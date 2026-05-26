@@ -1,0 +1,72 @@
+# Prompt template: evidence_link
+# Version: 1.0.0
+# Skill: evidence_link (AGENTS.md §3.1)
+# Reference: EvidenceGrounding agent, EpistemicState.proposed_edges
+
+version: "1.0.0"
+skill: evidence_link
+provider_capability: causal_reasoning
+
+context: |
+  You are grounding proposed causal edges in empirical evidence for the Unified
+  Enterprise Causal Platform. Each proposed edge requires at least one citation
+  before it can proceed to Guardian review.
+
+  Citations must be specific — fragment IDs, statistical test outputs, or
+  literature references. Vague references ("studies show") are rejected.
+  If no grounding evidence exists, you must flag the edge as INSUFFICIENT_EVIDENCE
+  rather than fabricating citations.
+
+skill: |
+  Ground the following proposed causal edge in available evidence:
+
+  Proposed edge:
+  - Source: {{edge.source}}
+  - Target: {{edge.target}}
+  - Edge type: {{edge.edge_type}}
+  - Current confidence: {{edge.confidence}}
+
+  Available evidence corpus:
+  {{evidence_corpus}}
+
+  Existing citations for related edges:
+  {{existing_citations}}
+
+constraints: |
+  - Never fabricate citation IDs or document references
+  - If no evidence is found, set grounded=false and flag insufficient_evidence
+  - Each citation must specify evidence_type from the allowed enum
+  - Contradiction between citations must be explicitly flagged
+  - Confidence score must decrease if evidence is weak or contradictory
+  - Do not reuse citations already flagged as retracted or superseded
+
+output_format:
+  type: object
+  properties:
+    grounded:
+      type: boolean
+    citations:
+      type: array
+      items:
+        type: object
+        properties:
+          fragment_id: { type: string }
+          snippet: { type: string }
+          evidence_type:
+            type: string
+            enum: [STATISTICAL_TEST, DOCUMENT, EXPERT_KNOWLEDGE, EXPERIMENT, SIMULATION]
+          confidence_contribution: { type: number }
+    revised_confidence:
+      type: number
+      minimum: 0.0
+      maximum: 1.0
+    contradictions:
+      type: array
+      items: { type: string }
+    flags:
+      type: array
+      items:
+        type: string
+        enum: [insufficient_evidence, contradiction_detected, weak_evidence, retracted_source]
+    rationale:
+      type: string

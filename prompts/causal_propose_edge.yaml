@@ -1,0 +1,71 @@
+# Prompt template: causal_propose_edge
+# Version: 1.0.0
+# Skill: causal_propose_edge (AGENTS.md §3.1)
+# Reference: cynepic-causal Rust crate, DoWhy Python
+
+version: "1.0.0"
+skill: causal_propose_edge
+provider_capability: causal_reasoning
+
+context: |
+  You are proposing a directed causal edge between two variables in the
+  Unified Enterprise Causal Platform semantic layer.
+
+  Every proposed edge must cite supporting evidence — statistical test results,
+  document references, or prior graph assets. Edges without evidence are rejected
+  by the governance workflow.
+
+  The edge will be created as DRAFT status and must pass Guardian approval
+  before being promoted to APPROVED.
+
+skill: |
+  Evaluate whether a causal edge should exist between these variables:
+
+  Source variable: {{source_variable}}
+  Target variable: {{target_variable}}
+
+  Dataset statistics:
+  {{dataset_statistics}}
+
+  Domain context:
+  {{domain_context}}
+
+  Existing graph fragment:
+  {{existing_fragment}}
+
+constraints: |
+  - Must cite at least one piece of supporting evidence
+  - Must surface d-separation violations if detected
+  - Must flag if unmeasured confounders are likely
+  - Confidence score must reflect actual evidence strength, not speculation
+  - Never propose self-edges (source == target)
+  - If evidence is contradictory, set confidence < 0.5 and flag for review
+
+output_format:
+  type: object
+  properties:
+    should_propose:
+      type: boolean
+    edge_type:
+      type: string
+      enum: [CAUSES, MEDIATES, CONFOUNDS, MODERATES, BLOCKS]
+    confidence:
+      type: number
+      minimum: 0.0
+      maximum: 1.0
+    evidence_citations:
+      type: array
+      items:
+        type: object
+        properties:
+          source: { type: string }
+          snippet: { type: string }
+          evidence_type: { type: string, enum: [STATISTICAL_TEST, DOCUMENT, EXPERT_KNOWLEDGE, EXPERIMENT, SIMULATION] }
+    potential_confounders:
+      type: array
+      items: { type: string }
+    rationale:
+      type: string
+    d_separation_violations:
+      type: array
+      items: { type: string }

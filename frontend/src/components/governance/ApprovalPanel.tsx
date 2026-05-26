@@ -1,0 +1,498 @@
+"use client";
+
+/**
+ * ApprovalPanel — Side panel for reviewing and approving/rejecting a draft object.
+ *
+ * Shows:
+ *   - Evidence citations (data-testid="evidence-citations")
+ *   - Sensitivity results (data-testid="sensitivity-result")
+ *   - Assumption list
+ *   - Causal chain (if EpistemicState available)
+ *   - Approve button (data-testid="approve-button")
+ *   - Reason textarea + confirm button (data-testid="confirm-approval")
+ *   - Success state (data-testid="approval-success")
+ */
+
+import { useState } from "react";
+import {
+  CheckCircle2,
+  XCircle,
+  BookOpen,
+  FlaskConical,
+  AlertCircle,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
+import { cn, formatConfidence } from "@/lib/utils";
+import { CynefinBadge } from "@/components/shared/CynefinBadge";
+import { GuardianVerdictBadge } from "@/components/shared/GuardianVerdictBadge";
+import type { ReviewQueueItem, Evidence, StatisticalTestResult, Assumption } from "@/lib/types";
+
+export interface ApprovalPanelProps {
+  item: ReviewQueueItem | null;
+  onApprove: (id: string, reason: string) => Promise<void>;
+  onReject: (id: string, reason: string) => Promise<void>;
+  className?: string;
+}
+
+function EvidenceCitationList({ citations }: { citations: Evidence[] }) {
+  return (
+    <div data-testid="evidence-citations" className="space-y-2">
+      <h4 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
+        Evidence Citations ({citations.length})
+      </h4>
+      {citations.length === 0 ? (
+        <p className="rounded-md border border-dashed border-border p-3 text-xs text-muted-foreground">
+          No evidence citations provided.
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {citations.map((cite) => (
+            <li
+              key={cite.id}
+              className="rounded-md border border-border bg-muted/30 p-3"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <span className="text-xs font-semibold text-foreground">
+                  {cite.source}
+                </span>
+                <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
+                  {cite.type.replace("_", " ")}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">{cite.snippet}</p>
+              {cite.url && (
+                <a
+                  href={cite.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 block text-xs text-blue-600 underline dark:text-blue-400"
+                >
+                  View source →
+                </a>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function SensitivityResultList({
+  results,
+}: {
+  results: StatisticalTestResult[];
+}) {
+  return (
+    <div data-testid="sensitivity-result" className="space-y-2">
+      <h4 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <FlaskConical className="h-3.5 w-3.5" aria-hidden="true" />
+        Sensitivity Results ({results.length})
+      </h4>
+      {results.length === 0 ? (
+        <p className="rounded-md border border-dashed border-border p-3 text-xs text-muted-foreground">
+          No sensitivity tests run yet.
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {results.map((result, i) => (
+            <li
+              key={i}
+              className={cn(
+                "rounded-md border p-3",
+                result.significant
+                  ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950"
+                  : "border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950"
+              )}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-semibold text-foreground">
+                  {result.testName}
+                </span>
+                <span
+                  className={cn(
+                    "text-xs font-bold",
+                    result.significant
+                      ? "text-green-700 dark:text-green-400"
+                      : "text-amber-700 dark:text-amber-400"
+                  )}
+                >
+                  {result.significant ? "Significant" : "Not significant"}
+                </span>
+              </div>
+              <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                <span>
+                  Statistic:{" "}
+                  <strong className="text-foreground">
+                    {result.statistic.toFixed(3)}
+                  </strong>
+                </span>
+                {result.pValue !== null && (
+                  <span>
+                    p-value:{" "}
+                    <strong className="text-foreground">
+                      {result.pValue.toFixed(4)}
+                    </strong>
+                  </span>
+                )}
+                {result.eValue !== null && (
+                  <span>
+                    E-value:{" "}
+                    <strong className="text-foreground">
+                      {result.eValue.toFixed(3)}
+                    </strong>
+                  </span>
+                )}
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {result.interpretation}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function AssumptionList({ assumptions }: { assumptions: Assumption[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? assumptions : assumptions.slice(0, 3);
+
+  if (assumptions.length === 0) return null;
+
+  return (
+    <div className="space-y-2">
+      <h4 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
+        Assumptions ({assumptions.length})
+      </h4>
+      <ul className="space-y-1.5">
+        {visible.map((assumption) => (
+          <li
+            key={assumption.id}
+            className="rounded-md border border-border bg-muted/20 p-2.5 text-xs"
+          >
+            <div className="flex items-center gap-1.5">
+              <span
+                className={cn(
+                  "rounded px-1 py-0.5 text-xs font-semibold",
+                  assumption.strength === "STRONG"
+                    ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
+                    : assumption.strength === "MODERATE"
+                    ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400"
+                    : "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400"
+                )}
+              >
+                {assumption.strength}
+              </span>
+              <span
+                className={cn(
+                  "rounded px-1 py-0.5 text-xs",
+                  assumption.reviewStatus === "OVERDUE"
+                    ? "bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400"
+                    : assumption.reviewStatus === "DUE_REVIEW"
+                    ? "bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400"
+                    : "bg-muted text-muted-foreground"
+                )}
+              >
+                {assumption.reviewStatus}
+              </span>
+            </div>
+            <p className="mt-1 text-foreground">{assumption.statement}</p>
+          </li>
+        ))}
+      </ul>
+      {assumptions.length > 3 && (
+        <button
+          onClick={() => setExpanded((p) => !p)}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {expanded ? (
+            <>
+              <ChevronDown className="h-3 w-3" aria-hidden="true" />
+              Show less
+            </>
+          ) : (
+            <>
+              <ChevronRight className="h-3 w-3" aria-hidden="true" />
+              Show {assumptions.length - 3} more
+            </>
+          )}
+        </button>
+      )}
+    </div>
+  );
+}
+
+export function ApprovalPanel({
+  item,
+  onApprove,
+  onReject,
+  className,
+}: ApprovalPanelProps) {
+  const [mode, setMode] = useState<"idle" | "approve" | "reject">("idle");
+  const [reason, setReason] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVerdict, setSuccessVerdict] = useState<
+    "approved" | "rejected" | null
+  >(null);
+
+  async function handleConfirmApproval() {
+    if (!item) return;
+    setIsSubmitting(true);
+    try {
+      await onApprove(item.id, reason);
+      setSuccessVerdict("approved");
+      setMode("idle");
+      setReason("");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleConfirmRejection() {
+    if (!item) return;
+    setIsSubmitting(true);
+    try {
+      await onReject(item.id, reason);
+      setSuccessVerdict("rejected");
+      setMode("idle");
+      setReason("");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  function handleReset() {
+    setMode("idle");
+    setReason("");
+    setSuccessVerdict(null);
+  }
+
+  if (!item) {
+    return (
+      <div
+        className={cn(
+          "flex items-center justify-center rounded-xl border border-dashed border-border p-12",
+          className
+        )}
+      >
+        <p className="text-sm text-muted-foreground">
+          Select a review queue item to begin review.
+        </p>
+      </div>
+    );
+  }
+
+  // Success state
+  if (successVerdict) {
+    return (
+      <div
+        data-testid="approval-success"
+        className={cn(
+          "flex flex-col items-center gap-4 rounded-xl border p-10 text-center",
+          successVerdict === "approved"
+            ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950"
+            : "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950",
+          className
+        )}
+      >
+        {successVerdict === "approved" ? (
+          <CheckCircle2 className="h-12 w-12 text-green-600 dark:text-green-400" aria-hidden="true" />
+        ) : (
+          <XCircle className="h-12 w-12 text-red-600 dark:text-red-400" aria-hidden="true" />
+        )}
+        <div>
+          <p className="text-lg font-bold text-foreground">
+            {successVerdict === "approved"
+              ? "Approved successfully"
+              : "Rejected successfully"}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            The decision has been recorded in the immutable audit trail.
+          </p>
+        </div>
+        <button
+          onClick={handleReset}
+          className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+        >
+          Review another item
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        "rounded-xl border border-border bg-card overflow-hidden",
+        className
+      )}
+    >
+      {/* Panel header */}
+      <div className="border-b border-border bg-muted/30 px-5 py-4">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h3 className="text-base font-bold text-foreground">{item.objectName}</h3>
+            <p className="text-xs text-muted-foreground">
+              {item.objectType.replace("_", " ")} · Submitted by {item.submittedBy}
+            </p>
+          </div>
+          <CynefinBadge
+            domain={item.domain}
+            confidence={0}
+            size="sm"
+          />
+        </div>
+      </div>
+
+      {/* Panel body */}
+      <div className="space-y-5 p-5">
+        {/* Evidence citations */}
+        <EvidenceCitationList citations={item.evidenceCitations} />
+
+        {/* Sensitivity results */}
+        <SensitivityResultList results={item.sensitivityResults} />
+
+        {/* Assumptions */}
+        <AssumptionList assumptions={item.assumptions} />
+
+        {/* Causal chain from EpistemicState */}
+        {item.epistemicState && item.epistemicState.proposedEdges.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Proposed Causal Edges ({item.epistemicState.proposedEdges.length})
+            </h4>
+            <ul className="space-y-1">
+              {item.epistemicState.proposedEdges.map((edge) => (
+                <li
+                  key={edge.id}
+                  className="flex items-center gap-2 rounded-md border border-border bg-muted/20 px-3 py-2 text-xs"
+                >
+                  <span className="font-medium text-foreground">
+                    {edge.sourceVariable}
+                  </span>
+                  <span className="text-muted-foreground">→</span>
+                  <span className="font-medium text-foreground">
+                    {edge.targetVariable}
+                  </span>
+                  <span className="ml-auto font-mono text-muted-foreground">
+                    {formatConfidence(edge.confidence)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Reason input */}
+        {mode !== "idle" && (
+          <div className="space-y-2">
+            <label
+              htmlFor="approval-reason"
+              className="text-xs font-semibold text-foreground"
+            >
+              {mode === "approve" ? "Approval reason" : "Rejection reason"}{" "}
+              <span className="text-muted-foreground">(recorded in audit trail)</span>
+            </label>
+            <textarea
+              id="approval-reason"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+              placeholder="Provide a clear rationale for your decision..."
+              className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Action footer */}
+      <div className="flex items-center gap-2 border-t border-border p-4">
+        {mode === "idle" && (
+          <>
+            <button
+              data-testid="approve-button"
+              onClick={() => setMode("approve")}
+              className={cn(
+                "flex flex-1 items-center justify-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold",
+                "bg-green-600 text-white hover:bg-green-700 active:bg-green-800",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1",
+                "transition-colors"
+              )}
+            >
+              <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+              Approve
+            </button>
+            <button
+              onClick={() => setMode("reject")}
+              className={cn(
+                "flex flex-1 items-center justify-center gap-1.5 rounded-md border px-4 py-2.5 text-sm font-semibold",
+                "border-red-300 bg-red-50 text-red-700 hover:bg-red-100",
+                "dark:border-red-800 dark:bg-red-950 dark:text-red-300 dark:hover:bg-red-900",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1",
+                "transition-colors"
+              )}
+            >
+              <XCircle className="h-4 w-4" aria-hidden="true" />
+              Reject
+            </button>
+          </>
+        )}
+
+        {mode === "approve" && (
+          <>
+            <button
+              data-testid="confirm-approval"
+              onClick={handleConfirmApproval}
+              disabled={isSubmitting}
+              className={cn(
+                "flex flex-1 items-center justify-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold",
+                "bg-green-600 text-white hover:bg-green-700",
+                "disabled:cursor-not-allowed disabled:opacity-50 transition-colors",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
+              )}
+            >
+              <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+              {isSubmitting ? "Confirming..." : "Confirm Approval"}
+            </button>
+            <button
+              onClick={handleReset}
+              className="rounded-md px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted transition-colors"
+            >
+              Cancel
+            </button>
+          </>
+        )}
+
+        {mode === "reject" && (
+          <>
+            <button
+              onClick={handleConfirmRejection}
+              disabled={isSubmitting}
+              className={cn(
+                "flex flex-1 items-center justify-center gap-1.5 rounded-md border px-4 py-2.5 text-sm font-semibold",
+                "border-red-300 bg-red-50 text-red-700 hover:bg-red-100",
+                "dark:border-red-800 dark:bg-red-950 dark:text-red-300",
+                "disabled:cursor-not-allowed disabled:opacity-50 transition-colors",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+              )}
+            >
+              <XCircle className="h-4 w-4" aria-hidden="true" />
+              {isSubmitting ? "Confirming..." : "Confirm Rejection"}
+            </button>
+            <button
+              onClick={handleReset}
+              className="rounded-md px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted transition-colors"
+            >
+              Cancel
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

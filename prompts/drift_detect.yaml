@@ -1,0 +1,65 @@
+# Prompt template: drift_detect
+# Version: 1.0.0
+# Skill: drift_detect (AGENTS.md §3.1)
+# Reference: DriftMonitor agent, src/skills/drift_detect.py
+# Note: Core drift metrics (KL divergence, JS divergence, severity) are computed
+#       by the Python skill functions. This template is used for LLM-assisted
+#       interpretation when statistical signals are ambiguous.
+
+version: "1.0.0"
+skill: drift_detect
+provider_capability: fast_classification
+
+context: |
+  You are interpreting drift detection signals for the Unified Enterprise Causal
+  Platform. Statistical drift metrics (KL divergence, JS divergence, chi-square)
+  have already been computed. Your role is to assess whether detected drift
+  represents a genuine causal structure change or a transient data artefact.
+
+  Drift classification drives downstream actions: CRITICAL and HIGH severity
+  trigger human escalation; MEDIUM triggers graph review; LOW is logged only.
+
+skill: |
+  Interpret the following drift detection results:
+
+  Feature: {{feature_name}}
+  KL divergence: {{kl_divergence}}
+  JS divergence: {{js_divergence}}
+  Concept drift detected (chi-square p<0.05): {{concept_drift}}
+  Semantic drift score: {{semantic_drift_score}}
+  Computed severity: {{computed_severity}}
+  Drift score: {{drift_score}}
+
+  Reference period: {{reference_period}}
+  Current period: {{current_period}}
+
+  Recent graph changes:
+  {{recent_graph_changes}}
+
+constraints: |
+  - Do not override a CRITICAL severity computed by the statistical functions
+  - If concept drift and semantic drift both fire, escalate regardless of KL score
+  - Transient artefacts (missing data windows, pipeline restarts) must be flagged
+  - Never dismiss drift signals without a documented rationale
+  - If ambiguous, default to the higher severity tier (fail-safe)
+
+output_format:
+  type: object
+  properties:
+    confirmed_drift:
+      type: boolean
+    likely_cause:
+      type: string
+      enum: [GENUINE_DISTRIBUTION_SHIFT, DATA_PIPELINE_ARTEFACT, SEASONAL_PATTERN, CONCEPT_CHANGE, UNKNOWN]
+    recommended_severity:
+      type: string
+      enum: [LOW, MEDIUM, HIGH, CRITICAL]
+    affected_edges:
+      type: array
+      items: { type: string }
+    recommended_action:
+      type: string
+    rationale:
+      type: string
+    requires_human_escalation:
+      type: boolean

@@ -1,0 +1,72 @@
+# Prompt template: confounder_screen
+# Version: 1.0.0
+# Skill: confounder_screen (AGENTS.md §3.1)
+# Reference: CausalDiscovery agent, DoWhy CausalModel
+
+version: "1.0.0"
+skill: confounder_screen
+provider_capability: causal_reasoning
+
+context: |
+  You are screening for confounders in a causal analysis for the Unified Enterprise
+  Causal Platform. A confounder is a variable that causally influences both the
+  treatment and the outcome, creating spurious associations if uncontrolled.
+
+  Uncontrolled confounders invalidate causal effect estimates and must be
+  surfaced before any edge is approved. If confounders are unmeasured, this must
+  be explicitly stated — never assume they are absent.
+
+skill: |
+  Screen for potential confounders in this causal relationship:
+
+  Treatment variable: {{treatment}}
+  Outcome variable: {{outcome}}
+
+  Candidate confounders from domain knowledge:
+  {{candidate_confounders}}
+
+  Available covariates in dataset:
+  {{available_covariates}}
+
+  Current approved graph fragment (for d-separation analysis):
+  {{graph_fragment}}
+
+  Dataset summary statistics:
+  {{dataset_summary}}
+
+constraints: |
+  - Flag ALL plausible confounders, even if data is unavailable to control them
+  - Unmeasured confounders must be labelled UNMEASURED — never silently dropped
+  - Use d-separation to identify conditional independence given graph structure
+  - If a confounder is unmeasured, recommend a proxy variable if one exists
+  - Never return an empty confounders list unless you have strong justification
+  - Collider bias (controlling for colliders) must be explicitly warned against
+
+output_format:
+  type: object
+  properties:
+    measured_confounders:
+      type: array
+      items:
+        type: object
+        properties:
+          variable: { type: string }
+          strength: { type: string, enum: [STRONG, MODERATE, WEAK] }
+          evidence: { type: string }
+    unmeasured_confounders:
+      type: array
+      items:
+        type: object
+        properties:
+          description: { type: string }
+          proxy_variable: { type: string, nullable: true }
+          impact_if_ignored: { type: string, enum: [HIGH, MEDIUM, LOW] }
+    collider_warnings:
+      type: array
+      items: { type: string }
+    identification_possible:
+      type: boolean
+    identification_caveat:
+      type: string
+    rationale:
+      type: string

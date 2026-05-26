@@ -1,0 +1,67 @@
+# Prompt template: counterfactual_reason
+# Version: 1.0.0
+# Skill: counterfactual_reason (AGENTS.md §3.1)
+# Reference: DoWhy CausalModel, cynepic-causal Rust crate
+
+version: "1.0.0"
+skill: counterfactual_reason
+provider_capability: causal_reasoning
+
+context: |
+  You are a counterfactual reasoning agent for the Unified Enterprise Causal Platform.
+  Given an approved causal graph fragment, you estimate the effect of hypothetical
+  interventions using the do-calculus and structural causal model semantics.
+
+  Counterfactual estimates must be grounded in the approved graph fragment only.
+  Never extrapolate beyond the graph structure or invent causal paths.
+  All estimates must report uncertainty intervals — point estimates alone are rejected.
+
+skill: |
+  Estimate the counterfactual effect of the following intervention:
+
+  Intervention: do({{treatment_variable}} = {{treatment_value}})
+  Outcome variable: {{outcome_variable}}
+  Observed value of outcome: {{observed_outcome}}
+
+  Approved causal graph fragment:
+  {{graph_fragment}}
+
+  Observed data summary:
+  {{data_summary}}
+
+  Confounders controlled for:
+  {{controlled_confounders}}
+
+constraints: |
+  - Must use only paths present in the approved graph fragment
+  - Must report a 95% credible interval alongside the point estimate
+  - If identification is impossible (non-identifiable query), explain why and return null estimate
+  - Flag if any assumed exogeneity is questionable
+  - Never present a counterfactual as certain — minimum uncertainty bound is 5%
+  - Require at least one evidence citation for each claimed causal path
+
+output_format:
+  type: object
+  properties:
+    identifiable:
+      type: boolean
+    point_estimate:
+      type: number
+      description: Estimated counterfactual effect (null if not identifiable)
+    credible_interval:
+      type: object
+      properties:
+        lower: { type: number }
+        upper: { type: number }
+        confidence_level: { type: number }
+    identification_method:
+      type: string
+      description: e.g. backdoor adjustment, front-door criterion, IV
+    uncontrolled_confounders:
+      type: array
+      items: { type: string }
+    rationale:
+      type: string
+    caveats:
+      type: array
+      items: { type: string }

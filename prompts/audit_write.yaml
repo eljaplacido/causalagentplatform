@@ -1,0 +1,73 @@
+# Prompt template: audit_write
+# Version: 1.0.0
+# Skill: audit_write (AGENTS.md §3.1)
+# Reference: Governance agent — immutable audit trail writes
+# Note: This skill is a deterministic DB write, not an LLM call.
+#       This YAML documents the contract for tooling and audit purposes.
+
+version: "1.0.0"
+skill: audit_write
+provider_capability: deterministic
+llm_required: false
+
+context: |
+  Write an immutable audit record to the platform audit trail. Audit records
+  are append-only — once written they cannot be modified or deleted.
+  Every Guardian verdict, policy evaluation, and governance action must be
+  recorded here before the originating operation is considered complete.
+
+  Audit writes that fail must cause the parent operation to fail — partial
+  audit coverage is not permitted.
+
+inputs:
+  type: object
+  required: [event_type, actor, payload]
+  properties:
+    event_type:
+      type: string
+      enum:
+        - GUARDIAN_VERDICT
+        - POLICY_EVALUATED
+        - EDGE_PROMOTED
+        - EDGE_REJECTED
+        - ASSUMPTION_APPROVED
+        - ASSUMPTION_REJECTED
+        - DRIFT_ALERT_RAISED
+        - HUMAN_ESCALATION_TRIGGERED
+        - SESSION_OPENED
+        - SESSION_CLOSED
+    actor:
+      type: string
+      description: Agent ID or human user ID originating the event
+    session_id:
+      type: string
+      format: uuid
+    payload:
+      type: object
+      description: Event-specific structured payload
+    guardian_verdict_ref:
+      type: string
+      format: uuid
+      description: Required for all write events that modified the semantic layer
+
+constraints: |
+  - guardian_verdict_ref is REQUIRED for all EDGE_PROMOTED events
+  - Audit records must be written before the semantic layer write commits
+  - event_type must be from the approved enum — free-text types are rejected
+  - Payload must be JSON-serialisable; no binary blobs
+  - actor must be a registered agent ID or authenticated user principal
+
+output_format:
+  type: object
+  properties:
+    audit_record_id:
+      type: string
+      format: uuid
+    timestamp:
+      type: string
+      format: date-time
+    written:
+      type: boolean
+    error:
+      type: string
+      nullable: true

@@ -1,0 +1,63 @@
+# Prompt template: semantic_layer_read
+# Version: 1.0.0
+# Skill: semantic_layer_read (AGENTS.md §3.1)
+# Reference: All agents — read-only access to the semantic layer
+# Note: This skill is a deterministic DB read, not an LLM call.
+#       This YAML documents the contract for tooling and audit purposes.
+
+version: "1.0.0"
+skill: semantic_layer_read
+provider_capability: deterministic
+llm_required: false
+
+context: |
+  Read approved entities, edges, and fragments from the semantic layer.
+  All reads are non-mutating and do not require Guardian approval.
+  Results reflect the current APPROVED state only — DRAFT objects are excluded
+  unless the caller explicitly requests draft_included=true.
+
+inputs:
+  type: object
+  properties:
+    entity_ids:
+      type: array
+      items: { type: string, format: uuid }
+      description: Optional filter by entity IDs
+    edge_types:
+      type: array
+      items: { type: string }
+      description: Optional filter by edge type
+    fragment_id:
+      type: string
+      format: uuid
+      description: Scope read to a specific graph fragment
+    draft_included:
+      type: boolean
+      default: false
+      description: Include DRAFT objects in results (requires explicit opt-in)
+    limit:
+      type: integer
+      default: 100
+      maximum: 1000
+
+constraints: |
+  - Never return objects in REJECTED or ARCHIVED status unless audit_mode=true
+  - Results must be scoped to the caller's session fragment unless fragment_id is provided
+  - draft_included=true requires the caller to have an active Guardian session
+  - Reads must complete within 200ms; longer queries must be paginated
+
+output_format:
+  type: object
+  properties:
+    entities:
+      type: array
+      items: { type: object }
+    edges:
+      type: array
+      items: { type: object }
+    fragment_metadata:
+      type: object
+    total_count:
+      type: integer
+    truncated:
+      type: boolean

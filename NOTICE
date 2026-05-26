@@ -1,0 +1,43 @@
+Causal Platform
+Copyright 2026 Eljas Suhonen
+
+This product is licensed under the Apache License, Version 2.0.
+See LICENSE for the full license text.
+
+────────────────────────────────────────────────────────────────────────────
+Third-party software
+────────────────────────────────────────────────────────────────────────────
+
+This product includes software developed by third parties under their own
+licenses. The full text of each license is available in the repositories
+linked below.
+
+Backend (Python):
+  - DoWhy (Apache 2.0) — https://github.com/py-why/dowhy
+  - EconML (MIT)        — https://github.com/py-why/EconML
+  - causal-learn (MIT)  — https://github.com/py-why/causal-learn
+  - PyMC (Apache 2.0)   — https://github.com/pymc-devs/pymc
+  - LangGraph (MIT)     — https://github.com/langchain-ai/langgraph
+  - FastAPI (MIT)       — https://github.com/tiangolo/fastapi
+  - Pydantic (MIT)      — https://github.com/pydantic/pydantic
+  - SQLAlchemy (MIT)    — https://github.com/sqlalchemy/sqlalchemy
+  - structlog (MIT/Apache 2.0 dual) — https://github.com/hynek/structlog
+  - MCP Python SDK (MIT)            — https://github.com/modelcontextprotocol/python-sdk
+  - statsmodels (BSD-3-Clause)       — https://github.com/statsmodels/statsmodels
+
+Frontend (TypeScript):
+  - Next.js (MIT)                    — https://github.com/vercel/next.js
+  - React (MIT)                      — https://github.com/facebook/react
+  - TanStack Query (MIT)             — https://github.com/TanStack/query
+  - Zustand (MIT)                    — https://github.com/pmndrs/zustand
+  - Radix UI (MIT)                   — https://github.com/radix-ui/primitives
+  - Tailwind CSS (MIT)               — https://github.com/tailwindlabs/tailwindcss
+  - lucide-react (ISC)               — https://github.com/lucide-icons/lucide
+  - react-hook-form (MIT)            — https://github.com/react-hook-form/react-hook-form
+  - zod (MIT)                        — https://github.com/colinhacks/zod
+
+Protocols:
+  - Model Context Protocol — https://modelcontextprotocol.io
+
+Modifications made to any third-party software incorporated into this product
+are documented in the commit history of this repository.

@@ -1,0 +1,63 @@
+name: Bounded Implementation Task
+description: Scoped implementation task ready for Copilot Coding Agent or manual execution
+title: "[implement] "
+labels: ["lane/implement", "copilot-ready"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for tightly scoped implementation tasks.
+        Tasks labeled `copilot-ready` can be picked up by the Copilot Coding Agent.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What needs to be built and why (2-3 sentences)
+    validations:
+      required: true
+
+  - type: textarea
+    id: target-files
+    attributes:
+      label: Target Files
+      description: List every file to create or modify
+      placeholder: |
+        - backend/src/agents/new_agent.py (create)
+        - backend/src/agents/__init__.py (modify — add export)
+        - backend/tests/unit/test_new_agent.py (create)
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Numbered list of independently verifiable criteria
+      placeholder: |
+        1. New agent extends BaseAgent and implements process()
+        2. Circuit breaker check at entry
+        3. All existing tests pass
+    validations:
+      required: true
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification Commands
+      description: Commands to run after implementation
+      placeholder: |
+        cd backend && python -m pytest tests/ -q
+        cd frontend && npm run typecheck
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: platform-constraints
+    attributes:
+      label: Platform Constraints
+      options:
+        - label: EpistemicState contract preserved
+        - label: Guardian-gated write paths enforced
+        - label: No hardcoded model names
+        - label: Audit trail writes verified

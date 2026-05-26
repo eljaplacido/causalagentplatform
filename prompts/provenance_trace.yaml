@@ -1,0 +1,46 @@
+# Prompt: provenance_trace
+# Agent: ProvenanceAgent
+# Capability: provenance tracing
+# Provider: rule-based (no LLM), falls back to Ollama (phi4:14b) for gap explanation
+#
+# [CONTEXT]
+#   - Full EpistemicState for the session including tool_call_log and reasoning_steps
+#   - Semantic layer objects referenced in the session
+#   - LLM invocation metadata captured by llm_factory.py
+#
+# [SKILL]
+#   provenance_trace:
+#     action: trace_full_provenance_chain
+#     inputs:
+#       - session_id: string
+#       - include_reasoning_steps: boolean (default: true)
+#       - include_tool_calls: boolean (default: true)
+#       - max_depth: integer (default: 100)
+#     outputs:
+#       - provenance_graph: ProvenanceGraph (PROV-JSON compatible)
+#       - gap_flags: string[] (missing links or incomplete chains)
+#       - trace_completeness: float (0.0-1.0)
+#
+# [CONSTRAINTS]
+#   - Provenance records are append-only and immutable
+#   - Missing provenance links must be flagged as PROV_GAP, never fabricated
+#   - Raw PII must never appear in provenance records
+#   - Guardian verdict must be recorded for every provenance-producing action
+#   - Provider-agnostic: provenance tracing uses structural data, not LLM generation
+#
+# [OUTPUT_FORMAT]
+#   {
+#     "provenance_graph": {
+#       "session_id": "<session_id>",
+#       "records": [...],
+#       "links": [...],
+#       "llm_invocations": [...]
+#     },
+#     "gap_flags": ["Missing attribution for record <id>"],
+#     "trace_completeness": 0.95
+#   }
+#
+# [EXAMPLES]
+#   - Trace a session that ran through the full LangGraph pipeline
+#   - Detect gaps when an agent skipped the GuardianCheck node
+#   - Export to PROV-JSON for regulatory submission

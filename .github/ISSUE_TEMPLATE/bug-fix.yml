@@ -1,0 +1,56 @@
+name: Bug Fix
+description: Report a bug with reproduction steps for Copilot Coding Agent or manual fix
+title: "[fix] "
+labels: ["lane/implement", "copilot-ready", "bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: What is broken?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction Steps
+      description: Exact steps to reproduce the bug
+      placeholder: |
+        1. Call endpoint POST /api/v1/...
+        2. Observe error response...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should happen instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What happens currently?
+    validations:
+      required: true
+
+  - type: textarea
+    id: target-files
+    attributes:
+      label: Likely Target Files
+      description: Files where the fix probably lives
+      placeholder: |
+        - backend/src/agents/governance.py
+        - backend/src/orchestration/graph.py
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: How to confirm the fix works
+      placeholder: |
+        cd backend && python -m pytest tests/ -q

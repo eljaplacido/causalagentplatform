@@ -1,0 +1,64 @@
+# Prompt template: experience_buffer_query
+# Version: 1.0.0
+# Skill: experience_buffer_query (AGENTS.md §3.1)
+# Reference: IncidentTriage agent, src/skills/experience_buffer.py
+# Note: Core similarity search is handled by the Python skill function.
+#       This YAML documents the contract; LLM is used only for relevance re-ranking
+#       when top-k candidates are ambiguous.
+
+version: "1.0.0"
+skill: experience_buffer_query
+provider_capability: fast_classification
+llm_required: conditional
+
+context: |
+  Query the experience buffer for prior incidents similar to the current one.
+  The experience buffer stores resolved incidents with their causal diagnoses,
+  time-decayed by recency. Older incidents have lower retrieval weight.
+
+  Use retrieved experiences to inform — not override — current reasoning.
+  Experiences from a different Cynefin domain should be flagged as lower
+  relevance. Never extrapolate causal paths from experience to a new context
+  without re-grounding in current evidence.
+
+skill: |
+  Re-rank the following candidate prior incidents by relevance to the current incident:
+
+  Current incident:
+  - Description: {{incident.description}}
+  - Affected components: {{incident.affected_components}}
+  - Cynefin domain: {{incident.cynefin_domain}}
+  - Observed symptoms: {{incident.symptoms}}
+
+  Candidate prior incidents (pre-filtered by vector similarity):
+  {{candidate_incidents}}
+
+constraints: |
+  - Relevance score must be 0.0–1.0; do not inflate similarity
+  - Flag incidents from a different Cynefin domain with domain_mismatch=true
+  - Incidents older than 180 days should be noted as potentially stale
+  - Never fabricate prior incidents — candidates come from the buffer only
+  - If no candidates are relevant (all scores < 0.3), return empty results
+
+output_format:
+  type: object
+  properties:
+    ranked_incidents:
+      type: array
+      items:
+        type: object
+        properties:
+          incident_id: { type: string }
+          relevance_score: { type: number, minimum: 0.0, maximum: 1.0 }
+          domain_mismatch: { type: boolean }
+          staleness_warning: { type: boolean }
+          applicable_causal_paths:
+            type: array
+            items: { type: string }
+          caveats: { type: string }
+    query_confidence:
+      type: number
+      minimum: 0.0
+      maximum: 1.0
+    rationale:
+      type: string

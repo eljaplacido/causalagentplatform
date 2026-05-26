@@ -1,0 +1,42 @@
+name: Test Addition
+description: Add test coverage for an existing module
+title: "[test] "
+labels: ["lane/implement", "copilot-ready", "testing"]
+body:
+  - type: textarea
+    id: target-module
+    attributes:
+      label: Target Module
+      description: Which module or function needs test coverage?
+      placeholder: "backend/src/agents/causal_discovery.py"
+    validations:
+      required: true
+
+  - type: textarea
+    id: coverage-goals
+    attributes:
+      label: Coverage Goals
+      description: What behaviors should the tests verify?
+      placeholder: |
+        1. process() returns valid EpistemicState with proposed edges
+        2. Circuit breaker raises after MAX_CYCLES
+        3. Hallucination risk flag set when score > 0.7
+    validations:
+      required: true
+
+  - type: textarea
+    id: test-file
+    attributes:
+      label: Test File Location
+      description: Where should the test file be created or modified?
+      placeholder: "backend/tests/unit/test_causal_discovery.py"
+    validations:
+      required: true
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: Commands to verify tests pass
+      value: |
+        cd backend && python -m pytest tests/ -q --cov=src --cov-report=term-missing

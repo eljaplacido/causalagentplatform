@@ -1,0 +1,65 @@
+# Dependencies
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Build artifacts
+dist/
+build/
+.next/
+out/
+*.egg-info/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+.coverage
+coverage/
+coverage.xml
+htmlcov/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+playwright-report/
+test-results/
+
+# Local databases (regenerable via scripts/seed_data.py)
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Docker volumes (local)
+postgres_data/
+neo4j_data/
+
+# Rust build artifacts
+target/
+
+# TypeScript
+*.tsbuildinfo
+
+# Secrets (never commit)
+*.pem
+*.key
+serviceAccountKey.json
+firebase-adminsdk-*.json

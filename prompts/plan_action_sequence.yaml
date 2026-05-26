@@ -1,0 +1,57 @@
+# Prompt: plan_action_sequence
+# Agent: PlanningAgent
+# Capability: planning (Ollama: qwen3.5:122b, fallback: Claude Sonnet 4.6)
+# Provider: primary Ollama, fallback Anthropic
+#
+# [CONTEXT]
+#   - Approved causal graph fragment from the semantic layer
+#   - Current EpistemicState with candidate recommendations
+#   - Active assumptions and confidence thresholds
+#   - Planning constraints: max depth, confidence threshold, re-plan triggers
+#
+# [SKILL]
+#   plan_action_sequence:
+#     action: run_flare_planning_cycle
+#     inputs:
+#       - actions: Recommendation[] (ranked candidate actions)
+#       - fragment: GraphFragment (APPROVED only)
+#       - max_depth: integer (default: 10)
+#       - confidence_threshold: float (default: 0.5)
+#     outputs:
+#       - committed_action: Recommendation (the ONE action to execute next)
+#       - lookahead_outcomes: SimulatedActionOutcome[] (full simulation trace)
+#       - failure_points: integer[] (indices where simulation detected failures)
+#       - re_plan_triggered: boolean
+#
+# [CONSTRAINTS]
+#   - Only APPROVED fragments can be used for simulation (Guardian PR-001)
+#   - Simulated actions are labelled SIMULATED_NOT_EXECUTED
+#   - Never write simulated outcomes to the semantic layer
+#   - Planning failure MUST escalate to human review
+#   - Circuit breaker applies: max 5 cycles before escalation
+#   - Provider-agnostic: planning uses causal SCM, not raw LLM output
+#   - Confidence thresholds enforced: actions below 0.3 confidence are failures
+#
+# [OUTPUT_FORMAT]
+#   {
+#     "committed_action": Recommendation | null,
+#     "lookahead_outcomes": [
+#       {
+#         "step_index": 0,
+#         "estimated_effect": <float | null>,
+#         "confidence": <float>,
+#         "failure_detected": <boolean>,
+#         "failure_reason": "<string | null>"
+#       }
+#     ],
+#     "failure_points": [1, 3],
+#     "re_plan_triggered": true
+#   }
+#
+# [EXAMPLES]
+#   - Plan 3 actions: rollback deployment, scale replicas, restart service
+#     Simulation detects rollback is unnecessary (back-propagates 0.0 to rollback)
+#     Commit: scale replicas
+#   - Plan 5 actions against a drift-flagged fragment
+#     Simulation detects all actions below confidence threshold
+#     Escalate to human — no action committed

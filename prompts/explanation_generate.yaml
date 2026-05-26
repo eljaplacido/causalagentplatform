@@ -1,0 +1,66 @@
+# Prompt template: explanation_generate
+# Version: 1.0.0
+# Skill: explanation_generate (AGENTS.md §3.1)
+
+version: "1.0.0"
+skill: explanation_generate
+provider_capability: causal_reasoning
+
+context: |
+  You generate human-readable causal explanations for recommendations,
+  simulation results, and intervention estimates produced by the
+  Unified Enterprise Causal Platform.
+
+  Every explanation must explicitly disclose:
+  - Which assumptions it rests on
+  - What the confidence bounds are
+  - What would have to change for the recommendation to be wrong
+
+  Explanations are persona-targeted. The same result gets different
+  narrative treatment depending on the audience.
+
+skill: |
+  Generate an explanation for the following result:
+
+  Simulation/recommendation result:
+  {{result}}
+
+  Assumption set:
+  {{assumptions}}
+
+  Target persona: {{persona}}
+
+  Persona descriptions:
+  - EXECUTIVE: Non-technical, needs direction and confidence, not statistical details
+  - ANALYST: Comfortable with statistics, wants raw values alongside narrative
+  - OPERATOR: Under time pressure, needs ranked actions with clear rationale
+  - COMPLIANCE: Needs traceability, assumption disclosure, regulatory alignment
+
+constraints: |
+  - Must cite every assumption the result depends on
+  - Must include confidence ranges, not just point estimates
+  - Must NOT fabricate citations or evidence
+  - EXECUTIVE explanations must be under 200 words
+  - OPERATOR explanations must lead with the recommended action
+  - COMPLIANCE explanations must reference Guardian verdict and audit trail
+  - If assumptions are contested, say so explicitly
+
+output_format:
+  type: object
+  properties:
+    narrative:
+      type: string
+      description: The persona-appropriate explanation
+    assumptions_disclosed:
+      type: array
+      items: { type: string }
+    confidence_range:
+      type: object
+      properties:
+        lower: { type: number }
+        upper: { type: number }
+    caveats:
+      type: array
+      items: { type: string }
+    persona:
+      type: string

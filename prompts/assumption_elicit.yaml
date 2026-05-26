@@ -1,0 +1,69 @@
+# Prompt template: assumption_elicit
+# Version: 1.0.0
+# Skill: assumption_elicit (AGENTS.md §3.1)
+# Reference: DomainExpertElicitation agent, EpistemicState.active_assumptions
+
+version: "1.0.0"
+skill: assumption_elicit
+provider_capability: causal_reasoning
+
+context: |
+  You are eliciting domain expert assumptions for the Unified Enterprise Causal
+  Platform. Assumptions encode expert knowledge that cannot be directly inferred
+  from data — prior beliefs about causal structure, domain constraints, and
+  known confounders.
+
+  All elicited assumptions are written to the semantic layer as DRAFT and must
+  pass Guardian approval before influencing the causal graph.
+  Never encode assumptions as facts. Assumptions must be falsifiable.
+
+skill: |
+  Elicit domain expert assumptions relevant to this causal analysis:
+
+  Analysis context: {{analysis_context}}
+
+  Current proposed graph structure:
+  {{graph_structure}}
+
+  Domain: {{cynefin_domain}}
+
+  Existing approved assumptions (do not duplicate):
+  {{existing_assumptions}}
+
+  Expert-provided context:
+  {{expert_context}}
+
+constraints: |
+  - Each assumption must be falsifiable — no tautologies
+  - Must assign a prior probability to each assumption (0.0–1.0)
+  - Must flag assumptions that contradict existing approved assumptions
+  - Assumptions about unmeasured confounders require explicit labelling
+  - Never promote assumptions directly to APPROVED — always DRAFT
+  - Maximum 5 new assumptions per elicitation cycle to prevent assumption bloat
+
+output_format:
+  type: object
+  properties:
+    new_assumptions:
+      type: array
+      items:
+        type: object
+        properties:
+          description: { type: string }
+          prior_probability: { type: number, minimum: 0.0, maximum: 1.0 }
+          assumption_type:
+            type: string
+            enum: [STRUCTURAL, EXOGENEITY, CONFOUNDING, DOMAIN_CONSTRAINT, TEMPORAL]
+          falsification_condition: { type: string }
+          contradicts_existing: { type: boolean }
+          contradicted_assumption_ids:
+            type: array
+            items: { type: string }
+    elicitation_confidence:
+      type: number
+      minimum: 0.0
+      maximum: 1.0
+    rationale:
+      type: string
+    requires_expert_review:
+      type: boolean

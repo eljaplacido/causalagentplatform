@@ -1,0 +1,671 @@
+# Agents, Skills & Prompt Architecture
+
+> **Scope:** Canonical reference for all agents deployed across the Unified Enterprise Causal Platform. Every agent, skill, and orchestration pattern must conform to this document. This file is loaded as shared context by every agent in the system.
+
+---
+
+## 1. Platform Agent Philosophy
+
+Every agent in this platform is **epistemically aware**: it explicitly tracks what it knows, how confident it is, and what domain of complexity it is operating in before acting. This is not optional. It is the foundational contract of the platform.
+
+Agents do not generate outputs directly. They generate **EpistemicState transitions** that are validated by the Guardian before any effect reaches storage, UI, or downstream systems.
+
+### Core Design Principles
+
+| Principle | Implication |
+|---|---|
+| Causal-first reasoning | Agents propose causal edges, not correlations. Every claim must cite structural evidence. |
+| Human-in-the-loop by default | Agents propose. Humans approve. Approvals write to the semantic layer. |
+| Guardian-gated outputs | Every agent output passes the Guardian policy engine before persistence. |
+| Cynefin-aware routing | Agents self-classify the domain complexity of a query before selecting a reasoning strategy. |
+| Immutable audit trails | All agent actions, tool calls, and state transitions are appended to the audit log. |
+| Provider-agnostic LLM | Agents specify capability requirements, not model names. The runtime selects the provider. |
+
+---
+
+## 2. Agent Registry
+
+### 2.1 Core Platform Agents
+
+#### `CausalDiscoveryAgent`
+**Role:** Proposes candidate edges, confounders, mediators, and missing variables in the causal graph from data and document evidence.
+
+**Inputs:**
+- Dataset schema + sample statistics
+- Existing graph fragment (partial DAG)
+- Domain context from the semantic layer
+- Prior assumption list
+
+**Outputs:**
+- Ranked candidate edge list with confidence scores and evidence citations
+- Flagged contradiction set (edges inconsistent with known domain constraints)
+- Suggested missing variables
+
+**Constraints:**
+- Never writes edges directly to the semantic layer
+- Must cite supporting evidence (statistical test, document reference, or prior graph asset) for every proposed edge
+- Must surface all detected d-separation violations
+
+**Tools available:** `causal_propose_edge`, `confounder_screen`, `conditional_independence_test`, `evidence_link`, `semantic_layer_read`
+
+**Backed by:** `cynepic-causal` crate (Rust) for DAG operations, DoWhy / EconML for statistical estimation
+
+---
+
+#### `DomainExpertElicitationAgent`
+**Role:** Facilitates structured knowledge elicitation from domain experts. Translates natural-language domain knowledge into candidate graph structure.
+
+**Inputs:**
+- Expert description of a domain process (free text or structured interview)
+- Prior graph fragments
+- Ontology terms from the semantic layer
+
+**Outputs:**
+- Structured assumption statements
+- Candidate edges annotated with expert justification
+- Disagreement flags when expert statements conflict with existing graph assets
+
+**Constraints:**
+- Must always present proposed changes as suggestions, never as facts
+- Must surface uncertainty when expert statements are ambiguous
+- Must record the expert's identity and timestamp for audit
+
+**Tools available:** `assumption_elicit`, `ontology_match`, `conflict_detect`, `semantic_layer_read`, `assumption_write_draft`
+
+---
+
+#### `GovernanceAgent`
+**Role:** Cross-cutting control plane agent. Runs assumption review workflows, sensitivity tests, placebo checks, and policy enforcement across all platform operations.
+
+**Inputs:**
+- Approved graph assets
+- Proposed interventions or simulation requests
+- Configured policy rules (YAML / OPA)
+
+**Outputs:**
+- Policy verdict: `APPROVED` / `REJECTED` / `REQUIRES_ESCALATION`
+- Sensitivity analysis results
+- Placebo and negative-control check results
+- Audit trail entries
+
+**Constraints:**
+- Cannot be bypassed or overridden by other agents
+- Escalation must route to a human reviewer, never to another agent
+- All verdicts are immutable once written
+
+**Tools available:** `guardian_check`, `sensitivity_test`, `placebo_check`, `assumption_audit`, `drift_detect`, `audit_write`
+
+**Backed by:** `cynepic-guardian` Rust crate, OPA policy engine, CSL-Core
+
+---
+
+#### `SimulationAgent`
+**Role:** Executes counterfactual and what-if simulations against approved causal models. Provides intervention comparisons, scenario ranges, and narrative explanations.
+
+**Inputs:**
+- Approved causal graph asset (from semantic layer)
+- Intervention specification (action, population, constraints)
+- Outcome variables of interest
+- Budget or feasibility constraints
+
+**Outputs:**
+- Estimated intervention effects with confidence intervals
+- Ranked action alternatives
+- Narrative explanation tied to explicit causal assumptions
+- Sensitivity-labeled output (flagged if near assumption violation bounds)
+
+**Constraints:**
+- Must only operate on Guardian-approved graph assets
+- Must attach the assumption set used to every simulation output
+- Counterfactual claims must be labeled with their identification assumptions
+- If observational data is unavailable, may return a clearly labeled graph-heuristic effect estimate rather than a silent placeholder or null result
+
+**Tools available:** `counterfactual_reason`, `intervention_estimate`, `scenario_compare`, `explanation_generate`, `semantic_layer_read`
+
+**Backed by:** Pearl's three-level causal hierarchy, DoWhy / PyMC / EconML
+
+---
+
+#### `DriftMonitorAgent`
+**Role:** Continuously monitors causal and semantic drift across the platform. Alerts when learned causal structure diverges from live data patterns or when entity definitions shift.
+
+**Current implementation note:** Production-ready with multi-type drift detection (distribution, causal, semantic, concept), configurable thresholds, comprehensive severity scoring (0-100), and Neo4j-native alert storage with 90-day TTL. Integrates with experience buffer for pattern learning. Alert emission via Kafka ready for integration.
+
+**Inputs:**
+- Live data streams or batch snapshots
+- Approved graph assets
+- Semantic layer entity definitions
+- Configured drift thresholds (kl_threshold, severe_kl_threshold)
+
+**Outputs:**
+- Drift alerts with severity level (LOW/MEDIUM/HIGH/CRITICAL)
+- Severity score (0-100) with multi-factor analysis
+- Identified drift type: distribution, causal, semantic, or concept drift
+- Per-feature divergence scores
+- Suggested re-validation trigger
+- Alerts stored in Neo4j with TTL and acknowledgment tracking
+
+**Constraints:**
+- Alerts must include the statistical evidence (KL divergence value, chi-squared result, etc.)
+- Cannot autonomously modify graph assets in response to drift
+- Must log all detections to audit trail
+- Alert-only agent (never writes to semantic layer)
+
+**Tools available:** `drift_detect`, `detect_semantic_drift`, `detect_causal_drift`, `detect_concept_drift`, `calculate_drift_severity`, `store_drift_alert`, `get_recent_drift_alerts`, `alert_emit`
+
+**Backed by:** KL-divergence monitoring (histogram and JS methods), Neo4j alert storage, cynepic-bayes Bayesian belief tracking
+
+**Configuration:**
+```python
+DriftMonitorAgent(
+    kl_threshold=0.1,              # Moderate drift threshold
+    severe_kl_threshold=0.5,       # Severe drift threshold
+    semantic_similarity_threshold=0.7,
+    enable_neo4j_storage=True,     # Store alerts in Neo4j
+    enable_alert_emission=True,    # Emit to Kafka
+)
+```
+
+---
+
+#### `EvidenceGroundingAgent`
+**Role:** Links causal claims, graph edges, and assumptions to supporting evidence from documents, metrics, and external knowledge sources.
+
+**Inputs:**
+- Candidate edge or assumption statement
+- Document corpus (runbooks, post-mortems, research papers, SLO docs)
+- Metric time series
+
+**Outputs:**
+- Evidence citations with relevance scores
+- Contradiction flags when evidence conflicts with proposals
+- Evidence gap list (claims without citations)
+
+**Constraints:**
+- Must distinguish between statistical evidence and expert knowledge evidence
+- Must flag low-evidence edges for human review
+- Must not fabricate citations
+
+**Tools available:** `evidence_link`, `document_search`, `metric_correlate`, `citation_validate`
+
+---
+
+### 2.2 Vertical Agents (DevOps Entry Point)
+
+#### `IncidentTriageAgent`
+**Role:** First-response agent for operational incidents. Classifies problem complexity via Cynefin, proposes likely causal drivers, retrieves relevant past incidents from the experience buffer, and surfaces actionable interventions.
+
+**Current implementation note:** The harness now uses a Neo4j-native experience buffer with TTL (90-day expiry) and relevance decay (30-day half-life) when `NEO4J_URI` is configured. Falls back to durable session-state snapshots when Neo4j is unavailable. Intervention and counterfactual reasoning use graph-grounded heuristics. Observationally calibrated incident estimators remain future work.
+
+**Inputs:**
+- Incident alert payload (title, affected services, metrics snapshot, alert timestamps)
+- Recent deployment and change event log
+- Service dependency graph from semantic layer
+- Experience buffer (past incidents and their resolutions)
+
+**Outputs:**
+- Cynefin domain classification with confidence
+- Ranked candidate root-cause list with causal evidence
+- Proposed interventions ranked by estimated effect
+- Guardian policy verdict on proposed interventions
+- Similar past incidents from experience buffer
+
+**Constraints:**
+- Chaotic-domain incidents route immediately to human incident commander with minimal AI framing
+- Complex-domain incidents surface the causal uncertainty explicitly
+- All proposed interventions require human approval before execution
+
+**Tools available:** `cynefin_classify`, `causal_propose_edge`, `experience_buffer_query`, `intervention_estimate`, `guardian_check`, `counterfactual_reason`
+
+**Reference implementation:** `src/agents/incident_triage.py` + `src/orchestration/graph.py` (Cynefin routing node)
+
+---
+
+#### `ChangeImpactAgent`
+**Role:** Pre-deployment analysis agent. Given a proposed change, estimates likely causal impact on downstream services, SLOs, and risk metrics.
+
+**Current implementation note:** The harness now resolves approved fragment edges and performs bounded downstream path tracing plus heuristic SLO screening. Full Neo4j traversal and outcome-calibrated estimators remain future work.
+
+**Inputs:**
+- Change request specification
+- Service dependency graph
+- Historical change → outcome data
+
+**Outputs:**
+- Impact estimate with confidence bounds
+- Risk tier (LOW / MEDIUM / HIGH / CRITICAL)
+- Recommended rollout strategy (canary, blue-green, staged)
+- Guardian policy verdict
+
+**Tools available:** `intervention_estimate`, `dependency_graph_read`, `risk_score`, `guardian_check`, `counterfactual_reason`
+
+---
+
+## 3. Shared Skill Library
+
+All agents share a common skill vocabulary. Skills are atomic, testable, composable units of agent capability. No agent implements business logic that duplicates a skill.
+
+### 3.1 Skill Definitions
+
+#### `cynefin_classify`
+Classifies a problem into one of five Cynefin domains: `CLEAR`, `COMPLICATED`, `COMPLEX`, `CHAOTIC`, `DISORDER`.
+
+**Inputs:** Problem description, available data features, time sensitivity flag
+**Output:** Domain label, confidence score, recommended reasoning strategy
+**Reference implementation:** `cynepic-router` Rust crate
+
+---
+
+#### `causal_propose_edge`
+Proposes a directed causal edge between two variables, with evidence and a confidence score.
+
+**Inputs:** Source variable, target variable, dataset statistics, domain context
+**Output:** Edge proposal with statistical test results, confidence, and evidence citations
+**Reference implementation:** `cynepic-causal` Rust crate, DoWhy Python
+
+---
+
+#### `counterfactual_reason`
+Applies Pearl's three-level hierarchy: Abduction → Action → Prediction.
+
+**Inputs:** Structural causal model (SCM), observation, query (intervention or counterfactual)
+**Output:** Estimated counterfactual distribution, identification status, sensitivity label
+**Reference implementation:** DoWhy, EconML, PyMC
+
+---
+
+#### `guardian_check`
+Submits an action, graph change, or recommendation to the Guardian policy engine.
+
+**Inputs:** Action payload, current EpistemicState, applicable policy rules
+**Output:** `APPROVED` / `REJECTED` / `REQUIRES_ESCALATION` verdict with reason and rule citations
+**Reference implementation:** `cynepic-guardian` Rust crate, OPA
+
+---
+
+#### `experience_buffer_query`
+Retrieves similar past incidents from the experience buffer with TTL filtering and relevance decay.
+
+**Inputs:** Incident description, domain filter, service filters, result limit
+**Output:** Ranked list of similar incidents with similarity scores, decay factors, resolutions
+**Storage backends:** 
+- Neo4j (production): Graph-native with 90-day TTL, 30-day half-life relevance decay
+- SQL (fallback): Session-state snapshot interim when Neo4j unavailable
+**Configuration:** Set `NEO4J_URI` to enable production backend
+
+---
+
+#### `evidence_link`
+Links a causal claim to supporting evidence in documents or metrics.
+
+**Inputs:** Claim text or edge specification, document corpus references
+**Output:** Ranked evidence list with source, snippet, and relevance score
+
+---
+
+#### `assumption_elicit`
+Elicits an explicit causal assumption from a domain expert or from agent-analyzed context.
+
+**Inputs:** Graph fragment, domain context, elicitation mode (`INTERVIEW` or `AUTO`)
+**Output:** Structured assumption statement with strength and scope
+
+---
+
+#### `drift_detect`
+Computes drift between two distributions or graph states.
+
+**Inputs:** Reference state (approved), current state (live), metric type
+**Output:** Drift score, drift type (`CAUSAL` / `DISTRIBUTION` / `SEMANTIC`), severity
+
+---
+
+#### `explanation_generate`
+Produces a human-readable causal explanation for a recommendation or estimate.
+
+**Inputs:** Simulation result, assumption set, target persona (EXECUTIVE / ANALYST / OPERATOR / COMPLIANCE)
+**Output:** Narrative explanation with explicit assumption disclosures, confidence ranges
+
+---
+
+#### `confounder_screen`
+Screens a variable set for likely unmeasured confounders using domain knowledge and statistical patterns.
+
+**Inputs:** Treatment, outcome, covariate list, domain context
+**Output:** Flagged potential confounders with evidence basis
+
+---
+
+#### `semantic_layer_read`
+Retrieves causal assets (entities, edges, assumptions, graph fragments) from the semantic layer registry.
+
+**Inputs:** Query (entity name, graph ID, assumption scope)
+**Output:** Typed semantic layer objects
+
+---
+
+#### `audit_write`
+Appends an immutable entry to the platform audit trail.
+
+**Inputs:** Agent identity, action type, payload hash, Guardian verdict, timestamp
+**Output:** Audit entry ID (append-only, no modification)
+
+---
+
+#### `effect_estimate`
+Computes Average Treatment Effect (ATE) using DoWhy identification and estimation frameworks over an approved graph fragment.
+
+**Inputs:** Approved graph fragment, identification strategy, assumption set, optional observational data
+**Output:** ATE with confidence interval, estimator name, treatment and outcome IDs
+**Reference implementation:** `src/skills/effect_estimate.py` (DoWhy, PyMC)
+
+---
+
+#### `identification_check`
+Validates whether a causal effect is identifiable given a graph fragment and assumptions.
+
+**Inputs:** Graph fragment, treatment/outcome specification, available covariates
+**Output:** Identification status, valid backdoor/frontdoor/IV strategies, blocking constraints
+**Reference implementation:** `src/skills/identification_check.py` (DoWhy)
+
+---
+
+#### `sensitivity_analysis`
+Computes Rosenbaum sensitivity bounds and E-values for unmeasured confounders on an approved edge.
+
+**Inputs:** Approved CausalEdge, effect estimate, confounder assumptions
+**Output:** E-value, sensitivity bounds, robustness verdict
+**Reference implementation:** `src/skills/sensitivity_analysis.py`
+
+---
+
+#### `causal_structure_compare`
+Compares graph structure against live data patterns using conditional independence tests to detect structural drift.
+
+**Inputs:** Graph fragment, live data observations, edge confidence threshold
+**Output:** Structural drift flag, affected edge list, violated d-separation statements
+**Reference implementation:** `src/skills/causal_structure_compare.py` (scipy, numpy)
+
+---
+
+#### `intervention_estimate`
+Wrapper around effect_estimate that validates intervention preconditions (approved fragment, SUTVA, positivity) before delegation.
+
+**Inputs:** Intervention specification, approved graph fragment, assumption set
+**Output:** Estimated intervention effect with sensitivity labels
+**Reference implementation:** `src/skills/intervention_estimate.py`
+
+---
+
+### 3.2 Phase 2B Extensions (ADR-002)
+
+#### `provenance_trace`
+Traces the full provenance chain from an agent output back to source data, model invocation, and reasoning steps. Produces W3C PROV-compliant provenance graphs.
+
+**Inputs:** Session ID, EpistemicState
+**Output:** PROV-JSON provenance graph with entities, activities, agents; gap flags for incomplete chains
+**Reference implementation:** `src/semantic_layer/provenance.py`, `src/api/provenance.py`
+
+---
+
+#### `verify_data_contract`
+Validates a data contract at runtime before agent data consumption, enforcing freshness SLAs, schema compliance, and semantic alignment.
+
+**Inputs:** Data contract ID, current data product state, agent access request
+**Output:** Contract verdict (COMPLIANT / VIOLATED / DEGRADED), violation details
+**Reference implementation:** `src/semantic_layer/contracts.py`, Guardian PR-009
+
+---
+
+### 3.3 Phase 2C Extensions (ADR-003)
+
+#### `plan_action_sequence`
+Applies FLARE-style receding-horizon planning: simulate forward, detect failure points, back-propagate value, commit one action.
+
+**Inputs:** Approved graph fragment, ranked action set, current platform state
+**Output:** Committed action with confidence, lookahead simulation trace, failure points
+**Reference implementation:** `src/orchestration/planning.py`
+
+---
+
+#### `ontology_negotiate`
+Negotiates semantic alignment between two domain ontologies at runtime. Determines whether concepts from different vocabularies are equivalent, mappable, or incompatible.
+
+**Inputs:** Source ontology, target ontology, concept pairs
+**Output:** Alignment report (DIRECT_MATCH / MAPPED_MATCH / NO_MATCH)
+**Reference implementation:** `src/semantic_layer/federation.py` (future — Phase 5)
+
+---
+
+### 3.4 MCP Skill Exposure
+
+A subset of the shared skill library is exposed to **external agents** (Claude Desktop, custom MCP clients, IDE plugins) via a Model Context Protocol server. The server is the canonical agentic-skills surface for cross-process callers — internal LangGraph workflows still invoke skills directly.
+
+**Server entry point:** `backend/mcp_server/server.py` (console script: `causal-mcp`)
+**Wrappers:** `backend/mcp_server/tools.py` — plain async functions, JSON-native I/O only, no Pydantic across the boundary
+**Tests:** `backend/tests/unit/test_mcp_tools.py`
+**Demo client:** `backend/mcp_server/examples/client_demo.py`
+**Quickstart:** `backend/mcp_server/README.md`
+
+#### Exposed tools
+
+| MCP tool name | Skill | Purpose |
+|---|---|---|
+| `causal_effect_estimate` | `effect_estimate` | ATE for an APPROVED graph fragment (DoWhy-backed) |
+| `causal_identification_check` | `identification_check` | IDENTIFIED / PARTIALLY_IDENTIFIED / UNIDENTIFIED verdict |
+| `causal_counterfactual_reason` | `counterfactual_reason` | "What if" queries over proposed edges |
+| `causal_sensitivity_analysis` | `sensitivity_analysis` | E-value / Rosenbaum-bound robustness check |
+| `causal_drift_detect` | `drift_detect` | KL divergence between reference vs current data |
+| `causal_intervention_estimate` | `intervention_estimate` | Risk-tiered effect for a single proposed edge |
+| `causal_structure_compare` | `causal_structure_compare` | Structural drift: edges going stale against fresh data |
+
+#### Recommended call order for an external agent
+
+`identification_check` → `effect_estimate` → `sensitivity_analysis`. If identification returns `UNIDENTIFIED`, the calling agent **must not** act on any point estimate.
+
+#### Error contract
+
+Every wrapper returns JSON-native dicts. On skill failure the wrapper returns a structured envelope:
+
+```json
+{ "ok": false, "error": "...", "error_type": "...", "tool": "..." }
+```
+
+— never a raised exception across the transport. This is enforced in the wrappers themselves (`_error` in `tools.py`).
+
+#### Adding a new skill to the MCP surface
+
+1. Implement the skill in `src/skills/`.
+2. Add a wrapper in `mcp_server/tools.py` that catches exceptions and routes them through `_error`.
+3. Register the wrapper in `server.py` and in the `CAUSAL_TOOLS` dict.
+4. Add a unit test in `tests/unit/test_mcp_tools.py` covering happy path + error envelope.
+
+---
+
+## 4. EpistemicState: Shared Agent State Contract
+
+Every agent operates on and returns an `EpistemicState` object. This is the single source of in-flight session truth. No agent stores mutable state outside of `EpistemicState` during a reasoning cycle.
+
+```typescript
+interface EpistemicState {
+  // Identity
+  sessionId: string;
+  agentId: string;
+  timestamp: ISO8601;
+
+  // Problem classification
+  cynefinDomain: "CLEAR" | "COMPLICATED" | "COMPLEX" | "CHAOTIC" | "DISORDER";
+  domainConfidence: number;          // 0.0 – 1.0
+
+  // Causal evidence
+  activeGraphFragmentId: string;
+  proposedEdges: EdgeProposal[];
+  activeAssumptions: Assumption[];
+  evidenceCitations: Evidence[];
+
+  // Uncertainty
+  overallConfidence: number;
+  uncertaintySources: UncertaintySource[];
+  hallucinationRiskScore: number;    // H-Neuron output
+
+  // Governance
+  guardianVerdict: "APPROVED" | "REJECTED" | "REQUIRES_ESCALATION" | "PENDING";
+  policyRulesCited: string[];
+
+  // Reasoning chain
+  reasoningSteps: ReasoningStep[];
+  toolCallLog: ToolCall[];
+
+  // Output
+  recommendations: Recommendation[];
+  simulationResults: SimulationResult[];
+  draftExplanation: string;
+}
+```
+
+---
+
+## 5. Agent Orchestration: LangGraph State Machine
+
+The platform uses **LangGraph StateGraph** for workflow coordination, implemented as a 7-node cognitive mesh.
+
+### 5.1 Core Workflow Graph
+
+```
+Intake → CynefinClassify → [Router]
+    ├── CLEAR        → DirectAnswer ────┐
+    ├── COMPLICATED  → CausalAnalysis ──┤
+    ├── COMPLEX      → CausalDiscovery ─┘
+    │                                       ↓
+    │                                  PlanAhead (Phase 2C)
+    │                                  ├── SimulateAhead (SCM lookahead)
+    │                                  ├── Backpropagate (failure detection)
+    │                                  └── CommitNext (one action only)
+    │                                    ╱           ╲
+    │                          GuardianCheck    EscalateHuman
+    │                               ↓                ↓
+    │                           Output           [Human review]
+    ├── CHAOTIC      → EscalateHuman → [Human approval required]
+    └── DISORDER     → DisorderProtocol → CynefinClassify [retry]
+```
+
+### 5.2 Graph Node Responsibilities
+
+| Node | Agent | Condition for transition |
+|---|---|---|
+| `Intake` | — | Always transitions to `CynefinClassify` |
+| `CynefinClassify` | `cynefin_classify` skill | Domain confidence > 0.7 |
+| `CausalAnalysis` | `CausalDiscoveryAgent` | Graph fragment available |
+| `CausalDiscovery` | `CausalDiscoveryAgent` | Complex domain with low evidence |
+| `PlanAhead` | `plan_action_sequence` skill | Candidate recommendations exist |
+| `GuardianCheck` | `GovernanceAgent` | PlanAhead found safe action |
+| `EscalateHuman` | — | CHAOTIC domain, Guardian REQUIRES_ESCALATION, or PlanAhead found no safe action |
+
+### 5.3 Circuit Breaker Rules (enforced by `GovernanceAgent`)
+
+- Maximum 5 cycles before mandatory human escalation
+- If `hallucinationRiskScore > 0.7`, pause and surface for review
+- If Guardian returns `REJECTED` twice for the same payload, escalate
+- All circuit breaker triggers are written to audit trail
+
+---
+
+## 6. Context and Memory Architecture
+
+### 6.1 Memory Tiers
+
+| Tier | Store | Contents | Lifetime |
+|---|---|---|---|
+| **Working memory** | In-process `EpistemicState` | Current reasoning cycle state | Session |
+| **Session memory** | PostgreSQL / Cloud SQL + in-process hot cache | Latest `EpistemicState` snapshot per session, resume context, API continuity | Session persisted across process restarts; richer per-user preference memory still pending |
+| **Graph memory** | Neo4j | Approved causal graph assets, edges, entities, assumptions | Platform lifetime |
+| **Experience buffer** | Neo4j target; current interim reads from durable session snapshots | Past incident patterns, resolutions, outcome feedback | Platform lifetime target; current interim store has no soft-expiry yet |
+| **Audit memory** | Append-only PostgreSQL | All agent actions and Guardian verdicts | Immutable, regulatory lifetime |
+| **Semantic registry** | PostgreSQL + Neo4j | Causal semantic layer objects (entities, treatments, outcomes) | Governed lifecycle |
+
+### 6.2 Memory Access Patterns
+
+```
+Read:   SemanticLayer → GraphMemory → ExperienceBuffer → SessionMemory
+Write:  WorkingMemory → [GuardianCheck] → SemanticLayer / GraphMemory / AuditLog
+```
+
+Agents **never write directly** to long-term stores. All writes are mediated by `audit_write` and, for semantic layer and graph memory, require a Guardian `APPROVED` verdict first.
+
+**Current boundary note:** Session-state durability is now implemented as governed `EpistemicState` snapshot persistence for orchestration continuity. The incident harness also reads those durable snapshots as an interim experience buffer. This is not yet a full preference/profile memory layer or the final Neo4j episodic-memory design, and it does not bypass Guardian-gated semantic writes.
+
+### 6.3 Prompt Architecture (PR)
+
+Prompt recipes follow a strict four-part structure:
+
+```
+[CONTEXT]     Relevant semantic layer objects, graph fragment, persona
+[SKILL]       The specific skill being invoked and its parameters
+[CONSTRAINTS] Policy rules, Guardian guardrails, assumption scope
+[OUTPUT_FORMAT] Typed schema the agent must return
+```
+
+Prompt templates are versioned in `prompts/` alongside their schema contracts. No agent uses ad-hoc prompts at runtime.
+
+---
+
+## 7. Multi-Provider LLM Routing
+
+Agents specify **capability requirements**, not model names — the LLM factory resolves capability → provider at runtime.
+
+| Capability | Default Provider | Fallback |
+|---|---|---|
+| Causal reasoning (complex) | Claude Sonnet 4.6 | OpenAI GPT-4o |
+| Fast classification (CLEAR/COMPLICATED) | Claude Haiku 4.5 | Mistral |
+| Document evidence extraction | Claude Sonnet 4.6 | Gemini 1.5 Pro |
+| Code generation | Claude Sonnet 4.6 | DeepSeek |
+| On-premise / air-gapped | Ollama (local) | — |
+
+Routing is handled by `src/agents/llm_factory.py`. Provider selection is never hardcoded in skill implementations.
+
+---
+
+## 8. Agent Development Checklist
+
+Before any new agent or skill is merged into the platform, it must satisfy:
+
+- [ ] EpistemicState in/out contract defined and typed
+- [ ] Guardian integration tested (APPROVED / REJECTED / ESCALATION paths all exercised)
+- [ ] Cynefin domain handling documented (which domains the agent supports)
+- [ ] Audit trail write verified in tests
+- [ ] H-Neuron hallucination risk thresholds configured
+- [ ] Prompt template versioned in `prompts/`
+- [ ] Skill used is in the shared skill library (no duplicates)
+- [ ] Circuit breaker behavior tested
+- [ ] Memory access follows read/write tiers (no direct long-term store writes)
+- [ ] Provider-agnostic (no hardcoded model names)
+
+---
+
+## 9. References
+
+### 9.1 Internal modules
+
+| Component | Source |
+|---|---|
+| Cynefin routing | `src/orchestration/graph.py` (Router node) |
+| Causal DAG operations | `src/semantic_layer/models.py`, `src/skills/causal_structure_compare.py` |
+| Guardian policy engine | `src/agents/governance.py` |
+| LangGraph orchestration | `src/orchestration/graph.py` |
+| EpistemicState schema | `src/semantic_layer/models.py` |
+| Hallucination-risk gating | `src/skills/evidence_grounding.py` |
+| LLM capability routing | `src/agents/llm_factory.py` |
+| MCP skill exposure | `backend/mcp_server/` (see §3.4) |
+
+### 9.2 External libraries
+
+| Capability | Library |
+|---|---|
+| Causal effect estimation | DoWhy, EconML, statsmodels |
+| Causal discovery | causal-learn |
+| Bayesian belief tracking | PyMC |
+| Policy as code | OPA (planned), TLA+ (`specs/guardian_policy.tla`) |
+| Workflow orchestration | LangGraph |
+
+### 9.3 Historical inspiration
+
+The platform's overall shape — Guardian-mediated semantic writes, Cynefin-routed agent workflows, EpistemicState as the single in-flight state object — draws on prior research prototypes (`carfdevops`, `causalrust`/`cynepic-rs`, `projectcarfcynepic`). Those repos are **not consolidated into this codebase** and are not tracked here; the canonical implementation of every pattern above lives in `backend/src/`.
