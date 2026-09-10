@@ -1,0 +1,220 @@
+# Role routing — model, endpoint, and tool scope per role.
+#
+# These tags were detected at 'gnomon init' time on this machine.
+# Found: gemma3-4b:latest (3.9B), nemotron-3-nano:4b (4B), qwen2.5:7b-instruct (7.6B), qwen2.5:14b-instruct (14.8B), nemotron-3-nano:30b-a3b-q4_K_M (31.6B), deepseek-r1:32b-qwen-distill-q4_K_M (32.8B), qwen3.6:35b (36B), nemotron-3-super:120b-a12b-q4_K_M (123.6B), qwen3.5:122b-a10b-q4_K_M (125.1B).
+# Detection ran once, here; the tags below are now fixed data like any
+# other part of the surface.
+#
+# These are concrete backend tags, not aliases: an alias would have to be
+# resolved per machine, which is the machine-scoped config this harness
+# forbids. Change any of them freely — `/models` lists what is available.
+#
+# `endpoint` names a block from [endpoints] in config.toml (default "local").
+# `tools` narrows what the role may call. Omit it for every declared tool;
+# an empty list means none.
+
+# ── The specify → contract → test → implement → verify loop ────────────────
+# Three roles, separated by what they are allowed to touch. The separation is
+# enforced by the tool list, not by asking the model nicely.
+
+[roles.coordinator]
+model = "qwen3.6:35b"
+endpoint = "local"
+temperature = 0.2
+top_p = 0.9
+max_steps = 20
+max_steps_total = 160
+# Reads the repo and writes specs/contracts. Two things hold that to be true:
+# no edit, so it cannot revise existing code in place, and write_allow, so the
+# files it may create are the ones a planning turn produces. Without the second
+# it could still write src/main.rs — withholding edit narrows how a role can
+# change code, not whether it can.
+#
+# Widen this the moment it is wrong for your repo. A scope that refuses work
+# you actually wanted is a scope you will delete in frustration; a scope that
+# matches your layout is one you keep.
+tools = ["read", "glob", "grep", "compute", "todo", "note", "task", "write", "skill"]
+# Which roles this one may hand work to. A sub-turn runs with the TARGET
+# role's tools, so this line -- not the one above -- bounds what delegation
+# can cause. Omit it and any role is reachable. An empty list forbids it.
+task_allow = ["implementor", "verifier"]
+# Not .gnomon/**. The skill tool writes proposals to .gnomon/skills/proposed/
+# through its own path, and accepting one is a human act that changes the
+# surface hash. Letting a role reach .gnomon/skills/ with plain write would
+# let it grant itself a standing instruction and skip that entirely.
+write_allow = ["docs/**", "specs/**", "*.md"]
+description = "Intent and contracts: turns a request into a spec"
+
+[roles.implementor]
+model = "qwen3.6:35b"
+endpoint = "local"
+temperature = 0.3
+top_p = 0.95
+max_steps = 32
+max_steps_total = 256
+tools = ["read", "glob", "grep", "compute", "todo", "note", "write", "edit", "bash"]
+# Operations whose damage is neither local nor undoable by re-running
+# something. This role has unrestricted bash by necessity — it runs builds,
+# installers and suites nobody can enumerate ahead of time — so the guardrail
+# is a deny-list rather than an allow-list. Deny wins over allow.
+#
+# Not a substitute for branch protection on the remote: that is the control
+# that binds everyone, and this one only binds the agent. It is the local half.
+bash_deny = [
+  # Measured against the real syntax: the previous list denied --force and -D
+  # and let through 'git push origin +master' (force-push by refspec),
+  # 'git push origin :master' (delete the remote branch), and
+  # 'git branch --delete --force'. Four operations named, all four reachable
+  # by their ordinary spellings.
+  '\bgit\s+push\b[^|;&]*\s(--force|--force-with-lease|-f)\b',
+  '\bgit\s+push\b[^|;&]*\s[+:]',
+  '\bgit\s+push\b[^|;&]*[\s:+/](main|master|release)\b',
+  '\bgit\s+push\b[^|;&]*--delete\b',
+  '\bgit\s+branch\b[^|;&]*\s(-D\b|--delete\b|-d\b[^|;&]*--force\b)',
+]
+
+description = "Tests first, then the code that satisfies them"
+
+[roles.verifier]
+model = "qwen3.6:35b"
+endpoint = "local"
+temperature = 0.1
+top_p = 0.9
+max_steps = 20
+max_steps_total = 160
+# No write, no edit. A verifier that can edit can make a failing suite pass
+# by changing the suite, so the capability is simply absent.
+tools = ["read", "glob", "grep", "compute", "todo", "note", "bash"]
+# 'bash' can write anything, so 'tools' alone cannot make this role
+# read-only. This list is what actually constrains it: the suite can be run,
+# nothing else. Remove it and the verifier can alter what it judges.
+bash_allow = [
+  # 'python -m pytest' used to be here. It named an interpreter, and an
+  # allow-list of program NAMES does not bound a role by the names it appears
+  # to: 'python -m anything' matched the same entry. gnomon's own startup audit
+  # said so on every launch of every project init had just created -- the
+  # shipped starter surface failed the auditor it ships with, which teaches a
+  # new user that the yellow text is noise. 'pytest' on its own runs the same
+  # suite and names no interpreter.
+  '^(cargo|pnpm|npm|yarn|pytest|go|make)\s',
+  '^(ls|cat|head|tail|grep|rg|find|git (status|diff|log|show))\s',
+]
+bash_deny = [
+  # find is on the allow-list for reading the tree, but -exec/-delete/-fprintf
+  # turn it into an arbitrary write. Measured: a verifier described as "Cannot
+  # write" created and deleted files through all three.
+  '-exec', '-execdir', '-ok', '-okdir', '-delete', '-fprint',
+  '\bxargs\b',
+  # Deny wins over allow, so this holds even if someone widens bash_allow
+  # later. A role that "cannot write" must not reach a language runtime.
+  '\b(awk|gawk|perl|python3?|ruby|node)\b',
+]
+description = "Runs the suite and reports. Cannot write."
+
+# ── General-purpose roles ──────────────────────────────────────────────────
+
+[roles.plan]
+model = "qwen3.6:35b"
+endpoint = "local"
+temperature = 0.2
+top_p = 0.9
+max_steps = 20
+max_steps_total = 160
+tools = ["read", "glob", "grep", "compute", "todo", "note", "task", "bash"]
+task_allow = ["implement", "critique"]
+# Measured, 2026-09-02: this role holds `bash` and the scaffold gave it no
+# bash_deny, so the guard in tools.ts is skipped outright --
+# `if (ctx.bashDeny && ctx.bashDeny.length > 0)`. Every spelling the
+# implement role refuses reached the shell from here unrefused:
+# 'git push --force', 'git push origin +master', 'git push origin :master',
+# 'git push --delete origin master', 'git branch -D'. The starter skills tell
+# the model not to do those; a skill is advice to a model, not a control, and a
+# scaffolded surface must not read as though it is one.
+#
+# The same five patterns the implement role carries, copied verbatim so every
+# bash-holding role refuses the same set.
+bash_deny = [
+  '\bgit\s+push\b[^|;&]*\s(--force|--force-with-lease|-f)\b',
+  '\bgit\s+push\b[^|;&]*\s[+:]',
+  '\bgit\s+push\b[^|;&]*[\s:+/](main|master|release)\b',
+  '\bgit\s+push\b[^|;&]*--delete\b',
+  '\bgit\s+branch\b[^|;&]*\s(-D\b|--delete\b|-d\b[^|;&]*--force\b)',
+]
+
+description = "Hardest reasoning, lowest call volume"
+
+[roles.implement]
+model = "qwen3.6:35b"
+endpoint = "local"
+temperature = 0.3
+top_p = 0.95
+max_steps = 28
+# Stated explicitly. An omitted list means every declared tool, which handed
+# this role `skill` as well and made "the coordinator authors skills" untrue.
+tools = ["read", "glob", "grep", "compute", "todo", "note", "write", "edit", "bash"]
+max_steps_total = 224
+# Operations whose damage is neither local nor undoable by re-running
+# something. This role has unrestricted bash by necessity — it runs builds,
+# installers and suites nobody can enumerate ahead of time — so the guardrail
+# is a deny-list rather than an allow-list. Deny wins over allow.
+#
+# Not a substitute for branch protection on the remote: that is the control
+# that binds everyone, and this one only binds the agent. It is the local half.
+bash_deny = [
+  # Measured against the real syntax: the previous list denied --force and -D
+  # and let through 'git push origin +master' (force-push by refspec),
+  # 'git push origin :master' (delete the remote branch), and
+  # 'git branch --delete --force'. Four operations named, all four reachable
+  # by their ordinary spellings.
+  '\bgit\s+push\b[^|;&]*\s(--force|--force-with-lease|-f)\b',
+  '\bgit\s+push\b[^|;&]*\s[+:]',
+  '\bgit\s+push\b[^|;&]*[\s:+/](main|master|release)\b',
+  '\bgit\s+push\b[^|;&]*--delete\b',
+  '\bgit\s+branch\b[^|;&]*\s(-D\b|--delete\b|-d\b[^|;&]*--force\b)',
+]
+
+description = "Highest token volume — where local hosting pays off"
+
+[roles.critique]
+model = "qwen3.6:35b"
+endpoint = "local"
+temperature = 0.1
+top_p = 0.9
+max_steps = 16
+max_steps_total = 128
+tools = ["read", "glob", "grep", "compute", "todo", "note", "bash"]
+# Measured, 2026-09-02: this role holds `bash` and the scaffold gave it no
+# bash_deny, so the guard in tools.ts is skipped outright --
+# `if (ctx.bashDeny && ctx.bashDeny.length > 0)`. Every spelling the
+# implement role refuses reached the shell from here unrefused:
+# 'git push --force', 'git push origin +master', 'git push origin :master',
+# 'git push --delete origin master', 'git branch -D'. The starter skills tell
+# the model not to do those; a skill is advice to a model, not a control, and a
+# scaffolded surface must not read as though it is one.
+#
+# The same five patterns the implement role carries, copied verbatim so every
+# bash-holding role refuses the same set.
+bash_deny = [
+  '\bgit\s+push\b[^|;&]*\s(--force|--force-with-lease|-f)\b',
+  '\bgit\s+push\b[^|;&]*\s[+:]',
+  '\bgit\s+push\b[^|;&]*[\s:+/](main|master|release)\b',
+  '\bgit\s+push\b[^|;&]*--delete\b',
+  '\bgit\s+branch\b[^|;&]*\s(-D\b|--delete\b|-d\b[^|;&]*--force\b)',
+]
+
+description = "Must not share context with the implementer"
+
+[roles.smol]
+model = "qwen2.5:7b-instruct"
+endpoint = "local"
+temperature = 0.2
+top_p = 0.95
+max_steps = 6
+tools = ["read", "glob", "grep", "compute", "todo"]
+max_steps_total = 48
+description = "Summarisation, compaction, commit messages"
+
+# A second endpoint, tried when the primary fails or times out.
+# [roles.implement.fallback]
+# model = "qwen3-coder"
+# endpoint = "zen"

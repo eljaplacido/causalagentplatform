@@ -1,0 +1,87 @@
+# Policy: approval gates, sandbox level, edit format.
+
+[approval]
+# The autonomy dial:
+#   always   — every tool call asks, reads and searches included.
+#              Consent after every action.
+#   on_write — only calls that can change something ask. Consent per change.
+#   never    — nothing asks. Unattended.
+#
+# Non-interactive runs have nobody to ask, so a gated call is refused rather
+# than assumed; `gnomon task --yes` is what stands in for a person.
+gate = "on_write"                  # never | on_write | always
+
+[sandbox]
+level = "confined"                 # off | confined | strict
+# What the level actually governs: TOOL PATHS. read/write/edit/glob/grep must
+# resolve inside the repository root, symlinks included. It does NOT govern
+# bash -- even at 'strict' it will still run 'cat /etc/passwd', because a role
+# that runs builds and installers cannot have its shell enumerated in advance.
+# A role holding bash is bounded by bash_deny/bash_allow, not by this line.
+#
+# To let the agent reach ONE other checkout, name it here rather than turning
+# the sandbox off. Paths are relative to this repository root, so the grant
+# means the same thing on every clone -- an absolute path would be
+# machine-scoped configuration, and Rule 1 forbids that. Granting is declared
+# data: it lives in this file, it is hashed with the rest of the surface, and
+# 'gnomon surface hash' moves when it changes.
+#   extra_roots = ["../sibling-checkout"]
+#
+# NOTE: network isolation is declared but NOT enforced by this build. The
+# prompt loop says so at startup rather than implying protection it lacks.
+network = false
+
+# Keys that changed nothing used to sit here — auto_merge,
+# reject_on_disagreement, env_isolation, min_line_context, preserve_formatting.
+# A surface that documents a setting no code reads is worse than one that omits
+# it, because it invites you to tune something that cannot move.
+
+# A check the harness runs after a turn that changed files.
+#
+# Absent by default, and deliberately so: there is no default command. A
+# repository that declares nothing pays nothing — no process, no tokens, no
+# change in behaviour. Executing whatever the agent just wrote would be a
+# destructive default, since `deploy.sh` is a shell script too, so the gate
+# only ever runs a command this file names.
+#
+# It exists because a model reporting success is reporting a belief. One
+# benchmark turn wrote a hundred-line setup script, ran `bash -n` on it,
+# reported "syntax check passed" and stopped. Nothing had been installed —
+# `bash -n` parses, it does not run. The check is the only thing in the loop
+# that can contradict the model's own account of its work.
+#
+# The command runs through the ordinary bash tool, so bash_deny, the sandbox
+# level and the tool timeout all apply to it. It is not a privileged path.
+#
+# It lives here, not in tools.toml: the loader maps each file to its own
+# namespace and they never merge, so a [verify] block written in tools.toml is
+# read by nothing and fails silently.
+#
+# [verify]
+# command = "pytest -q"    # or cargo test, make, .gnomon/ci.sh
+# after = "always"         # write | always
+# max_rounds = 1           # times a failure may hand the turn back; 0 = report only
+#
+#   "always" is the example on purpose, and it is not the code default.
+#
+#   "write" means a write or edit TOOL CALL, and only that. A turn that changes
+#   files through the shell -- a heredoc, sed -i, a build script -- does not
+#   count, so the declared check DOES NOT RUN for it. That is deliberate:
+#   counting shell work as a write would turn "write" into "always" for any turn
+#   that shells out, silently, for every surface that already exists.
+#
+#   The cost of it is what measurement showed. In a 48-task benchmark arm, 49 of
+#   50 trials made no write/edit call at all -- the model was editing through
+#   heredocs and sed -i. Under "write" none of those turns would have been
+#   checked. gnomon now SAYS so when it happens (a verify_skipped_shell_only
+#   degradation, on the terminal and in the trail), but the setting that just
+#   checks every turn is "always", and for most projects that is what you want.
+#
+# test_must_fail_first = true
+#   Reject a test that would have passed BEFORE the turn wrote it. A test is
+#   only worth having if it fails on the code as it was and passes on the code
+#   as it is; one that passes on both pins nothing, and one that asserts the bug
+#   passes today and blocks the correct fix tomorrow. Measured on this harness:
+#   a model cleared that bar 1 time in 9. Off by default -- it re-runs the check
+#   once more per turn, and a surface that has not asked should not pay for it.
+# test_paths = ["**/test_*.py", "**/tests/**"]   # what counts as a test

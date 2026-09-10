@@ -1,0 +1,286 @@
+# gnomon configuration — the active surface.
+# Everything that governs behaviour lives in .gnomon/ and is content-hashed.
+# No machine-scoped config: if it changes what the agent does, it belongs here.
+
+[defaults]
+edit_format = "str_replace"       # ast (INERT) | hashline (INERT) | str_replace
+                                  # Only str_replace is implemented: the edit tool
+                                  # matches an exact string. The other two are in the
+                                  # enumerations contract, not in this build -- so
+                                  # setting either runs on str_replace, and the
+                                  # surface audit says so at startup rather than
+                                  # doing it in silence. They stay in the contract
+                                  # because entries should leave that list by being
+                                  # implemented, not by being dropped from what was
+                                  # already published.
+sandbox = "confined"              # off | confined | strict
+approval = "on_write"             # never | on_write | always
+role_profile = "local_first"      # local_first | frontier_plan | all_remote
+max_context_tokens = 65536
+compaction = "summary"            # discard | summary | truncate
+
+[context]
+# How prior turns are replayed. sliding_window keeps retain_after tokens of
+# the oldest turns (the original ask) and fills the rest from the newest.
+policy = "sliding_window"         # full | sliding_window | summary
+retain_after = 2048               # tokens of the oldest turns to keep
+# Held back for the model's reply. The window would otherwise fill the whole
+# budget and leave nothing to answer with, and the ~4-chars-per-token estimate
+# under-counts code — one reserve covers both. Default: 15%, at least 1024.
+reserve_output = 8192
+
+# What the harness does when the endpoint misbehaves.
+#
+# In the surface rather than the environment, because a harness that retries
+# three times here and once there is not the same harness — and the timeout
+# decides what counts as apparatus failure, which is a behaviour, not a
+# preference. GNOMON_MODEL_TIMEOUT_MS still works when this says nothing, and
+# the startup banner names it when it is set.
+#
+# Only 11 (timed out) and 12 (unreachable, overloaded, rate-limited) are
+# retried. A 400 with a bad model tag and a prompt that did not fit will fail
+# the same way twice, so retrying them only burns the deadline. Every attempt
+# is announced: a silent retry would make a session that took three tries read
+# as one.
+[resilience]
+attempts = 3              # generation retries. 1 disables THESE; transport
+                          # retry is transport_grace_ms below, and is not
+                          # affected -- a refused socket does not spend an
+                          # attempt (the loop decrements the counter), so
+                          # attempts = 1 still knocks for the full grace.
+backoff_ms = 500          # doubled each attempt
+request_timeout_ms = 300000   # a reasoning model on a hard task exceeds 120s; a timed-out attempt doubles this
+transport_grace_ms = 60000    # an endpoint refusing the socket is not an attempt; keep knocking this long (0 disables)
+
+[turn]
+# The numbers that decide when a turn stops, is nudged, or is pushed to
+# converge. Every value below is the harness default, so writing the block out
+# in full changes nothing -- but from here on, changing one of them moves the
+# surface hash, which is the whole point.
+#
+# They were TypeScript constants until now, and that broke the sentence this
+# design exists to earn: "if behaviour changed, the hash changed". From
+# docs/HARNESS-RESEARCH-RECONCILIATION.md: 114 session records in one benchmark
+# arm all carried the same surface hash while the mechanism that ended a large
+# share of those runs -- nudge_after_idle -- was invisible to it. Two checkouts
+# with identical hashes on two builds behaved differently and nothing in the
+# record could say so.
+#
+# NOT a tuning recommendation. No run has been measured before and after this
+# block existed; these are the values that already shipped, written down.
+max_consecutive_empty = 3    # blank replies in a row before the turn is done (0 = one blank ends it)
+max_run_notes = 40           # run notes kept and replayed; oldest fall off first
+read_only_converge_after = 0.6  # a role with no write/edit/bash is pushed to conclude here (0 = never)
+all_refused_notice = 3       # every call to one tool refused this many times -> say the policy may be wrong
+max_steps = 12               # tool calls per leg when a role declares no max_steps of its own
+legs = 8                     # max_steps_total defaults to max_steps * legs (1 = stop at the first checkpoint)
+stall_repeats = 3            # identical calls in a row that count as going in circles
+nudge_after_idle = 12        # calls without changing a file before the model is nudged to decide
+converge_refire = 6          # calls between convergence re-pushes once converge_after is reached
+
+# Known limit, stated rather than implied: this block declares NINE of the
+# loop's numbers. The A-B-A-B alternation window (8 calls, 2 distinct
+# signatures) and the wording of the nudge and convergence messages are still
+# compiled into the harness and still outside the surface hash.
+
+[chain]
+# The stages one turn passes through, in order. Absent means one role answers,
+# which is the behaviour without this block -- nothing changes until you ask.
+#
+# Declared here rather than typed at a keyboard on purpose: a chain a person
+# types lives in their habits, is not hashed, is not in the manifest, and does
+# not reproduce on another machine. Declared, it is data.
+#
+# Every stage keeps its OWN bucket and its own audit record. The chain never
+# folds three outcomes into a fourth -- that is the composite verdict Rule 4
+# exists to forbid. A stage receives the original request plus what the stage
+# before it REPORTED, never its transcript.
+#
+# An explicit --role or /role prefix overrides the chain entirely.
+# stages = ["plan", "implement", "critique"]
+
+# What stops a chain early. One dial, three positions, each strictly stronger:
+#
+#   never       only an apparatus failure (10/12/13) stops it. A stage that
+#               refused, or whose declared check failed, still hands its answer
+#               to the next stage.
+#   on_refusal  a stage whose bucket is "refusal" also stops it -- it declined,
+#               so there is no answer for the next stage to build on.
+#   on_check    on_refusal, plus a stage whose declared [verify] check did not
+#               pass. This is the position that makes a chain a chain: the work
+#               is checked before the next stage is asked to look at it.
+#
+# What on_check does NOT do: gate on a stage's OPINION. A verifier reporting
+# "this is wrong" in prose still exits 0, and reading its sentence would be
+# instruction, not capability. What stops the chain is a check that RAN and
+# failed. Declare [verify] command in policy.toml to give it something to read.
+gate = "never"
+
+[endpoints.local]
+# Where inference goes lives in the surface: routing is part of what a checkout
+# declares, and it is hashed with everything else. One escape hatch exists —
+# GNOMON_MODEL_URL overrides this url — and the prompt loop prints a note at
+# startup when it is set, so an override cannot be mistaken for the surface.
+url = "http://127.0.0.1:11434/api/chat"
+kind = "ollama"
+
+# Declared, but inert until a role names one. An endpoint costs nothing to
+# declare: nothing reaches it unless roles.toml says endpoint = "<name>".
+# /endpoints lists these, tags each  · local  or  · cloud · <provider>, and
+# reports whether the key variable is set.
+#
+# Every endpoint is the same shape: a URL, a request kind (openai | ollama),
+# and — for cloud ones — a key VARIABLE NAME (never the key itself; store it
+# with "gnomon key set <name>"). provider is a display label only, inferred
+# from the URL when omitted, and never affects routing. This one shape covers
+# any OpenAI-compatible provider; azure/aws/google notes are below.
+
+[endpoints.zen]
+url = "https://opencode.ai/zen/v1/chat/completions"
+kind = "openai"
+api_key_env = "OPENCODE_API_KEY"   # the NAME of the variable, never the key
+provider = "opencode"
+
+# OpenCode Go — the $10/mo subscription tier (opencode.ai/go). Cloud, keyed.
+# Model ids are BARE — glm-5.3, deepseek-v4-flash, kimi-k3 — with no provider
+# prefix. This comment claimed they were "prefixed opencode-go/" until
+# 2026-09-03; they never were, and the wrong id comes back as a 400 that names
+# a model rather than the prefix, so the guess looks confirmed. Verified
+# against the endpoint: GET https://opencode.ai/zen/go/v1/models lists 34, all
+# unprefixed.
+# Run /models to list them. Store the key with:  gnomon key set go
+[endpoints.go]
+url = "https://opencode.ai/zen/go/v1/chat/completions"
+kind = "openai"
+api_key_env = "OPENCODE_API_KEY"
+provider = "opencode"
+
+# Cloud templates — commented so they do not show as unavailable until you want
+# one. Uncomment a block, then store its key with:  gnomon key set <name>
+# Local and cloud live side by side; assign one per role in roles.toml.
+#
+# [endpoints.openrouter]
+# url = "https://openrouter.ai/api/v1/chat/completions"
+# kind = "openai"
+# api_key_env = "OPENROUTER_API_KEY"
+# provider = "openrouter"
+#
+# [endpoints.copilot]              # needs a GitHub Copilot TOKEN, not a plain
+# url = "https://api.githubcopilot.com/chat/completions"   # API key — obtain it
+# kind = "openai"                  # via GitHub's Copilot auth flow, then store it
+# api_key_env = "GITHUB_COPILOT_TOKEN"
+# provider = "copilot"
+#
+# [endpoints.google]               # Gemini exposes an OpenAI-compatible route
+# url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+# kind = "openai"
+# api_key_env = "GEMINI_API_KEY"
+# provider = "google"
+#
+# [endpoints.azure]                # URL carries resource + deployment + api-version
+# url = "https://<resource>.openai.azure.com/openai/deployments/<deployment>/chat/completions?api-version=2024-10-21"
+# kind = "openai"
+# api_key_env = "AZURE_OPENAI_API_KEY"
+# provider = "azure"
+#
+# AWS Bedrock signs requests with SigV4, not a bearer key, so it needs an
+# OpenAI-compatible gateway (LiteLLM, Bedrock Access Gateway) in front: point
+# the url at the gateway and set its key. Native SigV4 is a future addition.
+
+# To actually use one, point a role at it in roles.toml:
+#
+#   [roles.plan]
+#   model = "some-hosted-model"
+#   endpoint = "zen"
+#
+# or keep local as primary and reach for it only on failure:
+#
+#   [roles.implement.fallback]
+#   model = "some-hosted-model"
+#   endpoint = "zen"
+
+[routing]
+# A trust dial:
+#   manual  — your current role answers; a /role-prefix routes one turn.
+#   suggest — the rules propose a role and you confirm ([y]es once, [a]lways,
+#             [N]o). Run this until the rules stop surprising you.
+#   auto    — the rules pick, and say which rule fired.
+#
+# An explicit prefix always wins in every mode — being overruled after asking
+# for a role would be worse than having no routing at all. 'suggest' needs
+# someone to ask, so a non-interactive run treats it as manual.
+#
+# Rules live here, not in the model's judgement: the same input must pick the
+# same role on every machine, which a model choosing its own role would not.
+# First match wins, so order is priority.
+mode = "manual"                   # manual | suggest | auto
+default = "implement"
+
+[[routing.rules]]
+role = "coordinator"
+match = '^\s*(spec|specify|design|plan|contract|scope|propose)\b'
+why = "intent and contracts"
+
+[[routing.rules]]
+role = "verifier"
+match = '^\s*(verify|check|validate|run the tests?|run tests?|does it pass)\b'
+why = "runs the suite, cannot write"
+
+[[routing.rules]]
+role = "implementor"
+match = '^\s*(implement|build|fix|add|refactor|rename|migrate|write the)\b'
+why = "tests first, then code"
+
+[[routing.rules]]
+role = "critique"
+match = '^\s*(review|critique|audit|what.s wrong)\b'
+why = "separate context from the implementer"
+
+[[routing.rules]]
+role = "smol"
+match = '^\s*(summari[sz]e|commit message|tl;?dr)\b'
+why = "cheap, high volume"
+
+[audit]
+# Off by default: nothing is recorded unless a surface asks for it.
+#
+# When enabled, every turn, tool call and approval decision is appended to a
+# hash-chained JSONL trail. That gives the primitives a traceability regime
+# needs — an append-only record, tamper-evidence, the surface hash that
+# determined the behaviour, and recorded human oversight decisions.
+#
+# It is not a compliance claim. Whether a deployment satisfies any particular
+# regulation depends on the deployment.
+enabled = false
+
+# Outside .gnomon/ on purpose: the surface is content-hashed, so a log written
+# inside it would change the surface hash on every turn.
+dir = ".gnomon-audit"
+
+# metadata: decisions, outcomes and identifiers only — no prompt or response
+#           text is written, so a trail can be kept where the content cannot.
+# full:     text as well, after 'redact' is applied.
+record = "metadata"
+
+# Patterns scrubbed from any recorded text. Matching is always
+# case-insensitive, so do not write an inline (?i) — JavaScript regular
+# expressions reject it, and a pattern that will not compile fails OPEN.
+# gnomon warns at startup about any that do not compile.
+redact = ['(api[_-]?key|token|secret|password)\s*[:=]\s*\S+']
+
+# Chain each record to the previous by hash, so alteration is detectable.
+chain = true
+
+[ui]
+# What the terminal shows. Declared here so every checkout renders the same.
+# Runtime /meta and /think override these for the session only.
+meta = ["turn", "role", "model", "bucket", "duration", "tokens", "context", "tools"]
+meta_style = "line"               # line | compact
+think = "collapse"                # hide | collapse | show
+spinner = true
+color = true
+# Render the answer's markdown — tables as tables, **bold** as bold, and
+# a mermaid fence as boxes and arrows. Set false to print exactly
+# what the model returned, which is what you want when the answer *is* markdown
+# you are about to paste somewhere else.
+markdown = true

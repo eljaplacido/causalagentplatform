@@ -1,0 +1,89 @@
+# Declared tools. Each one the model may call must appear here.
+#
+# A gnomon tool the current role may not call comes back to the model as a
+# refusal naming it: `Refused: "<name>" is not available to this role.`
+#
+# An MCP server does NOT behave that way, and this header used to claim it did.
+# Measured against connectMcp (packages/gnomon-core/src/mcp.ts, 2026-09-02): a
+# server that fails to spawn or fails the handshake is caught, one startup line
+# is printed -- `mcp: <name> unavailable — <reason>` -- and its tools are
+# simply absent from the list the model is given. The model is never told. Read
+# the startup lines: a declared server missing from them did not connect, and
+# the session is running with fewer tools than this file declares.
+
+[[tools]]
+name = "read"
+description = "Read a file as numbered lines, or list a directory. Text only."
+enabled = true
+
+[[tools]]
+name = "bash"
+description = "Execute a POSIX sh command (/bin/sh, not bash: no pipefail, [[ ]] or arrays). Runs in the project root every time — cd does not persist between calls, so use absolute paths. To leave a service running past the call, detach it into a log this harness can read: mkdir -p .gnomon-jobs && sh -c 'cmd' </dev/null >.gnomon-jobs/svc.log 2>&1 & — on Linux/macOS prefix 'setsid ' so a cancelled turn does not kill it; Git for Windows ships no setsid, so omit it there."
+enabled = true
+timeout_seconds = 120
+
+# Outside the surface, like sessions and audit: a note changes no behaviour and
+# no hash, it only lets a long run remember what it already tried. Read back as
+# observation, never as instruction.
+[[tools]]
+name = "note"
+description = "Record a short fact this run learned — what you tried, what failed, what to avoid repeating. Later steps in this run will see it, including after context is compacted."
+enabled = true
+
+[[tools]]
+name = "todo"
+description = "Keep a checklist for this session. Replace the whole list each time."
+enabled = true
+
+[[tools]]
+name = "task"
+description = "Run a sub-turn under another role, with its own context. It gets that role's tools."
+enabled = true
+
+# Reaches the network, so it is gated like a write and refused outright when
+# [sandbox] network = false in policy.toml. Off by default for that reason.
+[[tools]]
+name = "webfetch"
+description = "Retrieve an http(s) URL as text"
+enabled = false
+
+[[tools]]
+name = "compute"
+description = "Evaluate arithmetic exactly. Use this instead of calculating in your head."
+enabled = true
+
+[[tools]]
+name = "glob"
+description = "Find files by path pattern, e.g. **/*.ts"
+enabled = true
+
+[[tools]]
+name = "grep"
+description = "Find lines matching a regular expression. Returns path:line:text. Never searches build or dependency trees (node_modules, target, dist, build, vendor, .git) or binary files — a zero result means 'not in tracked source'."
+enabled = true
+
+[[tools]]
+name = "edit"
+description = "Replace exact text in a file. Must match exactly once."
+enabled = true
+
+[[tools]]
+name = "write"
+description = "Create or overwrite a file"
+enabled = true
+
+[[tools]]
+name = "skill"
+description = "Propose a skill: a durable note about how to work in this repository"
+enabled = true
+
+# MCP servers — the stdio transport is wired. A declared server is spawned at
+# startup, its tools discovered and offered as mcp__<server>__<tool>, gated per
+# role (a role must list a tool, or its server as "mcp__<name>", to use them).
+# Pin the VERSION in args: an unpinned server can change its tools with no hash
+# move. Its behaviour is external, so it is not covered by the surface hash.
+# [mcp_servers.example]
+# transport = "stdio"
+# command = "npx"
+# args = ["-y", "@example/mcp-server@1.0.0"]
+# env = ["EXAMPLE_API_KEY"]   # env var NAMES to forward; values never in the surface
