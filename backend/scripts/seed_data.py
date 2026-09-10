@@ -19,8 +19,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -34,7 +33,6 @@ from src.semantic_layer.models import (
     EntityType,
     FragmentApprovalStatus,
     GraphFragment,
-    GuardianVerdict,
     LineageRecord,
     UserRef,
 )
@@ -50,7 +48,7 @@ def _verdict_id() -> UUID:
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def _make_lineage(action: str = "SEEDED") -> list[LineageRecord]:
@@ -58,7 +56,7 @@ def _make_lineage(action: str = "SEEDED") -> list[LineageRecord]:
         LineageRecord(
             step_type=action,
             actor_id=_SEEDER_USER.id,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             description="Seeded test data for platform evaluation",
         )
     ]
@@ -188,8 +186,8 @@ def seed_devops(engine: Any) -> dict[str, Any]:
                     description=desc,
                     approval_status=ApprovalStatus.APPROVED,
                     created_by=_SEEDER_USER,
-                    created_at=datetime.now(timezone.utc),
-                    approved_at=datetime.now(timezone.utc),
+                    created_at=datetime.now(UTC),
+                    approved_at=datetime.now(UTC),
                     approved_by=_SEEDER_USER,
                     lineage=_make_lineage("SEEDED"),
                     tags=["devops", "service", "seeded"],
@@ -237,7 +235,7 @@ def seed_devops(engine: Any) -> dict[str, Any]:
                     "id": str(frag_verdict),
                     "agent": "seeder",
                     "action": "SEED_FRAGMENT",
-                    "hash": hashlib.sha256("deployment-latency-fragment".encode()).hexdigest(),
+                    "hash": hashlib.sha256(b"deployment-latency-fragment").hexdigest(),
                     "verdict": "APPROVED",
                     "rules": '["PR-001"]',
                     "ts": now,
@@ -334,7 +332,7 @@ def seed_marketing(engine: Any) -> dict[str, Any]:
                     "id": str(verdict_id),
                     "agent": "seeder",
                     "action": "SEED_FRAGMENT",
-                    "hash": hashlib.sha256("churn-causal-fragment".encode()).hexdigest(),
+                    "hash": hashlib.sha256(b"churn-causal-fragment").hexdigest(),
                     "verdict": "APPROVED",
                     "rules": '["PR-001", "PR-007"]',
                     "ts": now,
@@ -426,7 +424,7 @@ def seed_marketing(engine: Any) -> dict[str, Any]:
 
 def seed_evaluation_data(engine: Any) -> dict[str, Any]:
     """Seed audit_log with 30 days of evaluation data for decision quality metrics."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     created = {"audit_entries": 0, "approved": 0, "rejected": 0, "escalated": 0}
 
     async def _seed():
@@ -556,7 +554,7 @@ def seed_review_queue(engine: Any) -> dict[str, Any]:
             for offset, frag_spec in enumerate(REVIEW_FRAGMENTS):
                 verdict_id = _verdict_id()
                 frag_id = uuid4()
-                ts = (datetime.now(timezone.utc) - timedelta(days=offset, hours=offset * 3)).isoformat()
+                ts = (datetime.now(UTC) - timedelta(days=offset, hours=offset * 3)).isoformat()
 
                 await session.execute(
                     text(
@@ -639,7 +637,7 @@ def seed_review_queue(engine: Any) -> dict[str, Any]:
 
             for offset, ent_spec in enumerate(REVIEW_ENTITIES):
                 verdict_id = _verdict_id()
-                ts = (datetime.now(timezone.utc) - timedelta(days=offset + 1, hours=2)).isoformat()
+                ts = (datetime.now(UTC) - timedelta(days=offset + 1, hours=2)).isoformat()
 
                 await session.execute(
                     text(
@@ -665,7 +663,7 @@ def seed_review_queue(engine: Any) -> dict[str, Any]:
                     description=ent_spec["description"],
                     approval_status=ent_spec["status"],
                     created_by=_SEEDER_USER,
-                    created_at=datetime.now(timezone.utc) - timedelta(days=offset + 1),
+                    created_at=datetime.now(UTC) - timedelta(days=offset + 1),
                     lineage=_make_lineage("SEEDED_FOR_REVIEW"),
                     tags=[ent_spec["domain"], "pending-review", "seeded"],
                 )
@@ -825,7 +823,7 @@ def seed_incidents(engine: Any) -> dict[str, Any]:
     async def _seed():
         async with CloudSqlFactory.get_session_factory()() as session:
             for spec in SEED_INCIDENTS:
-                created_at = (datetime.now(timezone.utc) - timedelta(hours=spec["hours_ago"])).isoformat()
+                created_at = (datetime.now(UTC) - timedelta(hours=spec["hours_ago"])).isoformat()
                 proposed_interventions = []
                 for rank, intervention in enumerate(spec["interventions"], start=1):
                     int_id = f"int-{rank}-{spec['session_id']}"
@@ -845,7 +843,7 @@ def seed_incidents(engine: Any) -> dict[str, Any]:
                     # /interventions/decisions returns it and the merge layer
                     # rehydrates the verdict on reload.
                     if intervention["verdict"] in ("APPROVED", "REJECTED"):
-                        decision_ts = (datetime.now(timezone.utc) - timedelta(hours=spec["hours_ago"]) + timedelta(minutes=15)).isoformat()
+                        decision_ts = (datetime.now(UTC) - timedelta(hours=spec["hours_ago"]) + timedelta(minutes=15)).isoformat()
                         payload = json.dumps(
                             {
                                 "intervention_id": int_id,
@@ -1009,7 +1007,7 @@ def main():
         print(f"  Incidents: {len(results['incidents']['incidents'])}, "
               f"Decisions: {results['incidents']['decisions']}")
 
-    print(f"\nAll seeded. Run with --clear to remove seeded data.")
+    print("\nAll seeded. Run with --clear to remove seeded data.")
 
 
 if __name__ == "__main__":

@@ -14,21 +14,16 @@ Invariants tested:
 from __future__ import annotations
 
 import pytest
-import pytest_asyncio
 
 from src.agents.causal_discovery import (
     CausalDiscoveryAgent,
-    _CONFIDENCE_CUTOFF,
-    _EVIDENCE_FLOOR,
 )
 from src.exceptions import CircuitBreakerError
 from src.semantic_layer.models import (
     CynefinDomain,
     EdgeProposal,
     EpistemicState,
-    GuardianVerdict,
 )
-
 
 pytestmark = pytest.mark.asyncio
 

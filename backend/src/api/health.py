@@ -24,7 +24,7 @@ Endpoints:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
@@ -65,29 +65,29 @@ async def health_check() -> dict[str, Any]:
         "sensors": _check_sensors(),
         "alerts": _check_alerts(),
     }
-    
+
     # Determine overall health
     all_healthy = all(c.get("healthy", False) for c in checks.values())
-    
+
     status = "healthy" if all_healthy else "degraded"
     status_code = 200 if all_healthy else 503
-    
+
     response = {
         "status": status,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "checks": checks,
     }
-    
+
     if not all_healthy:
         response["degraded_components"] = [
             name for name, check in checks.items()
             if not check.get("healthy", False)
         ]
-    
+
     # Raise HTTPException for non-healthy status to return proper status code
     if status_code != 200:
         raise HTTPException(status_code=status_code, detail=response)
-    
+
     return response
 
 
@@ -100,10 +100,10 @@ async def health_neo4j() -> dict[str, Any]:
         Dict with Neo4j connectivity status
     """
     result = await _check_neo4j()
-    
+
     if not result.get("healthy", False):
         raise HTTPException(status_code=503, detail=result)
-    
+
     return result
 
 
@@ -140,31 +140,31 @@ async def health_drift_monitor() -> dict[str, Any]:
         Dict with drift monitoring status including recent alerts
     """
     from src.skills import get_recent_drift_alerts
-    
+
     result: dict[str, Any] = {
         "healthy": True,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "component": "drift_monitor",
     }
-    
+
     # Check recent alerts
     try:
         recent_alerts = await get_recent_drift_alerts(
             limit=10,
             include_acknowledged=False,
         )
-        
+
         result["recent_unacknowledged_alerts"] = recent_alerts.get("count", 0)
-        
+
         # Count by severity
         alerts = recent_alerts.get("alerts", [])
         severity_counts = {}
         for alert in alerts:
             severity = alert.get("severity", "UNKNOWN")
             severity_counts[severity] = severity_counts.get(severity, 0) + 1
-        
+
         result["severity_distribution"] = severity_counts
-        
+
         # Flag if critical alerts exist
         if severity_counts.get("CRITICAL", 0) > 0:
             result["status"] = "critical_alerts_present"
@@ -173,19 +173,19 @@ async def health_drift_monitor() -> dict[str, Any]:
             result["status"] = "high_severity_alerts_present"
         else:
             result["status"] = "healthy"
-    
+
     except Exception as e:
         result["healthy"] = False
         result["error"] = str(e)
         result["status"] = "error"
-    
+
     # Include sensor stats if available
     if _drift_sensor:
         result["sensor_stats"] = _drift_sensor.stats
-    
+
     if not result.get("healthy", True):
         raise HTTPException(status_code=503, detail=result)
-    
+
     return result
 
 
@@ -193,7 +193,7 @@ async def _check_neo4j() -> dict[str, Any]:
     """Check Neo4j connectivity."""
     try:
         is_connected = await Neo4jFactory.verify_connectivity()
-        
+
         if is_connected:
             return {
                 "healthy": True,
@@ -209,7 +209,7 @@ async def _check_neo4j() -> dict[str, Any]:
                 "configured": Neo4jFactory.is_available(),
                 "message": "Neo4j is configured but not reachable",
             }
-    
+
     except Exception as e:
         return {
             "healthy": False,
@@ -226,7 +226,7 @@ def _check_sensors() -> dict[str, Any]:
         "healthy": True,
         "component": "sensors",
     }
-    
+
     if _drift_sensor is None:
         result["drift_sensor"] = {
             "running": False,
@@ -235,10 +235,10 @@ def _check_sensors() -> dict[str, Any]:
     else:
         stats = _drift_sensor.stats
         result["drift_sensor"] = stats
-        
+
         # Sensor is healthy if it's running or hasn't been started yet
         result["healthy"] = True  # Sensor can be stopped intentionally
-    
+
     return result
 
 
@@ -248,7 +248,7 @@ def _check_alerts() -> dict[str, Any]:
         "healthy": True,
         "component": "alerts",
     }
-    
+
     if _alert_emitter is None:
         result["alert_emitter"] = {
             "configured": False,
@@ -256,8 +256,8 @@ def _check_alerts() -> dict[str, Any]:
     else:
         stats = _alert_emitter.stats
         result["alert_emitter"] = stats
-        
+
         # Alert system is healthy if it's processing
         result["healthy"] = True
-    
+
     return result

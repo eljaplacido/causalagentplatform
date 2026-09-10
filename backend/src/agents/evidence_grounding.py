@@ -25,7 +25,6 @@ import structlog
 from src.agents.base import BaseAgent
 from src.exceptions import CircuitBreakerError
 from src.semantic_layer.models import (
-    CynefinDomain,
     EpistemicState,
     Recommendation,
 )

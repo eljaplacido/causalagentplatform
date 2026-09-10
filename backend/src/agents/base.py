@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import time
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
@@ -26,7 +26,6 @@ from src.exceptions import CircuitBreakerError, GuardianBlockedError
 from src.semantic_layer.models import (
     CynefinDomain,
     EpistemicState,
-    GuardianVerdict,
     ReasoningStep,
     ToolCall,
 )
@@ -119,7 +118,7 @@ class BaseAgent(ABC):
                 inputs=inputs,
                 outputs=outputs,
                 duration_ms=round(duration_ms, 2),
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 success=success,
                 error=error_msg,
             )
@@ -173,7 +172,7 @@ class BaseAgent(ABC):
             action=action,
             inputs=inputs,
             outputs=outputs,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
         updated = state.model_copy(
             update={"reasoning_steps": [*state.reasoning_steps, step]}

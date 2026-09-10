@@ -32,7 +32,7 @@ if _dotenv_path.exists():
 import time
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import structlog
 from fastapi import FastAPI, Request
@@ -195,7 +195,7 @@ def create_app() -> FastAPI:
     async def health() -> dict[str, str]:
         return {
             "status": "ok",
-            "timestamp": datetime.now(tz=timezone.utc).isoformat(),
+            "timestamp": datetime.now(tz=UTC).isoformat(),
             "version": app.version,
             "env": os.getenv("ENV", "unknown"),
         }

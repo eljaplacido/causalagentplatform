@@ -12,23 +12,17 @@ Tests:
 
 from __future__ import annotations
 
-import pytest
-
 from src.evaluation.consistency import (
-    ConsistencyResult,
     ConsistencyRunner,
     _jaccard_distance,
-    _compute_recommendation_variance,
 )
-from src.evaluation.metrics import compute_decision_quality, DecisionQualityIndex
+from src.evaluation.metrics import compute_decision_quality
 from src.evaluation.probes import (
     CalibrationProbe,
     CynefinStabilityProbe,
     EdgeReproducibilityProbe,
-    ProbeResult,
 )
 from src.semantic_layer.models import Recommendation
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 

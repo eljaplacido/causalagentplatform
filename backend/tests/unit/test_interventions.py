@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from unittest.mock import AsyncMock, patch
 
@@ -199,7 +199,7 @@ async def test_close_feedback_success(intv_client: AsyncClient, db_engine: objec
             ),
             {"id": verdict_id, "agent": "tester", "action": "TEST", "hash": "abc",
              "verdict": "APPROVED", "rules": "[]",
-             "ts": datetime.now(timezone.utc).isoformat()},
+             "ts": datetime.now(UTC).isoformat()},
         )
         # Seed intervention
         await session.execute(
@@ -211,11 +211,11 @@ async def test_close_feedback_success(intv_client: AsyncClient, db_engine: objec
             ),
             {
                 "id": intv_id, "name": "Test Rollback", "by": "tester",
-                "iat": datetime.now(timezone.utc).isoformat(),
-                "ab": "tester", "at": datetime.now(timezone.utc).isoformat(),
+                "iat": datetime.now(UTC).isoformat(),
+                "ab": "tester", "at": datetime.now(UTC).isoformat(),
                 "gvr": verdict_id,
                 "ee": json.dumps({"ate": 0.5, "expected_effect": 0.5}),
-                "ca": datetime.now(timezone.utc).isoformat(),
+                "ca": datetime.now(UTC).isoformat(),
             },
         )
         await session.commit()
@@ -246,7 +246,7 @@ async def test_close_feedback_already_closed(intv_client: AsyncClient, db_engine
             ),
             {"id": verdict_id, "agent": "tester", "action": "TEST", "hash": "abc",
              "verdict": "APPROVED", "rules": "[]",
-             "ts": datetime.now(timezone.utc).isoformat()},
+             "ts": datetime.now(UTC).isoformat()},
         )
         await session.execute(
             text(
@@ -257,12 +257,12 @@ async def test_close_feedback_already_closed(intv_client: AsyncClient, db_engine
             ),
             {
                 "id": intv_id, "name": "Already Closed", "by": "tester",
-                "iat": datetime.now(timezone.utc).isoformat(),
-                "ab": "tester", "at": datetime.now(timezone.utc).isoformat(),
+                "iat": datetime.now(UTC).isoformat(),
+                "ab": "tester", "at": datetime.now(UTC).isoformat(),
                 "gvr": verdict_id, "ee": json.dumps({"ate": 0.3}),
                 "ae": json.dumps({"observed_value": 0.3}),
-                "now": datetime.now(timezone.utc).isoformat(),
-                "ca": datetime.now(timezone.utc).isoformat(),
+                "now": datetime.now(UTC).isoformat(),
+                "ca": datetime.now(UTC).isoformat(),
             },
         )
         await session.commit()
@@ -287,7 +287,7 @@ async def test_close_feedback_critical_deviation(intv_client: AsyncClient, db_en
             ),
             {"id": verdict_id, "agent": "tester", "action": "TEST", "hash": "abc",
              "verdict": "APPROVED", "rules": "[]",
-             "ts": datetime.now(timezone.utc).isoformat()},
+             "ts": datetime.now(UTC).isoformat()},
         )
         await session.execute(
             text(
@@ -298,11 +298,11 @@ async def test_close_feedback_critical_deviation(intv_client: AsyncClient, db_en
             ),
             {
                 "id": intv_id, "name": "Critical Deviation Test", "by": "tester",
-                "iat": datetime.now(timezone.utc).isoformat(),
-                "ab": "tester", "at": datetime.now(timezone.utc).isoformat(),
+                "iat": datetime.now(UTC).isoformat(),
+                "ab": "tester", "at": datetime.now(UTC).isoformat(),
                 "gvr": verdict_id,
                 "ee": json.dumps({"ate": 0.1, "expected_effect": 0.1}),
-                "ca": datetime.now(timezone.utc).isoformat(),
+                "ca": datetime.now(UTC).isoformat(),
             },
         )
         await session.commit()
@@ -331,7 +331,7 @@ async def test_close_feedback_high_deviation(intv_client: AsyncClient, db_engine
             ),
             {"id": verdict_id, "agent": "tester", "action": "TEST", "hash": "abc",
              "verdict": "APPROVED", "rules": "[]",
-             "ts": datetime.now(timezone.utc).isoformat()},
+             "ts": datetime.now(UTC).isoformat()},
         )
         await session.execute(
             text(
@@ -342,11 +342,11 @@ async def test_close_feedback_high_deviation(intv_client: AsyncClient, db_engine
             ),
             {
                 "id": intv_id, "name": "High Deviation Test", "by": "tester",
-                "iat": datetime.now(timezone.utc).isoformat(),
-                "ab": "tester", "at": datetime.now(timezone.utc).isoformat(),
+                "iat": datetime.now(UTC).isoformat(),
+                "ab": "tester", "at": datetime.now(UTC).isoformat(),
                 "gvr": verdict_id,
                 "ee": json.dumps({"ate": 1.0}),
-                "ca": datetime.now(timezone.utc).isoformat(),
+                "ca": datetime.now(UTC).isoformat(),
             },
         )
         await session.commit()
@@ -373,7 +373,7 @@ async def test_list_pending_with_data(intv_client: AsyncClient, db_engine: objec
                  "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)"),
             {"id": verdict_id, "agent": "tester", "action": "TEST", "hash": "abc",
              "verdict": "APPROVED", "rules": "[]",
-             "ts": datetime.now(timezone.utc).isoformat()},
+             "ts": datetime.now(UTC).isoformat()},
         )
         await session.execute(
             text("INSERT INTO interventions (id, name, initiated_by, initiated_at, "
@@ -382,10 +382,10 @@ async def test_list_pending_with_data(intv_client: AsyncClient, db_engine: objec
                  "VALUES (:id, :name, :by, :iat, :ab, :at, :gvr, :ee, 0, :ca)"),
             {
                 "id": intv_id, "name": "Pending Test", "by": "tester",
-                "iat": datetime.now(timezone.utc).isoformat(),
-                "ab": "tester", "at": datetime.now(timezone.utc).isoformat(),
+                "iat": datetime.now(UTC).isoformat(),
+                "ab": "tester", "at": datetime.now(UTC).isoformat(),
                 "gvr": verdict_id, "ee": json.dumps({"ate": 0.5}),
-                "ca": datetime.now(timezone.utc).isoformat(),
+                "ca": datetime.now(UTC).isoformat(),
             },
         )
         await session.commit()
@@ -408,9 +408,9 @@ async def test_accuracy_with_closed_loops(intv_client: AsyncClient, db_engine: o
                  "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)"),
             {"id": verdict_id, "agent": "tester", "action": "TEST", "hash": "abc",
              "verdict": "APPROVED", "rules": "[]",
-             "ts": datetime.now(timezone.utc).isoformat()},
+             "ts": datetime.now(UTC).isoformat()},
         )
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         await session.execute(
             text("INSERT INTO interventions (id, name, initiated_by, initiated_at, "
                  "approved_by, approval_timestamp, guardian_verdict_ref, expected_effect, "
@@ -437,8 +437,7 @@ async def test_accuracy_with_closed_loops(intv_client: AsyncClient, db_engine: o
 
 async def test_close_feedback_handler_standalone(db_engine: object) -> None:
     """Test the close_feedback_loop handler directly (not via HTTP)."""
-    from src.api.interventions import close_feedback_loop, FeedbackRequest
-    from src.middleware.auth import get_current_user
+    from src.api.interventions import FeedbackRequest, close_feedback_loop
 
     intv_id = str(uuid.uuid4())
     verdict_id = str(uuid.uuid4())
@@ -449,7 +448,7 @@ async def test_close_feedback_handler_standalone(db_engine: object) -> None:
                  "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)"),
             {"id": verdict_id, "agent": "tester", "action": "TEST", "hash": "abc",
              "verdict": "APPROVED", "rules": "[]",
-             "ts": datetime.now(timezone.utc).isoformat()},
+             "ts": datetime.now(UTC).isoformat()},
         )
         await session.execute(
             text("INSERT INTO interventions (id, name, initiated_by, initiated_at, "
@@ -457,10 +456,10 @@ async def test_close_feedback_handler_standalone(db_engine: object) -> None:
                  "feedback_loop_closed, created_at) "
                  "VALUES (:id, :n, :by, :iat, :ab, :at, :gvr, :ee, 0, :ca)"),
             {"id": intv_id, "n": "Handler Test", "by": "tester",
-             "iat": datetime.now(timezone.utc).isoformat(),
-             "ab": "tester", "at": datetime.now(timezone.utc).isoformat(),
+             "iat": datetime.now(UTC).isoformat(),
+             "ab": "tester", "at": datetime.now(UTC).isoformat(),
              "gvr": verdict_id, "ee": json.dumps({"ate": 0.8}),
-             "ca": datetime.now(timezone.utc).isoformat()},
+             "ca": datetime.now(UTC).isoformat()},
         )
         await session.commit()
 

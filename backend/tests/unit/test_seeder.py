@@ -7,8 +7,6 @@ from __future__ import annotations
 
 import uuid
 
-import pytest
-
 from scripts.seed_data import (
     _SEEDER_USER,
     _make_lineage,

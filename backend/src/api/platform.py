@@ -13,8 +13,8 @@ No static or mock values.
 from __future__ import annotations
 
 import time
-from datetime import datetime, timedelta, timezone
-from typing import Annotated, Any
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import structlog
 from fastapi import APIRouter, Depends, Query
@@ -109,7 +109,7 @@ _POLICY_DESCRIPTIONS = {
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def _week_label(dt: datetime) -> str:
@@ -355,7 +355,7 @@ async def get_platform_metrics(
       - Semantic layer object counts by approval status
       - Aggregate totals
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     four_weeks_ago = (now - timedelta(weeks=4)).isoformat()
 
     weekly_sessions: list[WeeklySessionMetric] = []
@@ -538,7 +538,7 @@ async def get_drift_alerts(
       - The REQUIRES_ESCALATION verdict was triggered (indicates state anomaly)
     """
     alerts: list[DriftAlert] = []
-    cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+    cutoff = (datetime.now(UTC) - timedelta(hours=24)).isoformat()
 
     try:
         async with CloudSqlFactory.get_session_factory()() as session:

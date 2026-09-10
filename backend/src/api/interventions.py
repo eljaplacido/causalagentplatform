@@ -21,9 +21,9 @@ EpistemicState constraints:
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -32,7 +32,6 @@ from sqlalchemy import text
 
 from src.db.factory import CloudSqlFactory
 from src.middleware.auth import get_current_user
-from src.semantic_layer.models import GuardianVerdict
 
 log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/api/v1/interventions", tags=["Interventions"])
@@ -132,7 +131,7 @@ async def close_feedback_loop(
     All feedback closures are auditable via the intervention's audit log.
     """
     intervention_id = body.intervention_id
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     async with CloudSqlFactory.get_session_factory()() as session:
         # Look up the intervention
@@ -272,7 +271,7 @@ async def list_pending(
     user: dict[str, Any] = Depends(get_current_user),
 ) -> list[PendingIntervention]:
     """List interventions that have been executed but whose outcomes are not yet observed."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     async with CloudSqlFactory.get_session_factory()() as session:
         rows = await session.execute(
@@ -298,7 +297,7 @@ async def list_pending(
             try:
                 initiated_dt = datetime.fromisoformat(initiated_str.replace("Z", "+00:00"))
                 hours_open = round(
-                    (now - initiated_dt.replace(tzinfo=timezone.utc)).total_seconds() / 3600, 1
+                    (now - initiated_dt.replace(tzinfo=UTC)).total_seconds() / 3600, 1
                 )
             except Exception:
                 hours_open = 0.0
@@ -376,7 +375,7 @@ async def _record_decision(
         )
         return existing
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     audit_id = str(uuid4())
     action = "INTERVENTION_APPROVED" if decision == "APPROVED" else "INTERVENTION_REJECTED"
     verdict = "APPROVED" if decision == "APPROVED" else "REJECTED"
@@ -519,7 +518,7 @@ async def get_prediction_accuracy(
     Returns MAE (Mean Absolute Error), RMSE, and directional accuracy
     (did the prediction get the sign right?) over the specified period.
     """
-    cutoff = (datetime.now(timezone.utc) - __import__("datetime").timedelta(days=period_days))
+    cutoff = (datetime.now(UTC) - __import__("datetime").timedelta(days=period_days))
 
     async with CloudSqlFactory.get_session_factory()() as session:
         rows = await session.execute(

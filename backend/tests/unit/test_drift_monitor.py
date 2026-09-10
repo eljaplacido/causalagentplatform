@@ -23,17 +23,16 @@ From AGENTS.md §2.1 DriftMonitorAgent:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from uuid import uuid4
 
 import pytest
-from uuid import uuid4
 
 from src.agents.drift_monitor import DriftMonitorAgent
 from src.semantic_layer.models import (
     CynefinDomain,
     EpistemicState,
 )
-
 
 pytestmark = pytest.mark.asyncio
 
@@ -76,15 +75,15 @@ async def test_severe_drift_escalation(db_engine: object) -> None:
         }
 
     agent._skill_drift_detect = mock_drift_detect
-    
+
     async def mock_structure_compare(inputs):
         return {"structural_drift_detected": False, "affected_edges": []}
-    
+
     agent._skill_causal_structure_compare = mock_structure_compare
-    
+
     async def mock_semantic_drift(inputs):
         return {"semantic_drift": False, "drifted_entities": []}
-    
+
     agent._skill_semantic_drift_detect = mock_semantic_drift
 
     result = await agent.process(state)
@@ -119,10 +118,10 @@ async def test_moderate_drift_recommendation(db_engine: object) -> None:
         return {"structural_drift_detected": False, "affected_edges": []}
 
     agent._skill_causal_structure_compare = mock_structure_compare
-    
+
     async def mock_semantic_drift(inputs):
         return {"semantic_drift": False, "drifted_entities": []}
-    
+
     agent._skill_semantic_drift_detect = mock_semantic_drift
 
     result = await agent.process(state)
@@ -150,10 +149,10 @@ async def test_no_drift_healthy(db_engine: object) -> None:
         return {"structural_drift_detected": False, "affected_edges": []}
 
     agent._skill_causal_structure_compare = mock_structure_compare
-    
+
     async def mock_semantic_drift(inputs):
         return {"semantic_drift": False, "drifted_entities": []}
-    
+
     agent._skill_semantic_drift_detect = mock_semantic_drift
 
     result = await agent.process(state)
@@ -185,10 +184,10 @@ async def test_structural_drift_flags_graph(db_engine: object) -> None:
         }
 
     agent._skill_causal_structure_compare = mock_structure_compare
-    
+
     async def mock_semantic_drift(inputs):
         return {"semantic_drift": False, "drifted_entities": []}
-    
+
     agent._skill_semantic_drift_detect = mock_semantic_drift
 
     result = await agent.process(state)
@@ -212,12 +211,12 @@ async def test_semantic_drift_detected(db_engine: object) -> None:
         return {"kl_divergence": 0.05, "drifted_features": [], "drift_type": "none", "feature_scores": {}}
 
     agent._skill_drift_detect = mock_drift_detect
-    
+
     async def mock_structure_compare(inputs):
         return {"structural_drift_detected": False, "affected_edges": []}
 
     agent._skill_causal_structure_compare = mock_structure_compare
-    
+
     async def mock_semantic_drift(inputs):
         return {
             "semantic_drift": True,
@@ -226,7 +225,7 @@ async def test_semantic_drift_detected(db_engine: object) -> None:
             ],
             "avg_similarity": 0.75,
         }
-    
+
     agent._skill_semantic_drift_detect = mock_semantic_drift
 
     result = await agent.process(state)
@@ -270,10 +269,10 @@ async def test_reasoning_steps_logged(db_engine: object) -> None:
         return {"structural_drift_detected": False, "affected_edges": []}
 
     agent._skill_causal_structure_compare = mock_structure_compare
-    
+
     async def mock_semantic_drift(inputs):
         return {"semantic_drift": False, "drifted_entities": []}
-    
+
     agent._skill_semantic_drift_detect = mock_semantic_drift
 
     result = await agent.process(state)
@@ -339,7 +338,7 @@ async def test_alert_emit_called(db_engine: object) -> None:
         from src.sensors.alert_emit import Alert
         return Alert(
             alert_id="test-alert-123",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             severity=severity,
             alert_type=alert_type,
             message=message,
@@ -352,7 +351,7 @@ async def test_alert_emit_called(db_engine: object) -> None:
 
     async def mock_structure_compare(inputs):
         return {"structural_drift_detected": False, "affected_edges": []}
-    
+
     async def mock_semantic_drift(inputs):
         return {"semantic_drift": False, "drifted_entities": []}
 
@@ -393,10 +392,10 @@ async def test_explanation_includes_drift_info(db_engine: object) -> None:
         return {"structural_drift_detected": False, "affected_edges": []}
 
     agent._skill_causal_structure_compare = mock_structure_compare
-    
+
     async def mock_semantic_drift(inputs):
         return {"semantic_drift": False, "drifted_entities": []}
-    
+
     agent._skill_semantic_drift_detect = mock_semantic_drift
 
     result = await agent.process(state)
@@ -430,7 +429,7 @@ async def test_configurable_thresholds(db_engine: object) -> None:
     agent._skill_drift_detect = mock_drift_detect_low
     async def mock_structure_compare(inputs):
         return {"structural_drift_detected": False, "affected_edges": []}
-    
+
     async def mock_semantic_drift(inputs):
         return {"semantic_drift": False, "drifted_entities": []}
 
@@ -463,7 +462,7 @@ async def test_severity_scoring_multiple_drift_types(db_engine: object) -> None:
         }
 
     agent._skill_drift_detect = mock_drift_detect
-    
+
     async def mock_structure_compare(inputs):
         return {
             "structural_drift_detected": True,
@@ -471,10 +470,10 @@ async def test_severity_scoring_multiple_drift_types(db_engine: object) -> None:
         }
 
     agent._skill_causal_structure_compare = mock_structure_compare
-    
+
     async def mock_semantic_drift(inputs):
         return {"semantic_drift": False, "drifted_entities": []}
-    
+
     agent._skill_semantic_drift_detect = mock_semantic_drift
 
     result = await agent.process(state)
@@ -509,17 +508,17 @@ async def test_alert_storage_can_be_disabled(db_engine: object) -> None:
         from src.sensors.alert_emit import Alert
         return Alert(
             alert_id="test-alert-456",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             severity=severity,
             alert_type=alert_type,
             message=message,
             source="test",
             context=context,
         )
-    
+
     async def mock_structure_compare(inputs):
         return {"structural_drift_detected": False, "affected_edges": []}
-    
+
     async def mock_semantic_drift(inputs):
         return {"semantic_drift": False, "drifted_entities": []}
 
@@ -549,7 +548,7 @@ def test_agent_initialization_logs_config() -> None:
         enable_neo4j_storage=False,
         enable_alert_emission=True,
     )
-    
+
     assert agent.agent_id == "test-agent"
     assert agent._kl_threshold == 0.15
     assert agent._severe_kl_threshold == 0.55
@@ -583,7 +582,7 @@ async def test_alert_includes_evidence_payload(db_engine: object) -> None:
         from src.sensors.alert_emit import Alert
         return Alert(
             alert_id="test-evidence-001",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             severity=severity,
             alert_type=alert_type,
             message=message,
@@ -701,7 +700,7 @@ async def test_structural_drift_alert_has_edge_evidence(db_engine: object) -> No
         from src.sensors.alert_emit import Alert
         return Alert(
             alert_id="test-structural-001",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             severity=severity,
             alert_type=alert_type,
             message=message,

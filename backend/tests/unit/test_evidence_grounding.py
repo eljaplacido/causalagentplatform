@@ -18,8 +18,9 @@ From AGENTS.md §2.1 EvidenceGroundingAgent:
 
 from __future__ import annotations
 
-import pytest
 from uuid import uuid4
+
+import pytest
 
 from src.agents.evidence_grounding import EvidenceGroundingAgent
 from src.semantic_layer.models import (
@@ -29,7 +30,6 @@ from src.semantic_layer.models import (
     EdgeType,
     EpistemicState,
 )
-
 
 pytestmark = pytest.mark.asyncio
 

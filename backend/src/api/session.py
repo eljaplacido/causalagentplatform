@@ -17,15 +17,14 @@ runs inside every graph execution — it cannot be bypassed via this API.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
 from typing import Any
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from src.agents.incident_triage import IncidentTriageAgent
-from src.exceptions import CircuitBreakerError, GuardianBlockedError
+from src.exceptions import CircuitBreakerError
 from src.middleware.auth import get_current_user
 from src.orchestration.graph import PlatformState, compile_platform_graph
 from src.orchestration.session_store import SessionStateStore
@@ -189,7 +188,7 @@ async def _run_graph(initial_state: EpistemicState) -> EpistemicState:
                 "requires_human_review": True,
                 "flags": [*initial_state.flags, "graph_internal_error"],
                 "draft_explanation": (
-                    f"Internal platform error during session execution. "
+                    "Internal platform error during session execution. "
                     "Escalating to human reviewer."
                 ),
                 "guardian_verdict": GuardianVerdict.REJECTED,
@@ -357,7 +356,7 @@ async def triage_incident(
 
 
 async def _persist_incident(
-    body: "IncidentSessionRequest",
+    body: IncidentSessionRequest,
     state: EpistemicState,
     user: dict[str, Any],
 ) -> None:

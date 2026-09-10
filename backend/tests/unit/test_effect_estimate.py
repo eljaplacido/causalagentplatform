@@ -4,8 +4,6 @@ Unit tests for effect estimation skill helpers (src/skills/effect_estimate.py).
 
 from __future__ import annotations
 
-from typing import Any
-
 import pytest
 
 from src.skills.effect_estimate import (
@@ -23,7 +21,6 @@ from src.skills.effect_estimate import (
     _path_strength,
     effect_estimate,
 )
-
 
 # ── effect_estimate ───────────────────────────────────────────────────────────
 

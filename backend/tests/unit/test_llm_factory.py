@@ -16,7 +16,6 @@ from src.agents.llm_factory import (
     get_llm,
 )
 
-
 # ── _detect_provider ──────────────────────────────────────────────────────────
 
 
@@ -104,6 +103,5 @@ def test_model_name_unknown_provider() -> None:
 
 def test_get_llm_no_provider() -> None:
     """get_llm raises LLMNotAvailableError when nothing is configured."""
-    with patch.dict(os.environ, {}, clear=True):
-        with pytest.raises(LLMNotAvailableError):
-            get_llm()
+    with patch.dict(os.environ, {}, clear=True), pytest.raises(LLMNotAvailableError):
+        get_llm()

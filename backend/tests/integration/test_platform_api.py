@@ -14,7 +14,7 @@ from __future__ import annotations
 import hashlib
 import json
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from unittest.mock import AsyncMock, patch
 
@@ -180,7 +180,7 @@ async def test_connectors_db_counts_seeded_data(
                 "verdict": "APPROVED",
                 "rules": "[]",
                 "sid": "sess-1",
-                "ts": datetime.now(timezone.utc).isoformat(),
+                "ts": datetime.now(UTC).isoformat(),
             }
         ],
     )
@@ -284,7 +284,7 @@ async def test_metrics_counts_seeded_entries(
     client: AsyncClient, db_engine: object
 ) -> None:
     """After seeding audit entries, totals reflect actual data."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     await _seed_audit_log(
         db_engine,
         [
@@ -322,7 +322,7 @@ async def test_metrics_policy_patterns_from_seeded_data(
     client: AsyncClient, db_engine: object
 ) -> None:
     """Policy patterns reflect the most-cited rules from audit_log."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     await _seed_audit_log(
         db_engine,
         [
@@ -351,7 +351,7 @@ async def test_metrics_approval_rate_calculation(
     client: AsyncClient, db_engine: object
 ) -> None:
     """overall_approval_rate is approved/total, rounded to 3 decimal places."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     entries = []
     for i in range(3):
         entries.append({
@@ -415,7 +415,7 @@ async def test_drift_no_alert_for_single_rejection(
     client: AsyncClient, db_engine: object
 ) -> None:
     """A single REJECTED verdict does not create a cluster-based drift alert."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     await _seed_audit_log(
         db_engine,
         [
@@ -443,7 +443,7 @@ async def test_drift_alert_for_two_rejections_same_rule(
     client: AsyncClient, db_engine: object
 ) -> None:
     """Two REJECTED verdicts for the same rule within 24h trigger a drift alert."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     await _seed_audit_log(
         db_engine,
         [
@@ -472,7 +472,7 @@ async def test_drift_escalation_always_surfaces(
     client: AsyncClient, db_engine: object
 ) -> None:
     """A single REQUIRES_ESCALATION verdict always creates a drift alert."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     await _seed_audit_log(
         db_engine,
         [
@@ -497,7 +497,7 @@ async def test_drift_escalation_always_surfaces(
 
 async def test_drift_alert_schema(client: AsyncClient, db_engine: object) -> None:
     """Drift alert objects have all required fields."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     await _seed_audit_log(
         db_engine,
         [
@@ -531,7 +531,7 @@ async def test_drift_excludes_approved_verdicts(
     client: AsyncClient, db_engine: object
 ) -> None:
     """APPROVED verdicts do not trigger drift alerts."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     await _seed_audit_log(
         db_engine,
         [
@@ -557,7 +557,7 @@ async def test_drift_deduplicates_alerts(
     client: AsyncClient, db_engine: object
 ) -> None:
     """Duplicate alert IDs are removed from the response."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     await _seed_audit_log(
         db_engine,
         [
@@ -595,7 +595,7 @@ async def test_drift_severity_critical_for_five_rejections(
     client: AsyncClient, db_engine: object
 ) -> None:
     """5+ rejections for same rule within 24h → CRITICAL severity."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     await _seed_audit_log(
         db_engine,
         [

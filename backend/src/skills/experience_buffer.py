@@ -10,7 +10,6 @@ To use Neo4j, set the NEO4J_URI environment variable.
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 
 import structlog
@@ -18,6 +17,8 @@ import structlog
 from src.db.neo4j_factory import Neo4jFactory
 from src.skills.experience_buffer_neo4j import (
     query_similar_incidents as neo4j_query_similar,
+)
+from src.skills.experience_buffer_neo4j import (
     store_incident as neo4j_store_incident,
 )
 
@@ -68,7 +69,7 @@ async def experience_buffer_query(
                 error=str(e),
                 fallback="sql_interim"
             )
-    
+
     # Fall back to SQL interim approach
     log.debug("experience_buffer.using_sql_fallback", session_id=session_id)
     return await sql_experience_buffer_query(
@@ -127,7 +128,7 @@ async def store_incident_experience(
         except Exception as e:
             log.warning("experience_buffer.store_neo4j_failed", error=str(e))
             return {"stored": False, "reason": f"neo4j_error: {e}"}
-    
+
     return {
         "stored": False,
         "reason": "neo4j_not_configured",
@@ -142,14 +143,14 @@ async def get_experience_buffer_stats() -> dict[str, Any]:
         Dict with buffer statistics
     """
     from src.skills.experience_buffer_neo4j import get_buffer_stats
-    
+
     if Neo4jFactory.is_available():
         try:
             return await get_buffer_stats()
         except Exception as e:
             log.warning("experience_buffer.stats_failed", error=str(e))
             return {"available": False, "error": str(e)}
-    
+
     return {
         "available": False,
         "reason": "neo4j_not_configured",

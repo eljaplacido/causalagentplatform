@@ -31,7 +31,6 @@ from src.semantic_layer.models import (
     EdgeProposal,
     EdgeType,
     EpistemicState,
-    GuardianVerdict,
     Recommendation,
 )
 

@@ -18,19 +18,15 @@ From AGENTS.md §2.1 ChangeImpactAgent:
 
 from __future__ import annotations
 
-import pytest
 from uuid import uuid4
+
+import pytest
 
 from src.agents.change_impact import ChangeImpactAgent
 from src.semantic_layer.models import (
-    CausalEdge,
-    CausalObjectRef,
     CynefinDomain,
-    EdgeDirection,
-    EdgeType,
     EpistemicState,
 )
-
 
 pytestmark = pytest.mark.asyncio
 

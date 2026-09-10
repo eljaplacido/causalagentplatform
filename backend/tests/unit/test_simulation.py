@@ -21,17 +21,16 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
+from uuid import uuid4
 
 import pytest
 from sqlalchemy import text
-from uuid import uuid4
 
 from src.agents.simulation import SimulationAgent
 from src.semantic_layer.models import (
     CynefinDomain,
     EpistemicState,
 )
-
 
 pytestmark = pytest.mark.asyncio
 
@@ -274,8 +273,9 @@ async def test_simulation_result_fields(db_engine: object) -> None:
     """
     SimulationResult model must have required fields defined in AGENTS.md.
     """
-    from src.semantic_layer.models import SimulationResult
     from uuid import UUID
+
+    from src.semantic_layer.models import SimulationResult
 
     # Verify SimulationResult has all required fields
     sim_result = SimulationResult(

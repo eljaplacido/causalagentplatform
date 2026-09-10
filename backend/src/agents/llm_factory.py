@@ -263,11 +263,7 @@ def _build_fallback_llm(capability: Capability, temperature: float) -> Any:
         try:
             if provider == "ollama" and os.getenv("OLLAMA_BASE_URL"):
                 pass  # Only use ollama if configured
-            elif provider == "anthropic" and os.getenv("ANTHROPIC_API_KEY"):
-                pass
-            elif provider == "openai" and os.getenv("OPENAI_API_KEY"):
-                pass
-            elif provider == "deepseek" and os.getenv("DEEPSEEK_API_KEY"):
+            elif provider == "anthropic" and os.getenv("ANTHROPIC_API_KEY") or provider == "openai" and os.getenv("OPENAI_API_KEY") or provider == "deepseek" and os.getenv("DEEPSEEK_API_KEY"):
                 pass
             else:
                 continue
@@ -322,7 +318,6 @@ class _ProvenanceCapturingLLM:
 
     async def ainvoke(self, prompt: Any, **kwargs: Any) -> Any:
         import time as _time
-        import hashlib as _hashlib
 
         t0 = _time.perf_counter()
         try:
@@ -341,7 +336,6 @@ class _ProvenanceCapturingLLM:
 
     def invoke(self, prompt: Any, **kwargs: Any) -> Any:
         import time as _time
-        import hashlib as _hashlib
 
         t0 = _time.perf_counter()
         try:

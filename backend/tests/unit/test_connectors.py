@@ -25,7 +25,7 @@ Invariants tested:
 from __future__ import annotations
 
 import urllib.error
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -141,7 +141,7 @@ def test_causal_semantic_draft_pii_stripped_default() -> None:
         object_type="CausalEntity",
         draft_payload={"name": "test-service"},
         source_event_id="event-001",
-        inferred_at=datetime.now(timezone.utc).isoformat(),
+        inferred_at=datetime.now(UTC).isoformat(),
         domain="devops",
         confidence=0.8,
     )
@@ -150,7 +150,7 @@ def test_causal_semantic_draft_pii_stripped_default() -> None:
 
 def test_causal_semantic_draft_fields() -> None:
     """CausalSemanticDraft stores all fields correctly."""
-    now_str = datetime.now(timezone.utc).isoformat()
+    now_str = datetime.now(UTC).isoformat()
     draft = CausalSemanticDraft(
         object_type="CausalEdge",
         draft_payload={"source_id": "a", "target_id": "b"},

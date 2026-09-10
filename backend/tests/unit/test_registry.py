@@ -24,11 +24,10 @@ Invariants tested:
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 import pytest
-import pytest_asyncio
 
 from src.exceptions import GuardianBlockedError, ObjectNotFoundError
 from src.semantic_layer.models import (
@@ -45,7 +44,6 @@ from src.semantic_layer.models import (
     FragmentApprovalStatus,
     GraphFragment,
     GuardianVerdict,
-    ReviewStatus,
     UserRef,
 )
 from src.semantic_layer.registry import SemanticLayerRegistry, _object_hash, _sv
@@ -447,7 +445,7 @@ def test_sv_serializes_list_as_json() -> None:
 
 
 def test_sv_serializes_datetime_as_iso() -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     result = _sv(now)
     assert isinstance(result, str)
     # Must be parseable as ISO
@@ -497,7 +495,6 @@ async def test_list_fragments_with_status_filter(
     fragment = _fragment(name="status-filter-fragment")
     await registry.propose_draft(fragment, approved_audit_entry_id)
 
-    from src.semantic_layer.models import FragmentApprovalStatus
 
     draft_results = await registry.list_fragments(
         status=FragmentApprovalStatus.DRAFT

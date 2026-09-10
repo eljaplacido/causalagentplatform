@@ -7,7 +7,6 @@ Tests driver creation, availability checks, and lifecycle with mocked neo4j.
 from __future__ import annotations
 
 import os
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -38,13 +37,12 @@ def test_get_driver_creates_singleton() -> None:
     """get_driver creates driver once and returns cached instance."""
     mock_driver = MagicMock()
 
-    with patch.dict(os.environ, {"NEO4J_URI": "bolt://localhost:7687"}, clear=True):
-        with patch(
-            "neo4j.AsyncGraphDatabase.driver",
-            return_value=mock_driver,
-        ):
-            driver1 = Neo4jFactory.get_driver()
-            driver2 = Neo4jFactory.get_driver()
+    with patch.dict(os.environ, {"NEO4J_URI": "bolt://localhost:7687"}, clear=True), patch(
+        "neo4j.AsyncGraphDatabase.driver",
+        return_value=mock_driver,
+    ):
+        driver1 = Neo4jFactory.get_driver()
+        driver2 = Neo4jFactory.get_driver()
 
     assert driver1 is mock_driver
     assert driver1 is driver2
@@ -53,12 +51,11 @@ def test_get_driver_creates_singleton() -> None:
 
 def test_get_driver_creation_failure() -> None:
     """get_driver returns None when driver creation fails."""
-    with patch.dict(os.environ, {"NEO4J_URI": "bolt://bad:7687"}, clear=True):
-        with patch(
-            "neo4j.AsyncGraphDatabase.driver",
-            side_effect=RuntimeError("connection refused"),
-        ):
-            driver = Neo4jFactory.get_driver()
+    with patch.dict(os.environ, {"NEO4J_URI": "bolt://bad:7687"}, clear=True), patch(
+        "neo4j.AsyncGraphDatabase.driver",
+        side_effect=RuntimeError("connection refused"),
+    ):
+        driver = Neo4jFactory.get_driver()
 
     assert driver is None
     assert Neo4jFactory._available is False

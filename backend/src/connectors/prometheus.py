@@ -21,9 +21,8 @@ from __future__ import annotations
 
 import re
 import statistics
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
-from urllib.parse import urljoin
 from uuid import uuid4
 
 import structlog
@@ -127,10 +126,10 @@ class PrometheusConnector(BaseCausalConnector):
             )
             return []
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         start_iso = cursor or (
             datetime.fromtimestamp(
-                now.timestamp() - self._lookback_h * 3600, tz=timezone.utc
+                now.timestamp() - self._lookback_h * 3600, tz=UTC
             ).isoformat()
         )
 
@@ -230,7 +229,7 @@ class PrometheusConnector(BaseCausalConnector):
                                 "std": round(std, 4),
                                 "z_score": round(z_score, 3),
                                 "anomaly_timestamp": datetime.fromtimestamp(
-                                    ts, tz=timezone.utc
+                                    ts, tz=UTC
                                 ).isoformat(),
                             },
                             source=self._base_url,
@@ -258,7 +257,7 @@ class PrometheusConnector(BaseCausalConnector):
         _parse_range_result via _redact_pii().
         """
         drafts: list[CausalSemanticDraft] = []
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         # Group anomaly events by service
         service_anomalies: dict[str, list[DomainEvent]] = {}

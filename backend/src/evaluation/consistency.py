@@ -19,8 +19,6 @@ from typing import Any
 
 import structlog
 
-from src.semantic_layer.models import EpistemicState
-
 log = structlog.get_logger(__name__)
 
 DEFAULT_CONSISTENCY_RUNS = 8

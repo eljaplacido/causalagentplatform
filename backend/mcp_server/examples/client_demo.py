@@ -58,36 +58,35 @@ async def main() -> None:
         args=["-m", "mcp_server.server"],
     )
 
-    async with stdio_client(server) as (read, write):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
+    async with stdio_client(server) as (read, write), ClientSession(read, write) as session:
+        await session.initialize()
 
-            tools = await session.list_tools()
-            _dump("tools advertised", [t.name for t in tools.tools])
+        tools = await session.list_tools()
+        _dump("tools advertised", [t.name for t in tools.tools])
 
-            ident = await session.call_tool(
-                "causal_identification_check",
-                arguments={
-                    "fragment": FRAGMENT,
-                    "assumptions": [
-                        {
-                            "assumption_type": "IGNORABILITY",
-                            "statement": "no unobserved confounders",
-                        }
-                    ],
-                },
-            )
-            _dump("identification_check", [c.model_dump() for c in ident.content])
+        ident = await session.call_tool(
+            "causal_identification_check",
+            arguments={
+                "fragment": FRAGMENT,
+                "assumptions": [
+                    {
+                        "assumption_type": "IGNORABILITY",
+                        "statement": "no unobserved confounders",
+                    }
+                ],
+            },
+        )
+        _dump("identification_check", [c.model_dump() for c in ident.content])
 
-            estimate = await session.call_tool(
-                "causal_effect_estimate",
-                arguments={
-                    "fragment": FRAGMENT,
-                    "identification_strategy": "backdoor",
-                    "data": DATA,
-                },
-            )
-            _dump("effect_estimate", [c.model_dump() for c in estimate.content])
+        estimate = await session.call_tool(
+            "causal_effect_estimate",
+            arguments={
+                "fragment": FRAGMENT,
+                "identification_strategy": "backdoor",
+                "data": DATA,
+            },
+        )
+        _dump("effect_estimate", [c.model_dump() for c in estimate.content])
 
 
 if __name__ == "__main__":

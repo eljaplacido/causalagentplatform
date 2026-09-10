@@ -15,9 +15,9 @@ import pytest
 
 from src.api.semantic import (
     DraftSubmissionRequest,
+    get_edge_audit_trail,
     get_entity,
     get_fragment,
-    get_edge_audit_trail,
     list_entities,
     list_fragments,
     submit_draft,
@@ -26,7 +26,6 @@ from src.exceptions import ObjectNotFoundError
 from src.semantic_layer.models import (
     ApprovalStatus,
     CausalEntity,
-    CausalEdge,
     GraphFragment,
     GuardianVerdict,
 )

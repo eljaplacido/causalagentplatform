@@ -12,13 +12,12 @@ React frontend without transformation.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import StrEnum
 from typing import Any
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-
 
 # ── Shared serialisation config ───────────────────────────────────────────────
 
@@ -315,7 +314,7 @@ class CausalEntity(BaseModel):
         return v
 
     @model_validator(mode="after")
-    def validate_approval_fields(self) -> "CausalEntity":
+    def validate_approval_fields(self) -> CausalEntity:
         if self.approval_status == ApprovalStatus.APPROVED:
             if self.approved_by is None or self.approved_at is None:
                 raise ValueError(
@@ -424,13 +423,13 @@ class CausalEdge(BaseModel):
     domain: str
 
     @model_validator(mode="after")
-    def validate_no_self_edge(self) -> "CausalEdge":
+    def validate_no_self_edge(self) -> CausalEdge:
         if self.source.id == self.target.id:
             raise ValueError("CausalEdge source and target cannot be the same object")
         return self
 
     @model_validator(mode="after")
-    def validate_approval_consistency(self) -> "CausalEdge":
+    def validate_approval_consistency(self) -> CausalEdge:
         if self.approval_status == ApprovalStatus.APPROVED:
             if self.approved_by is None or self.approved_at is None:
                 raise ValueError(
@@ -466,7 +465,7 @@ class GraphFragment(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     @model_validator(mode="after")
-    def validate_approved_has_verdict(self) -> "GraphFragment":
+    def validate_approved_has_verdict(self) -> GraphFragment:
         if (
             self.approval_status == FragmentApprovalStatus.APPROVED
             and self.guardian_verdict_ref is None
@@ -527,7 +526,7 @@ class Intervention(BaseModel):
     feedback_loop_closed: bool = False
 
     @model_validator(mode="after")
-    def validate_feedback_consistency(self) -> "Intervention":
+    def validate_feedback_consistency(self) -> Intervention:
         if self.feedback_loop_closed and self.actual_effect is None:
             raise ValueError(
                 "actual_effect must be set before feedback_loop_closed=True"
@@ -714,7 +713,7 @@ class EpistemicState(BaseModel):
     flags: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
-    def validate_hallucination_flag(self) -> "EpistemicState":
+    def validate_hallucination_flag(self) -> EpistemicState:
         """Auto-flag for human review if H-Neuron score exceeds threshold."""
         if self.hallucination_risk_score > 0.7:
             object.__setattr__(self, "requires_human_review", True)
@@ -726,6 +725,6 @@ class EpistemicState(BaseModel):
         """Return True only when Guardian has APPROVED the current state."""
         return self.guardian_verdict == GuardianVerdict.APPROVED
 
-    def increment_cycle(self) -> "EpistemicState":
+    def increment_cycle(self) -> EpistemicState:
         """Return a new EpistemicState with cycle_count incremented by 1."""
         return self.model_copy(update={"cycle_count": self.cycle_count + 1})

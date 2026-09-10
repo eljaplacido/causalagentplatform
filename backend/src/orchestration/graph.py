@@ -27,7 +27,7 @@ from langgraph.graph import END, StateGraph
 from src.agents.causal_discovery import CausalDiscoveryAgent
 from src.agents.governance import GovernanceAgent
 from src.agents.incident_triage import IncidentTriageAgent
-from src.exceptions import CircuitBreakerError, GuardianBlockedError
+from src.exceptions import CircuitBreakerError
 from src.orchestration.planning import node_plan_ahead
 from src.semantic_layer.models import (
     CynefinDomain,

@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import os
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import structlog
@@ -66,14 +66,14 @@ def _calculate_decay_factor(created_at: datetime) -> float:
     
     Uses half-life decay: after DECAY_HALF_LIFE_DAYS, relevance is halved.
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if created_at.tzinfo is None:
-        created_at = created_at.replace(tzinfo=timezone.utc)
-    
+        created_at = created_at.replace(tzinfo=UTC)
+
     age_days = (now - created_at).days
     if age_days < 0:
         return 1.0
-    
+
     # Exponential decay: relevance = 0.5^(age/half_life)
     import math
     decay = math.pow(0.5, age_days / DECAY_HALF_LIFE_DAYS)
@@ -162,7 +162,7 @@ async def store_incident(
 
     await _ensure_schema()
 
-    now = created_at or datetime.now(timezone.utc)
+    now = created_at or datetime.now(UTC)
     ttl_at = now + timedelta(days=TTL_DAYS)
 
     async with driver.session() as session:
@@ -274,7 +274,7 @@ async def query_similar_incidents(
 
     await _ensure_schema()
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     query_tokens = _tokenize(description)
 
     async with driver.session() as session:
@@ -283,7 +283,7 @@ async def query_similar_incidents(
         MATCH (i:Incident)
         WHERE i.ttl_at > $now
         """
-        
+
         params: dict[str, Any] = {"now": now, "limit": limit * 3}  # Fetch extra for ranking
 
         # Add domain filter if specified
@@ -320,7 +320,7 @@ async def query_similar_incidents(
     for record in records:
         candidate_tokens = _tokenize(record.get("description", ""))
         similarity = _jaccard_similarity(query_tokens, candidate_tokens)
-        
+
         # Apply relevance decay based on age
         created_at_str = record.get("created_at", "")
         try:
@@ -393,7 +393,7 @@ async def cleanup_expired_incidents() -> dict[str, Any]:
     if not driver:
         return {"cleaned": False, "reason": "neo4j_not_available"}
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
 
     async with driver.session() as session:
         # Count expired incidents
@@ -443,7 +443,7 @@ async def get_buffer_stats() -> dict[str, Any]:
         total = total_record["total"] if total_record else 0
 
         # Active (non-expired) incidents
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         active_result = await session.run(
             "MATCH (i:Incident) WHERE i.ttl_at > $now RETURN count(i) as active",
             {"now": now}

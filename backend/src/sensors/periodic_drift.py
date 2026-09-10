@@ -28,9 +28,10 @@ Usage::
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Callable
+from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 
@@ -45,32 +46,32 @@ log = structlog.get_logger(__name__)
 @dataclass
 class DriftSensorConfig:
     """Configuration for the periodic drift sensor."""
-    
+
     # Timing
     check_interval_seconds: float = 300.0  # 5 minutes default
     initial_delay_seconds: float = 10.0  # Wait before first check
-    
+
     # Target fragments to monitor (empty = monitor all)
     fragment_ids: list[str] = field(default_factory=list)
-    
+
     # Drift detection thresholds
     kl_threshold: float = 0.1
     severe_kl_threshold: float = 0.5
-    
+
     # Storage and emission
     enable_neo4j_storage: bool = True
     enable_alert_emission: bool = True
-    
+
     # Pattern learning from experience buffer
     enable_pattern_learning: bool = True
     pattern_learning_window_days: int = 30
-    
+
     # Alert suppression (don't alert on same fragment within this window)
     alert_suppression_seconds: float = 3600.0  # 1 hour
-    
+
     # Callback for custom alert handling
     alert_callback: Callable[[dict[str, Any]], None] | None = None
-    
+
     def __post_init__(self):
         if self.check_interval_seconds < 60:
             log.warning(
@@ -94,7 +95,7 @@ class DriftSensor:
         config: DriftSensorConfig instance with sensor settings
         agent: Optional DriftMonitorAgent instance (creates default if not provided)
     """
-    
+
     def __init__(
         self,
         config: DriftSensorConfig | None = None,
@@ -108,24 +109,24 @@ class DriftSensor:
             enable_neo4j_storage=self._config.enable_neo4j_storage,
             enable_alert_emission=self._config.enable_alert_emission,
         )
-        
+
         # Dedicated alert emitter for sensor-level notifications (failures,
         # pattern learning, etc.). Distinct from the agent's drift alerts.
         self._sensor_alert_emitter = AlertEmitter(source="drift-sensor")
-        
+
         self._running = False
         self._task: asyncio.Task | None = None
         self._last_alert_times: dict[str, datetime] = {}
         self._check_count = 0
         self._drift_detected_count = 0
-        
+
         self._log = log.bind(sensor="drift_sensor")
-    
+
     @property
     def is_running(self) -> bool:
         """Return True if the sensor is currently running."""
         return self._running
-    
+
     @property
     def stats(self) -> dict[str, Any]:
         """Get sensor statistics."""
@@ -140,13 +141,13 @@ class DriftSensor:
                 "enable_alert_emission": self._config.enable_alert_emission,
             },
         }
-    
+
     async def start(self) -> None:
         """Start the periodic drift sensor."""
         if self._running:
             self._log.warning("drift_sensor.already_running")
             return
-        
+
         self._running = True
         self._task = asyncio.create_task(self._run_loop())
         self._log.info(
@@ -154,12 +155,12 @@ class DriftSensor:
             interval_seconds=self._config.check_interval_seconds,
             fragment_count=len(self._config.fragment_ids),
         )
-    
+
     async def stop(self) -> None:
         """Stop the periodic drift sensor."""
         if not self._running:
             return
-        
+
         self._running = False
         if self._task:
             self._task.cancel()
@@ -168,18 +169,18 @@ class DriftSensor:
             except asyncio.CancelledError:
                 pass
             self._task = None
-        
+
         self._log.info(
             "drift_sensor.stopped",
             total_checks=self._check_count,
             total_drifts_detected=self._drift_detected_count,
         )
-    
+
     async def _run_loop(self) -> None:
         """Main sensor loop."""
         # Initial delay
         await asyncio.sleep(self._config.initial_delay_seconds)
-        
+
         while self._running:
             try:
                 await self._run_check_cycle()
@@ -193,17 +194,17 @@ class DriftSensor:
                         message=f"Drift sensor cycle failed: {e}",
                         context={"sensor": "drift", "cycle": self._check_count},
                     )
-            
+
             # Wait for next check
             await asyncio.sleep(self._config.check_interval_seconds)
-    
+
     async def _run_check_cycle(self) -> None:
         """Run a single drift check cycle."""
         self._check_count += 1
-        cycle_start = datetime.now(timezone.utc)
-        
+        cycle_start = datetime.now(UTC)
+
         self._log.debug("drift_sensor.check_starting", cycle=self._check_count)
-        
+
         # Determine which fragments to check
         fragments_to_check = self._config.fragment_ids
         if not fragments_to_check:
@@ -225,19 +226,19 @@ class DriftSensor:
                 duration_seconds=0.0,
             )
             return
-        
+
         # Check each fragment
         for fragment_id in fragments_to_check:
             await self._check_fragment(fragment_id)
-        
-        cycle_duration = (datetime.now(timezone.utc) - cycle_start).total_seconds()
+
+        cycle_duration = (datetime.now(UTC) - cycle_start).total_seconds()
         self._log.info(
             "drift_sensor.check_complete",
             cycle=self._check_count,
             fragments_checked=len(fragments_to_check),
             duration_seconds=cycle_duration,
         )
-    
+
     async def _check_fragment(self, fragment_id: str) -> None:
         """Check a single fragment for drift."""
         # Create ephemeral EpistemicState for this check
@@ -247,21 +248,21 @@ class DriftSensor:
             cynefin_domain=CynefinDomain.COMPLICATED,
             active_graph_fragment_id=fragment_id,
         )
-        
+
         try:
             # Run drift detection
             result_state = await self._agent.process(state)
-            
+
             # Check if drift was detected
             drift_flags = [f for f in result_state.flags if "drift" in f.lower()]
-            
+
             if drift_flags:
                 self._drift_detected_count += 1
-                
+
                 # Check suppression window
                 last_alert = self._last_alert_times.get(fragment_id)
-                now = datetime.now(timezone.utc)
-                
+                now = datetime.now(UTC)
+
                 should_alert = True
                 if last_alert:
                     seconds_since_last = (now - last_alert).total_seconds()
@@ -272,15 +273,15 @@ class DriftSensor:
                             fragment_id=fragment_id,
                             seconds_since_last=seconds_since_last,
                         )
-                
+
                 if should_alert:
                     self._last_alert_times[fragment_id] = now
                     await self._handle_drift_alert(fragment_id, result_state, drift_flags)
-            
+
             # Pattern learning from experience buffer
             if self._config.enable_pattern_learning:
                 await self._learn_from_experience(fragment_id, result_state)
-        
+
         except Exception as e:
             self._log.error(
                 "drift_sensor.fragment_check_failed",
@@ -299,7 +300,7 @@ class DriftSensor:
                         "sensor_cycle": self._check_count,
                     },
                 )
-    
+
     async def _handle_drift_alert(
         self,
         fragment_id: str,
@@ -308,7 +309,7 @@ class DriftSensor:
     ) -> None:
         """Handle a drift alert."""
         alert_data = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "fragment_id": fragment_id,
             "drift_flags": drift_flags,
             "recommendations": [
@@ -321,14 +322,14 @@ class DriftSensor:
             ],
             "requires_human_review": state.requires_human_review,
         }
-        
+
         self._log.warning(
             "drift_sensor.drift_detected",
             fragment_id=fragment_id,
             drift_flags=drift_flags,
             recommendation_count=len(state.recommendations),
         )
-        
+
         # Custom callback
         if self._config.alert_callback:
             try:
@@ -337,7 +338,7 @@ class DriftSensor:
                 self._log.error("drift_sensor.callback_failed", error=str(e))
                 # Do not suppress the error for the caller
                 raise
-    
+
     async def _learn_from_experience(self, fragment_id: str, state: EpistemicState) -> None:
         """Learn from experience buffer to improve drift detection."""
         try:
@@ -346,9 +347,9 @@ class DriftSensor:
                 fragment_id=fragment_id,
                 limit=10,
             )
-            
+
             alert_count = recent_alerts.get("count", 0)
-            
+
             if alert_count > 5:
                 # Pattern: frequent drift alerts on this fragment
                 self._log.info(
@@ -370,7 +371,7 @@ class DriftSensor:
                             "recommendation": "Consider re-validating graph fragment",
                         },
                     )
-            
+
             elif alert_count == 0 and self._check_count > 10:
                 # Pattern: stable fragment
                 self._log.debug(
@@ -378,10 +379,10 @@ class DriftSensor:
                     pattern="stable_fragment",
                     fragment_id=fragment_id,
                 )
-        
+
         except Exception as e:
             self._log.debug("drift_sensor.pattern_learning_failed", error=str(e))
-    
+
     async def force_check(self, fragment_id: str | None = None) -> dict[str, Any]:
         """
         Force an immediate drift check.
@@ -393,10 +394,10 @@ class DriftSensor:
             Dict with check results
         """
         fragments = [fragment_id] if fragment_id else self._config.fragment_ids
-        
+
         if not fragments:
             return {"checked": False, "reason": "no_fragments_specified"}
-        
+
         results = []
         for fid in fragments:
             state = EpistemicState(
@@ -405,11 +406,11 @@ class DriftSensor:
                 cynefin_domain=CynefinDomain.COMPLICATED,
                 active_graph_fragment_id=fid,
             )
-            
+
             try:
                 result_state = await self._agent.process(state)
                 drift_flags = [f for f in result_state.flags if "drift" in f.lower()]
-                
+
                 results.append({
                     "fragment_id": fid,
                     "drift_detected": len(drift_flags) > 0,
@@ -421,13 +422,13 @@ class DriftSensor:
                     "fragment_id": fid,
                     "error": str(e),
                 })
-        
+
         return {
             "checked": True,
             "fragments_checked": len(fragments),
             "results": results,
         }
-    
+
     async def get_alert_summary(self) -> dict[str, Any]:
         """
         Get a summary of recent drift alerts.
@@ -440,24 +441,24 @@ class DriftSensor:
                 limit=100,
                 include_acknowledged=False,
             )
-            
+
             alerts = all_alerts.get("alerts", [])
-            
+
             # Count by severity
             severity_counts = {}
             type_counts = {}
             fragment_counts = {}
-            
+
             for alert in alerts:
                 severity = alert.get("severity", "UNKNOWN")
                 severity_counts[severity] = severity_counts.get(severity, 0) + 1
-                
+
                 drift_type = alert.get("drift_type", "unknown")
                 type_counts[drift_type] = type_counts.get(drift_type, 0) + 1
-                
+
                 fragment_id = alert.get("fragment_id", "unknown")
                 fragment_counts[fragment_id] = fragment_counts.get(fragment_id, 0) + 1
-            
+
             return {
                 "total_unacknowledged_alerts": len(alerts),
                 "severity_distribution": severity_counts,
@@ -465,7 +466,7 @@ class DriftSensor:
                 "alerts_by_fragment": fragment_counts,
                 "sensor_stats": self.stats,
             }
-        
+
         except Exception as e:
             self._log.error("drift_sensor.summary_failed", error=str(e))
             return {

@@ -19,12 +19,12 @@ From AGENTS.md §2.1 DomainExpertElicitationAgent:
 
 from __future__ import annotations
 
-import pytest
 from uuid import uuid4
+
+import pytest
 
 from src.agents.domain_expert_elicitation import DomainExpertElicitationAgent
 from src.semantic_layer.models import (
-    Assumption,
     AssumptionType,
     CausalObjectRef,
     CynefinDomain,
@@ -33,9 +33,7 @@ from src.semantic_layer.models import (
     ElicitedFrom,
     EpistemicState,
     ReviewStatus,
-    UserRef,
 )
-
 
 pytestmark = pytest.mark.asyncio
 

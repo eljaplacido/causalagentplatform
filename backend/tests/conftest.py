@@ -14,10 +14,8 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import uuid
 from collections.abc import AsyncGenerator
 from datetime import datetime
-from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
@@ -37,20 +35,14 @@ os.environ.setdefault("ENV", "local")
 from src.agents.governance import GovernanceAgent
 from src.db.factory import CloudSqlFactory
 from src.semantic_layer.models import (
-    ApprovalStatus,
-    Assumption,
-    AssumptionType,
     CausalEdge,
     CausalEntity,
     CausalObjectRef,
     EdgeDirection,
     EdgeType,
-    ElicitedFrom,
     EntityType,
     EpistemicState,
-    FragmentApprovalStatus,
     GraphFragment,
-    GuardianVerdict,
     UserRef,
 )
 from src.semantic_layer.registry import SemanticLayerRegistry

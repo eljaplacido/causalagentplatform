@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import hashlib
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import numpy as np
@@ -91,16 +91,16 @@ async def store_drift_alert(
     if not driver:
         logger.warning("drift_alert.storage_skipped", reason="neo4j_not_available")
         return {"stored": False, "reason": "neo4j_not_available"}
-    
+
     # Generate alert ID if not provided
     if alert_id is None:
         alert_id = hashlib.sha256(
-            f"{alert_type}:{fragment_id}:{datetime.now(timezone.utc).isoformat()}".encode()
+            f"{alert_type}:{fragment_id}:{datetime.now(UTC).isoformat()}".encode()
         ).hexdigest()[:16]
-    
-    now = datetime.now(timezone.utc)
+
+    now = datetime.now(UTC)
     ttl_at = now + timedelta(days=DRIFT_ALERT_TTL_DAYS)
-    
+
     try:
         async with driver.session() as session:
             # Create drift alert node
@@ -139,7 +139,7 @@ async def store_drift_alert(
                 }
             )
             await result.single()
-            
+
             # Link to fragment if provided
             if fragment_id:
                 await session.run(
@@ -150,7 +150,7 @@ async def store_drift_alert(
                     """,
                     {"alert_id": alert_id, "fragment_id": fragment_id}
                 )
-        
+
         logger.info(
             "drift_alert.stored",
             alert_id=alert_id,
@@ -158,13 +158,13 @@ async def store_drift_alert(
             severity=severity,
             drift_score=drift_score,
         )
-        
+
         return {
             "stored": True,
             "alert_id": alert_id,
             "ttl_at": ttl_at.isoformat(),
         }
-    
+
     except Exception as e:
         logger.error("drift_alert.storage_failed", error=str(e), alert_id=alert_id)
         raise DriftAlertStorageError(f"Failed to store drift alert: {e}") from e
@@ -197,30 +197,30 @@ async def get_recent_drift_alerts(
             "retrieval_source": "neo4j_not_available",
             "count": 0,
         }
-    
-    now = datetime.now(timezone.utc).isoformat()
-    
+
+    now = datetime.now(UTC).isoformat()
+
     try:
         async with driver.session() as session:
             # Build query dynamically
             where_clauses = ["a.ttl_at > $now"]
             params: dict[str, Any] = {"now": now, "limit": limit}
-            
+
             if fragment_id:
                 where_clauses.append("a.fragment_id = $fragment_id")
                 params["fragment_id"] = fragment_id
-            
+
             if drift_type:
                 where_clauses.append("a.drift_type = $drift_type")
                 params["drift_type"] = drift_type
-            
+
             if severity:
                 where_clauses.append("a.severity = $severity")
                 params["severity"] = severity
-            
+
             if not include_acknowledged:
                 where_clauses.append("a.acknowledged = false")
-            
+
             cypher = f"""
                 MATCH (a:DriftAlert)
                 WHERE {' AND '.join(where_clauses)}
@@ -238,10 +238,10 @@ async def get_recent_drift_alerts(
                 ORDER BY a.created_at DESC
                 LIMIT $limit
             """
-            
+
             result = await session.run(cypher, params)
             records = await result.data()
-            
+
             alerts = [
                 {
                     "alert_id": r["id"],
@@ -258,14 +258,14 @@ async def get_recent_drift_alerts(
                 }
                 for r in records
             ]
-            
+
             return {
                 "alerts": alerts,
                 "retrieval_source": "neo4j_drift_alerts",
                 "count": len(alerts),
                 "ttl_days": DRIFT_ALERT_TTL_DAYS,
             }
-    
+
     except Exception as e:
         logger.error("drift_alert.retrieval_failed", error=str(e))
         return {
@@ -289,7 +289,7 @@ async def acknowledge_drift_alert(alert_id: str, acknowledged_by: str) -> dict[s
     driver = Neo4jFactory.get_driver()
     if not driver:
         return {"acknowledged": False, "reason": "neo4j_not_available"}
-    
+
     try:
         async with driver.session() as session:
             result = await session.run(
@@ -302,18 +302,18 @@ async def acknowledge_drift_alert(alert_id: str, acknowledged_by: str) -> dict[s
                 """,
                 {
                     "alert_id": alert_id,
-                    "acknowledged_at": datetime.now(timezone.utc).isoformat(),
+                    "acknowledged_at": datetime.now(UTC).isoformat(),
                     "acknowledged_by": acknowledged_by,
                 }
             )
             record = await result.single()
-            
+
             if record:
                 logger.info("drift_alert.acknowledged", alert_id=alert_id, by=acknowledged_by)
                 return {"acknowledged": True, "alert_id": alert_id}
             else:
                 return {"acknowledged": False, "reason": "alert_not_found"}
-    
+
     except Exception as e:
         logger.error("drift_alert.acknowledge_failed", error=str(e), alert_id=alert_id)
         return {"acknowledged": False, "reason": str(e)}

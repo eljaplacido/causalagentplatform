@@ -17,29 +17,19 @@ Tests:
 
 from __future__ import annotations
 
-from datetime import datetime
 from uuid import uuid4
 
 import pytest
 
-from src.agents.base import BaseAgent, MAX_CYCLES, HALLUCINATION_THRESHOLD
+from src.agents.base import MAX_CYCLES, BaseAgent
 from src.exceptions import CircuitBreakerError, GuardianBlockedError
 from src.semantic_layer.models import (
-    Assumption,
-    AssumptionType,
-    CynefinDomain,
-    EdgeProposal,
-    EdgeType,
     CausalObjectRef,
-    ElicitedFrom,
+    CynefinDomain,
+    EdgeType,
     EpistemicState,
     GuardianVerdict,
-    ReasoningStep,
-    ToolCall,
-    UserRef,
 )
-from tests.conftest import make_epistemic_state
-
 
 # ── 1. Initial state is DISORDER domain ──────────────────────────────────────
 
@@ -470,7 +460,7 @@ def test_epistemic_state_confidence_bounds() -> None:
 
 def test_causal_edge_no_self_loop() -> None:
     """CausalEdge must reject self-loop (source == target)."""
-    from src.semantic_layer.models import CausalEdge, CausalObjectRef, EdgeType
+    from src.semantic_layer.models import CausalEdge
 
     same_id = uuid4()
     with pytest.raises(Exception):

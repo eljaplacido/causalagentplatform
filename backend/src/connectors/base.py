@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
@@ -48,7 +48,7 @@ class DomainEvent:
         payload: dict[str, Any],
         source: str,
         version: str = "1.0",
-    ) -> "DomainEvent":
+    ) -> DomainEvent:
         """Factory: generates a new event_id and current timestamp."""
         return cls(
             event_id=str(uuid4()),
@@ -57,7 +57,7 @@ class DomainEvent:
             event_type=event_type,
             payload=payload,
             source=source,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             version=version,
         )
 
@@ -96,7 +96,7 @@ class ConnectorHealthResult:
     error_message: str | None
     fields_missing: list[str] = field(default_factory=list)
     checked_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.now(UTC).isoformat()
     )
 
 

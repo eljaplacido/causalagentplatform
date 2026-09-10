@@ -25,7 +25,6 @@ from src.skills.drift_detect import (
     drift_detect,
 )
 
-
 pytestmark = pytest.mark.asyncio
 
 
@@ -35,9 +34,9 @@ pytestmark = pytest.mark.asyncio
 def test_kl_divergence_identical_distributions() -> None:
     """KL divergence between identical distributions should be ~0."""
     data = [1.0, 2.0, 3.0, 4.0, 5.0] * 10
-    
+
     kl = _compute_kl_divergence(data, data)
-    
+
     assert kl < 0.01  # Should be very close to 0
 
 
@@ -45,9 +44,9 @@ def test_kl_divergence_different_distributions() -> None:
     """KL divergence between different distributions should be > 0."""
     reference = [1.0, 2.0, 3.0, 4.0, 5.0] * 10
     current = [10.0, 11.0, 12.0, 13.0, 14.0] * 10
-    
+
     kl = _compute_kl_divergence(reference, current)
-    
+
     assert kl > 0.1  # Should be significantly > 0
 
 
@@ -55,7 +54,7 @@ def test_kl_divergence_empty_data() -> None:
     """KL divergence with empty data should handle gracefully."""
     reference = [1.0, 2.0, 3.0]
     current: list[float] = []
-    
+
     # Should not raise, returns 0 or handles gracefully
     result = _compute_kl_divergence(reference, current)
     assert isinstance(result, float)
@@ -68,9 +67,9 @@ def test_js_divergence_bounded() -> None:
     """Jensen-Shannon divergence should be bounded [0, 1]."""
     reference = [1.0, 2.0, 3.0, 4.0, 5.0] * 10
     current = [10.0, 11.0, 12.0, 13.0, 14.0] * 10
-    
+
     js = _compute_js_divergence(reference, current)
-    
+
     assert 0.0 <= js <= 1.0
 
 
@@ -80,7 +79,7 @@ def test_js_divergence_bounded() -> None:
 async def test_drift_detect_no_data() -> None:
     """Drift detection with no data should return safe defaults."""
     result = await drift_detect({}, {})
-    
+
     assert result["kl_divergence"] == 0.0
     assert result["drifted_features"] == []
     assert result["drift_type"] == "none"
@@ -96,13 +95,13 @@ async def test_drift_detect_with_drift() -> None:
         "feature_a": [1.0, 2.0, 3.0, 4.0, 5.0] * 20,  # Same
         "feature_b": [10.0, 11.0, 12.0, 13.0, 14.0] * 20,  # Different
     }
-    
+
     result = await drift_detect(
         reference_data=reference_data,
         current_data=current_data,
         kl_threshold=0.1,
     )
-    
+
     assert "feature_b" in result["drifted_features"]
     assert result["drift_type"] in ["distribution", "severe_distribution"]
 
@@ -116,9 +115,9 @@ def test_semantic_drift_no_changes() -> None:
         "entity_1": "This is a service entity representing user authentication",
         "entity_2": "This is a metric entity for response time",
     }
-    
+
     result = detect_semantic_drift(definitions, definitions)
-    
+
     assert result["semantic_drift"] is False
     assert result["avg_similarity"] == 1.0
     assert result["drifted_count"] == 0
@@ -132,9 +131,9 @@ def test_semantic_drift_modified_entity() -> None:
     current = {
         "entity_1": "This is a database entity representing user profiles",
     }
-    
+
     result = detect_semantic_drift(reference, current)
-    
+
     assert result["semantic_drift"] is True
     assert result["drifted_count"] == 1
     assert result["drifted_entities"][0]["change_type"] == "modified"
@@ -149,9 +148,9 @@ def test_semantic_drift_removed_entity() -> None:
     current = {
         "entity_1": "Service entity",
     }
-    
+
     result = detect_semantic_drift(reference, current)
-    
+
     assert result["semantic_drift"] is True
     assert any(e["change_type"] == "removed" for e in result["drifted_entities"])
 
@@ -165,9 +164,9 @@ def test_semantic_drift_added_entity() -> None:
         "entity_1": "Service entity",
         "entity_2": "New metric entity",
     }
-    
+
     result = detect_semantic_drift(reference, current)
-    
+
     assert result["semantic_drift"] is True
     assert any(e["change_type"] == "added" for e in result["drifted_entities"])
 
@@ -181,7 +180,7 @@ async def test_causal_drift_no_edges() -> None:
         reference_graph_edges=[],
         current_data_correlations={},
     )
-    
+
     assert result["causal_drift"] is False
     assert result["drifted_count"] == 0
 
@@ -200,13 +199,13 @@ async def test_causal_drift_dropped_correlation() -> None:
     correlations = {
         "service_a->service_b": 0.2,  # Dropped significantly
     }
-    
+
     result = await detect_causal_drift(
         reference_graph_edges=edges,
         current_data_correlations=correlations,
         correlation_threshold=0.5,
     )
-    
+
     assert result["causal_drift"] is True
     assert result["drifted_count"] == 1
 
@@ -225,13 +224,13 @@ async def test_causal_drift_stable_correlation() -> None:
     correlations = {
         "service_a->service_b": 0.75,  # Still strong
     }
-    
+
     result = await detect_causal_drift(
         reference_graph_edges=edges,
         current_data_correlations=correlations,
         correlation_threshold=0.5,
     )
-    
+
     assert result["causal_drift"] is False
     assert result["drifted_count"] == 0
 
@@ -242,7 +241,7 @@ async def test_causal_drift_stable_correlation() -> None:
 def test_concept_drift_no_labels() -> None:
     """Concept drift with no labels should return safe defaults."""
     result = detect_concept_drift([], [])
-    
+
     # Should handle gracefully
     assert isinstance(result, dict)
 
@@ -250,9 +249,9 @@ def test_concept_drift_no_labels() -> None:
 def test_concept_drift_same_distribution() -> None:
     """Concept drift with same label distribution should return no drift."""
     labels = [0, 1, 0, 1, 0, 1, 0, 1] * 10
-    
+
     result = detect_concept_drift(labels, labels)
-    
+
     # Same distribution should have high p-value (no drift)
     assert result["p_value"] > 0.05
     assert result["concept_drift"] is False
@@ -262,9 +261,9 @@ def test_concept_drift_different_distribution() -> None:
     """Concept drift with different label distribution should detect drift."""
     reference = [0] * 80 + [1] * 20  # 80% class 0
     current = [0] * 20 + [1] * 80    # 80% class 1
-    
+
     result = detect_concept_drift(reference, current)
-    
+
     # Different distribution should indicate drift
     assert result["concept_drift"] is True
     assert result["p_value"] < 0.05
@@ -279,7 +278,7 @@ def test_severity_low() -> None:
         kl_divergence=0.05,
         drifted_features=[],
     )
-    
+
     assert result["severity"] == "LOW"
     assert result["score"] < 25
 
@@ -290,7 +289,7 @@ def test_severity_medium() -> None:
         kl_divergence=0.2,
         drifted_features=["feature_1"],
     )
-    
+
     assert result["severity"] == "MEDIUM"
     assert 25 <= result["score"] < 50
 
@@ -301,7 +300,7 @@ def test_severity_high() -> None:
         kl_divergence=0.4,
         drifted_features=["feature_1", "feature_2"],
     )
-    
+
     assert result["severity"] == "HIGH"
     assert 50 <= result["score"] < 75
 
@@ -312,7 +311,7 @@ def test_severity_critical() -> None:
         kl_divergence=0.8,
         drifted_features=["f1", "f2", "f3", "f4", "f5", "f6"],
     )
-    
+
     assert result["severity"] == "CRITICAL"
     assert result["score"] >= 75
 
@@ -329,7 +328,7 @@ def test_severity_boosted_by_structural() -> None:
         drifted_features=["feature_1"],
         structural_drift=True,
     )
-    
+
     assert boosted["score"] > base["score"]
 
 
@@ -345,7 +344,7 @@ def test_severity_boosted_by_semantic() -> None:
         drifted_features=["feature_1"],
         semantic_drift=True,
     )
-    
+
     assert boosted["score"] > base["score"]
 
 
@@ -361,7 +360,7 @@ def test_severity_boosted_by_concept() -> None:
         drifted_features=["feature_1"],
         concept_drift=True,
     )
-    
+
     assert boosted["score"] > base["score"]
 
 
@@ -375,5 +374,5 @@ def test_severity_many_features() -> None:
         kl_divergence=0.2,
         drifted_features=[f"feature_{i}" for i in range(10)],
     )
-    
+
     assert many["score"] >= base["score"]

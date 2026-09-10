@@ -10,10 +10,8 @@ Uses in-memory SQLite via db_engine fixture and bypasses Firebase auth.
 
 from __future__ import annotations
 
-import hashlib
-import json
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from unittest.mock import AsyncMock, patch
 
@@ -52,7 +50,7 @@ async def gov_client(db_engine: object):
 
 def _utc_naive() -> str:
     """UTC datetime as naive ISO string (no timezone suffix)."""
-    return datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
+    return datetime.now(UTC).replace(tzinfo=None).isoformat()
 
 
 # ── POST /check ───────────────────────────────────────────────────────────────

@@ -193,7 +193,7 @@ class ChangeImpactAgent(BaseAgent):
         requires_human = state.requires_human_review or bool(slo_violations) or overall_risk_tier in ("HIGH", "CRITICAL")
 
         explanation_parts = [
-            f"Change impact assessment complete.",
+            "Change impact assessment complete.",
             f"{len(affected_paths)} causal path(s) traced.",
             f"{len(downstream_outcomes)} downstream outcome(s) evaluated.",
         ]
@@ -419,9 +419,7 @@ class ChangeImpactAgent(BaseAgent):
             confidence = float(estimate.get("confidence", 0.0))
             lower_outcome = outcome.lower()
 
-            if any(keyword in lower_outcome for keyword in ("latency", "error", "timeout", "availability")) and magnitude >= 0.25:
-                slo_violations.append(f"{outcome} projected effect {magnitude:.2f}")
-            elif any(keyword in lower_outcome for keyword in ("cpu", "memory", "saturation")) and magnitude >= 0.4:
+            if any(keyword in lower_outcome for keyword in ("latency", "error", "timeout", "availability")) and magnitude >= 0.25 or any(keyword in lower_outcome for keyword in ("cpu", "memory", "saturation")) and magnitude >= 0.4:
                 slo_violations.append(f"{outcome} projected effect {magnitude:.2f}")
 
             if magnitude >= 0.6 or (magnitude >= 0.35 and confidence >= 0.75):

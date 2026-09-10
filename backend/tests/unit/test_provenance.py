@@ -13,21 +13,8 @@ Tests:
 
 from __future__ import annotations
 
-from typing import Any
 from uuid import uuid4
 
-import pytest
-
-from src.semantic_layer.provenance import (
-    LLMCapability,
-    LLMInvocation,
-    LLMProvider,
-    ProvenanceGapStatus,
-    ProvenanceGraph,
-    ProvenanceLink,
-    ProvenanceRecord,
-    ProvenanceRecordType,
-)
 from src.api.provenance import (
     _build_links,
     _detect_gaps,
@@ -35,7 +22,15 @@ from src.api.provenance import (
     store_llm_invocation,
     store_provenance_record,
 )
-
+from src.semantic_layer.provenance import (
+    LLMCapability,
+    LLMInvocation,
+    LLMProvider,
+    ProvenanceGapStatus,
+    ProvenanceGraph,
+    ProvenanceRecord,
+    ProvenanceRecordType,
+)
 
 # ── LLMInvocation ─────────────────────────────────────────────────────────────
 

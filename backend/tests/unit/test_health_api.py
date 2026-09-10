@@ -6,7 +6,6 @@ Tests the comprehensive health router with mocked Neo4j, sensors, and alert emit
 
 from __future__ import annotations
 
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -16,11 +15,11 @@ from src.api.health import (
     _check_alerts,
     _check_neo4j,
     _check_sensors,
+    health_alerts,
     health_check,
+    health_drift_monitor,
     health_neo4j,
     health_sensors,
-    health_alerts,
-    health_drift_monitor,
     set_alert_emitter,
     set_drift_sensor,
 )

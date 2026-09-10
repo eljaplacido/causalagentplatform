@@ -12,10 +12,7 @@ Tests:
 
 from __future__ import annotations
 
-from typing import Any
 from uuid import uuid4
-
-import pytest
 
 from src.semantic_layer.contracts import (
     ConsumerType,
@@ -31,7 +28,6 @@ from src.semantic_layer.contracts import (
     ViolationSeverity,
     ViolationType,
 )
-
 
 # ── FreshnessSLA ──────────────────────────────────────────────────────────────
 

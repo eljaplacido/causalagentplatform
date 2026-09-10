@@ -14,30 +14,21 @@ Marked with @pytest.mark.guardian for selective CI execution.
 
 from __future__ import annotations
 
-import hashlib
-import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
-import pytest_asyncio
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.exceptions import GuardianBlockedError
 from src.semantic_layer.models import (
-    CausalEdge,
-    CausalObjectRef,
     CynefinDomain,
-    EdgeDirection,
-    EdgeType,
-    EpistemicState,
     GuardianVerdict,
 )
 from tests.conftest import make_causal_edge, make_epistemic_state
-
 
 pytestmark = pytest.mark.guardian
 
@@ -80,7 +71,7 @@ async def test_semantic_layer_write_blocked_without_verdict(
                 "src": str(uuid4()),
                 "tgt": str(uuid4()),
                 "verdict_ref": fake_verdict_id,
-                "ts": datetime.now(timezone.utc).isoformat(),
+                "ts": datetime.now(UTC).isoformat(),
             },
         )
         # SQLite deferred FK — commit triggers the constraint
@@ -134,7 +125,7 @@ async def test_semantic_layer_write_succeeds_with_approved_verdict(
             "src": str(uuid4()),
             "tgt": str(uuid4()),
             "verdict_ref": str(approved_audit_entry_id),
-            "ts": datetime.now(timezone.utc).isoformat(),
+            "ts": datetime.now(UTC).isoformat(),
         },
     )
     await db_session.commit()
@@ -157,7 +148,6 @@ async def test_guardian_rejected_blocks_semantic_write(
     From TESTING_CICD.md §4.1:
         'A REJECTED Guardian verdict must prevent the action from completing.'
     """
-    from src.semantic_layer.registry import SemanticLayerRegistry
 
     edge = make_causal_edge(rejected_audit_entry_id)
 
@@ -182,7 +172,6 @@ async def test_guardian_missing_verdict_blocks_semantic_write(
     Attempting to call registry.propose_draft() with a verdict_id that does
     not exist in audit_log must raise GuardianBlockedError.
     """
-    from src.semantic_layer.registry import SemanticLayerRegistry
 
     nonexistent_verdict = uuid4()
     edge = make_causal_edge(nonexistent_verdict)
@@ -223,9 +212,10 @@ async def test_audit_log_no_update(
     # In SQLite test env, the trigger is not present — we verify via application
     # invariant: GovernanceAgent never issues UPDATE on audit_log.
     # We also verify the GovernanceAgent._write_audit_entry only uses INSERT.
-    from src.agents.governance import GovernanceAgent
     import inspect
     import re
+
+    from src.agents.governance import GovernanceAgent
 
     source = inspect.getsource(GovernanceAgent._write_audit_entry)
     assert re.search(r"UPDATE\s+audit_log", source, re.IGNORECASE) is None, (
@@ -312,8 +302,9 @@ async def test_audit_log_no_delete(
     From TESTING_CICD.md §4.2:
         'DELETE on audit_log table must be rejected.'
     """
-    from src.agents.governance import GovernanceAgent
     import inspect
+
+    from src.agents.governance import GovernanceAgent
 
     # Static analysis: no DELETE in governance agent source
     source = inspect.getsource(GovernanceAgent)

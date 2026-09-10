@@ -7,8 +7,6 @@ Tests environment detection, URL building, and singleton behaviour.
 from __future__ import annotations
 
 import os
-from pathlib import Path
-from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -20,7 +18,6 @@ from src.db.factory import (
     _postgres_url,
     _sqlite_url,
 )
-
 
 # ── _get_env ──────────────────────────────────────────────────────────────────
 

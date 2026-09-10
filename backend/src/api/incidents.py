@@ -16,7 +16,7 @@ this module joins them in on read so the UI rehydrates the post-decision state.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
@@ -74,7 +74,7 @@ async def save_incident(
     requires_human_review: bool,
 ) -> None:
     """Upsert an incident row. Idempotent on `id` (latest payload wins)."""
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     status_value = "ACTIVE" if requires_human_review else "INVESTIGATING"
 
     async with CloudSqlFactory.get_session_factory()() as session:

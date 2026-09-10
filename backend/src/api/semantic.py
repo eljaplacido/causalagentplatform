@@ -21,11 +21,10 @@ from uuid import UUID
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from src.agents.governance import GovernanceAgent
-from src.exceptions import GuardianBlockedError, ObjectNotFoundError
+from src.exceptions import ObjectNotFoundError
 from src.middleware.auth import get_current_user
 from src.semantic_layer.models import (
     ApprovalStatus,

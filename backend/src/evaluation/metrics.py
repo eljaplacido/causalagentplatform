@@ -12,9 +12,8 @@ These metrics fuel the evaluation dashboard and experience buffer.
 
 from __future__ import annotations
 
-import time
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import structlog
@@ -79,7 +78,7 @@ def compute_decision_quality(
     else:
         trend = "declining"
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     start = (now - timedelta(days=period_days)).isoformat()
 
     return DecisionQualityIndex(

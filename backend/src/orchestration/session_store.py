@@ -9,7 +9,7 @@ resume/read paths, but durable recovery now survives process restarts.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import structlog
 from sqlalchemy import text
@@ -42,7 +42,7 @@ class SessionStateStore:
 
     async def save(self, state: EpistemicState, user_id: str | None = None) -> None:
         """Upsert the latest EpistemicState snapshot for the session."""
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         payload = json.dumps(state.model_dump(mode="json"), sort_keys=True)
 
         async with CloudSqlFactory.get_session_factory()() as session:

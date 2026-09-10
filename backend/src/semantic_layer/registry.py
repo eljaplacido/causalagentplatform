@@ -22,14 +22,13 @@ from __future__ import annotations
 
 import hashlib
 import json
-import logging
 from collections.abc import Sequence
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
 import structlog
-from sqlalchemy import select, text
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.factory import CloudSqlFactory
@@ -43,7 +42,6 @@ from src.semantic_layer.models import (
     FragmentApprovalStatus,
     GraphFragment,
     GuardianVerdict,
-    LineageRecord,
     ReviewStatus,
     UserRef,
 )
@@ -439,7 +437,7 @@ class SemanticLayerRegistry:
                         "version": draft.version,
                         "lineage": json.dumps([r.model_dump() for r in draft.lineage], default=str),
                         "domain": draft.domain,
-                        "created_at": datetime.now(timezone.utc).isoformat(),
+                        "created_at": datetime.now(UTC).isoformat(),
                     },
                 )
 
@@ -578,7 +576,7 @@ class SemanticLayerRegistry:
                 session, verdict_id, context=f"promote_to_approved({object_type})"
             )
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             lineage_entry = json.dumps(
                 {
                     "step_type": "APPROVED",

@@ -13,13 +13,12 @@ Object types (DATA_LAYER.md §2):
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
-
 
 # ── Shared serialisation config (matches models.py) ────────────────────────────
 
@@ -90,7 +89,7 @@ class LLMInvocation(BaseModel):
     input_token_count: int = Field(0, ge=0)
     output_token_count: int = Field(0, ge=0)
     latency_ms: float = Field(0.0, ge=0.0)
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     context_window_truncated: bool = False
 
 
@@ -131,7 +130,7 @@ class ProvenanceRecord(BaseModel):
     session_id: str = Field(..., min_length=1)
     agent_id: str = Field(..., min_length=1)
     gap_status: ProvenanceGapStatus = ProvenanceGapStatus.COMPLETE
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 # ── Provenance Graph (aggregate export view) ────────────────────────────────────

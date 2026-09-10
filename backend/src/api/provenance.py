@@ -9,13 +9,12 @@ Endpoints:
 
 from __future__ import annotations
 
-import json
 from typing import Any
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel
 
 from src.middleware.auth import get_current_user
 from src.semantic_layer.provenance import (

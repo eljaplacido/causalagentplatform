@@ -14,13 +14,11 @@ Object types (DATA_LAYER.md §2):
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-
 
 # ── Shared serialisation config ────────────────────────────────────────────────
 
@@ -151,7 +149,7 @@ class DataContract(BaseModel):
     semantic_bindings: list[SemanticBinding] = Field(default_factory=list)
     enforcement_mode: ContractEnforcementMode = ContractEnforcementMode.WARN
     version: str = Field(default="1.0.0")
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     @field_validator("enforcement_mode", mode="before")
     @classmethod
@@ -179,7 +177,7 @@ class ContractViolation(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     contract_ref: UUID
     violation_type: ViolationType
-    detected_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    detected_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     detail: str = Field(..., min_length=1)
     blocked: bool = False
     audit_entry_ref: UUID | None = None

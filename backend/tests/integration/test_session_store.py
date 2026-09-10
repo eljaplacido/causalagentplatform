@@ -8,8 +8,8 @@ import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
-from src.api.main import app
 from src.api import session as session_api
+from src.api.main import app
 
 pytestmark = pytest.mark.asyncio
 

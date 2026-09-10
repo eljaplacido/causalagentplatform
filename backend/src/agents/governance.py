@@ -24,7 +24,7 @@ import hashlib
 import json
 import os
 from abc import ABCMeta
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -33,9 +33,8 @@ from sqlalchemy import text
 
 from src.agents.base import HALLUCINATION_THRESHOLD, BaseAgent
 from src.db.factory import CloudSqlFactory
-from src.exceptions import AuditWriteError, GuardianBlockedError
+from src.exceptions import AuditWriteError
 from src.semantic_layer.models import (
-    AuditEntry,
     CynefinDomain,
     EpistemicState,
     GuardianVerdict,
@@ -464,7 +463,7 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
                         "verdict": verdict.value if hasattr(verdict, "value") else str(verdict),
                         "rules": json.dumps(list(policy_rules_cited)),
                         "session_id": session_id,
-                        "created_at": datetime.now(timezone.utc).isoformat(),
+                        "created_at": datetime.now(UTC).isoformat(),
                     },
                 )
                 await session.commit()

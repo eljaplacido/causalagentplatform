@@ -30,7 +30,6 @@ import structlog
 from src.semantic_layer.models import (
     EpistemicState,
     Recommendation,
-    SimulationResult,
 )
 
 log = structlog.get_logger(__name__)

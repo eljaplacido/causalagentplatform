@@ -20,10 +20,11 @@ Or as a dependency on individual routes:
 from __future__ import annotations
 
 import os
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import structlog
-from fastapi import Request, HTTPException
+from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response
@@ -84,7 +85,7 @@ def _get_firebase_app() -> Any:
 
     try:
         import firebase_admin
-        from firebase_admin import credentials, auth as firebase_auth  # noqa: F401
+        from firebase_admin import credentials  # noqa: F401
 
         if not firebase_admin._apps:  # type: ignore[attr-defined]
             # Try explicit credentials file first
