@@ -12,12 +12,12 @@ EpistemicState constraints enforced:
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 import numpy as np
+import structlog
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # Try to import scipy for statistical tests
 try:

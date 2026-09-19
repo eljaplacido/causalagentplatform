@@ -10,11 +10,12 @@ EpistemicState constraints enforced:
 
 from __future__ import annotations
 
-import logging
 import math
 from typing import Any
 
-logger = logging.getLogger(__name__)
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 # Try to import sensitivity analysis libraries
 try:
