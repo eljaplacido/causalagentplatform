@@ -33,7 +33,7 @@ max_steps_total = 160
 # Widen this the moment it is wrong for your repo. A scope that refuses work
 # you actually wanted is a scope you will delete in frustration; a scope that
 # matches your layout is one you keep.
-tools = ["read", "glob", "grep", "compute", "todo", "note", "task", "write", "skill"]
+tools = ["read", "glob", "grep", "compute", "todo", "note", "task", "write", "skill", "mcp__causal"]
 # Which roles this one may hand work to. A sub-turn runs with the TARGET
 # role's tools, so this line -- not the one above -- bounds what delegation
 # can cause. Omit it and any role is reachable. An empty list forbids it.
@@ -42,8 +42,16 @@ task_allow = ["implementor", "verifier"]
 # through its own path, and accepting one is a human act that changes the
 # surface hash. Letting a role reach .gnomon/skills/ with plain write would
 # let it grant itself a standing instruction and skip that entirely.
-write_allow = ["docs/**", "specs/**", "*.md"]
-description = "Intent and contracts: turns a request into a spec"
+#
+# For this repository: specs and prose (docs/, specs/), contracts and the
+# declared-not-implemented register (conformance/), and a benchmark's
+# pre-registration -- written BEFORE results exist, which is the whole point of
+# one (gnomon's benchmark-discipline, rule 6). Not the root *.md the scaffold
+# allowed: README.md carries status claims, and changing those is a reviewed
+# edit by the implementor alongside the evidence, not a planning side effect.
+# `**/` matches zero directories too, so benchmarks/PRE-REGISTRATION.md is in.
+write_allow = ["docs/**", "specs/**", "conformance/**", "benchmarks/**/PRE-REGISTRATION.md"]
+description = "Intent and contracts: turns a request into a spec, a contract, or a declared_not_implemented entry"
 
 [roles.implementor]
 model = "qwen3.6:35b"
@@ -52,7 +60,21 @@ temperature = 0.3
 top_p = 0.95
 max_steps = 32
 max_steps_total = 256
-tools = ["read", "glob", "grep", "compute", "todo", "note", "write", "edit", "bash"]
+tools = ["read", "glob", "grep", "compute", "todo", "note", "write", "edit", "bash", "mcp__causal"]
+# Where this role may write: the source trees, the gate scripts and their
+# baselines, and the docs and register it must keep true alongside the code.
+# Not .github/** (CI workflow changes get a human), not the root compose and
+# launcher files, not .gitignore. Widen it the moment it refuses real work.
+#
+# A ratchet baseline (scripts/*-baseline.json, scripts/coverage-floor.json) IS
+# writable -- lowering one to lock a gain in is expected work. Raising one is
+# caught by the scripts themselves, against the merge base, unless the commit
+# says why with a `Ratchet-Exempt:` line. That is where that control lives; a
+# path scope cannot express "may lower but not raise".
+write_allow = [
+  "backend/**", "frontend/**", "packages/**", "scripts/**", "conformance/**",
+  "docs/**", "specs/**", "benchmarks/**", "prompts/**", "templates/**", "README.md",
+]
 # Operations whose damage is neither local nor undoable by re-running
 # something. This role has unrestricted bash by necessity — it runs builds,
 # installers and suites nobody can enumerate ahead of time — so the guardrail
@@ -73,7 +95,7 @@ bash_deny = [
   '\bgit\s+branch\b[^|;&]*\s(-D\b|--delete\b|-d\b[^|;&]*--force\b)',
 ]
 
-description = "Tests first, then the code that satisfies them"
+description = "Tests first (against a known ground truth for any causal number), then the code that satisfies them"
 
 [roles.verifier]
 model = "qwen3.6:35b"
@@ -84,32 +106,54 @@ max_steps = 20
 max_steps_total = 160
 # No write, no edit. A verifier that can edit can make a failing suite pass
 # by changing the suite, so the capability is simply absent.
-tools = ["read", "glob", "grep", "compute", "todo", "note", "bash"]
+#
+# mcp__causal is here so the verifier can re-derive a causal number the
+# implementor reported, from the tool, instead of trusting the transcript.
+tools = ["read", "glob", "grep", "compute", "todo", "note", "bash", "mcp__causal"]
 # 'bash' can write anything, so 'tools' alone cannot make this role
-# read-only. This list is what actually constrains it: the suite can be run,
+# read-only. This list is what actually constrains it: the gates can be run,
 # nothing else. Remove it and the verifier can alter what it judges.
+#
+# For this repository, exactly the gate commands. gnomon checks EVERY segment of
+# a compound command against this list (and refuses substitution and
+# redirection outright), so `cd backend && .venv/bin/pytest -q` needs the `cd`
+# segment admitted too -- pytest and mypy find their config from backend/, and
+# npx resolves the frontend's tools from frontend/. `cd` alone changes nothing.
+#
+# What this does NOT make true, stated plainly: "the verifier cannot write".
+# .gnomon/ci.sh and the test runners write caches and logs (.gnomon-out/ci/,
+# backend/.coverage, .mypy_cache, .ruff_cache, frontend/tsconfig.tsbuildinfo),
+# and pytest executes test code, which can write anything. The bound is "may run
+# the gates and nothing else", not "has no effect on disk".
+#
+# KNOWN STARTUP WARNING, left standing on purpose. gnomon 0.2.3's surface audit
+# warns that the first entry "admits a shell (runs anything)": it matches the
+# pattern TEXT against /\b(sh|bash|...)\b/ (its message says NOT VERIFIED), and
+# the `.sh` extension trips it. The entry is anchored to exactly two files this
+# role cannot edit. The remedy the warning offers -- bash_deny '\b(sh|bash|...)\b'
+# -- would also deny `.gnomon/ci.sh` itself, since deny wins over allow, so it
+# is not applied; and rewriting the pattern to dodge the auditor's regex would
+# be gaming a check, not satisfying it.
 bash_allow = [
-  # 'python -m pytest' used to be here. It named an interpreter, and an
-  # allow-list of program NAMES does not bound a role by the names it appears
-  # to: 'python -m anything' matched the same entry. gnomon's own startup audit
-  # said so on every launch of every project init had just created -- the
-  # shipped starter surface failed the auditor it ships with, which teaches a
-  # new user that the yellow text is noise. 'pytest' on its own runs the same
-  # suite and names no interpreter.
-  '^(cargo|pnpm|npm|yarn|pytest|go|make)\s',
-  '^(ls|cat|head|tail|grep|rg|find|git (status|diff|log|show))\s',
+  '^\.gnomon/(ci|verify)\.sh$',
+  '^(backend/)?\.venv/bin/(pytest|ruff|mypy)(\s|$)',
+  '^npx (--no-install )?tsc --noEmit(\s|$)',
+  '^npx (--no-install )?vitest run(\s|$)',
+  '^npx (--no-install )?eslint(\s|$)',
+  '^cd (backend|frontend)$',
 ]
 bash_deny = [
-  # find is on the allow-list for reading the tree, but -exec/-delete/-fprintf
-  # turn it into an arbitrary write. Measured: a verifier described as "Cannot
-  # write" created and deleted files through all three.
+  # The scaffold's list, kept: deny wins over allow, so these hold even if
+  # someone widens bash_allow later.
   '-exec', '-execdir', '-ok', '-okdir', '-delete', '-fprint',
   '\bxargs\b',
-  # Deny wins over allow, so this holds even if someone widens bash_allow
-  # later. A role that "cannot write" must not reach a language runtime.
+  # A role that "cannot write" must not reach a language runtime.
   '\b(awk|gawk|perl|python3?|ruby|node)\b',
+  # Flags that turn an allowed CHECK into a WRITE to source: ruff/eslint --fix,
+  # ruff format, vitest snapshot update, --write of any kind.
+  '--fix\b', '\bruff\s+format\b', '\bvitest\b[^|;&]*\s(-u|--update)\b', '--write\b',
 ]
-description = "Runs the suite and reports. Cannot write."
+description = "Runs .gnomon/ci.sh and reports what it measured. Cannot edit what it judges."
 
 # ── General-purpose roles ──────────────────────────────────────────────────
 
@@ -120,7 +164,7 @@ temperature = 0.2
 top_p = 0.9
 max_steps = 20
 max_steps_total = 160
-tools = ["read", "glob", "grep", "compute", "todo", "note", "task", "bash"]
+tools = ["read", "glob", "grep", "compute", "todo", "note", "task", "bash", "mcp__causal"]
 task_allow = ["implement", "critique"]
 # Measured, 2026-09-02: this role holds `bash` and the scaffold gave it no
 # bash_deny, so the guard in tools.ts is skipped outright --
@@ -151,7 +195,7 @@ top_p = 0.95
 max_steps = 28
 # Stated explicitly. An omitted list means every declared tool, which handed
 # this role `skill` as well and made "the coordinator authors skills" untrue.
-tools = ["read", "glob", "grep", "compute", "todo", "note", "write", "edit", "bash"]
+tools = ["read", "glob", "grep", "compute", "todo", "note", "write", "edit", "bash", "mcp__causal"]
 max_steps_total = 224
 # Operations whose damage is neither local nor undoable by re-running
 # something. This role has unrestricted bash by necessity — it runs builds,
@@ -182,7 +226,7 @@ temperature = 0.1
 top_p = 0.9
 max_steps = 16
 max_steps_total = 128
-tools = ["read", "glob", "grep", "compute", "todo", "note", "bash"]
+tools = ["read", "glob", "grep", "compute", "todo", "note", "bash", "mcp__causal"]
 # Measured, 2026-09-02: this role holds `bash` and the scaffold gave it no
 # bash_deny, so the guard in tools.ts is skipped outright --
 # `if (ctx.bashDeny && ctx.bashDeny.length > 0)`. Every spelling the

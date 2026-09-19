@@ -1,6 +1,13 @@
 # gnomon configuration — the active surface.
 # Everything that governs behaviour lives in .gnomon/ and is content-hashed.
 # No machine-scoped config: if it changes what the agent does, it belongs here.
+#
+# This surface belongs to the Causal Platform (Python 3.12 backend in backend/,
+# Next.js frontend in frontend/, TS types in packages/semantic-types/). It was
+# scaffolded by `gnomon init` (commit 6cbbd0c, unmodified) and adapted in the
+# commit after it, so `git diff 6cbbd0c -- .gnomon/` is the whole adaptation.
+# What changed here: [chain] runs coordinator -> implementor -> verifier and
+# gates on the declared check; [audit] is on.
 
 [defaults]
 edit_format = "str_replace"       # ast (INERT) | hashline (INERT) | str_replace
@@ -97,7 +104,15 @@ converge_refire = 6          # calls between convergence re-pushes once converge
 # before it REPORTED, never its transcript.
 #
 # An explicit --role or /role prefix overrides the chain entirely.
-# stages = ["plan", "implement", "critique"]
+#
+# This repository runs the specify -> implement -> verify loop as a chain:
+#   coordinator  turns the request into a spec, a contract or a
+#                declared_not_implemented entry (write_allow keeps it to docs/,
+#                specs/, conformance/ and benchmark pre-registrations);
+#   implementor  writes the test first, then the code;
+#   verifier     runs .gnomon/ci.sh and reports -- it holds no write/edit and a
+#                bash_allow that admits the gate commands only.
+stages = ["coordinator", "implementor", "verifier"]
 
 # What stops a chain early. One dial, three positions, each strictly stronger:
 #
@@ -114,7 +129,14 @@ converge_refire = 6          # calls between convergence re-pushes once converge
 # "this is wrong" in prose still exits 0, and reading its sentence would be
 # instruction, not capability. What stops the chain is a check that RAN and
 # failed. Declare [verify] command in policy.toml to give it something to read.
-gate = "never"
+#
+# on_check here: policy.toml declares [verify] command = ".gnomon/verify.sh", so
+# an implementor turn whose writes break ruff's hard-error rules, the ruff
+# ratchet, or the unit/guardian suites stops the chain before the verifier is
+# asked to look. The verifier stage itself writes nothing, so [verify] (which
+# runs after a write) never fires for it: its verdict is its own bucket plus
+# the ci.sh output it reports, not a gate.
+gate = "on_check"
 
 [endpoints.local]
 # Where inference goes lives in the surface: routing is part of what a checkout
@@ -251,7 +273,13 @@ why = "cheap, high volume"
 #
 # It is not a compliance claim. Whether a deployment satisfies any particular
 # regulation depends on the deployment.
-enabled = false
+#
+# ON for this repository. The platform's own subject is governed, audited
+# decisions; an agent working on it without a trail would be the one unaudited
+# actor in the room. And gnomon's benchmark-discipline notes record what a
+# trail that ships disabled costs: four post-mortems of one campaign, four
+# different diagnoses, all refuted, because nothing had been recorded.
+enabled = true
 
 # Outside .gnomon/ on purpose: the surface is content-hashed, so a log written
 # inside it would change the surface hash on every turn.
@@ -270,6 +298,31 @@ redact = ['(api[_-]?key|token|secret|password)\s*[:=]\s*\S+']
 
 # Chain each record to the previous by hash, so alteration is detectable.
 chain = true
+
+# [audit.attest] -- an anchor OUTSIDE the trail. NOT ENABLED, and deliberately
+# left as a comment rather than an empty block.
+#
+# Hash chaining proves a trail is internally consistent, not that it is the
+# trail that was written: rewrite a record, recompute every hash after it, and
+# `gnomon audit verify` still says intact. [audit.attest] closes that by having
+# an EXTERNAL signer sign the chain head; gnomon never holds the key. Declaring
+# the block is what turns it on, and gnomon (0.2.3) requires a usable `sign`
+# command -- a declared block without one is reported as a surface problem and
+# signs nothing. No signer is provisioned for this repository yet (no key, no
+# agent, no off-box head store), so declaring it now would be a control that
+# reads as present and does nothing. Two further limits, from gnomon's README:
+# `gnomon audit verify` checks the chain only, never signatures; and whoever can
+# write the trail can usually delete individual head lines unnoticed unless a
+# head copy is kept off-box.
+#
+# When a signer exists, uncomment and point `sign` at it:
+#
+# [audit.attest]
+# sign = "./ops/sign-audit-head.sh"   # digest on stdin -> signature on stdout
+# public_key = "ops/audit-head.pub"   # PEM, for in-process verification
+# key_id = "causalplatform-audit-1"
+# algorithm = "ed25519"
+# every = 50                          # sign a head every 50 records (0 = only at seal)
 
 [ui]
 # What the terminal shows. Declared here so every checkout renders the same.

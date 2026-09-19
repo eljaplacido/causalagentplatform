@@ -82,3 +82,9 @@ goodprompts/
 # Claude Code local state (agent worktrees, per-machine settings)
 .claude/worktrees/
 .claude/settings.local.json
+
+# gnomon: sessions, audit trail, jobs and CI logs live OUTSIDE the hashed .gnomon/ surface
+.gnomon-sessions/
+.gnomon-audit/
+.gnomon-jobs/
+.gnomon-out/

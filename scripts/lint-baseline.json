@@ -1,0 +1,52 @@
+{
+  "_comment": [
+    "Maximum finding counts per tool. A ratchet: scripts/lint_ratchet.py fails when a",
+    "run finds MORE than max_findings, and fails when a commit RAISES max_findings",
+    "(against the merge base with main) without a `Ratchet-Exempt: <why>` trailer.",
+    "When a run finds fewer, lower the number in the same change to lock the gain in.",
+    "",
+    "Measured 2026-09-19 at commit abf97db, unchanged at a0e4951 (after the ruff safe autofixes and",
+    "the 3aecd16 MCP logging fix, which removed mypy's 20 call-arg errors):",
+    "  ruff  451 findings over 103 files -- ANN001 110, E501 98, ANN202 89, W293 43,",
+    "        ANN201 22, E402 19, ... (backend/: tests 260, src 163, scripts 28)",
+    "  mypy  46 errors in 18 files, 59 source files checked -- import-untyped 10,",
+    "        no-any-return 6, index 6, type-arg 5, unused-ignore 4, var-annotated 4, ...",
+    "",
+    "No eslint entry, on purpose. frontend/ has no eslint.config.* and eslint 9",
+    "refuses to run without one (exit 2 before inspecting a single file), so the CI",
+    "lint step has never inspected anything. .gnomon/ci.sh reports it SKIPPED with",
+    "that reason rather than inventing a rule set to measure. Whoever adds the config",
+    "adds an `eslint` entry here in the same change (tool = eslint, cwd = frontend,",
+    "args = [\"src/\"]); until then lint_ratchet.py refuses to run an undeclared entry.",
+    "",
+    "The args are the SAME ones the tool runs with here and in .gnomon/ci.sh, so the",
+    "number and the command that produced it cannot drift apart."
+  ],
+  "ruff": {
+    "max_findings": 451,
+    "measured_with": "ruff 0.15.12",
+    "cwd": "backend",
+    "args": [
+      "."
+    ]
+  },
+  "ruff-scripts": {
+    "_why": "The gate scripts themselves. Zero, and it stays zero: a gate whose own code does not lint is not one to trust. Ruff's default rule set (no project config at the repo root).",
+    "tool": "ruff",
+    "max_findings": 0,
+    "measured_with": "ruff 0.15.12",
+    "cwd": ".",
+    "args": [
+      "scripts/"
+    ]
+  },
+  "mypy": {
+    "max_findings": 46,
+    "measured_with": "mypy 1.20.2 (compiled: yes)",
+    "cwd": "backend",
+    "args": [
+      "src/",
+      "--strict"
+    ]
+  }
+}
