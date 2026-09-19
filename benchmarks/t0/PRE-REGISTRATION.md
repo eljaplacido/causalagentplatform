@@ -2,7 +2,7 @@
 
 **Suite:** T0, analytic structural causal models with closed-form truth
 **System under test:** `packages/causal-core` (`causal_core.analyze` and its parts)
-**Registered:** 2026-09-19, version 1
+**Registered:** 2026-09-19, version 2 (v1 the same day; see changelog)
 **Runs:** every PR (this configuration), via `pytest -m t0` in `packages/causal-core`
 
 ## Status of this document
@@ -70,7 +70,9 @@ continuous treatments. The cases cover every built-in strategy:
 
 - *False alarms:* the valid binary back-door designs.
 - *Power:* a confounder that enters the outcome nonlinearly, as Z², while the propensity is
-  correctly logistic-linear. Regression adjustment is then biased and AIPW is not.
+  correctly logistic-linear. Regression adjustment is then biased (by about 0.16) and AIPW is not.
+  - **Gated (v2):** at n = 50,000, a pre-computed power analysis predicts about 99% power (below).
+  - **Reported, not gated:** power at n = 2,000. v1 gated it, and it failed at 0.04 (see changelog).
 
 **Seeded defects.** Each defect is injected with a context manager in `causal_core/bench/defects.py`.
 The gate must fail under every one of them:
@@ -83,14 +85,14 @@ The gate must fail under every one of them:
 | `halved_se` | standard errors divided by 2 | coverage |
 | `leaky_estimator` | an estimator that uses the outcome to build its answer | placebo refuter |
 | `refuter_always_passes` | refuters report success without testing | refuter power |
-| `triangulation_disabled` | triangulation always reports agreement | triangulation power |
+| `triangulation_disabled` | triangulation always reports agreement | triangulation power at n = 50,000 |
 
 ## Statistics and pass bars
 
 ```toml
 [meta]
 suite = "T0"
-version = 1
+version = 2
 registered = "2026-09-19"
 
 [identification]
@@ -119,11 +121,13 @@ false_alarm_max = 0.075          # per refuter, pooled over valid designs
 power_min = 0.80                 # per planted violation
 
 [triangulation]
-n = 2000
+n = 2000                         # false alarms, and the reported (not gated) power
 reps = 200
 seed = 20260921
 false_alarm_max = 0.075
-power_min = 0.80
+power_min = 0.80                 # gated at power_n
+power_n = 50000
+power_reps = 200
 
 [seeded_defects]
 required = [
@@ -152,7 +156,7 @@ The Monte Carlo error is what the bars above account for.
 (for example AIPW and interacted regression under randomization), the standard error of their
 difference from influence functions is close to zero. Second-order noise would then read as
 disagreement. The difference's standard error is therefore floored at 0.25 × the smaller estimator
-SE (`TRIANGULATION_SE_FLOOR` in `causal_core/analyze.py`). The false-alarm and power bars above
+SE (`TRIANGULATION_SE_FLOOR` in `causal_core/pipeline.py`). The false-alarm and power bars above
 measure the consequences of that choice.
 
 ## Results
@@ -169,3 +173,26 @@ defect caught.
 ## Changelog
 
 - v1 (2026-09-19): initial registration.
+- v2 (2026-09-19): changed after the first v1 run, and for these reasons only:
+  1. **Triangulation power at n = 2,000 failed.** It was 0.04 against the 0.80 bar. The v1 result is
+     kept as `results/2026-09-19-v1-run1.json`.
+     - *Diagnosis:* regression adjustment is biased by +0.157, and its intervals cover the truth only
+       64% of the time. AIPW stays valid (94.3% coverage). But the standard error of the difference
+       between the two is about 0.13 at n = 2,000. A bias of about 1.2 standard errors of that
+       difference cannot be detected at the Holm-corrected level. This is a limit of any Hausman-type
+       comparison, not a bug.
+     - *The claim "triangulation detects moderate misspecification at moderate n" is withdrawn.* It is
+       recorded as not established in `conformance/declared_not_implemented.json`. Its power is still
+       reported.
+     - *What is gated instead:* power at a sample size fixed in advance by a power analysis. The
+       standard error of the difference scales as 1/√n, so it is about 0.026 at n = 50,000. The
+       minimum detectable bias is then (2.81 + 0.84) × 0.026 ≈ 0.095, which is below 0.157. The
+       predicted power is about 99%. That is a prediction, and the gate tests it.
+     - *Why the gate needs this:* without a gated power check, the `triangulation_disabled` defect is
+       caught only because power already fails. A defect "caught" by a check that fails anyway has
+       not been caught.
+  2. **A path reference changed.** `causal_core/analyze.py` became `causal_core/pipeline.py`: the
+     module was renamed because the re-exported `analyze` function shadowed it. The number and the
+     rule it names did not change.
+  Nothing else changed: no other threshold, case, coefficient or seed. The v1 run's other sections
+  passed and are in the v1 results file.

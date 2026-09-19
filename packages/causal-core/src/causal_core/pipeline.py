@@ -46,7 +46,7 @@ from causal_core.contract import (
 from causal_core.design import prepare
 from causal_core.estimators import Fit
 from causal_core.graph import Graph, GraphSyntaxError, as_causal_graph
-from causal_core.identify import (
+from causal_core.identification import (
     IdentificationError,
     IdentificationInconsistency,
     InvalidAdjustmentSet,
@@ -194,7 +194,7 @@ def analyze(
         return _analyze(
             data, graph, treatment, outcome, query, policy, query_fields, stage, prov, refuse
         )
-    except Exception as exc:  # noqa: BLE001 - the apparatus boundary
+    except Exception as exc:
         return ApparatusFailure(
             stage=stage.name,
             error_type=type(exc).__name__,
@@ -243,7 +243,7 @@ def _analyze(
         )
     try:
         frame = as_frame(data)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return refuse(AbstentionReason.INVALID_INPUT, f"cannot read data: {exc}", q=query)
     frame.columns = [str(c) for c in frame.columns]
     try:
@@ -348,7 +348,7 @@ def _analyze(
         rng = np.random.default_rng([policy.seed, i])
         try:
             fits.append(est.fit(d, policy, rng))
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             if i == 0:
                 raise
             warnings.append(f"secondary estimator {est.name} failed: {type(exc).__name__}: {exc}")

@@ -39,9 +39,9 @@ from causal_core.contract import (
     Tier,
 )
 from causal_core.graph import Graph
-from causal_core.identify.id_algorithm import ADMG, IDResult, identify_id
+from causal_core.identification.id_algorithm import ADMG, IDResult, identify_id
 
-ENGINE = "causal_core.identify/0.2"
+ENGINE = "causal_core.identification/0.2"
 
 
 class IdentificationError(ValueError):
@@ -83,7 +83,7 @@ def open_path(
         for i in range(1, len(path) - 1):
             a, b, c = path[i - 1], path[i], path[i + 1]
             collider = dag.has_edge(a, b) and dag.has_edge(c, b)
-            if collider and b not in an_z or not collider and b in zs:
+            if (collider and b not in an_z) or (not collider and b in zs):
                 ok = False
                 break
         if ok:

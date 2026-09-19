@@ -33,16 +33,15 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-from causal_core.analyze import analyze
 from causal_core.contract import (
     AnalysisPolicy,
     CausalQuery,
     CausalResult,
-    IdentificationStatus,
 )
 from causal_core.graph import Graph, parse_graph
-from causal_core.identify import IdentificationError, identify
-from causal_core.identify.id_algorithm import ADMG, identify_id
+from causal_core.identification import IdentificationError, identify
+from causal_core.identification.id_algorithm import ADMG, identify_id
+from causal_core.pipeline import analyze
 from causal_core.refute import holm
 from causal_core.scm import LinearSCM
 
@@ -166,6 +165,7 @@ class CrossCheck:
     agree: int
     disagreements: list[str]
     reason: str = ""
+    identified: int = 0  # class balance: a generator yielding one class checks nothing
 
     @property
     def rate(self) -> float:
@@ -180,7 +180,7 @@ def check_against_y0(n_graphs: int, kmin: int, kmax: int, seed: int) -> CrossChe
     except ImportError:
         return CrossCheck(False, 0, 0, [], "y0 not installed (pip install 'causal-core[crosscheck]')")
     rng = np.random.default_rng(seed)
-    agree, bad = 0, []
+    agree, bad, identified = 0, [], 0
     for i in range(n_graphs):
         k = int(rng.integers(kmin, kmax + 1))
         nodes, directed, bidirected = random_admg(rng, k)
@@ -190,11 +190,12 @@ def check_against_y0(n_graphs: int, kmin: int, kmax: int, seed: int) -> CrossChe
         ours = identify_id(ADMG.from_edges(nodes, directed, bidirected), {x}, {y}).identified
         g0 = NxMixedGraph.from_str_edges(nodes=nodes, directed=directed, undirected=bidirected)
         theirs = identify_outcomes(g0, treatments={Variable(x)}, outcomes={Variable(y)}) is not None
+        identified += int(ours)
         if ours == theirs:
             agree += 1
         else:
             bad.append(f"#{i}: {x}->{y} directed={directed} bidirected={bidirected} ours={ours} y0={theirs}")
-    return CrossCheck(True, n_graphs, agree, bad)
+    return CrossCheck(True, n_graphs, agree, bad, identified=identified)
 
 
 # ── estimation catalog ────────────────────────────────────────────────────────
@@ -504,11 +505,24 @@ def check_triangulation(cfg: Mapping[str, Any], reps: int | None = None, paralle
         failures.append("triangulation never ran on the valid designs")
     elif rate > c["false_alarm_max"]:
         failures.append(f"triangulation false-alarm rate {rate:.3f} > {c['false_alarm_max']}")
-    pw = _triangulation_rate((TRIANGULATION_POWER_CASE, 299, c["n"], reps, c["seed"]))
-    power_rate = float(np.mean(pw)) if pw else 0.0
+    power_reps = reps if reps != c["reps"] else c["power_reps"]
+    gated, reported = _map(
+        _triangulation_rate,
+        [(TRIANGULATION_POWER_CASE, 299, c["power_n"], power_reps, c["seed"]),
+         (TRIANGULATION_POWER_CASE, 298, c["n"], reps, c["seed"])],
+        parallel,
+    )
+    power_rate = float(np.mean(gated)) if gated else 0.0
     if power_rate < c["power_min"]:
-        failures.append(f"triangulation power {power_rate:.3f} < {c['power_min']}")
-    return RateReport(fa, {TRIANGULATION_POWER_CASE.id: power_rate}, failures)
+        failures.append(
+            f"triangulation power at n={c['power_n']}: {power_rate:.3f} < {c['power_min']}"
+        )
+    power = {
+        f"{TRIANGULATION_POWER_CASE.id}@n={c['power_n']} (gated)": power_rate,
+        f"{TRIANGULATION_POWER_CASE.id}@n={c['n']} (reported)": float(np.mean(reported))
+        if reported else 0.0,
+    }
+    return RateReport(fa, power, failures)
 
 
 # ── the gate ──────────────────────────────────────────────────────────────────
@@ -521,7 +535,7 @@ def git_sha() -> str:
         dirty = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True,
                                check=True).stdout.strip()
         return sha + ("-dirty" if dirty else "")
-    except Exception:  # noqa: BLE001
+    except Exception:
         return "unknown"
 
 
@@ -538,10 +552,13 @@ def run_gate(prereg: Path | None = None, parallel: bool = True) -> dict[str, Any
     sections = {
         "identification": {
             "passed": id_match >= idc["catalog_match_required"]
-            and (not cross.ran or cross.rate >= idc["agreement_required"]),
+            and (not cross.ran or cross.rate >= idc["agreement_required"])
+            and (not cross.ran or 0 < cross.identified < cross.graphs),
             "catalog_match": id_match,
             "mismatches": [asdict(c) for c in ident if not c.passed],
             "y0_crosscheck": {"ran": cross.ran, "graphs": cross.graphs, "agreement": cross.rate,
+                              "identified": cross.identified,
+                              "not_identified": cross.graphs - cross.identified,
                               "disagreements": cross.disagreements[:10], "reason": cross.reason},
         },
         "estimation": {"passed": est.passed, "failures": est.failures,

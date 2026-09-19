@@ -4,7 +4,7 @@ The ID algorithm (Shpitser & Pearl, 2006) for P(y | do(x)) in an ADMG.
 ID is *complete*: if it fails, no nonparametric identification of the effect
 exists from the observational distribution over the observed variables, and the
 failure carries a hedge -- a pair of c-forests that witnesses it. Every simpler
-strategy in :mod:`causal_core.identify` (back-door, front-door) is checked
+strategy in :mod:`causal_core.identification` (back-door, front-door) is checked
 against this algorithm, so a disagreement surfaces as an internal error instead
 of a wrong certificate.
 

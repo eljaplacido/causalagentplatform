@@ -12,7 +12,6 @@ See :mod:`causal_core.contract` for the typed outcome objects.
 
 from __future__ import annotations
 
-from causal_core.analyze import CORE_VERSION, analyze, as_frame
 from causal_core.claims import render, verify
 from causal_core.contract import (
     CONTRACT_VERSION,
@@ -35,7 +34,8 @@ from causal_core.contract import (
     json_schemas,
 )
 from causal_core.graph import Graph, parse_graph
-from causal_core.identify import identify
+from causal_core.identification import identify
+from causal_core.pipeline import CORE_VERSION, analyze, as_frame
 from causal_core.report import report
 from causal_core.scm import LinearSCM
 
