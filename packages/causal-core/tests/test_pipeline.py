@@ -264,3 +264,53 @@ def test_polars_input(confounded_binary: pd.DataFrame) -> None:
     ref = cc.analyze(confounded_binary, G, treatment="X", outcome="Y")
     assert isinstance(out, cc.CausalResult) and isinstance(ref, cc.CausalResult)
     assert out.primary.point == pytest.approx(ref.primary.point)
+
+
+def test_att_differs_from_ate_under_heterogeneity() -> None:
+    from causal_core.bench.t0 import _heterogeneous, _heterogeneous_att
+
+    frame = _heterogeneous(4000, np.random.default_rng(3))
+    g = "Z -> X; Z -> Y; X -> Y"
+    ate = cc.analyze(frame, g, treatment="X", outcome="Y")
+    att = cc.analyze(frame, g, treatment="X", outcome="Y", estimand="att")
+    assert isinstance(ate, cc.CausalResult) and isinstance(att, cc.CausalResult)
+    assert att.primary.estimand.startswith("ATT") and att.primary.estimator == "aipw"
+    assert abs(ate.primary.point - 1.0) < 4 * (ate.primary.se or 1)
+    assert abs(att.primary.point - _heterogeneous_att()) < 4 * (att.primary.se or 1)
+    assert {e.estimator for e in att.estimates} == {"aipw", "regression_adjustment", "ipw_hajek"}
+
+
+def test_att_needs_one_sided_overlap_only() -> None:
+    """Many controls unlike any treated unit break ATE overlap but not ATT overlap."""
+    rng = np.random.default_rng(0)
+    n = 4000
+    z = rng.normal(size=n)
+    x = (3.0 * z - 4.0 + rng.logistic(size=n) > 0).astype(float)  # treated only at high z
+    y = x + z + rng.normal(size=n)
+    frame = pd.DataFrame({"Z": z, "X": x, "Y": y})
+    g = "Z -> X; Z -> Y; X -> Y"
+    ate = cc.analyze(frame, g, treatment="X", outcome="Y")
+    att = cc.analyze(frame, g, treatment="X", outcome="Y", estimand="att")
+    assert isinstance(ate, cc.Abstention) and ate.reason is AbstentionReason.POSITIVITY
+    assert isinstance(att, cc.CausalResult), cc.report(att)
+
+
+def test_att_with_continuous_treatment_is_refused(confounded_continuous: pd.DataFrame) -> None:
+    out = cc.analyze(confounded_continuous, G, treatment="X", outcome="Y", estimand="att")
+    assert isinstance(out, cc.Abstention) and out.reason is AbstentionReason.INVALID_INPUT
+
+
+def test_att_with_iv_has_no_estimator() -> None:
+    rng = np.random.default_rng(0)
+    n = 2000
+    u, z = rng.normal(size=n), rng.normal(size=n)
+    x = (z + u + rng.logistic(size=n) > 0).astype(float)
+    y = x + u + rng.normal(size=n)
+    out = cc.analyze(
+        pd.DataFrame({"Z": z, "X": x, "Y": y}),
+        "Z -> X -> Y; X <-> Y",
+        treatment="X",
+        outcome="Y",
+        estimand="att",
+    )
+    assert isinstance(out, cc.Abstention) and out.reason is AbstentionReason.NO_ESTIMATOR

@@ -19,11 +19,13 @@ import jsonschema
 import numpy as np
 import pytest
 
+from causal_core.contract import CONTRACT_VERSION
+
 from causal_mcp.server import TOOLS
 
 REPO = Path(__file__).resolve().parents[3]
 OUTCOME_SCHEMA = json.loads(
-    (REPO / "conformance" / "causal-claims" / "0.1.0" / "outcome.schema.json").read_text()
+    (REPO / "conformance" / "causal-claims" / CONTRACT_VERSION / "outcome.schema.json").read_text()
 )
 GRAPH = "Z -> X; Z -> Y; X -> Y"
 

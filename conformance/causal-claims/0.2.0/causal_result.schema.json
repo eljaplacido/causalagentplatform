@@ -55,8 +55,12 @@
           "default": "observational"
         },
         "estimand": {
-          "const": "ate",
           "default": "ate",
+          "description": "ate: average effect over the population. att: average effect on the treated units (binary treatment only; needs overlap in one direction only).",
+          "enum": [
+            "ate",
+            "att"
+          ],
           "title": "Estimand",
           "type": "string"
         },
@@ -1001,7 +1005,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:causalplatform:claims:0.1.0:causal_result",
+  "$id": "urn:causalplatform:claims:0.2.0:causal_result",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {

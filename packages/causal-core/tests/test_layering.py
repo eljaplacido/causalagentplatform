@@ -6,8 +6,20 @@ import subprocess
 import sys
 
 FORBIDDEN = (
-    "fastapi", "starlette", "uvicorn", "langchain", "langgraph", "openai", "anthropic",
-    "sqlalchemy", "neo4j", "mcp", "tigramite", "dowhy", "y0", "sklearn",
+    "fastapi",
+    "starlette",
+    "uvicorn",
+    "langchain",
+    "langgraph",
+    "openai",
+    "anthropic",
+    "sqlalchemy",
+    "neo4j",
+    "mcp",
+    "tigramite",
+    "dowhy",
+    "y0",
+    "sklearn",
 )
 
 

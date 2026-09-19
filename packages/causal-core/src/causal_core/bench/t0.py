@@ -311,7 +311,7 @@ def _heterogeneous_att() -> float:
     val, _err = integrate.quad(
         lambda z: z * special.expit(z) * stats.norm.pdf(z), -40, 40, epsabs=1e-13, limit=200
     )
-    return 1.0 + 0.8 * 2.0 * val
+    return float(1.0 + 0.8 * 2.0 * val)
 
 
 _BACKDOOR = "Z1 -> X; Z1 -> Y; Z2 -> X; Z2 -> Y; X -> Y; W -> Y"
