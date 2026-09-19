@@ -374,19 +374,19 @@ def _analyze(
     tri = _triangulate(fits, policy.triangulation_alpha)
 
     stage.name = "refute"
-    refutations = refuters.run(
-        RefutationContext(
-            prepared=d,
-            primary=ests[0],
-            policy=policy,
-            query=query,
-            cert=cert,
-            graph=g,
-            frame=dres.frame,
-            data=frame,
-            seed=policy.seed,
-        )
+    ref_ctx = RefutationContext(
+        prepared=d,
+        primary=ests[0],
+        policy=policy,
+        query=query,
+        cert=cert,
+        graph=g,
+        frame=dres.frame,
+        data=frame,
+        seed=policy.seed,
     )
+    refutations = refuters.run(ref_ctx)
+    warnings.extend(ref_ctx.notes)
 
     stage.name = "sensitivity"
     sens = analyze_sensitivity(d, primary, cert.strategy, policy) if policy.sensitivity else None

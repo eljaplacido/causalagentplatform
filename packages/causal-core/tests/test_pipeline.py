@@ -314,3 +314,36 @@ def test_att_with_iv_has_no_estimator() -> None:
         estimand="att",
     )
     assert isinstance(out, cc.Abstention) and out.reason is AbstentionReason.NO_ESTIMATOR
+
+
+def test_dependencies_among_adjusted_covariates_are_notes_not_failures() -> None:
+    rng = np.random.default_rng(0)
+    n = 3000
+    a = rng.normal(size=n)
+    b = 0.8 * a + rng.normal(size=n)  # the graph below wrongly says A and B are independent
+    x = (a + b + rng.logistic(size=n) > 0).astype(float)
+    y = x + a + b + rng.normal(size=n)
+    frame = pd.DataFrame({"A": a, "B": b, "X": x, "Y": y})
+    out = cc.analyze(frame, "A -> X; B -> X; A -> Y; B -> Y; X -> Y", treatment="X", outcome="Y")
+    assert isinstance(out, cc.CausalResult)
+    assert out.status is ResultStatus.supported
+    assert any("omits dependencies among adjustment covariates" in w for w in out.warnings)
+
+
+def test_low_effective_sample_is_warned() -> None:
+    """LaLonde-like: many controls unlike the treated, and only a few comparable ones."""
+    rng = np.random.default_rng(1)
+    z = np.concatenate([rng.normal(2, 0.5, 200), rng.normal(-2, 1, 2000), rng.normal(2, 0.5, 25)])
+    x = np.concatenate([np.ones(200), np.zeros(2025)])
+    y = x + z + rng.normal(size=z.size)
+    out = cc.analyze(
+        pd.DataFrame({"Z": z, "X": x, "Y": y}),
+        "Z -> X; Z -> Y; X -> Y",
+        treatment="X",
+        outcome="Y",
+        estimand="att",
+    )
+    assert isinstance(out, cc.CausalResult), cc.report(out)
+    assert out.diagnostics.propensity is not None
+    assert out.diagnostics.propensity.ess_control < 50
+    assert any("effective sample size" in w for w in out.warnings)

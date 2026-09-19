@@ -18,7 +18,7 @@ against planted violations, so their verdicts carry a known error rate.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from itertools import combinations
 
 import networkx as nx
@@ -49,6 +49,7 @@ class RefutationContext:
     frame: pd.DataFrame  # analysis columns after missing-value handling
     data: pd.DataFrame  # the full input, for implied-independence tests
     seed: int
+    notes: list[str] = field(default_factory=list)  # informational, never change status
 
 
 def _p_value(point: float, se: float | None) -> float | None:
@@ -164,15 +165,33 @@ def graph_implications(ctx: RefutationContext) -> RefutationResult | None:
     if not tests:
         return None
     results = [(a, b, s, *partial_correlation_test(ctx.data, a, b, s)) for a, b, s in tests]
-    pvals = [r[4] for r in results]
-    rejected = holm(pvals, ctx.policy.refutation_alpha)
-    bad = [r for r, rej in zip(results, rejected, strict=True) if rej]
-    worst = sorted(results, key=lambda r: r[4])[:3]
 
     def fmt(r: tuple[str, str, tuple[str, ...], float, float]) -> str:
         given = f" | {', '.join(r[2])}" if r[2] else ""
         return f"{r[0]} ⊥ {r[1]}{given} (r={r[3]:.3f}, p={r[4]:.2g})"
 
+    # An implication between two variables that are both adjusted for cannot change
+    # this estimate: whatever links them is conditioned away. Its violation still
+    # means the graph is wrong, so it is reported -- but as a note, not a failure.
+    adjusted = set(ctx.cert.adjustment_set)
+    background = [r for r in results if {r[0], r[1]} <= adjusted]
+    results = [r for r in results if not {r[0], r[1]} <= adjusted]
+    if background:
+        rej = holm([r[4] for r in background], ctx.policy.refutation_alpha)
+        bad_bg = [r for r, x in zip(background, rej, strict=True) if x]
+        if bad_bg:
+            ctx.notes.append(
+                f"the graph omits dependencies among adjustment covariates "
+                f"({'; '.join(fmt(r) for r in bad_bg[:3])}"
+                f"{'; ...' if len(bad_bg) > 3 else ''}). This does not affect this estimate, "
+                "because all of them are adjusted for, but the graph should be corrected."
+            )
+    if not results:
+        return None
+    pvals = [r[4] for r in results]
+    rejected = holm(pvals, ctx.policy.refutation_alpha)
+    bad = [r for r, rej in zip(results, rejected, strict=True) if rej]
+    worst = sorted(results, key=lambda r: r[4])[:3]
     detail = (
         f"{len(bad)} of {len(results)} graph-implied independences rejected (Holm); "
         + (

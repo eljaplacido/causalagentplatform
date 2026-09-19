@@ -31,6 +31,7 @@ from causal_core.estimators._linalg import add_intercept, logistic, ols, robust_
 
 SRM_ALPHA = 0.001  # sample-ratio mismatch threshold (Fabijan et al. 2019 use 0.0005)
 MIN_TREATMENT_RESIDUAL_SHARE = 0.01  # continuous T: variation left after the covariates
+MIN_EFFECTIVE_SAMPLE = 50  # below this, a reweighted arm rests on few comparable units
 
 
 @dataclass
@@ -310,6 +311,13 @@ def prepare(
                     "or drop covariates that (nearly) determine treatment, if the graph allows",
                 ),
             )
+        for arm, label, size in ((1.0, "treated", n_treated), (0.0, "control", n_control)):
+            if ess[arm] < MIN_EFFECTIVE_SAMPLE and ess[arm] < (size or 0):
+                warnings.append(
+                    f"after weighting, the {label} arm's effective sample size is "
+                    f"{ess[arm]:.0f} of {size} units: the estimate rests on few comparable "
+                    "units, and its interval is wide for that reason"
+                )
         imbalanced = [b.covariate for b in balance if abs(b.smd_weighted or 0) > 0.1]
         if imbalanced:
             warnings.append(f"weighted |SMD| > 0.1 for {imbalanced}")
