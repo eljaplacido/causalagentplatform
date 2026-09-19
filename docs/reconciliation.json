@@ -54,7 +54,7 @@
       "baseline": {
         "on": "2026-09-19",
         "sha256": {
-          "conformance/declared_not_implemented.json": "416c328dcd0ed39d7dcec851e5b454c7c7910c029353f03bfea1ced87d301afa",
+          "conformance/declared_not_implemented.json": "12d1bb553ceef9a0270edca26c0cbc24cc4831d9c0fe8e379d565fcff61f1b44",
           "backend/src": "5df8979d5b08f7cc547ca6c902f0f4a607c411c268ae3f61dc2bbfaea3033c9f",
           "backend/mcp_server": "659e6b5ff37886fb61ed4277fba5e128337f634e8612531d442ed3f0cdde68b3",
           "backend/tests": "151660b847befe31db0b6099dc223578a1bdbde70b83d1d8b52be30d3b53f83d",
@@ -65,7 +65,7 @@
       },
       "last_read": {
         "on": "2026-09-19",
-        "by": "Claude (rows added for ATT, real-data benchmarks, licence gate, kernel limits)"
+        "by": "Claude (CI row re-cited after workflow rewrite)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {

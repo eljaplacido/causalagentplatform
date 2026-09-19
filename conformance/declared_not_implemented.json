@@ -632,7 +632,7 @@
   },
   {
    "id": "ci-pipeline-green",
-   "status": "declared-not-implemented",
+   "status": "partial",
    "capability": "CI quality gates that block a merge",
    "claimed_in": [
     {
@@ -640,11 +640,11 @@
      "says": "Quality Gates (Block Merge)"
     }
    ],
-   "reality": "The Sep 2026 audit found 0 of 10 jobs in .github/workflows/ci.yml able to pass. Causes verified still present: the causal-correctness job targets tests/causal_correctness/, which does not exist, and the lint job's eslint has no config and exits 2. The unit job's 80% coverage failure was removed by this change (coverage is now a ratchet in .gnomon/ci.sh); no job has been re-run since. .gnomon/ci.sh is the working local gate until the workflow calls it.",
+   "reality": "The Sep 2026 audit found 0 of 10 jobs in the old workflow able to pass. The workflow was replaced by one job that builds the environments .gnomon/ci.sh expects, runs it, and fails on any SKIPPED step other than a named one (frontend-eslint). Locally the same ci.sh passes 12 of 13 steps (eslint skipped: no config). The workflow has never run on GitHub: the repository has not been pushed.",
    "evidence": [
     {
-     "at": ".github/workflows/ci.yml:268",
-     "says": "pytest tests/causal_correctness/"
+     "at": ".github/workflows/ci.yml:73",
+     "says": "run: bash .gnomon/ci.sh"
     }
    ],
    "leaves_by": {

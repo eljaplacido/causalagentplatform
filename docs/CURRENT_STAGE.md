@@ -12,7 +12,7 @@ This page replaces an earlier version that marked "Phase 1" finished. A Septembe
 - **The new kernel.** `packages/causal-core` identifies before it estimates, reports influence-function intervals, refuses with a typed reason, and passes its pre-registered T0 correctness gate. A separate MCP server, `packages/causal-mcp`, exposes it as four tools. Nothing in `backend/` calls it, and the backend's own MCP server (`backend/mcp_server`) still serves the heuristic skills, so the causal rows below stay open until the platform uses the kernel.
 - **LLMs.** No LLM is called anywhere. The agents are rule-based code.
 - **Governance.** The registry refuses writes that lack an APPROVED verdict. Verdicts are not tied to one object, can be reused, and are not signed. `POST /api/governance/check` can never return APPROVED, so the approval flow cannot complete through the API.
-- **Gates.** The local gate `.gnomon/ci.sh` passes. The GitHub Actions pipeline does not.
+- **Gates.** The local gate `.gnomon/ci.sh` passes. The GitHub Actions workflow now runs that same gate, but has never run on GitHub because nothing has been pushed.
 
 ## Status
 
@@ -82,7 +82,7 @@ This page replaces an earlier version that marked "Phase 1" finished. A Septembe
 
 | Capability | Status | Evidence | Note |
 |---|---|---|---|
-| GitHub Actions quality gates that block a merge | `declared-not-implemented` | [dni:ci-pipeline-green](../conformance/declared_not_implemented.json) | `.gnomon/ci.sh` is the working gate |
+| GitHub Actions quality gates that block a merge | `partial` | [dni:ci-pipeline-green](../conformance/declared_not_implemented.json) | Workflow runs `.gnomon/ci.sh`; never run on GitHub (not pushed) |
 
 ## Fixed items (moved off the register)
 
