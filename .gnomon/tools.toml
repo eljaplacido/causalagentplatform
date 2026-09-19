@@ -119,3 +119,17 @@ transport = "stdio"
 command = "sh"
 args = ["-c", 'cd "$(git rev-parse --show-toplevel)/backend" || exit 1; V=.venv; test -x "$V/bin/python" || V="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")/backend/.venv"; exec "$V/bin/python" -m mcp_server.server']
 env = []
+
+# The kernel's own MCP server (packages/causal-mcp, MCP SDK v2): identification before
+# estimation, typed refusals, and a narrative verifier that rejects numbers no tool
+# returned. Offered to roles that list "mcp__causal_core". It is the server whose
+# numbers the T0/T2/T3 gates stand behind; the legacy `causal` server above still
+# serves the backend's heuristic skills until the backend is rewired onto causal-core.
+# Same invocation constraints as above (no `cwd` key in gnomon 0.2.3's McpServerDef):
+# resolve the checkout root with git, and fall back to the main checkout's venv from
+# a worktree.
+[mcp_servers.causal_core]
+transport = "stdio"
+command = "sh"
+args = ["-c", 'R="$(git rev-parse --show-toplevel)"; V="$R/packages/causal-core/.venv"; test -x "$V/bin/python" || V="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")/packages/causal-core/.venv"; exec "$V/bin/python" -m causal_mcp.server']
+env = []

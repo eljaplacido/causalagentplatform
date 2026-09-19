@@ -30,6 +30,13 @@ This page replaces an earlier version that marked "Phase 1" finished. A Septembe
 | EconML / PyMC estimation backends | `declared-not-implemented` | [dni:econml-pymc](../conformance/declared_not_implemented.json) | Not dependencies |
 | Rust crates for DAG operations and belief tracking | `declared-not-implemented` | [dni:rust-crates](../conformance/declared_not_implemented.json) | No Rust in this repository |
 | `packages/causal-core` (standalone): identification catalog, estimation bias and interval coverage, refuter and triangulation error rates, per its pre-registered T0 gate | `implemented` | [packages/causal-core/tests/t0/test_t0_gate.py](../packages/causal-core/tests/t0/test_t0_gate.py) | Not called by `backend/` |
+| `causal-core`: ATT estimand (doubly robust, regression and weighting), one-sided overlap | `implemented` | [packages/causal-core/tests/test_pipeline.py](../packages/causal-core/tests/test_pipeline.py) | T0 v3 heterogeneous-effect cases |
+| `causal-core`: no confident wrong answer on real data (LaLonde NSW vs PSID/CPS) and ATT coverage on IHDP-100 | `implemented` | [packages/causal-core/tests/bench/test_real_data.py](../packages/causal-core/tests/bench/test_real_data.py) | Pre-registered T3/T2; data fetched by pinned SHA-256, not committed |
+| `causal-core`: runtime dependencies permissively licensed | `implemented` | [packages/causal-core/tests/test_licenses.py](../packages/causal-core/tests/test_licenses.py) | Transitive, platform markers evaluated |
+| `causal-core`: triangulation detects moderate misspecification at moderate n | `partial` | [dni:kernel-triangulation-moderate-n](../conformance/declared_not_implemented.json) | Power 0.035 at n=2,000; 1.00 at n=50,000 |
+| `causal-core`: overlap violations detected before estimation | `partial` | [dni:kernel-overlap-detection-limits](../conformance/declared_not_implemented.json) | IHDP's built-in violation not detected |
+| `causal-core`: estimation of general ID functionals (napkin) | `declared-not-implemented` | [dni:kernel-general-id-estimation](../conformance/declared_not_implemented.json) | Identified, then refused `NO_ESTIMATOR` |
+| `causal-core`: nonparametric front-door, discovery, time series, sequential tests, interference | `planned` | [dni:kernel-methods-roadmap](../conformance/declared_not_implemented.json) | |
 
 ### Governance
 
@@ -51,7 +58,7 @@ This page replaces an earlier version that marked "Phase 1" finished. A Septembe
 | Capability | Status | Evidence | Note |
 |---|---|---|---|
 | Backend MCP server (`backend/mcp_server`): 7 causal tools over stdio, stdout reserved for protocol frames | `implemented` | [backend/tests/integration/test_mcp_stdio.py](../backend/tests/integration/test_mcp_stdio.py) | Outputs are only as real as the causal rows above |
-| `packages/causal-mcp`: causal-core over MCP (check graph, identify, analyze, verify narrative) | `implemented` | [packages/causal-mcp/tests/test_stdio_flow.py](../packages/causal-mcp/tests/test_stdio_flow.py) | Separate server; not what `.gnomon/tools.toml` wires in |
+| `packages/causal-mcp`: causal-core over MCP (check graph, identify, analyze, verify narrative) | `implemented` | [packages/causal-mcp/tests/test_stdio_flow.py](../packages/causal-mcp/tests/test_stdio_flow.py) | Separate server; wired into `.gnomon/tools.toml` as `causal_core` |
 | LLM capability routing used by the agents | `declared-not-implemented` | [dni:llm-routing-no-callers](../conformance/declared_not_implemented.json) | `get_llm` has no callers |
 | Session orchestration API (`/api/v1/session/run`, `/incident`) | `implemented` | [backend/tests/integration/test_session_api.py](../backend/tests/integration/test_session_api.py) | Agents are rule-based code |
 | Intervention feedback endpoint | `implemented` | [backend/tests/unit/test_interventions.py](../backend/tests/unit/test_interventions.py) | |
@@ -97,7 +104,7 @@ This page replaces an earlier version that marked "Phase 1" finished. A Septembe
 | mypy --strict (backend/src) | at most 46 errors, may only fall | 46 |
 | Frontend tsc / vitest | must pass | 46 files, 47 tests |
 | Frontend eslint | none: `frontend/` has no eslint config | SKIPPED |
-| Every Python package under `packages/` | its suite must pass, in the package's environment | causal-core 93 passed (T0 gate included); causal-mcp 10 passed |
+| Every Python package under `packages/` | its suite must pass, in the package's environment | causal-core 100 passed (T0 gate and real-data benchmarks included); causal-mcp 10 passed |
 | Skill modules imported by a test | 6 known gaps, may only shrink | 4 of 10 |
 | State-changing routes called by a test | 6 known gaps, may only shrink | 5 of 11 |
 | MCP tools referenced by a test | no gaps allowed | 7 of 7 |

@@ -4,12 +4,42 @@ A governed platform for causal reasoning, decision simulation, and intervention 
 
 > **Status:** Pre-1.0, and most of the causal layer the platform serves is not real yet. In the backend skills and MCP tools, DoWhy's backdoor and IV point estimates are the only causal numbers a real estimator computes, and no test checks them against a known effect. Confidence intervals, identification, counterfactuals and discovery are heuristics or constants, and no LLM is called. A standalone kernel, `packages/causal-core`, does identification, honest intervals and typed refusals and passes its pre-registered T0 correctness gate; `packages/causal-mcp` serves it over MCP, but nothing in the backend calls it yet. [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAGE.md) lists what is implemented, each row with the test that pins it, and what is declared but not implemented. `.gnomon/ci.sh` is the gate; `scripts/status_claims.py` keeps that page in step with the code.
 
-## What's in the box
+## Start here: the causal kernel
 
-- **Backend** (`backend/`) — Python 3.12 + FastAPI + SQLAlchemy + LangGraph. `.gnomon/ci.sh` prints the current test count and coverage.
-- **Frontend** (`frontend/`) — Next.js + TypeScript + Tailwind. Persona-scoped views: workbench, governance, incidents, engineer.
-- **MCP server** (`backend/mcp_server/`) — exposes seven causal skills as MCP tools for any external agent. Console script: `causal-mcp`. Which of those tools return real estimates is listed in `docs/CURRENT_STAGE.md`.
-- **Docs** (`docs/`) — architecture (AGENTS.md), data layer, ADRs, quickstart, testing standards.
+[`packages/causal-core`](packages/causal-core) is the part to use today. It identifies before it
+estimates, refuses with a typed reason when the data cannot answer, and binds every number it
+returns to the computation that produced it.
+
+```python
+import causal_core as cc
+
+out = cc.analyze(df, "Z -> X; Z -> Y; X -> Y", treatment="X", outcome="Y")  # or estimand="att"
+out.kind           # "result" | "refusal" | "apparatus_failure"
+print(cc.report(out))
+```
+
+For agents: [`packages/causal-mcp`](packages/causal-mcp) serves the kernel over MCP (SDK v2, stdio
+or stateless HTTP). It has four read-only tools: check a graph, identify, analyze, and verify a
+narrative before it reaches a user.
+
+**Evidence, pre-registered before each run.** Each benchmark's thresholds are committed before it
+runs, and failing runs are kept.
+
+| Benchmark | Result |
+|---|---|
+| T0: 29 identification cases, 14 estimation designs, 7 seeded defects ([`benchmarks/t0`](benchmarks/t0)) | Identification agrees with y0 on 200/200 random graphs. Pooled 95% coverage is 94.9%. Every seeded defect is caught. |
+| T3: LaLonde, real data with an experimental benchmark ([`benchmarks/t3-lalonde`](benchmarks/t3-lalonde)) | No confident wrong answer. Naive estimates are off by up to −$15,205; every kernel interval covers the experimental $1,794. |
+| T2: IHDP-100, semi-synthetic ([`benchmarks/t2-ihdp`](benchmarks/t2-ihdp)) | ATT coverage 0.99 / 0.98; supported results miss the truth 1.5% of the time. |
+
+Known limits are listed, not hidden: [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAGE.md) and
+[`conformance/declared_not_implemented.json`](conformance/declared_not_implemented.json).
+
+## What else is in the box
+
+- **Backend** (`backend/`): Python 3.12, FastAPI, SQLAlchemy and LangGraph. `.gnomon/ci.sh` prints the current test count and coverage.
+- **Frontend** (`frontend/`): Next.js, TypeScript and Tailwind. Persona-scoped views: workbench, governance, incidents and engineer.
+- **Legacy MCP server** (`backend/mcp_server/`): exposes seven backend skills as MCP tools; console script `causal-platform-mcp`. Which of them return real estimates is listed in `docs/CURRENT_STAGE.md`. Prefer `packages/causal-mcp` for estimates.
+- **Docs** (`docs/`): architecture (AGENTS.md), data layer, ADRs, quickstart and testing standards.
 
 ## Quick start
 

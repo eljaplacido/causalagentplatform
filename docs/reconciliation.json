@@ -28,16 +28,16 @@
       "baseline": {
         "on": "2026-09-19",
         "sha256": {
-          "backend/pyproject.toml": "669f2ad657d35c2fde9ed8bebdbb128cefa1f546a866bf2ccf8bb10381995ff1",
+          "backend/pyproject.toml": "9f1af8c82b45e81b138dcf14ca67e0a0c5446442b125a65b7d870b6a460c5107",
           "backend/mcp_server": "659e6b5ff37886fb61ed4277fba5e128337f634e8612531d442ed3f0cdde68b3",
           "frontend/package.json": "328e50541f6341ef44bdb0664d818c5de9c95444d15fa3cc19d076f971e4303e",
           "launch_backend.sh": "3fd5bf0bc3060014f319befd6966d4b33f851a1bce01b15d3dc6facc35f5ec00",
-          "docs/CURRENT_STAGE.md": "57d649bd97c9fa5bd9bd2c33f477ab7e0c3bc87ff8a3242f5fa07e71523d7471"
+          "docs/CURRENT_STAGE.md": "5f2a74a8a09661911c72949bbed82f83531a3ca3f9dfa08586970e01880cc3f0"
         }
       },
       "last_read": {
         "on": "2026-09-19",
-        "by": "Claude (P0 truth-and-hygiene; rewritten against the Sep 2026 audit and re-verified in code)"
+        "by": "Claude (read against the tree at the causal-core/benchmarks integration)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -54,18 +54,18 @@
       "baseline": {
         "on": "2026-09-19",
         "sha256": {
-          "conformance/declared_not_implemented.json": "5a739281d1aa9d928d4aca4108da933cedf5692744f63fba5db592515c055b69",
+          "conformance/declared_not_implemented.json": "416c328dcd0ed39d7dcec851e5b454c7c7910c029353f03bfea1ced87d301afa",
           "backend/src": "5df8979d5b08f7cc547ca6c902f0f4a607c411c268ae3f61dc2bbfaea3033c9f",
           "backend/mcp_server": "659e6b5ff37886fb61ed4277fba5e128337f634e8612531d442ed3f0cdde68b3",
           "backend/tests": "151660b847befe31db0b6099dc223578a1bdbde70b83d1d8b52be30d3b53f83d",
           "frontend/src": "43b4fec5fbddbf1cbeab0cc5dc3aa23933dd6678419738027cbf5fa27d48f428",
-          "packages": "ecc6cd8fc35bd8a6d65af7b445c511d38c5dbf65ec3fd02e2b2e6140e0dafcba",
+          "packages": "b97243140de68c56e475bb1e6696e8e6298154f741c1cc1e3b6a936387c07265",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-19",
-        "by": "Claude (P0 truth-and-hygiene; rewritten against the Sep 2026 audit and re-verified in code)"
+        "by": "Claude (rows added for ATT, real-data benchmarks, licence gate, kernel limits)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {

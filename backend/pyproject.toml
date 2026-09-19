@@ -73,7 +73,7 @@ production = [
 ]
 
 [project.scripts]
-causal-mcp = "mcp_server.server:main"
+causal-platform-mcp = "mcp_server.server:main"  # legacy server; the kernel server is packages/causal-mcp
 
 [tool.hatch.build.targets.wheel]
 packages = ["src", "mcp_server"]

@@ -440,7 +440,7 @@ Negotiates semantic alignment between two domain ontologies at runtime. Determin
 
 A subset of the shared skill library is exposed to **external agents** (Claude Desktop, custom MCP clients, IDE plugins) via a Model Context Protocol server. The server is the canonical agentic-skills surface for cross-process callers — internal LangGraph workflows still invoke skills directly.
 
-**Server entry point:** `backend/mcp_server/server.py` (console script: `causal-mcp`)
+**Server entry point:** `backend/mcp_server/server.py` (console script: `causal-platform-mcp`; the kernel server is `packages/causal-mcp`, script `causal-mcp`)
 **Wrappers:** `backend/mcp_server/tools.py` — plain async functions, JSON-native I/O only, no Pydantic across the boundary
 **Tests:** `backend/tests/unit/test_mcp_tools.py`
 **Demo client:** `backend/mcp_server/examples/client_demo.py`
