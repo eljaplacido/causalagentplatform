@@ -1,0 +1,149 @@
+{
+  "$id": "urn:causalplatform:claims:0.1.0:analysis_policy",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Every threshold that can change an answer. Hashed into provenance.",
+  "properties": {
+    "ci_level": {
+      "default": 0.95,
+      "exclusiveMaximum": 1,
+      "exclusiveMinimum": 0.5,
+      "title": "Ci Level",
+      "type": "number"
+    },
+    "cross_fit_folds": {
+      "default": 5,
+      "minimum": 2,
+      "title": "Cross Fit Folds",
+      "type": "integer"
+    },
+    "implied_independence_tests": {
+      "default": 30,
+      "minimum": 0,
+      "title": "Implied Independence Tests",
+      "type": "integer"
+    },
+    "learners": {
+      "default": "linear",
+      "enum": [
+        "linear",
+        "flexible"
+      ],
+      "title": "Learners",
+      "type": "string"
+    },
+    "max_ci_width": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Max Ci Width"
+    },
+    "max_extreme_propensity_share": {
+      "default": 0.05,
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Max Extreme Propensity Share",
+      "type": "number"
+    },
+    "min_first_stage_f": {
+      "default": 10.0,
+      "minimum": 0,
+      "title": "Min First Stage F",
+      "type": "number"
+    },
+    "min_n": {
+      "default": 30,
+      "minimum": 2,
+      "title": "Min N",
+      "type": "integer"
+    },
+    "min_per_arm": {
+      "default": 10,
+      "minimum": 2,
+      "title": "Min Per Arm",
+      "type": "integer"
+    },
+    "missing": {
+      "default": "error",
+      "enum": [
+        "error",
+        "drop"
+      ],
+      "title": "Missing",
+      "type": "string"
+    },
+    "propensity_bounds": {
+      "default": [
+        0.01,
+        0.99
+      ],
+      "maxItems": 2,
+      "minItems": 2,
+      "prefixItems": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "title": "Propensity Bounds",
+      "type": "array"
+    },
+    "refutation_alpha": {
+      "default": 0.01,
+      "exclusiveMaximum": 0.5,
+      "exclusiveMinimum": 0,
+      "title": "Refutation Alpha",
+      "type": "number"
+    },
+    "refuters": {
+      "default": [
+        "placebo_treatment",
+        "negative_control_outcomes",
+        "implied_independences"
+      ],
+      "items": {
+        "enum": [
+          "placebo_treatment",
+          "negative_control_outcomes",
+          "implied_independences"
+        ],
+        "type": "string"
+      },
+      "title": "Refuters",
+      "type": "array"
+    },
+    "require_approved_graph": {
+      "default": false,
+      "title": "Require Approved Graph",
+      "type": "boolean"
+    },
+    "seed": {
+      "default": 0,
+      "title": "Seed",
+      "type": "integer"
+    },
+    "sensitivity": {
+      "default": true,
+      "title": "Sensitivity",
+      "type": "boolean"
+    },
+    "triangulation_alpha": {
+      "default": 0.01,
+      "exclusiveMaximum": 0.5,
+      "exclusiveMinimum": 0,
+      "title": "Triangulation Alpha",
+      "type": "number"
+    }
+  },
+  "title": "AnalysisPolicy",
+  "type": "object"
+}

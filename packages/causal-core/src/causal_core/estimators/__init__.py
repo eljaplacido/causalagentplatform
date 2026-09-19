@@ -107,9 +107,7 @@ def registered() -> dict[str, Estimator]:
 
 def applicable(strategy: Strategy, kind: TreatmentKind) -> list[Estimator]:
     ests = [
-        e
-        for e in registered().values()
-        if strategy in e.strategies and kind in e.treatment_kinds
+        e for e in registered().values() if strategy in e.strategies and kind in e.treatment_kinds
     ]
     return sorted(ests, key=lambda e: (e.priority, e.name))
 

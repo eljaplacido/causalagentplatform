@@ -1,0 +1,709 @@
+{
+  "$defs": {
+    "AbstentionReason": {
+      "enum": [
+        "NON_IDENTIFIABLE",
+        "POSITIVITY",
+        "LOW_N",
+        "UNAPPROVED_ASSUMPTION",
+        "CI_TOO_WIDE",
+        "DESIGN_CHECK_FAILED",
+        "RUNG_MISMATCH",
+        "INVALID_ADJUSTMENT_SET",
+        "WEAK_INSTRUMENT",
+        "NO_ESTIMATOR",
+        "INVALID_INPUT"
+      ],
+      "title": "AbstentionReason",
+      "type": "string"
+    },
+    "BalanceRow": {
+      "additionalProperties": false,
+      "properties": {
+        "covariate": {
+          "title": "Covariate",
+          "type": "string"
+        },
+        "smd_raw": {
+          "title": "Smd Raw",
+          "type": "number"
+        },
+        "smd_weighted": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Smd Weighted"
+        }
+      },
+      "required": [
+        "covariate",
+        "smd_raw",
+        "smd_weighted"
+      ],
+      "title": "BalanceRow",
+      "type": "object"
+    },
+    "CausalQuery": {
+      "additionalProperties": false,
+      "properties": {
+        "adjust_for": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A user-chosen adjustment set. It is validated against the graph and refused if it is not a valid adjustment set.",
+          "title": "Adjust For"
+        },
+        "design": {
+          "$ref": "#/$defs/Design",
+          "default": "observational"
+        },
+        "estimand": {
+          "const": "ate",
+          "default": "ate",
+          "title": "Estimand",
+          "type": "string"
+        },
+        "expected_treated_share": {
+          "anyOf": [
+            {
+              "exclusiveMaximum": 1,
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Treated Share"
+        },
+        "horizon": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Horizon"
+        },
+        "instruments": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Instruments"
+        },
+        "negative_control_outcomes": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Negative Control Outcomes",
+          "type": "array"
+        },
+        "outcome": {
+          "title": "Outcome",
+          "type": "string"
+        },
+        "outcome_proxies": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Outcome Proxies",
+          "type": "array"
+        },
+        "population": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Population"
+        },
+        "rung": {
+          "$ref": "#/$defs/Rung",
+          "default": "intervention"
+        },
+        "treatment": {
+          "title": "Treatment",
+          "type": "string"
+        },
+        "treatment_levels": {
+          "anyOf": [
+            {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "(control, treated). Defaults to (0, 1) for a binary treatment; for a continuous treatment the effect is reported per unit unless levels are given.",
+          "title": "Treatment Levels"
+        },
+        "treatment_proxies": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Treatment Proxies",
+          "type": "array"
+        }
+      },
+      "required": [
+        "treatment",
+        "outcome"
+      ],
+      "title": "CausalQuery",
+      "type": "object"
+    },
+    "ConditionCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "detail": {
+          "default": "",
+          "title": "Detail",
+          "type": "string"
+        },
+        "holds": {
+          "title": "Holds",
+          "type": "boolean"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "holds"
+      ],
+      "title": "ConditionCheck",
+      "type": "object"
+    },
+    "Design": {
+      "enum": [
+        "observational",
+        "randomized"
+      ],
+      "title": "Design",
+      "type": "string"
+    },
+    "DesignCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "detail": {
+          "default": "",
+          "title": "Detail",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "passed"
+      ],
+      "title": "DesignCheck",
+      "type": "object"
+    },
+    "Diagnostics": {
+      "additionalProperties": false,
+      "properties": {
+        "balance": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/BalanceRow"
+          },
+          "title": "Balance",
+          "type": "array"
+        },
+        "checks": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/DesignCheck"
+          },
+          "title": "Checks",
+          "type": "array"
+        },
+        "first_stage_f": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "First Stage F"
+        },
+        "n_control": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "N Control"
+        },
+        "n_dropped_missing": {
+          "default": 0,
+          "title": "N Dropped Missing",
+          "type": "integer"
+        },
+        "n_rows": {
+          "title": "N Rows",
+          "type": "integer"
+        },
+        "n_treated": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "N Treated"
+        },
+        "n_used": {
+          "title": "N Used",
+          "type": "integer"
+        },
+        "propensity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PropensityDiagnostics"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "srm_p_value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Srm P Value"
+        },
+        "treatment_kind": {
+          "enum": [
+            "binary",
+            "continuous"
+          ],
+          "title": "Treatment Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "n_rows",
+        "n_used",
+        "treatment_kind"
+      ],
+      "title": "Diagnostics",
+      "type": "object"
+    },
+    "IdentificationCertificate": {
+      "additionalProperties": false,
+      "properties": {
+        "adjustment_set": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Adjustment Set",
+          "type": "array"
+        },
+        "assumptions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Assumptions",
+          "type": "array"
+        },
+        "conditions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ConditionCheck"
+          },
+          "title": "Conditions",
+          "type": "array"
+        },
+        "engine": {
+          "title": "Engine",
+          "type": "string"
+        },
+        "estimand": {
+          "description": "The identifying functional, as a readable expression.",
+          "title": "Estimand",
+          "type": "string"
+        },
+        "general_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Result of the complete ID algorithm on the same graph: the identifying expression, or 'FAIL: hedge ...'. Every strategy above must agree with it.",
+          "title": "General Id"
+        },
+        "graph_digest": {
+          "title": "Graph Digest",
+          "type": "string"
+        },
+        "instruments": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Instruments",
+          "type": "array"
+        },
+        "mediators": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Mediators",
+          "type": "array"
+        },
+        "outcome_proxies": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Outcome Proxies",
+          "type": "array"
+        },
+        "status": {
+          "$ref": "#/$defs/IdentificationStatus"
+        },
+        "strategy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Strategy"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tier": {
+          "$ref": "#/$defs/Tier"
+        },
+        "treatment_proxies": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Treatment Proxies",
+          "type": "array"
+        },
+        "unreviewed_edges": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Unreviewed Edges",
+          "type": "array"
+        }
+      },
+      "required": [
+        "status",
+        "strategy",
+        "tier",
+        "estimand",
+        "engine",
+        "graph_digest"
+      ],
+      "title": "IdentificationCertificate",
+      "type": "object"
+    },
+    "IdentificationStatus": {
+      "enum": [
+        "identified",
+        "not_identified"
+      ],
+      "title": "IdentificationStatus",
+      "type": "string"
+    },
+    "PropensityDiagnostics": {
+      "additionalProperties": false,
+      "properties": {
+        "ess_control": {
+          "title": "Ess Control",
+          "type": "number"
+        },
+        "ess_treated": {
+          "title": "Ess Treated",
+          "type": "number"
+        },
+        "max": {
+          "title": "Max",
+          "type": "number"
+        },
+        "min": {
+          "title": "Min",
+          "type": "number"
+        },
+        "share_outside_bounds": {
+          "title": "Share Outside Bounds",
+          "type": "number"
+        }
+      },
+      "required": [
+        "min",
+        "max",
+        "share_outside_bounds",
+        "ess_treated",
+        "ess_control"
+      ],
+      "title": "PropensityDiagnostics",
+      "type": "object"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "properties": {
+        "contract_version": {
+          "title": "Contract Version",
+          "type": "string"
+        },
+        "core_version": {
+          "title": "Core Version",
+          "type": "string"
+        },
+        "data_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data Digest"
+        },
+        "graph_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Graph Digest"
+        },
+        "policy_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Policy Digest"
+        },
+        "query_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Query Digest"
+        },
+        "seed": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Seed"
+        }
+      },
+      "required": [
+        "contract_version",
+        "core_version"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "Rung": {
+      "description": "Pearl's ladder. A query must declare which rung it asks about.",
+      "enum": [
+        "association",
+        "intervention",
+        "counterfactual"
+      ],
+      "title": "Rung",
+      "type": "string"
+    },
+    "Strategy": {
+      "enum": [
+        "randomized",
+        "backdoor",
+        "frontdoor",
+        "iv",
+        "proximal",
+        "id_general"
+      ],
+      "title": "Strategy",
+      "type": "string"
+    },
+    "Tier": {
+      "description": "Strength of identification.\n\nA -- identified nonparametrically from the graph alone.\nB -- identified only under additional parametric or structural assumptions\n     that the graph cannot express (e.g. effect homogeneity for IV).\nC -- reserved: identified only by an assumption outside the graph.\nD -- not identified.",
+      "enum": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "title": "Tier",
+      "type": "string"
+    }
+  },
+  "$id": "urn:causalplatform:claims:0.1.0:abstention",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "certificate": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/IdentificationCertificate"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "detail": {
+      "title": "Detail",
+      "type": "string"
+    },
+    "diagnostics": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Diagnostics"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "kind": {
+      "const": "refusal",
+      "default": "refusal",
+      "title": "Kind",
+      "type": "string"
+    },
+    "missing_information": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Missing Information",
+      "type": "array"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "query": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/CausalQuery"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "reason": {
+      "$ref": "#/$defs/AbstentionReason"
+    }
+  },
+  "required": [
+    "reason",
+    "detail",
+    "provenance"
+  ],
+  "title": "Abstention",
+  "type": "object"
+}

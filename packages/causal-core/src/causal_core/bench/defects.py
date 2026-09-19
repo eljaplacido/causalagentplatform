@@ -52,7 +52,7 @@ def halved_se() -> Iterator[None]:
 
 @contextmanager
 def ignore_adjustment() -> Iterator[None]:
-    real = analyze_mod.identify
+    real = analyze_mod.identify  # type: ignore[attr-defined]
 
     def fake(g: Any, query: Any) -> Any:
         cert = real(g, query)
@@ -64,7 +64,7 @@ def ignore_adjustment() -> Iterator[None]:
 
 @contextmanager
 def suppress_hedge() -> Iterator[None]:
-    real = identify_mod.identify_id
+    real = identify_mod.identify_id  # type: ignore[attr-defined]
 
     def fake(g: Any, x: Any, y: Any) -> IDResult:
         res = real(g, x, y)
@@ -92,8 +92,15 @@ class _Leaky:
         point = float(d.y[hi].mean() - d.y[~hi].mean())
         se = float(np.std(d.y) / np.sqrt(d.n))
         ci = builtin.wald_interval(point, se, policy.ci_level, "defect")
-        rec = EstimateRecord(estimator=self.name, family=self.family, estimand="defect",
-                             point=point, se=se, ci=ci, n_used=d.n)
+        rec = EstimateRecord(
+            estimator=self.name,
+            family=self.family,
+            estimand="defect",
+            point=point,
+            se=se,
+            ci=ci,
+            n_used=d.n,
+        )
         return Fit(record=rec, influence=None)
 
 

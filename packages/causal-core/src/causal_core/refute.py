@@ -113,18 +113,14 @@ def implied_independences(
     directed, bidirected = g.admg
     adjacent = {frozenset(e) for e in directed.edges} | set(bidirected)
     pairs = [
-        (a, b)
-        for a, b in combinations(sorted(measured), 2)
-        if frozenset((a, b)) not in adjacent
+        (a, b) for a, b in combinations(sorted(measured), 2) if frozenset((a, b)) not in adjacent
     ]
     pairs.sort(key=lambda ab: (-len({ab[0], ab[1]} & focus), ab))
-    out = []
+    out: list[tuple[str, str, tuple[str, ...]]] = []
     for a, b in pairs:
         if len(out) >= limit:
             break
-        sep = nx.find_minimal_d_separator(
-            g.dag, {a}, {b}, restricted=measured - {a, b}
-        )
+        sep = nx.find_minimal_d_separator(g.dag, {a}, {b}, restricted=measured - {a, b})
         if sep is not None:
             out.append((a, b, tuple(sorted(sep))))
     return out
@@ -164,9 +160,7 @@ def holm(pvals: list[float], alpha: float) -> list[bool]:
 
 def graph_implications(ctx: RefutationContext) -> RefutationResult | None:
     focus = {ctx.query.treatment, ctx.query.outcome, *ctx.cert.adjustment_set}
-    tests = implied_independences(
-        ctx.graph, ctx.data, focus, ctx.policy.implied_independence_tests
-    )
+    tests = implied_independences(ctx.graph, ctx.data, focus, ctx.policy.implied_independence_tests)
     if not tests:
         return None
     results = [(a, b, s, *partial_correlation_test(ctx.data, a, b, s)) for a, b, s in tests]
@@ -174,14 +168,18 @@ def graph_implications(ctx: RefutationContext) -> RefutationResult | None:
     rejected = holm(pvals, ctx.policy.refutation_alpha)
     bad = [r for r, rej in zip(results, rejected, strict=True) if rej]
     worst = sorted(results, key=lambda r: r[4])[:3]
+
     def fmt(r: tuple[str, str, tuple[str, ...], float, float]) -> str:
         given = f" | {', '.join(r[2])}" if r[2] else ""
         return f"{r[0]} ⊥ {r[1]}{given} (r={r[3]:.3f}, p={r[4]:.2g})"
 
     detail = (
         f"{len(bad)} of {len(results)} graph-implied independences rejected (Holm); "
-        + ("rejected: " + "; ".join(fmt(r) for r in bad[:5]) if bad else
-           "closest: " + "; ".join(fmt(r) for r in worst))
+        + (
+            "rejected: " + "; ".join(fmt(r) for r in bad[:5])
+            if bad
+            else "closest: " + "; ".join(fmt(r) for r in worst)
+        )
         + ". Linear partial-correlation tests: nonlinear dependence can go undetected."
     )
     return RefutationResult(

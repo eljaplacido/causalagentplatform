@@ -30,6 +30,7 @@ import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from functools import cached_property
+from itertools import pairwise
 from typing import Any
 
 import networkx as nx
@@ -90,7 +91,7 @@ def parse_graph(text: str) -> CausalGraph:
         arrows = parts[1::2]
         for n in names:
             nodes[n] = None
-        for (a, b), arrow in zip(zip(names, names[1:], strict=False), arrows, strict=True):
+        for (a, b), arrow in zip(pairwise(names), arrows, strict=True):
             origin = EdgeOrigin(attrs.get("origin", "human"))
             default_status = "proposed" if origin is EdgeOrigin.llm_prior else "asserted"
             status = EdgeStatus(attrs.get("status", default_status))
@@ -120,7 +121,8 @@ def as_causal_graph(graph: CausalGraph | str | Any) -> CausalGraph:
     if isinstance(graph, Mapping):
         return CausalGraph.model_validate(graph)
     if isinstance(graph, Sequence):
-        edges = tuple(Edge(source=str(a), target=str(b)) for a, b in graph)
+        pairs: Sequence[tuple[Any, Any]] = graph  # type: ignore[assignment]
+        edges = tuple(Edge(source=str(a), target=str(b)) for a, b in pairs)
         seen: dict[str, None] = {}
         for e in edges:
             seen[e.source] = None
@@ -282,8 +284,4 @@ class Graph:
         return f"{e.source} {arrow} {e.target}"
 
     def unreviewed_edges(self) -> list[str]:
-        return [
-            self.edge_label(e)
-            for e in self.spec.edges
-            if e.status is EdgeStatus.proposed
-        ]
+        return [self.edge_label(e) for e in self.spec.edges if e.status is EdgeStatus.proposed]

@@ -185,8 +185,10 @@ class LinRegression(_Base):
         p = X.shape[1]
         xbar = X.mean(axis=0) if p else np.zeros(0)
         Xc = X - xbar
-        D = np.column_stack([np.ones(d.n), t, Xc, t[:, None] * Xc]) if p else np.column_stack(
-            [np.ones(d.n), t]
+        D = (
+            np.column_stack([np.ones(d.n), t, Xc, t[:, None] * Xc])
+            if p
+            else np.column_stack([np.ones(d.n), t])
         )
         f = ols(y, D)
         inf = f.influence(hc2=True)[:, 1]
@@ -228,7 +230,7 @@ class HajekIPW(_Base):
     se_method: str = "m-estimation"
 
     def supports(self, d: Prepared, strategy: Strategy) -> bool:
-        return d.X.shape[1] > 0
+        return bool(d.X.shape[1] > 0)
 
     def fit(self, d: Prepared, policy: AnalysisPolicy, rng: np.random.Generator) -> Fit:
         t, y = d.t, d.y

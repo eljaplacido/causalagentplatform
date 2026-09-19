@@ -185,9 +185,7 @@ class Hedge(Exception):
         self.f_prime = f_prime
 
 
-def _id(
-    y: frozenset[str], x: frozenset[str], p: _Dist, g: ADMG, order: list[str]
-) -> Expr:
+def _id(y: frozenset[str], x: frozenset[str], p: _Dist, g: ADMG, order: list[str]) -> Expr:
     v = g.nodes
     pi = [n for n in order if n in v]
 
@@ -238,9 +236,7 @@ class IDResult:
     hedge: tuple[frozenset[str], frozenset[str]] | None = None
 
 
-def identify_id(
-    g: ADMG, treatment: Iterable[str], outcome: Iterable[str]
-) -> IDResult:
+def identify_id(g: ADMG, treatment: Iterable[str], outcome: Iterable[str]) -> IDResult:
     """Run ID for P(outcome | do(treatment)) on the ADMG ``g``."""
     x = frozenset(treatment)
     y = frozenset(outcome)

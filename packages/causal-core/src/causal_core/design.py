@@ -239,7 +239,7 @@ def prepare(
             n_rows=n_rows,
             n_used=n,
             n_dropped_missing=n_rows - n,
-            treatment_kind=kind,  # type: ignore[arg-type]
+            treatment_kind=kind,
             n_treated=n_treated,
             n_control=n_control,
             propensity=propensity,
@@ -263,9 +263,7 @@ def prepare(
         outside = float(np.mean((e < lo) | (e > hi)))
         ec = np.clip(e, lo, hi)
         w = np.where(t == 1, 1 / ec, 1 / (1 - ec))
-        ess = {
-            arm: float(w[t == arm].sum() ** 2 / np.sum(w[t == arm] ** 2)) for arm in (0.0, 1.0)
-        }
+        ess = {arm: float(w[t == arm].sum() ** 2 / np.sum(w[t == arm] ** 2)) for arm in (0.0, 1.0)}
         propensity = PropensityDiagnostics(
             min=float(e.min()),
             max=float(e.max()),
@@ -323,7 +321,7 @@ def prepare(
                 "there is no independent variation to learn the effect from",
             )
 
-    if kind == "binary" and query.expected_treated_share is not None:
+    if kind == "binary" and n_treated is not None and query.expected_treated_share is not None:
         expected = np.array([query.expected_treated_share, 1 - query.expected_treated_share]) * n
         observed = np.array([n_treated, n_control], dtype=float)
         srm_p = float(stats.chisquare(observed, expected).pvalue)

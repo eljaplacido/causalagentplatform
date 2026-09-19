@@ -87,43 +87,79 @@ class IdCase:
 IDENTIFICATION_CASES: tuple[IdCase, ...] = (
     IdCase("direct", "X -> Y", "identified", "backdoor", ref="trivial"),
     IdCase("confounder", "Z -> X; Z -> Y; X -> Y", "identified", "backdoor", ref="Pearl 2009 3.3"),
-    IdCase("two_confounders", "Z1 -> X; Z1 -> Y; Z2 -> X; Z2 -> Y; X -> Y", "identified", "backdoor"),
+    IdCase(
+        "two_confounders", "Z1 -> X; Z1 -> Y; Z2 -> X; Z2 -> Y; X -> Y", "identified", "backdoor"
+    ),
     IdCase("mediator", "Z -> X; Z -> Y; X -> M -> Y", "identified", "backdoor"),
-    IdCase("m_bias", "A -> M; B -> M; A -> X; B -> Y; X -> Y", "identified", "backdoor",
-           ref="Greenland 2003"),
-    IdCase("butterfly", "A -> M; B -> M; A -> X; B -> Y; M -> X; M -> Y; X -> Y", "identified",
-           "backdoor", ref="Ding & Miratrix 2015"),
+    IdCase(
+        "m_bias",
+        "A -> M; B -> M; A -> X; B -> Y; X -> Y",
+        "identified",
+        "backdoor",
+        ref="Greenland 2003",
+    ),
+    IdCase(
+        "butterfly",
+        "A -> M; B -> M; A -> X; B -> Y; M -> X; M -> Y; X -> Y",
+        "identified",
+        "backdoor",
+        ref="Ding & Miratrix 2015",
+    ),
     IdCase("collider_after", "X -> Y; X -> C; Y -> C", "identified", "backdoor"),
     IdCase("precision", "X -> Y; W -> Y", "identified", "backdoor"),
     IdCase("latent_blocked", "latent U; U -> Z; Z -> X; U -> Y; X -> Y", "identified", "backdoor"),
-    IdCase("selection_collider", "latent U; X -> S; U -> S; U -> Y; X -> Y", "identified",
-           "backdoor"),
+    IdCase(
+        "selection_collider", "latent U; X -> S; U -> S; U -> Y; X -> Y", "identified", "backdoor"
+    ),
     IdCase("long_backdoor", "A -> B -> C -> X; A -> D -> Y; X -> Y", "identified", "backdoor"),
     IdCase("confounded_mediator_only", "X -> M -> Y; M <-> Y", "identified", "backdoor"),
-    IdCase("confounded_mediator_direct", "X -> M -> Y; X -> Y; M <-> Y", "identified",
-           "backdoor"),
+    IdCase("confounded_mediator_direct", "X -> M -> Y; X -> Y; M <-> Y", "identified", "backdoor"),
     IdCase("descendant_of_treatment", "X -> D; Z -> X; Z -> Y; X -> Y", "identified", "backdoor"),
     IdCase("frontdoor", "X -> M -> Y; X <-> Y", "identified", "frontdoor", ref="Pearl 1995"),
     IdCase("frontdoor_chain", "X -> M1 -> M2 -> Y; X <-> Y", "identified", "frontdoor"),
-    IdCase("napkin", "W1 -> W2 -> X -> Y; W1 <-> X; W1 <-> Y", "identified", "id_general",
-           ref="Pearl & Mackenzie 2018; Shpitser & Pearl 2006"),
+    IdCase(
+        "napkin",
+        "W1 -> W2 -> X -> Y; W1 <-> X; W1 <-> Y",
+        "identified",
+        "id_general",
+        ref="Pearl & Mackenzie 2018; Shpitser & Pearl 2006",
+    ),
     IdCase("bow", "X -> Y; X <-> Y", "not_identified", None, ref="Tian & Pearl 2002"),
     IdCase("latent_confounder", "latent U; U -> X; U -> Y; X -> Y", "not_identified", None),
     IdCase("bow_on_mediator", "X -> M -> Y; X <-> M", "not_identified", None),
     IdCase("frontdoor_broken", "X -> M -> Y; X <-> Y; M <-> Y", "not_identified", None),
     IdCase("iv", "Z -> X -> Y; X <-> Y", "identified", "iv", ref="Angrist, Imbens & Rubin 1996"),
     IdCase("iv_two", "Z1 -> X; Z2 -> X; X -> Y; X <-> Y", "identified", "iv"),
-    IdCase("iv_conditional", "C -> Z -> X -> Y; C -> Y; X <-> Y", "identified", "iv",
-           ref="Brito & Pearl 2002"),
+    IdCase(
+        "iv_conditional",
+        "C -> Z -> X -> Y; C -> Y; X <-> Y",
+        "identified",
+        "iv",
+        ref="Brito & Pearl 2002",
+    ),
     IdCase("iv_exclusion_violated", "Z -> X -> Y; Z -> Y; X <-> Y", "not_identified", None),
-    IdCase("proximal", "latent U; U -> X; U -> Y; U -> Zp; U -> Wp; X -> Y", "identified",
-           "proximal", {"treatment_proxies": ("Zp",), "outcome_proxies": ("Wp",)},
-           ref="Miao, Geng & Tchetgen Tchetgen 2018"),
-    IdCase("proximal_undeclared", "latent U; U -> X; U -> Y; U -> Zp; U -> Wp; X -> Y",
-           "not_identified", None),
+    IdCase(
+        "proximal",
+        "latent U; U -> X; U -> Y; U -> Zp; U -> Wp; X -> Y",
+        "identified",
+        "proximal",
+        {"treatment_proxies": ("Zp",), "outcome_proxies": ("Wp",)},
+        ref="Miao, Geng & Tchetgen Tchetgen 2018",
+    ),
+    IdCase(
+        "proximal_undeclared",
+        "latent U; U -> X; U -> Y; U -> Zp; U -> Wp; X -> Y",
+        "not_identified",
+        None,
+    ),
     IdCase("randomized", "X -> Y; W -> Y", "identified", "randomized", {"design": "randomized"}),
-    IdCase("randomized_contradicted", "Z -> X; Z -> Y; X -> Y", "identified", "backdoor",
-           {"design": "randomized"}),
+    IdCase(
+        "randomized_contradicted",
+        "Z -> X; Z -> Y; X -> Y",
+        "identified",
+        "backdoor",
+        {"design": "randomized"},
+    ),
 )
 
 
@@ -151,10 +187,16 @@ def check_identification(cases: tuple[IdCase, ...] = IDENTIFICATION_CASES) -> li
     return out
 
 
-def random_admg(rng: np.random.Generator, k: int) -> tuple[list[str], list[tuple[str, str]], list[tuple[str, str]]]:
+def random_admg(
+    rng: np.random.Generator, k: int
+) -> tuple[list[str], list[tuple[str, str]], list[tuple[str, str]]]:
     nodes = [f"V{i}" for i in range(k)]
-    directed = [(nodes[i], nodes[j]) for i in range(k) for j in range(i + 1, k) if rng.random() < 0.35]
-    bidirected = [(nodes[i], nodes[j]) for i in range(k) for j in range(i + 1, k) if rng.random() < 0.2]
+    directed = [
+        (nodes[i], nodes[j]) for i in range(k) for j in range(i + 1, k) if rng.random() < 0.35
+    ]
+    bidirected = [
+        (nodes[i], nodes[j]) for i in range(k) for j in range(i + 1, k) if rng.random() < 0.2
+    ]
     return nodes, directed, bidirected
 
 
@@ -178,7 +220,9 @@ def check_against_y0(n_graphs: int, kmin: int, kmax: int, seed: int) -> CrossChe
         from y0.dsl import Variable
         from y0.graph import NxMixedGraph
     except ImportError:
-        return CrossCheck(False, 0, 0, [], "y0 not installed (pip install 'causal-core[crosscheck]')")
+        return CrossCheck(
+            False, 0, 0, [], "y0 not installed (pip install 'causal-core[crosscheck]')"
+        )
     rng = np.random.default_rng(seed)
     agree, bad, identified = 0, [], 0
     for i in range(n_graphs):
@@ -194,7 +238,10 @@ def check_against_y0(n_graphs: int, kmin: int, kmax: int, seed: int) -> CrossChe
         if ours == theirs:
             agree += 1
         else:
-            bad.append(f"#{i}: {x}->{y} directed={directed} bidirected={bidirected} ours={ours} y0={theirs}")
+            bad.append(
+                f"#{i}: {x}->{y} directed={directed} bidirected={bidirected} "
+                f"ours={ours} y0={theirs}"
+            )
     return CrossCheck(True, n_graphs, agree, bad, identified=identified)
 
 
@@ -236,92 +283,178 @@ class EstCase:
 
 
 _BACKDOOR = "Z1 -> X; Z1 -> Y; Z2 -> X; Z2 -> Y; X -> Y; W -> Y"
-_BACKDOOR_COEF = {("Z1", "X"): 0.6, ("Z1", "Y"): 1.0, ("Z2", "X"): -0.5, ("Z2", "Y"): 0.7,
-                  ("X", "Y"): 1.5, ("W", "Y"): 0.8}
+_BACKDOOR_COEF = {
+    ("Z1", "X"): 0.6,
+    ("Z1", "Y"): 1.0,
+    ("Z2", "X"): -0.5,
+    ("Z2", "Y"): 0.7,
+    ("X", "Y"): 1.5,
+    ("W", "Y"): 0.8,
+}
 
 ESTIMATION_CASES: tuple[EstCase, ...] = (
     EstCase("backdoor_binary", _BACKDOOR, _BACKDOOR_COEF, binary=frozenset({"X"})),
     EstCase("backdoor_continuous", _BACKDOOR, _BACKDOOR_COEF),
-    EstCase("randomized_binary", "X -> Y; W -> Y", {("X", "Y"): 0.4, ("W", "Y"): 1.0},
-            binary=frozenset({"X"}), strategy="randomized", query={"design": "randomized"}),
-    EstCase("m_bias_binary", "A -> M; B -> M; A -> X; B -> Y; X -> Y",
-            {("A", "M"): 1.0, ("B", "M"): 1.0, ("A", "X"): 0.8, ("B", "Y"): 1.0, ("X", "Y"): 1.0},
-            binary=frozenset({"X"})),
-    EstCase("butterfly_continuous", "A -> M; B -> M; A -> X; B -> Y; M -> X; M -> Y; X -> Y",
-            {("A", "M"): 0.7, ("B", "M"): 0.7, ("A", "X"): 0.5, ("B", "Y"): 0.5, ("M", "X"): 0.5,
-             ("M", "Y"): 0.5, ("X", "Y"): 1.2}),
-    EstCase("mediated_continuous", "Z -> X; Z -> Y; X -> M -> Y; X -> Y",
-            {("Z", "X"): 0.8, ("Z", "Y"): 1.0, ("X", "M"): 0.7, ("M", "Y"): 0.9, ("X", "Y"): 0.5}),
-    EstCase("long_backdoor_continuous", "A -> B -> C -> X; A -> D -> Y; X -> Y",
-            {("A", "B"): 0.8, ("B", "C"): 0.8, ("C", "X"): 0.8, ("A", "D"): 0.8, ("D", "Y"): 0.8,
-             ("X", "Y"): 1.0}),
-    EstCase("null_effect_binary", "Z -> X; Z -> Y; X -> Y",
-            {("Z", "X"): 0.8, ("Z", "Y"): 1.0, ("X", "Y"): 0.0}, binary=frozenset({"X"})),
-    EstCase("frontdoor_continuous", "latent U; U -> X; U -> Y; X -> M; M -> Y",
-            {("U", "X"): 1.0, ("U", "Y"): 1.0, ("X", "M"): 0.8, ("M", "Y"): 1.1},
-            analyst_graph="X -> M -> Y; X <-> Y", strategy="frontdoor"),
-    EstCase("iv_continuous", "latent U; U -> X; U -> Y; Z -> X; X -> Y",
-            {("U", "X"): 1.0, ("U", "Y"): 1.0, ("Z", "X"): 1.0, ("X", "Y"): 0.7},
-            analyst_graph="Z -> X -> Y; X <-> Y", strategy="iv"),
-    EstCase("iv_conditional_continuous", "latent U; U -> X; U -> Y; C -> Z; C -> Y; Z -> X; X -> Y",
-            {("U", "X"): 0.8, ("U", "Y"): 0.8, ("C", "Z"): 0.8, ("C", "Y"): 0.8, ("Z", "X"): 1.0,
-             ("X", "Y"): -0.6},
-            analyst_graph="C -> Z -> X -> Y; C -> Y; X <-> Y", strategy="iv"),
-    EstCase("proximal_continuous", "latent U; U -> X; U -> Y; U -> Zp; U -> Wp; X -> Y",
-            {("U", "X"): 1.0, ("U", "Y"): 1.0, ("U", "Zp"): 1.0, ("U", "Wp"): 1.0, ("X", "Y"): 0.5},
-            strategy="proximal", query={"treatment_proxies": ("Zp",), "outcome_proxies": ("Wp",)}),
+    EstCase(
+        "randomized_binary",
+        "X -> Y; W -> Y",
+        {("X", "Y"): 0.4, ("W", "Y"): 1.0},
+        binary=frozenset({"X"}),
+        strategy="randomized",
+        query={"design": "randomized"},
+    ),
+    EstCase(
+        "m_bias_binary",
+        "A -> M; B -> M; A -> X; B -> Y; X -> Y",
+        {("A", "M"): 1.0, ("B", "M"): 1.0, ("A", "X"): 0.8, ("B", "Y"): 1.0, ("X", "Y"): 1.0},
+        binary=frozenset({"X"}),
+    ),
+    EstCase(
+        "butterfly_continuous",
+        "A -> M; B -> M; A -> X; B -> Y; M -> X; M -> Y; X -> Y",
+        {
+            ("A", "M"): 0.7,
+            ("B", "M"): 0.7,
+            ("A", "X"): 0.5,
+            ("B", "Y"): 0.5,
+            ("M", "X"): 0.5,
+            ("M", "Y"): 0.5,
+            ("X", "Y"): 1.2,
+        },
+    ),
+    EstCase(
+        "mediated_continuous",
+        "Z -> X; Z -> Y; X -> M -> Y; X -> Y",
+        {("Z", "X"): 0.8, ("Z", "Y"): 1.0, ("X", "M"): 0.7, ("M", "Y"): 0.9, ("X", "Y"): 0.5},
+    ),
+    EstCase(
+        "long_backdoor_continuous",
+        "A -> B -> C -> X; A -> D -> Y; X -> Y",
+        {
+            ("A", "B"): 0.8,
+            ("B", "C"): 0.8,
+            ("C", "X"): 0.8,
+            ("A", "D"): 0.8,
+            ("D", "Y"): 0.8,
+            ("X", "Y"): 1.0,
+        },
+    ),
+    EstCase(
+        "null_effect_binary",
+        "Z -> X; Z -> Y; X -> Y",
+        {("Z", "X"): 0.8, ("Z", "Y"): 1.0, ("X", "Y"): 0.0},
+        binary=frozenset({"X"}),
+    ),
+    EstCase(
+        "frontdoor_continuous",
+        "latent U; U -> X; U -> Y; X -> M; M -> Y",
+        {("U", "X"): 1.0, ("U", "Y"): 1.0, ("X", "M"): 0.8, ("M", "Y"): 1.1},
+        analyst_graph="X -> M -> Y; X <-> Y",
+        strategy="frontdoor",
+    ),
+    EstCase(
+        "iv_continuous",
+        "latent U; U -> X; U -> Y; Z -> X; X -> Y",
+        {("U", "X"): 1.0, ("U", "Y"): 1.0, ("Z", "X"): 1.0, ("X", "Y"): 0.7},
+        analyst_graph="Z -> X -> Y; X <-> Y",
+        strategy="iv",
+    ),
+    EstCase(
+        "iv_conditional_continuous",
+        "latent U; U -> X; U -> Y; C -> Z; C -> Y; Z -> X; X -> Y",
+        {
+            ("U", "X"): 0.8,
+            ("U", "Y"): 0.8,
+            ("C", "Z"): 0.8,
+            ("C", "Y"): 0.8,
+            ("Z", "X"): 1.0,
+            ("X", "Y"): -0.6,
+        },
+        analyst_graph="C -> Z -> X -> Y; C -> Y; X <-> Y",
+        strategy="iv",
+    ),
+    EstCase(
+        "proximal_continuous",
+        "latent U; U -> X; U -> Y; U -> Zp; U -> Wp; X -> Y",
+        {("U", "X"): 1.0, ("U", "Y"): 1.0, ("U", "Zp"): 1.0, ("U", "Wp"): 1.0, ("X", "Y"): 0.5},
+        strategy="proximal",
+        query={"treatment_proxies": ("Zp",), "outcome_proxies": ("Wp",)},
+    ),
 )
 
 #: Valid designs used for refuter false alarms. backdoor_binary gains a genuine
 #: negative-control outcome N (caused by a confounder, not by X).
 REFUTER_VALID_CASES: tuple[EstCase, ...] = (
-    EstCase("backdoor_binary_nco", _BACKDOOR + "; Z1 -> N", {**_BACKDOOR_COEF, ("Z1", "N"): 1.0},
-            binary=frozenset({"X"}), query={"negative_control_outcomes": ("N",)}),
+    EstCase(
+        "backdoor_binary_nco",
+        _BACKDOOR + "; Z1 -> N",
+        {**_BACKDOOR_COEF, ("Z1", "N"): 1.0},
+        binary=frozenset({"X"}),
+        query={"negative_control_outcomes": ("N",)},
+    ),
     *(c for c in ESTIMATION_CASES if c.strategy in ("backdoor", "randomized")),
 )
 
 REFUTER_POWER_CASES: tuple[tuple[EstCase, str], ...] = (
     (
-        EstCase("unmeasured_confounder_nco",
-                "latent U; U -> X; U -> Y; U -> N; Z -> X; Z -> Y; X -> Y",
-                {("U", "X"): 0.8, ("U", "Y"): 0.8, ("U", "N"): 0.8, ("Z", "X"): 0.5,
-                 ("Z", "Y"): 0.5, ("X", "Y"): 1.0},
-                analyst_graph="Z -> X; Z -> Y; X -> Y; N", binary=frozenset({"X"}),
-                query={"negative_control_outcomes": ("N",)}),
+        EstCase(
+            "unmeasured_confounder_nco",
+            "latent U; U -> X; U -> Y; U -> N; Z -> X; Z -> Y; X -> Y",
+            {
+                ("U", "X"): 0.8,
+                ("U", "Y"): 0.8,
+                ("U", "N"): 0.8,
+                ("Z", "X"): 0.5,
+                ("Z", "Y"): 0.5,
+                ("X", "Y"): 1.0,
+            },
+            analyst_graph="Z -> X; Z -> Y; X -> Y; N",
+            binary=frozenset({"X"}),
+            query={"negative_control_outcomes": ("N",)},
+        ),
         "negative_control_outcome:N",
     ),
     (
-        EstCase("omitted_edge", "A -> X -> Y; B -> Y; A -> Y",
-                {("A", "X"): 0.8, ("X", "Y"): 1.0, ("B", "Y"): 0.7, ("A", "Y"): 0.6},
-                analyst_graph="A -> X -> Y; B -> Y"),
+        EstCase(
+            "omitted_edge",
+            "A -> X -> Y; B -> Y; A -> Y",
+            {("A", "X"): 0.8, ("X", "Y"): 1.0, ("B", "Y"): 0.7, ("A", "Y"): 0.6},
+            analyst_graph="A -> X -> Y; B -> Y",
+        ),
         "implied_independences",
     ),
 )
 
 TRIANGULATION_VALID_CASES: tuple[EstCase, ...] = tuple(
-    c for c in ESTIMATION_CASES
+    c
+    for c in ESTIMATION_CASES
     if c.id in ("backdoor_binary", "m_bias_binary", "null_effect_binary", "randomized_binary")
 )
 
 TRIANGULATION_POWER_CASE = EstCase(
-    "nonlinear_outcome", "Z -> X; Z -> Y; X -> Y",
+    "nonlinear_outcome",
+    "Z -> X; Z -> Y; X -> Y",
     {("Z", "X"): 1.0, ("Z", "Y"): 1.0, ("X", "Y"): 1.0},
-    binary=frozenset({"X"}), intercept={"Z": 0.5}, extra={"Y": _z_squared},
+    binary=frozenset({"X"}),
+    intercept={"Z": 0.5},
+    extra={"Y": _z_squared},
 )
 
 
 # ── runners ───────────────────────────────────────────────────────────────────
 
-FAST_POLICY = dict(refuters=(), sensitivity=False)
+FAST_POLICY: dict[str, Any] = {"refuters": (), "sensitivity": False}
 
 
-def _one_rep(case: EstCase, n: int, seed: int, case_idx: int, rep: int,
-             policy_kwargs: Mapping[str, Any]) -> CausalResult | Any:
+def _one_rep(
+    case: EstCase, n: int, seed: int, case_idx: int, rep: int, policy_kwargs: Mapping[str, Any]
+) -> CausalResult | Any:
     rng = np.random.default_rng([seed, case_idx, rep])
     frame = case.scm().sample(n, rng)
     policy = AnalysisPolicy(seed=rep, **policy_kwargs)
-    return analyze(frame, case.graph_for_analysis, treatment="X", outcome="Y", policy=policy,
-                   **case.query)
+    return analyze(
+        frame, case.graph_for_analysis, treatment="X", outcome="Y", policy=policy, **case.query
+    )
 
 
 @dataclass
@@ -352,7 +485,8 @@ def run_estimation_case(args: tuple[EstCase, int, int, int, int]) -> EstimationC
         if not isinstance(out, CausalResult):
             non_results += 1
             if not first_failure:
-                first_failure = f"{out.kind}: {getattr(out, 'reason', getattr(out, 'error_type', ''))} {getattr(out, 'detail', '')}"[:300]
+                why = getattr(out, "reason", getattr(out, "error_type", ""))
+                first_failure = f"{out.kind}: {why} {getattr(out, 'detail', '')}"[:300]
             continue
         strategies.add(out.certificate.strategy.value if out.certificate.strategy else "none")
         estimator = out.primary.estimator
@@ -366,10 +500,20 @@ def run_estimation_case(args: tuple[EstCase, int, int, int, int]) -> EstimationC
     cov = float(np.mean(covered)) if k else 0.0
     cov_p = float(stats.binomtest(int(sum(covered)), k, 0.95).pvalue) if k else 0.0
     return EstimationCaseResult(
-        id=case.id, strategy_expected=case.strategy, strategies_seen=sorted(strategies),
-        estimator=estimator, truth=truth, reps=reps, non_results=non_results, mean=mean,
-        mcse=mcse, bias=bias, bias_in_mcse=abs(bias) / mcse if mcse and mcse > 0 else math.inf,
-        coverage=cov, coverage_p=cov_p, first_failure=first_failure,
+        id=case.id,
+        strategy_expected=case.strategy,
+        strategies_seen=sorted(strategies),
+        estimator=estimator,
+        truth=truth,
+        reps=reps,
+        non_results=non_results,
+        mean=mean,
+        mcse=mcse,
+        bias=bias,
+        bias_in_mcse=abs(bias) / mcse if mcse and mcse > 0 else math.inf,
+        coverage=cov,
+        coverage_p=cov_p,
+        first_failure=first_failure,
     )
 
 
@@ -395,32 +539,49 @@ class EstimationReport:
         return not self.failures
 
 
-def check_estimation(cfg: Mapping[str, Any], reps: int | None = None, parallel: bool = True,
-                     cases: tuple[EstCase, ...] = ESTIMATION_CASES) -> EstimationReport:
+def check_estimation(
+    cfg: Mapping[str, Any],
+    reps: int | None = None,
+    parallel: bool = True,
+    cases: tuple[EstCase, ...] = ESTIMATION_CASES,
+) -> EstimationReport:
     e = cfg["estimation"]
     reps = reps or e["reps"]
-    results = _map(run_estimation_case,
-                   [(c, i, e["n"], reps, e["seed"]) for i, c in enumerate(cases)], parallel)
+    results = _map(
+        run_estimation_case,
+        [(c, i, e["n"], reps, e["seed"]) for i, c in enumerate(cases)],
+        parallel,
+    )
     failures: list[str] = []
     for r in results:
         if r.non_results:
-            failures.append(f"{r.id}: {r.non_results}/{r.reps} replications returned no result ({r.first_failure})")
+            failures.append(
+                f"{r.id}: {r.non_results}/{r.reps} replications returned no result "
+                f"({r.first_failure})"
+            )
         if r.strategy_expected not in r.strategies_seen or len(r.strategies_seen) != 1:
             failures.append(f"{r.id}: strategy {r.strategies_seen}, expected {r.strategy_expected}")
         if not (r.bias_in_mcse <= e["bias_max_mcse"]):
-            failures.append(f"{r.id}: bias {r.bias:+.4f} = {r.bias_in_mcse:.1f} MCSE (max {e['bias_max_mcse']})")
+            failures.append(
+                f"{r.id}: bias {r.bias:+.4f} = {r.bias_in_mcse:.1f} MCSE (max {e['bias_max_mcse']})"
+            )
     rejected = holm([r.coverage_p for r in results], e["coverage_family_alpha"])
     holm_rej = [r.id for r, rej in zip(results, rejected, strict=True) if rej]
     for rid in holm_rej:
         r = next(x for x in results if x.id == rid)
-        failures.append(f"{rid}: coverage {r.coverage:.3f} (binomial p={r.coverage_p:.2g}, Holm-rejected)")
+        failures.append(
+            f"{rid}: coverage {r.coverage:.3f} (binomial p={r.coverage_p:.2g}, Holm-rejected)"
+        )
     total = sum(r.reps - r.non_results for r in results)
     pooled = sum(r.coverage * (r.reps - r.non_results) for r in results) / total if total else 0.0
     if not (e["pooled_coverage_min"] <= pooled <= e["pooled_coverage_max"]):
-        failures.append(f"pooled coverage {pooled:.4f} outside [{e['pooled_coverage_min']}, {e['pooled_coverage_max']}]")
+        failures.append(
+            f"pooled coverage {pooled:.4f} outside "
+            f"[{e['pooled_coverage_min']}, {e['pooled_coverage_max']}]"
+        )
     band = tuple(e["reported_cell_band"])
     outside = [r.id for r in results if not (band[0] <= r.coverage <= band[1])]
-    return EstimationReport(results, pooled, holm_rej, band, outside, failures)  # type: ignore[arg-type]
+    return EstimationReport(results, pooled, holm_rej, (band[0], band[1]), outside, failures)
 
 
 # ── refuters and triangulation ───────────────────────────────────────────────
@@ -453,7 +614,9 @@ class RateReport:
         return not self.failures
 
 
-def check_refuters(cfg: Mapping[str, Any], reps: int | None = None, parallel: bool = True) -> RateReport:
+def check_refuters(
+    cfg: Mapping[str, Any], reps: int | None = None, parallel: bool = True
+) -> RateReport:
     c = cfg["refuters"]
     reps = reps or c["reps"]
     jobs = [(case, i, c["n"], reps, c["seed"], "") for i, case in enumerate(REFUTER_VALID_CASES)]
@@ -465,15 +628,22 @@ def check_refuters(cfg: Mapping[str, Any], reps: int | None = None, parallel: bo
     failures = []
     fa = {k: float(np.mean(v)) for k, v in pooled.items() if k != "__no_result__"}
     if "__no_result__" in pooled:
-        failures.append(f"{len(pooled['__no_result__'])} valid-design replications returned no result")
+        failures.append(
+            f"{len(pooled['__no_result__'])} valid-design replications returned no result"
+        )
     for k in ("placebo_treatment", "negative_control_outcome", "implied_independences"):
         if k not in fa:
             failures.append(f"refuter {k} never ran on the valid designs")
         elif fa[k] > c["false_alarm_max"]:
             failures.append(f"{k}: false-alarm rate {fa[k]:.3f} > {c['false_alarm_max']}")
     power = {}
-    pjobs = [(case, 100 + i, c["n"], reps, c["seed"], key) for i, (case, key) in enumerate(REFUTER_POWER_CASES)]
-    for (case, key), d in zip(REFUTER_POWER_CASES, _map(_refuter_rates, pjobs, parallel), strict=True):
+    pjobs = [
+        (case, 100 + i, c["n"], reps, c["seed"], key)
+        for i, (case, key) in enumerate(REFUTER_POWER_CASES)
+    ]
+    for (case, key), d in zip(
+        REFUTER_POWER_CASES, _map(_refuter_rates, pjobs, parallel), strict=True
+    ):
         rate = float(np.mean(d.get(key, [False])))
         power[f"{case.id}:{key}"] = rate
         if rate < c["power_min"]:
@@ -491,13 +661,20 @@ def _triangulation_rate(args: tuple[EstCase, int, int, int, int]) -> list[bool]:
     return fired
 
 
-def check_triangulation(cfg: Mapping[str, Any], reps: int | None = None, parallel: bool = True) -> RateReport:
+def check_triangulation(
+    cfg: Mapping[str, Any], reps: int | None = None, parallel: bool = True
+) -> RateReport:
     c = cfg["triangulation"]
     reps = reps or c["reps"]
-    jobs = [(case, 200 + i, c["n"], reps, c["seed"]) for i, case in enumerate(TRIANGULATION_VALID_CASES)]
+    jobs = [
+        (case, 200 + i, c["n"], reps, c["seed"]) for i, case in enumerate(TRIANGULATION_VALID_CASES)
+    ]
     res = _map(_triangulation_rate, jobs, parallel)
     failures = []
-    fa = {case.id: float(np.mean(v)) if v else math.nan for case, v in zip(TRIANGULATION_VALID_CASES, res, strict=True)}
+    fa = {
+        case.id: float(np.mean(v)) if v else math.nan
+        for case, v in zip(TRIANGULATION_VALID_CASES, res, strict=True)
+    }
     pooled = [x for v in res for x in v]
     rate = float(np.mean(pooled)) if pooled else math.nan
     fa["pooled"] = rate
@@ -508,8 +685,10 @@ def check_triangulation(cfg: Mapping[str, Any], reps: int | None = None, paralle
     power_reps = reps if reps != c["reps"] else c["power_reps"]
     gated, reported = _map(
         _triangulation_rate,
-        [(TRIANGULATION_POWER_CASE, 299, c["power_n"], power_reps, c["seed"]),
-         (TRIANGULATION_POWER_CASE, 298, c["n"], reps, c["seed"])],
+        [
+            (TRIANGULATION_POWER_CASE, 299, c["power_n"], power_reps, c["seed"]),
+            (TRIANGULATION_POWER_CASE, 298, c["n"], reps, c["seed"]),
+        ],
         parallel,
     )
     power_rate = float(np.mean(gated)) if gated else 0.0
@@ -520,7 +699,8 @@ def check_triangulation(cfg: Mapping[str, Any], reps: int | None = None, paralle
     power = {
         f"{TRIANGULATION_POWER_CASE.id}@n={c['power_n']} (gated)": power_rate,
         f"{TRIANGULATION_POWER_CASE.id}@n={c['n']} (reported)": float(np.mean(reported))
-        if reported else 0.0,
+        if reported
+        else 0.0,
     }
     return RateReport(fa, power, failures)
 
@@ -530,10 +710,12 @@ def check_triangulation(cfg: Mapping[str, Any], reps: int | None = None, paralle
 
 def git_sha() -> str:
     try:
-        sha = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True,
-                             check=True).stdout.strip()
-        dirty = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True,
-                               check=True).stdout.strip()
+        sha = subprocess.run(
+            ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True
+        ).stdout.strip()
+        dirty = subprocess.run(
+            ["git", "status", "--porcelain"], capture_output=True, text=True, check=True
+        ).stdout.strip()
         return sha + ("-dirty" if dirty else "")
     except Exception:
         return "unknown"
@@ -543,8 +725,9 @@ def run_gate(prereg: Path | None = None, parallel: bool = True) -> dict[str, Any
     cfg, prereg_hash = load_prereg(prereg)
     ident = check_identification()
     idc = cfg["identification"]
-    cross = check_against_y0(idc["random_admgs"], idc["random_nodes_min"], idc["random_nodes_max"],
-                             idc["random_seed"])
+    cross = check_against_y0(
+        idc["random_admgs"], idc["random_nodes_min"], idc["random_nodes_max"], idc["random_seed"]
+    )
     est = check_estimation(cfg, parallel=parallel)
     ref = check_refuters(cfg, parallel=parallel)
     tri = check_triangulation(cfg, parallel=parallel)
@@ -556,19 +739,36 @@ def run_gate(prereg: Path | None = None, parallel: bool = True) -> dict[str, Any
             and (not cross.ran or 0 < cross.identified < cross.graphs),
             "catalog_match": id_match,
             "mismatches": [asdict(c) for c in ident if not c.passed],
-            "y0_crosscheck": {"ran": cross.ran, "graphs": cross.graphs, "agreement": cross.rate,
-                              "identified": cross.identified,
-                              "not_identified": cross.graphs - cross.identified,
-                              "disagreements": cross.disagreements[:10], "reason": cross.reason},
+            "y0_crosscheck": {
+                "ran": cross.ran,
+                "graphs": cross.graphs,
+                "agreement": cross.rate,
+                "identified": cross.identified,
+                "not_identified": cross.graphs - cross.identified,
+                "disagreements": cross.disagreements[:10],
+                "reason": cross.reason,
+            },
         },
-        "estimation": {"passed": est.passed, "failures": est.failures,
-                       "pooled_coverage": est.pooled_coverage,
-                       "reported_band": est.band, "outside_reported_band": est.outside_band,
-                       "cases": [asdict(c) for c in est.cases]},
-        "refuters": {"passed": ref.passed, "failures": ref.failures,
-                     "false_alarms": ref.false_alarms, "power": ref.power},
-        "triangulation": {"passed": tri.passed, "failures": tri.failures,
-                          "false_alarms": tri.false_alarms, "power": tri.power},
+        "estimation": {
+            "passed": est.passed,
+            "failures": est.failures,
+            "pooled_coverage": est.pooled_coverage,
+            "reported_band": est.band,
+            "outside_reported_band": est.outside_band,
+            "cases": [asdict(c) for c in est.cases],
+        },
+        "refuters": {
+            "passed": ref.passed,
+            "failures": ref.failures,
+            "false_alarms": ref.false_alarms,
+            "power": ref.power,
+        },
+        "triangulation": {
+            "passed": tri.passed,
+            "failures": tri.failures,
+            "false_alarms": tri.false_alarms,
+            "power": tri.power,
+        },
     }
     return {
         "suite": "T0",

@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
+from itertools import pairwise
 
 import networkx as nx
 import numpy as np
@@ -87,7 +88,7 @@ class LinearSCM:
         total = 0.0
         for path in nx.all_simple_paths(g.dag, treatment, outcome):
             prod = 1.0
-            for a, b in zip(path, path[1:], strict=False):
+            for a, b in pairwise(path):
                 if b in self.binary:
                     raise ValueError(
                         f"{b} is binary and lies on a causal path: the effect is not linear"

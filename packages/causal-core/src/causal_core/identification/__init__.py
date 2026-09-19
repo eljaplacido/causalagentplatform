@@ -24,7 +24,7 @@ suggests a valid set when one exists.
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
-from itertools import islice
+from itertools import islice, pairwise
 
 import networkx as nx
 
@@ -87,13 +87,13 @@ def open_path(
                 ok = False
                 break
         if ok:
-            return path
+            return list(path)
     return None
 
 
 def _render_path(dag: nx.DiGraph, path: Sequence[str]) -> str:
     out = [path[0]]
-    for a, b in zip(path, path[1:], strict=False):
+    for a, b in pairwise(path):
         out.append("->" if dag.has_edge(a, b) else "<-")
         out.append(b)
     return " ".join(out)
@@ -147,9 +147,8 @@ def find_adjustment_set(g: Graph, x: str, y: str) -> tuple[str, ...] | None:
     forb = g.forbidden({x}, {y})
     cn = g.causal_nodes({x}, {y})
     o_set = (g.parents(cn) - forb) if cn else set()
-    if cn and not (o_set & g.latent):
-        if all(c.holds for c in adjustment_checks(g, x, y, o_set)):
-            return tuple(sorted(o_set))
+    if cn and not (o_set & g.latent) and all(c.holds for c in adjustment_checks(g, x, y, o_set)):
+        return tuple(sorted(o_set))
     restricted = (g.observed - forb) - {x, y}
     pbd = g.proper_backdoor_dag({x}, {y})
     sep = nx.find_minimal_d_separator(pbd, {x}, {y}, restricted=restricted)
@@ -296,7 +295,7 @@ def identify(g: Graph, query: CausalQuery) -> IdentificationCertificate:
     }
 
     def certify(**kw: object) -> IdentificationCertificate:
-        cert = IdentificationCertificate(**{**base, **kw})  # type: ignore[arg-type]
+        cert = IdentificationCertificate(**{**base, **kw})
         nonparametric = cert.tier is Tier.A and cert.status is IdentificationStatus.identified
         if nonparametric and not general.identified:
             raise IdentificationInconsistency(
@@ -398,9 +397,7 @@ def identify(g: Graph, query: CausalQuery) -> IdentificationCertificate:
 
     # Not nonparametrically identified. Parametric routes, if the data allow.
     if query.treatment_proxies or query.outcome_proxies:
-        covs, checks = proximal_checks(
-            g, x, y, query.treatment_proxies, query.outcome_proxies
-        )
+        covs, checks = proximal_checks(g, x, y, query.treatment_proxies, query.outcome_proxies)
         conditions.extend(checks)
         if all(c.holds for c in checks):
             zp, wp = _fmt(query.treatment_proxies), _fmt(query.outcome_proxies)
@@ -423,15 +420,15 @@ def identify(g: Graph, query: CausalQuery) -> IdentificationCertificate:
 
     iv = find_instrument(g, x, y, query.instruments)
     if iv is not None:
-        z, w, checks = iv
+        instrument, w, checks = iv
         conditions.extend(checks)
         wtxt = f" | {_fmt(w)}" if w else ""
         return certify(
             status=IdentificationStatus.identified,
             strategy=Strategy.iv,
             tier=Tier.B,
-            estimand=f"Cov({y}, {z}{wtxt}) / Cov({x}, {z}{wtxt})",
-            instruments=(z,),
+            estimand=f"Cov({y}, {instrument}{wtxt}) / Cov({x}, {instrument}{wtxt})",
+            instruments=(instrument,),
             adjustment_set=w,
             conditions=tuple(conditions),
             assumptions=(
@@ -453,15 +450,11 @@ def identify(g: Graph, query: CausalQuery) -> IdentificationCertificate:
 
 def missing_information(g: Graph, x: str, y: str) -> tuple[str, ...]:
     """What would make a non-identified effect identifiable."""
-    directed, bidirected = g.admg
-    confounded = sorted(
-        "<->".join(sorted(p)) for p in bidirected if x in p or y in p
-    )
+    _directed, bidirected = g.admg
+    confounded = sorted("<->".join(sorted(p)) for p in bidirected if x in p or y in p)
     hints = []
     if confounded:
-        hints.append(
-            "measure the unobserved common cause(s) behind: " + ", ".join(confounded)
-        )
+        hints.append("measure the unobserved common cause(s) behind: " + ", ".join(confounded))
     hints.extend(
         [
             f"declare an instrument: a variable that moves {x}, affects {y} only through {x}, "

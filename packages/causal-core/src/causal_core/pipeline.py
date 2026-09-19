@@ -219,7 +219,7 @@ def _analyze(
     stage.name = "input"
     if query is None:
         try:
-            query = CausalQuery(treatment=treatment, outcome=outcome, **query_fields)  # type: ignore[arg-type]
+            query = CausalQuery(treatment=treatment, outcome=outcome, **query_fields)
         except ValidationError as exc:
             return refuse(AbstentionReason.INVALID_INPUT, f"invalid query: {exc}")
     elif treatment or outcome or query_fields:
@@ -267,7 +267,9 @@ def _analyze(
     prov["graph_digest"] = digest(effective)
     warnings: list[str] = []
     if unmeasured:
-        warnings.append(f"graph variables with no data column are treated as unmeasured: {unmeasured}")
+        warnings.append(
+            f"graph variables with no data column are treated as unmeasured: {unmeasured}"
+        )
     unreviewed = g.unreviewed_edges()
     if unreviewed and policy.require_approved_graph:
         return refuse(
@@ -276,7 +278,7 @@ def _analyze(
             ("approve or refute each proposed edge (data test, experiment or human sign-off)",),
             q=query,
         )
-    refuted = [g.edge_label(e) for e in spec.edges if e.status is EdgeStatus.refuted]
+    refuted: list[str] = [g.edge_label(e) for e in spec.edges if e.status is EdgeStatus.refuted]
     if refuted:
         warnings.append(f"refuted edges were removed before analysis: {refuted}")
     de_x = g.descendants({query.treatment})
@@ -320,8 +322,8 @@ def _analyze(
     warnings.extend(dres.warnings)
     prov["data_digest"] = data_digest(dres.frame)
     if dres.abstention is not None:
-        reason, detail, fix = dres.abstention
-        return refuse(reason, detail, fix, q=query, cert=cert, diag=dres.diagnostics)
+        reason, detail, design_fix = dres.abstention
+        return refuse(reason, detail, design_fix, q=query, cert=cert, diag=dres.diagnostics)
     d = dres.prepared
     assert d is not None and dres.diagnostics is not None
 

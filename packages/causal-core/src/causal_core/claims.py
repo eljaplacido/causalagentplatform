@@ -52,13 +52,17 @@ def format_number(x: float, sig: int = 4) -> str:
     return s.replace("e+0", "e+").replace("e-0", "e-")
 
 
-def build_claims(result_fields: dict[str, tuple[float | None, str, str | None]]) -> tuple[Claim, ...]:
+def build_claims(
+    result_fields: dict[str, tuple[float | None, str, str | None]],
+) -> tuple[Claim, ...]:
     """``{claim_id: (value, json_pointer, unit)}`` -> claims, skipping missing values."""
     out = []
     for cid, (value, path, unit) in result_fields.items():
         if value is None or not math.isfinite(value):
             continue
-        out.append(Claim(id=cid, value=float(value), text=format_number(value), unit=unit, path=path))
+        out.append(
+            Claim(id=cid, value=float(value), text=format_number(value), unit=unit, path=path)
+        )
     return tuple(out)
 
 
@@ -98,12 +102,12 @@ def _matches(literal: str, claim: Claim) -> bool:
     if "e" in raw.lower():
         mant = raw.lower().split("e")[0].lstrip("+-")
         sig = len(mant.replace(".", "").lstrip("0")) or 1
-        return math.isclose(v, claim.value, rel_tol=0.5 * 10 ** (1 - sig) + 1e-12)
+        return bool(math.isclose(v, claim.value, rel_tol=0.5 * 10 ** (1 - sig) + 1e-12))
     tol = 0.5 * 10 ** -_decimals(raw) + 1e-12 * max(1.0, abs(claim.value))
     # "0" or "-0" must not stand in for a small but non-zero claim.
     if v == 0 and claim.value != 0 and _decimals(raw) == 0:
         return False
-    return abs(v - claim.value) <= tol
+    return bool(abs(v - claim.value) <= tol)
 
 
 @dataclass
@@ -149,8 +153,10 @@ def verify(text: str, outcome: Outcome, allow: tuple[str, ...] = ()) -> Verifica
             continue
         if not any(_matches(lit, c) for c in claims.values()):
             unbound.append(lit)
-    causal = [] if causal_language_allowed(outcome) else sorted(
-        {m.group(0).lower() for m in CAUSAL_LANGUAGE.finditer(body)}
+    causal = (
+        []
+        if causal_language_allowed(outcome)
+        else sorted({m.group(0).lower() for m in CAUSAL_LANGUAGE.finditer(body)})
     )
     return Verification(
         ok=not (unbound or unknown or causal),
