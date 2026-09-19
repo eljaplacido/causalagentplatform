@@ -1,206 +1,105 @@
 # Platform Current Stage
 
-> **Last updated:** 2026-05-24
-> **Active phase:** Phase 1 effectively complete; opening Phase 2 (DAG Workbench)
-> **Tests:** 551/551 backend passing • Frontend Playwright e2e suite (22 specs)
+> **Last reconciled:** 2026-09-19, against the code at `2ba6328` plus the change that introduced this page.
+> **How to read it:** every row has one of four statuses. `implemented` rows link to the test that pins the behaviour. Every other row names its entry in [`conformance/declared_not_implemented.json`](../conformance/declared_not_implemented.json), which cites where the claim was made, says in one line what the code does instead, and names what must exist for the entry to leave the list.
+> **Checked, not asserted:** `scripts/status_claims.py` (run by `.gnomon/ci.sh`) fails if a row's status disagrees with the register, an `implemented` row's test is missing, an open register entry is missing from this page, or a cited claim or piece of code has changed under the register.
 
----
+This page replaces an earlier version that marked "Phase 1" finished. A September 2026 audit found that most of the causal and governance rows marked done were heuristic, constant or unreachable, so the phase framing has been withdrawn. The earlier version is still in git history (`3e57d58`).
 
-## 1. Strategic Position
+## Summary
 
-The **Causal Platform** is a standalone enterprise system for governed causal reasoning, decision simulation, and intervention recommendation. It combines:
+- **Causal numbers the platform serves.** In the backend skills and the MCP tools, DoWhy's backdoor linear-regression and IV point estimates are the only causal numbers a real estimator computes, and no test checks them against a known true effect. Confidence intervals, identification, frontdoor estimation, counterfactuals, discovery and sensitivity analysis are heuristics or constants.
+- **The new kernel.** `packages/causal-core` identifies before it estimates, reports influence-function intervals, refuses with a typed reason, and passes its pre-registered T0 correctness gate. A separate MCP server, `packages/causal-mcp`, exposes it as four tools. Nothing in `backend/` calls it, and the backend's own MCP server (`backend/mcp_server`) still serves the heuristic skills, so the causal rows below stay open until the platform uses the kernel.
+- **LLMs.** No LLM is called anywhere. The agents are rule-based code.
+- **Governance.** The registry refuses writes that lack an APPROVED verdict. Verdicts are not tied to one object, can be reused, and are not signed. `POST /api/governance/check` can never return APPROVED, so the approval flow cannot complete through the API.
+- **Gates.** The local gate `.gnomon/ci.sh` passes. The GitHub Actions pipeline does not.
 
-- A canonical **semantic layer** (causal entities, edges, assumptions, fragments) with Guardian-mediated approval.
-- A **shared skill library** implementing the platform's causal-inference primitives (effect estimation, identification check, sensitivity analysis, drift detection, counterfactual reasoning, structural comparison, intervention estimation).
-- An **agent fleet** (Governance, Drift Monitor, Incident Triage, Change Impact, Domain Expert Elicitation, Evidence Grounding, Simulation, Causal Discovery) operating on a single `EpistemicState` contract.
-- An **MCP skill surface** (`backend/mcp_server/`) exposing the seven causal skills to external agents over stdio.
-- A **React frontend** rendering governance review, incidents, interventions, and provenance views against a typed semantic-layer API.
+## Status
 
-> **Historical note:** Earlier drafts of this document framed the platform as a consolidation of three prior prototypes (`carfdevops`, `causalrust`/`cynepic-rs`, `projectcarfcynepic`). Those repos were **inspiration only** — they are not being merged into this codebase and are not tracked here. Every architectural pattern referenced in the docs lives in `backend/src/` of this repo.
+### Causal inference
 
----
-
-## 2. Phase Completion Status
-
-### Phase 1: Foundation — Semantic Layer + Agentic Skills + Guardian
-
-**Status: Complete** (551/551 backend tests green; one frontend type-coverage line item outstanding)
-
-| Deliverable | Status | Where it lives |
-|---|---|---|
-| Canonical causal semantic object model | ✅ | `src/semantic_layer/models.py`, ADR-001 |
-| Guardian approval workflow (DRAFT → UNDER_REVIEW → APPROVED → DEPRECATED) | ✅ | `src/agents/governance.py` |
-| Append-only audit trail | ✅ | `src/api/provenance.py`, `src/semantic_layer/provenance.py` |
-| Evidence grounding + lineage capture | ✅ | `src/agents/evidence_grounding.py` |
-| Drift monitor with KL/semantic/causal/concept detection | ✅ | `src/agents/drift_monitor.py`, `src/skills/drift_detect.py` |
-| Continuous drift sensor + alert emitter | ✅ | `src/sensors/periodic_drift.py`, `src/sensors/alert_emit.py` |
-| Causal skill library (7 skills, DoWhy-backed) | ✅ | `src/skills/*.py` |
-| **MCP skill surface (external agentic-skills API)** | ✅ | `backend/mcp_server/` — console script `causal-mcp` |
-| Frontend fail-closed UX (no silent mock fallback) | ✅ | `frontend/src/lib/api.ts` + page handlers |
-| Health endpoint with full monitoring-stack visibility | ✅ | `src/api/health.py` |
-| Incident persistence + intervention approve/reject (idempotent) | ✅ | `src/api/incidents.py`, `src/api/interventions.py` |
-| Type unification: canonical → frontend | 🔄 In progress | governance + incidents pages done; remaining pages pending |
-| Prompt template library | ✅ | `prompts/` |
-
-**Exit criteria — Phase 1:**
-- [x] Teams can create reusable causal assets
-- [x] Every approved graph object has lineage, ownership, review metadata
-- [x] Drift alerts carry statistical evidence and severity scoring
-- [x] Frontend shows explicit degraded state on backend unavailability
-- [x] Governance policy PR-008 blocks drift-triggered semantic layer writes
-- [x] Causal skills callable by external agents over MCP
-- [ ] Full type coverage across **all** frontend pages
-
----
-
-### Phase 2: DAG Workbench — **NEXT PRIORITY**
-
-**Status: ~30%** (skill primitives + agent suggestions exist; unified authoring UI not built)
-
-| Deliverable | Status | Notes |
-|---|---|---|
-| Graph authoring UI (unified) | 🔄 Components exist, no unified surface | Highest-leverage open item |
-| Agent edge + confounder suggestions | ✅ | `src/agents/causal_discovery.py` |
-| Document-grounded evidence linking | 🔄 Partial | `src/agents/evidence_grounding.py` |
-| Human approval + versioning workflow | ✅ | Guardian + audit trail |
-| Reusable graph fragments by domain | 🔴 Not started | Phase 2 sprint deliverable |
-| Single asset-promotion workflow (DRAFT → APPROVED → reusable) | 🔄 In progress | UI surface missing |
-
-**Exit criteria — Phase 2:**
-- [ ] Unified graph-authoring UI surface
-- [ ] Non-technical SME can propose + approve a fragment in <30 min (first session)
-- [ ] ≥3 approved fragments available per domain at launch
-- [ ] Agent edge suggestions hit ≥70% accepted rate in persona tests
-
----
-
-### Phase 3: Decision Simulation Cockpit
-
-**Status: ~20%** (simulation engine exists, cockpit UI not built)
-
-| Deliverable | Status | Notes |
-|---|---|---|
-| Intervention comparison UI | 🔄 In design | Personas defined in `docs/UIX.md`, component spec TBD |
-| Outcome simulation with constraints | ✅ | `src/agents/simulation.py`, DoWhy/EconML |
-| Recommendation summaries with assumptions | 🔄 Partial | `prompts/explanation_generate.txt` |
-| Audit-ready output + review logs | ✅ | Guardian + append-only audit trail |
-
----
-
-### Phase 4: First Vertical Agent (DevOps)
-
-**Status: ~25%** (one connector implemented; ontology + outcome-feedback loop not started)
-
-| Deliverable | Status | Notes |
-|---|---|---|
-| Domain connectors | 🔄 Prometheus only | `src/connectors/prometheus.py` |
-| Domain ontology templates (incident / change / alert) | 🔴 Not started | |
-| Workflow playbooks (Cynefin-routed incident triage) | ✅ | `src/agents/incident_triage.py`, `src/orchestration/graph.py` |
-| Approval gates and feedback loops | ✅ | Guardian layer |
-| Outcome feedback → causal graph update | 🔴 Not started | Requires fragment-reuse infrastructure from Phase 2 |
-
----
-
-### Phase 5: Multi-vertical Expansion
-
-Not started. Gated on Phase 4 GA.
-
----
-
-## 3. Active Work Streams (Q2 2026)
-
-| Stream | Priority | Notes |
-|---|---|---|
-| **DAG Workbench unified UI** | **P0** | Phase 2 exit blocker; gates Phase 3 + Phase 4 |
-| Frontend type coverage (remaining pages) | P0 | Closes last Phase 1 line item |
-| Decision Simulation cockpit spec | P1 | Phase 3 entry condition |
-| Domain ontology templates (DevOps) | P1 | Phase 4 entry condition |
-| MCP skill surface expansion (provenance, planning) | P2 | Surface more of `src/skills/` as MCP tools |
-| Enterprise IdP (SAML 2.0 / OIDC) | P2 | Beyond Firebase Auth |
-| Outcome-feedback → graph update loop | P3 | Phase 4 mid-stream |
-
----
-
-## 4. Known Technical Debt and Risks
-
-### Critical (must resolve before enterprise GA)
-
-| Issue | Impact | Mitigation path |
-|---|---|---|
-| No unified frontend shell — pages are page-scoped components | Users see disconnected views | Phase 2 DAG Workbench UI + Phase 3 cockpit |
-| Frontend type coverage incomplete across all pages | Type drift between backend canonical schema and frontend | Finish `packages/semantic-types` adoption |
-| Domain ontology templates missing | Phase 4 vertical agent blocked on schema | Author DevOps incident/change ontology fragments |
-
-### Moderate
-
-| Issue | Impact | Mitigation path |
-|---|---|---|
-| Firebase auth only | Enterprise IdP requirements not met | Add SAML/OIDC provider support |
-| Session memory richer than latest durable snapshot not implemented | Resume works across restarts, but preferences/history shallow | Extend session store into governed user-memory tier without bypassing Guardian |
-| MCP surface advertises 7 tools; the broader skill library has more (planning, provenance, contracts) | External agents can't reach planning / contract-verification | Add wrappers in `mcp_server/tools.py` + register in `server.py` |
-| Upstream warnings: `pyparsing`, `pandas4`, `datetime.utcnow()` deprecation in `test_simulation.py` | Test-run noise; no functional impact | Filter in `pyproject.toml` or pin compatible versions; replace `utcnow()` with timezone-aware `now(UTC)` |
-
----
-
-## 5. Architectural Decisions Log
-
-| Decision | Rationale | Date | Status |
+| Capability | Status | Evidence | Note |
 |---|---|---|---|
-| DevOps as first vertical | Bounded ontology, intervention-rich workflow, frequent outcome signals | 2025-Q4 | Committed |
-| LangGraph for workflow orchestration | Conditional edges, cycle detection, human-in-the-loop nodes | 2025-Q4 | Committed |
-| Neo4j for causal graph storage | Native graph traversal for d-separation, backdoor path queries | 2025-Q4 | Committed |
-| Guardian before all semantic writes | Enterprise trust requirement; aligns with EU AI Act governance | 2026-Q1 | Committed |
-| `EpistemicState` as session state contract | Single state object prevents context fragmentation across multi-step cycles | 2026-Q1 | Committed |
-| Minimalist-first UI with progressive disclosure | Reduces cognitive load; complexity added only on validated persona need | 2026-Q1 | Committed |
-| **MCP server as the agentic-skills surface** | Standard protocol; external agents (Claude Desktop, IDE plugins, custom clients) reach skills without re-implementing them | 2026-05-23 | Committed |
+| ATE point estimate: DoWhy backdoor linear regression, IV | `partial` | [dni:effect-estimate-unpinned](../conformance/declared_not_implemented.json) | Real DoWhy call; no ground-truth test |
+| Confidence intervals | `declared-not-implemented` | [dni:confidence-interval-constant](../conformance/declared_not_implemented.json) | Constant (-0.5, 0.5) |
+| Frontdoor estimation | `declared-not-implemented` | [dni:frontdoor-estimation](../conformance/declared_not_implemented.json) | Runs backdoor, labelled frontdoor |
+| Identification check | `declared-not-implemented` | [dni:identification-heuristic](../conformance/declared_not_implemented.json) | Assumption flags over dummy columns |
+| Counterfactuals over a structural causal model | `declared-not-implemented` | [dni:scm-counterfactuals](../conformance/declared_not_implemented.json) | Formula over edge confidences |
+| Causal discovery from data | `declared-not-implemented` | [dni:causal-discovery](../conformance/declared_not_implemented.json) | One edge between `uuid4()` nodes |
+| Sensitivity analysis (E-value, Rosenbaum bounds) | `declared-not-implemented` | [dni:sensitivity-analysis](../conformance/declared_not_implemented.json) | Scale-free formulas |
+| EconML / PyMC estimation backends | `declared-not-implemented` | [dni:econml-pymc](../conformance/declared_not_implemented.json) | Not dependencies |
+| Rust crates for DAG operations and belief tracking | `declared-not-implemented` | [dni:rust-crates](../conformance/declared_not_implemented.json) | No Rust in this repository |
+| `packages/causal-core` (standalone): identification catalog, estimation bias and interval coverage, refuter and triangulation error rates, per its pre-registered T0 gate | `implemented` | [packages/causal-core/tests/t0/test_t0_gate.py](../packages/causal-core/tests/t0/test_t0_gate.py) | Not called by `backend/` |
 
----
+### Governance
 
-## 6. Dependency Sequence (Phase Gates)
+| Capability | Status | Evidence | Note |
+|---|---|---|---|
+| Registry writes refused without an APPROVED `audit_log` verdict | `implemented` | [backend/tests/guardian/test_guardian_bypass.py](../backend/tests/guardian/test_guardian_bypass.py) | Existence and status only; see next row |
+| Verdicts bound to one object, single-use, unforgeable | `declared-not-implemented` | [dni:guardian-verdict-binding](../conformance/declared_not_implemented.json) | Replayable and forgeable |
+| API approval flow (`/check`, then `/approve`) | `declared-not-implemented` | [dni:guardian-check-always-rejects](../conformance/declared_not_implemented.json) | `/check` always REJECTED (PR-006) |
+| Approval notes and rejection reasons stored as text | `declared-not-implemented` | [dni:governance-reasons-not-stored](../conformance/declared_not_implemented.json) | Only a payload hash survives |
+| `/reject` validates the verdict it is given | `declared-not-implemented` | [dni:governance-reject-verdict-unchecked](../conformance/declared_not_implemented.json) | Any UUID accepted |
+| Review queue risk tier and submitter | `declared-not-implemented` | [dni:review-queue-risk-tier](../conformance/declared_not_implemented.json) | UI shows MEDIUM / "system" |
+| Audit log bounded by the client's `limit` | `declared-not-implemented` | [dni:audit-log-limit-ignored](../conformance/declared_not_implemented.json) | Endpoint reads `page_size` |
+| Governance UI shows only backend-confirmed decisions and audit rows | `implemented` | [frontend/src/app/governance/\_\_tests\_\_/page.test.tsx](../frontend/src/app/governance/__tests__/page.test.tsx) | Fixed in `17a394d` |
+| Provenance records written by real flows | `declared-not-implemented` | [dni:provenance-store-no-callers](../conformance/declared_not_implemented.json) | Writer has no callers |
+| TLA+ model of the Guardian policy, checked by TLC | `declared-not-implemented` | [dni:tla-spec-not-checked](../conformance/declared_not_implemented.json) | Not runnable as written |
 
-```
-[P1] Foundation (semantic layer + skills + Guardian + MCP surface) ✅ DONE
-  → [P2] DAG Workbench UI               ← next priority
-      → [P3] Decision Simulation Cockpit
-          → [P4] DevOps Vertical Agent (production)
-              → [P5] Second Vertical (Marketing / Supply Chain)
-```
+### Agents, MCP and API
 
-No phase gate can be bypassed. Platform coherence depends on each layer being stable before the next builds on it.
+| Capability | Status | Evidence | Note |
+|---|---|---|---|
+| Backend MCP server (`backend/mcp_server`): 7 causal tools over stdio, stdout reserved for protocol frames | `implemented` | [backend/tests/integration/test_mcp_stdio.py](../backend/tests/integration/test_mcp_stdio.py) | Outputs are only as real as the causal rows above |
+| `packages/causal-mcp`: causal-core over MCP (check graph, identify, analyze, verify narrative) | `implemented` | [packages/causal-mcp/tests/test_stdio_flow.py](../packages/causal-mcp/tests/test_stdio_flow.py) | Separate server; not what `.gnomon/tools.toml` wires in |
+| LLM capability routing used by the agents | `declared-not-implemented` | [dni:llm-routing-no-callers](../conformance/declared_not_implemented.json) | `get_llm` has no callers |
+| Session orchestration API (`/api/v1/session/run`, `/incident`) | `implemented` | [backend/tests/integration/test_session_api.py](../backend/tests/integration/test_session_api.py) | Agents are rule-based code |
+| Intervention feedback endpoint | `implemented` | [backend/tests/unit/test_interventions.py](../backend/tests/unit/test_interventions.py) | |
+| Health endpoint | `implemented` | [backend/tests/unit/test_health_api.py](../backend/tests/unit/test_health_api.py) | |
 
----
+### Data and infrastructure
 
-## 6b. "Blocked By" Matrix
+| Capability | Status | Evidence | Note |
+|---|---|---|---|
+| Prometheus connector (queries, response parsing) | `implemented` | [backend/tests/unit/test_connectors.py](../backend/tests/unit/test_connectors.py) | HTTP is mocked in the tests |
+| Neo4j as the causal graph store | `declared-not-implemented` | [dni:neo4j-graph-store](../conformance/declared_not_implemented.json) | Graph lives in SQL; Neo4j paths tested only with mocks |
+| Kafka event streaming | `declared-not-implemented` | [dni:kafka-streaming](../conformance/declared_not_implemented.json) | No client; broker unused |
 
-| Work stream | Blocked by |
-|---|---|
-| DAG Workbench UI | Nothing — ready to start (Phase 1 complete) |
-| Phase 3 cockpit | DAG Workbench must produce reusable fragments first |
-| Phase 4 DevOps vertical | DAG Workbench (for domain ontology templates); cockpit (for intervention surface) |
-| Outcome-feedback → graph update loop | Phase 2 reusable-fragments infrastructure must land |
-| Enterprise IdP swap | Frontend auth integration refactor |
+### Frontend
 
----
+| Capability | Status | Evidence | Note |
+|---|---|---|---|
+| DAG Workbench (unified graph authoring) | `planned` | [dni:dag-workbench](../conformance/declared_not_implemented.json) | Not built |
 
-## 7. Success Metrics by Phase
+### Delivery
 
-### Phase 1 (Done)
-- Semantic layer objects: ≥5 entity types, ≥3 treatment types, ≥4 confounder types ✅
-- Every approved edge has owner, lineage, timestamp, assumption set ✅
-- 100% of semantic writes pass through Guardian verdict ✅
-- All 7 causal skills callable via MCP with JSON-native I/O and structured error envelope ✅
+| Capability | Status | Evidence | Note |
+|---|---|---|---|
+| GitHub Actions quality gates that block a merge | `declared-not-implemented` | [dni:ci-pipeline-green](../conformance/declared_not_implemented.json) | `.gnomon/ci.sh` is the working gate |
 
-### Phase 2 (Next)
-- DAG Workbench: non-technical SME proposes + approves a graph fragment in <30 min (first session)
-- Agent edge suggestions: ≥70% accepted rate in usability tests
-- ≥3 approved reusable fragments per domain at launch
+## Fixed items (moved off the register)
 
-### Phase 3
-- Decision Simulation: analyst compares ≥2 interventions in <5 min
-- ≥80% of explanations rated "causally intelligible" in user testing
-- 100% of simulation outputs linkable to an approved graph asset + assumption set
+| Was | Fixed in | Pinned by |
+|---|---|---|
+| 2 of 7 MCP tools crashed at INFO; logs went to stdout, the stdio protocol channel | `3aecd16` | [backend/tests/integration/test_mcp_stdio.py](../backend/tests/integration/test_mcp_stdio.py) |
+| Governance UI showed approvals and audit rows no backend call had confirmed | `17a394d` | [frontend/src/app/governance/\_\_tests\_\_/page.test.tsx](../frontend/src/app/governance/__tests__/page.test.tsx) |
+| `packages/causal-core` was planned, not built | `a0e4951` | [packages/causal-core/tests/t0/test_t0_gate.py](../packages/causal-core/tests/t0/test_t0_gate.py) |
 
-### Phase 4 (DevOps GA)
-- Time to root-cause identification: ≥30% reduction vs. baseline
-- Incident resolution quality: ≥20% improvement (operator-rated)
-- Measurable reduction in unnecessary rollbacks over 90-day period
+## Gates
+
+`.gnomon/ci.sh` is the command that decides whether a change passes. It prints PASS, FAIL or SKIPPED for each step, with a count of what the step inspected. The numbers it holds are ratchets. Each file records when and against which commit its number was measured:
+
+| Gate | Committed baseline | Measured 2026-09-19 |
+|---|---|---|
+| Backend tests (unit, integration, guardian) | at least 500 tests; every test file reports ([`scripts/gate-scope-floors.json`](../scripts/gate-scope-floors.json)) | 560 passed |
+| Backend line coverage, full suite | floor 80.0%, may only rise ([`scripts/coverage-floor.json`](../scripts/coverage-floor.json)) | 80.01% |
+| ruff (backend/) | at most 451 findings, may only fall ([`scripts/lint-baseline.json`](../scripts/lint-baseline.json)) | 451 |
+| mypy --strict (backend/src) | at most 46 errors, may only fall | 46 |
+| Frontend tsc / vitest | must pass | 46 files, 47 tests |
+| Frontend eslint | none: `frontend/` has no eslint config | SKIPPED |
+| Every Python package under `packages/` | its suite must pass, in the package's environment | causal-core 93 passed (T0 gate included); causal-mcp 10 passed |
+| Skill modules imported by a test | 6 known gaps, may only shrink | 4 of 10 |
+| State-changing routes called by a test | 6 known gaps, may only shrink | 5 of 11 |
+| MCP tools referenced by a test | no gaps allowed | 7 of 7 |
+
+`scripts/doc_reconciliation.py` reports which documents in `docs/` are owed a re-read because the code they describe has changed. Only this page and the root README had been read against the code when tracking began.

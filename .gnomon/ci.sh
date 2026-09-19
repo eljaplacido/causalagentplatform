@@ -20,8 +20,10 @@
 # that is wrong. Logs land in .gnomon-out/ci/<step>.log (outside the hashed
 # surface, git-ignored); a failing step prints its tail.
 #
-# The numbers the ratchets hold are in scripts/coverage-floor.json and
-# scripts/lint-baseline.json; each says when and against what it was measured.
+# The numbers the ratchets hold are in scripts/coverage-floor.json,
+# scripts/lint-baseline.json and scripts/gate-scope-floors.json; each says when
+# and against what it was measured. What the docs may claim is held by
+# conformance/declared_not_implemented.json and docs/CURRENT_STAGE.md.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 ROOT="$(pwd)"
@@ -43,6 +45,11 @@ record() {  # name status detail seconds
 }
 show_tail() { echo "   ── last lines of $1 ──"; tail -n "${2:-25}" "$1" | sed 's/^/   | /'; }
 header() { echo ""; echo "═══ $1 ═══"; }
+# Run a command, print its output indented, return ITS status (not sed's).
+indented() { "$@" > "$LOG_DIR/.indented" 2>&1; local rc=$?; sed 's/^/   /' "$LOG_DIR/.indented"; return $rc; }
+# A smoke alarm for scope collapse: the count a step inspected must not fall
+# under its floor in scripts/gate-scope-floors.json (scripts/gate_scope.py).
+scope_floor() { indented "$PY" scripts/gate_scope.py floor "$1" "$2"; }
 
 # ── Toolchains ───────────────────────────────────────────────────────────────
 # Backend: a bin/ directory holding python, pytest, ruff and mypy. BACKEND_VENV
@@ -81,13 +88,23 @@ if [ -z "$PYBIN" ]; then
 else
     t0=$SECONDS
     ( cd backend && "$PYBIN/pytest" -q -p no:cacheprovider --cov=src \
-        --cov-report="json:$COV_JSON" ) > "$LOG_DIR/backend-pytest.log" 2>&1
+        --cov-report="json:$COV_JSON" --junitxml="$LOG_DIR/pytest-junit.xml" ) \
+        > "$LOG_DIR/backend-pytest.log" 2>&1
     rc=$?
     summary="$(grep -E '^=+ .*(passed|failed|error).* in [0-9.]+s' "$LOG_DIR/backend-pytest.log" | tail -1 | sed -E 's/=+//g; s/^ +| +$//g')"
     passed="$(echo "$summary" | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || true)"
     passed="${passed:-0}"
     if [ "$rc" -eq 0 ] && [ "$passed" -gt 0 ]; then
-        record backend-pytest PASS "$passed passed (backend/tests: unit+integration+guardian) -- $summary" $((SECONDS - t0))
+        # Scope: the count must clear its floor, and EVERY backend/tests/**/test_*.py
+        # must have reported a test (identity, read from the JUnit report) -- so a
+        # test file that stops being collected fails here instead of vanishing.
+        if scope_floor backend-tests "$passed" \
+           && indented "$PY" scripts/gate_scope.py pytest-files --junit "$LOG_DIR/pytest-junit.xml"; then
+            files="$(grep -oE 'pytest-files: [0-9]+/[0-9]+' "$LOG_DIR/.indented" | cut -d' ' -f2)"
+            record backend-pytest PASS "$passed passed, ${files:-?} test files reported -- $summary" $((SECONDS - t0))
+        else
+            record backend-pytest FAIL "$passed passed, but the run's scope check failed (above)" $((SECONDS - t0))
+        fi
     else
         show_tail "$LOG_DIR/backend-pytest.log" 40
         record backend-pytest FAIL "exit $rc, ${passed} passed -- ${summary:-no pytest summary line}" $((SECONDS - t0))
@@ -109,13 +126,18 @@ fi
 # Counts may not rise above scripts/lint-baseline.json, and the committed maxima
 # may only fall. The args each tool runs with live in that file, next to the
 # number they produced.
-ratchet_step() {  # step-name entry [binary]
-    local name="$1" entry="$2" bin="${3:-}" t0=$SECONDS rc detail
+ratchet_step() {  # step-name entry [binary] [floor-id]
+    local name="$1" entry="$2" bin="${3:-}" floor_id="${4:-}" t0=$SECONDS rc detail nfiles
     "$PY" scripts/lint_ratchet.py "$entry" ${bin:+--bin "$bin"} > "$LOG_DIR/$name.log" 2>&1
     rc=$?
     sed 's/^/   /' "$LOG_DIR/$name.log"
     if [ "$rc" -eq 0 ]; then
         detail="$(grep -m1 -oE '[0-9]+ findings over [0-9]+ files \(max [0-9]+\)' "$LOG_DIR/$name.log")"
+        nfiles="$(echo "$detail" | grep -oE 'over [0-9]+' | grep -oE '[0-9]+')"
+        if [ -n "$floor_id" ] && ! scope_floor "$floor_id" "${nfiles:-x}"; then
+            record "$name" FAIL "$detail -- but under its scope floor (above)" $((SECONDS - t0))
+            return
+        fi
         record "$name" PASS "$detail" $((SECONDS - t0))
     else
         record "$name" FAIL "$(grep -m1 FAIL "$LOG_DIR/$name.log" | cut -c6-170)" $((SECONDS - t0))
@@ -124,7 +146,7 @@ ratchet_step() {  # step-name entry [binary]
 
 header "backend: ruff ratchet"
 if [ -n "$PYBIN" ] && [ -x "$PYBIN/ruff" ]; then
-    ratchet_step backend-ruff ruff "$PYBIN/ruff"
+    ratchet_step backend-ruff ruff "$PYBIN/ruff" backend-ruff-files
     ratchet_step scripts-ruff ruff-scripts "$PYBIN/ruff"
 else
     record backend-ruff SKIPPED "ruff not installed in the backend toolchain" 0
@@ -133,7 +155,7 @@ fi
 
 header "backend: mypy --strict ratchet"
 if [ -n "$PYBIN" ] && [ -x "$PYBIN/mypy" ]; then
-    ratchet_step backend-mypy mypy "$PYBIN/mypy"
+    ratchet_step backend-mypy mypy "$PYBIN/mypy" backend-mypy-files
 else
     record backend-mypy SKIPPED "mypy not installed in the backend toolchain" 0
 fi
@@ -155,7 +177,7 @@ else
     # --listFiles prints every file in the program; the project's own are the
     # ones outside node_modules. That count is what "typechecked" means here.
     n="$(grep '^/' "$LOG_DIR/frontend-tsc.log" | grep -vc node_modules || true)"
-    if [ "$rc" -eq 0 ] && [ "${n:-0}" -gt 0 ]; then
+    if [ "$rc" -eq 0 ] && [ "${n:-0}" -gt 0 ] && scope_floor frontend-tsc-files "$n"; then
         record frontend-tsc PASS "$n project files typecheck (tsc --noEmit)" $((SECONDS - t0))
     else
         grep -v '^/' "$LOG_DIR/frontend-tsc.log" | tail -25 | sed 's/^/   | /'
@@ -163,14 +185,18 @@ else
     fi
 
     t0=$SECONDS
-    ( cd frontend && npx --no-install vitest run ) > "$LOG_DIR/frontend-vitest.log" 2>&1
+    # The JSON report is what the per-file identity check reads: the default
+    # reporter prints only totals when not on a terminal.
+    ( cd frontend && npx --no-install vitest run --reporter=default --reporter=json \
+        --outputFile.json="$LOG_DIR/vitest.json" ) > "$LOG_DIR/frontend-vitest.log" 2>&1
     rc=$?
     ESC=$(printf '\033')
     plain="$(sed -E "s/${ESC}\[[0-9;]*[A-Za-z]//g" "$LOG_DIR/frontend-vitest.log")"
     n="$(echo "$plain" | grep -E '^ *Tests +' | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' | tail -1 || true)"
     files="$(echo "$plain" | grep -E '^ *Test Files +' | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' | tail -1 || true)"
-    if [ "$rc" -eq 0 ] && [ "${n:-0}" -gt 0 ]; then
-        record frontend-vitest PASS "${n} tests passed in ${files:-?} files" $((SECONDS - t0))
+    if [ "$rc" -eq 0 ] && [ "${n:-0}" -gt 0 ] && scope_floor frontend-tests "$n" \
+       && indented "$PY" scripts/gate_scope.py vitest-files --json "$LOG_DIR/vitest.json"; then
+        record frontend-vitest PASS "${n} tests passed in ${files:-?} files (every test file reported)" $((SECONDS - t0))
     else
         show_tail "$LOG_DIR/frontend-vitest.log" 30
         record frontend-vitest FAIL "exit $rc, ${n:-0} passed" $((SECONDS - t0))
@@ -271,6 +297,49 @@ for name in $PKG_ORDER; do
         record "$name" FAIL "RAN: exit $rc -- ${n_pass} passed, ${n_fail} failed, ${n_err} errors, ${n_skip} skipped" $((SECONDS - t0))
     fi
 done
+
+# ── 5. Scope, status claims, documents ───────────────────────────────────────
+# gate-scope     identity checks derived from the code: every skill module is
+#                imported by a test, every registered MCP tool and every
+#                state-changing route is referenced by one, every decorated route
+#                is mounted. Today's gaps are listed by name in
+#                scripts/gate-scope-floors.json; a NEW gap fails, and so does a
+#                listed gap that has been closed but not struck off.
+# status-claims  docs/CURRENT_STAGE.md and conformance/declared_not_implemented.json
+#                agree with each other and with the tree (scripts/status_claims.py).
+# doc-reconciliation  which documents are owed a re-read because the code they
+#                describe changed. REPORTED, not failed -- a hard gate on every
+#                code change would be switched off within a month (gnomon's
+#                reasoning, kept). It fails only when its own manifest is wrong:
+#                an untracked doc, or a subject path that matches nothing.
+header "gate scope / status claims / doc reconciliation"
+t0=$SECONDS
+if [ -z "$PYBIN" ]; then
+    record gate-scope SKIPPED "needs the backend toolchain (it loads the live MCP server and FastAPI app)" 0
+elif indented "$PY" scripts/gate_scope.py identity-all; then
+    detail="$(grep -oE '(skills-imported|mcp-tools|routes-tested|routes-mounted): [0-9]+/[0-9]+ covered(, [0-9]+ known gap\(s\) listed)?' "$LOG_DIR/.indented" \
+        | sed -E 's/ covered//; s/, ([0-9]+) known gap\(s\) listed/ (\1 known gaps)/' | paste -sd ';' - | sed 's/;/; /g')"
+    record gate-scope PASS "$detail" $((SECONDS - t0))
+else
+    record gate-scope FAIL "$(grep -m1 FAIL "$LOG_DIR/.indented" | sed 's/^ *FAIL *//' | cut -c1-150)" $((SECONDS - t0))
+fi
+
+t0=$SECONDS
+if indented "$PY" scripts/status_claims.py; then
+    record status-claims PASS "$(grep -m1 -oE 'register: .*' "$LOG_DIR/.indented" | cut -c1-230)" $((SECONDS - t0))
+else
+    record status-claims FAIL "$(grep -m1 FAIL "$LOG_DIR/.indented" | sed 's/^ *FAIL *//' | cut -c1-150)" $((SECONDS - t0))
+fi
+
+t0=$SECONDS
+if indented "$PY" scripts/doc_reconciliation.py; then
+    tracked="$(grep -oE '[0-9]+ document\(s\) tracked' "$LOG_DIR/.indented" | grep -oE '[0-9]+')"
+    moved="$(grep -oE '[0-9]+ owed a re-read' "$LOG_DIR/.indented" | grep -oE '[0-9]+' || true)"
+    never="$(grep -oE '[0-9]+ never read against the code' "$LOG_DIR/.indented" | grep -oE '[0-9]+' || true)"
+    record doc-reconciliation PASS "${tracked:-?} docs tracked; owed a re-read: ${moved:-0} (code moved) + ${never:-0} (never read) -- reported, not gated" $((SECONDS - t0))
+else
+    record doc-reconciliation FAIL "$(grep -m1 FAIL "$LOG_DIR/.indented" | sed 's/^ *FAIL *//' | cut -c1-150)" $((SECONDS - t0))
+fi
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""

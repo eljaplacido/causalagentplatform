@@ -53,8 +53,10 @@ people act on, so these rules are stricter than the ones above:
 - A test of a causal number asserts it against a known ground truth — data
   simulated from a structural model whose true effect you set — never
   against whatever the code returned last time.
-- Status claims are checked, not asserted. `docs/CURRENT_STAGE.md` says what
-  is implemented; do not describe a capability it does not list as
-  implemented as if it works.
+- Status claims are checked, not asserted. `docs/CURRENT_STAGE.md` and
+  `conformance/declared_not_implemented.json` say what is implemented; do
+  not describe a capability either lists as not implemented as if it works.
+  When you implement one, its leaves_by test is the proof: move the entry to
+  `left_the_list` and update its row in the same change.
 - Done is decided by `.gnomon/ci.sh`, not by your account of the work. Run
   it and paste its per-step summary.
