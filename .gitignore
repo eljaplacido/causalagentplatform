@@ -63,3 +63,22 @@ target/
 *.key
 serviceAccountKey.json
 firebase-adminsdk-*.json
+
+# Credentials dropped as plain text files (a DeepSeek key once leaked this way)
+api.txt*
+*.api.txt
+*_api_key*
+
+# Personal agent/IDE tooling: machine-specific, never part of the project
+.antigravity/
+.cursor/
+.opencode/
+.openfang/
+goodprompts/
+
+# Stray artefacts from mistyped shell commands (e.g. `pip install x>=1.11.0`)
+=*
+
+# Claude Code local state (agent worktrees, per-machine settings)
+.claude/worktrees/
+.claude/settings.local.json
