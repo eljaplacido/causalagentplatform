@@ -117,10 +117,13 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+# No --cov-fail-under here. It applied to EVERY run, so the unit-only CI job
+# (~75%) and any single-file run failed on coverage of code they never touched.
+# Coverage is judged once, on the full suite, by scripts/coverage_gate.py against
+# the committed ratchet in scripts/coverage-floor.json (run by .gnomon/ci.sh).
 addopts = [
     "--cov=src",
     "--cov-report=term-missing",
-    "--cov-fail-under=80",
     "--tb=short",
     "-v",
 ]
@@ -136,7 +139,8 @@ source = ["src"]
 omit = ["tests/*", "src/db/migrations/*", "scripts/*"]
 
 [tool.coverage.report]
-fail_under = 80
+# fail_under removed for the same reason as --cov-fail-under above: the floor is
+# a ratchet in scripts/coverage-floor.json, enforced on the full suite only.
 show_missing = true
 
 # ── Bandit SAST ───────────────────────────────────────────────────────────────

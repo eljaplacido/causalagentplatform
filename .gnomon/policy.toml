@@ -85,3 +85,23 @@ network = false
 #   a model cleared that bar 1 time in 9. Off by default -- it re-runs the check
 #   once more per turn, and a surface that has not asked should not pay for it.
 # test_paths = ["**/test_*.py", "**/tests/**"]   # what counts as a test
+
+# This repository's declared check. .gnomon/verify.sh is FAST (~4s: ruff's
+# hard-error rules on changed Python, the ruff ratchet, the backend unit +
+# guardian suites, tsc when frontend TypeScript changed) and NON-RECURSIVE (it
+# never starts gnomon or .gnomon/ci.sh). It prints how many things it checked
+# and exits 1 when that is zero. The full gate -- whole suite, coverage floor,
+# mypy, frontend, gate scope, doc reconciliation -- is .gnomon/ci.sh, which the
+# verifier role runs.
+#
+# after = "write", knowingly. The comment above records the cost: a turn that
+# changes files only through the shell (heredoc, sed -i) is NOT checked, and
+# gnomon says so (verify_skipped_shell_only). "always" would run the unit suite
+# after every read-only turn too. The chain's verifier stage is TOLD to run
+# ci.sh (roles.toml description, system.md) -- that is an instruction to a model,
+# not a gate, so a shell-only change can still pass this check unexamined. The
+# limit is named here rather than implied away.
+[verify]
+command = ".gnomon/verify.sh"
+after = "write"
+max_rounds = 1

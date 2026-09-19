@@ -36,3 +36,27 @@ Rules:
 - Get to something that works end to end first, then improve it. If the
   deliverable is not on disk yet, make it exist before refining anything —
   a turn spent validating a thing that was never produced scores nothing.
+
+This repository is a causal-inference platform. Its product is numbers that
+people act on, so these rules are stricter than the ones above:
+
+- Every causal number you state — an effect estimate, a confidence interval,
+  an identification verdict, an E-value or sensitivity bound, a p-value, a
+  counterfactual range — must come from a tool result in this session: an
+  `mcp__causal__*` call, a test run, or a script you executed. Quote which
+  call produced it. A causal number you reasoned your way to is a guess
+  formatted as a finding; if no tool produced it, say it is unmeasured.
+- A tool result is provenance, not truth. Several of these tools return graph
+  heuristics or a constant interval. Report the labels the tool attaches
+  (`estimator`, `identification_status`, `sensitivity_labels`) next to the
+  number, and check `docs/CURRENT_STAGE.md` before calling a result real.
+- A test of a causal number asserts it against a known ground truth — data
+  simulated from a structural model whose true effect you set — never
+  against whatever the code returned last time.
+- Status claims are checked, not asserted. `docs/CURRENT_STAGE.md` and
+  `conformance/declared_not_implemented.json` say what is implemented; do
+  not describe a capability either lists as not implemented as if it works.
+  When you implement one, its leaves_by test is the proof: move the entry to
+  `left_the_list` and update its row in the same change.
+- Done is decided by `.gnomon/ci.sh`, not by your account of the work. Run
+  it and paste its per-step summary.

@@ -20,7 +20,11 @@ enabled = true
 name = "bash"
 description = "Execute a POSIX sh command (/bin/sh, not bash: no pipefail, [[ ]] or arrays). Runs in the project root every time — cd does not persist between calls, so use absolute paths. To leave a service running past the call, detach it into a log this harness can read: mkdir -p .gnomon-jobs && sh -c 'cmd' </dev/null >.gnomon-jobs/svc.log 2>&1 & — on Linux/macOS prefix 'setsid ' so a cancelled turn does not kill it; Git for Windows ships no setsid, so omit it there."
 enabled = true
-timeout_seconds = 120
+# 300, not the scaffold's 120: the verifier runs .gnomon/ci.sh through this tool,
+# and ci.sh measured ~2m10s on 2026-09-19 (backend suite ~20s, packages/causal-core
+# with its T0 gate ~100s, causal-mcp ~4s). At 120s every verifier run would end as an apparatus
+# failure (timed out) rather than a verdict.
+timeout_seconds = 300
 
 # Outside the surface, like sessions and audit: a note changes no behaviour and
 # no hash, it only lets a long run remember what it already tried. Read back as
@@ -87,3 +91,31 @@ enabled = true
 # command = "npx"
 # args = ["-y", "@example/mcp-server@1.0.0"]
 # env = ["EXAMPLE_API_KEY"]   # env var NAMES to forward; values never in the surface
+
+# This repository's own causal skills (backend/mcp_server/server.py, 7 tools),
+# offered to a role that lists "mcp__causal". system.md requires every causal
+# number an agent states to come from a tool result; these are the tools.
+#
+# Pinned by the commit, not a version string: the server is code in this tree,
+# so its behaviour moves with the checkout -- still OUTSIDE the surface hash,
+# like any MCP server. Two things about the invocation, both forced by gnomon
+# 0.2.3's McpServerDef (transport, command, args, env -- there is no `cwd` key):
+#   * `python -m mcp_server.server` must run from backend/, so the command cds
+#     to the checkout root's backend/ itself rather than trusting the directory
+#     gnomon was launched from (it finds .gnomon/ by walking up, so that can be
+#     a subdirectory).
+#   * The interpreter is backend/.venv; in a git worktree, which has no venv of
+#     its own, the main checkout's -- derived from git, never written down.
+#     (`causal-mcp` is the console script pyproject declares, but it is only on
+#     PATH in an environment where the package was installed with its scripts,
+#     so it is not relied on here.)
+# gnomon passes the server only PATH/HOME/TMPDIR/LANG-type variables plus the
+# names in `env`; the server needs no secret, so `env` is empty.
+#
+# A tool RESULT is provenance, not truth: several of these tools return graph
+# heuristics or a constant interval -- see docs/CURRENT_STAGE.md for which.
+[mcp_servers.causal]
+transport = "stdio"
+command = "sh"
+args = ["-c", 'cd "$(git rev-parse --show-toplevel)/backend" || exit 1; V=.venv; test -x "$V/bin/python" || V="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")/backend/.venv"; exec "$V/bin/python" -m mcp_server.server']
+env = []

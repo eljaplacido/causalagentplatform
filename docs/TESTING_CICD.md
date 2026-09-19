@@ -37,8 +37,8 @@ The platform makes causal claims. A bug in a recommendation engine is not just a
                     └───────────────────┘
 ```
 
-**Current baseline (this repo, 2026-05-24):**
-- Backend: **551 passing tests**, ~80% line coverage (see `pyproject.toml` `--cov-fail-under` gate)
+**Current baseline (this repo, measured 2026-09-19):**
+- Backend: **560 passing tests** (count printed by `.gnomon/ci.sh` on every run), 80.01% line coverage on the full suite (75.03% unit-only). The gate is a ratchet in `scripts/coverage-floor.json`, run by `.gnomon/ci.sh`; the global `--cov-fail-under` was removed from `pyproject.toml` because it failed every partial run. None of these tests asserts a causal estimate against a known ground truth.
 - Frontend: Playwright e2e suite at `frontend/e2e/platform.spec.ts` (22 specs)
 
 **Target:** ≥ 80% line coverage across Python backend, ≥ 85% branch coverage on Guardian/semantic layer paths, 100% coverage on `audit_write` and `guardian_check`.

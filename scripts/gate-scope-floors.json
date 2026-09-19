@@ -1,0 +1,85 @@
+{
+  "_comment": [
+    "What each gate must have looked at before it may say 'pass' -- read by",
+    "scripts/gate_scope.py (a Python port of gnomon's scripts/gate_scope.mjs).",
+    "",
+    "known_gaps: today's REAL gaps in the identity checks, each named, so the gate",
+    "passes today and fails on any NEW gap. The lists only shrink: an entry that is",
+    "no longer a gap fails the gate until it is removed, and an entry added since",
+    "the merge base with main fails unless the commit says `Ratchet-Exempt: <why>`.",
+    "Every item here is a thing nothing in backend/tests/ touches directly.",
+    "",
+    "floors: smoke alarms for scope collapse, set well BELOW today's counts so",
+    "ordinary work never trips them and a broken selector always does. A floor is",
+    "the weaker instrument -- it cannot see a partial miss -- which is why the",
+    "identity checks (pytest-files, vitest-files, skills-imported, mcp-tools,",
+    "routes-*) exist beside them.",
+    "",
+    "Measured 2026-09-19 at abf97db: backend 560 tests in 33 files, frontend 47",
+    "tests in 5 files, ruff over 103 files, mypy over 59, tsc over 46; skills 4/10",
+    "imported by a test, MCP tools 7/7 referenced, state-changing routes 5/11",
+    "referenced, 11/11 mounted."
+  ],
+  "floors": {
+    "backend-tests": {
+      "floor": 500,
+      "why": "The full backend suite (560 on 2026-09-19). The unit+guardian subset alone is 482, so a run that silently lost the integration suite lands under 500."
+    },
+    "frontend-tests": {
+      "floor": 35,
+      "why": "The vitest suite (47 on 2026-09-19). vitest-files is the identity check per file; this catches the run collapsing outright."
+    },
+    "backend-ruff-files": {
+      "floor": 90,
+      "why": "Python files ruff inspected under backend/ (103). Under 90 means the selector in scripts/lint-baseline.json stopped meaning all of backend/."
+    },
+    "backend-mypy-files": {
+      "floor": 50,
+      "why": "Source files mypy --strict checked under backend/src (59). Under 50 means a package fell out of the check, which would lower the error count for the wrong reason."
+    },
+    "frontend-tsc-files": {
+      "floor": 35,
+      "why": "Project (non-node_modules) files in the tsc program (46). Under 35 means tsconfig's include stopped reaching src/."
+    }
+  },
+  "known_gaps": {
+    "skills-imported": {
+      "why": "Skill modules no test imports. They run only transitively (MCP wrappers, agents), so no test pins their own contract. Each leaves this list when a test imports it -- ideally one asserting its output against a known ground truth.",
+      "items": [
+        "_experience_buffer_sql",
+        "counterfactual_reason",
+        "experience_buffer",
+        "identification_check",
+        "intervention_estimate",
+        "sensitivity_analysis"
+      ]
+    },
+    "mcp-tools": {
+      "why": "None today: all 7 registered tools are referenced (tests/unit/test_mcp_tools.py calls each wrapper; tests/integration/test_mcp_stdio.py calls each over stdio).",
+      "items": []
+    },
+    "routes-tested": {
+      "why": "State-changing routes no test calls, over HTTP or by handler. Governance approve/reject are the routes the governance UI now depends on for real decisions.",
+      "items": [
+        "DELETE /api/v1/provenance/session/{session_id}",
+        "POST /api/governance/approve/{object_id}",
+        "POST /api/governance/reject/{object_id}",
+        "POST /api/v1/interventions/{intervention_id}/approve",
+        "POST /api/v1/interventions/{intervention_id}/reject",
+        "POST /api/v1/platform/evaluation/calibration"
+      ]
+    },
+    "routes-mounted": {
+      "why": "None today: every state-changing handler decorated in backend/src/api/ is mounted on the app.",
+      "items": []
+    },
+    "pytest-files": {
+      "why": "None today: every backend/tests/**/test_*.py reports at least one test.",
+      "items": []
+    },
+    "vitest-files": {
+      "why": "None today: every frontend/src test file reports at least one test.",
+      "items": []
+    }
+  }
+}
