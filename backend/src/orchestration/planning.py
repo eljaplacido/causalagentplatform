@@ -317,8 +317,8 @@ async def _simulate_single_action(
     """
     Simulate a single action against the approved causal graph.
 
-    Uses the effect_estimate skill when an approved fragment is available.
-    Falls back to a confidence-weighted heuristic when no fragment is provided.
+    Uses the effect_estimate skill when an approved fragment is available. Without
+    observational data it returns no estimate (None) rather than a heuristic number.
 
     Returns:
         (estimated_effect, confidence, failure_detected, failure_reason)
@@ -332,7 +332,7 @@ async def _simulate_single_action(
                 fragment=fragment,
                 identification_strategy="backdoor",
                 assumptions=[],
-                data=None,  # Observational data unavailable → heuristic
+                data=None,  # no observational data here: the kernel refuses, ate is None
             )
             ate = result.get("ate")
             estimator = result.get("estimator", "unknown")

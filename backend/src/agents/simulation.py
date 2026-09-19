@@ -167,8 +167,35 @@ class SimulationAgent(BaseAgent):
             state,
         )
 
-        ate = float(estimate_out.get("ate", 0.0))
-        ci = estimate_out.get("confidence_interval", [0.0, 0.0])
+        if estimate_out.get("ate") is None:
+            # No estimate (no data, a design check failed, or a typed refusal): say why and
+            # stop. A simulation result without an estimate would be a fabricated number.
+            detail = str(
+                estimate_out.get("detail") or estimate_out.get("error") or "no estimate returned"
+            )
+            state = state.model_copy(
+                update={
+                    "requires_human_review": True,
+                    "flags": [*state.flags, "no_effect_estimate"],
+                    "draft_explanation": (
+                        f"Identification: {identification_status}. No effect estimate: {detail}"
+                    ),
+                }
+            )
+            return self._add_reasoning_step(
+                state,
+                node="Simulation",
+                action="ESTIMATE_REFUSED",
+                inputs={"fragment_id": state.active_graph_fragment_id},
+                outputs={
+                    "status": estimate_out.get("status"),
+                    "reason": estimate_out.get("refusal_reason"),
+                    "detail": detail,
+                },
+            )
+
+        ate = float(estimate_out["ate"])
+        ci = list(estimate_out.get("confidence_interval") or [None, None])
         estimator = estimate_out.get("estimator", "unknown")
 
         # Step 4: Sensitivity analysis
@@ -182,7 +209,17 @@ class SimulationAgent(BaseAgent):
             state,
         )
         e_value = sensitivity_out.get("e_value")
-        robust = sensitivity_out.get("robust_to_unmeasured_confounding", False)
+        robust = sensitivity_out.get("robust_to_unmeasured_confounding")
+        # The kernel computed its sensitivity analysis from the data (it knows the
+        # outcome's scale); prefer it to the skill's scale-limited version.
+        kernel_sens = (estimate_out.get("outcome") or {}).get("sensitivity") or {}
+        if kernel_sens.get("e_value") is not None:
+            e_value = kernel_sens["e_value"]
+            e_ci = kernel_sens.get("e_value_ci")
+            robust = None if e_ci is None else bool(e_ci >= 2.0)
+        ci_ok = len(ci) == 2 and None not in ci
+        ci_text = f"[{ci[0]:.4f}, {ci[1]:.4f}]" if ci_ok else "unavailable"
+        sensitivity_label = {True: "ROBUST", False: "SENSITIVE"}.get(robust, "UNASSESSED")
 
         from uuid import UUID
 
@@ -195,22 +232,19 @@ class SimulationAgent(BaseAgent):
             treatment_id=treatment_id,
             outcome_id=outcome_id,
             ate_estimate=ate,
-            confidence_interval=ci,
+            confidence_interval=[float(c) for c in ci] if ci_ok else [],
             identification_status=identification_status,
-            sensitivity_label="ROBUST" if robust else "SENSITIVE",
+            sensitivity_label=sensitivity_label,
         )
 
         recommendations = [
             Recommendation(
                 rank=1,
-                action=(
-                    f"Estimated ATE: {ate:.4f} "
-                    f"(CI: [{ci[0]:.4f}, {ci[1]:.4f}])"
-                ),
+                action=f"Estimated ATE: {ate:.4f} (CI: {ci_text})",
                 rationale=(
-                    f"Identified via {estimator}. "
+                    f"Estimated by {estimator}. "
                     f"E-value: {e_value or 'N/A'}. "
-                    f"{'Robust' if robust else 'Sensitive'} to unmeasured confounding."
+                    f"Sensitivity to unmeasured confounding: {sensitivity_label.lower()}."
                 ),
                 confidence=min(abs(ate), 1.0),
                 risk_tier="LOW" if robust else "HIGH",
@@ -224,7 +258,7 @@ class SimulationAgent(BaseAgent):
                 "draft_explanation": (
                     f"Simulation complete. ATE estimate: {ate:.4f}. "
                     f"Identification: {identification_status}. "
-                    f"Sensitivity: {'robust' if robust else 'sensitive to unmeasured confounding'}."
+                    f"Sensitivity: {sensitivity_label.lower()}."
                 ),
             }
         )

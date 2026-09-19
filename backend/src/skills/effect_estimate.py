@@ -1,43 +1,56 @@
 """
-Effect estimation skill using DoWhy for causal inference.
+Effect estimation skill, backed by the causal-core kernel.
 
-This module provides the production implementation of the effect_estimate skill,
-computing Average Treatment Effects (ATE) using DoWhy's identification and 
-estimation framework.
+The kernel identifies the effect from the fragment's graph before estimating
+it, checks the design (overlap, sample size, missing data), estimates with a
+portfolio of estimators whose intervals come from influence functions, and
+returns a typed outcome: a result, a refusal with a reason, or an apparatus
+failure. This skill maps that outcome onto the dict its callers read and adds
+the full contract object under ``"outcome"``.
+
+What it no longer does:
+  * return a hard-coded constant interval when a bootstrap failed;
+  * return a "graph heuristic" effect when no data are given. Without data
+    there is no estimate, and the result says so.
 
 EpistemicState constraints enforced:
-- require_approved_fragment: Only operates on APPROVED graph fragments
-- audit_log_required: All estimations logged
+- require_approved_fragment: only APPROVED fragments can be estimated
+- audit_log_required: every estimation is logged with its outcome kind
 """
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
-import numpy as np
 import pandas as pd
+import structlog
+from causal_core import analyze
+from causal_core.contract import Abstention, CausalResult
 
-logger = logging.getLogger(__name__)
+from src.skills._kernel import fragment_to_graph, outcome_id, treatment_id
 
-# Try to import DoWhy - if not available, provide informative error
-try:
-    import dowhy
-    from dowhy import CausalModel
-    DOWHY_AVAILABLE = True
-except ImportError:
-    DOWHY_AVAILABLE = False
-    logger.warning("DoWhy not installed. Effect estimation will use fallback implementation.")
+logger = structlog.get_logger(__name__)
 
 
 class EffectEstimationError(Exception):
-    """Raised when effect estimation fails."""
-    pass
+    """Raised when effect estimation is not allowed (e.g. an unapproved fragment)."""
 
 
 class InsufficientDataError(EffectEstimationError):
-    """Raised when insufficient data for estimation."""
-    pass
+    """Raised when data are insufficient for estimation."""
+
+
+def _empty_result(reason: str) -> dict[str, Any]:
+    return {
+        "status": "refusal",
+        "ate": None,
+        "confidence_interval": [None, None],
+        "estimator": "none",
+        "treatment_id": None,
+        "outcome_id": None,
+        "refusal_reason": "INVALID_INPUT",
+        "detail": reason,
+    }
 
 
 async def effect_estimate(
@@ -45,346 +58,80 @@ async def effect_estimate(
     identification_strategy: str,
     assumptions: list[dict[str, Any]],
     data: pd.DataFrame | None = None,
+    estimand: str = "ate",
 ) -> dict[str, Any]:
-    """
-    Estimate Average Treatment Effect (ATE) using DoWhy.
+    """Estimate the effect of the fragment's treatment on its outcome, or say why not.
 
     Args:
-        fragment: Graph fragment with treatment, outcome, and covariates
-        identification_strategy: Strategy from identification_check (backdoor, etc.)
-        assumptions: List of causal assumptions (ignorability, positivity, etc.)
-        data: Optional DataFrame with observed data. If None, returns None estimates.
+        fragment: APPROVED graph fragment; its Treatment and Outcome nodes define the query.
+        identification_strategy: the caller's preferred strategy. Kept as
+            ``requested_strategy``; the kernel chooses the strategy the graph supports.
+        assumptions: causal assumptions (recorded; the graph carries the testable ones).
+        data: observational data with one column per node id. Required for an estimate.
+        estimand: ``"ate"`` or ``"att"``.
 
     Returns:
-        dict with ate, confidence_interval, estimator, treatment_id, outcome_id
+        ``status`` (result | refusal | apparatus_failure), ``ate`` (the point estimate or
+        None), ``confidence_interval`` (the kernel's interval or [None, None]),
+        ``estimator``, ``identification_strategy``, ``estimand_type``, ``detail``, and the
+        full contract object under ``outcome``.
 
     Raises:
-        EffectEstimationError: If estimation fails
-        InsufficientDataError: If data is insufficient
-
-    EpistemicState constraints:
-        - require_approved_fragment: fragment must have approval_status == 'APPROVED'
-        - audit_log_required: estimation logged with method and assumptions
+        EffectEstimationError: the fragment is not APPROVED (a governance rule).
     """
-    # Validate fragment approval status (Guardian constraint)
     if fragment.get("approval_status") != "APPROVED":
-        logger.error("effect_estimate: fragment not APPROVED")
+        logger.error("effect_estimate.unapproved_fragment")
         raise EffectEstimationError("Only APPROVED fragments can be used for estimation")
+    if not fragment.get("edges"):
+        return _empty_result("the fragment has no edges")
+    t_id, y_id = treatment_id(fragment), outcome_id(fragment)
+    if not t_id or not y_id:
+        return _empty_result("the fragment names no Treatment or no Outcome node")
 
-    # Extract treatment and outcome from fragment
-    edges = fragment.get("edges", [])
-    if not edges:
-        logger.warning("effect_estimate: no edges in fragment")
-        return _empty_result()
-
-    # Find treatment and outcome nodes
-    treatment_id = _extract_treatment_id(fragment)
-    outcome_id = _extract_outcome_id(fragment)
-
-    if not treatment_id or not outcome_id:
-        logger.warning("effect_estimate: missing treatment or outcome")
-        return _empty_result()
-
-    # If no data provided, return a graph-grounded heuristic estimate rather than
-    # a placeholder. This keeps the harness operational while clearly labeling
-    # the estimator as non-observational.
+    base = {
+        "treatment_id": t_id,
+        "outcome_id": y_id,
+        "requested_strategy": identification_strategy,
+    }
     if data is None:
-        logger.info("effect_estimate: no data provided, using graph heuristic")
-        return _graph_heuristic_result(
-            fragment,
-            assumptions,
-            treatment_id,
-            outcome_id,
-            identification_strategy,
-            estimator="graph_heuristic_no_observations",
-        )
-
-    # Check DoWhy availability
-    if not DOWHY_AVAILABLE:
-        logger.warning("DoWhy not available, using graph heuristic")
-        return _graph_heuristic_result(
-            fragment,
-            assumptions,
-            treatment_id,
-            outcome_id,
-            identification_strategy,
-            estimator="graph_heuristic_dowhy_unavailable",
-        )
-
-    try:
-        # Build causal graph from fragment
-        causal_graph = _build_causal_graph(fragment)
-
-        # Create DoWhy model
-        model = CausalModel(
-            data=data,
-            treatment=_get_treatment_name(fragment),
-            outcome=_get_outcome_name(fragment),
-            graph=causal_graph,
-        )
-
-        # Identify causal effect
-        identified_estimand = model.identify_effect(proceed_when_unidentifiable=True)
-
-        # Estimate effect based on strategy
-        if identification_strategy == "backdoor":
-            estimate = model.estimate_effect(
-                identified_estimand,
-                method_name="backdoor.linear_regression",
-            )
-        elif identification_strategy == "iv":
-            estimate = model.estimate_effect(
-                identified_estimand,
-                method_name="iv.instrumental_variable",
-            )
-        else:
-            # Default to backdoor
-            estimate = model.estimate_effect(
-                identified_estimand,
-                method_name="backdoor.linear_regression",
-            )
-
-        ate = float(estimate.value)
-
-        # Compute confidence interval via bootstrap
-        ci_lower, ci_upper = _compute_confidence_interval(model, identified_estimand, data)
-
-        logger.info(
-            "effect_estimate.complete ate=%s ci=%s strategy=%s treatment=%s outcome=%s",
-            ate,
-            [ci_lower, ci_upper],
-            identification_strategy,
-            treatment_id,
-            outcome_id,
-        )
-
+        logger.info("effect_estimate.no_data", treatment=t_id, outcome=y_id)
         return {
-            "ate": ate,
-            "confidence_interval": [ci_lower, ci_upper],
-            "estimator": f"dowhy.{identification_strategy}",
-            "treatment_id": treatment_id,
-            "outcome_id": outcome_id,
-            "identification_strategy": identification_strategy,
-            "estimand_type": identified_estimand.estimand_type if hasattr(identified_estimand, 'estimand_type') else "nonparametric-ate",
+            **base,
+            "status": "refusal",
+            "ate": None,
+            "confidence_interval": [None, None],
+            "estimator": "none",
+            "identification_strategy": None,
+            "refusal_reason": "NO_DATA",
+            "detail": "no observational data supplied: an effect cannot be estimated from "
+            "graph structure alone",
         }
 
-    except Exception as e:
-        logger.error("effect_estimate.failed: %s", e)
-        raise EffectEstimationError(f"Estimation failed: {e}") from e
-
-
-def _empty_result() -> dict[str, Any]:
-    """Return empty result when estimation cannot proceed."""
+    out = analyze(
+        data, fragment_to_graph(fragment), treatment=t_id, outcome=y_id, estimand=estimand
+    )
+    logger.info("effect_estimate.done", kind=out.kind, treatment=t_id, outcome=y_id)
+    common = {**base, "status": out.kind, "outcome": out.model_dump(mode="json")}
+    if isinstance(out, CausalResult):
+        ci = out.primary.ci
+        return {
+            **common,
+            "ate": out.primary.point,
+            "confidence_interval": [ci.lo, ci.hi] if ci else [None, None],
+            "estimator": out.primary.estimator,
+            "identification_strategy": out.certificate.strategy.value
+            if out.certificate.strategy
+            else None,
+            "estimand_type": out.primary.estimand,
+            "result_status": out.status.value,
+            "detail": "; ".join(out.warnings),
+        }
     return {
+        **common,
         "ate": None,
         "confidence_interval": [None, None],
         "estimator": "none",
-        "treatment_id": None,
-        "outcome_id": None,
+        "identification_strategy": None,
+        "refusal_reason": out.reason.value if isinstance(out, Abstention) else None,
+        "detail": out.detail,
     }
-
-
-def _graph_heuristic_result(
-    fragment: dict[str, Any],
-    assumptions: list[dict[str, Any]],
-    treatment_id: str,
-    outcome_id: str,
-    identification_strategy: str,
-    *,
-    estimator: str,
-) -> dict[str, Any]:
-    """Estimate a bounded relative effect score from graph structure alone."""
-    paths = _find_paths(fragment, treatment_id, outcome_id)
-    path_strengths = [_path_strength(path) for path in paths]
-    strongest_path = max(path_strengths, default=0.2)
-    mean_path = sum(path_strengths) / len(path_strengths) if path_strengths else strongest_path
-
-    assumption_types = {str(a.get("assumption_type", "")) for a in assumptions}
-    assumption_bonus = 0.0
-    if "IGNORABILITY" in assumption_types:
-        assumption_bonus += 0.08
-    if "POSITIVITY" in assumption_types:
-        assumption_bonus += 0.05
-    confounder_penalty = 0.12 if _has_confounding_edges(fragment) else 0.0
-
-    ate = round(
-        max(
-            -1.0,
-            min(
-                1.0,
-                strongest_path + (0.2 * mean_path) + assumption_bonus - confounder_penalty,
-            ),
-        ),
-        4,
-    )
-    interval_radius = round(max(0.15, 0.55 - strongest_path + confounder_penalty), 4)
-
-    return {
-        "ate": ate,
-        "confidence_interval": [round(ate - interval_radius, 4), round(ate + interval_radius, 4)],
-        "estimator": estimator,
-        "treatment_id": treatment_id,
-        "outcome_id": outcome_id,
-        "identification_strategy": identification_strategy,
-        "estimate_basis": "graph_structure",
-        "path_count": len(paths),
-    }
-
-
-def _extract_treatment_id(fragment: dict[str, Any]) -> str | None:
-    """Extract treatment ID from fragment edges."""
-    edges = fragment.get("edges", [])
-    for edge in edges:
-        source = edge.get("source", {})
-        if source.get("object_type") == "Treatment":
-            return source.get("id")
-    return None
-
-
-def _extract_outcome_id(fragment: dict[str, Any]) -> str | None:
-    """Extract outcome ID from fragment edges."""
-    edges = fragment.get("edges", [])
-    for edge in edges:
-        target = edge.get("target", {})
-        if target.get("object_type") == "Outcome":
-            return target.get("id")
-    return None
-
-
-def _get_treatment_name(fragment: dict[str, Any]) -> str:
-    """Get treatment variable name for DoWhy."""
-    treatment_id = _extract_treatment_id(fragment)
-    return str(treatment_id or "treatment")[:8]
-
-
-def _get_outcome_name(fragment: dict[str, Any]) -> str:
-    """Get outcome variable name for DoWhy."""
-    outcome_id = _extract_outcome_id(fragment)
-    return str(outcome_id or "outcome")[:8]
-
-
-def _build_causal_graph(fragment: dict[str, Any]) -> str:
-    """
-    Build DoWhy-compatible causal graph from fragment.
-
-    Returns Graphviz DOT format string.
-    """
-    edges = fragment.get("edges", [])
-    if not edges:
-        # Return minimal graph
-        return "digraph { treatment -> outcome; }"
-
-    lines = ["digraph {"]
-
-    for edge in edges:
-        source = edge.get("source", {})
-        target = edge.get("target", {})
-        source_id = str(source.get("id", "unknown"))[:8]
-        target_id = str(target.get("id", "unknown"))[:8]
-        lines.append(f'    "{source_id}" -> "{target_id}";')
-
-    lines.append("}")
-    return "\n".join(lines)
-
-
-def _compute_confidence_interval(
-    model: Any,
-    identified_estimand: Any,
-    data: pd.DataFrame,
-    n_bootstrap: int = 100,
-    confidence_level: float = 0.95,
-) -> tuple[float, float]:
-    """
-    Compute confidence interval via bootstrap.
-
-    Args:
-        model: DoWhy CausalModel
-        identified_estimand: Identified estimand
-        data: DataFrame with data
-        n_bootstrap: Number of bootstrap samples
-        confidence_level: Confidence level (default 95%)
-
-    Returns:
-        (lower_bound, upper_bound)
-    """
-    if not DOWHY_AVAILABLE or len(data) < 10:
-        return (-0.5, 0.5)  # Default wide interval
-
-    try:
-        estimates = []
-        for _ in range(n_bootstrap):
-            # Bootstrap sample
-            sample = data.sample(n=len(data), replace=True)
-            boot_model = CausalModel(
-                data=sample,
-                treatment=model._treatment,
-                outcome=model._outcome,
-                graph=model._graph,
-            )
-            boot_estimate = boot_model.estimate_effect(
-                identified_estimand,
-                method_name="backdoor.linear_regression",
-            )
-            estimates.append(boot_estimate.value)
-
-        # Compute percentile CI
-        alpha = 1 - confidence_level
-        ci_lower = float(np.percentile(estimates, alpha / 2 * 100))
-        ci_upper = float(np.percentile(estimates, (1 - alpha / 2) * 100))
-
-        return (ci_lower, ci_upper)
-
-    except Exception as e:
-        logger.warning("bootstrap_ci.failed: %s", e)
-        return (-0.5, 0.5)
-
-
-def _find_paths(
-    fragment: dict[str, Any],
-    treatment_id: str,
-    outcome_id: str,
-    *,
-    max_depth: int = 4,
-) -> list[list[dict[str, Any]]]:
-    """Return bounded directed paths from treatment to outcome."""
-    adjacency: dict[str, list[dict[str, Any]]] = {}
-    for edge in fragment.get("edges", []):
-        source_id = str(edge.get("source", {}).get("id"))
-        adjacency.setdefault(source_id, []).append(edge)
-
-    paths: list[list[dict[str, Any]]] = []
-    queue: list[tuple[str, list[str], list[dict[str, Any]]]] = [(treatment_id, [treatment_id], [])]
-    while queue:
-        current_node, visited, path_edges = queue.pop(0)
-        if len(path_edges) >= max_depth:
-            continue
-        for edge in adjacency.get(current_node, []):
-            target_id = str(edge.get("target", {}).get("id"))
-            if target_id in visited:
-                continue
-            next_path_edges = [*path_edges, edge]
-            if target_id == outcome_id:
-                paths.append(next_path_edges)
-            else:
-                queue.append((target_id, [*visited, target_id], next_path_edges))
-    return paths
-
-
-def _path_strength(path_edges: list[dict[str, Any]]) -> float:
-    """Collapse a path into a bounded strength score."""
-    if not path_edges:
-        return 0.0
-    score = 1.0
-    for edge in path_edges:
-        score *= max(0.05, min(1.0, float(edge.get("confidence", 0.0))))
-    return round(score, 4)
-
-
-def _has_confounding_edges(fragment: dict[str, Any]) -> bool:
-    """Return True when the fragment contains explicit confounding structure."""
-    for edge in fragment.get("edges", []):
-        if str(edge.get("edge_type", "")) == "CONFOUNDS":
-            return True
-        if edge.get("source", {}).get("object_type") == "Confounder":
-            return True
-    return False

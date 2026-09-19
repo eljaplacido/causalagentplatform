@@ -46,7 +46,10 @@ INSTRUCTIONS = (
     "to confirm the effect is identifiable, (2) causal_effect_estimate for the "
     "ATE, (3) causal_sensitivity_analysis to test robustness to unmeasured "
     "confounding before acting. If identification returns UNIDENTIFIED, do not "
-    "act on any point estimate."
+    "act on any point estimate. Tools marked heuristic (counterfactual_reason, "
+    "intervention_estimate) return triage scores, not effects. This is the legacy "
+    "server; packages/causal-mcp (console script causal-mcp) serves the causal-core "
+    "kernel with typed outputs and a narrative verifier, and is the recommended one."
 )
 
 log = logging.getLogger("causal-platform-mcp")

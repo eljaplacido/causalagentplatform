@@ -315,14 +315,16 @@ async def test_experience_buffer_returns_prior_similar_incident(
 
 
 async def test_counterfactual_analysis_is_explicitly_graph_heuristic(db_engine: object) -> None:
-    """Complex incident counterfactual text should declare its heuristic basis."""
+    """The counterfactual text must say it did not answer the question, and why."""
     agent = IncidentTriageAgent()
     state = make_incident_state(description="intermittent unclear multiple pattern")
 
     result = await agent.process(state)
 
     assert "Counterfactual analysis:" in result.draft_explanation
-    assert "graph-heuristic" in result.draft_explanation
+    assert "Not answered" in result.draft_explanation
+    assert "structural causal model" in result.draft_explanation
+    assert "%" not in result.draft_explanation.split("Counterfactual analysis:")[1]
 
 
 async def test_intervention_estimate_is_not_confidence_only(db_engine: object) -> None:

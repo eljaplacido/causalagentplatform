@@ -202,13 +202,15 @@ async def test_effect_estimation_uses_resolved_fragment_edges(
     state = make_simulation_state(fragment_id=str(fragment_id))
     result = await agent.process(state)
 
-    assert len(result.simulation_results) == 1
-    sim_result = result.simulation_results[0]
-    assert sim_result.fragment_id == UUID(str(fragment_id))
-    assert sim_result.treatment_id == UUID(str(treatment_id))
-    assert sim_result.outcome_id == UUID(str(outcome_id))
-    assert sim_result.ate_estimate > 0.0
-    assert result.recommendations[0].action.startswith("Estimated ATE:")
+    # The fragment resolves and its effect is identified, but no observational data
+    # reach the agent, so there is no estimate: the agent says so and asks for review
+    # instead of producing a simulation result from graph structure (as it once did).
+    assert result.simulation_results == []
+    assert "no_effect_estimate" in result.flags and result.requires_human_review
+    assert "Identification: IDENTIFIED" in result.draft_explanation
+    assert "no observational data" in result.draft_explanation
+    assert not any(r.action.startswith("Estimated ATE:") for r in result.recommendations)
+    assert treatment_id and outcome_id  # created above; resolved through the registry
 
 
 # ── 5. Reasoning steps logged ────────────────────────────────────────────────

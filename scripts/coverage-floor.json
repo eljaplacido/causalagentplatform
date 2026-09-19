@@ -12,6 +12,8 @@
     "  full suite  560 tests  4304/5379 statements = 80.01%",
     "  unit only   470 tests  4036/5379 statements = 75.03%",
     "Set at the full-suite measurement rounded down to one decimal.",
+    "Raised 2026-09-19 to 80.7 after the backend rewire onto causal-core measured",
+    "  full suite  549 tests  4179/5175 statements = 80.75%.",
     "",
     "Why this replaced `--cov-fail-under=80` in backend/pyproject.toml: that flag",
     "applied to every pytest invocation, so the CI unit job (unit tests only,",
@@ -21,5 +23,5 @@
     "pass and none of them asserts an estimate against a known ground truth.",
     "Coverage says which lines ran, not whether what they computed is true."
   ],
-  "line_percent": 80.0
+  "line_percent": 80.7
 }

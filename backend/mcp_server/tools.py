@@ -59,7 +59,7 @@ async def tool_effect_estimate(
     assumptions: list[dict[str, Any]] | None = None,
     data: dict[str, list[float]] | None = None,
 ) -> dict[str, Any]:
-    """Estimate the Average Treatment Effect (ATE) for an APPROVED causal graph fragment.
+    """Estimate the effect of an APPROVED fragment's Treatment on its Outcome, via causal-core.
 
     Args:
         fragment: Causal graph fragment. MUST have ``approval_status == "APPROVED"``
@@ -67,12 +67,14 @@ async def tool_effect_estimate(
             "target": {"id","object_type"}, "confidence": float}``.
         identification_strategy: ``"backdoor"`` | ``"iv"`` | ``"frontdoor"``.
         assumptions: Causal assumptions (ignorability, positivity, SUTVA, ...).
-        data: Optional observational data as ``{column: [values]}``. Without it,
-            a graph-structure heuristic estimate is returned and clearly labelled.
+        data: Observational data as ``{column: [values]}``, one column per node id.
+            Without data there is no estimate: ``status`` is ``refusal``, ``ate`` is null.
 
     Returns:
-        ``{ate, confidence_interval, estimator, treatment_id, outcome_id,
-        identification_strategy, estimand_type, ok}``.
+        ``{status (result|refusal|apparatus_failure), ate, confidence_interval, estimator,
+        identification_strategy, estimand_type, detail, outcome (the full typed contract
+        object), ok}``. Relay a refusal's ``detail``; never state an effect that ``ate``
+        does not carry.
     """
     try:
         result = await effect_estimate(
@@ -91,7 +93,10 @@ async def tool_counterfactual_reason(
     query: str,
     assumptions: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Answer a counterfactual ("what if") query over a set of proposed causal edges.
+    """Heuristic triage summary for a counterfactual question -- it does NOT answer it.
+
+    No structural model is fitted, so ``identification_status`` is ``NOT_ASSESSED`` and the
+    output is labelled ``heuristic: true``. Do not present it as a counterfactual estimate.
 
     Args:
         proposed_edges: Candidate causal edges to reason over.
@@ -99,7 +104,7 @@ async def tool_counterfactual_reason(
         assumptions: Optional causal assumptions.
 
     Returns:
-        ``{estimated_distribution, identification_status, sensitivity_labels,
+        ``{heuristic, caveat, heuristic_summary, identification_status, sensitivity_labels,
         assumptions, narrative, ok}``.
     """
     try:
@@ -141,17 +146,20 @@ async def tool_sensitivity_analysis(
     confidence_interval: list[float | None],
     assumptions: list[dict[str, Any]] | None = None,
     data: dict[str, list[float]] | None = None,
+    effect_scale: str = "difference",
+    outcome_sd: float | None = None,
+    outcome_column: str | None = None,
 ) -> dict[str, Any]:
-    """Assess robustness of an estimate to unmeasured confounding (E-value / Rosenbaum).
+    """E-value: how strong an unmeasured confounder would need to be to explain the effect away.
 
-    Args:
-        ate: The point estimate from ``effect_estimate``.
-        confidence_interval: ``[lower, upper]`` — entries may be null.
-        assumptions: Causal assumptions used in the estimate.
-        data: Optional data for Rosenbaum-bound computation.
+    The E-value is defined on the risk-ratio scale, so give either
+    ``effect_scale="risk_ratio"`` (``ate`` is a risk ratio) or a difference-scale ``ate``
+    with the outcome's standard deviation (``outcome_sd``, or ``data`` plus
+    ``outcome_column``). Otherwise ``e_value`` is null with the reason. Rosenbaum bounds
+    are not implemented (``rosenbaum_gamma`` is always null).
 
     Returns:
-        ``{e_value, rosenbaum_gamma, robust_to_unmeasured_confounding, method, ok}``.
+        ``{e_value, e_value_ci, robust_to_unmeasured_confounding, method, reason, ok}``.
     """
     try:
         result = await sensitivity_analysis(
@@ -159,6 +167,9 @@ async def tool_sensitivity_analysis(
             confidence_interval=confidence_interval,
             assumptions=assumptions or [],
             data=_to_dataframe(data),
+            effect_scale="risk_ratio" if effect_scale == "risk_ratio" else "difference",
+            outcome_sd=outcome_sd,
+            outcome_column=outcome_column,
         )
         return {**result, "ok": True}
     except Exception as exc:  # noqa: BLE001
@@ -197,13 +208,15 @@ async def tool_intervention_estimate(
     confidence: float,
     assumptions: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Estimate the effect of a proposed intervention on a single causal edge.
+    """Heuristic triage score for a proposed intervention on one edge -- not an estimate.
 
-    Useful for an agent deciding *whether to act*: returns a signed effect and a
-    risk tier (LOW/MEDIUM/HIGH) alongside a recommended action.
+    Ranks candidates by the edge's confidence and returns a risk tier (LOW/MEDIUM/HIGH)
+    with a recommended action. There are no data behind the score: use
+    ``causal_effect_estimate`` with data before claiming any effect.
 
     Returns:
-        ``{estimated_effect, signed_effect, risk_tier, action, ..., ok}``.
+        ``{heuristic: true, heuristic_score, caveat, risk_tier, action, ok}``. The score ranks
+        candidates; it is not a causal effect estimate.
     """
     try:
         result = await intervention_estimate(

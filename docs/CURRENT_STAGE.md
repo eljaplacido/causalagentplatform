@@ -8,8 +8,9 @@ This page replaces an earlier version that marked "Phase 1" finished. A Septembe
 
 ## Summary
 
-- **Causal numbers the platform serves.** In the backend skills and the MCP tools, DoWhy's backdoor linear-regression and IV point estimates are the only causal numbers a real estimator computes, and no test checks them against a known true effect. Confidence intervals, identification, frontdoor estimation, counterfactuals, discovery and sensitivity analysis are heuristics or constants.
-- **The new kernel.** `packages/causal-core` identifies before it estimates, reports influence-function intervals, refuses with a typed reason, and passes its pre-registered T0 correctness gate. A separate MCP server, `packages/causal-mcp`, exposes it as four tools. Nothing in `backend/` calls it, and the backend's own MCP server (`backend/mcp_server`) still serves the heuristic skills, so the causal rows below stay open until the platform uses the kernel.
+- **Causal numbers the platform serves.** They come from `packages/causal-core`. The backend's `effect_estimate` and `identification_check` skills delegate to it, and so do the API and the legacy MCP server. Without observational data they return no estimate and say why; the old graph-heuristic numbers and the constant interval are gone. Ground truth is gated by the pre-registered T0, LaLonde and IHDP benchmarks.
+- **What is still heuristic, and labelled so.** `counterfactual_reason` and `intervention_estimate` return triage scores with `heuristic: true` and a caveat. No counterfactual is computed. Rosenbaum bounds and discovery are not implemented.
+- **The kernel's own limits** are on the register too: triangulation at moderate n, overlap detection and general-ID estimation.
 - **LLMs.** No LLM is called anywhere. The agents are rule-based code.
 - **Governance.** The registry refuses writes that lack an APPROVED verdict. Verdicts are not tied to one object, can be reused, and are not signed. `POST /api/governance/check` can never return APPROVED, so the approval flow cannot complete through the API.
 - **Gates.** The local gate `.gnomon/ci.sh` passes. The GitHub Actions workflow now runs that same gate, but has never run on GitHub because nothing has been pushed.
@@ -20,16 +21,16 @@ This page replaces an earlier version that marked "Phase 1" finished. A Septembe
 
 | Capability | Status | Evidence | Note |
 |---|---|---|---|
-| ATE point estimate: DoWhy backdoor linear regression, IV | `partial` | [dni:effect-estimate-unpinned](../conformance/declared_not_implemented.json) | Real DoWhy call; no ground-truth test |
-| Confidence intervals | `declared-not-implemented` | [dni:confidence-interval-constant](../conformance/declared_not_implemented.json) | Constant (-0.5, 0.5) |
-| Frontdoor estimation | `declared-not-implemented` | [dni:frontdoor-estimation](../conformance/declared_not_implemented.json) | Runs backdoor, labelled frontdoor |
-| Identification check | `declared-not-implemented` | [dni:identification-heuristic](../conformance/declared_not_implemented.json) | Assumption flags over dummy columns |
-| Counterfactuals over a structural causal model | `declared-not-implemented` | [dni:scm-counterfactuals](../conformance/declared_not_implemented.json) | Formula over edge confidences |
+| Backend effect estimates (`effect_estimate` skill, API, legacy MCP tool) | `implemented` | [backend/tests/unit/test_effect_estimate.py](../backend/tests/unit/test_effect_estimate.py) | Delegates to causal-core; refuses without data |
+| Confidence intervals | `implemented` | [backend/tests/unit/test_effect_estimate.py](../backend/tests/unit/test_effect_estimate.py) | Kernel intervals; coverage gated by T0 |
+| Frontdoor estimation (linear) | `implemented` | [packages/causal-core/tests/t0/test_t0_gate.py](../packages/causal-core/tests/t0/test_t0_gate.py) | Strategy label comes from the certificate |
+| Identification check | `implemented` | [backend/tests/unit/test_effect_estimate.py](../backend/tests/unit/test_effect_estimate.py) | causal-core identification on the fragment graph |
+| Counterfactuals over a structural causal model | `declared-not-implemented` | [dni:scm-counterfactuals](../conformance/declared_not_implemented.json) | Skill is a labelled heuristic (`NOT_ASSESSED`) |
 | Causal discovery from data | `declared-not-implemented` | [dni:causal-discovery](../conformance/declared_not_implemented.json) | One edge between `uuid4()` nodes |
-| Sensitivity analysis (E-value, Rosenbaum bounds) | `declared-not-implemented` | [dni:sensitivity-analysis](../conformance/declared_not_implemented.json) | Scale-free formulas |
+| Sensitivity analysis (E-value, Rosenbaum bounds) | `partial` | [dni:sensitivity-analysis](../conformance/declared_not_implemented.json) | E-values right; no Rosenbaum bounds |
 | EconML / PyMC estimation backends | `declared-not-implemented` | [dni:econml-pymc](../conformance/declared_not_implemented.json) | Not dependencies |
 | Rust crates for DAG operations and belief tracking | `declared-not-implemented` | [dni:rust-crates](../conformance/declared_not_implemented.json) | No Rust in this repository |
-| `packages/causal-core` (standalone): identification catalog, estimation bias and interval coverage, refuter and triangulation error rates, per its pre-registered T0 gate | `implemented` | [packages/causal-core/tests/t0/test_t0_gate.py](../packages/causal-core/tests/t0/test_t0_gate.py) | Not called by `backend/` |
+| `packages/causal-core`: identification catalog, estimation bias and interval coverage, refuter and triangulation error rates, per its pre-registered T0 gate | `implemented` | [packages/causal-core/tests/t0/test_t0_gate.py](../packages/causal-core/tests/t0/test_t0_gate.py) | The backend skills call it |
 | `causal-core`: ATT estimand (doubly robust, regression and weighting), one-sided overlap | `implemented` | [packages/causal-core/tests/test_pipeline.py](../packages/causal-core/tests/test_pipeline.py) | T0 v3 heterogeneous-effect cases |
 | `causal-core`: no confident wrong answer on real data (LaLonde NSW vs PSID/CPS) and ATT coverage on IHDP-100 | `implemented` | [packages/causal-core/tests/bench/test_real_data.py](../packages/causal-core/tests/bench/test_real_data.py) | Pre-registered T3/T2; data fetched by pinned SHA-256, not committed |
 | `causal-core`: runtime dependencies permissively licensed | `implemented` | [packages/causal-core/tests/test_licenses.py](../packages/causal-core/tests/test_licenses.py) | Transitive, platform markers evaluated |
@@ -91,6 +92,7 @@ This page replaces an earlier version that marked "Phase 1" finished. A Septembe
 | 2 of 7 MCP tools crashed at INFO; logs went to stdout, the stdio protocol channel | `3aecd16` | [backend/tests/integration/test_mcp_stdio.py](../backend/tests/integration/test_mcp_stdio.py) |
 | Governance UI showed approvals and audit rows no backend call had confirmed | `17a394d` | [frontend/src/app/governance/\_\_tests\_\_/page.test.tsx](../frontend/src/app/governance/__tests__/page.test.tsx) |
 | `packages/causal-core` was planned, not built | `a0e4951` | [packages/causal-core/tests/t0/test_t0_gate.py](../packages/causal-core/tests/t0/test_t0_gate.py) |
+| Backend effect estimates unpinned; constant (−0.5, 0.5) interval; heuristic identification; front-door label on a back-door estimate | backend rewire onto causal-core | [backend/tests/unit/test_effect_estimate.py](../backend/tests/unit/test_effect_estimate.py) |
 
 ## Gates
 

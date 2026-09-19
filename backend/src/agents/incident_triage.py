@@ -227,7 +227,7 @@ class IncidentTriageAgent(BaseAgent):
             interventions.append(
                 {
                     "edge": edge,
-                    "estimated_effect": est_outputs.get("estimated_effect", 0.0),
+                    "heuristic_score": est_outputs.get("heuristic_score", 0.0),
                     "risk_tier": est_outputs.get("risk_tier", "MEDIUM"),
                     "action": est_outputs.get("action", "Investigate root cause"),
                 }
@@ -280,9 +280,10 @@ class IncidentTriageAgent(BaseAgent):
                     rationale=(
                         f"Root cause candidate: {edge.source.id} → {edge.target.id}. "
                         f"Confidence: {edge.confidence:.2f}. "
-                        f"{edge.rationale}"
+                        f"{edge.rationale} "
+                        "(Ranked by a heuristic triage score, not an effect estimate.)"
                     ),
-                    confidence=edge.confidence * float(interv["estimated_effect"] or 1.0),
+                    confidence=float(interv["heuristic_score"]),
                     risk_tier=interv["risk_tier"],
                 )
             )
@@ -486,11 +487,10 @@ class IncidentTriageAgent(BaseAgent):
         self, inputs: dict[str, Any], state: EpistemicState
     ) -> dict[str, Any]:
         """
-        Estimate the effect of a proposed intervention on the incident.
+        Score a proposed intervention for triage ranking.
 
-        Delegates to the shared intervention_estimate skill so incident triage
-        uses the same graph-grounded estimation pathway as the simulation layer
-        instead of a confidence-only placeholder.
+        The shared intervention_estimate skill returns a labelled heuristic score
+        (edge confidence, no data): a ranking aid, not an effect estimate.
         """
         return await intervention_estimate(
             source_id=str(inputs.get("source_id", "source")),
@@ -526,9 +526,9 @@ class IncidentTriageAgent(BaseAgent):
         """
         Apply Pearl's three-level counterfactual hierarchy.
 
-        Current implementation returns a bounded graph-heuristic summary rather
-        than a free-text placeholder. It explicitly labels the result as a
-        non-observational estimate until a full SCM-backed estimator is wired.
+        The skill returns a labelled heuristic summary (NOT_ASSESSED): answering
+        a counterfactual needs a structural causal model fitted to data, which is
+        not implemented.
         """
         return await counterfactual_reason(
             proposed_edges=list(inputs.get("proposed_edges", [])),

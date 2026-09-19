@@ -19,11 +19,14 @@
     "adds an `eslint` entry here in the same change (tool = eslint, cwd = frontend,",
     "args = [\"src/\"]); until then lint_ratchet.py refuses to run an undeclared entry.",
     "",
+    "Lowered 2026-09-19 by the backend rewire onto causal-core (heuristic skills removed):",
+    "  ruff 451 -> 442, mypy 46 -> 40.",
+    "",
     "The args are the SAME ones the tool runs with here and in .gnomon/ci.sh, so the",
     "number and the command that produced it cannot drift apart."
   ],
   "ruff": {
-    "max_findings": 451,
+    "max_findings": 442,
     "measured_with": "ruff 0.15.12",
     "cwd": "backend",
     "args": [
@@ -41,7 +44,7 @@
     ]
   },
   "mypy": {
-    "max_findings": 46,
+    "max_findings": 40,
     "measured_with": "mypy 1.20.2 (compiled: yes)",
     "cwd": "backend",
     "args": [

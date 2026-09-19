@@ -2,7 +2,7 @@
 
 A governed platform for causal reasoning, decision simulation, and intervention recommendation. Built around a canonical semantic layer, a Guardian-mediated approval workflow, and a shared library of causal-inference skills that are callable both internally (LangGraph agents) and externally (Model Context Protocol).
 
-> **Status:** Pre-1.0, and most of the causal layer the platform serves is not real yet. In the backend skills and MCP tools, DoWhy's backdoor and IV point estimates are the only causal numbers a real estimator computes, and no test checks them against a known effect. Confidence intervals, identification, counterfactuals and discovery are heuristics or constants, and no LLM is called. A standalone kernel, `packages/causal-core`, does identification, honest intervals and typed refusals and passes its pre-registered T0 correctness gate; `packages/causal-mcp` serves it over MCP, but nothing in the backend calls it yet. [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAGE.md) lists what is implemented, each row with the test that pins it, and what is declared but not implemented. `.gnomon/ci.sh` is the gate; `scripts/status_claims.py` keeps that page in step with the code.
+> **Status:** Pre-1.0. The causal numbers the platform serves come from the causal-core kernel, which identifies before it estimates, refuses with a typed reason, and passes pre-registered correctness and real-data benchmarks. Several platform features are still heuristic (and labelled so) or not built: counterfactuals, discovery, the LLM layer, signed governance verdicts. [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAGE.md) lists what is implemented, each row with the test that pins it, and what is declared but not implemented. `.gnomon/ci.sh` is the gate; `scripts/status_claims.py` keeps that page in step with the code.
 
 ## Start here: the causal kernel
 
@@ -47,7 +47,7 @@ Known limits are listed, not hidden: [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAG
 # 1. Backend
 cd backend
 python -m venv .venv
-.venv/bin/pip install -e ".[dev]"
+.venv/bin/pip install -e ../packages/causal-core -e ".[dev]"   # the kernel is a local package
 .venv/bin/python -m scripts.seed_data --all
 .venv/bin/python -m pytest        # full backend suite (coverage is judged by .gnomon/ci.sh)
 
@@ -61,6 +61,8 @@ cd frontend && NEXT_PUBLIC_API_BASE_URL=http://localhost:49234 npm run dev
 ```
 
 Then open <http://localhost:3000/workbench>.
+
+Container: `docker build -f backend/Dockerfile .` from the repository root.
 
 Full guide: [`docs/QUICKSTART.md`](docs/QUICKSTART.md).
 

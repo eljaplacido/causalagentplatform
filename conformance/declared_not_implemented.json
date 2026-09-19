@@ -31,130 +31,6 @@
  ],
  "declared_not_implemented": [
   {
-   "id": "effect-estimate-unpinned",
-   "status": "partial",
-   "capability": "ATE point estimation (backdoor linear regression, IV) via DoWhy",
-   "claimed_in": [
-    {
-     "at": "docs/AGENTS.md:355",
-     "says": "Computes Average Treatment Effect (ATE) using DoWhy identification and estimation frameworks"
-    },
-    {
-     "at": "docs/CURRENT_STAGE.md@3e57d58:37",
-     "says": "Causal skill library (7 skills, DoWhy-backed)"
-    },
-    {
-     "at": "docs/TESTING_CICD.md:455",
-     "says": "pytest tests/causal_correctness"
-    }
-   ],
-   "reality": "The point estimate is a real DoWhy backdoor.linear_regression / iv.instrumental_variable call (probe 2026-09-19: 1.981 for a true ATE of 2.0), but no test asserts any estimate against a known ground truth, and backend/tests/causal_correctness/, which CI runs, does not exist.",
-   "evidence": [
-    {
-     "at": "backend/src/skills/effect_estimate.py:133",
-     "says": "method_name=\"backdoor.linear_regression\""
-    }
-   ],
-   "leaves_by": {
-    "kind": "test",
-    "path": "backend/tests/causal_correctness/test_effect_estimate_ground_truth.py",
-    "asserts": "on data simulated from linear SCMs with a known ATE (confounded backdoor case; valid-instrument IV case), |estimate - truth| is within a pre-registered tolerance"
-   }
-  },
-  {
-   "id": "confidence-interval-constant",
-   "status": "declared-not-implemented",
-   "capability": "Confidence intervals on effect estimates",
-   "claimed_in": [
-    {
-     "at": "docs/AGENTS.md:358",
-     "says": "ATE with confidence interval"
-    },
-    {
-     "at": "docs/AGENTS.md:112",
-     "says": "Estimated intervention effects with confidence intervals"
-    },
-    {
-     "at": "backend/src/skills/effect_estimate.py:149",
-     "says": "Compute confidence interval via bootstrap"
-    }
-   ],
-   "reality": "_compute_confidence_interval returns the constant (-0.5, 0.5) on <10 rows or on any exception, and the bootstrap raised in the one measured call: 2000 rows, true ATE 2.0 -> ate 1.981, interval [-0.5, 0.5], which excludes its own point estimate.",
-   "evidence": [
-    {
-     "at": "backend/src/skills/effect_estimate.py:311",
-     "says": "return (-0.5, 0.5)"
-    },
-    {
-     "at": "backend/src/skills/effect_estimate.py:339",
-     "says": "return (-0.5, 0.5)"
-    }
-   ],
-   "leaves_by": {
-    "kind": "test",
-    "path": "backend/tests/causal_correctness/test_ci_coverage.py",
-    "asserts": "a nominal 95% interval covers the true ATE in a pre-registered share (e.g. >= 93%) of >= 200 datasets simulated from a known linear SCM"
-   }
-  },
-  {
-   "id": "frontdoor-estimation",
-   "status": "declared-not-implemented",
-   "capability": "Frontdoor identification and estimation",
-   "claimed_in": [
-    {
-     "at": "docs/AGENTS.md:367",
-     "says": "valid backdoor/frontdoor/IV strategies"
-    },
-    {
-     "at": "backend/mcp_server/tools.py:68",
-     "says": "``\"frontdoor\"``"
-    }
-   ],
-   "reality": "Any strategy other than \"iv\" runs backdoor.linear_regression but is labelled \"dowhy.<strategy>\": measured, \"frontdoor\" returned estimator \"dowhy.frontdoor\" with exactly the backdoor ATE.",
-   "evidence": [
-    {
-     "at": "backend/src/skills/effect_estimate.py:144",
-     "says": "method_name=\"backdoor.linear_regression\""
-    },
-    {
-     "at": "backend/src/skills/effect_estimate.py:164",
-     "says": "\"estimator\": f\"dowhy.{identification_strategy}\""
-    }
-   ],
-   "leaves_by": {
-    "kind": "test",
-    "path": "backend/tests/causal_correctness/test_frontdoor.py",
-    "asserts": "on a frontdoor-only SCM (unobserved T-Y confounder, fully mediating M) backdoor adjustment is biased and the frontdoor estimate recovers the true effect within tolerance"
-   }
-  },
-  {
-   "id": "identification-heuristic",
-   "status": "declared-not-implemented",
-   "capability": "Causal identification (is the effect identifiable, by which strategy, with which adjustment set)",
-   "claimed_in": [
-    {
-     "at": "docs/AGENTS.md:367",
-     "says": "Identification status, valid backdoor/frontdoor/IV strategies, blocking constraints"
-    }
-   ],
-   "reality": "identification_check runs DoWhy's identifier on dummy columns \"treatment\"/\"outcome\" that are not the fragment's treatment and outcome nodes, so its answer is not about the fragment; the verdict comes from assumption flags, and the strategy helper returns \"backdoor\" on every fall-through path.",
-   "evidence": [
-    {
-     "at": "backend/src/skills/identification_check.py:126",
-     "says": "\"treatment\": [0] * n_samples"
-    },
-    {
-     "at": "backend/src/skills/identification_check.py:302",
-     "says": "return \"backdoor\""
-    }
-   ],
-   "leaves_by": {
-    "kind": "test",
-    "path": "backend/tests/causal_correctness/test_identification.py",
-    "asserts": "over fixture graphs with known answers (backdoor-identifiable, frontdoor-only, IV-only, unidentifiable bow arc) the verdict, strategy and adjustment set match"
-   }
-  },
-  {
    "id": "scm-counterfactuals",
    "status": "declared-not-implemented",
    "capability": "Counterfactual reasoning over a structural causal model",
@@ -172,11 +48,11 @@
      "says": "scm.counterfactual(observation, intervention)"
     }
    ],
-   "reality": "counterfactual_reason takes no SCM: it returns a range computed from edge confidences (strongest*0.45 to strongest*0.85+0.05) and labels it \"graph_heuristic\". No abduction-action-prediction step exists.",
+   "reality": "No structural causal model is fitted anywhere. counterfactual_reason is now a labelled heuristic that reports identification_status NOT_ASSESSED and makes no quantitative claim (it previously reported IDENTIFIED from edge confidences and invented impact-reduction percentages). causal-core refuses rung-3 queries with RUNG_MISMATCH.",
    "evidence": [
     {
-     "at": "backend/src/skills/counterfactual_reason.py:30",
-     "says": "strongest * 0.45"
+     "at": "backend/src/skills/counterfactual_reason.py:37",
+     "says": "\"identification_status\": \"NOT_ASSESSED\","
     }
    ],
    "leaves_by": {
@@ -214,7 +90,7 @@
   },
   {
    "id": "sensitivity-analysis",
-   "status": "declared-not-implemented",
+   "status": "partial",
    "capability": "Sensitivity to unmeasured confounding (E-values, Rosenbaum bounds)",
    "claimed_in": [
     {
@@ -222,21 +98,17 @@
      "says": "Computes Rosenbaum sensitivity bounds and E-values for unmeasured confounders"
     }
    ],
-   "reality": "The E-value treats |ATE| as a log odds ratio whatever the outcome scale (then takes the worst of it and the constant interval); the \"Rosenbaum bounds\" are ate/(1+(G-1)/2) .. ate*(1+(G-1)/2), a formula with no dependence on the data.",
+   "reality": "E-values are now correct and scale-aware (causal-core's e_value_rr; risk ratio, or difference plus outcome SD; otherwise null with the reason), and the kernel reports E-values and Cinelli-Hazlett robustness values from data. Rosenbaum bounds are not implemented: rosenbaum_gamma is always null (the previous values came from an invented multiplier).",
    "evidence": [
     {
-     "at": "backend/src/skills/sensitivity_analysis.py:146",
-     "says": "odds_ratio = math.exp(effect)"
-    },
-    {
-     "at": "backend/src/skills/sensitivity_analysis.py:216",
-     "says": "bound_factor = 1 + (gamma - 1) * 0.5"
+     "at": "backend/src/skills/sensitivity_analysis.py:67",
+     "says": "base: dict[str, Any] = {\"rosenbaum_gamma\": None"
     }
    ],
    "leaves_by": {
     "kind": "test",
-    "path": "backend/tests/causal_correctness/test_sensitivity.py",
-    "asserts": "E-values match VanderWeele & Ding (2017) worked examples on the risk-ratio scale, and Rosenbaum bounds match a published matched-pairs example"
+    "path": "backend/tests/unit/test_rosenbaum_bounds.py",
+    "asserts": "Rosenbaum bounds match a published matched-pairs example (E-values are already pinned by backend/tests/unit/test_effect_estimate.py)"
    }
   },
   {
@@ -261,11 +133,11 @@
      "says": "DoWhy/EconML"
     }
    ],
-   "reality": "Neither econml nor pymc is declared in backend/pyproject.toml, installed in the dev venv, or imported anywhere under backend/ (checked 2026-09-19); both appear only in docs and docstrings.",
+   "reality": "Neither EconML nor PyMC is a dependency; estimation is causal-core (and DoWhy is no longer a backend dependency either). causal-core's plug-in registry is the way to add EconML estimators.",
    "evidence": [
     {
      "at": "backend/pyproject.toml:47",
-     "says": "\"dowhy>=0.11.0\""
+     "says": "\"causal-core>=0.2.0.dev0\""
     }
    ],
    "leaves_by": {
@@ -791,6 +663,34 @@
    "fixed_in": "a0e4951",
    "pinned_by": "packages/causal-core/tests/t0/test_t0_gate.py",
    "note": "The backend skills and the backend MCP server do not use it (packages/causal-mcp, a separate server, does), so the platform rows (intervals, identification, frontdoor, sensitivity) stay open until the backend does."
+  },
+  {
+   "id": "effect-estimate-unpinned",
+   "was": "partial: ATE point estimation (backdoor linear regression, IV) via DoWhy",
+   "fixed_in": "the backend rewire onto causal-core (git log -- backend/src/skills/_kernel.py)",
+   "pinned_by": "backend/tests/unit/test_effect_estimate.py",
+   "note": "Backend effect estimates now come from causal-core: identification from the fragment graph, design checks, IF-based intervals. Ground-truth bias and coverage are pinned by the kernel's T0 gate; the backend test pins that the skill returns the kernel's estimate and interval on simulated confounded data."
+  },
+  {
+   "id": "confidence-interval-constant",
+   "was": "declared-not-implemented: Confidence intervals on effect estimates",
+   "fixed_in": "the backend rewire onto causal-core (git log -- backend/src/skills/_kernel.py)",
+   "pinned_by": "backend/tests/unit/test_effect_estimate.py",
+   "note": "No code path in backend/src returns a constant interval (scanned by test_no_code_path_returns_a_constant_interval). Intervals are causal-core's; their coverage is gated by T0 (pooled 94.9%) and the real-data benchmarks."
+  },
+  {
+   "id": "frontdoor-estimation",
+   "was": "declared-not-implemented: Frontdoor identification and estimation",
+   "fixed_in": "the backend rewire onto causal-core (git log -- backend/src/skills/_kernel.py)",
+   "pinned_by": "packages/causal-core/tests/t0/test_t0_gate.py",
+   "note": "Strategy labels now come from causal-core's identification certificate, so a front-door label means front-door. Linear front-door estimation is gated by T0 (frontdoor_continuous). Reachable from the backend when a fragment node has no data column (it becomes latent)."
+  },
+  {
+   "id": "identification-heuristic",
+   "was": "declared-not-implemented: Causal identification (is the effect identifiable, by which strategy, with which adjustment set)",
+   "fixed_in": "the backend rewire onto causal-core (git log -- backend/src/skills/_kernel.py)",
+   "pinned_by": "backend/tests/unit/test_effect_estimate.py",
+   "note": "identification_check runs causal-core's identification (complete ID algorithm plus back-door/front-door/IV) on the fragment graph. The literature catalog and the y0 cross-check are gated by T0."
   }
  ]
 }

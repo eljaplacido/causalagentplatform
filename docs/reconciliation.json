@@ -28,16 +28,16 @@
       "baseline": {
         "on": "2026-09-19",
         "sha256": {
-          "backend/pyproject.toml": "9f1af8c82b45e81b138dcf14ca67e0a0c5446442b125a65b7d870b6a460c5107",
-          "backend/mcp_server": "659e6b5ff37886fb61ed4277fba5e128337f634e8612531d442ed3f0cdde68b3",
+          "backend/pyproject.toml": "f882373b919703041b8a24cbb028909309c6ec51d9e915985a008eaf9e6616c8",
+          "backend/mcp_server": "906126ac2e95942d33fa44c6abe372051ab452e3022a978c6d5ad78c28a2f6d5",
           "frontend/package.json": "328e50541f6341ef44bdb0664d818c5de9c95444d15fa3cc19d076f971e4303e",
           "launch_backend.sh": "3fd5bf0bc3060014f319befd6966d4b33f851a1bce01b15d3dc6facc35f5ec00",
-          "docs/CURRENT_STAGE.md": "5f2a74a8a09661911c72949bbed82f83531a3ca3f9dfa08586970e01880cc3f0"
+          "docs/CURRENT_STAGE.md": "78ecc8e54da0d60f3390077abd93aa9ea5bb59f5e30e86e6c8ef8ef677f5d13d"
         }
       },
       "last_read": {
         "on": "2026-09-19",
-        "by": "Claude (read against the tree at the causal-core/benchmarks integration)"
+        "by": "Claude (status line, install and container instructions re-verified)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -54,18 +54,18 @@
       "baseline": {
         "on": "2026-09-19",
         "sha256": {
-          "conformance/declared_not_implemented.json": "12d1bb553ceef9a0270edca26c0cbc24cc4831d9c0fe8e379d565fcff61f1b44",
-          "backend/src": "5df8979d5b08f7cc547ca6c902f0f4a607c411c268ae3f61dc2bbfaea3033c9f",
-          "backend/mcp_server": "659e6b5ff37886fb61ed4277fba5e128337f634e8612531d442ed3f0cdde68b3",
-          "backend/tests": "151660b847befe31db0b6099dc223578a1bdbde70b83d1d8b52be30d3b53f83d",
+          "conformance/declared_not_implemented.json": "8e960c584350e4e377c41787117f284dc7f990b570c6570567f3ffbfa5571c68",
+          "backend/src": "7f5ec7b834e21271aecbac06b58cca1fcf6794c83575d8107afe8d73623684ac",
+          "backend/mcp_server": "906126ac2e95942d33fa44c6abe372051ab452e3022a978c6d5ad78c28a2f6d5",
+          "backend/tests": "d12064cef2f51b4466058e761555e1aa5f96929a6f949d0b51c5e153f0ebdf33",
           "frontend/src": "43b4fec5fbddbf1cbeab0cc5dc3aa23933dd6678419738027cbf5fa27d48f428",
-          "packages": "b97243140de68c56e475bb1e6696e8e6298154f741c1cc1e3b6a936387c07265",
+          "packages": "6f23c5bbfbc9c3046419229c8bf65bb76f708130e7db59e4e6858d59d212ab84",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-19",
-        "by": "Claude (CI row re-cited after workflow rewrite)"
+        "by": "Claude (backend rewire: rows and summary re-verified in code)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {

@@ -126,7 +126,7 @@ async def test_risk_tier_based_on_effect(db_engine: object) -> None:
 
     async def mock_estimate(inputs):
         return {
-            "estimated_effect": 0.6,  # > 0.5 = HIGH
+            "heuristic_score": 0.6,  # > 0.5 = HIGH
             "direction": "negative",
             "confidence": 0.8,
         }

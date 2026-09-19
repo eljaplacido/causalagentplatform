@@ -131,7 +131,7 @@ class ChangeImpactAgent(BaseAgent):
             )
             impact_estimates.append({
                 "outcome": outcome,
-                "estimated_effect": est_out.get("estimated_effect", 0.0),
+                "heuristic_score": est_out.get("heuristic_score", 0.0),
                 "direction": est_out.get("direction", "unknown"),
                 "confidence": est_out.get("confidence", 0.0),
             })
@@ -168,11 +168,16 @@ class ChangeImpactAgent(BaseAgent):
             )
 
         for i, impact in enumerate(impact_estimates):
-            risk = "HIGH" if abs(impact["estimated_effect"]) > 0.5 else "MEDIUM" if abs(impact["estimated_effect"]) > 0.1 else "LOW"
+            score = abs(impact["heuristic_score"])
+            risk = "HIGH" if score > 0.5 else "MEDIUM" if score > 0.1 else "LOW"
             recommendations.append(
                 Recommendation(
                     rank=len(recommendations) + 1,
-                    action=f"Impact on {impact['outcome']}: {impact['direction']} ({impact['estimated_effect']:.2f})",
+                    action=(
+                        f"Impact on {impact['outcome']}: {impact['direction']} "
+                        f"(heuristic path score {impact['heuristic_score']:.2f}, not an effect "
+                        "estimate)"
+                    ),
                     rationale=f"Confidence: {impact['confidence']:.0%}. Via {len(affected_paths)} causal path(s).",
                     confidence=impact["confidence"],
                     risk_tier=risk,
@@ -370,21 +375,22 @@ class ChangeImpactAgent(BaseAgent):
         """
         Estimate the effect of the change on a downstream outcome.
 
-        Heuristic operational fallback based on traced path confidence and the
-        number of reinforcing paths.
+        A heuristic path score from traced edge confidences and the number of
+        reinforcing paths -- labelled as such; it is not an effect estimate.
         """
         target_outcome = str(inputs.get("target_outcome", "unknown"))
         paths = [p for p in inputs.get("affected_paths", []) if str(p.get("outcome")) == target_outcome]
         if not paths:
             return {
-                "estimated_effect": 0.0,
+                "heuristic_score": 0.0,
+                "heuristic": True,
                 "direction": "unknown",
                 "confidence": 0.0,
             }
 
         strongest_path = max(float(p.get("net_confidence", 0.0)) for p in paths)
         aggregate_signal = sum(float(p.get("net_confidence", 0.0)) for p in paths)
-        estimated_effect = min(1.0, round((strongest_path * 0.7) + (aggregate_signal * 0.15), 4))
+        heuristic_score = min(1.0, round((strongest_path * 0.7) + (aggregate_signal * 0.15), 4))
         confidence = min(0.95, round(0.35 + strongest_path + (0.05 * min(len(paths), 3)), 4))
 
         lower_target = target_outcome.lower()
@@ -395,7 +401,8 @@ class ChangeImpactAgent(BaseAgent):
         )
 
         return {
-            "estimated_effect": estimated_effect,
+            "heuristic_score": heuristic_score,
+            "heuristic": True,
             "direction": direction,
             "confidence": confidence,
         }
@@ -415,7 +422,7 @@ class ChangeImpactAgent(BaseAgent):
 
         for estimate in impact_estimates:
             outcome = str(estimate.get("outcome", "unknown"))
-            magnitude = abs(float(estimate.get("estimated_effect", 0.0)))
+            magnitude = abs(float(estimate.get("heuristic_score", 0.0)))
             confidence = float(estimate.get("confidence", 0.0))
             lower_outcome = outcome.lower()
 

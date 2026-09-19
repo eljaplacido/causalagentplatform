@@ -28,7 +28,7 @@ cd /home/eljaplacido/Desktop/causalplatform   # or your clone path
 cd backend
 python3 -m venv .venv
 source .venv/bin/activate          # gx10 uses bash, not Windows
-pip install -e ".[dev]"
+pip install -e ../packages/causal-core -e ".[dev]"   # the causal kernel is a local package
 cd ..
 ```
 

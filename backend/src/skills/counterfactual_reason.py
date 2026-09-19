@@ -1,8 +1,23 @@
-"""Bounded counterfactual reasoning helper for agent flows."""
+"""Counterfactual triage summary for agent flows -- a heuristic, not a counterfactual.
+
+A counterfactual ("what would have happened without X?") needs a structural
+causal model fitted to data. This skill has neither: it summarizes the
+confidences of proposed edges for triage. It therefore reports
+``identification_status: NOT_ASSESSED``, labels itself heuristic, and its
+narrative makes no quantitative or causal claim. Earlier versions reported
+"IDENTIFIED" whenever an edge's confidence was >= 0.75 and wrote invented
+impact-reduction percentages into the narrative; both are gone.
+"""
 
 from __future__ import annotations
 
 from typing import Any
+
+CAVEAT = (
+    "Heuristic summary of proposed-edge confidences. No structural model and no data: "
+    "not a counterfactual estimate. Use unit-level counterfactuals only once they are "
+    "computed from a fitted structural causal model."
+)
 
 
 async def counterfactual_reason(
@@ -11,51 +26,41 @@ async def counterfactual_reason(
     query: str,
     assumptions: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Produce a bounded counterfactual summary from proposed edge structure."""
+    """Summarize proposed edges for a counterfactual question, without answering it."""
+    names = [str(a.get("assumption_type", "")).strip() for a in assumptions or []]
+    names = [n for n in names if n]
     if not proposed_edges:
         return {
-            "estimated_distribution": {},
-            "identification_status": "NOT_IDENTIFIED",
+            "heuristic": True,
+            "caveat": CAVEAT,
+            "heuristic_summary": {},
+            "identification_status": "NOT_ASSESSED",
             "sensitivity_labels": ["insufficient_structure"],
-            "assumptions": [],
-            "narrative": "Insufficient causal structure for counterfactual analysis.",
+            "assumptions": names,
+            "narrative": "Insufficient causal structure to discuss this counterfactual.",
         }
-
-    confidences = [
-        max(0.0, min(1.0, float(edge.get("confidence", 0.0))))
-        for edge in proposed_edges
-    ]
-    strongest = max(confidences, default=0.0)
-    mean_strength = sum(confidences) / len(confidences)
-    reduction_low = round(max(0.0, strongest * 0.45), 4)
-    reduction_high = round(min(1.0, strongest * 0.85 + 0.05), 4)
-
-    assumption_names = [str(item.get("assumption_type", "")).strip() for item in assumptions or []]
-    assumption_names = [item for item in assumption_names if item]
-    identification_status = "IDENTIFIED" if strongest >= 0.75 else "PARTIALLY_IDENTIFIED"
-    sensitivity_labels = ["graph_heuristic"]
+    confidences = [max(0.0, min(1.0, float(e.get("confidence", 0.0)))) for e in proposed_edges]
+    strongest = max(confidences)
+    labels = ["graph_heuristic", "no_structural_model"]
     if strongest < 0.6:
-        sensitivity_labels.append("high_structural_uncertainty")
-    if not assumption_names:
-        sensitivity_labels.append("limited_assumptions")
-
+        labels.append("high_structural_uncertainty")
+    if not names:
+        labels.append("limited_assumptions")
     narrative = (
-        f"Counterfactual query: '{query}'. Removing or mitigating the leading proposed cause "
-        f"would be expected to reduce incident impact by roughly {reduction_low:.0%} "
-        f"to {reduction_high:.0%} under the current graph assumptions. "
-        "This is a bounded graph-heuristic estimate over "
-        f"{len(proposed_edges)} candidate path(s), not an observationally identified "
-        "production estimate."
+        f"Counterfactual query: '{query}'. Not answered: this needs a structural causal model "
+        f"fitted to data, and none is available. For triage, the strongest of "
+        f"{len(proposed_edges)} proposed edge(s) has confidence {strongest:.2f}."
     )
-
     return {
-        "estimated_distribution": {
-            "impact_reduction_low": reduction_low,
-            "impact_reduction_high": reduction_high,
-            "mean_path_strength": round(mean_strength, 4),
+        "heuristic": True,
+        "caveat": CAVEAT,
+        "heuristic_summary": {
+            "max_edge_confidence": round(strongest, 4),
+            "mean_edge_confidence": round(sum(confidences) / len(confidences), 4),
+            "edge_count": len(proposed_edges),
         },
-        "identification_status": identification_status,
-        "sensitivity_labels": sensitivity_labels,
-        "assumptions": assumption_names,
+        "identification_status": "NOT_ASSESSED",
+        "sensitivity_labels": labels,
+        "assumptions": names,
         "narrative": narrative,
     }

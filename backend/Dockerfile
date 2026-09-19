@@ -1,7 +1,14 @@
+# Build from the REPOSITORY ROOT, because the backend depends on packages/causal-core:
+#
+#     docker build -f backend/Dockerfile -t causal-platform-backend .
+#
+# (The previous version built from backend/ and copied only pyproject.toml before
+# `pip install .`, which cannot build a package whose sources are absent.)
+
 # ── Build stage ────────────────────────────────────────────────────────────
 FROM python:3.12-slim AS builder
 
-WORKDIR /app
+WORKDIR /build
 
 # Install build tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -9,9 +16,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python deps into isolated location
-COPY pyproject.toml ./
-RUN pip install --no-cache-dir --prefix=/install ".[production]"
+# The causal kernel first (a local package, not on PyPI yet), then the backend.
+COPY packages/causal-core ./causal-core
+COPY backend/pyproject.toml ./backend/pyproject.toml
+COPY backend/src ./backend/src
+COPY backend/mcp_server ./backend/mcp_server
+RUN pip install --no-cache-dir --prefix=/install ./causal-core "./backend[production]"
 
 # ── Production stage (distroless-style slim) ───────────────────────────────
 FROM python:3.12-slim AS production
@@ -30,7 +40,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /install /usr/local
 
 # Copy application source
-COPY src/ ./src/
+COPY backend/src ./src/
 
 # Read-only root filesystem where possible (CYBERSECURITY.md §8.3)
 RUN chown -R causal:causal /app

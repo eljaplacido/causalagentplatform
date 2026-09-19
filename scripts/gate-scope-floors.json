@@ -47,11 +47,7 @@
       "why": "Skill modules no test imports. They run only transitively (MCP wrappers, agents), so no test pins their own contract. Each leaves this list when a test imports it -- ideally one asserting its output against a known ground truth.",
       "items": [
         "_experience_buffer_sql",
-        "counterfactual_reason",
-        "experience_buffer",
-        "identification_check",
-        "intervention_estimate",
-        "sensitivity_analysis"
+        "experience_buffer"
       ]
     },
     "mcp-tools": {
