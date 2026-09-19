@@ -49,10 +49,12 @@ def ols(y: F, X: F, ridge: float = 0.0) -> OLS:
     xtx = X.T @ X / n
     if ridge:
         xtx = xtx + ridge * np.eye(p)
-    try:
-        bread = np.linalg.inv(xtx)
-    except np.linalg.LinAlgError:
-        bread = np.linalg.pinv(xtx)
+    # A pseudo-inverse with a relative cutoff, not inv(): a near-singular X'X (a binary
+    # covariate that is constant inside one arm of one cross-fitting fold, say) makes
+    # inv() return a huge finite matrix and predictions of order 1e16, silently. Here a
+    # direction the data do not vary in is treated as unidentified and given weight 0.
+    # For a well-conditioned X'X this equals the inverse.
+    bread = np.linalg.pinv(xtx, rcond=1e-10, hermitian=True)
     beta = bread @ (X.T @ y / n)
     resid = y - X @ beta
     leverage = np.einsum("ij,jk,ik->i", X, bread, X) / n

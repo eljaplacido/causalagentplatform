@@ -347,3 +347,54 @@ def test_low_effective_sample_is_warned() -> None:
     assert out.diagnostics.propensity is not None
     assert out.diagnostics.propensity.ess_control < 50
     assert any("effective sample size" in w for w in out.warnings)
+
+
+def test_sparse_binary_covariates_do_not_blow_up_aipw() -> None:
+    """Regression test for the IHDP finding: a binary covariate that is constant inside the
+    treated arm made cross-fitted OLS near-singular and AIPW return ~1e16."""
+    rng = np.random.default_rng(0)
+    n = 800
+    z = rng.normal(size=n)
+    rare = (rng.random(n) < 0.03).astype(float)  # 3% prevalence
+    x = (0.5 * z - 2.0 * rare + rng.logistic(size=n) > 0).astype(float)
+    x[rare == 1] = 0.0  # never treated: constant (0) within the treated arm
+    y = 2.0 * x + z + 3.0 * rare + rng.normal(size=n)
+    frame = pd.DataFrame({"Z": z, "R": rare, "X": x, "Y": y})
+    out = cc.analyze(
+        frame, "Z -> X; R -> X; Z -> Y; R -> Y; X -> Y", treatment="X", outcome="Y", estimand="att"
+    )
+    assert isinstance(out, cc.CausalResult), cc.report(out)
+    for e in out.estimates:
+        assert abs(e.point - 2.0) < 1.0 and (e.se or 0) < 1.0, e
+
+
+def test_absurd_standard_error_is_an_apparatus_failure(confounded_binary: pd.DataFrame) -> None:
+    @dataclass(frozen=True)
+    class _Unstable:
+        name: str = "unstable"
+        family: str = "test"
+        strategies: frozenset[Strategy] = frozenset({Strategy.backdoor})
+        treatment_kinds: frozenset[str] = frozenset({"binary"})
+        priority: int = -1
+
+        def fit(self, d: Prepared, policy: cc.AnalysisPolicy, rng: np.random.Generator) -> Fit:
+            from causal_core.contract import EstimateRecord
+
+            rec = EstimateRecord(
+                estimator=self.name,
+                family=self.family,
+                estimand="x",
+                point=-2e16,
+                se=2e16,
+                ci=None,
+                n_used=d.n,
+            )
+            return Fit(record=rec)
+
+    registry.register(_Unstable())  # type: ignore[arg-type]
+    try:
+        out = cc.analyze(confounded_binary, G, treatment="X", outcome="Y")
+    finally:
+        registry.unregister("unstable")
+    assert isinstance(out, cc.ApparatusFailure)
+    assert out.error_type == "NumericalInstabilityError" and out.stage == "estimate"

@@ -71,6 +71,26 @@ T = TypeVar("T")
 #: second order would read as disagreement. Pre-registered in benchmarks/t0.
 TRIANGULATION_SE_FLOOR = 0.25
 
+#: An estimator whose standard error exceeds this multiple of the outcome's standard
+#: deviation has not produced a statistical answer; its interval would "cover" anything.
+MAX_SE_TO_OUTCOME_SD = 1e3
+
+
+class NumericalInstabilityError(ArithmeticError):
+    pass
+
+
+def _check_numerics(fit: Fit, sd_y: float) -> None:
+    rec = fit.record
+    bad = not np.isfinite(rec.point) or (rec.se is not None and not np.isfinite(rec.se))
+    if not bad and rec.se is not None and sd_y > 0 and rec.se > MAX_SE_TO_OUTCOME_SD * sd_y:
+        bad = True
+    if bad:
+        raise NumericalInstabilityError(
+            f"{rec.estimator} returned point={rec.point:.4g}, se={rec.se} for an outcome with "
+            f"sd={sd_y:.4g}: numerically unstable, not an estimate"
+        )
+
 
 def as_frame(data: Any) -> pd.DataFrame:
     """Accept pandas, a column dict, pyarrow, polars, or any dataframe-interchange object."""
@@ -347,10 +367,13 @@ def _analyze(
             diag=dres.diagnostics,
         )
     fits: list[Fit] = []
+    sd_y = float(np.std(d.y))
     for i, est in enumerate(ests):
         rng = np.random.default_rng([policy.seed, i])
         try:
-            fits.append(est.fit(d, policy, rng))
+            fit = est.fit(d, policy, rng)
+            _check_numerics(fit, sd_y)
+            fits.append(fit)
         except Exception as exc:
             if i == 0:
                 raise

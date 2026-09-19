@@ -290,14 +290,19 @@ def prepare(
                     smd_weighted=smd(X[:, j], t, w),
                 )
             )
-        ok = not lg.separated and outside <= policy.max_extreme_propensity_share
+        # Separation (some covariate profile occurs in one arm only) breaks ATE overlap in
+        # either direction. For the ATT only treated units without comparable controls
+        # matter -- a never-treated profile just gets zero weight -- and those already
+        # show up in `outside` as treated propensities near 1.
+        separated = lg.separated and not att
+        ok = not separated and outside <= policy.max_extreme_propensity_share
         region = f"above {hi} (treated units)" if att else f"outside [{lo}, {hi}]"
         checks.append(
             DesignCheck(
                 name="overlap (positivity)",
                 passed=ok,
                 detail=f"{outside:.1%} have propensity {region}"
-                + ("; covariates separate the arms perfectly" if lg.separated else ""),
+                + ("; covariates separate the arms perfectly" if separated else ""),
             )
         )
         if not ok:
@@ -305,7 +310,7 @@ def prepare(
                 AbstentionReason.POSITIVITY,
                 f"{outside:.1%} have an estimated propensity {region} "
                 f"(policy allows {policy.max_extreme_propensity_share:.1%})"
-                + ("; the covariates predict treatment perfectly" if lg.separated else ""),
+                + ("; the covariates predict treatment perfectly" if separated else ""),
                 (
                     "restrict the population to the region where both arms occur",
                     "or drop covariates that (nearly) determine treatment, if the graph allows",
