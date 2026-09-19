@@ -11,14 +11,23 @@
  * Data: loads from GET /api/governance/review-queue + GET /api/governance/audit-log
  * via React Query.
  *
+ * Decisions (fail-closed):
+ *   - Approve: POST /api/governance/check (Guardian verdict) → POST
+ *     /api/governance/approve/{id} with the returned audit_entry_id as verdict_id.
+ *   - Reject:  POST /api/governance/check → POST /api/governance/reject/{id}.
+ *   - Success is shown only after the backend confirms. Nothing is patched
+ *     locally: the review-queue and audit-log queries are invalidated and
+ *     refetched, so the UI only ever shows backend state and backend audit rows.
+ *
  * Failure mode:
  *   - If the backend is unreachable and NEXT_PUBLIC_ENABLE_MOCK_FALLBACK is set,
- *     mock data is shown with an explicit badge.
+ *     mock data is shown with an explicit badge and approve/reject are disabled
+ *     (a mock item cannot be approved).
  *   - Otherwise, a degraded-state message is shown (no silent mock substitution).
  */
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ShieldCheck, RefreshCw, AlertTriangle } from "lucide-react";
 import { AuditLogPanel } from "@/components/shared/AuditLogPanel";
 import { PersonaSelector } from "@/components/shared/PersonaSelector";
@@ -30,9 +39,18 @@ import type { ReviewQueueItem, AuditEntry } from "@/lib/types";
 // ─── Mock fallback data (dev-only, gated by env flag) ───────────────────────
 // NEVER silently shown in production. Must be explicitly opted-in via:
 //   NEXT_PUBLIC_ENABLE_MOCK_FALLBACK=true
+// Mock items are display-only: approve/reject are disabled in mock mode.
 
-const ENABLE_MOCK =
-  process.env["NEXT_PUBLIC_ENABLE_MOCK_FALLBACK"] === "true";
+function isMockFallbackEnabled(): boolean {
+  return process.env["NEXT_PUBLIC_ENABLE_MOCK_FALLBACK"] === "true";
+}
+
+const MOCK_DECISIONS_DISABLED_REASON =
+  "Showing mock data because the governance backend is unavailable. " +
+  "Mock items cannot be approved or rejected.";
+
+const REVIEW_QUEUE_QUERY_KEY = ["governance", "review-queue"] as const;
+const AUDIT_LOG_QUERY_KEY = ["governance", "audit-log"] as const;
 
 const MOCK_REVIEW_ITEMS: ReviewQueueItem[] = [
   {
@@ -255,14 +273,46 @@ function mapBackendAuditEntry(entry: BackendAuditEntry): AuditEntry {
   };
 }
 
+// ─── Decision helpers ──────────────────────────────────────────────────────────
+
+/**
+ * Backend object types accepted by /approve and /reject
+ * (SemanticLayerRegistry.promote_to_approved / reject_object table_map).
+ */
+const BACKEND_OBJECT_TYPES = ["CausalEdge", "GraphFragment", "CausalEntity"] as const;
+type BackendObjectType = (typeof BACKEND_OBJECT_TYPES)[number];
+
+const FRONTEND_TO_BACKEND_OBJECT_TYPE: Partial<Record<string, BackendObjectType>> = {
+  CAUSAL_EDGE: "CausalEdge",
+  GRAPH_FRAGMENT: "GraphFragment",
+};
+
+/**
+ * Resolve the backend object_type for a queue item. Live items carry the
+ * backend value verbatim (see mapBackendItem); returns null for types the
+ * governance API cannot approve/reject (ASSUMPTION, INTERVENTION).
+ */
+function toBackendObjectType(objectType: string): BackendObjectType | null {
+  if ((BACKEND_OBJECT_TYPES as readonly string[]).includes(objectType)) {
+    return objectType as BackendObjectType;
+  }
+  return FRONTEND_TO_BACKEND_OBJECT_TYPE[objectType] ?? null;
+}
+
+/** Mirrors RejectRequest.reason min_length in backend/src/api/governance.py. */
+const MIN_REJECTION_REASON_LENGTH = 10;
+
+interface DecisionVariables {
+  item: ReviewQueueItem;
+  reason: string;
+}
+
 // ─── Page component ────────────────────────────────────────────────────────────
 
 export default function GovernancePage() {
-  const [selectedItem, setSelectedItem] = useState<ReviewQueueItem | null>(null);
-  const [localOverrides, setLocalOverrides] = useState<
-    Record<string, ReviewQueueItem["status"]>
-  >({});
-  const [localAuditEntries, setLocalAuditEntries] = useState<AuditEntry[]>([]);
+  const queryClient = useQueryClient();
+  const enableMock = isMockFallbackEnabled();
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
   // ── React Query: review queue ───────────────────────────────────────────────
   const {
@@ -271,7 +321,7 @@ export default function GovernancePage() {
     isError: queueError,
     refetch: refetchQueue,
   } = useQuery<ReviewQueueItem[]>({
-    queryKey: ["governance", "review-queue"],
+    queryKey: REVIEW_QUEUE_QUERY_KEY,
     queryFn: async () => {
       const raw = await governanceApi.reviewQueue() as BackendQueueItem[];
       return raw.map(mapBackendItem);
@@ -282,7 +332,7 @@ export default function GovernancePage() {
 
   // ── React Query: audit log ──────────────────────────────────────────────────
   const { data: backendAuditLog, isError: auditError } = useQuery<AuditEntry[]>({
-    queryKey: ["governance", "audit-log"],
+    queryKey: AUDIT_LOG_QUERY_KEY,
     queryFn: async () => {
       const raw = await governanceApi.auditLog({ limit: 50 }) as { entries: BackendAuditEntry[] };
       return raw.entries.map(mapBackendAuditEntry);
@@ -291,68 +341,107 @@ export default function GovernancePage() {
     staleTime: 30_000,
   });
 
-  // Determine data source and whether we should use mock fallback
-  const hasBackendError = queueError || auditError;
-  const useMock = ENABLE_MOCK && hasBackendError;
+  // Mock fallback only when explicitly enabled AND the backend gave us nothing.
+  const queueIsMock = enableMock && queueError && !backendItems;
+  const auditIsMock = enableMock && auditError && !backendAuditLog;
+  const isMockMode = queueIsMock || auditIsMock;
 
-  // Fail-closed: no silent mock substitution in production
-  const reviewItems: ReviewQueueItem[] = (
-    useMock && !backendItems ? MOCK_REVIEW_ITEMS : (backendItems ?? [])
-  ).map((item) =>
-    localOverrides[item.id]
-      ? { ...item, status: localOverrides[item.id]! }
-      : item
-  );
+  // Fail-closed: no silent mock substitution in production, and no locally
+  // patched statuses — the queue is exactly what the backend returned.
+  const reviewItems: ReviewQueueItem[] = queueIsMock
+    ? MOCK_REVIEW_ITEMS
+    : (backendItems ?? []);
 
-  const auditEntries: AuditEntry[] = [
-    ...localAuditEntries,
-    ...(useMock && !backendAuditLog ? MOCK_AUDIT_ENTRIES : (backendAuditLog ?? [])),
-  ];
+  // Audit rows come only from GET /api/governance/audit-log (or the labelled
+  // mock set). Nothing is synthesized client-side.
+  const auditEntries: AuditEntry[] = auditIsMock
+    ? MOCK_AUDIT_ENTRIES
+    : (backendAuditLog ?? []);
+  const auditUnavailable = auditError && !auditIsMock && !backendAuditLog;
 
-  const dataSource = useMock ? "mock" : backendItems ? "live" : "error";
+  const dataSource = isMockMode ? "mock" : backendItems ? "live" : "error";
+
+  const selectedItem =
+    reviewItems.find((item) => item.id === selectedItemId) ?? null;
 
   // ── Approve / Reject ────────────────────────────────────────────────────────
+  // Both go to the backend; the returned promise resolves only on success.
+  // On settle (success OR failure) the queue + audit log are refetched so the
+  // UI reflects whatever the backend actually recorded — nothing is patched
+  // locally.
 
-  async function handleApprove(id: string, reason: string) {
-    setLocalOverrides((prev) => ({ ...prev, [id]: "APPROVED" }));
-
-    const item = reviewItems.find((i) => i.id === id);
-    if (item) {
-      setLocalAuditEntries((prev) => [
-        {
-          id: `local-${Date.now()}`,
-          timestamp: new Date().toISOString(),
-          agent: "GovernanceAgent",
-          action: `approve — ${item.objectName} (reason: "${reason}")`,
-          verdict: "APPROVED",
-          policyRulesCited: ["POL-001"],
-          payloadHash: `sha256:${Math.random().toString(36).slice(2)}`,
-          actorId: "dev-user-001",
-        },
-        ...prev,
-      ]);
-    }
+  function invalidateGovernanceQueries() {
+    void queryClient.invalidateQueries({ queryKey: REVIEW_QUEUE_QUERY_KEY });
+    void queryClient.invalidateQueries({ queryKey: AUDIT_LOG_QUERY_KEY });
   }
 
-  async function handleReject(id: string, reason: string) {
-    setLocalOverrides((prev) => ({ ...prev, [id]: "REJECTED" }));
-
-    const item = reviewItems.find((i) => i.id === id);
-    if (item) {
-      setLocalAuditEntries((prev) => [
-        {
-          id: `local-${Date.now()}`,
-          timestamp: new Date().toISOString(),
-          agent: "GovernanceAgent",
-          action: `reject — ${item.objectName} (reason: "${reason}")`,
-          verdict: "REJECTED",
-          policyRulesCited: ["POL-002"],
-          payloadHash: `sha256:${Math.random().toString(36).slice(2)}`,
-          actorId: "dev-user-001",
-        },
-        ...prev,
-      ]);
+  function assertDecidable(item: ReviewQueueItem): BackendObjectType {
+    if (isMockMode) {
+      throw new Error(MOCK_DECISIONS_DISABLED_REASON);
     }
+    const objectType = toBackendObjectType(item.objectType);
+    if (!objectType) {
+      throw new Error(
+        `The governance API cannot approve or reject ${item.objectType} objects`
+      );
+    }
+    return objectType;
+  }
+
+  const approveMutation = useMutation({
+    mutationFn: async ({ item, reason }: DecisionVariables) => {
+      const objectType = assertDecidable(item);
+      // The backend requires a Guardian APPROVED verdict (audit_log id) to
+      // authorise the promotion — obtain it from /check first.
+      const check = await governanceApi.check({
+        action_type: "GOVERNANCE_APPROVE",
+        payload: { object_id: item.id, object_type: objectType, reason },
+      });
+      if (check.verdict !== "APPROVED") {
+        throw new Error(`Guardian verdict was ${check.verdict}: ${check.reason}`);
+      }
+      await governanceApi.approve(
+        item.id,
+        objectType,
+        check.audit_entry_id,
+        reason || undefined
+      );
+    },
+    onSettled: invalidateGovernanceQueries,
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: async ({ item, reason }: DecisionVariables) => {
+      const objectType = assertDecidable(item);
+      if (reason.trim().length < MIN_REJECTION_REASON_LENGTH) {
+        throw new Error(
+          `A rejection reason of at least ${MIN_REJECTION_REASON_LENGTH} characters is required`
+        );
+      }
+      // /reject requires the id of a real Guardian audit_log entry as verdict_id.
+      const check = await governanceApi.check({
+        action_type: "GOVERNANCE_REJECT",
+        payload: { object_id: item.id, object_type: objectType, reason },
+      });
+      await governanceApi.reject(item.id, objectType, reason, check.audit_entry_id);
+    },
+    onSettled: invalidateGovernanceQueries,
+  });
+
+  function findQueueItem(id: string): ReviewQueueItem {
+    const item = reviewItems.find((i) => i.id === id);
+    if (!item) {
+      throw new Error("This item is no longer in the review queue");
+    }
+    return item;
+  }
+
+  async function handleApprove(id: string, reason: string): Promise<void> {
+    await approveMutation.mutateAsync({ item: findQueueItem(id), reason });
+  }
+
+  async function handleReject(id: string, reason: string): Promise<void> {
+    await rejectMutation.mutateAsync({ item: findQueueItem(id), reason });
   }
 
   const pendingCount = reviewItems.filter(
@@ -372,8 +461,12 @@ export default function GovernancePage() {
           </span>
         )}
         {dataSource === "mock" && (
-          <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
-            mock data
+          <span
+            data-testid="mock-data-badge"
+            title={MOCK_DECISIONS_DISABLED_REASON}
+            className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
+          >
+            mock data — decisions disabled
           </span>
         )}
         {dataSource === "error" && (
@@ -440,14 +533,26 @@ export default function GovernancePage() {
                 <ReviewQueue
                   items={reviewItems}
                   selectedItemId={selectedItem?.id}
-                  onSelectItem={setSelectedItem}
+                  onSelectItem={(item) => setSelectedItemId(item.id)}
                 />
               )
             )}
           </div>
 
-          {/* Audit log — progressive disclosure Level 3 */}
-          {dataSource !== "error" && <AuditLogPanel entries={auditEntries} defaultOpen={false} />}
+          {/* Audit log — progressive disclosure Level 3 (backend rows only) */}
+          {dataSource !== "error" &&
+            (auditUnavailable ? (
+              <div
+                role="alert"
+                data-testid="audit-log-unavailable"
+                className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200"
+              >
+                <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
+                The audit log could not be loaded from the governance backend.
+              </div>
+            ) : (
+              <AuditLogPanel entries={auditEntries} defaultOpen={false} />
+            ))}
         </div>
 
         {/* Approval panel */}
@@ -459,6 +564,9 @@ export default function GovernancePage() {
             item={selectedItem}
             onApprove={handleApprove}
             onReject={handleReject}
+            decisionsDisabledReason={
+              isMockMode ? MOCK_DECISIONS_DISABLED_REASON : null
+            }
           />
         </aside>
       </div>

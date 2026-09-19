@@ -8,9 +8,15 @@
  *   - Sensitivity results (data-testid="sensitivity-result")
  *   - Assumption list
  *   - Causal chain (if EpistemicState available)
- *   - Approve button (data-testid="approve-button")
- *   - Reason textarea + confirm button (data-testid="confirm-approval")
+ *   - Approve / reject buttons (data-testid="approve-button" / "reject-button")
+ *   - Reason textarea + confirm button (data-testid="confirm-approval" / "confirm-rejection")
  *   - Success state (data-testid="approval-success")
+ *   - Error state (data-testid="approval-error")
+ *
+ * Fail-closed contract: the success state is rendered ONLY after the
+ * onApprove/onReject promise resolves (the backend confirmed the decision).
+ * If it rejects, the error is shown and the item stays as it was. When
+ * `decisionsDisabledReason` is set (e.g. mock data), approve/reject are disabled.
  */
 
 import { useState } from "react";
@@ -30,9 +36,34 @@ import type { ReviewQueueItem, Evidence, StatisticalTestResult, Assumption } fro
 
 export interface ApprovalPanelProps {
   item: ReviewQueueItem | null;
+  /**
+   * Must resolve ONLY once the backend has confirmed the approval and reject
+   * otherwise. The success state is shown only after this resolves.
+   */
   onApprove: (id: string, reason: string) => Promise<void>;
+  /** Same contract as onApprove, for rejections. */
   onReject: (id: string, reason: string) => Promise<void>;
+  /**
+   * When set, approve/reject are disabled and this explanation is shown
+   * (e.g. the page is displaying mock fallback data).
+   */
+  decisionsDisabledReason?: string | null;
   className?: string;
+}
+
+interface ConfirmedDecision {
+  itemId: string;
+  objectName: string;
+  verdict: "approved" | "rejected";
+}
+
+function formatDecisionError(kind: "approve" | "reject", err: unknown): string {
+  const raw =
+    err instanceof Error ? err.message : typeof err === "string" ? err : "";
+  const detail = raw.trim().replace(/[.\s]+$/, "") || "Unknown error";
+  return kind === "approve"
+    ? `Approval failed: ${detail}. The item was NOT approved and remains in its previous state.`
+    : `Rejection failed: ${detail}. The item was NOT rejected and remains in its previous state.`;
 }
 
 function EvidenceCitationList({ citations }: { citations: Evidence[] }) {
@@ -231,36 +262,55 @@ export function ApprovalPanel({
   item,
   onApprove,
   onReject,
+  decisionsDisabledReason = null,
   className,
 }: ApprovalPanelProps) {
   const [mode, setMode] = useState<"idle" | "approve" | "reject">("idle");
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successVerdict, setSuccessVerdict] = useState<
-    "approved" | "rejected" | null
-  >(null);
+  // Set ONLY after onApprove/onReject resolved, i.e. the backend confirmed the
+  // decision. Keyed by item so a confirmation never bleeds onto another item.
+  const [confirmed, setConfirmed] = useState<ConfirmedDecision | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  async function handleConfirmApproval() {
-    if (!item) return;
-    setIsSubmitting(true);
-    try {
-      await onApprove(item.id, reason);
-      setSuccessVerdict("approved");
-      setMode("idle");
-      setReason("");
-    } finally {
-      setIsSubmitting(false);
+  // Reset the in-progress decision when a different item is selected.
+  const itemId = item?.id ?? null;
+  const [trackedItemId, setTrackedItemId] = useState<string | null>(itemId);
+  if (itemId !== trackedItemId) {
+    setTrackedItemId(itemId);
+    setMode("idle");
+    setReason("");
+    setError(null);
+    // itemId === null happens when the decided item drops out of the refetched
+    // queue — keep the confirmation visible in that case.
+    if (itemId !== null && confirmed?.itemId !== itemId) {
+      setConfirmed(null);
     }
   }
 
-  async function handleConfirmRejection() {
-    if (!item) return;
+  const decisionsDisabled = Boolean(decisionsDisabledReason);
+
+  async function submitDecision(kind: "approve" | "reject") {
+    if (!item || decisionsDisabled) return;
+    const target = item;
     setIsSubmitting(true);
+    setError(null);
     try {
-      await onReject(item.id, reason);
-      setSuccessVerdict("rejected");
+      if (kind === "approve") {
+        await onApprove(target.id, reason);
+      } else {
+        await onReject(target.id, reason);
+      }
+      setConfirmed({
+        itemId: target.id,
+        objectName: target.objectName,
+        verdict: kind === "approve" ? "approved" : "rejected",
+      });
       setMode("idle");
       setReason("");
+    } catch (err) {
+      // Fail closed: keep the item and the typed reason as they were, show why.
+      setError(formatDecisionError(kind, err));
     } finally {
       setIsSubmitting(false);
     }
@@ -269,7 +319,49 @@ export function ApprovalPanel({
   function handleReset() {
     setMode("idle");
     setReason("");
-    setSuccessVerdict(null);
+    setError(null);
+    setConfirmed(null);
+  }
+
+  // Success state — only reachable after the backend confirmed the decision.
+  if (confirmed && (item === null || item.id === confirmed.itemId)) {
+    return (
+      <div
+        data-testid="approval-success"
+        className={cn(
+          "flex flex-col items-center gap-4 rounded-xl border p-10 text-center",
+          confirmed.verdict === "approved"
+            ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950"
+            : "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950",
+          className
+        )}
+      >
+        {confirmed.verdict === "approved" ? (
+          <CheckCircle2 className="h-12 w-12 text-green-600 dark:text-green-400" aria-hidden="true" />
+        ) : (
+          <XCircle className="h-12 w-12 text-red-600 dark:text-red-400" aria-hidden="true" />
+        )}
+        <div>
+          <p className="text-lg font-bold text-foreground">
+            {confirmed.verdict === "approved"
+              ? "Approved successfully"
+              : "Rejected successfully"}
+          </p>
+          <p className="mt-1 text-sm font-medium text-foreground">
+            {confirmed.objectName}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            The decision has been recorded in the immutable audit trail.
+          </p>
+        </div>
+        <button
+          onClick={handleReset}
+          className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+        >
+          Review another item
+        </button>
+      </div>
+    );
   }
 
   if (!item) {
@@ -283,44 +375,6 @@ export function ApprovalPanel({
         <p className="text-sm text-muted-foreground">
           Select a review queue item to begin review.
         </p>
-      </div>
-    );
-  }
-
-  // Success state
-  if (successVerdict) {
-    return (
-      <div
-        data-testid="approval-success"
-        className={cn(
-          "flex flex-col items-center gap-4 rounded-xl border p-10 text-center",
-          successVerdict === "approved"
-            ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950"
-            : "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950",
-          className
-        )}
-      >
-        {successVerdict === "approved" ? (
-          <CheckCircle2 className="h-12 w-12 text-green-600 dark:text-green-400" aria-hidden="true" />
-        ) : (
-          <XCircle className="h-12 w-12 text-red-600 dark:text-red-400" aria-hidden="true" />
-        )}
-        <div>
-          <p className="text-lg font-bold text-foreground">
-            {successVerdict === "approved"
-              ? "Approved successfully"
-              : "Rejected successfully"}
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            The decision has been recorded in the immutable audit trail.
-          </p>
-        </div>
-        <button
-          onClick={handleReset}
-          className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
-        >
-          Review another item
-        </button>
       </div>
     );
   }
@@ -408,6 +462,28 @@ export function ApprovalPanel({
             />
           </div>
         )}
+
+        {/* Decisions disabled (e.g. mock fallback data) */}
+        {decisionsDisabledReason && (
+          <p
+            data-testid="decisions-disabled-notice"
+            className="rounded-md border border-zinc-300 bg-zinc-50 p-3 text-xs text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+          >
+            {decisionsDisabledReason}
+          </p>
+        )}
+
+        {/* Backend failure — the decision was not recorded */}
+        {error && (
+          <div
+            role="alert"
+            data-testid="approval-error"
+            className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200"
+          >
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span>{error}</span>
+          </div>
+        )}
       </div>
 
       {/* Action footer */}
@@ -417,24 +493,27 @@ export function ApprovalPanel({
             <button
               data-testid="approve-button"
               onClick={() => setMode("approve")}
+              disabled={decisionsDisabled}
               className={cn(
                 "flex flex-1 items-center justify-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold",
                 "bg-green-600 text-white hover:bg-green-700 active:bg-green-800",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1",
-                "transition-colors"
+                "disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
               )}
             >
               <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
               Approve
             </button>
             <button
+              data-testid="reject-button"
               onClick={() => setMode("reject")}
+              disabled={decisionsDisabled}
               className={cn(
                 "flex flex-1 items-center justify-center gap-1.5 rounded-md border px-4 py-2.5 text-sm font-semibold",
                 "border-red-300 bg-red-50 text-red-700 hover:bg-red-100",
                 "dark:border-red-800 dark:bg-red-950 dark:text-red-300 dark:hover:bg-red-900",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1",
-                "transition-colors"
+                "disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
               )}
             >
               <XCircle className="h-4 w-4" aria-hidden="true" />
@@ -447,8 +526,8 @@ export function ApprovalPanel({
           <>
             <button
               data-testid="confirm-approval"
-              onClick={handleConfirmApproval}
-              disabled={isSubmitting}
+              onClick={() => void submitDecision("approve")}
+              disabled={isSubmitting || decisionsDisabled}
               className={cn(
                 "flex flex-1 items-center justify-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold",
                 "bg-green-600 text-white hover:bg-green-700",
@@ -461,7 +540,8 @@ export function ApprovalPanel({
             </button>
             <button
               onClick={handleReset}
-              className="rounded-md px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted transition-colors"
+              disabled={isSubmitting}
+              className="rounded-md px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
             >
               Cancel
             </button>
@@ -471,8 +551,9 @@ export function ApprovalPanel({
         {mode === "reject" && (
           <>
             <button
-              onClick={handleConfirmRejection}
-              disabled={isSubmitting}
+              data-testid="confirm-rejection"
+              onClick={() => void submitDecision("reject")}
+              disabled={isSubmitting || decisionsDisabled}
               className={cn(
                 "flex flex-1 items-center justify-center gap-1.5 rounded-md border px-4 py-2.5 text-sm font-semibold",
                 "border-red-300 bg-red-50 text-red-700 hover:bg-red-100",
@@ -486,7 +567,8 @@ export function ApprovalPanel({
             </button>
             <button
               onClick={handleReset}
-              className="rounded-md px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted transition-colors"
+              disabled={isSubmitting}
+              className="rounded-md px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
             >
               Cancel
             </button>
