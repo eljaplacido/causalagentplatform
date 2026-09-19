@@ -179,6 +179,12 @@ def prepare(
         scale = 1.0
     else:
         kind = "continuous"
+        if query.estimand == "att":
+            return refuse(
+                AbstentionReason.INVALID_INPUT,
+                f"the ATT is defined for a binary treatment; {x!r} takes {len(uniq)} values",
+                ("ask for the ATE, or give treatment_levels and a binary treatment column",),
+            )
         if query.treatment_levels is not None:
             levels = query.treatment_levels
             scale = levels[1] - levels[0]
@@ -227,6 +233,7 @@ def prepare(
         mediators=arr(groups["mediators"]),
         treatment_proxies=arr(groups["treatment_proxies"]),
         outcome_proxies=arr(groups["outcome_proxies"]),
+        estimand=query.estimand,
     )
 
     propensity: PropensityDiagnostics | None = None
@@ -260,9 +267,12 @@ def prepare(
         lg = logistic(t, add_intercept(X))
         lo, hi = policy.propensity_bounds
         e = lg.p
-        outside = float(np.mean((e < lo) | (e > hi)))
+        att = query.estimand == "att"
+        # The ATT needs comparable controls for every treated unit, not the reverse:
+        # only treated units with a propensity near 1 violate its overlap.
+        outside = float(np.mean(e[t == 1] > hi)) if att else float(np.mean((e < lo) | (e > hi)))
         ec = np.clip(e, lo, hi)
-        w = np.where(t == 1, 1 / ec, 1 / (1 - ec))
+        w = np.where(t == 1, 1.0, ec / (1 - ec)) if att else np.where(t == 1, 1 / ec, 1 / (1 - ec))
         ess = {arm: float(w[t == arm].sum() ** 2 / np.sum(w[t == arm] ** 2)) for arm in (0.0, 1.0)}
         propensity = PropensityDiagnostics(
             min=float(e.min()),
@@ -280,18 +290,19 @@ def prepare(
                 )
             )
         ok = not lg.separated and outside <= policy.max_extreme_propensity_share
+        region = f"above {hi} (treated units)" if att else f"outside [{lo}, {hi}]"
         checks.append(
             DesignCheck(
                 name="overlap (positivity)",
                 passed=ok,
-                detail=f"{outside:.1%} of units have propensity outside [{lo}, {hi}]"
+                detail=f"{outside:.1%} have propensity {region}"
                 + ("; covariates separate the arms perfectly" if lg.separated else ""),
             )
         )
         if not ok:
             return refuse_with_diag(
                 AbstentionReason.POSITIVITY,
-                f"{outside:.1%} of units have an estimated propensity outside [{lo}, {hi}] "
+                f"{outside:.1%} have an estimated propensity {region} "
                 f"(policy allows {policy.max_extreme_propensity_share:.1%})"
                 + ("; the covariates predict treatment perfectly" if lg.separated else ""),
                 (

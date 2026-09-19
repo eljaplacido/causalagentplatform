@@ -2,7 +2,7 @@
 
 **Suite:** T0, analytic structural causal models with closed-form truth
 **System under test:** `packages/causal-core` (`causal_core.analyze` and its parts)
-**Registered:** 2026-09-19, version 2 (v1 the same day; see changelog)
+**Registered:** 2026-09-19, version 3 (v1 and v2 the same day; see changelog)
 **Runs:** every PR (this configuration), via `pytest -m t0` in `packages/causal-core`
 
 ## Status of this document
@@ -56,6 +56,12 @@ continuous treatments. The cases cover every built-in strategy:
 - conditional IV
 - proximal
 - a null effect
+- *(v3)* effect heterogeneity, where the ATT and the ATE differ:
+  - Z ~ N(0,1), X ~ Bernoulli(logistic(Z)), Y = X + 0.8·X·Z + Z + ε
+  - ATE = 1
+  - ATT = 1 + 0.8·E[Z | X=1] = 1.330594, computed by deterministic quadrature
+  - the quadrature was cross-checked against a 20-million-draw Monte Carlo of the data-generating
+    process, which gave 1.33033
 
 **Refuter cases.**
 
@@ -92,7 +98,7 @@ The gate must fail under every one of them:
 ```toml
 [meta]
 suite = "T0"
-version = 2
+version = 3
 registered = "2026-09-19"
 
 [identification]
@@ -196,3 +202,10 @@ defect caught.
      rule it names did not change.
   Nothing else changed: no other threshold, case, coefficient or seed. The v1 run's other sections
   passed and are in the v1 results file.
+- v3 (2026-09-19): scope added and nothing relaxed. The kernel gained the ATT estimand (effect on the
+  treated), which is needed for the LaLonde real-data benchmark (T3). Two estimation cases are
+  appended: `heterogeneous_ate_binary` and `heterogeneous_att_binary`.
+  - They also join the valid designs for refuter and triangulation false alarms, because their
+    strategy is back-door.
+  - Existing cases keep their indices and seeds, so their numbers reproduce the v2 run exactly.
+  - No threshold changed. The v2 run passed, in `results/2026-09-19-v2-run1.json`.

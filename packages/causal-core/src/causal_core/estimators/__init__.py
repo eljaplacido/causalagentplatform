@@ -30,6 +30,7 @@ from causal_core.contract import AnalysisPolicy, EstimateRecord, Strategy
 
 F = NDArray[np.float64]
 TreatmentKind = Literal["binary", "continuous"]
+EstimandKind = Literal["ate", "att"]
 
 
 @dataclass(frozen=True)
@@ -47,6 +48,7 @@ class Prepared:
     mediators: F | None = None
     treatment_proxies: F | None = None
     outcome_proxies: F | None = None
+    estimand: EstimandKind = "ate"
 
     @property
     def n(self) -> int:
@@ -105,9 +107,18 @@ def registered() -> dict[str, Estimator]:
     return dict(_REGISTRY)
 
 
-def applicable(strategy: Strategy, kind: TreatmentKind) -> list[Estimator]:
+def estimands_of(est: Estimator) -> frozenset[str]:
+    """Estimands an estimator targets. Plug-ins that do not declare any are ATE-only."""
+    return frozenset(getattr(est, "estimands", frozenset({"ate"})))
+
+
+def applicable(
+    strategy: Strategy, kind: TreatmentKind, estimand: EstimandKind = "ate"
+) -> list[Estimator]:
     ests = [
-        e for e in registered().values() if strategy in e.strategies and kind in e.treatment_kinds
+        e
+        for e in registered().values()
+        if strategy in e.strategies and kind in e.treatment_kinds and estimand in estimands_of(e)
     ]
     return sorted(ests, key=lambda e: (e.priority, e.name))
 

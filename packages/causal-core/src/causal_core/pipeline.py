@@ -332,14 +332,15 @@ def _analyze(
     assert cert.strategy is not None
     ests = [
         e
-        for e in est_registry.applicable(cert.strategy, d.treatment_kind)
+        for e in est_registry.applicable(cert.strategy, d.treatment_kind, d.estimand)
         if getattr(e, "supports", lambda _d, _s: True)(d, cert.strategy)
     ]
     if not ests:
         return refuse(
             AbstentionReason.NO_ESTIMATOR,
             f"identified by {cert.strategy.value} ({cert.estimand}), but no registered "
-            f"estimator handles that strategy for a {d.treatment_kind} treatment",
+            f"estimator targets the {d.estimand.upper()} under that strategy for a "
+            f"{d.treatment_kind} treatment",
             ("register an estimator for this strategy (see causal_core.estimators)",),
             q=query,
             cert=cert,

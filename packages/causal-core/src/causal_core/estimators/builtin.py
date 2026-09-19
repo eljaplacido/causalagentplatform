@@ -52,6 +52,8 @@ def _se_from_if(inf: F) -> float:
 def _estimand(d: Prepared) -> str:
     if d.treatment_kind == "binary":
         t0, t1 = d.levels
+        if d.estimand == "att":
+            return f"ATT: E[Y(T={t1:g}) - Y(T={t0:g}) | T={t1:g}]"
         return f"ATE: E[Y(T={t1:g}) - Y(T={t0:g})]"
     if d.scale != 1.0:
         t0, t1 = d.levels
@@ -96,6 +98,7 @@ class _Base:
     priority: int = 100
     assumptions: tuple[str, ...] = ()
     se_method: str = "influence-function"
+    estimands: frozenset[str] = frozenset({"ate"})
 
     def supports(self, d: Prepared, strategy: Strategy) -> bool:
         return True
@@ -147,6 +150,7 @@ class DifferenceInMeans(_Base):
     priority: int = 10
     assumptions: tuple[str, ...] = ("treatment independent of potential outcomes",)
     se_method: str = "neyman"
+    estimands: frozenset[str] = frozenset({"ate", "att"})  # equal when T is unconfounded
 
     def supports(self, d: Prepared, strategy: Strategy) -> bool:
         return strategy is Strategy.randomized or d.X.shape[1] == 0
@@ -179,8 +183,11 @@ class LinRegression(_Base):
     priority: int = 30
     assumptions: tuple[str, ...] = ("outcome linear in the covariates within each arm",)
     se_method: str = "hc2+covariate-mean"
+    estimands: frozenset[str] = frozenset({"ate", "att"})
 
     def fit(self, d: Prepared, policy: AnalysisPolicy, rng: np.random.Generator) -> Fit:
+        if d.estimand == "att":
+            return self._fit_att(d, policy)
         t, y, X = d.t, d.y, d.X
         p = X.shape[1]
         xbar = X.mean(axis=0) if p else np.zeros(0)
@@ -195,6 +202,30 @@ class LinRegression(_Base):
         if p:
             inf = inf + Xc @ f.beta[2 + p : 2 + 2 * p]
         return _record(self, d, policy, float(f.beta[1]), inf)
+
+    def _fit_att(self, d: Prepared, policy: AnalysisPolicy) -> Fit:
+        """Fit the control-arm outcome model, impute Y(0) for the treated.
+
+        IF: t(y - x b0 - tau)/p  -  m1' A^-1 x (1-t) e0, where m1 is the treated covariate
+        mean and A = E[(1-t) x x'] -- the second term accounts for estimating b0.
+        """
+        t, y = d.t, d.y
+        n = d.n
+        Xi = add_intercept(d.X)
+        ctrl = t == 0
+        A = Xi[ctrl].T @ Xi[ctrl] / n
+        A_inv = np.linalg.pinv(A)
+        b0 = A_inv @ (Xi[ctrl].T @ y[ctrl] / n)
+        resid = y - Xi @ b0
+        p = float(t.mean())
+        tau = float(resid[t == 1].mean())
+        m1 = Xi[t == 1].mean(axis=0)
+        inf = t * (resid - tau) / p - (1 - t) * resid * (Xi @ (A_inv @ m1))
+        fit = _record(self, d, policy, tau, inf)
+        mu1 = float(y[t == 1].mean())
+        if_mu1 = t * (y - mu1) / p
+        fit.extras.update(mu1=mu1, mu0=mu1 - tau, if_mu1=if_mu1, if_mu0=if_mu1 - inf)
+        return fit
 
 
 @dataclass(frozen=True)
@@ -228,6 +259,7 @@ class HajekIPW(_Base):
     priority: int = 40
     assumptions: tuple[str, ...] = ("propensity logistic-linear in the covariates",)
     se_method: str = "m-estimation"
+    estimands: frozenset[str] = frozenset({"ate", "att"})
 
     def supports(self, d: Prepared, strategy: Strategy) -> bool:
         return bool(d.X.shape[1] > 0)
@@ -239,10 +271,29 @@ class HajekIPW(_Base):
         lo, hi = policy.propensity_bounds
         e = np.clip(lg.p, lo, hi)
         inside = ((lg.p > lo) & (lg.p < hi)).astype(float)
+        phi_gamma = (Xi * (t - lg.p)[:, None]) @ lg.hessian_inv.T
+        if d.estimand == "att":
+            # Treated weight 1; control weight e/(1-e), whose derivative in gamma is w * x.
+            p = float(t.mean())
+            w = (1 - t) * e / (1 - e)
+            mu1 = float(y[t == 1].mean())
+            mu0 = float(np.sum(w * y) / np.sum(w))
+            g0 = np.mean((w * (y - mu0) * inside)[:, None] * Xi, axis=0)
+            if_mu1 = t * (y - mu1) / p
+            if_mu0 = (w * (y - mu0) + phi_gamma @ g0) / p
+            fit = _record(
+                self,
+                d,
+                policy,
+                mu1 - mu0,
+                if_mu1 - if_mu0,
+                details={"share_clipped": float(1 - inside.mean())},
+            )
+            fit.extras.update(mu1=mu1, mu0=mu0, if_mu1=if_mu1, if_mu0=if_mu0)
+            return fit
         w1, w0 = t / e, (1 - t) / (1 - e)
         mu1 = float(np.sum(w1 * y) / np.sum(w1))
         mu0 = float(np.sum(w0 * y) / np.sum(w0))
-        phi_gamma = (Xi * (t - lg.p)[:, None]) @ lg.hessian_inv.T
         de = (e * (1 - e) * inside)[:, None] * Xi
         g1 = np.mean((-t * (y - mu1) / e**2)[:, None] * de, axis=0)
         g0 = np.mean(((1 - t) * (y - mu0) / (1 - e) ** 2)[:, None] * de, axis=0)
@@ -274,6 +325,7 @@ class AIPW(_Base):
         "either the propensity model or the outcome model is correctly specified",
     )
     se_method: str = "influence-function (cross-fitted)"
+    estimands: frozenset[str] = frozenset({"ate", "att"})
 
     def fit(self, d: Prepared, policy: AnalysisPolicy, rng: np.random.Generator) -> Fit:
         t, y, X = d.t, d.y, d.X
@@ -290,6 +342,26 @@ class AIPW(_Base):
         lo, hi = policy.propensity_bounds
         clipped = float(np.mean((e_hat <= lo) | (e_hat >= hi)))
         e_hat = np.clip(e_hat, lo, hi)
+        if d.estimand == "att":
+            # Doubly robust ATT score: [t(y - m0) - (1-t) e/(1-e) (y - m0)] / P(T=1).
+            p = float(t.mean())
+            r0 = y - mu0_hat
+            phi = t * r0 - (1 - t) * e_hat / (1 - e_hat) * r0
+            tau = float(phi.sum() / t.sum())
+            inf_att = (phi - tau * t) / p
+            fit = _record(
+                self,
+                d,
+                policy,
+                tau,
+                inf_att,
+                details={"share_clipped": clipped, "folds": float(policy.cross_fit_folds)},
+                extra_assumptions=(f"nuisance learners: {policy.learners}",),
+            )
+            mu1 = float(y[t == 1].mean())
+            if_mu1 = t * (y - mu1) / p
+            fit.extras.update(mu1=mu1, mu0=mu1 - tau, if_mu1=if_mu1, if_mu0=if_mu1 - inf_att)
+            return fit
         psi1 = mu1_hat + t * (y - mu1_hat) / e_hat
         psi0 = mu0_hat + (1 - t) * (y - mu0_hat) / (1 - e_hat)
         mu1, mu0 = float(psi1.mean()), float(psi0.mean())

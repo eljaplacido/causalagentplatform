@@ -263,6 +263,13 @@ class EstCase:
     query: Mapping[str, Any] = field(default_factory=dict)
     intercept: Mapping[str, float] = field(default_factory=dict)
     extra: Mapping[str, Callable[[pd.DataFrame], np.ndarray]] = field(default_factory=dict)
+    #: A custom data-generating process, for designs a linear SCM cannot express
+    #: (e.g. effect heterogeneity). ``truth_value`` must then be given.
+    sampler: Callable[[int, np.random.Generator], pd.DataFrame] | None = None
+    truth_value: float | None = None
+
+    def sample(self, n: int, rng: np.random.Generator) -> pd.DataFrame:
+        return self.sampler(n, rng) if self.sampler else self.scm().sample(n, rng)
 
     def scm(self) -> LinearSCM:
         return LinearSCM(
@@ -275,11 +282,36 @@ class EstCase:
 
     @property
     def truth(self) -> float:
+        if self.truth_value is not None:
+            return self.truth_value
         return self.scm().total_effect("X", "Y")
 
     @property
     def graph_for_analysis(self) -> str:
         return self.analyst_graph or self.sim_graph
+
+
+def _heterogeneous(n: int, rng: np.random.Generator) -> pd.DataFrame:
+    """Z ~ N(0,1); X ~ Bernoulli(logistic(Z)); Y = X + 0.8 X Z + Z + N(0,1).
+
+    The effect varies with Z and treated units have higher Z, so ATE = 1 while
+    ATT = 1 + 0.8 E[Z | X=1].
+    """
+    z = rng.normal(size=n)
+    x = (z + rng.logistic(size=n) > 0).astype(float)
+    y = x + 0.8 * x * z + z + rng.normal(size=n)
+    return pd.DataFrame({"Z": z, "X": x, "Y": y})
+
+
+def _heterogeneous_att() -> float:
+    """1 + 0.8 E[Z | X=1] = 1 + 0.8 * 2 * integral z logistic(z) phi(z) dz (quadrature)."""
+    from scipy import integrate, special
+
+    # phi(z) < 1e-300 beyond |z| = 40, so the finite range loses nothing.
+    val, _err = integrate.quad(
+        lambda z: z * special.expit(z) * stats.norm.pdf(z), -40, 40, epsabs=1e-13, limit=200
+    )
+    return 1.0 + 0.8 * 2.0 * val
 
 
 _BACKDOOR = "Z1 -> X; Z1 -> Y; Z2 -> X; Z2 -> Y; X -> Y; W -> Y"
@@ -380,6 +412,22 @@ ESTIMATION_CASES: tuple[EstCase, ...] = (
         strategy="proximal",
         query={"treatment_proxies": ("Zp",), "outcome_proxies": ("Wp",)},
     ),
+    # v3: effect heterogeneity, where the ATT and the ATE differ.
+    EstCase(
+        "heterogeneous_ate_binary",
+        "Z -> X; Z -> Y; X -> Y",
+        {},
+        sampler=_heterogeneous,
+        truth_value=1.0,
+    ),
+    EstCase(
+        "heterogeneous_att_binary",
+        "Z -> X; Z -> Y; X -> Y",
+        {},
+        sampler=_heterogeneous,
+        truth_value=_heterogeneous_att(),
+        query={"estimand": "att"},
+    ),
 )
 
 #: Valid designs used for refuter false alarms. backdoor_binary gains a genuine
@@ -428,7 +476,15 @@ REFUTER_POWER_CASES: tuple[tuple[EstCase, str], ...] = (
 TRIANGULATION_VALID_CASES: tuple[EstCase, ...] = tuple(
     c
     for c in ESTIMATION_CASES
-    if c.id in ("backdoor_binary", "m_bias_binary", "null_effect_binary", "randomized_binary")
+    if c.id
+    in (
+        "backdoor_binary",
+        "m_bias_binary",
+        "null_effect_binary",
+        "randomized_binary",
+        "heterogeneous_ate_binary",
+        "heterogeneous_att_binary",
+    )
 )
 
 TRIANGULATION_POWER_CASE = EstCase(
@@ -450,7 +506,7 @@ def _one_rep(
     case: EstCase, n: int, seed: int, case_idx: int, rep: int, policy_kwargs: Mapping[str, Any]
 ) -> CausalResult | Any:
     rng = np.random.default_rng([seed, case_idx, rep])
-    frame = case.scm().sample(n, rng)
+    frame = case.sample(n, rng)
     policy = AnalysisPolicy(seed=rep, **policy_kwargs)
     return analyze(
         frame, case.graph_for_analysis, treatment="X", outcome="Y", policy=policy, **case.query

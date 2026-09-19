@@ -26,7 +26,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
-CONTRACT_VERSION = "0.1.0"
+CONTRACT_VERSION = "0.2.0"
 
 
 class _Model(BaseModel):
@@ -164,7 +164,11 @@ class CausalQuery(_Model):
     rung: Rung = Rung.intervention
     treatment: str
     outcome: str
-    estimand: Literal["ate"] = "ate"
+    estimand: Literal["ate", "att"] = Field(
+        default="ate",
+        description="ate: average effect over the population. att: average effect on the "
+        "treated units (binary treatment only; needs overlap in one direction only).",
+    )
     design: Design = Design.observational
     treatment_levels: tuple[float, float] | None = Field(
         default=None,
