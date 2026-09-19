@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -121,7 +122,14 @@ def main(argv: list[str] | None = None) -> int:
     t.add_argument("--out")
     t.set_defaults(fn=_t0)
     args = ap.parse_args(argv)
-    return int(args.fn(args))
+    try:
+        return int(args.fn(args))
+    except BrokenPipeError:
+        # The reader closed the pipe early (`causal-core schema | head`): not an error
+        # worth a traceback. Point stdout at devnull so the flush at exit stays quiet.
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull, sys.stdout.fileno())
+        return 1
 
 
 if __name__ == "__main__":
