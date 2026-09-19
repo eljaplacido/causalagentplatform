@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import io
 import json
+import multiprocessing
 import os
 import sys
 import urllib.request
@@ -23,7 +24,7 @@ import numpy as np
 import pandas as pd
 
 from causal_core.bench.lalonde import load_prereg as _load_toml_block
-from causal_core.contract import AnalysisPolicy, CausalResult, ResultStatus
+from causal_core.contract import Abstention, AnalysisPolicy, CausalResult, ResultStatus
 from causal_core.pipeline import analyze
 
 COVARIATES = tuple(f"x{i}" for i in range(25))
@@ -103,9 +104,8 @@ def _one(args: tuple[int, pd.DataFrame, float, str, str]) -> dict[str, Any]:
             abs_error=abs(out.primary.point - truth),
         )
     else:
-        rec.update(
-            reason=getattr(out, "reason", None) and out.reason.value, detail=out.detail[:200]
-        )
+        reason = out.reason.value if isinstance(out, Abstention) else out.error_type
+        rec.update(reason=reason, detail=out.detail[:200])
     return rec
 
 
@@ -119,7 +119,13 @@ def run(
                 jobs.append((r, frame, ate if estimand == "ate" else att, estimand, config))
     keys = [(j[3], j[4]) for j in jobs]
     if parallel:
-        with ProcessPoolExecutor(max_workers=os.cpu_count() or 1) as ex:
+        # One thread per worker: gradient boosting and BLAS are multithreaded, and N
+        # workers x N threads oversubscribes the machine by an order of magnitude.
+        # Spawned (not forked) workers read these variables before their libraries start.
+        for var in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
+            os.environ[var] = "1"
+        ctx = multiprocessing.get_context("spawn")
+        with ProcessPoolExecutor(max_workers=os.cpu_count() or 1, mp_context=ctx) as ex:
             recs = list(ex.map(_one, jobs, chunksize=4))
     else:
         recs = [_one(j) for j in jobs]
