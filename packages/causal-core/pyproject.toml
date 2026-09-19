@@ -1,0 +1,79 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "causal-core"
+version = "0.2.0.dev0"
+description = "Causal inference kernel that identifies before it estimates, abstains when it cannot, and proves every number it returns."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+authors = [{ name = "Eljas Suhonen" }]
+keywords = ["causal inference", "identification", "treatment effects", "agents", "mcp"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
+# Core stays small and permissively licensed: no web framework, no LLM client,
+# no copyleft engine. Everything else is an optional extra.
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "pandas>=2.1",
+    "networkx>=3.3",
+    "pydantic>=2.7",
+]
+
+[project.optional-dependencies]
+ml = ["scikit-learn>=1.4"]              # flexible nuisance learners for AIPW / DML
+crosscheck = ["y0>=0.2.11", "dowhy>=0.12"]  # independent identification engines used by the tests
+dev = [
+    "pytest>=8",
+    "hypothesis>=6.100",
+    "jsonschema>=4.21",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "pyarrow>=15",
+]
+
+[project.scripts]
+causal-core = "causal_core.cli:main"
+
+[project.entry-points."causal_core.estimators"]
+# Third-party packages register estimators under this group; see causal_core.estimators.
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/causal_core"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM", "RUF"]
+ignore = [
+    "N803", "N806",  # statistical notation: X, Y, T, W are conventional names
+    "RUF001", "RUF002", "RUF003",  # ⟦ ⟧, ⊥ and × are intentional in docs and tokens
+]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["scipy.*", "networkx.*", "sklearn.*", "pandas.*", "y0.*", "dowhy.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--tb=short", "-q"]
+markers = [
+    "t0: T0 analytic-SCM correctness gate (pre-registered; see benchmarks/t0/PRE-REGISTRATION.md)",
+    "slow: long-running (nightly) configuration",
+    "crosscheck: compares against an independent engine (y0 / DoWhy); skipped if not installed",
+]
+filterwarnings = ["ignore::SyntaxWarning", "ignore::DeprecationWarning:dowhy.*"]
