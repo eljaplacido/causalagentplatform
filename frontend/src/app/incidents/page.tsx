@@ -30,6 +30,7 @@ import {
   incidentsApi,
   CausalApiError,
   type IncidentRecord,
+  type InterventionDecisionResponse,
 } from "@/lib/api";
 import type { Incident, ThinkingStage } from "@/lib/types";
 
@@ -44,7 +45,8 @@ function recordToIncident(record: IncidentRecord): Incident {
       description: String(obj["description"] ?? ""),
       confidence: typeof obj["confidence"] === "number" ? (obj["confidence"] as number) : 0,
       riskTier: (obj["riskTier"] as Incident["proposedInterventions"][number]["riskTier"]) ?? "LOW",
-      guardianVerdict: (obj["guardianVerdict"] as Incident["proposedInterventions"][number]["guardianVerdict"]) ?? "APPROVED",
+      // Fail-closed: a missing verdict is PENDING, never an implied approval.
+      guardianVerdict: (obj["guardianVerdict"] as Incident["proposedInterventions"][number]["guardianVerdict"]) ?? "PENDING",
       estimatedEffect: partial.estimatedEffect ?? {
         pointEstimate: 0,
         lowerBound: 0,
@@ -256,38 +258,13 @@ export default function IncidentsPage() {
     }
   }
 
-  async function applyDecision(
+  /** Reflect a decision in local state — only ever called with a backend-confirmed decision. */
+  function applyConfirmedDecision(
     incidentId: string,
     interventionId: string,
-    verdict: "APPROVED" | "REJECTED",
-    reason: string
-  ): Promise<{ previousVerdict: Incident["proposedInterventions"][0]["guardianVerdict"] | null; title: string | null }> {
-    let previousVerdict: Incident["proposedInterventions"][0]["guardianVerdict"] | null = null;
-    let title: string | null = null;
-    setIncidents((prev) =>
-      prev.map((inc) =>
-        inc.id !== incidentId
-          ? inc
-          : {
-              ...inc,
-              proposedInterventions: inc.proposedInterventions.map((int) => {
-                if (int.id !== interventionId) return int;
-                previousVerdict = int.guardianVerdict;
-                title = int.title;
-                return { ...int, guardianVerdict: verdict, approvalReason: reason };
-              }),
-            }
-      )
-    );
-    return { previousVerdict, title };
-  }
-
-  function rollbackDecision(
-    incidentId: string,
-    interventionId: string,
-    previousVerdict: Incident["proposedInterventions"][0]["guardianVerdict"] | null
+    decision: InterventionDecisionResponse["decision"],
+    reason: string | undefined
   ) {
-    if (previousVerdict == null) return;
     setIncidents((prev) =>
       prev.map((inc) =>
         inc.id !== incidentId
@@ -295,11 +272,58 @@ export default function IncidentsPage() {
           : {
               ...inc,
               proposedInterventions: inc.proposedInterventions.map((int) =>
-                int.id !== interventionId ? int : { ...int, guardianVerdict: previousVerdict }
+                int.id !== interventionId
+                  ? int
+                  : {
+                      ...int,
+                      guardianVerdict: decision,
+                      ...(reason !== undefined ? { approvalReason: reason } : {}),
+                    }
               ),
             }
       )
     );
+  }
+
+  /**
+   * Fail-closed decision flow: call the backend FIRST and only update the UI
+   * with what it recorded. Throws (so InterventionCard shows the error and keeps
+   * its reason input) when the decision was not recorded.
+   */
+  async function decideIntervention(
+    incidentId: string,
+    interventionId: string,
+    attempted: InterventionDecisionResponse["decision"],
+    reason: string
+  ) {
+    const title = incidents
+      .find((inc) => inc.id === incidentId)
+      ?.proposedInterventions.find((int) => int.id === interventionId)?.title;
+    const body = { reason, incident_id: incidentId, intervention_title: title };
+
+    let response: InterventionDecisionResponse;
+    try {
+      response =
+        attempted === "APPROVED"
+          ? await interventionApi.approve(interventionId, body)
+          : await interventionApi.reject(interventionId, body);
+    } catch (err) {
+      const msg = err instanceof CausalApiError ? err.message : err instanceof Error ? err.message : "Backend unavailable";
+      throw new Error(`${msg.replace(/[.\s]+$/, "")}. The decision was NOT recorded.`);
+    }
+
+    // The endpoint is idempotent: an earlier decision wins and is returned as-is.
+    applyConfirmedDecision(
+      incidentId,
+      interventionId,
+      response.decision,
+      response.already_decided ? undefined : reason
+    );
+    if (response.already_decided && response.decision !== attempted) {
+      throw new Error(
+        `This intervention was already ${response.decision} (audit entry ${response.audit_log_id}). The new decision was NOT recorded.`
+      );
+    }
   }
 
   async function handleApproveIntervention(
@@ -307,19 +331,7 @@ export default function IncidentsPage() {
     interventionId: string,
     reason: string
   ) {
-    setSubmitError(null);
-    const { previousVerdict, title } = await applyDecision(incidentId, interventionId, "APPROVED", reason);
-    try {
-      await interventionApi.approve(interventionId, {
-        reason,
-        incident_id: incidentId,
-        intervention_title: title ?? undefined,
-      });
-    } catch (err) {
-      rollbackDecision(incidentId, interventionId, previousVerdict);
-      const msg = err instanceof CausalApiError ? err.message : err instanceof Error ? err.message : "Backend unavailable";
-      setSubmitError(`Approval failed: ${msg}. The decision was NOT recorded.`);
-    }
+    await decideIntervention(incidentId, interventionId, "APPROVED", reason);
   }
 
   async function handleRejectIntervention(
@@ -327,19 +339,7 @@ export default function IncidentsPage() {
     interventionId: string,
     reason: string
   ) {
-    setSubmitError(null);
-    const { previousVerdict, title } = await applyDecision(incidentId, interventionId, "REJECTED", reason);
-    try {
-      await interventionApi.reject(interventionId, {
-        reason,
-        incident_id: incidentId,
-        intervention_title: title ?? undefined,
-      });
-    } catch (err) {
-      rollbackDecision(incidentId, interventionId, previousVerdict);
-      const msg = err instanceof CausalApiError ? err.message : err instanceof Error ? err.message : "Backend unavailable";
-      setSubmitError(`Rejection failed: ${msg}. The decision was NOT recorded.`);
-    }
+    await decideIntervention(incidentId, interventionId, "REJECTED", reason);
   }
 
   return (

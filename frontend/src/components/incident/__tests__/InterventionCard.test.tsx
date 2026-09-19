@@ -283,6 +283,77 @@ describe("InterventionCard — reject flow", () => {
   });
 });
 
+describe("InterventionCard — backend failure (fail-closed)", () => {
+  it("approve rejection shows the error and keeps the reason input open", async () => {
+    const user = userEvent.setup();
+    const onApprove = vi
+      .fn()
+      .mockRejectedValue(new Error("Network request failed. The decision was NOT recorded."));
+
+    render(
+      <InterventionCard
+        intervention={makeIntervention({ guardianVerdict: "PENDING" })}
+        onApprove={onApprove}
+        onReject={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByTestId("approve-button"));
+    await user.type(screen.getByLabelText(/approval reason/i), "Safe rollback.");
+    await user.click(screen.getByTestId("approve-button"));
+
+    const alert = await screen.findByTestId("intervention-action-error");
+    expect(alert).toHaveTextContent(/Approval failed: Network request failed/);
+    expect(alert).toHaveTextContent(/NOT recorded/);
+    // Prior state kept — the user can retry
+    expect(screen.getByLabelText(/approval reason/i)).toHaveValue("Safe rollback.");
+    expect(screen.getByTestId("approve-button")).toHaveTextContent("Confirm Approval");
+    expect(screen.getByTestId("approve-button")).toBeEnabled();
+  });
+
+  it("reject rejection shows the error and keeps the reason input open", async () => {
+    const user = userEvent.setup();
+    const onReject = vi.fn().mockRejectedValue(new Error("Request failed with status 500"));
+
+    render(
+      <InterventionCard
+        intervention={makeIntervention({ guardianVerdict: "PENDING" })}
+        onApprove={vi.fn()}
+        onReject={onReject}
+      />
+    );
+
+    await user.click(screen.getByTestId("reject-button"));
+    await user.type(screen.getByLabelText(/rejection reason/i), "Too risky.");
+    await user.click(screen.getByTestId("reject-button"));
+
+    const alert = await screen.findByTestId("intervention-action-error");
+    expect(alert).toHaveTextContent(/Rejection failed: Request failed with status 500/);
+    expect(screen.getByLabelText(/rejection reason/i)).toHaveValue("Too risky.");
+  });
+
+  it("successful decision closes the reason input without an error", async () => {
+    const user = userEvent.setup();
+    const onApprove = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <InterventionCard
+        intervention={makeIntervention()}
+        onApprove={onApprove}
+        onReject={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByTestId("approve-button"));
+    await user.click(screen.getByTestId("approve-button"));
+
+    await waitFor(() => {
+      expect(screen.queryByLabelText(/approval reason/i)).toBeNull();
+    });
+    expect(screen.queryByTestId("intervention-action-error")).toBeNull();
+  });
+});
+
 describe("InterventionCard — intervention title and description", () => {
   it("renders the intervention title", () => {
     render(

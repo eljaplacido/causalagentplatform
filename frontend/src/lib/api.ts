@@ -128,18 +128,30 @@ async function apiFetch<T>(
   }
 
   if (!response.ok) {
-    let errorBody: ApiError | null = null;
+    let errorBody: (ApiError & { detail?: unknown; reason?: unknown }) | null =
+      null;
 
     try {
-      errorBody = (await response.json()) as ApiError;
+      errorBody = (await response.json()) as ApiError & {
+        detail?: unknown;
+        reason?: unknown;
+      };
     } catch {
       // Body is not JSON — use status text
     }
 
+    // FastAPI HTTPException bodies carry the explanation in `detail`; the
+    // Guardian-blocked handler uses `reason`. Surface whichever is present so
+    // the UI can show the real cause instead of a bare status code.
+    const backendMessage =
+      errorBody?.message ??
+      (typeof errorBody?.detail === "string" ? errorBody.detail : undefined) ??
+      (typeof errorBody?.reason === "string" ? errorBody.reason : undefined);
+
     throw new CausalApiError(
       response.status,
       errorBody?.code ?? "HTTP_ERROR",
-      errorBody?.message ?? `Request failed with status ${response.status}`,
+      backendMessage ?? `Request failed with status ${response.status}`,
       errorBody?.details
     );
   }
@@ -200,6 +212,16 @@ export const sessionApi = {
     api.get(`/api/v1/session/${sessionId}/state`),
 };
 
+/** Response of POST /api/governance/check (backend GuardianCheckResponse). */
+export interface GuardianCheckResponse {
+  verdict: string;
+  reason: string;
+  policy_rules_cited: string[];
+  /** audit_log row written by the Guardian — used as verdict_id for approve/reject */
+  audit_entry_id: string;
+  session_id: string | null;
+}
+
 /** Governance — review queue, approve/reject, audit log */
 export const governanceApi = {
   // Routes: /api/governance/... (no v1 prefix)
@@ -216,7 +238,7 @@ export const governanceApi = {
       }`
     ),
   check: (body: unknown) =>
-    api.post("/api/governance/check", body),
+    api.post<GuardianCheckResponse>("/api/governance/check", body),
   approve: (objectId: string, objectType: string, verdictId: string, notes?: string) =>
     api.post(`/api/governance/approve/${objectId}`, {
       object_type: objectType,
