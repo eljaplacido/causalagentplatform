@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "causal-mcp"
+version = "0.2.0.dev0"
+description = "MCP server exposing causal-core: identify, estimate, refute and verify causal claims from any agent."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+authors = [{ name = "Eljas Suhonen" }]
+dependencies = [
+    "causal-core>=0.2.0.dev0",
+    "mcp>=2.2,<3",
+]
+
+[project.optional-dependencies]
+http = ["uvicorn>=0.30"]
+dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.11"]
+
+[project.scripts]
+causal-mcp = "causal_mcp.server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/causal_mcp"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["pandas.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--tb=short", "-q"]

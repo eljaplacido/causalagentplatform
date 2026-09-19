@@ -256,3 +256,11 @@ def test_randomized_experiment() -> None:
     assert out.certificate.strategy is Strategy.randomized
     assert out.primary.estimator == "difference_in_means"
     assert out.diagnostics.srm_p_value is not None and out.diagnostics.srm_p_value > 0.001
+
+
+def test_polars_input(confounded_binary: pd.DataFrame) -> None:
+    pl = pytest.importorskip("polars")
+    out = cc.analyze(pl.from_pandas(confounded_binary), G, treatment="X", outcome="Y")
+    ref = cc.analyze(confounded_binary, G, treatment="X", outcome="Y")
+    assert isinstance(out, cc.CausalResult) and isinstance(ref, cc.CausalResult)
+    assert out.primary.point == pytest.approx(ref.primary.point)

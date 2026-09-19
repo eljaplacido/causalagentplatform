@@ -1,0 +1,293 @@
+"""
+Tool implementations. Plain functions over the causal-core contract, with no
+MCP types, so they are unit-testable without a transport and reusable from
+any other agent framework.
+
+Every tool is read-only: none writes files, calls the network or changes
+state. Governance actions (approving an edge, acting on a result) are
+deliberately *not* tools here; an agent must never be able to grant itself
+an approval.
+"""
+
+from __future__ import annotations
+
+import os
+from pathlib import Path
+from typing import Any, Literal
+
+import causal_core as cc
+import pandas as pd
+from causal_core.claims import Verification, render, verify
+from causal_core.contract import (
+    OUTCOME_ADAPTER,
+    Abstention,
+    AbstentionReason,
+    AnalysisPolicy,
+    ApparatusFailure,
+    CausalGraph,
+    CausalQuery,
+    CausalResult,
+    IdentificationCertificate,
+    Provenance,
+)
+from causal_core.graph import Graph, GraphSyntaxError, parse_graph
+from causal_core.identification import (
+    IdentificationError,
+    InvalidAdjustmentSet,
+    identify,
+    missing_information,
+)
+from causal_core.refute import implied_independences
+from pydantic import BaseModel, Field
+
+Cell = float | int | str | bool | None
+
+
+class AnalyzeResponse(BaseModel):
+    """The typed outcome plus a plain-language report built only from its claims."""
+
+    outcome: CausalResult | Abstention | ApparatusFailure = Field(discriminator="kind")
+    report: str
+
+
+class IdentifyResponse(BaseModel):
+    identified: bool
+    certificate: IdentificationCertificate | None = None
+    refusal: str | None = None
+    missing_information: list[str] = Field(default_factory=list)
+
+
+class Implication(BaseModel):
+    a: str
+    b: str
+    given: list[str]
+
+
+class GraphCheckResponse(BaseModel):
+    valid: bool
+    error: str | None = None
+    graph: CausalGraph | None = None
+    observed: list[str] = Field(default_factory=list)
+    latent: list[str] = Field(default_factory=list)
+    unreviewed_edges: list[str] = Field(default_factory=list)
+    testable_implications: list[Implication] = Field(
+        default_factory=list,
+        description="Conditional independences the graph implies among observed variables. "
+        "Test them on data before trusting the graph; each is a claim of an absent edge.",
+    )
+
+
+class VerifyResponse(BaseModel):
+    ok: bool
+    rendered: str
+    unbound_numbers: list[str]
+    unknown_tokens: list[str]
+    causal_language: list[str]
+    reasons: list[str]
+
+
+def data_roots() -> list[Path]:
+    raw = os.environ.get("CAUSAL_MCP_DATA_ROOTS")
+    roots = raw.split(os.pathsep) if raw else [os.getcwd()]
+    return [Path(r).resolve() for r in roots if r]
+
+
+def load_table(data: dict[str, list[Cell]] | None, data_path: str | None) -> pd.DataFrame:
+    if (data is None) == (data_path is None):
+        raise ValueError("pass exactly one of data (columns as lists) or data_path")
+    if data is not None:
+        return pd.DataFrame(data)
+    assert data_path is not None
+    path = Path(data_path).resolve()
+    if not any(path.is_relative_to(root) for root in data_roots()):
+        raise PermissionError(
+            f"{data_path} is outside the allowed data roots; set CAUSAL_MCP_DATA_ROOTS"
+        )
+    suffix = path.suffix.lower()
+    if suffix == ".parquet":
+        return pd.read_parquet(path)
+    if suffix in (".json", ".jsonl"):
+        return pd.read_json(path, lines=suffix == ".jsonl")
+    return pd.read_csv(path)
+
+
+def _query(
+    treatment: str,
+    outcome: str,
+    design: Literal["observational", "randomized"],
+    adjust_for: list[str] | None,
+    instruments: list[str] | None,
+    treatment_proxies: list[str] | None,
+    outcome_proxies: list[str] | None,
+    negative_control_outcomes: list[str] | None,
+    treatment_levels: list[float] | None,
+    expected_treated_share: float | None,
+) -> CausalQuery:
+    return CausalQuery(
+        treatment=treatment,
+        outcome=outcome,
+        design=design,
+        adjust_for=tuple(adjust_for) if adjust_for is not None else None,
+        instruments=tuple(instruments) if instruments else None,
+        treatment_proxies=tuple(treatment_proxies or ()),
+        outcome_proxies=tuple(outcome_proxies or ()),
+        negative_control_outcomes=tuple(negative_control_outcomes or ()),
+        treatment_levels=(treatment_levels[0], treatment_levels[1]) if treatment_levels else None,
+        expected_treated_share=expected_treated_share,
+    )
+
+
+def causal_analyze(
+    graph: str,
+    treatment: str,
+    outcome: str,
+    data: dict[str, list[Cell]] | None = None,
+    data_path: str | None = None,
+    design: Literal["observational", "randomized"] = "observational",
+    adjust_for: list[str] | None = None,
+    instruments: list[str] | None = None,
+    treatment_proxies: list[str] | None = None,
+    outcome_proxies: list[str] | None = None,
+    negative_control_outcomes: list[str] | None = None,
+    treatment_levels: list[float] | None = None,
+    expected_treated_share: float | None = None,
+    policy: dict[str, Any] | None = None,
+) -> AnalyzeResponse:
+    """Estimate the effect of `treatment` on `outcome`, or return a typed refusal saying why not.
+
+    Identification comes first (from `graph`), then design checks, a portfolio of estimators,
+    falsification tests and sensitivity analysis. The outcome is exactly one of:
+    `result` (an estimate with interval, certificate and diagnostics), `refusal` (a typed
+    reason plus what information would make the question answerable -- a correct answer,
+    not an error) or `apparatus_failure`.
+
+    Use numbers in your reply only via claims: `outcome.claims` lists every number with its
+    rendered text. Before replying to a user, pass your text to `causal_verify_narrative`.
+
+    `graph` syntax: `Z -> X -> Y; Z -> Y`; `X <-> Y` means an unmeasured common cause;
+    `latent U` declares an unmeasured node. Data: either `data` as {column: [values]} or
+    `data_path` (CSV / Parquet / JSON under the server's allowed data roots).
+    """
+    try:
+        query = _query(
+            treatment,
+            outcome,
+            design,
+            adjust_for,
+            instruments,
+            treatment_proxies,
+            outcome_proxies,
+            negative_control_outcomes,
+            treatment_levels,
+            expected_treated_share,
+        )
+        pol = AnalysisPolicy.model_validate(policy or {})
+        frame = load_table(data, data_path)
+    except Exception as exc:
+        refusal = Abstention(
+            reason=AbstentionReason.INVALID_INPUT,
+            detail=f"{type(exc).__name__}: {exc}"[:2000],
+            provenance=Provenance(
+                contract_version=cc.CONTRACT_VERSION, core_version=cc.__version__
+            ),
+        )
+        return AnalyzeResponse(outcome=refusal, report=cc.report(refusal))
+    out = cc.analyze(frame, graph, query=query, policy=pol)
+    return AnalyzeResponse(outcome=out, report=cc.report(out))
+
+
+def causal_identify(
+    graph: str,
+    treatment: str,
+    outcome: str,
+    design: Literal["observational", "randomized"] = "observational",
+    adjust_for: list[str] | None = None,
+    instruments: list[str] | None = None,
+    treatment_proxies: list[str] | None = None,
+    outcome_proxies: list[str] | None = None,
+) -> IdentifyResponse:
+    """Decide whether the effect is identifiable from the graph alone -- before collecting data.
+
+    Returns the identification certificate (strategy, adjustment set or instruments, the
+    identifying expression, and the result of the complete ID algorithm), or the reason it is
+    not identified and what would change that. A user-chosen `adjust_for` is validated.
+    """
+    try:
+        query = _query(
+            treatment,
+            outcome,
+            design,
+            adjust_for,
+            instruments,
+            treatment_proxies,
+            outcome_proxies,
+            None,
+            None,
+            None,
+        )
+        g = Graph.from_spec(parse_graph(graph))
+        cert = identify(g, query)
+    except InvalidAdjustmentSet as exc:
+        hint = (
+            [f"a valid adjustment set is {{{', '.join(exc.suggestion)}}}"]
+            if exc.suggestion
+            else ["no valid adjustment set exists among the measured variables"]
+        )
+        return IdentifyResponse(identified=False, refusal=exc.detail, missing_information=hint)
+    except (IdentificationError, GraphSyntaxError, ValueError) as exc:
+        return IdentifyResponse(identified=False, refusal=str(exc))
+    if cert.status.value != "identified":
+        return IdentifyResponse(
+            identified=False,
+            certificate=cert,
+            refusal=f"not identified: {cert.general_id}",
+            missing_information=list(missing_information(g, treatment, outcome)),
+        )
+    return IdentifyResponse(identified=True, certificate=cert)
+
+
+def causal_check_graph(graph: str, max_implications: int = 50) -> GraphCheckResponse:
+    """Parse and validate a causal graph, and list the independences it implies.
+
+    Use this while drafting a graph with a user: acyclicity, unreviewed (e.g. LLM-proposed)
+    edges, and every testable implication -- which are the graph's riskiest claims.
+    """
+    try:
+        spec = parse_graph(graph)
+        g = Graph.from_spec(spec)
+    except (GraphSyntaxError, ValueError) as exc:
+        return GraphCheckResponse(valid=False, error=str(exc))
+    columns = pd.DataFrame(columns=sorted(g.observed), dtype=float)
+    imps = implied_independences(g, columns, set(), max_implications)
+    return GraphCheckResponse(
+        valid=True,
+        graph=spec,
+        observed=sorted(g.observed),
+        latent=sorted(n for n in g.latent if not n.startswith("⟨")),
+        unreviewed_edges=g.unreviewed_edges(),
+        testable_implications=[Implication(a=a, b=b, given=list(s)) for a, b, s in imps],
+    )
+
+
+def causal_verify_narrative(text: str, outcome: dict[str, Any]) -> VerifyResponse:
+    """Check prose about a causal outcome before it reaches a user. Fail-closed.
+
+    Renders claim tokens (`⟦claim:effect⟧` or `[[claim:effect]]`), then rejects any number
+    that is not a faithful rounding of a claim in `outcome`, any unknown claim token, and any
+    causal wording ("caused", "will reduce", "root cause", ...) unless the outcome is a
+    `supported` result. Pass the `outcome` object returned by `causal_analyze` unchanged.
+    """
+    parsed = OUTCOME_ADAPTER.validate_python(outcome)
+    try:
+        rendered = render(text, parsed)
+    except KeyError:
+        rendered = text
+    v: Verification = verify(text, parsed)
+    return VerifyResponse(
+        ok=v.ok,
+        rendered=rendered,
+        unbound_numbers=v.unbound_numbers,
+        unknown_tokens=v.unknown_tokens,
+        causal_language=v.causal_language,
+        reasons=v.reasons(),
+    )
