@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "causal-core"
-version = "0.2.0.dev0"
+version = "0.2.0"
 description = "Causal inference kernel that identifies before it estimates, abstains when it cannot, and proves every number it returns."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -26,6 +26,12 @@ dependencies = [
     "networkx>=3.3",
     "pydantic>=2.7",
 ]
+
+[project.urls]
+Homepage = "https://github.com/eljaplacido/causalagentplatform"
+Source = "https://github.com/eljaplacido/causalagentplatform/tree/main/packages/causal-core"
+Issues = "https://github.com/eljaplacido/causalagentplatform/issues"
+Changelog = "https://github.com/eljaplacido/causalagentplatform/commits/main/packages/causal-core"
 
 [project.optional-dependencies]
 ml = ["scikit-learn>=1.4"]              # flexible nuisance learners for AIPW / DML

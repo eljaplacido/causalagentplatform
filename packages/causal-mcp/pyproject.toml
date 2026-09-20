@@ -4,16 +4,21 @@ build-backend = "hatchling.build"
 
 [project]
 name = "causal-mcp"
-version = "0.2.0.dev0"
+version = "0.2.0"
 description = "MCP server exposing causal-core: identify, estimate, refute and verify causal claims from any agent."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
 authors = [{ name = "Eljas Suhonen" }]
 dependencies = [
-    "causal-core>=0.2.0.dev0",
+    "causal-core>=0.2.0",
     "mcp>=2.2,<3",
 ]
+
+[project.urls]
+Homepage = "https://github.com/eljaplacido/causalagentplatform"
+Source = "https://github.com/eljaplacido/causalagentplatform/tree/main/packages/causal-mcp"
+Issues = "https://github.com/eljaplacido/causalagentplatform/issues"
 
 [project.optional-dependencies]
 http = ["uvicorn>=0.30"]

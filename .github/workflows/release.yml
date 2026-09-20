@@ -1,0 +1,87 @@
+name: Release to PyPI
+
+# Publishes packages/causal-core and packages/causal-mcp when a v* tag is pushed.
+#
+# Authentication is PyPI Trusted Publishing (OIDC): no API token is stored in this
+# repository, in an environment, or anywhere on a laptop. Each project must have a
+# trusted publisher configured once on PyPI:
+#   owner eljaplacido / repository causalagentplatform / workflow release.yml /
+#   environment pypi
+#
+# Nothing is published before the kernel's own gates pass on the tagged commit,
+# including the pre-registered T0 correctness gate and its seeded defects.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Gates before publishing
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install both packages with their test extras
+        run: |
+          python -m pip install -q -e "packages/causal-core[dev,crosscheck,ml]" \
+                                     -e "packages/causal-mcp[dev,http]" httpx
+      - name: Licences must stay permissive
+        run: |
+          python packages/causal-core/scripts/check_licenses.py causal-core
+          python packages/causal-core/scripts/check_licenses.py causal-mcp
+      - name: causal-core (unit, then the pre-registered T0 gate and seeded defects)
+        working-directory: packages/causal-core
+        run: |
+          python -m pytest -q -m "not t0 and not slow and not real_data"
+          python -m pytest -q -m t0
+      - name: causal-mcp
+        working-directory: packages/causal-mcp
+        run: python -m pytest -q
+
+  build:
+    name: Build distributions
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -q build
+      - name: Build sdist and wheel for both packages
+        run: |
+          python -m build --outdir dist/causal-core packages/causal-core
+          python -m build --outdir dist/causal-mcp packages/causal-mcp
+      - uses: actions/upload-artifact@v4
+        with:
+          name: distributions
+          path: dist/
+
+  publish:
+    name: Publish ${{ matrix.package }}
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write # the OIDC token Trusted Publishing exchanges for an upload token
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [causal-core, causal-mcp]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: distributions
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/${{ matrix.package }}
+          print-hash: true
