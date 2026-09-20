@@ -14,6 +14,13 @@
     "Set at the full-suite measurement rounded down to one decimal.",
     "Raised 2026-09-19 to 80.7 after the backend rewire onto causal-core measured",
     "  full suite  549 tests  4179/5175 statements = 80.75%.",
+    "Lowered 2026-09-20 to 80.6, once CI measured 80.66% on the same commit. The 0.09",
+    "difference was environmental: this laptop still had dowhy installed from before the",
+    "rewire dropped it as a dependency, so the optional-import branch in",
+    "src/skills/causal_structure_compare.py ran here and not on CI. dowhy has been",
+    "uninstalled here, both now measure 80.66%, and the floor follows the environment",
+    "that CI builds from the declared dependencies -- not whatever a laptop happens to",
+    "have lying around.",
     "",
     "Why this replaced `--cov-fail-under=80` in backend/pyproject.toml: that flag",
     "applied to every pytest invocation, so the CI unit job (unit tests only,",
@@ -23,5 +30,5 @@
     "pass and none of them asserts an estimate against a known ground truth.",
     "Coverage says which lines ran, not whether what they computed is true."
   ],
-  "line_percent": 80.7
+  "line_percent": 80.6
 }

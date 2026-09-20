@@ -230,11 +230,19 @@ print(json.dumps(out))
 
 
 def live_routes() -> list[dict[str, str]]:
-    routes = json.loads(backend_python(_ROUTES_SNIPPET).strip().splitlines()[-1])
-    return [
-        r for r in routes
+    """State-changing routes of the live app. Also returns what it rejected, so a gate
+    that finds nothing can say what it saw instead of only that it saw nothing."""
+    all_routes = json.loads(backend_python(_ROUTES_SNIPPET).strip().splitlines()[-1])
+    kept = [
+        r for r in all_routes
         if r["method"] in STATE_CHANGING and r["module"].startswith("src.api.")
     ]
+    live_routes.seen = {  # type: ignore[attr-defined]
+        "routes": len(all_routes),
+        "methods": sorted({r["method"] for r in all_routes}),
+        "modules": sorted({r["module"] for r in all_routes})[:8],
+    }
+    return kept
 
 
 def decorated_routes() -> set[tuple[str, str]]:
@@ -341,7 +349,12 @@ def handler_calls(tree: ast.Module) -> set[tuple[str, str]]:
 def check_routes() -> tuple[set[str], set[str], dict[str, str], set[str], set[str]]:
     routes = live_routes()
     if not routes:
-        raise ScopeError("the live FastAPI app exposes no state-changing routes under src.api")
+        seen = getattr(live_routes, "seen", {})
+        raise ScopeError(
+            "the live FastAPI app exposes no state-changing routes under src.api -- "
+            f"it did expose {seen.get('routes', 0)} route(s), methods {seen.get('methods')}, "
+            f"modules {seen.get('modules')}"
+        )
     expected = {route_key(r) for r in routes}
     regex = {route_key(r): template_regex(r["path"]) for r in routes}
     by_handler = {(r["module"], r["handler"]): route_key(r) for r in routes}

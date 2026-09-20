@@ -33,6 +33,10 @@ jobs:
       PIP_DISABLE_PIP_VERSION_CHECK: "1"
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history: the register cites some claims at the revision they were made
+          # (file@rev:line), and a shallow clone cannot verify those.
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
