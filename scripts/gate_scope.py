@@ -219,12 +219,44 @@ _ROUTES_SNIPPET = r"""
 import json
 from fastapi.routing import APIRoute
 from src.api.main import app
+
+# FastAPI < 0.141 flattened included routers into app.routes as APIRoute objects.
+# From 0.141 an included router stays behind a lazy wrapper, and the APIRoute it
+# holds carries the path relative to its own router (no prefix). Handle both: walk
+# for the APIRoute objects (they carry module and handler), then take the full path
+# each one is served at from the OpenAPI schema, which is public and stable.
+def collect(routes, out):
+    for r in routes:
+        if isinstance(r, APIRoute):
+            out.append(r)
+            continue
+        inner = getattr(r, "original_router", None)
+        if inner is not None:
+            collect(getattr(inner, "routes", []), out)
+
+found = []
+collect(app.routes, found)
 out = []
-for r in app.routes:
-    if isinstance(r, APIRoute):
-        for m in sorted(r.methods):
-            out.append({"method": m, "path": r.path, "module": r.endpoint.__module__,
-                        "handler": r.endpoint.__name__})
+for r in found:
+    for m in sorted(r.methods):
+        out.append({"method": m, "path": r.path, "module": r.endpoint.__module__,
+                    "handler": r.endpoint.__name__})
+
+try:
+    schema_paths = app.openapi().get("paths", {})
+except Exception:
+    schema_paths = {}
+by_method = {}
+for full, ops in schema_paths.items():
+    for method in ops:
+        by_method.setdefault(method.upper(), []).append(full)
+for rec in out:
+    served = by_method.get(rec["method"], [])
+    if rec["path"] in served:
+        continue
+    suffixed = [p for p in served if p.endswith(rec["path"])]
+    if suffixed:
+        rec["path"] = min(suffixed, key=len)
 print(json.dumps(out))
 """
 

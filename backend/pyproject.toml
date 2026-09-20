@@ -12,7 +12,11 @@ authors = [{ name = "eljasuhonen" }]
 
 dependencies = [
     # Web framework
-    "fastapi>=0.115.0",
+    # Ceiling is deliberate: 0.141 changed how included routers are composed
+    # (they stay behind a lazy wrapper instead of being flattened into app.routes).
+    # The suite passes on it, so the range includes it; the next minor gets tested
+    # before the ceiling moves.
+    "fastapi>=0.115,<0.142",
     "uvicorn[standard]>=0.30.0",
     # SQLAlchemy async
     "sqlalchemy[asyncio]>=2.0.35",
