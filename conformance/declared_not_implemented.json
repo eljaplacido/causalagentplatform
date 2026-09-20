@@ -136,7 +136,7 @@
    "reality": "Neither EconML nor PyMC is a dependency; estimation is causal-core (and DoWhy is no longer a backend dependency either). causal-core's plug-in registry is the way to add EconML estimators.",
    "evidence": [
     {
-     "at": "backend/pyproject.toml:47",
+     "at": "backend/pyproject.toml:51",
      "says": "\"causal-core>=0.2.0\","
     }
    ],
@@ -503,29 +503,6 @@
    }
   },
   {
-   "id": "ci-pipeline-green",
-   "status": "partial",
-   "capability": "CI quality gates that block a merge",
-   "claimed_in": [
-    {
-     "at": "docs/TESTING_CICD.md:492",
-     "says": "Quality Gates (Block Merge)"
-    }
-   ],
-   "reality": "The Sep 2026 audit found 0 of 10 jobs in the old workflow able to pass. The workflow was replaced by one job that builds the environments .gnomon/ci.sh expects, runs it, and fails on any SKIPPED step other than a named one (frontend-eslint). Locally the same ci.sh passes 12 of 13 steps (eslint skipped: no config). The workflow has never run on GitHub: the repository has not been pushed.",
-   "evidence": [
-    {
-     "at": ".github/workflows/ci.yml:73",
-     "says": "run: bash .gnomon/ci.sh"
-    }
-   ],
-   "leaves_by": {
-    "kind": "ci-run",
-    "path": ".github/workflows/ci.yml",
-    "asserts": "every job in the workflow passes on main (or the workflow runs .gnomon/ci.sh and it passes)"
-   }
-  },
-  {
    "id": "dag-workbench",
    "status": "planned",
    "capability": "Unified graph-authoring UI (DAG Workbench)",
@@ -691,6 +668,13 @@
    "fixed_in": "the backend rewire onto causal-core (git log -- backend/src/skills/_kernel.py)",
    "pinned_by": "backend/tests/unit/test_effect_estimate.py",
    "note": "identification_check runs causal-core's identification (complete ID algorithm plus back-door/front-door/IV) on the fragment graph. The literature catalog and the y0 cross-check are gated by T0."
+  },
+  {
+   "id": "ci-pipeline-green",
+   "was": "partial: CI quality gates that block a merge",
+   "fixed_in": "32d0254 (the last of four fixes CI's own runs exposed)",
+   "pinned_by": ".github/workflows/ci.yml",
+   "note": "Run 35504722068 on main: 13 steps passed, 1 skipped (frontend eslint, which has no config), and the workflow's own check fails on any skip that is not named. The four runs before it failed on an unpinned mcp range, unpinned lint tools, a frontend typecheck reading a stale dist/, a coverage floor measured with a gitignored .env present, and FastAPI 0.141's lazy routers."
   }
  ]
 }

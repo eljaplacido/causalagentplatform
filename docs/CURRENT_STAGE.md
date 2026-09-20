@@ -13,7 +13,7 @@ This page replaces an earlier version that marked "Phase 1" finished. A Septembe
 - **The kernel's own limits** are on the register too: triangulation at moderate n, overlap detection and general-ID estimation.
 - **LLMs.** No LLM is called anywhere. The agents are rule-based code.
 - **Governance.** The registry refuses writes that lack an APPROVED verdict. Verdicts are not tied to one object, can be reused, and are not signed. `POST /api/governance/check` can never return APPROVED, so the approval flow cannot complete through the API.
-- **Gates.** The local gate `.gnomon/ci.sh` passes. The GitHub Actions workflow now runs that same gate, but has never run on GitHub because nothing has been pushed.
+- **Gates.** `.gnomon/ci.sh` is the gate, and GitHub Actions runs that same script: green on `main` (run 35504722068, 13 steps passed, 1 named skip). The workflow fails on any skipped step it has not named, so a broken environment cannot read as a pass.
 
 ## Status
 
@@ -79,18 +79,13 @@ This page replaces an earlier version that marked "Phase 1" finished. A Septembe
 |---|---|---|---|
 | DAG Workbench (unified graph authoring) | `planned` | [dni:dag-workbench](../conformance/declared_not_implemented.json) | Not built |
 
-### Delivery
-
-| Capability | Status | Evidence | Note |
-|---|---|---|---|
-| GitHub Actions quality gates that block a merge | `partial` | [dni:ci-pipeline-green](../conformance/declared_not_implemented.json) | Workflow runs `.gnomon/ci.sh`; never run on GitHub (not pushed) |
-
 ## Fixed items (moved off the register)
 
 | Was | Fixed in | Pinned by |
 |---|---|---|
 | 2 of 7 MCP tools crashed at INFO; logs went to stdout, the stdio protocol channel | `6768cc6` | [backend/tests/integration/test_mcp_stdio.py](../backend/tests/integration/test_mcp_stdio.py) |
 | Governance UI showed approvals and audit rows no backend call had confirmed | `85fe619` | [frontend/src/app/governance/\_\_tests\_\_/page.test.tsx](../frontend/src/app/governance/__tests__/page.test.tsx) |
+| GitHub Actions pipeline: 0 of 10 jobs could pass | `32d0254` | [.github/workflows/ci.yml](../.github/workflows/ci.yml) (run 35504722068 on `main`: 13 passed, 1 named skip) |
 | `packages/causal-core` was planned, not built | `06fd061` | [packages/causal-core/tests/t0/test_t0_gate.py](../packages/causal-core/tests/t0/test_t0_gate.py) |
 | Backend effect estimates unpinned; constant (−0.5, 0.5) interval; heuristic identification; front-door label on a back-door estimate | backend rewire onto causal-core | [backend/tests/unit/test_effect_estimate.py](../backend/tests/unit/test_effect_estimate.py) |
 

@@ -1,5 +1,7 @@
 # Causal Platform
 
+[![CI](https://github.com/eljaplacido/causalagentplatform/actions/workflows/ci.yml/badge.svg)](https://github.com/eljaplacido/causalagentplatform/actions/workflows/ci.yml)
+
 A governed platform for causal reasoning, decision simulation, and intervention recommendation. Built around a canonical semantic layer, a Guardian-mediated approval workflow, and a shared library of causal-inference skills that are callable both internally (LangGraph agents) and externally (Model Context Protocol).
 
 > **Status:** Pre-1.0. The causal numbers the platform serves come from the causal-core kernel, which identifies before it estimates, refuses with a typed reason, and passes pre-registered correctness and real-data benchmarks. Several platform features are still heuristic (and labelled so) or not built: counterfactuals, discovery, the LLM layer, signed governance verdicts. [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAGE.md) lists what is implemented, each row with the test that pins it, and what is declared but not implemented. `.gnomon/ci.sh` is the gate; `scripts/status_claims.py` keeps that page in step with the code.

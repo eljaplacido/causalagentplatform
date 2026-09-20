@@ -52,20 +52,20 @@
         "specs"
       ],
       "baseline": {
-        "on": "2026-09-19",
+        "on": "2026-09-20",
         "sha256": {
-          "conformance/declared_not_implemented.json": "8e960c584350e4e377c41787117f284dc7f990b570c6570567f3ffbfa5571c68",
+          "conformance/declared_not_implemented.json": "fba02eb7a064f8c2570caa3d44ab826fbb641e1bab6a2ed142e31323bf891e2a",
           "backend/src": "7f5ec7b834e21271aecbac06b58cca1fcf6794c83575d8107afe8d73623684ac",
           "backend/mcp_server": "906126ac2e95942d33fa44c6abe372051ab452e3022a978c6d5ad78c28a2f6d5",
           "backend/tests": "d12064cef2f51b4466058e761555e1aa5f96929a6f949d0b51c5e153f0ebdf33",
           "frontend/src": "43b4fec5fbddbf1cbeab0cc5dc3aa23933dd6678419738027cbf5fa27d48f428",
-          "packages": "6f23c5bbfbc9c3046419229c8bf65bb76f708130e7db59e4e6858d59d212ab84",
+          "packages": "f42acbfddcc2aed12d163ed15a05c9c1b17efe3254b2b60e327b841df12288c4",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
-        "on": "2026-09-19",
-        "by": "Claude (backend rewire: rows and summary re-verified in code)"
+        "on": "2026-09-20",
+        "by": "Claude (CI row closed after the first green run; gates summary re-verified)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
