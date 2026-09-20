@@ -81,6 +81,7 @@ Full MCP client setup: [`backend/mcp_server/README.md`](backend/mcp_server/READM
 |---|---|
 | [`docs/AGENTS.md`](docs/AGENTS.md) | Agent registry, skill library, `EpistemicState` contract, MCP exposure |
 | [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAGE.md) | Status: what is implemented (with its test) and what is declared but not implemented |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Where this is going: causal decision assurance for agentic workflows, and the order of work |
 | [`docs/DATA_LAYER.md`](docs/DATA_LAYER.md) | Storage, connectors, drift detection |
 | [`docs/CYBERSECURITY.md`](docs/CYBERSECURITY.md) | Threat model, auth, compliance |
 | [`docs/TESTING_CICD.md`](docs/TESTING_CICD.md) | Test pyramid, quality gates |
