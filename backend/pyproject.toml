@@ -46,7 +46,8 @@ dependencies = [
     "scipy>=1.11.0",           # Statistical tests for drift detection
     "causal-core>=0.2.0",  # identification, estimation, refusals (packages/causal-core)
     # Agent integration
-    "mcp>=1.2.0",              # Model Context Protocol server (mcp_server/)
+    # v1 API: mcp 2.x removed mcp.server.fastmcp (packages/causal-mcp is the v2 server).
+    "mcp>=1.2,<2",             # Model Context Protocol server (mcp_server/)
 ]
 
 [project.optional-dependencies]
@@ -57,8 +58,11 @@ dev = [
     "pytest-mock>=3.14.0",
     "anyio[trio]>=4.6.0",
     "httpx>=0.27.0",           # async test client
-    "ruff>=0.6.0",
-    "mypy>=1.11.0",
+    # Pinned: the ratchet baselines in scripts/lint-baseline.json are counts from a
+    # specific version, and a different one is not comparable (CI ruff 0.16 found 12
+    # findings against a 0.15 baseline of 0). Upgrade deliberately, re-measuring both.
+    "ruff>=0.15,<0.16",
+    "mypy>=1.20,<1.21",
     "types-python-jose>=3.3.4",
     # Type stubs
     "sqlalchemy[mypy]>=2.0.35",

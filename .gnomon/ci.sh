@@ -171,6 +171,23 @@ if [ ! -d frontend/node_modules ]; then
         record "$s" SKIPPED "frontend/node_modules absent -- run npm ci at the repo root" 0
     done
 else
+    # packages/semantic-types is a workspace dependency of the frontend, and its
+    # package.json points at dist/. npm ci does not build workspaces, so on a fresh
+    # checkout that directory is absent and the frontend's imported types resolve to
+    # something else -- which is how tsc passed here for months on a stale local dist
+    # and failed on CI's first run. Build it from source every time, so the gate
+    # typechecks the same inputs everywhere.
+    t0=$SECONDS
+    ( cd packages/semantic-types && npx --no-install tsup src/index.ts --format cjs,esm --dts ) \
+        > "$LOG_DIR/semantic-types-build.log" 2>&1
+    rc=$?
+    if [ "$rc" -eq 0 ] && [ -f packages/semantic-types/dist/index.d.ts ]; then
+        record semantic-types-build PASS "dist/index.d.ts built from src (the frontend's types)" $((SECONDS - t0))
+    else
+        tail -15 "$LOG_DIR/semantic-types-build.log" | sed 's/^/   | /'
+        record semantic-types-build FAIL "exit $rc -- the frontend typecheck below reads dist/" $((SECONDS - t0))
+    fi
+
     t0=$SECONDS
     ( cd frontend && npx --no-install tsc --noEmit --listFiles ) > "$LOG_DIR/frontend-tsc.log" 2>&1
     rc=$?
