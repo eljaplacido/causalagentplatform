@@ -2,7 +2,7 @@
   "suite": "T3-LaLonde",
   "prereg_sha256": "sha256:9a9e2b16abd2d5c44716e760101b8ae4cb01822a29b9470d5580283ae8589a3e",
   "prereg_version": 1,
-  "git": "f0ff733b7096428ee1c282940d9a61887283d8f5-dirty",
+  "git": "38b882135d76cb4ae1cdadb0b3c8a79b70eee8ff-dirty",
   "experiment": {
     "kind": "result",
     "status": "contested",

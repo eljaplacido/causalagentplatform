@@ -15,7 +15,7 @@
     "identity checks (pytest-files, vitest-files, skills-imported, mcp-tools,",
     "routes-*) exist beside them.",
     "",
-    "Measured 2026-09-19 at abf97db: backend 560 tests in 33 files, frontend 47",
+    "Measured 2026-09-19 at a61112a: backend 560 tests in 33 files, frontend 47",
     "tests in 5 files, ruff over 103 files, mypy over 59, tsc over 46; skills 4/10",
     "imported by a test, MCP tools 7/7 referenced, state-changing routes 5/11",
     "referenced, 11/11 mounted."

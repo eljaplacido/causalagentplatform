@@ -194,7 +194,7 @@
       "last_read": null
     },
     "docs/ORCHESTRATION.md": {
-      "why": "development tool stack and configuration files; several it lists are no longer tracked (c5cb0eb)",
+      "why": "development tool stack and configuration files; several it lists are no longer tracked (82cdd8f)",
       "subjects": [
         "templates",
         "prompts",

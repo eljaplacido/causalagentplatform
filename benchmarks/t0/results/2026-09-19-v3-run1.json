@@ -2,7 +2,7 @@
   "suite": "T0",
   "prereg_sha256": "sha256:deb1f93b94754db2a487579c887149232f0f2af1764164886257ecf122d2151b",
   "prereg_version": 3,
-  "git": "a435c4744a71f0cde29f733a279314e19f491266-dirty",
+  "git": "596e5c4956653c9868b1cdadef32f736b2936a07-dirty",
   "passed": true,
   "sections": {
     "identification": {

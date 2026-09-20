@@ -6,7 +6,7 @@
     "raises itself -- raising it is a deliberate edit. It may not be lowered without",
     "a `Ratchet-Exempt: <why>` line in the commit message.",
     "",
-    "Measured 2026-09-19 at commit abf97db and again, unchanged, at a0e4951 (which adds",
+    "Measured 2026-09-19 at commit a61112a and again, unchanged, at 06fd061 (which adds",
     "packages/causal-core and leaves backend/ alone). coverage.py via pytest-cov,",
     "Python 3.12.3, `--cov=src`, so backend/mcp_server is not in the denominator:",
     "  full suite  560 tests  4304/5379 statements = 80.01%",

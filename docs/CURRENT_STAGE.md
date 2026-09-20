@@ -1,10 +1,10 @@
 # Platform Current Stage
 
-> **Last reconciled:** 2026-09-19, against the code at `2ba6328` plus the change that introduced this page.
+> **Last reconciled:** 2026-09-19, against the code at `d2a5e6a` plus the change that introduced this page.
 > **How to read it:** every row has one of four statuses. `implemented` rows link to the test that pins the behaviour. Every other row names its entry in [`conformance/declared_not_implemented.json`](../conformance/declared_not_implemented.json), which cites where the claim was made, says in one line what the code does instead, and names what must exist for the entry to leave the list.
 > **Checked, not asserted:** `scripts/status_claims.py` (run by `.gnomon/ci.sh`) fails if a row's status disagrees with the register, an `implemented` row's test is missing, an open register entry is missing from this page, or a cited claim or piece of code has changed under the register.
 
-This page replaces an earlier version that marked "Phase 1" finished. A September 2026 audit found that most of the causal and governance rows marked done were heuristic, constant or unreachable, so the phase framing has been withdrawn. The earlier version is still in git history (`3e57d58`).
+This page replaces an earlier version that marked "Phase 1" finished. A September 2026 audit found that most of the causal and governance rows marked done were heuristic, constant or unreachable, so the phase framing has been withdrawn. The earlier version is still in git history (`4e036a0`).
 
 ## Summary
 
@@ -50,7 +50,7 @@ This page replaces an earlier version that marked "Phase 1" finished. A Septembe
 | `/reject` validates the verdict it is given | `declared-not-implemented` | [dni:governance-reject-verdict-unchecked](../conformance/declared_not_implemented.json) | Any UUID accepted |
 | Review queue risk tier and submitter | `declared-not-implemented` | [dni:review-queue-risk-tier](../conformance/declared_not_implemented.json) | UI shows MEDIUM / "system" |
 | Audit log bounded by the client's `limit` | `declared-not-implemented` | [dni:audit-log-limit-ignored](../conformance/declared_not_implemented.json) | Endpoint reads `page_size` |
-| Governance UI shows only backend-confirmed decisions and audit rows | `implemented` | [frontend/src/app/governance/\_\_tests\_\_/page.test.tsx](../frontend/src/app/governance/__tests__/page.test.tsx) | Fixed in `17a394d` |
+| Governance UI shows only backend-confirmed decisions and audit rows | `implemented` | [frontend/src/app/governance/\_\_tests\_\_/page.test.tsx](../frontend/src/app/governance/__tests__/page.test.tsx) | Fixed in `85fe619` |
 | Provenance records written by real flows | `declared-not-implemented` | [dni:provenance-store-no-callers](../conformance/declared_not_implemented.json) | Writer has no callers |
 | TLA+ model of the Guardian policy, checked by TLC | `declared-not-implemented` | [dni:tla-spec-not-checked](../conformance/declared_not_implemented.json) | Not runnable as written |
 
@@ -89,9 +89,9 @@ This page replaces an earlier version that marked "Phase 1" finished. A Septembe
 
 | Was | Fixed in | Pinned by |
 |---|---|---|
-| 2 of 7 MCP tools crashed at INFO; logs went to stdout, the stdio protocol channel | `3aecd16` | [backend/tests/integration/test_mcp_stdio.py](../backend/tests/integration/test_mcp_stdio.py) |
-| Governance UI showed approvals and audit rows no backend call had confirmed | `17a394d` | [frontend/src/app/governance/\_\_tests\_\_/page.test.tsx](../frontend/src/app/governance/__tests__/page.test.tsx) |
-| `packages/causal-core` was planned, not built | `a0e4951` | [packages/causal-core/tests/t0/test_t0_gate.py](../packages/causal-core/tests/t0/test_t0_gate.py) |
+| 2 of 7 MCP tools crashed at INFO; logs went to stdout, the stdio protocol channel | `6768cc6` | [backend/tests/integration/test_mcp_stdio.py](../backend/tests/integration/test_mcp_stdio.py) |
+| Governance UI showed approvals and audit rows no backend call had confirmed | `85fe619` | [frontend/src/app/governance/\_\_tests\_\_/page.test.tsx](../frontend/src/app/governance/__tests__/page.test.tsx) |
+| `packages/causal-core` was planned, not built | `06fd061` | [packages/causal-core/tests/t0/test_t0_gate.py](../packages/causal-core/tests/t0/test_t0_gate.py) |
 | Backend effect estimates unpinned; constant (−0.5, 0.5) interval; heuristic identification; front-door label on a back-door estimate | backend rewire onto causal-core | [backend/tests/unit/test_effect_estimate.py](../backend/tests/unit/test_effect_estimate.py) |
 
 ## Gates

@@ -129,7 +129,7 @@
      "says": "DoWhy, EconML, statsmodels"
     },
     {
-     "at": "docs/CURRENT_STAGE.md@3e57d58:84",
+     "at": "docs/CURRENT_STAGE.md@4e036a0:84",
      "says": "DoWhy/EconML"
     }
    ],
@@ -245,7 +245,7 @@
      "says": "The caller must supply a valid Guardian verdict_id (from a previous"
     },
     {
-     "at": "docs/CURRENT_STAGE.md@3e57d58:32",
+     "at": "docs/CURRENT_STAGE.md@4e036a0:32",
      "says": "Guardian approval workflow (DRAFT → UNDER_REVIEW → APPROVED → DEPRECATED)"
     }
    ],
@@ -384,7 +384,7 @@
    "capability": "Provenance records written by real platform flows",
    "claimed_in": [
     {
-     "at": "docs/CURRENT_STAGE.md@3e57d58:33",
+     "at": "docs/CURRENT_STAGE.md@4e036a0:33",
      "says": "Append-only audit trail"
     },
     {
@@ -450,7 +450,7 @@
      "says": "d-separation query p95 < 50ms"
     },
     {
-     "at": "docs/CURRENT_STAGE.md@3e57d58:151",
+     "at": "docs/CURRENT_STAGE.md@4e036a0:151",
      "says": "Neo4j for causal graph storage"
     }
    ],
@@ -531,7 +531,7 @@
    "capability": "Unified graph-authoring UI (DAG Workbench)",
    "claimed_in": [
     {
-     "at": "docs/CURRENT_STAGE.md@3e57d58:62",
+     "at": "docs/CURRENT_STAGE.md@4e036a0:62",
      "says": "Graph authoring UI (unified)"
     }
    ],
@@ -648,19 +648,19 @@
   {
    "id": "mcp-tools-crash-and-stdout-logging",
    "was": "2 of 7 MCP tools raised TypeError (stdlib loggers called with structlog kwargs) and structlog wrote log lines to stdout, the stdio protocol channel",
-   "fixed_in": "3aecd16",
+   "fixed_in": "6768cc6",
    "pinned_by": "backend/tests/integration/test_mcp_stdio.py"
   },
   {
    "id": "ui-fabricated-approvals",
    "was": "the governance UI showed approvals and audit rows that no backend call had confirmed",
-   "fixed_in": "17a394d",
+   "fixed_in": "85fe619",
    "pinned_by": "frontend/src/app/governance/__tests__/page.test.tsx"
   },
   {
    "id": "causal-core",
    "was": "planned: packages/causal-core -- identification before estimation, influence-function intervals, typed refusals, a claim contract and a pre-registered T0 correctness gate",
-   "fixed_in": "a0e4951",
+   "fixed_in": "06fd061",
    "pinned_by": "packages/causal-core/tests/t0/test_t0_gate.py",
    "note": "The backend skills and the backend MCP server do not use it (packages/causal-mcp, a separate server, does), so the platform rows (intervals, identification, frontdoor, sensitivity) stay open until the backend does."
   },

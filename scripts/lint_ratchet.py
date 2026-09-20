@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """lint_ratchet -- hold ruff / mypy / eslint finding counts at or below a committed maximum.
 
-WHY A RATCHET AND NOT "CLEAN". After the safe autofixes (cb1e345) ruff still
+WHY A RATCHET AND NOT "CLEAN". After the safe autofixes (81dc794) ruff still
 reports ~450 findings in backend/ and mypy --strict ~46 errors in backend/src.
 Three dishonest ways to make CI green were on offer: disable the rules, sprinkle
 ignores, or keep a gate nobody can pass. A ratchet is the honest one: the

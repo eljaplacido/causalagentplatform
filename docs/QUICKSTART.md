@@ -19,7 +19,7 @@
 ## 2. Repository Setup
 
 ```bash
-cd /home/eljaplacido/Desktop/causalplatform   # or your clone path
+cd /path/to/causalplatform   # your clone
 ```
 
 ### Backend virtual environment

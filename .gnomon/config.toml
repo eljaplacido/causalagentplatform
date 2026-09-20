@@ -4,8 +4,8 @@
 #
 # This surface belongs to the Causal Platform (Python 3.12 backend in backend/,
 # Next.js frontend in frontend/, TS types in packages/semantic-types/). It was
-# scaffolded by `gnomon init` (commit 6cbbd0c, unmodified) and adapted in the
-# commit after it, so `git diff 6cbbd0c -- .gnomon/` is the whole adaptation.
+# scaffolded by `gnomon init` (commit 464b0a7, unmodified) and adapted in the
+# commit after it, so `git diff 464b0a7 -- .gnomon/` is the whole adaptation.
 # What changed here: [chain] runs coordinator -> implementor -> verifier and
 # gates on the declared check; [audit] is on.
 

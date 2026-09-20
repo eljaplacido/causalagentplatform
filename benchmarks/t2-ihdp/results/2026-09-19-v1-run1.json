@@ -2,7 +2,7 @@
   "suite": "T2-IHDP",
   "prereg_sha256": "sha256:7aae51257409e568d002efee1a852d6f3f7c265d8fb9928b658ded90e3f8e87e",
   "prereg_version": 1,
-  "git": "d7c8a64a507fae38a1d356b53f6e4f54a4b8c908-dirty",
+  "git": "9d51e0175eb7744a2f5ce0f9c1ba2bd3f191e66b-dirty",
   "summary": {
     "ate/C1": {
       "results": 5,
