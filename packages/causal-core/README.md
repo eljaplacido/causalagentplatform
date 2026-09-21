@@ -45,6 +45,39 @@ The command exits 0 for a result, 2 for a refusal and 1 for an apparatus failure
 | **Claims** | Every number that may appear in prose is a claim bound to a field. `cc.verify(text, out)` rejects any number that isn't one. It also rejects causal wording ("caused", "will reduce") unless the result is *supported*. |
 | **Provenance** | Digests of the graph, query, data and policy, all in RFC 8785 canonical JSON, plus a digest of the result itself. The same inputs reproduce the same `result_digest`. |
 
+## For whom does it work?
+
+An average effect can describe nobody. Declare the subgroups and the kernel estimates within each:
+
+```python
+out = cc.analyze(incidents, "load -> playbook; load -> minutes; playbook -> minutes",
+                 treatment="playbook", outcome="minutes", segment_by=("severity",))
+
+out.primary.point        # -3.07  -- the pooled effect, an average of two opposite truths
+out.heterogeneity.differs  # True
+for s in out.segments:
+    print(s.level, s.estimate.point, s.family_wise_ci)
+# P1 -11.90  (-12.73, -11.06)
+# P3   5.90  (  5.03,   6.78)
+```
+
+The playbook shortens P1 incidents by twelve minutes and lengthens P3 incidents by six. Acting on
+the pooled −3.07 gets both wrong.
+
+Three rules make segment claims worth something:
+
+- **Declared, never discovered.** You name the subgroups before seeing the answer. Searching for
+  the subgroup with the largest effect is a different activity with different statistics, and this
+  kernel will not pretend the correction covers it.
+- **Two intervals, and the honest one is wider.** Each segment carries its own interval and a
+  family-wise interval adjusted for how many segments were examined. Claims use the second.
+  Per-segment nulls are tested with Holm across the family.
+- **Ask whether they differ before saying they do.** One Cochran's Q runs before any comparison.
+  When it does not reject, the result says the segments could not be told apart.
+
+A segment too small to estimate, or with no treated units, gets its own typed refusal — it is not
+dropped, and not guessed.
+
 ## What it refuses to do, and says so
 
 A refusal is a correct answer, not an error. Each one has a typed reason:
@@ -81,6 +114,11 @@ before any run. It runs on every change:
   - discarded adjustment sets
   - a suppressed hedge
 
+- **T4 (segments):** per-segment interval coverage 0.93–0.97; family-wise coverage across all
+  segments of one analysis 0.945–0.98; the heterogeneity test fires on 4.5% of homogeneous designs
+  (α = 0.05) and 100% of planted differences; with every segment null, Holm rejects something in
+  4% of runs. Each of four seeded defects fails the specific bar it was registered against.
+
 **Known limit.** Triangulation does *not* reliably detect moderate outcome-model misspecification
 at moderate n. Its power was 0.04 at n = 2,000 against a bias of about 1.2 standard errors. The v1
 run that showed this is kept in `benchmarks/t0/results/`. The doubly robust primary estimator stays
@@ -107,6 +145,7 @@ Data can be pandas, a dict of columns, pyarrow, polars, or any dataframe-interch
 - Estimation for general ID functionals such as the napkin graph: identified, then refused with
   `NO_ESTIMATOR`
 - Nonparametric front-door
+- Subgroup *discovery* (declared segments are supported; searching for them is not)
 - Discovery
 - Time series
 - Sequential (anytime-valid) tests

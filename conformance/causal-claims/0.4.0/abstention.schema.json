@@ -158,6 +158,15 @@
           "$ref": "#/$defs/Rung",
           "default": "intervention"
         },
+        "segment_by": {
+          "default": [],
+          "description": "Discrete, pre-treatment columns to estimate the effect within, declared before the answer is seen. The kernel does not search for subgroups: finding the subgroup with the largest effect is a different activity with different statistics, and reporting it as if it had been declared is how a team fools itself.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Segment By",
+          "type": "array"
+        },
         "treatment": {
           "title": "Treatment",
           "type": "string"
@@ -654,7 +663,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:causalplatform:claims:0.3.0:abstention",
+  "$id": "urn:causalplatform:claims:0.4.0:abstention",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {

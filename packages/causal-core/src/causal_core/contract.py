@@ -26,7 +26,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
-CONTRACT_VERSION = "0.3.0"
+CONTRACT_VERSION = "0.4.0"
 
 
 class _Model(BaseModel):
@@ -185,6 +185,13 @@ class CausalQuery(_Model):
     outcome_proxies: tuple[str, ...] = ()
     negative_control_outcomes: tuple[str, ...] = ()
     expected_treated_share: float | None = Field(default=None, gt=0, lt=1)
+    segment_by: tuple[str, ...] = Field(
+        default=(),
+        description="Discrete, pre-treatment columns to estimate the effect within, declared "
+        "before the answer is seen. The kernel does not search for subgroups: finding the "
+        "subgroup with the largest effect is a different activity with different statistics, "
+        "and reporting it as if it had been declared is how a team fools itself.",
+    )
     population: str | None = None
     horizon: str | None = None
 
@@ -203,6 +210,14 @@ class AnalysisPolicy(_Model):
     learners: Literal["linear", "flexible"] = "linear"
     refutation_alpha: float = Field(default=0.01, gt=0, lt=0.5)
     triangulation_alpha: float = Field(default=0.01, gt=0, lt=0.5)
+    segment_alpha: float = Field(
+        default=0.05,
+        gt=0,
+        lt=0.5,
+        description="Level for the heterogeneity test across declared segments. Looser than "
+        "the refutation alphas on purpose: this test decides whether segments may be "
+        "compared at all, and missing real heterogeneity is the costlier error.",
+    )
     implied_independence_tests: int = Field(default=30, ge=0)
     refuters: tuple[
         Literal["placebo_treatment", "negative_control_outcomes", "implied_independences"], ...
@@ -367,6 +382,48 @@ class Provenance(_Model):
 # ── The three outcomes ────────────────────────────────────────────────────────
 
 
+class SegmentEffect(_Model):
+    """The effect within one declared subgroup, and what may be claimed about it."""
+
+    variable: str
+    level: str
+    n_used: int
+    estimate: EstimateRecord | None = Field(
+        default=None, description="None when this segment could not be estimated."
+    )
+    family_wise_ci: Interval | None = Field(
+        default=None,
+        description="Interval at a level corrected for the number of segments examined. Any "
+        "claim about this segment uses this, not the unadjusted one: having looked at k "
+        "subgroups, the unadjusted interval no longer means what it says.",
+    )
+    p_value: float | None = None
+    significant_after_correction: bool | None = Field(
+        default=None,
+        description="Holm's step-down decision across the family. None when the segment could "
+        "not be estimated.",
+    )
+    refusal: AbstentionReason | None = Field(
+        default=None, description="Why this segment has no estimate, when it has none."
+    )
+    refusal_detail: str = ""
+
+
+class Heterogeneity(_Model):
+    """Whether the segments differ at all, asked once, before any of them are compared."""
+
+    method: Literal["cochran_q"] = "cochran_q"
+    statistic: float
+    df: int
+    p_value: float
+    alpha: float
+    differs: bool = Field(
+        description="False means the data cannot distinguish these segments from one another. "
+        "Acting on the differences anyway is the error this test exists to prevent."
+    )
+    segments_compared: int
+
+
 class CausalResult(_Model):
     kind: Literal["result"] = "result"
     status: ResultStatus
@@ -378,6 +435,8 @@ class CausalResult(_Model):
     refutations: tuple[RefutationResult, ...] = ()
     sensitivity: Sensitivity | None = None
     triangulation: Triangulation | None = None
+    segments: tuple[SegmentEffect, ...] = ()
+    heterogeneity: Heterogeneity | None = None
     claims: tuple[Claim, ...] = ()
     warnings: tuple[str, ...] = ()
     provenance: Provenance

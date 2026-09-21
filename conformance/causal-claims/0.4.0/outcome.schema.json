@@ -261,6 +261,15 @@
           "$ref": "#/$defs/Rung",
           "default": "intervention"
         },
+        "segment_by": {
+          "default": [],
+          "description": "Discrete, pre-treatment columns to estimate the effect within, declared before the answer is seen. The kernel does not search for subgroups: finding the subgroup with the largest effect is a different activity with different statistics, and reporting it as if it had been declared is how a team fools itself.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Segment By",
+          "type": "array"
+        },
         "treatment": {
           "title": "Treatment",
           "type": "string"
@@ -328,6 +337,17 @@
           "title": "Estimates",
           "type": "array"
         },
+        "heterogeneity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Heterogeneity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "kind": {
           "const": "result",
           "default": "result",
@@ -363,6 +383,14 @@
           "default": null,
           "description": "sha256 of the JCS form of this object without this field.",
           "title": "Result Digest"
+        },
+        "segments": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SegmentEffect"
+          },
+          "title": "Segments",
+          "type": "array"
         },
         "sensitivity": {
           "anyOf": [
@@ -721,6 +749,53 @@
       "title": "EstimateRecord",
       "type": "object"
     },
+    "Heterogeneity": {
+      "additionalProperties": false,
+      "description": "Whether the segments differ at all, asked once, before any of them are compared.",
+      "properties": {
+        "alpha": {
+          "title": "Alpha",
+          "type": "number"
+        },
+        "df": {
+          "title": "Df",
+          "type": "integer"
+        },
+        "differs": {
+          "description": "False means the data cannot distinguish these segments from one another. Acting on the differences anyway is the error this test exists to prevent.",
+          "title": "Differs",
+          "type": "boolean"
+        },
+        "method": {
+          "const": "cochran_q",
+          "default": "cochran_q",
+          "title": "Method",
+          "type": "string"
+        },
+        "p_value": {
+          "title": "P Value",
+          "type": "number"
+        },
+        "segments_compared": {
+          "title": "Segments Compared",
+          "type": "integer"
+        },
+        "statistic": {
+          "title": "Statistic",
+          "type": "number"
+        }
+      },
+      "required": [
+        "statistic",
+        "df",
+        "p_value",
+        "alpha",
+        "differs",
+        "segments_compared"
+      ],
+      "title": "Heterogeneity",
+      "type": "object"
+    },
     "IdentificationCertificate": {
       "additionalProperties": false,
       "properties": {
@@ -1072,6 +1147,97 @@
       "title": "Rung",
       "type": "string"
     },
+    "SegmentEffect": {
+      "additionalProperties": false,
+      "description": "The effect within one declared subgroup, and what may be claimed about it.",
+      "properties": {
+        "estimate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EstimateRecord"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "None when this segment could not be estimated."
+        },
+        "family_wise_ci": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Interval"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Interval at a level corrected for the number of segments examined. Any claim about this segment uses this, not the unadjusted one: having looked at k subgroups, the unadjusted interval no longer means what it says."
+        },
+        "level": {
+          "title": "Level",
+          "type": "string"
+        },
+        "n_used": {
+          "title": "N Used",
+          "type": "integer"
+        },
+        "p_value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "P Value"
+        },
+        "refusal": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AbstentionReason"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Why this segment has no estimate, when it has none."
+        },
+        "refusal_detail": {
+          "default": "",
+          "title": "Refusal Detail",
+          "type": "string"
+        },
+        "significant_after_correction": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Holm's step-down decision across the family. None when the segment could not be estimated.",
+          "title": "Significant After Correction"
+        },
+        "variable": {
+          "title": "Variable",
+          "type": "string"
+        }
+      },
+      "required": [
+        "variable",
+        "level",
+        "n_used"
+      ],
+      "title": "SegmentEffect",
+      "type": "object"
+    },
     "Sensitivity": {
       "additionalProperties": false,
       "properties": {
@@ -1244,7 +1410,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:causalplatform:claims:0.3.0:outcome",
+  "$id": "urn:causalplatform:claims:0.4.0:outcome",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "discriminator": {
     "mapping": {

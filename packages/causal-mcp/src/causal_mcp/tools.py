@@ -122,6 +122,7 @@ def _query(
     negative_control_outcomes: list[str] | None,
     treatment_levels: list[float] | None,
     expected_treated_share: float | None,
+    segment_by: list[str] | None = None,
 ) -> CausalQuery:
     return CausalQuery(
         treatment=treatment,
@@ -134,6 +135,7 @@ def _query(
         negative_control_outcomes=tuple(negative_control_outcomes or ()),
         treatment_levels=(treatment_levels[0], treatment_levels[1]) if treatment_levels else None,
         expected_treated_share=expected_treated_share,
+        segment_by=tuple(segment_by or ()),
     )
 
 
@@ -151,6 +153,7 @@ def causal_analyze(
     negative_control_outcomes: list[str] | None = None,
     treatment_levels: list[float] | None = None,
     expected_treated_share: float | None = None,
+    segment_by: list[str] | None = None,
     policy: dict[str, Any] | None = None,
 ) -> AnalyzeResponse:
     """Estimate the effect of `treatment` on `outcome`, or return a typed refusal saying why not.
@@ -163,6 +166,15 @@ def causal_analyze(
 
     Use numbers in your reply only via claims: `outcome.claims` lists every number with its
     rendered text. Before replying to a user, pass your text to `causal_verify_narrative`.
+
+    `segment_by` names discrete, pre-treatment columns to estimate the effect *within*.
+    Declare them before you see the answer: this kernel will not search for the subgroup
+    with the largest effect, because the subgroup that looks best after a search is
+    mostly noise. Each segment comes back with its own interval, a wider family-wise
+    interval that accounts for how many subgroups were examined, and one heterogeneity
+    test saying whether the segments differ at all. Quote the family-wise interval when
+    you make a claim about a segment, and if `heterogeneity.differs` is false, say the
+    segments could not be told apart rather than comparing them.
 
     `graph` syntax: `Z -> X -> Y; Z -> Y`; `X <-> Y` means an unmeasured common cause;
     `latent U` declares an unmeasured node. Data: either `data` as {column: [values]} or
@@ -180,6 +192,7 @@ def causal_analyze(
             negative_control_outcomes,
             treatment_levels,
             expected_treated_share,
+            segment_by,
         )
         pol = AnalysisPolicy.model_validate(policy or {})
         frame = load_table(data, data_path)

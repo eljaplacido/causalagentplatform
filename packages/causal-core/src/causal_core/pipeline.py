@@ -40,6 +40,7 @@ from causal_core.contract import (
     Provenance,
     ResultStatus,
     Rung,
+    SegmentEffect,
     Triangulation,
     TriangulationPair,
 )
@@ -54,6 +55,7 @@ from causal_core.identification import (
     missing_information,
 )
 from causal_core.refute import RefutationContext, holm
+from causal_core.segments import estimate_segments
 from causal_core.sensitivity import analyze_sensitivity
 
 try:
@@ -176,12 +178,12 @@ def _frame_diagnostics(frame: pd.DataFrame, query: CausalQuery) -> Diagnostics |
         y = y[np.isfinite(y)]
         levels = frame[query.treatment].nunique(dropna=True)
         return Diagnostics(
-            n_rows=int(len(frame)),
+            n_rows=len(frame),
             n_used=0,
             treatment_kind="binary" if levels <= 2 else "continuous",
             outcome_sd=float(np.std(y, ddof=1)) if y.size > 1 else None,
         )
-    except Exception:  # noqa: BLE001 - diagnostics must never turn a refusal into a crash
+    except Exception:
         return None
 
 
@@ -444,6 +446,19 @@ def _analyze(
     stage.name = "sensitivity"
     sens = analyze_sensitivity(d, primary, cert.strategy, policy) if policy.sensitivity else None
 
+    # Declared subgroups, each analysed on its own stratum with the same graph and
+    # the same checks. Runs after the pooled analysis, because the pooled estimate
+    # is what the refuters and sensitivity above were about, and a segment with no
+    # overlap should refuse rather than borrow the pooled design's clean bill.
+    stage.name = "segments"
+    segment_effects: tuple[SegmentEffect, ...] = ()
+    heterogeneity = None
+    if query.segment_by:
+        segment_effects, heterogeneity, seg_warnings = estimate_segments(
+            frame, graph, query, policy, analyze
+        )
+        warnings.extend(seg_warnings)
+
     stage.name = "assemble"
     failed = [r.name for r in refutations if not r.passed]
     if failed or (tri is not None and not tri.agree):
@@ -482,6 +497,8 @@ def _analyze(
         refutations=tuple(refutations),
         sensitivity=sens,
         triangulation=tri,
+        segments=segment_effects,
+        heterogeneity=heterogeneity,
         claims=build_claims(claim_fields),
         warnings=tuple(warnings),
         provenance=Provenance(**prov),

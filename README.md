@@ -55,6 +55,7 @@ runs, and failing runs are kept.
 | T0: 29 identification cases, 14 estimation designs, 7 seeded defects ([`benchmarks/t0`](benchmarks/t0)) | Identification agrees with y0 on 200/200 random graphs. Pooled 95% coverage is 94.9%. Every seeded defect is caught. |
 | T3: LaLonde, real data with an experimental benchmark ([`benchmarks/t3-lalonde`](benchmarks/t3-lalonde)) | No confident wrong answer. Naive estimates are off by up to −$15,205; every kernel interval covers the experimental $1,794. |
 | T2: IHDP-100, semi-synthetic ([`benchmarks/t2-ihdp`](benchmarks/t2-ihdp)) | ATT coverage 0.99 / 0.98; supported results miss the truth 1.5% of the time. |
+| T4: segment effects ([`benchmarks/t4-segments`](benchmarks/t4-segments)) | Per-segment coverage 0.93–0.97, family-wise coverage 0.945–0.98, 4% false discovery with every segment null. Bars registered before the code was written. |
 | D0: the decision procedure ([`benchmarks/d0-decision-policy`](benchmarks/d0-decision-policy)) | 15/15 scenarios return the verdict the table names; 8 properties hold over 400 seeded cases; each of 6 seeded defects makes the gate fail. |
 
 Known limits are listed, not hidden: [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAGE.md) and

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "causal-core"
-version = "0.3.0"
+version = "0.4.0"
 description = "Causal inference kernel that identifies before it estimates, abstains when it cannot, and proves every number it returns."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -82,6 +82,7 @@ testpaths = ["tests"]
 addopts = ["--tb=short", "-q"]
 markers = [
     "t0: T0 analytic-SCM correctness gate (pre-registered; see benchmarks/t0/PRE-REGISTRATION.md)",
+    "t4: T4 segment-effect gate (pre-registered; see benchmarks/t4-segments/PRE-REGISTRATION.md)",
     "slow: long-running (nightly) configuration",
     "crosscheck: compares against an independent engine (y0 / DoWhy); skipped if not installed",
     "real_data: pre-registered real-data benchmarks (T2 IHDP, T3 LaLonde); skipped unless cached or CAUSAL_FETCH=1",

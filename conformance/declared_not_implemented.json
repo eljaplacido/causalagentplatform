@@ -137,7 +137,7 @@
       "evidence": [
         {
           "at": "backend/pyproject.toml:51",
-          "says": "\"causal-core>=0.3.0\","
+          "says": "\"causal-core>=0.4.0\","
         }
       ],
       "leaves_by": {
@@ -433,7 +433,7 @@
       "capability": "Estimation of effects identified only by the general ID algorithm (e.g. the napkin graph)",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:107",
+          "at": "packages/causal-core/README.md:145",
           "says": "Estimation for general ID functionals"
         }
       ],
@@ -456,22 +456,22 @@
       "capability": "causal-core methods beyond the current portfolio: nonparametric front-door, discovery, time series, anytime-valid sequential tests, interference-aware designs",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:109",
+          "at": "packages/causal-core/README.md:147",
           "says": "Nonparametric front-door"
         },
         {
-          "at": "packages/causal-core/README.md:110",
+          "at": "packages/causal-core/README.md:149",
           "says": "Discovery"
         },
         {
-          "at": "packages/causal-core/README.md:112",
+          "at": "packages/causal-core/README.md:151",
           "says": "Sequential (anytime-valid) tests"
         }
       ],
       "reality": "Listed as not implemented in the package README; none of these exists in the kernel.",
       "evidence": [
         {
-          "at": "packages/causal-core/README.md:104",
+          "at": "packages/causal-core/README.md:142",
           "says": "Not implemented yet"
         }
       ],
@@ -510,7 +510,7 @@
       "capability": "Calibration of decisions: comparing the effect predicted before acting with the effect realized after",
       "claimed_in": [
         {
-          "at": "docs/ROADMAP.md:58",
+          "at": "docs/ROADMAP.md:60",
           "says": "**Outcome capture and calibration.** Compare predicted with realized effects; publish regret and"
         },
         {
@@ -552,6 +552,52 @@
         "kind": "test",
         "path": "backend/tests/integration/test_ledger_anchoring.py",
         "asserts": "the head digest is published to a store the platform cannot rewrite, and a chain rewritten in the database is detected by comparison with the published head"
+      }
+    },
+    {
+      "id": "segment-discovery",
+      "status": "declared-not-implemented",
+      "capability": "Finding which subgroups an effect differs across, rather than testing declared ones",
+      "claimed_in": [
+        {
+          "at": "docs/ROADMAP.md:29",
+          "says": "and for effects within declared segments with family-wise correction"
+        }
+      ],
+      "reality": "causal_core.segments estimates effects within subgroups the caller declares in advance and corrects for how many were examined. Nothing searches for subgroups, and this is deliberate: a subgroup chosen after looking is not covered by the correction, and honest post-hoc subgroup discovery needs machinery (sample splitting, or a method with its own guarantees) that is not here.",
+      "evidence": [
+        {
+          "at": "packages/causal-core/src/causal_core/segments.py:13",
+          "says": "**Declared, never discovered.**"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "packages/causal-core/tests/t4/test_discovery.py",
+        "asserts": "a discovered subgroup's reported interval covers its true effect at the nominal rate under a pre-registered discovery procedure, on data where no subgroup differs"
+      }
+    },
+    {
+      "id": "decision-ignores-segments",
+      "status": "declared-not-implemented",
+      "capability": "The decision layer accounts for heterogeneity across segments",
+      "claimed_in": [
+        {
+          "at": "packages/causal-decision/README.md:3",
+          "says": "**The layer between an agent's proposed action and the system that action would change.**"
+        }
+      ],
+      "reality": "causal_decision.decide reads the pooled estimate and ignores result.segments and result.heterogeneity entirely. So an action whose effect is +6 in one segment and -12 in another can be approved on a pooled effect of about -3, which describes nobody. The kernel now detects that case; the decision layer does not yet read it.",
+      "evidence": [
+        {
+          "at": "packages/causal-decision/src/causal_decision/policy.py:61",
+          "says": "def _evidence(out: CausalOutcome, request: DecisionRequest) -> Evidence:"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "packages/causal-decision/tests/test_segments.py",
+        "asserts": "a result whose segments differ is not automated on the pooled effect; the verdict names the heterogeneity"
       }
     }
   ],

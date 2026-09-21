@@ -1,5 +1,5 @@
 {
-  "$id": "urn:causalplatform:claims:0.3.0:analysis_policy",
+  "$id": "urn:causalplatform:claims:0.4.0:analysis_policy",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Every threshold that can change an answer. Hashed into provenance.",
@@ -130,6 +130,14 @@
       "default": 0,
       "title": "Seed",
       "type": "integer"
+    },
+    "segment_alpha": {
+      "default": 0.05,
+      "description": "Level for the heterogeneity test across declared segments. Looser than the refutation alphas on purpose: this test decides whether segments may be compared at all, and missing real heterogeneity is the costlier error.",
+      "exclusiveMaximum": 0.5,
+      "exclusiveMinimum": 0,
+      "title": "Segment Alpha",
+      "type": "number"
     },
     "sensitivity": {
       "default": true,

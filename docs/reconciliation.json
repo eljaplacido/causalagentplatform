@@ -54,18 +54,18 @@
       "baseline": {
         "on": "2026-09-21",
         "sha256": {
-          "conformance/declared_not_implemented.json": "27e68c875f25cca92cb7adf0b8cfd006650cafe2e27d69cc004a76f43bfaa458",
+          "conformance/declared_not_implemented.json": "38be7eafe900ea48bfa53cc4ee1863954774df22ecead8c9cbb16f40478b7463",
           "backend/src": "c88bf379b4366a17267bf9edf76ab9cf790b44f55e656bc4c7d66252c8a9276c",
           "backend/mcp_server": "906126ac2e95942d33fa44c6abe372051ab452e3022a978c6d5ad78c28a2f6d5",
           "backend/tests": "eac24496b5c7eb7a72970c80b2910e4fe86d4ba45b920cdfe188265cc81afdd6",
           "frontend/src": "43b4fec5fbddbf1cbeab0cc5dc3aa23933dd6678419738027cbf5fa27d48f428",
-          "packages": "119166be5d42b46a2881c0b37df3dcdac803a6a2a4e8805712e120d4b4cf04c4",
+          "packages": "dad9fcec8c1fd6b365a2f0c1f1e29cdccf5215d54391fa34c732b591d921fb32",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-21",
-        "by": "Claude (decision endpoints and ledger rows)"
+        "by": "Claude (segment rows)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -289,14 +289,14 @@
       "baseline": {
         "on": "2026-09-21",
         "sha256": {
-          "packages/causal-core/src/causal_core": "ac35243850d467d5a65a057dc056ab7534b17c29e2f0d8f73ef9f6a43fde27af",
-          "conformance/declared_not_implemented.json": "64ea645e28a1cf28154fcf551165f44584dfb818efd674d39c1f0c9e65997e90",
-          "docs/CURRENT_STAGE.md": "8fe26d3cf2d10a57460c3f6c51bc3080ae3d926908523c350c207f9577a256cc"
+          "packages/causal-core/src/causal_core": "33054d63f00443a2419b10f1b83b7b6c5fcc29d970062777c6653718036943f6",
+          "conformance/declared_not_implemented.json": "38be7eafe900ea48bfa53cc4ee1863954774df22ecead8c9cbb16f40478b7463",
+          "docs/CURRENT_STAGE.md": "d22f0bc2c50d52852aa1e5e0e6ba9c0fcee5afea36c5591b193bb754a90ef7c5"
         }
       },
       "last_read": {
         "on": "2026-09-21",
-        "by": "Claude (step 2 in progress: Guardian half done)"
+        "by": "Claude (step 3 partly done: segments)"
       }
     }
   }

@@ -26,7 +26,7 @@ sustainability investment assurance follow, in that order.
 | A typed causal question | Partial: `CausalQuery` is typed, but `population` and `horizon` are free text, and nothing translates an agent's action into an estimand |
 | Retrieve the assumptions and evidence that apply | Missing: edges carry origin, status and evidence in the contract, but nothing stores, versions or retrieves them |
 | Decide identified / partially identified / unsupported | Done, except bounds: complete ID, back-door with the optimal adjustment set, front-door, conditional IV, proximal; 11 typed refusals, each with what is missing |
-| Estimate impact and uncertainty | Done for ATE and ATT with coverage-tested intervals; missing segment effects, difference-in-differences, policy value, sequential tests, interference-aware designs |
+| Estimate impact and uncertainty | Done for ATE and ATT with coverage-tested intervals, and for effects within declared segments with family-wise correction and a heterogeneity test (pre-registered T4). Missing: difference-in-differences, policy value, sequential tests, interference-aware designs, and subgroup *discovery* |
 | Robustness checks | Done: placebo, negative controls, graph-implied independences with measured power, overlap, balance, E-values, robustness values |
 | Decide: act, ask, experiment, refuse | Done: `packages/causal-decision` turns an outcome, a request and a policy into one verdict, deterministically, gated by the pre-registered D0 suite (15 scenarios, 8 properties, 6 seeded defects) |
 | Evidence record | Partial: every result and every decision carries digests of its inputs and itself; nothing is persisted, no approval binding, no observed outcome |
@@ -47,10 +47,12 @@ sustainability investment assurance follow, in that order.
    mint a verdict outside the Guardian remain open on the register
    (`intervention-approval-no-role`, `guardian-audit-write-skill`); neither can authorise a
    semantic write any more, but both still write to the audit trail.
-3. **The estimators operations actually need.** Segment-level effects, staggered
-   difference-in-differences and event studies, anytime-valid sequential tests for canaries,
-   cluster and switchback designs for interference. Each with its own pre-registered gate and a
-   seeded defect.
+3. **The estimators operations actually need.** Segment-level effects are **done**
+   (`causal_core.segments`, pre-registered T4: declared subgroups, Bonferroni family-wise
+   intervals, Holm across the family, one Cochran's Q before anything is compared). Still to
+   come: staggered difference-in-differences and event studies, anytime-valid sequential tests
+   for canaries, cluster and switchback designs for interference. Each with its own
+   pre-registered gate and a seeded defect.
 4. ~~**Experiment recommendation.**~~ **Done for randomized units**, in the same package: unit,
    per-arm size and duration from a minimum-detectable-effect calculation, guardrails. A refusal
    now carries the outcome's spread even when identification is what failed, so an unanswerable
