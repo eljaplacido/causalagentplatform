@@ -2,7 +2,7 @@
 
 **Suite:** T4, effects within declared subgroups, where the truth is known by construction
 **System under test:** `packages/causal-core` (`causal_core.segments`, reached through `analyze`)
-**Registered:** 2026-09-21, version 1
+**Registered:** 2026-09-21, version 2 (v1 the same day; see changelog)
 **Runs:** every PR, via `pytest -m t4` in `packages/causal-core`
 
 ## Status of this document
@@ -70,7 +70,7 @@ the data cannot distinguish from noise is the failure this suite is about.
 ```toml
 [meta]
 suite = "T4"
-version = 1
+version = 2
 registered = "2026-09-21"
 
 [estimation]
@@ -102,7 +102,7 @@ reps = 120
 required = [
   "no_multiplicity_adjustment",
   "pooled_effect_per_segment",
-  "heterogeneity_wrong_df",
+  "heterogeneity_anticonservative_df",
   "silent_segment_drop",
 ]
 ```
@@ -114,7 +114,7 @@ every one:
 |---|---|---|
 | `no_multiplicity_adjustment` | the family-wise interval is the unadjusted one | `family_wise` |
 | `pooled_effect_per_segment` | every segment reports the overall effect | `heterogeneity` power, `estimation` bias |
-| `heterogeneity_wrong_df` | Cochran's Q compared against χ²(k) instead of χ²(k−1) | `heterogeneity` false positives |
+| `heterogeneity_anticonservative_df` | Cochran's Q compared against too few degrees of freedom, so it invents heterogeneity | `heterogeneity` false positives |
 | `silent_segment_drop` | a segment that cannot be estimated is omitted instead of refused | `refusals` |
 
 ## What this gate does not establish
@@ -125,7 +125,26 @@ every one:
   different and much harder to get right.
 - Continuous effect modification, or interactions between two segment variables.
 - Performance on real data. That is T2 and T3's job.
+- **That the heterogeneity test is not needlessly conservative.** Every bar here would be met by a
+  test that fires slightly too rarely: the power case plants opposite effects, where power is 1.00
+  and stays 1.00 under a conservative error. Catching over-conservatism needs a case whose true
+  power sits near the bar, which this suite does not have. See the v2 changelog.
 
 ## Changelog
 
+- v2 (2026-09-21): **a registered defect turned out to be invisible to this suite.**
+  `heterogeneity_wrong_df` was registered as "Cochran's Q compared against χ²(k) instead of
+  χ²(k−1)", to be caught by the heterogeneity false-positive bar. Writing it showed that error
+  runs the wrong way: too *many* degrees of freedom makes the test more conservative, so it fires
+  *less* often and the false-positive bar is satisfied more comfortably than before. The power bar
+  cannot see it either, because the power case plants opposite effects where power is 1.00 with or
+  without the defect.
+
+  The defect is replaced by `heterogeneity_anticonservative_df`, which errs in the direction that
+  does harm — a test that invents heterogeneity that is not there — and is caught by the
+  false-positive bar (0.158 against a bar of 0.075). The blind spot the original defect was
+  reaching for is now recorded under "what this gate does not establish" rather than left implied
+  by a defect that passes.
+
+  No pass bar changed. The seeded-defect list is the only edit to the TOML block.
 - v1 (2026-09-21): initial registration, before the capability was written.
