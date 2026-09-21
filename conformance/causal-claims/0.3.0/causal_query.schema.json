@@ -19,7 +19,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:causalplatform:claims:0.2.0:causal_query",
+  "$id": "urn:causalplatform:claims:0.3.0:causal_query",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {

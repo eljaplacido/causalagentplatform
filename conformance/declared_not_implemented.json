@@ -1,680 +1,680 @@
 {
- "version": "0.1.0",
- "_comment": [
-  "Capabilities this repository's documents (or its own API contracts) CLAIM,",
-  "that the code does not do as claimed. The shape is gnomon's",
-  "conformance/declared_not_implemented.json, widened from enumeration values to",
-  "capabilities, because this repository's gap is wider: the Sep 2026 audit found",
-  "docs marking a finished Phase 1 over heuristics, a constant confidence",
-  "interval and an LLM layer nothing calls.",
-  "",
-  "Every entry carries:",
-  "  claimed_in  where the claim is made, as {at: 'file:line', says: <quote>}.",
-  "              'file@rev:line' cites a committed revision (the claim was",
-  "              published there and has since been withdrawn from the tree).",
-  "  reality     one line: what the code actually does.",
-  "  evidence    code locations that make `reality` true, same {at, says} shape.",
-  "  leaves_by   what must exist for the entry to leave the list: a test (path +",
-  "              what it asserts), a CI run, or a retraction of the claim.",
-  "  status      declared-not-implemented | partial | planned -- the same token",
-  "              docs/CURRENT_STAGE.md shows for it.",
-  "",
-  "scripts/status_claims.py checks every citation: the quote must still be in",
-  "the cited file (on the cited line, or it reports the drift). A quote that is",
-  "GONE fails the gate, because then this register says something about the code",
-  "or the docs that is no longer true -- which is the defect it exists to catch.",
-  "",
-  "An entry leaves this list by being IMPLEMENTED (its leaves_by exists and",
-  "passes) or by the claim being RETRACTED from the docs -- never by being",
-  "dropped. When one leaves, it moves to `left_the_list` with the commit and the",
-  "test that pins it."
- ],
- "declared_not_implemented": [
-  {
-   "id": "scm-counterfactuals",
-   "status": "declared-not-implemented",
-   "capability": "Counterfactual reasoning over a structural causal model",
-   "claimed_in": [
+  "version": "0.1.0",
+  "_comment": [
+    "Capabilities this repository's documents (or its own API contracts) CLAIM,",
+    "that the code does not do as claimed. The shape is gnomon's",
+    "conformance/declared_not_implemented.json, widened from enumeration values to",
+    "capabilities, because this repository's gap is wider: the Sep 2026 audit found",
+    "docs marking a finished Phase 1 over heuristics, a constant confidence",
+    "interval and an LLM layer nothing calls.",
+    "",
+    "Every entry carries:",
+    "  claimed_in  where the claim is made, as {at: 'file:line', says: <quote>}.",
+    "              'file@rev:line' cites a committed revision (the claim was",
+    "              published there and has since been withdrawn from the tree).",
+    "  reality     one line: what the code actually does.",
+    "  evidence    code locations that make `reality` true, same {at, says} shape.",
+    "  leaves_by   what must exist for the entry to leave the list: a test (path +",
+    "              what it asserts), a CI run, or a retraction of the claim.",
+    "  status      declared-not-implemented | partial | planned -- the same token",
+    "              docs/CURRENT_STAGE.md shows for it.",
+    "",
+    "scripts/status_claims.py checks every citation: the quote must still be in",
+    "the cited file (on the cited line, or it reports the drift). A quote that is",
+    "GONE fails the gate, because then this register says something about the code",
+    "or the docs that is no longer true -- which is the defect it exists to catch.",
+    "",
+    "An entry leaves this list by being IMPLEMENTED (its leaves_by exists and",
+    "passes) or by the claim being RETRACTED from the docs -- never by being",
+    "dropped. When one leaves, it moves to `left_the_list` with the commit and the",
+    "test that pins it."
+  ],
+  "declared_not_implemented": [
     {
-     "at": "docs/AGENTS.md:271",
-     "says": "Structural causal model (SCM), observation, query (intervention or counterfactual)"
+      "id": "scm-counterfactuals",
+      "status": "declared-not-implemented",
+      "capability": "Counterfactual reasoning over a structural causal model",
+      "claimed_in": [
+        {
+          "at": "docs/AGENTS.md:271",
+          "says": "Structural causal model (SCM), observation, query (intervention or counterfactual)"
+        },
+        {
+          "at": "docs/AGENTS.md:272",
+          "says": "Estimated counterfactual distribution"
+        },
+        {
+          "at": "docs/TESTING_CICD.md:80",
+          "says": "scm.counterfactual(observation, intervention)"
+        }
+      ],
+      "reality": "No structural causal model is fitted anywhere. counterfactual_reason is now a labelled heuristic that reports identification_status NOT_ASSESSED and makes no quantitative claim (it previously reported IDENTIFIED from edge confidences and invented impact-reduction percentages). causal-core refuses rung-3 queries with RUNG_MISMATCH.",
+      "evidence": [
+        {
+          "at": "backend/src/skills/counterfactual_reason.py:37",
+          "says": "\"identification_status\": \"NOT_ASSESSED\","
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/causal_correctness/test_counterfactual_scm.py",
+        "asserts": "for a known SCM and observed unit, the counterfactual outcome under do(T=t') equals the analytic value (and equals the factual outcome when t' is the factual treatment)"
+      }
     },
     {
-     "at": "docs/AGENTS.md:272",
-     "says": "Estimated counterfactual distribution"
+      "id": "causal-discovery",
+      "status": "declared-not-implemented",
+      "capability": "Causal discovery: candidate edges and independence tests from data",
+      "claimed_in": [
+        {
+          "at": "docs/AGENTS.md:31",
+          "says": "Proposes candidate edges, confounders, mediators, and missing variables in the causal graph from data and document evidence."
+        }
+      ],
+      "reality": "The discovery agent proposes one edge between two freshly generated uuid4() nodes with a confidence looked up from the Cynefin domain; conditional_independence_test is a stub that returns None.",
+      "evidence": [
+        {
+          "at": "backend/src/agents/causal_discovery.py:330",
+          "says": "source_id = uuid4()"
+        },
+        {
+          "at": "backend/src/agents/causal_discovery.py:394",
+          "says": "stub \u2014 real data required"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/causal_correctness/test_discovery.py",
+        "asserts": "on data simulated from a known DAG the recovered skeleton/CPDAG is within a pre-registered structural Hamming distance of the truth"
+      }
     },
     {
-     "at": "docs/TESTING_CICD.md:80",
-     "says": "scm.counterfactual(observation, intervention)"
-    }
-   ],
-   "reality": "No structural causal model is fitted anywhere. counterfactual_reason is now a labelled heuristic that reports identification_status NOT_ASSESSED and makes no quantitative claim (it previously reported IDENTIFIED from edge confidences and invented impact-reduction percentages). causal-core refuses rung-3 queries with RUNG_MISMATCH.",
-   "evidence": [
-    {
-     "at": "backend/src/skills/counterfactual_reason.py:37",
-     "says": "\"identification_status\": \"NOT_ASSESSED\","
-    }
-   ],
-   "leaves_by": {
-    "kind": "test",
-    "path": "backend/tests/causal_correctness/test_counterfactual_scm.py",
-    "asserts": "for a known SCM and observed unit, the counterfactual outcome under do(T=t') equals the analytic value (and equals the factual outcome when t' is the factual treatment)"
-   }
-  },
-  {
-   "id": "causal-discovery",
-   "status": "declared-not-implemented",
-   "capability": "Causal discovery: candidate edges and independence tests from data",
-   "claimed_in": [
-    {
-     "at": "docs/AGENTS.md:31",
-     "says": "Proposes candidate edges, confounders, mediators, and missing variables in the causal graph from data and document evidence."
-    }
-   ],
-   "reality": "The discovery agent proposes one edge between two freshly generated uuid4() nodes with a confidence looked up from the Cynefin domain; conditional_independence_test is a stub that returns None.",
-   "evidence": [
-    {
-     "at": "backend/src/agents/causal_discovery.py:330",
-     "says": "source_id = uuid4()"
+      "id": "sensitivity-analysis",
+      "status": "partial",
+      "capability": "Sensitivity to unmeasured confounding (E-values, Rosenbaum bounds)",
+      "claimed_in": [
+        {
+          "at": "docs/AGENTS.md:373",
+          "says": "Computes Rosenbaum sensitivity bounds and E-values for unmeasured confounders"
+        }
+      ],
+      "reality": "E-values are now correct and scale-aware (causal-core's e_value_rr; risk ratio, or difference plus outcome SD; otherwise null with the reason), and the kernel reports E-values and Cinelli-Hazlett robustness values from data. Rosenbaum bounds are not implemented: rosenbaum_gamma is always null (the previous values came from an invented multiplier).",
+      "evidence": [
+        {
+          "at": "backend/src/skills/sensitivity_analysis.py:67",
+          "says": "base: dict[str, Any] = {\"rosenbaum_gamma\": None"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/unit/test_rosenbaum_bounds.py",
+        "asserts": "Rosenbaum bounds match a published matched-pairs example (E-values are already pinned by backend/tests/unit/test_effect_estimate.py)"
+      }
     },
     {
-     "at": "backend/src/agents/causal_discovery.py:394",
-     "says": "stub — real data required"
-    }
-   ],
-   "leaves_by": {
-    "kind": "test",
-    "path": "backend/tests/causal_correctness/test_discovery.py",
-    "asserts": "on data simulated from a known DAG the recovered skeleton/CPDAG is within a pre-registered structural Hamming distance of the truth"
-   }
-  },
-  {
-   "id": "sensitivity-analysis",
-   "status": "partial",
-   "capability": "Sensitivity to unmeasured confounding (E-values, Rosenbaum bounds)",
-   "claimed_in": [
-    {
-     "at": "docs/AGENTS.md:373",
-     "says": "Computes Rosenbaum sensitivity bounds and E-values for unmeasured confounders"
-    }
-   ],
-   "reality": "E-values are now correct and scale-aware (causal-core's e_value_rr; risk ratio, or difference plus outcome SD; otherwise null with the reason), and the kernel reports E-values and Cinelli-Hazlett robustness values from data. Rosenbaum bounds are not implemented: rosenbaum_gamma is always null (the previous values came from an invented multiplier).",
-   "evidence": [
-    {
-     "at": "backend/src/skills/sensitivity_analysis.py:67",
-     "says": "base: dict[str, Any] = {\"rosenbaum_gamma\": None"
-    }
-   ],
-   "leaves_by": {
-    "kind": "test",
-    "path": "backend/tests/unit/test_rosenbaum_bounds.py",
-    "asserts": "Rosenbaum bounds match a published matched-pairs example (E-values are already pinned by backend/tests/unit/test_effect_estimate.py)"
-   }
-  },
-  {
-   "id": "econml-pymc",
-   "status": "declared-not-implemented",
-   "capability": "EconML / PyMC estimation backends",
-   "claimed_in": [
-    {
-     "at": "docs/AGENTS.md:51",
-     "says": "DoWhy / EconML for statistical estimation"
+      "id": "econml-pymc",
+      "status": "declared-not-implemented",
+      "capability": "EconML / PyMC estimation backends",
+      "claimed_in": [
+        {
+          "at": "docs/AGENTS.md:51",
+          "says": "DoWhy / EconML for statistical estimation"
+        },
+        {
+          "at": "docs/AGENTS.md:359",
+          "says": "(DoWhy, PyMC)"
+        },
+        {
+          "at": "docs/AGENTS.md:663",
+          "says": "DoWhy, EconML, statsmodels"
+        },
+        {
+          "at": "docs/CURRENT_STAGE.md@4e036a0:84",
+          "says": "DoWhy/EconML"
+        }
+      ],
+      "reality": "Neither EconML nor PyMC is a dependency; estimation is causal-core (and DoWhy is no longer a backend dependency either). causal-core's plug-in registry is the way to add EconML estimators.",
+      "evidence": [
+        {
+          "at": "backend/pyproject.toml:51",
+          "says": "\"causal-core>=0.3.0\","
+        }
+      ],
+      "leaves_by": {
+        "kind": "retraction",
+        "path": "docs/AGENTS.md",
+        "asserts": "the claims are removed from the docs -- or the dependency is added with a test that exercises an estimator from it"
+      }
     },
     {
-     "at": "docs/AGENTS.md:359",
-     "says": "(DoWhy, PyMC)"
+      "id": "rust-crates",
+      "status": "declared-not-implemented",
+      "capability": "Rust crates (cynepic-causal, cynepic-bayes) backing DAG operations and belief tracking",
+      "claimed_in": [
+        {
+          "at": "docs/AGENTS.md:51",
+          "says": "`cynepic-causal` crate (Rust) for DAG operations"
+        },
+        {
+          "at": "docs/AGENTS.md:156",
+          "says": "cynepic-bayes Bayesian belief tracking"
+        },
+        {
+          "at": "docs/AGENTS.md:264",
+          "says": "`cynepic-causal` Rust crate"
+        }
+      ],
+      "reality": "This repository contains no Rust code and depends on no crate; the cynepic crates belong to separate projects that were inspiration only.",
+      "evidence": [
+        {
+          "at": "backend/src/agents/causal_discovery.py:312",
+          "says": "cynepic-causal Rust crate"
+        }
+      ],
+      "leaves_by": {
+        "kind": "retraction",
+        "path": "docs/AGENTS.md",
+        "asserts": "the crate references are removed from the docs and the docstrings that repeat them"
+      }
     },
     {
-     "at": "docs/AGENTS.md:663",
-     "says": "DoWhy, EconML, statsmodels"
+      "id": "llm-routing-no-callers",
+      "status": "declared-not-implemented",
+      "capability": "Capability-based LLM routing used by the agents",
+      "claimed_in": [
+        {
+          "at": "docs/AGENTS.md:22",
+          "says": "Provider-agnostic LLM"
+        },
+        {
+          "at": "docs/AGENTS.md:613",
+          "says": "the LLM factory resolves capability \u2192 provider at runtime"
+        },
+        {
+          "at": "docs/AGENTS.md:623",
+          "says": "Routing is handled by `src/agents/llm_factory.py`"
+        }
+      ],
+      "reality": "get_llm has no call site outside its own docstring: no agent invokes an LLM, and every agent's reasoning is rule or heuristic code.",
+      "evidence": [
+        {
+          "at": "backend/src/agents/llm_factory.py:139",
+          "says": "def get_llm("
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/unit/test_llm_routing_used.py",
+        "asserts": "an agent path requests a capability through get_llm and its output depends on the (stubbed) model's reply"
+      }
     },
     {
-     "at": "docs/CURRENT_STAGE.md@4e036a0:84",
-     "says": "DoWhy/EconML"
-    }
-   ],
-   "reality": "Neither EconML nor PyMC is a dependency; estimation is causal-core (and DoWhy is no longer a backend dependency either). causal-core's plug-in registry is the way to add EconML estimators.",
-   "evidence": [
-    {
-     "at": "backend/pyproject.toml:51",
-     "says": "\"causal-core>=0.2.0\","
-    }
-   ],
-   "leaves_by": {
-    "kind": "retraction",
-    "path": "docs/AGENTS.md",
-    "asserts": "the claims are removed from the docs -- or the dependency is added with a test that exercises an estimator from it"
-   }
-  },
-  {
-   "id": "rust-crates",
-   "status": "declared-not-implemented",
-   "capability": "Rust crates (cynepic-causal, cynepic-bayes) backing DAG operations and belief tracking",
-   "claimed_in": [
-    {
-     "at": "docs/AGENTS.md:51",
-     "says": "`cynepic-causal` crate (Rust) for DAG operations"
+      "id": "guardian-verdict-binding",
+      "status": "declared-not-implemented",
+      "capability": "Guardian verdicts that authorise exactly one write: bound to the object, single-use, unforgeable",
+      "claimed_in": [
+        {
+          "at": "docs/CYBERSECURITY.md:63",
+          "says": "Guardian verdict IDs are validated against the audit log before writes proceed"
+        },
+        {
+          "at": "docs/ADR-001-canonical-semantic-layer.md:81",
+          "says": "All verdicts are immutable once written"
+        }
+      ],
+      "reality": "The registry checks only that the verdict id exists in audit_log with verdict APPROVED: not that it was issued for this object or payload, not that it is unused, and it carries no signature -- one APPROVED row authorises any number of unrelated writes (replay), and anything that can insert into audit_log can mint one (forge).",
+      "evidence": [
+        {
+          "at": "backend/src/semantic_layer/registry.py:55",
+          "says": "async def _assert_verdict_approved("
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/guardian/test_verdict_binding.py",
+        "asserts": "a verdict issued for object A is refused for object B; a verdict is refused on second use; an audit_log row inserted without the issuer's key is refused"
+      }
     },
     {
-     "at": "docs/AGENTS.md:156",
-     "says": "cynepic-bayes Bayesian belief tracking"
+      "id": "guardian-check-always-rejects",
+      "status": "declared-not-implemented",
+      "capability": "API approval flow: POST /api/governance/check then POST /api/governance/approve",
+      "claimed_in": [
+        {
+          "at": "backend/src/api/governance.py:180",
+          "says": "The caller must supply a valid Guardian verdict_id (from a previous"
+        },
+        {
+          "at": "docs/CURRENT_STAGE.md@4e036a0:32",
+          "says": "Guardian approval workflow (DRAFT \u2192 UNDER_REVIEW \u2192 APPROVED \u2192 DEPRECATED)"
+        }
+      ],
+      "reality": "/check builds its EpistemicState with no Cynefin domain, which defaults to DISORDER, and Guardian rule PR-006 rejects every verdict in DISORDER -- so /check never returns APPROVED and /approve can never be satisfied through the API.",
+      "evidence": [
+        {
+          "at": "backend/src/api/governance.py:134",
+          "says": "state = EpistemicState("
+        },
+        {
+          "at": "backend/src/semantic_layer/models.py:681",
+          "says": "cynefin_domain: CynefinDomain = CynefinDomain.DISORDER"
+        },
+        {
+          "at": "backend/src/agents/governance.py:303",
+          "says": "if state.cynefin_domain == CynefinDomain.DISORDER:"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/integration/test_governance_approval_flow.py",
+        "asserts": "a compliant payload in a classified domain gets APPROVED from /check, and /approve with that verdict_id promotes the object"
+      }
     },
     {
-     "at": "docs/AGENTS.md:264",
-     "says": "`cynepic-causal` Rust crate"
-    }
-   ],
-   "reality": "This repository contains no Rust code and depends on no crate; the cynepic crates belong to separate projects that were inspiration only.",
-   "evidence": [
-    {
-     "at": "backend/src/agents/causal_discovery.py:312",
-     "says": "cynepic-causal Rust crate"
-    }
-   ],
-   "leaves_by": {
-    "kind": "retraction",
-    "path": "docs/AGENTS.md",
-    "asserts": "the crate references are removed from the docs and the docstrings that repeat them"
-   }
-  },
-  {
-   "id": "llm-routing-no-callers",
-   "status": "declared-not-implemented",
-   "capability": "Capability-based LLM routing used by the agents",
-   "claimed_in": [
-    {
-     "at": "docs/AGENTS.md:22",
-     "says": "Provider-agnostic LLM"
+      "id": "governance-reasons-not-stored",
+      "status": "declared-not-implemented",
+      "capability": "Approval notes and rejection reasons recorded in the audit trail",
+      "claimed_in": [
+        {
+          "at": "backend/src/api/governance.py:83",
+          "says": "notes: str | None = Field(None, description=\"Optional approval notes\")"
+        },
+        {
+          "at": "docs/UIX.md:127",
+          "says": "formally approve a proposed intervention with a reason attached, so the decision is recorded in the audit trail"
+        }
+      ],
+      "reality": "approve_object never passes the notes on, so they are discarded; a rejection's reason reaches audit_log only inside the SHA-256 payload_hash. No reason text is stored anywhere.",
+      "evidence": [
+        {
+          "at": "backend/src/api/governance.py:196",
+          "says": "await _registry.promote_to_approved("
+        },
+        {
+          "at": "backend/src/agents/governance.py:452",
+          "says": "(id, agent_id, action_type, payload_hash, guardian_verdict, "
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/integration/test_governance_reasons_recorded.py",
+        "asserts": "approve notes and reject reason are returned as text by GET /api/governance/audit-log for the decision's entry"
+      }
     },
     {
-     "at": "docs/AGENTS.md:613",
-     "says": "the LLM factory resolves capability → provider at runtime"
+      "id": "governance-reject-verdict-unchecked",
+      "status": "declared-not-implemented",
+      "capability": "Reject validates the Guardian verdict it is given",
+      "claimed_in": [
+        {
+          "at": "backend/src/api/governance.py:93",
+          "says": "description=\"ID of the Guardian REJECTED audit_log entry\""
+        }
+      ],
+      "reality": "RejectRequest requires verdict_id, but reject_object never reads it: any UUID is accepted.",
+      "evidence": [
+        {
+          "at": "backend/src/api/governance.py:226",
+          "says": "async def reject_object("
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/integration/test_governance_reject_verdict.py",
+        "asserts": "/reject with an unknown or non-REJECTED verdict_id is refused with a 4xx"
+      }
     },
     {
-     "at": "docs/AGENTS.md:623",
-     "says": "Routing is handled by `src/agents/llm_factory.py`"
-    }
-   ],
-   "reality": "get_llm has no call site outside its own docstring: no agent invokes an LLM, and every agent's reasoning is rule or heuristic code.",
-   "evidence": [
-    {
-     "at": "backend/src/agents/llm_factory.py:139",
-     "says": "def get_llm("
-    }
-   ],
-   "leaves_by": {
-    "kind": "test",
-    "path": "backend/tests/unit/test_llm_routing_used.py",
-    "asserts": "an agent path requests a capability through get_llm and its output depends on the (stubbed) model's reply"
-   }
-  },
-  {
-   "id": "guardian-verdict-binding",
-   "status": "declared-not-implemented",
-   "capability": "Guardian verdicts that authorise exactly one write: bound to the object, single-use, unforgeable",
-   "claimed_in": [
-    {
-     "at": "docs/CYBERSECURITY.md:63",
-     "says": "Guardian verdict IDs are validated against the audit log before writes proceed"
+      "id": "review-queue-risk-tier",
+      "status": "declared-not-implemented",
+      "capability": "Review queue ordered by risk tier, showing who submitted each item",
+      "claimed_in": [
+        {
+          "at": "backend/src/api/governance.py:299",
+          "says": "summary=\"List pending drafts ordered by risk tier\""
+        }
+      ],
+      "reality": "ReviewQueueItem carries no risk tier and no submitter, the queue is not ordered by risk, and the UI fills riskTier \"MEDIUM\" and submittedBy \"system\" for every item.",
+      "evidence": [
+        {
+          "at": "backend/src/api/governance.py:97",
+          "says": "class ReviewQueueItem(BaseModel):"
+        },
+        {
+          "at": "frontend/src/app/governance/page.tsx:238",
+          "says": "riskTier: \"MEDIUM\","
+        },
+        {
+          "at": "frontend/src/app/governance/page.tsx:239",
+          "says": "submittedBy: \"system\","
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/integration/test_review_queue_risk.py",
+        "asserts": "/review-queue returns risk_tier and submitted_by derived from each object and orders by risk tier"
+      }
     },
     {
-     "at": "docs/ADR-001-canonical-semantic-layer.md:81",
-     "says": "All verdicts are immutable once written"
-    }
-   ],
-   "reality": "The registry checks only that the verdict id exists in audit_log with verdict APPROVED: not that it was issued for this object or payload, not that it is unused, and it carries no signature -- one APPROVED row authorises any number of unrelated writes (replay), and anything that can insert into audit_log can mint one (forge).",
-   "evidence": [
-    {
-     "at": "backend/src/semantic_layer/registry.py:55",
-     "says": "async def _assert_verdict_approved("
-    }
-   ],
-   "leaves_by": {
-    "kind": "test",
-    "path": "backend/tests/guardian/test_verdict_binding.py",
-    "asserts": "a verdict issued for object A is refused for object B; a verdict is refused on second use; an audit_log row inserted without the issuer's key is refused"
-   }
-  },
-  {
-   "id": "guardian-check-always-rejects",
-   "status": "declared-not-implemented",
-   "capability": "API approval flow: POST /api/governance/check then POST /api/governance/approve",
-   "claimed_in": [
-    {
-     "at": "backend/src/api/governance.py:180",
-     "says": "The caller must supply a valid Guardian verdict_id (from a previous"
+      "id": "audit-log-limit-ignored",
+      "status": "declared-not-implemented",
+      "capability": "Audit-log requests bounded by the client's `limit`",
+      "claimed_in": [
+        {
+          "at": "frontend/src/lib/api.ts:230",
+          "says": "auditLog: (params?: { from?: string; to?: string; limit?: number })"
+        }
+      ],
+      "reality": "GET /api/governance/audit-log reads page and page_size; the client's `limit` query parameter is silently ignored and page_size defaults to 100.",
+      "evidence": [
+        {
+          "at": "backend/src/api/governance.py:347",
+          "says": "page_size: Annotated[int, Query(ge=1, le=500)] = 100,"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/integration/test_audit_log_paging.py",
+        "asserts": "the number of rows returned honours the limit the client sends (either the endpoint accepts `limit` or the client sends `page_size`)"
+      }
     },
     {
-     "at": "docs/CURRENT_STAGE.md@4e036a0:32",
-     "says": "Guardian approval workflow (DRAFT → UNDER_REVIEW → APPROVED → DEPRECATED)"
-    }
-   ],
-   "reality": "/check builds its EpistemicState with no Cynefin domain, which defaults to DISORDER, and Guardian rule PR-006 rejects every verdict in DISORDER -- so /check never returns APPROVED and /approve can never be satisfied through the API.",
-   "evidence": [
-    {
-     "at": "backend/src/api/governance.py:134",
-     "says": "state = EpistemicState("
+      "id": "provenance-store-no-callers",
+      "status": "declared-not-implemented",
+      "capability": "Provenance records written by real platform flows",
+      "claimed_in": [
+        {
+          "at": "docs/CURRENT_STAGE.md@4e036a0:33",
+          "says": "Append-only audit trail"
+        },
+        {
+          "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md:110",
+          "says": "`src/api/provenance.py` | Implemented"
+        }
+      ],
+      "reality": "store_provenance_record has no call site: nothing outside the tests writes a provenance record, so the provenance API serves only what tests put there.",
+      "evidence": [
+        {
+          "at": "backend/src/api/provenance.py:41",
+          "says": "def store_provenance_record(record: ProvenanceRecord) -> None:"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/integration/test_provenance_flow.py",
+        "asserts": "a real flow (e.g. POST /api/v1/session/run) produces a provenance record retrievable from the provenance API"
+      }
     },
     {
-     "at": "backend/src/semantic_layer/models.py:681",
-     "says": "cynefin_domain: CynefinDomain = CynefinDomain.DISORDER"
+      "id": "tla-spec-not-checked",
+      "status": "declared-not-implemented",
+      "capability": "TLA+ model of Guardian policy, model-checked in CI",
+      "claimed_in": [
+        {
+          "at": "docs/TESTING_CICD.md:584",
+          "says": "verified in CI via TLC model checker"
+        },
+        {
+          "at": "specs/guardian_policy.tla:5",
+          "says": "Critical safety properties verified by this spec"
+        }
+      ],
+      "reality": "No CI job runs TLC, and the spec cannot be checked as written: it uses Range, which none of its EXTENDS'd standard modules define, and Next quantifies over STRING, which TLC cannot enumerate.",
+      "evidence": [
+        {
+          "at": "specs/guardian_policy.tla:56",
+          "says": "Range(audit_log)"
+        },
+        {
+          "at": "specs/guardian_policy.tla:203",
+          "says": "id \\in STRING"
+        }
+      ],
+      "leaves_by": {
+        "kind": "ci-run",
+        "path": "specs/guardian_policy.tla",
+        "asserts": "a CI step runs TLC on specs/guardian_policy.tla with guardian_policy.cfg to completion with no violation, and a deliberately broken copy is rejected"
+      }
     },
     {
-     "at": "backend/src/agents/governance.py:303",
-     "says": "if state.cynefin_domain == CynefinDomain.DISORDER:"
-    }
-   ],
-   "leaves_by": {
-    "kind": "test",
-    "path": "backend/tests/integration/test_governance_approval_flow.py",
-    "asserts": "a compliant payload in a classified domain gets APPROVED from /check, and /approve with that verdict_id promotes the object"
-   }
-  },
-  {
-   "id": "governance-reasons-not-stored",
-   "status": "declared-not-implemented",
-   "capability": "Approval notes and rejection reasons recorded in the audit trail",
-   "claimed_in": [
-    {
-     "at": "backend/src/api/governance.py:83",
-     "says": "notes: str | None = Field(None, description=\"Optional approval notes\")"
+      "id": "neo4j-graph-store",
+      "status": "declared-not-implemented",
+      "capability": "Neo4j as the causal graph store (d-separation and backdoor-path queries)",
+      "claimed_in": [
+        {
+          "at": "docs/DATA_LAYER.md:251",
+          "says": "3.1 Neo4j (Graph Store)"
+        },
+        {
+          "at": "docs/DATA_LAYER.md:277",
+          "says": "d-separation query p95 < 50ms"
+        },
+        {
+          "at": "docs/CURRENT_STAGE.md@4e036a0:151",
+          "says": "Neo4j for causal graph storage"
+        }
+      ],
+      "reality": "The semantic layer (fragments, edges) is stored through SQLAlchemy (SQLite/PostgreSQL); Neo4j code exists only for the experience buffer and drift alerts, is exercised only against mocks, and no d-separation or path query runs in Neo4j.",
+      "evidence": [
+        {
+          "at": "backend/src/semantic_layer/registry.py:327",
+          "says": "FROM graph_fragments"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/integration/test_neo4j_live.py",
+        "asserts": "against a real Neo4j (the docker-compose service), the paths that claim Neo4j store and query what they claim to"
+      }
     },
     {
-     "at": "docs/UIX.md:127",
-     "says": "formally approve a proposed intervention with a reason attached, so the decision is recorded in the audit trail"
-    }
-   ],
-   "reality": "approve_object never passes the notes on, so they are discarded; a rejection's reason reaches audit_log only inside the SHA-256 payload_hash. No reason text is stored anywhere.",
-   "evidence": [
-    {
-     "at": "backend/src/api/governance.py:196",
-     "says": "await _registry.promote_to_approved("
+      "id": "kafka-streaming",
+      "status": "declared-not-implemented",
+      "capability": "Kafka event streaming (ingestion bus, alert emission)",
+      "claimed_in": [
+        {
+          "at": "docs/DATA_LAYER.md:10",
+          "says": "Ingestion Bus (Kafka)"
+        },
+        {
+          "at": "docs/DATA_LAYER.md:328",
+          "says": "3.3 Kafka (Event Streaming)"
+        },
+        {
+          "at": "docs/AGENTS.md:132",
+          "says": "Alert emission via Kafka ready for integration"
+        },
+        {
+          "at": "docs/QUICKSTART.md:93",
+          "says": "The platform requires PostgreSQL 16, Neo4j 5, Kafka (KRaft), and Redis."
+        }
+      ],
+      "reality": "No Kafka client is a dependency or imported anywhere; the connector base class carries a comment to replace its stub with a producer. docker-compose starts a broker nothing talks to.",
+      "evidence": [
+        {
+          "at": "backend/src/connectors/base.py:174",
+          "says": "Production: replace with confluent_kafka.Producer."
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/integration/test_kafka_live.py",
+        "asserts": "an alert produced by the platform is consumed from the broker"
+      }
     },
     {
-     "at": "backend/src/agents/governance.py:452",
-     "says": "(id, agent_id, action_type, payload_hash, guardian_verdict, "
-    }
-   ],
-   "leaves_by": {
-    "kind": "test",
-    "path": "backend/tests/integration/test_governance_reasons_recorded.py",
-    "asserts": "approve notes and reject reason are returned as text by GET /api/governance/audit-log for the decision's entry"
-   }
-  },
-  {
-   "id": "governance-reject-verdict-unchecked",
-   "status": "declared-not-implemented",
-   "capability": "Reject validates the Guardian verdict it is given",
-   "claimed_in": [
-    {
-     "at": "backend/src/api/governance.py:93",
-     "says": "description=\"ID of the Guardian REJECTED audit_log entry\""
-    }
-   ],
-   "reality": "RejectRequest requires verdict_id, but reject_object never reads it: any UUID is accepted.",
-   "evidence": [
-    {
-     "at": "backend/src/api/governance.py:226",
-     "says": "async def reject_object("
-    }
-   ],
-   "leaves_by": {
-    "kind": "test",
-    "path": "backend/tests/integration/test_governance_reject_verdict.py",
-    "asserts": "/reject with an unknown or non-REJECTED verdict_id is refused with a 4xx"
-   }
-  },
-  {
-   "id": "review-queue-risk-tier",
-   "status": "declared-not-implemented",
-   "capability": "Review queue ordered by risk tier, showing who submitted each item",
-   "claimed_in": [
-    {
-     "at": "backend/src/api/governance.py:299",
-     "says": "summary=\"List pending drafts ordered by risk tier\""
-    }
-   ],
-   "reality": "ReviewQueueItem carries no risk tier and no submitter, the queue is not ordered by risk, and the UI fills riskTier \"MEDIUM\" and submittedBy \"system\" for every item.",
-   "evidence": [
-    {
-     "at": "backend/src/api/governance.py:97",
-     "says": "class ReviewQueueItem(BaseModel):"
+      "id": "dag-workbench",
+      "status": "planned",
+      "capability": "Unified graph-authoring UI (DAG Workbench)",
+      "claimed_in": [
+        {
+          "at": "docs/CURRENT_STAGE.md@4e036a0:62",
+          "says": "Graph authoring UI (unified)"
+        }
+      ],
+      "reality": "Not built. The frontend has per-page components; no unified authoring surface exists.",
+      "evidence": [],
+      "leaves_by": {
+        "kind": "test",
+        "path": "frontend/e2e/workbench-authoring.spec.ts",
+        "asserts": "a user can propose a fragment, see Guardian's verdict, and submit it for approval from one surface"
+      }
     },
     {
-     "at": "frontend/src/app/governance/page.tsx:238",
-     "says": "riskTier: \"MEDIUM\","
+      "id": "kernel-triangulation-moderate-n",
+      "status": "partial",
+      "capability": "Triangulation flags outcome-model misspecification in causal-core",
+      "claimed_in": [
+        {
+          "at": "packages/causal-core/README.md:42",
+          "says": "Estimators that rest on different assumptions are compared"
+        }
+      ],
+      "reality": "Measured power against a planted misspecification that biases regression adjustment by ~0.16 (~1.2 SE of the difference): 0.035 at n=2,000 (reported), 1.00 at n=50,000 (gated). At moderate n, 'estimators agree' is weak evidence that a model is right.",
+      "evidence": [
+        {
+          "at": "benchmarks/t0/PRE-REGISTRATION.md:183",
+          "says": "Triangulation power at n = 2,000 failed"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "packages/causal-core/tests/t0/test_triangulation_power_moderate_n.py",
+        "asserts": "a pre-registered triangulation power >= 0.80 at n <= 5,000 against a planted misspecification, e.g. via an added specification test or flexible-learner arm"
+      }
     },
     {
-     "at": "frontend/src/app/governance/page.tsx:239",
-     "says": "submittedBy: \"system\","
-    }
-   ],
-   "leaves_by": {
-    "kind": "test",
-    "path": "backend/tests/integration/test_review_queue_risk.py",
-    "asserts": "/review-queue returns risk_tier and submitted_by derived from each object and orders by risk tier"
-   }
-  },
-  {
-   "id": "audit-log-limit-ignored",
-   "status": "declared-not-implemented",
-   "capability": "Audit-log requests bounded by the client's `limit`",
-   "claimed_in": [
-    {
-     "at": "frontend/src/lib/api.ts:230",
-     "says": "auditLog: (params?: { from?: string; to?: string; limit?: number })"
-    }
-   ],
-   "reality": "GET /api/governance/audit-log reads page and page_size; the client's `limit` query parameter is silently ignored and page_size defaults to 100.",
-   "evidence": [
-    {
-     "at": "backend/src/api/governance.py:347",
-     "says": "page_size: Annotated[int, Query(ge=1, le=500)] = 100,"
-    }
-   ],
-   "leaves_by": {
-    "kind": "test",
-    "path": "backend/tests/integration/test_audit_log_paging.py",
-    "asserts": "the number of rows returned honours the limit the client sends (either the endpoint accepts `limit` or the client sends `page_size`)"
-   }
-  },
-  {
-   "id": "provenance-store-no-callers",
-   "status": "declared-not-implemented",
-   "capability": "Provenance records written by real platform flows",
-   "claimed_in": [
-    {
-     "at": "docs/CURRENT_STAGE.md@4e036a0:33",
-     "says": "Append-only audit trail"
+      "id": "kernel-general-id-estimation",
+      "status": "declared-not-implemented",
+      "capability": "Estimation of effects identified only by the general ID algorithm (e.g. the napkin graph)",
+      "claimed_in": [
+        {
+          "at": "packages/causal-core/README.md:107",
+          "says": "Estimation for general ID functionals"
+        }
+      ],
+      "reality": "causal-core identifies such effects and returns the ID expression, then refuses with NO_ESTIMATOR: no estimator for arbitrary ID functionals exists.",
+      "evidence": [
+        {
+          "at": "packages/causal-core/tests/test_pipeline.py:1",
+          "says": "End-to-end behaviour of analyze()"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "packages/causal-core/tests/t0/test_general_id_estimation.py",
+        "asserts": "a napkin-graph estimation case in T0 with bias <= 3 MCSE and pre-registered coverage"
+      }
     },
     {
-     "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md:110",
-     "says": "`src/api/provenance.py` | Implemented"
-    }
-   ],
-   "reality": "store_provenance_record has no call site: nothing outside the tests writes a provenance record, so the provenance API serves only what tests put there.",
-   "evidence": [
-    {
-     "at": "backend/src/api/provenance.py:41",
-     "says": "def store_provenance_record(record: ProvenanceRecord) -> None:"
-    }
-   ],
-   "leaves_by": {
-    "kind": "test",
-    "path": "backend/tests/integration/test_provenance_flow.py",
-    "asserts": "a real flow (e.g. POST /api/v1/session/run) produces a provenance record retrievable from the provenance API"
-   }
-  },
-  {
-   "id": "tla-spec-not-checked",
-   "status": "declared-not-implemented",
-   "capability": "TLA+ model of Guardian policy, model-checked in CI",
-   "claimed_in": [
-    {
-     "at": "docs/TESTING_CICD.md:584",
-     "says": "verified in CI via TLC model checker"
+      "id": "kernel-methods-roadmap",
+      "status": "planned",
+      "capability": "causal-core methods beyond the current portfolio: nonparametric front-door, discovery, time series, anytime-valid sequential tests, interference-aware designs",
+      "claimed_in": [
+        {
+          "at": "packages/causal-core/README.md:109",
+          "says": "Nonparametric front-door"
+        },
+        {
+          "at": "packages/causal-core/README.md:110",
+          "says": "Discovery"
+        },
+        {
+          "at": "packages/causal-core/README.md:112",
+          "says": "Sequential (anytime-valid) tests"
+        }
+      ],
+      "reality": "Listed as not implemented in the package README; none of these exists in the kernel.",
+      "evidence": [
+        {
+          "at": "packages/causal-core/README.md:104",
+          "says": "Not implemented yet"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "packages/causal-core/tests/t0/test_methods_roadmap.py",
+        "asserts": "each method leaves this entry separately, with its own pre-registered T0 case and seeded defect"
+      }
     },
     {
-     "at": "specs/guardian_policy.tla:5",
-     "says": "Critical safety properties verified by this spec"
+      "id": "kernel-overlap-detection-limits",
+      "status": "partial",
+      "capability": "Positivity violations detected before estimation",
+      "claimed_in": [
+        {
+          "at": "packages/causal-core/README.md:40",
+          "says": "positivity and overlap"
+        }
+      ],
+      "reality": "The check reads a logistic propensity model. IHDP's by-construction overlap violation (all treated children of non-white mothers removed) was not detected from its 25 covariates in 100/100 realizations; the ATE was answered by extrapolation (coverage stayed >= 0.97).",
+      "evidence": [
+        {
+          "at": "benchmarks/t2-ihdp/PRE-REGISTRATION.md:103",
+          "says": "a refusal needs a detectable overlap violation"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "packages/causal-core/tests/bench/test_ihdp_overlap_refusal.py",
+        "asserts": "a pre-registered IHDP bar that the ATE is refused or flagged for the overlap violation, e.g. via a flexible or covariate-profile overlap check"
+      }
     }
-   ],
-   "reality": "No CI job runs TLC, and the spec cannot be checked as written: it uses Range, which none of its EXTENDS'd standard modules define, and Next quantifies over STRING, which TLC cannot enumerate.",
-   "evidence": [
+  ],
+  "left_the_list": [
     {
-     "at": "specs/guardian_policy.tla:56",
-     "says": "Range(audit_log)"
+      "id": "mcp-tools-crash-and-stdout-logging",
+      "was": "2 of 7 MCP tools raised TypeError (stdlib loggers called with structlog kwargs) and structlog wrote log lines to stdout, the stdio protocol channel",
+      "fixed_in": "6768cc6",
+      "pinned_by": "backend/tests/integration/test_mcp_stdio.py"
     },
     {
-     "at": "specs/guardian_policy.tla:203",
-     "says": "id \\in STRING"
-    }
-   ],
-   "leaves_by": {
-    "kind": "ci-run",
-    "path": "specs/guardian_policy.tla",
-    "asserts": "a CI step runs TLC on specs/guardian_policy.tla with guardian_policy.cfg to completion with no violation, and a deliberately broken copy is rejected"
-   }
-  },
-  {
-   "id": "neo4j-graph-store",
-   "status": "declared-not-implemented",
-   "capability": "Neo4j as the causal graph store (d-separation and backdoor-path queries)",
-   "claimed_in": [
-    {
-     "at": "docs/DATA_LAYER.md:251",
-     "says": "3.1 Neo4j (Graph Store)"
+      "id": "ui-fabricated-approvals",
+      "was": "the governance UI showed approvals and audit rows that no backend call had confirmed",
+      "fixed_in": "85fe619",
+      "pinned_by": "frontend/src/app/governance/__tests__/page.test.tsx"
     },
     {
-     "at": "docs/DATA_LAYER.md:277",
-     "says": "d-separation query p95 < 50ms"
+      "id": "causal-core",
+      "was": "planned: packages/causal-core -- identification before estimation, influence-function intervals, typed refusals, a claim contract and a pre-registered T0 correctness gate",
+      "fixed_in": "06fd061",
+      "pinned_by": "packages/causal-core/tests/t0/test_t0_gate.py",
+      "note": "The backend skills and the backend MCP server do not use it (packages/causal-mcp, a separate server, does), so the platform rows (intervals, identification, frontdoor, sensitivity) stay open until the backend does."
     },
     {
-     "at": "docs/CURRENT_STAGE.md@4e036a0:151",
-     "says": "Neo4j for causal graph storage"
-    }
-   ],
-   "reality": "The semantic layer (fragments, edges) is stored through SQLAlchemy (SQLite/PostgreSQL); Neo4j code exists only for the experience buffer and drift alerts, is exercised only against mocks, and no d-separation or path query runs in Neo4j.",
-   "evidence": [
-    {
-     "at": "backend/src/semantic_layer/registry.py:327",
-     "says": "FROM graph_fragments"
-    }
-   ],
-   "leaves_by": {
-    "kind": "test",
-    "path": "backend/tests/integration/test_neo4j_live.py",
-    "asserts": "against a real Neo4j (the docker-compose service), the paths that claim Neo4j store and query what they claim to"
-   }
-  },
-  {
-   "id": "kafka-streaming",
-   "status": "declared-not-implemented",
-   "capability": "Kafka event streaming (ingestion bus, alert emission)",
-   "claimed_in": [
-    {
-     "at": "docs/DATA_LAYER.md:10",
-     "says": "Ingestion Bus (Kafka)"
+      "id": "effect-estimate-unpinned",
+      "was": "partial: ATE point estimation (backdoor linear regression, IV) via DoWhy",
+      "fixed_in": "the backend rewire onto causal-core (git log -- backend/src/skills/_kernel.py)",
+      "pinned_by": "backend/tests/unit/test_effect_estimate.py",
+      "note": "Backend effect estimates now come from causal-core: identification from the fragment graph, design checks, IF-based intervals. Ground-truth bias and coverage are pinned by the kernel's T0 gate; the backend test pins that the skill returns the kernel's estimate and interval on simulated confounded data."
     },
     {
-     "at": "docs/DATA_LAYER.md:328",
-     "says": "3.3 Kafka (Event Streaming)"
+      "id": "confidence-interval-constant",
+      "was": "declared-not-implemented: Confidence intervals on effect estimates",
+      "fixed_in": "the backend rewire onto causal-core (git log -- backend/src/skills/_kernel.py)",
+      "pinned_by": "backend/tests/unit/test_effect_estimate.py",
+      "note": "No code path in backend/src returns a constant interval (scanned by test_no_code_path_returns_a_constant_interval). Intervals are causal-core's; their coverage is gated by T0 (pooled 94.9%) and the real-data benchmarks."
     },
     {
-     "at": "docs/AGENTS.md:132",
-     "says": "Alert emission via Kafka ready for integration"
+      "id": "frontdoor-estimation",
+      "was": "declared-not-implemented: Frontdoor identification and estimation",
+      "fixed_in": "the backend rewire onto causal-core (git log -- backend/src/skills/_kernel.py)",
+      "pinned_by": "packages/causal-core/tests/t0/test_t0_gate.py",
+      "note": "Strategy labels now come from causal-core's identification certificate, so a front-door label means front-door. Linear front-door estimation is gated by T0 (frontdoor_continuous). Reachable from the backend when a fragment node has no data column (it becomes latent)."
     },
     {
-     "at": "docs/QUICKSTART.md:93",
-     "says": "The platform requires PostgreSQL 16, Neo4j 5, Kafka (KRaft), and Redis."
-    }
-   ],
-   "reality": "No Kafka client is a dependency or imported anywhere; the connector base class carries a comment to replace its stub with a producer. docker-compose starts a broker nothing talks to.",
-   "evidence": [
-    {
-     "at": "backend/src/connectors/base.py:174",
-     "says": "Production: replace with confluent_kafka.Producer."
-    }
-   ],
-   "leaves_by": {
-    "kind": "test",
-    "path": "backend/tests/integration/test_kafka_live.py",
-    "asserts": "an alert produced by the platform is consumed from the broker"
-   }
-  },
-  {
-   "id": "dag-workbench",
-   "status": "planned",
-   "capability": "Unified graph-authoring UI (DAG Workbench)",
-   "claimed_in": [
-    {
-     "at": "docs/CURRENT_STAGE.md@4e036a0:62",
-     "says": "Graph authoring UI (unified)"
-    }
-   ],
-   "reality": "Not built. The frontend has per-page components; no unified authoring surface exists.",
-   "evidence": [],
-   "leaves_by": {
-    "kind": "test",
-    "path": "frontend/e2e/workbench-authoring.spec.ts",
-    "asserts": "a user can propose a fragment, see Guardian's verdict, and submit it for approval from one surface"
-   }
-  },
-  {
-   "id": "kernel-triangulation-moderate-n",
-   "status": "partial",
-   "capability": "Triangulation flags outcome-model misspecification in causal-core",
-   "claimed_in": [
-    {
-     "at": "packages/causal-core/README.md:42",
-     "says": "Estimators that rest on different assumptions are compared"
-    }
-   ],
-   "reality": "Measured power against a planted misspecification that biases regression adjustment by ~0.16 (~1.2 SE of the difference): 0.035 at n=2,000 (reported), 1.00 at n=50,000 (gated). At moderate n, 'estimators agree' is weak evidence that a model is right.",
-   "evidence": [
-    {
-     "at": "benchmarks/t0/PRE-REGISTRATION.md:183",
-     "says": "Triangulation power at n = 2,000 failed"
-    }
-   ],
-   "leaves_by": {
-    "kind": "test",
-    "path": "packages/causal-core/tests/t0/test_triangulation_power_moderate_n.py",
-    "asserts": "a pre-registered triangulation power >= 0.80 at n <= 5,000 against a planted misspecification, e.g. via an added specification test or flexible-learner arm"
-   }
-  },
-  {
-   "id": "kernel-general-id-estimation",
-   "status": "declared-not-implemented",
-   "capability": "Estimation of effects identified only by the general ID algorithm (e.g. the napkin graph)",
-   "claimed_in": [
-    {
-     "at": "packages/causal-core/README.md:107",
-     "says": "Estimation for general ID functionals"
-    }
-   ],
-   "reality": "causal-core identifies such effects and returns the ID expression, then refuses with NO_ESTIMATOR: no estimator for arbitrary ID functionals exists.",
-   "evidence": [
-    {
-     "at": "packages/causal-core/tests/test_pipeline.py:1",
-     "says": "End-to-end behaviour of analyze()"
-    }
-   ],
-   "leaves_by": {
-    "kind": "test",
-    "path": "packages/causal-core/tests/t0/test_general_id_estimation.py",
-    "asserts": "a napkin-graph estimation case in T0 with bias <= 3 MCSE and pre-registered coverage"
-   }
-  },
-  {
-   "id": "kernel-methods-roadmap",
-   "status": "planned",
-   "capability": "causal-core methods beyond the current portfolio: nonparametric front-door, discovery, time series, anytime-valid sequential tests, interference-aware designs",
-   "claimed_in": [
-    {
-     "at": "packages/causal-core/README.md:109",
-     "says": "Nonparametric front-door"
+      "id": "identification-heuristic",
+      "was": "declared-not-implemented: Causal identification (is the effect identifiable, by which strategy, with which adjustment set)",
+      "fixed_in": "the backend rewire onto causal-core (git log -- backend/src/skills/_kernel.py)",
+      "pinned_by": "backend/tests/unit/test_effect_estimate.py",
+      "note": "identification_check runs causal-core's identification (complete ID algorithm plus back-door/front-door/IV) on the fragment graph. The literature catalog and the y0 cross-check are gated by T0."
     },
     {
-     "at": "packages/causal-core/README.md:110",
-     "says": "Discovery"
-    },
-    {
-     "at": "packages/causal-core/README.md:112",
-     "says": "Sequential (anytime-valid) tests"
+      "id": "ci-pipeline-green",
+      "was": "partial: CI quality gates that block a merge",
+      "fixed_in": "32d0254 (the last of four fixes CI's own runs exposed)",
+      "pinned_by": ".github/workflows/ci.yml",
+      "note": "Run 35504722068 on main: 13 steps passed, 1 skipped (frontend eslint, which has no config), and the workflow's own check fails on any skip that is not named. The four runs before it failed on an unpinned mcp range, unpinned lint tools, a frontend typecheck reading a stale dist/, a coverage floor measured with a gitignored .env present, and FastAPI 0.141's lazy routers."
     }
-   ],
-   "reality": "Listed as not implemented in the package README; none of these exists in the kernel.",
-   "evidence": [
-    {
-     "at": "packages/causal-core/README.md:104",
-     "says": "Not implemented yet"
-    }
-   ],
-   "leaves_by": {
-    "kind": "test",
-    "path": "packages/causal-core/tests/t0/test_methods_roadmap.py",
-    "asserts": "each method leaves this entry separately, with its own pre-registered T0 case and seeded defect"
-   }
-  },
-  {
-   "id": "kernel-overlap-detection-limits",
-   "status": "partial",
-   "capability": "Positivity violations detected before estimation",
-   "claimed_in": [
-    {
-     "at": "packages/causal-core/README.md:40",
-     "says": "positivity and overlap"
-    }
-   ],
-   "reality": "The check reads a logistic propensity model. IHDP's by-construction overlap violation (all treated children of non-white mothers removed) was not detected from its 25 covariates in 100/100 realizations; the ATE was answered by extrapolation (coverage stayed >= 0.97).",
-   "evidence": [
-    {
-     "at": "benchmarks/t2-ihdp/PRE-REGISTRATION.md:103",
-     "says": "a refusal needs a detectable overlap violation"
-    }
-   ],
-   "leaves_by": {
-    "kind": "test",
-    "path": "packages/causal-core/tests/bench/test_ihdp_overlap_refusal.py",
-    "asserts": "a pre-registered IHDP bar that the ATE is refused or flagged for the overlap violation, e.g. via a flexible or covariate-profile overlap check"
-   }
-  }
- ],
- "left_the_list": [
-  {
-   "id": "mcp-tools-crash-and-stdout-logging",
-   "was": "2 of 7 MCP tools raised TypeError (stdlib loggers called with structlog kwargs) and structlog wrote log lines to stdout, the stdio protocol channel",
-   "fixed_in": "6768cc6",
-   "pinned_by": "backend/tests/integration/test_mcp_stdio.py"
-  },
-  {
-   "id": "ui-fabricated-approvals",
-   "was": "the governance UI showed approvals and audit rows that no backend call had confirmed",
-   "fixed_in": "85fe619",
-   "pinned_by": "frontend/src/app/governance/__tests__/page.test.tsx"
-  },
-  {
-   "id": "causal-core",
-   "was": "planned: packages/causal-core -- identification before estimation, influence-function intervals, typed refusals, a claim contract and a pre-registered T0 correctness gate",
-   "fixed_in": "06fd061",
-   "pinned_by": "packages/causal-core/tests/t0/test_t0_gate.py",
-   "note": "The backend skills and the backend MCP server do not use it (packages/causal-mcp, a separate server, does), so the platform rows (intervals, identification, frontdoor, sensitivity) stay open until the backend does."
-  },
-  {
-   "id": "effect-estimate-unpinned",
-   "was": "partial: ATE point estimation (backdoor linear regression, IV) via DoWhy",
-   "fixed_in": "the backend rewire onto causal-core (git log -- backend/src/skills/_kernel.py)",
-   "pinned_by": "backend/tests/unit/test_effect_estimate.py",
-   "note": "Backend effect estimates now come from causal-core: identification from the fragment graph, design checks, IF-based intervals. Ground-truth bias and coverage are pinned by the kernel's T0 gate; the backend test pins that the skill returns the kernel's estimate and interval on simulated confounded data."
-  },
-  {
-   "id": "confidence-interval-constant",
-   "was": "declared-not-implemented: Confidence intervals on effect estimates",
-   "fixed_in": "the backend rewire onto causal-core (git log -- backend/src/skills/_kernel.py)",
-   "pinned_by": "backend/tests/unit/test_effect_estimate.py",
-   "note": "No code path in backend/src returns a constant interval (scanned by test_no_code_path_returns_a_constant_interval). Intervals are causal-core's; their coverage is gated by T0 (pooled 94.9%) and the real-data benchmarks."
-  },
-  {
-   "id": "frontdoor-estimation",
-   "was": "declared-not-implemented: Frontdoor identification and estimation",
-   "fixed_in": "the backend rewire onto causal-core (git log -- backend/src/skills/_kernel.py)",
-   "pinned_by": "packages/causal-core/tests/t0/test_t0_gate.py",
-   "note": "Strategy labels now come from causal-core's identification certificate, so a front-door label means front-door. Linear front-door estimation is gated by T0 (frontdoor_continuous). Reachable from the backend when a fragment node has no data column (it becomes latent)."
-  },
-  {
-   "id": "identification-heuristic",
-   "was": "declared-not-implemented: Causal identification (is the effect identifiable, by which strategy, with which adjustment set)",
-   "fixed_in": "the backend rewire onto causal-core (git log -- backend/src/skills/_kernel.py)",
-   "pinned_by": "backend/tests/unit/test_effect_estimate.py",
-   "note": "identification_check runs causal-core's identification (complete ID algorithm plus back-door/front-door/IV) on the fragment graph. The literature catalog and the y0 cross-check are gated by T0."
-  },
-  {
-   "id": "ci-pipeline-green",
-   "was": "partial: CI quality gates that block a merge",
-   "fixed_in": "32d0254 (the last of four fixes CI's own runs exposed)",
-   "pinned_by": ".github/workflows/ci.yml",
-   "note": "Run 35504722068 on main: 13 steps passed, 1 skipped (frontend eslint, which has no config), and the workflow's own check fails on any skip that is not named. The four runs before it failed on an unpinned mcp range, unpinned lint tools, a frontend typecheck reading a stale dist/, a coverage floor measured with a gitignored .env present, and FastAPI 0.141's lazy routers."
-  }
- ]
+  ]
 }

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "causal-core"
-version = "0.2.0"
+version = "0.3.0"
 description = "Causal inference kernel that identifies before it estimates, abstains when it cannot, and proves every number it returns."
 readme = "README.md"
 requires-python = ">=3.11"

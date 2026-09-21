@@ -26,7 +26,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
-CONTRACT_VERSION = "0.2.0"
+CONTRACT_VERSION = "0.3.0"
 
 
 class _Model(BaseModel):
@@ -294,6 +294,12 @@ class Diagnostics(_Model):
     treatment_kind: Literal["binary", "continuous"]
     n_treated: int | None = None
     n_control: int | None = None
+    outcome_sd: float | None = Field(
+        default=None,
+        description="Standard deviation of the outcome on the analysed rows. Reported because "
+        "sizing a follow-up experiment needs it, and because an effect is only interpretable "
+        "against the outcome's spread.",
+    )
     propensity: PropensityDiagnostics | None = None
     balance: tuple[BalanceRow, ...] = ()
     srm_p_value: float | None = None

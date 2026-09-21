@@ -1,5 +1,125 @@
 {
   "$defs": {
+    "Abstention": {
+      "additionalProperties": false,
+      "properties": {
+        "certificate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IdentificationCertificate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "detail": {
+          "title": "Detail",
+          "type": "string"
+        },
+        "diagnostics": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Diagnostics"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "kind": {
+          "const": "refusal",
+          "default": "refusal",
+          "title": "Kind",
+          "type": "string"
+        },
+        "missing_information": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Missing Information",
+          "type": "array"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "query": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CausalQuery"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "reason": {
+          "$ref": "#/$defs/AbstentionReason"
+        }
+      },
+      "required": [
+        "reason",
+        "detail",
+        "provenance"
+      ],
+      "title": "Abstention",
+      "type": "object"
+    },
+    "AbstentionReason": {
+      "enum": [
+        "NON_IDENTIFIABLE",
+        "POSITIVITY",
+        "LOW_N",
+        "UNAPPROVED_ASSUMPTION",
+        "CI_TOO_WIDE",
+        "DESIGN_CHECK_FAILED",
+        "RUNG_MISMATCH",
+        "INVALID_ADJUSTMENT_SET",
+        "WEAK_INSTRUMENT",
+        "NO_ESTIMATOR",
+        "INVALID_INPUT"
+      ],
+      "title": "AbstentionReason",
+      "type": "string"
+    },
+    "ApparatusFailure": {
+      "additionalProperties": false,
+      "properties": {
+        "detail": {
+          "title": "Detail",
+          "type": "string"
+        },
+        "error_type": {
+          "title": "Error Type",
+          "type": "string"
+        },
+        "kind": {
+          "const": "apparatus_failure",
+          "default": "apparatus_failure",
+          "title": "Kind",
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "stage": {
+          "title": "Stage",
+          "type": "string"
+        }
+      },
+      "required": [
+        "stage",
+        "error_type",
+        "detail",
+        "provenance"
+      ],
+      "title": "ApparatusFailure",
+      "type": "object"
+    },
     "BalanceRow": {
       "additionalProperties": false,
       "properties": {
@@ -184,6 +304,112 @@
       "title": "CausalQuery",
       "type": "object"
     },
+    "CausalResult": {
+      "additionalProperties": false,
+      "properties": {
+        "certificate": {
+          "$ref": "#/$defs/IdentificationCertificate"
+        },
+        "claims": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Claim"
+          },
+          "title": "Claims",
+          "type": "array"
+        },
+        "diagnostics": {
+          "$ref": "#/$defs/Diagnostics"
+        },
+        "estimates": {
+          "items": {
+            "$ref": "#/$defs/EstimateRecord"
+          },
+          "title": "Estimates",
+          "type": "array"
+        },
+        "kind": {
+          "const": "result",
+          "default": "result",
+          "title": "Kind",
+          "type": "string"
+        },
+        "primary": {
+          "$ref": "#/$defs/EstimateRecord"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "query": {
+          "$ref": "#/$defs/CausalQuery"
+        },
+        "refutations": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RefutationResult"
+          },
+          "title": "Refutations",
+          "type": "array"
+        },
+        "result_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "sha256 of the JCS form of this object without this field.",
+          "title": "Result Digest"
+        },
+        "sensitivity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Sensitivity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "$ref": "#/$defs/ResultStatus"
+        },
+        "triangulation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Triangulation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "warnings": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "status",
+        "query",
+        "certificate",
+        "primary",
+        "estimates",
+        "diagnostics",
+        "provenance"
+      ],
+      "title": "CausalResult",
+      "type": "object"
+    },
     "Claim": {
       "additionalProperties": false,
       "description": "A number that may appear in prose, bound to the field it came from.\n\nNarratives reference claims as ``\u27e6claim:<id>\u27e7``; the renderer substitutes\n``text`` and the verifier rejects any number in the prose that is not a claim.",
@@ -350,6 +576,19 @@
         "n_used": {
           "title": "N Used",
           "type": "integer"
+        },
+        "outcome_sd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Standard deviation of the outcome on the analysed rows. Reported because sizing a follow-up experiment needs it, and because an effect is only interpretable against the outcome's spread.",
+          "title": "Outcome Sd"
         },
         "propensity": {
           "anyOf": [
@@ -1005,110 +1244,25 @@
       "type": "object"
     }
   },
-  "$id": "urn:causalplatform:claims:0.2.0:causal_result",
+  "$id": "urn:causalplatform:claims:0.3.0:outcome",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "additionalProperties": false,
-  "properties": {
-    "certificate": {
-      "$ref": "#/$defs/IdentificationCertificate"
+  "discriminator": {
+    "mapping": {
+      "apparatus_failure": "#/$defs/ApparatusFailure",
+      "refusal": "#/$defs/Abstention",
+      "result": "#/$defs/CausalResult"
     },
-    "claims": {
-      "default": [],
-      "items": {
-        "$ref": "#/$defs/Claim"
-      },
-      "title": "Claims",
-      "type": "array"
-    },
-    "diagnostics": {
-      "$ref": "#/$defs/Diagnostics"
-    },
-    "estimates": {
-      "items": {
-        "$ref": "#/$defs/EstimateRecord"
-      },
-      "title": "Estimates",
-      "type": "array"
-    },
-    "kind": {
-      "const": "result",
-      "default": "result",
-      "title": "Kind",
-      "type": "string"
-    },
-    "primary": {
-      "$ref": "#/$defs/EstimateRecord"
-    },
-    "provenance": {
-      "$ref": "#/$defs/Provenance"
-    },
-    "query": {
-      "$ref": "#/$defs/CausalQuery"
-    },
-    "refutations": {
-      "default": [],
-      "items": {
-        "$ref": "#/$defs/RefutationResult"
-      },
-      "title": "Refutations",
-      "type": "array"
-    },
-    "result_digest": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "description": "sha256 of the JCS form of this object without this field.",
-      "title": "Result Digest"
-    },
-    "sensitivity": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/Sensitivity"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null
-    },
-    "status": {
-      "$ref": "#/$defs/ResultStatus"
-    },
-    "triangulation": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/Triangulation"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null
-    },
-    "warnings": {
-      "default": [],
-      "items": {
-        "type": "string"
-      },
-      "title": "Warnings",
-      "type": "array"
-    }
+    "propertyName": "kind"
   },
-  "required": [
-    "status",
-    "query",
-    "certificate",
-    "primary",
-    "estimates",
-    "diagnostics",
-    "provenance"
-  ],
-  "title": "CausalResult",
-  "type": "object"
+  "oneOf": [
+    {
+      "$ref": "#/$defs/CausalResult"
+    },
+    {
+      "$ref": "#/$defs/Abstention"
+    },
+    {
+      "$ref": "#/$defs/ApparatusFailure"
+    }
+  ]
 }

@@ -250,6 +250,7 @@ def prepare(
             treatment_kind=kind,
             n_treated=n_treated,
             n_control=n_control,
+            outcome_sd=float(np.std(yv, ddof=1)) if n > 1 else None,
             propensity=propensity,
             balance=tuple(balance),
             srm_p_value=srm_p,
