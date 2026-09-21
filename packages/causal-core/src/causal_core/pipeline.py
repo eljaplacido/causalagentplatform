@@ -163,6 +163,28 @@ def _triangulate(fits: list[Fit], alpha: float) -> Triangulation | None:
     )
 
 
+def _frame_diagnostics(frame: pd.DataFrame, query: CausalQuery) -> Diagnostics | None:
+    """What can honestly be said about the data when no estimate was produced.
+
+    A refusal that reports the outcome's spread can be turned into a sized experiment;
+    one that does not leaves the caller guessing at the only number that sizing needs.
+    None of this depends on identification, so it is available even when identification
+    is what failed. ``n_used`` is 0 because nothing was analysed.
+    """
+    try:
+        y = pd.to_numeric(frame[query.outcome], errors="coerce").to_numpy(dtype=float)
+        y = y[np.isfinite(y)]
+        levels = frame[query.treatment].nunique(dropna=True)
+        return Diagnostics(
+            n_rows=int(len(frame)),
+            n_used=0,
+            treatment_kind="binary" if levels <= 2 else "continuous",
+            outcome_sd=float(np.std(y, ddof=1)) if y.size > 1 else None,
+        )
+    except Exception:  # noqa: BLE001 - diagnostics must never turn a refusal into a crash
+        return None
+
+
 def analyze(
     data: Any,
     graph: CausalGraph | str | Any,
@@ -297,6 +319,7 @@ def _analyze(
             f"the graph contains edges that have not been reviewed: {unreviewed}",
             ("approve or refute each proposed edge (data test, experiment or human sign-off)",),
             q=query,
+            diag=_frame_diagnostics(frame, query),
         )
     refuted: list[str] = [g.edge_label(e) for e in spec.edges if e.status is EdgeStatus.refuted]
     if refuted:
@@ -323,7 +346,13 @@ def _analyze(
             if exc.suggestion is not None
             else ("no valid adjustment set exists among the measured variables",)
         )
-        return refuse(AbstentionReason.INVALID_ADJUSTMENT_SET, exc.detail, fix, q=query)
+        return refuse(
+            AbstentionReason.INVALID_ADJUSTMENT_SET,
+            exc.detail,
+            fix,
+            q=query,
+            diag=_frame_diagnostics(frame, query),
+        )
     except IdentificationInconsistency:
         raise
     if cert.status is IdentificationStatus.not_identified:
@@ -334,6 +363,7 @@ def _analyze(
             missing_information(g, query.treatment, query.outcome),
             q=query,
             cert=cert,
+            diag=_frame_diagnostics(frame, query),
         )
 
     # ── design ───────────────────────────────────────────────────────────────
