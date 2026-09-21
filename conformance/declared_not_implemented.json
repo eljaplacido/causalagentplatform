@@ -514,7 +514,7 @@
           "says": "**Outcome capture and calibration.** Compare predicted with realized effects; publish regret and"
         },
         {
-          "at": "packages/causal-decision/README.md:138",
+          "at": "packages/causal-decision/README.md:165",
           "says": "**Calibrate.** Whether actions taken under `act` produced the predicted effect needs the"
         }
       ],
@@ -529,6 +529,29 @@
         "kind": "test",
         "path": "packages/causal-decision/tests/d0/test_calibration.py",
         "asserts": "predicted and realized effects are compared over recorded decisions, with a pre-registered calibration bar and a seeded defect that breaks it"
+      }
+    },
+    {
+      "id": "decision-ledger-not-persisted",
+      "status": "partial",
+      "capability": "Decision records persisted, served and anchored by the platform",
+      "claimed_in": [
+        {
+          "at": "docs/ROADMAP.md:42",
+          "says": "**Evidence record and assumption registry.**"
+        }
+      ],
+      "reality": "causal_decision.ledger builds and verifies the chain in memory, with tests for an edited, removed and reordered entry. Nothing in the platform writes a record, serves one, or anchors a head digest anywhere the writer does not control -- so today the chain proves internal consistency of a list somebody is already holding.",
+      "evidence": [
+        {
+          "at": "packages/causal-decision/src/causal_decision/ledger.py:17",
+          "says": "Everything here is pure. No clock (the caller supplies the timestamp), no store,"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/integration/test_decision_ledger.py",
+        "asserts": "a decision made through the platform is persisted, returned by an endpoint, and verifies as a chain across process restarts"
       }
     }
   ],

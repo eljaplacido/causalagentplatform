@@ -110,6 +110,31 @@ minimum worthwhile effect and the outcome's spread, an estimated duration from t
 and guardrails. If no experiment is possible (`can_randomize=False`, or the policy says so), the
 open question goes to a person rather than quietly becoming an action.
 
+## Keeping the decision
+
+A verdict nobody kept is advice. `causal_decision.ledger` seals each decision into a hash chain:
+the decision itself, digests of the evidence it rested on (result, graph, data, contract version),
+the approval that let it happen, and the digest of the entry before it.
+
+```python
+from causal_decision.ledger import append, verify_chain
+
+record = append(tail, decision, outcome, recorded_at=now, approval=approval, executed=True)
+verify_chain(records)   # ok, or exactly which entry stopped holding and why
+```
+
+`decide` is pure, so a recorded decision can be re-run and compared digest to digest — which is
+what makes it disputable rather than merely stored. A decision to act and an action taken are kept
+as separate facts (`verdict` and `executed`), because conflating them is how a ledger comes to
+overstate what happened.
+
+**What the chain does not do.** It makes tampering *detectable*, not impossible: anyone who can
+rewrite the store can rewrite the chain from the altered entry onward, and it will verify again.
+There is a test that does exactly that and asserts it verifies. Detection becomes prevention only
+when the head digest is anchored somewhere the writer does not control — an append-only table, a
+countersignature, another party's copy — which is a deployment decision, so the chain reports its
+head and leaves the anchoring to you.
+
 ## Evidence
 
 The D0 gate is pre-registered in `benchmarks/d0-decision-policy/PRE-REGISTRATION.md`, with bars
@@ -124,6 +149,8 @@ fixed before the first run, and runs on every change (`pytest -m d0`):
   verifies against the analysis.
 - **6 seeded defects** each make the gate fail, including the dangerous one: reading a contested
   result as if it were supported.
+- **The record's own tests** cover an entry edited, removed and reordered — each caught, each
+  located by index — plus the limit above.
 
 The first run failed twice, both times on faults in the procedure rather than the bars. Both are
 written up in the pre-registration and the failing behaviours are pinned by tests.

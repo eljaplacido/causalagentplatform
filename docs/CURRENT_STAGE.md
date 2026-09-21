@@ -53,6 +53,8 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 | `causal-decision`: an unsettled question returns the experiment that would settle it (randomized units, size, duration, guardrails) | `implemented` | [packages/causal-decision/tests/test_policy.py](../packages/causal-decision/tests/test_policy.py) | Sized from the outcome's spread and the minimum worthwhile effect |
 | `causal-decision`: every verdict's prose verifies against the analysis that produced it | `implemented` | [packages/causal-decision/tests/test_render.py](../packages/causal-decision/tests/test_render.py) | Unverifiable prose raises rather than prints |
 | `causal_decide` over MCP: analysis and verdict in one call, so the evidence cannot change in between | `implemented` | [packages/causal-mcp/tests/test_decision_tool.py](../packages/causal-mcp/tests/test_decision_tool.py) | Optional extra `causal-mcp[decision]`; annotated read-only |
+| `causal-decision`: a decision is sealed into a hash chain with the evidence and approval behind it, and an edited, removed or reordered entry is detected and located | `implemented` | [packages/causal-decision/tests/test_ledger.py](../packages/causal-decision/tests/test_ledger.py) | Detects tampering; does not prevent it — anchoring the head digest is a deployment decision |
+| Decision records persisted by the platform | `partial` | [dni:decision-ledger-not-persisted](../conformance/declared_not_implemented.json) | The chain is in-memory only; nothing stores or serves it |
 | Calibration: were the actions taken under `act` right? | `planned` | [dni:decision-calibration](../conformance/declared_not_implemented.json) | No outcome capture; verdicts are consistent, not yet calibrated |
 
 ### Governance
