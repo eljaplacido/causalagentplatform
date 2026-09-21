@@ -23,10 +23,11 @@
     "  ruff 451 -> 442, mypy 46 -> 40.",
     "",
     "The args are the SAME ones the tool runs with here and in .gnomon/ci.sh, so the",
-    "number and the command that produced it cannot drift apart."
+    "number and the command that produced it cannot drift apart.",
+    "2026-09-21: 442 -> 441 after the verdict-binding change. The new code is clean; the net gain is two import-order findings fixed in files it touched."
   ],
   "ruff": {
-    "max_findings": 442,
+    "max_findings": 441,
     "measured_with": "ruff 0.15.12",
     "cwd": "backend",
     "args": [

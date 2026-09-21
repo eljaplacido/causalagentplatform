@@ -13,7 +13,7 @@ This page replaces an earlier version that marked "Phase 1" finished. A Septembe
 - **What is still heuristic, and labelled so.** `counterfactual_reason` and `intervention_estimate` return triage scores with `heuristic: true` and a caveat. No counterfactual is computed. Rosenbaum bounds and discovery are not implemented.
 - **The kernel's own limits** are on the register too: triangulation at moderate n, overlap detection and general-ID estimation.
 - **LLMs.** No LLM is called anywhere. The agents are rule-based code.
-- **Governance.** The registry refuses writes that lack an APPROVED verdict. Verdicts are not tied to one object, can be reused, and are not signed. `POST /api/governance/check` can never return APPROVED, so the approval flow cannot complete through the API.
+- **Governance.** A Guardian verdict now authorises exactly one write: it is signed by the issuer, names the object it was issued for, and is spent on use, so it cannot be forged by inserting a row, replayed against a second write, or pointed at a different object. The `/check` → `/approve` flow completes through the API when the caller classifies the situation; an unclassified one is still refused by PR-006. Still open: approving an *intervention* needs no governance role, and the `audit_write` skill lets an agent name its own verdict — neither can authorise a semantic write any more, but both are on the register.
 - **Gates.** `.gnomon/ci.sh` is the gate, and GitHub Actions runs that same script: green on `main` (run 35504722068, 13 steps passed, 1 named skip). The workflow fails on any skipped step it has not named, so a broken environment cannot read as a pass.
 
 ## Status
@@ -60,8 +60,10 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 | Capability | Status | Evidence | Note |
 |---|---|---|---|
 | Registry writes refused without an APPROVED `audit_log` verdict | `implemented` | [backend/tests/guardian/test_guardian_bypass.py](../backend/tests/guardian/test_guardian_bypass.py) | Existence and status only; see next row |
-| Verdicts bound to one object, single-use, unforgeable | `declared-not-implemented` | [dni:guardian-verdict-binding](../conformance/declared_not_implemented.json) | Replayable and forgeable |
-| API approval flow (`/check`, then `/approve`) | `declared-not-implemented` | [dni:guardian-check-always-rejects](../conformance/declared_not_implemented.json) | `/check` always REJECTED (PR-006) |
+| Verdicts bound to one object, single-use, unforgeable | `implemented` | [backend/tests/guardian/test_verdict_binding.py](../backend/tests/guardian/test_verdict_binding.py) | HMAC-signed claim naming the subject; spent by insert into `verdict_consumption` |
+| API approval flow (`/check`, then `/approve`) | `implemented` | [backend/tests/integration/test_governance_approval_flow.py](../backend/tests/integration/test_governance_approval_flow.py) | A classified, compliant payload is APPROVED; unclassified is still PR-006 REJECTED |
+| Intervention approval restricted to governance roles | `declared-not-implemented` | [dni:intervention-approval-no-role](../conformance/declared_not_implemented.json) | Any authenticated user can approve an intervention |
+| Agents cannot choose their own Guardian verdict | `declared-not-implemented` | [dni:guardian-audit-write-skill](../conformance/declared_not_implemented.json) | The `audit_write` skill takes the verdict from its inputs |
 | Approval notes and rejection reasons stored as text | `declared-not-implemented` | [dni:governance-reasons-not-stored](../conformance/declared_not_implemented.json) | Only a payload hash survives |
 | `/reject` validates the verdict it is given | `declared-not-implemented` | [dni:governance-reject-verdict-unchecked](../conformance/declared_not_implemented.json) | Any UUID accepted |
 | Review queue risk tier and submitter | `declared-not-implemented` | [dni:review-queue-risk-tier](../conformance/declared_not_implemented.json) | UI shows MEDIUM / "system" |

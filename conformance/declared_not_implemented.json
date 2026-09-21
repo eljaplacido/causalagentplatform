@@ -209,74 +209,12 @@
       }
     },
     {
-      "id": "guardian-verdict-binding",
-      "status": "declared-not-implemented",
-      "capability": "Guardian verdicts that authorise exactly one write: bound to the object, single-use, unforgeable",
-      "claimed_in": [
-        {
-          "at": "docs/CYBERSECURITY.md:63",
-          "says": "Guardian verdict IDs are validated against the audit log before writes proceed"
-        },
-        {
-          "at": "docs/ADR-001-canonical-semantic-layer.md:81",
-          "says": "All verdicts are immutable once written"
-        }
-      ],
-      "reality": "The registry checks only that the verdict id exists in audit_log with verdict APPROVED: not that it was issued for this object or payload, not that it is unused, and it carries no signature -- one APPROVED row authorises any number of unrelated writes (replay), and anything that can insert into audit_log can mint one (forge).",
-      "evidence": [
-        {
-          "at": "backend/src/semantic_layer/registry.py:55",
-          "says": "async def _assert_verdict_approved("
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/guardian/test_verdict_binding.py",
-        "asserts": "a verdict issued for object A is refused for object B; a verdict is refused on second use; an audit_log row inserted without the issuer's key is refused"
-      }
-    },
-    {
-      "id": "guardian-check-always-rejects",
-      "status": "declared-not-implemented",
-      "capability": "API approval flow: POST /api/governance/check then POST /api/governance/approve",
-      "claimed_in": [
-        {
-          "at": "backend/src/api/governance.py:180",
-          "says": "The caller must supply a valid Guardian verdict_id (from a previous"
-        },
-        {
-          "at": "docs/CURRENT_STAGE.md@4e036a0:32",
-          "says": "Guardian approval workflow (DRAFT \u2192 UNDER_REVIEW \u2192 APPROVED \u2192 DEPRECATED)"
-        }
-      ],
-      "reality": "/check builds its EpistemicState with no Cynefin domain, which defaults to DISORDER, and Guardian rule PR-006 rejects every verdict in DISORDER -- so /check never returns APPROVED and /approve can never be satisfied through the API.",
-      "evidence": [
-        {
-          "at": "backend/src/api/governance.py:134",
-          "says": "state = EpistemicState("
-        },
-        {
-          "at": "backend/src/semantic_layer/models.py:681",
-          "says": "cynefin_domain: CynefinDomain = CynefinDomain.DISORDER"
-        },
-        {
-          "at": "backend/src/agents/governance.py:303",
-          "says": "if state.cynefin_domain == CynefinDomain.DISORDER:"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/integration/test_governance_approval_flow.py",
-        "asserts": "a compliant payload in a classified domain gets APPROVED from /check, and /approve with that verdict_id promotes the object"
-      }
-    },
-    {
       "id": "governance-reasons-not-stored",
       "status": "declared-not-implemented",
       "capability": "Approval notes and rejection reasons recorded in the audit trail",
       "claimed_in": [
         {
-          "at": "backend/src/api/governance.py:83",
+          "at": "backend/src/api/governance.py:106",
           "says": "notes: str | None = Field(None, description=\"Optional approval notes\")"
         },
         {
@@ -287,11 +225,11 @@
       "reality": "approve_object never passes the notes on, so they are discarded; a rejection's reason reaches audit_log only inside the SHA-256 payload_hash. No reason text is stored anywhere.",
       "evidence": [
         {
-          "at": "backend/src/api/governance.py:196",
+          "at": "backend/src/api/governance.py:230",
           "says": "await _registry.promote_to_approved("
         },
         {
-          "at": "backend/src/agents/governance.py:452",
+          "at": "backend/src/agents/governance.py:489",
           "says": "(id, agent_id, action_type, payload_hash, guardian_verdict, "
         }
       ],
@@ -307,14 +245,14 @@
       "capability": "Reject validates the Guardian verdict it is given",
       "claimed_in": [
         {
-          "at": "backend/src/api/governance.py:93",
+          "at": "backend/src/api/governance.py:116",
           "says": "description=\"ID of the Guardian REJECTED audit_log entry\""
         }
       ],
       "reality": "RejectRequest requires verdict_id, but reject_object never reads it: any UUID is accepted.",
       "evidence": [
         {
-          "at": "backend/src/api/governance.py:226",
+          "at": "backend/src/api/governance.py:260",
           "says": "async def reject_object("
         }
       ],
@@ -330,14 +268,14 @@
       "capability": "Review queue ordered by risk tier, showing who submitted each item",
       "claimed_in": [
         {
-          "at": "backend/src/api/governance.py:299",
+          "at": "backend/src/api/governance.py:333",
           "says": "summary=\"List pending drafts ordered by risk tier\""
         }
       ],
       "reality": "ReviewQueueItem carries no risk tier and no submitter, the queue is not ordered by risk, and the UI fills riskTier \"MEDIUM\" and submittedBy \"system\" for every item.",
       "evidence": [
         {
-          "at": "backend/src/api/governance.py:97",
+          "at": "backend/src/api/governance.py:120",
           "says": "class ReviewQueueItem(BaseModel):"
         },
         {
@@ -368,7 +306,7 @@
       "reality": "GET /api/governance/audit-log reads page and page_size; the client's `limit` query parameter is silently ignored and page_size defaults to 100.",
       "evidence": [
         {
-          "at": "backend/src/api/governance.py:347",
+          "at": "backend/src/api/governance.py:381",
           "says": "page_size: Annotated[int, Query(ge=1, le=500)] = 100,"
         }
       ],
@@ -457,7 +395,7 @@
       "reality": "The semantic layer (fragments, edges) is stored through SQLAlchemy (SQLite/PostgreSQL); Neo4j code exists only for the experience buffer and drift alerts, is exercised only against mocks, and no d-separation or path query runs in Neo4j.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:327",
+          "at": "backend/src/semantic_layer/registry.py:410",
           "says": "FROM graph_fragments"
         }
       ],
@@ -646,6 +584,52 @@
         "path": "packages/causal-decision/tests/d0/test_calibration.py",
         "asserts": "predicted and realized effects are compared over recorded decisions, with a pre-registered calibration bar and a seeded defect that breaks it"
       }
+    },
+    {
+      "id": "intervention-approval-no-role",
+      "status": "declared-not-implemented",
+      "capability": "Intervention approval restricted to governance roles",
+      "claimed_in": [
+        {
+          "at": "docs/CYBERSECURITY.md:70",
+          "says": "RBAC enforced at API layer, database layer, and semantic layer"
+        }
+      ],
+      "reality": "POST /api/v1/interventions/{id}/approve depends on get_current_user only, with no require_role, so any authenticated user can approve an intervention -- and doing so hand-writes an APPROVED row into audit_log. That row can no longer authorise a semantic-layer write (it is unsigned; see guardian-verdict-binding in left_the_list), but the intervention itself is approved by someone who may hold no governance role.",
+      "evidence": [
+        {
+          "at": "backend/src/api/interventions.py:437",
+          "says": "user: dict[str, Any] = Depends(get_current_user),"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/integration/test_intervention_approval_role.py",
+        "asserts": "approving an intervention without a governance role is refused with 403"
+      }
+    },
+    {
+      "id": "guardian-audit-write-skill",
+      "status": "declared-not-implemented",
+      "capability": "Agents cannot choose their own Guardian verdict",
+      "claimed_in": [
+        {
+          "at": "docs/AGENTS.md:19",
+          "says": "Every agent output passes the Guardian policy engine before persistence."
+        }
+      ],
+      "reality": "GovernanceAgent._execute_skill exposes an `audit_write` skill whose verdict comes from its own inputs, defaulting to APPROVED: an agent calling it writes whatever verdict it likes into audit_log. The row cannot authorise a semantic write (it is signed for no subject), but it still enters the audit trail as though the Guardian had ruled.",
+      "evidence": [
+        {
+          "at": "backend/src/agents/governance.py:558",
+          "says": "verdict=GuardianVerdict(inputs.get(\"verdict\", \"APPROVED\")),"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/guardian/test_audit_write_skill.py",
+        "asserts": "the audit_write skill cannot record a verdict the policy evaluation did not reach"
+      }
     }
   ],
   "left_the_list": [
@@ -702,6 +686,18 @@
       "fixed_in": "32d0254 (the last of four fixes CI's own runs exposed)",
       "pinned_by": ".github/workflows/ci.yml",
       "note": "Run 35504722068 on main: 13 steps passed, 1 skipped (frontend eslint, which has no config), and the workflow's own check fails on any skip that is not named. The four runs before it failed on an unpinned mcp range, unpinned lint tools, a frontend typecheck reading a stale dist/, a coverage floor measured with a gitignored .env present, and FastAPI 0.141's lazy routers."
+    },
+    {
+      "id": "guardian-verdict-binding",
+      "was": "The registry checks only that the verdict id exists in audit_log with verdict APPROVED: not that it was issued for this object or payload, not that it is unused, and it carries no signature -- one APPROVED row authorises any number of unrelated writes (replay), and anything that can insert into audit_log can mint one (forge).",
+      "fixed_in": "PENDING",
+      "pinned_by": "backend/tests/guardian/test_verdict_binding.py"
+    },
+    {
+      "id": "guardian-check-always-rejects",
+      "was": "/check builds its EpistemicState with no Cynefin domain, which defaults to DISORDER, and Guardian rule PR-006 rejects every verdict in DISORDER -- so /check never returns APPROVED and /approve can never be satisfied through the API.",
+      "fixed_in": "PENDING",
+      "pinned_by": "backend/tests/integration/test_governance_approval_flow.py"
     }
   ]
 }

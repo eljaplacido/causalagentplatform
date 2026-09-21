@@ -39,9 +39,14 @@ sustainability investment assurance follow, in that order.
    `act_with_approval`, `experiment`, `refuse`. "Do nothing" is always a candidate. Deterministic,
    with seeded defects. What it does *not* settle: whether the thresholds are the right ones.
    That needs step 5.
-2. **Evidence record and assumption registry.** Persist request → certificate → result → verdict →
-   approver, hash-chained; version graphs and the provenance of every edge. Fix the Guardian
-   (today `/check` can never return APPROVED, and verdicts can be forged and replayed).
+2. **Evidence record and assumption registry.** *In progress.* The Guardian half is done: a verdict
+   is signed, names the object it authorises, and is spent on use, so it cannot be forged by
+   inserting a row, replayed, or pointed at another object; and the `/check` → `/approve` flow
+   completes through the API. Still to do: persist request → certificate → result → verdict →
+   approver as a hash chain, version graphs, and record the provenance of every edge. Two ways to
+   mint a verdict outside the Guardian remain open on the register
+   (`intervention-approval-no-role`, `guardian-audit-write-skill`); neither can authorise a
+   semantic write any more, but both still write to the audit trail.
 3. **The estimators operations actually need.** Segment-level effects, staggered
    difference-in-differences and event studies, anytime-valid sequential tests for canaries,
    cluster and switchback designs for interference. Each with its own pre-registered gate and a
