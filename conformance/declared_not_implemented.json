@@ -532,26 +532,26 @@
       }
     },
     {
-      "id": "decision-ledger-not-persisted",
-      "status": "partial",
-      "capability": "Decision records persisted, served and anchored by the platform",
+      "id": "decision-ledger-not-anchored",
+      "status": "planned",
+      "capability": "The decision chain's head digest anchored outside the writer's control",
       "claimed_in": [
         {
-          "at": "docs/ROADMAP.md:42",
-          "says": "**Evidence record and assumption registry.**"
+          "at": "packages/causal-decision/README.md:131",
+          "says": "**What the chain does not do.** It makes tampering *detectable*, not impossible"
         }
       ],
-      "reality": "causal_decision.ledger builds and verifies the chain in memory, with tests for an edited, removed and reordered entry. Nothing in the platform writes a record, serves one, or anchors a head digest anywhere the writer does not control -- so today the chain proves internal consistency of a list somebody is already holding.",
+      "reality": "The chain is built, persisted, served and verified, and decision_records is append-only in the production schema. All of that is still inside one trust boundary: whoever can write the rows can rewrite the chain from the altered entry onward and it verifies again. Nothing publishes or countersigns the head digest, so the ledger evidences internal consistency and not much more.",
       "evidence": [
         {
-          "at": "packages/causal-decision/src/causal_decision/ledger.py:17",
-          "says": "Everything here is pure. No clock (the caller supplies the timestamp), no store,"
+          "at": "backend/src/api/decisions.py:164",
+          "says": "A pass means the chain is *internally* consistent. It cannot mean more than"
         }
       ],
       "leaves_by": {
         "kind": "test",
-        "path": "backend/tests/integration/test_decision_ledger.py",
-        "asserts": "a decision made through the platform is persisted, returned by an endpoint, and verifies as a chain across process restarts"
+        "path": "backend/tests/integration/test_ledger_anchoring.py",
+        "asserts": "the head digest is published to a store the platform cannot rewrite, and a chain rewritten in the database is detected by comparison with the published head"
       }
     }
   ],
@@ -645,6 +645,12 @@
       "was": "GovernanceAgent._execute_skill exposes an `audit_write` skill whose verdict comes from its own inputs, defaulting to APPROVED: an agent calling it writes whatever verdict it likes into audit_log. The row cannot authorise a semantic write (it is signed for no subject), but it still enters the audit trail as though the Guardian had ruled.",
       "fixed_in": "PENDING",
       "pinned_by": "backend/tests/guardian/test_audit_write_skill.py"
+    },
+    {
+      "id": "decision-ledger-not-persisted",
+      "was": "causal_decision.ledger builds and verifies the chain in memory, with tests for an edited, removed and reordered entry. Nothing in the platform writes a record, serves one, or anchors a head digest anywhere the writer does not control -- so today the chain proves internal consistency of a list somebody is already holding.",
+      "fixed_in": "PENDING",
+      "pinned_by": "backend/tests/integration/test_decision_ledger.py"
     }
   ]
 }

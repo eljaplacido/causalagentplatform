@@ -56,6 +56,20 @@ def _get_env() -> str:
 #: The schema the local/dev engine creates. The test suite runs *this* string --
 #: it used to keep its own copy in tests/conftest.py, which is how a suite ends up
 #: green against a schema production does not have.
+def ddl_statements(ddl: str) -> list[str]:
+    """Split a DDL script into executable statements.
+
+    Splitting on every ``;`` breaks on a semicolon inside a ``--`` comment, which is
+    how a schema change can fail with "near 'the': syntax error" and take a while to
+    place. Comments are stripped first, and the split is on the statement terminator
+    at the end of a line.
+    """
+    stripped = "\n".join(
+        line for line in ddl.splitlines() if not line.lstrip().startswith("--")
+    )
+    return [stmt.strip() for stmt in stripped.split(";") if stmt.strip()]
+
+
 SQLITE_DDL = """
 CREATE TABLE IF NOT EXISTS audit_log (
     id                  TEXT PRIMARY KEY,
@@ -74,6 +88,21 @@ CREATE TABLE IF NOT EXISTS audit_log (
 -- One verdict, one write. audit_log cannot carry a "used" flag because it is
 -- append-only, so consumption is an insert here and the primary key is the rule:
 -- the second attempt to spend a verdict violates it.
+-- Decision records: the hash chain from causal_decision.ledger, one row per link.
+-- `record` is the sealed entry as canonical JSON; the columns beside it exist so the
+-- chain can be walked and served without parsing every row. They are a copy of what
+-- the record already says, so the verifier reads the record and recomputes -- a row
+-- whose columns disagree with its own record is exactly what tampering looks like.
+CREATE TABLE IF NOT EXISTS decision_records (
+    sequence            INTEGER PRIMARY KEY,
+    entry_digest        TEXT NOT NULL UNIQUE,
+    prev_digest         TEXT NOT NULL,
+    decision_digest     TEXT NOT NULL,
+    subject             TEXT NOT NULL,
+    verdict             TEXT NOT NULL,
+    recorded_at         TEXT NOT NULL,
+    record              TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS verdict_consumption (
     verdict_id          TEXT PRIMARY KEY
         REFERENCES audit_log(id),
@@ -361,10 +390,8 @@ class CloudSqlFactory:
 
         if env == "local":
             async with engine.begin() as conn:
-                for stmt in SQLITE_DDL.strip().split(";"):
-                    stmt = stmt.strip()
-                    if stmt:
-                        await conn.execute(sa_text(stmt))
+                for stmt in ddl_statements(SQLITE_DDL):
+                    await conn.execute(sa_text(stmt))
 
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)

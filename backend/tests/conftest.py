@@ -33,7 +33,7 @@ os.environ.setdefault("ENV", "local")
 
 # ── Import after ENV is set ────────────────────────────────────────────────────
 from src.agents.governance import GovernanceAgent
-from src.db.factory import SQLITE_DDL, CloudSqlFactory
+from src.db.factory import SQLITE_DDL, CloudSqlFactory, ddl_statements
 from src.semantic_layer.models import (
     CausalEdge,
     CausalEntity,
@@ -84,10 +84,8 @@ async def db_engine() -> AsyncGenerator[AsyncEngine, None]:
 
     # Create schema
     async with engine.begin() as conn:
-        for statement in SQLITE_SCHEMA.strip().split(";"):
-            stmt = statement.strip()
-            if stmt:
-                await conn.execute(text(stmt))
+        for statement in ddl_statements(SQLITE_SCHEMA):
+            await conn.execute(text(statement))
 
     # Inject the test engine directly via class-level cache variables
     CloudSqlFactory.reset()

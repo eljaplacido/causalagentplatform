@@ -16,12 +16,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# The causal kernel first (a local package, not on PyPI yet), then the backend.
+# The causal kernel and the decision layer first (local packages, not on PyPI yet),
+# then the backend, which depends on both.
 COPY packages/causal-core ./causal-core
+COPY packages/causal-decision ./causal-decision
 COPY backend/pyproject.toml ./backend/pyproject.toml
 COPY backend/src ./backend/src
 COPY backend/mcp_server ./backend/mcp_server
-RUN pip install --no-cache-dir --prefix=/install ./causal-core "./backend[production]"
+RUN pip install --no-cache-dir --prefix=/install ./causal-core ./causal-decision \
+    "./backend[production]"
 
 # ── Production stage (distroless-style slim) ───────────────────────────────
 FROM python:3.12-slim AS production

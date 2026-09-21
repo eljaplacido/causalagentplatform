@@ -24,10 +24,11 @@
     "",
     "The args are the SAME ones the tool runs with here and in .gnomon/ci.sh, so the",
     "number and the command that produced it cannot drift apart.",
-    "2026-09-21: 442 -> 441 after the verdict-binding change. The new code is clean; the net gain is two import-order findings fixed in files it touched."
+    "2026-09-21: 442 -> 441 after the verdict-binding change. The new code is clean; the net gain is two import-order findings fixed in files it touched.",
+    "2026-09-21: ruff 441 -> 424 after the .env loader moved out of src/api/main.py's import block into src/env_bootstrap.py (19 E402 findings describing one deliberate ordering constraint, now stated as an import). mypy 40 -> 39: pandas joined the stubless-module list beside firebase_admin and neo4j."
   ],
   "ruff": {
-    "max_findings": 441,
+    "max_findings": 424,
     "measured_with": "ruff 0.15.12",
     "cwd": "backend",
     "args": [
@@ -45,7 +46,7 @@
     ]
   },
   "mypy": {
-    "max_findings": 40,
+    "max_findings": 39,
     "measured_with": "mypy 1.20.2 (compiled: yes)",
     "cwd": "backend",
     "args": [

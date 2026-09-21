@@ -56,7 +56,8 @@ jobs:
       - name: Backend environment (backend/.venv)
         run: |
           python -m venv backend/.venv
-          backend/.venv/bin/pip install -q -e packages/causal-core -e "backend[dev]"
+          backend/.venv/bin/pip install -q -e packages/causal-core \
+            -e packages/causal-decision -e "backend[dev]"
 
       - name: Kernel environment (packages/causal-core/.venv)
         run: |

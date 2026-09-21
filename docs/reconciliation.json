@@ -54,10 +54,10 @@
       "baseline": {
         "on": "2026-09-21",
         "sha256": {
-          "conformance/declared_not_implemented.json": "9907450f81b497c6948396d9781dd66129f484f4066440596969ae763781eb1c",
-          "backend/src": "4a8f189efecaca0c7ae92adc8188cb60c650ec7a09a118dc61b93c238556584c",
+          "conformance/declared_not_implemented.json": "27e68c875f25cca92cb7adf0b8cfd006650cafe2e27d69cc004a76f43bfaa458",
+          "backend/src": "c88bf379b4366a17267bf9edf76ab9cf790b44f55e656bc4c7d66252c8a9276c",
           "backend/mcp_server": "906126ac2e95942d33fa44c6abe372051ab452e3022a978c6d5ad78c28a2f6d5",
-          "backend/tests": "b5e3c93f7de6a3b8cfced29fc8829ac67fc9811e94bcc1e5fa2d20a642882a9f",
+          "backend/tests": "eac24496b5c7eb7a72970c80b2910e4fe86d4ba45b920cdfe188265cc81afdd6",
           "frontend/src": "43b4fec5fbddbf1cbeab0cc5dc3aa23933dd6678419738027cbf5fa27d48f428",
           "packages": "119166be5d42b46a2881c0b37df3dcdac803a6a2a4e8805712e120d4b4cf04c4",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
@@ -65,7 +65,7 @@
       },
       "last_read": {
         "on": "2026-09-21",
-        "by": "Claude (decision ledger rows added)"
+        "by": "Claude (decision endpoints and ledger rows)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {

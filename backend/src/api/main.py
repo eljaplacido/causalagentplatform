@@ -18,17 +18,6 @@ Cloud Run:
 from __future__ import annotations
 
 import os
-from pathlib import Path
-
-# ── Load .env early so DEV_AUTH_BYPASS / ENV reach the middleware ─────────────
-# Simple manual loader — no extra deps. Only sets vars not already in the env.
-_dotenv_path = Path(__file__).resolve().parent.parent.parent / ".env"
-if _dotenv_path.exists():
-    for _line in _dotenv_path.read_text(encoding="utf-8").splitlines():
-        _line = _line.strip()
-        if _line and not _line.startswith("#") and "=" in _line:
-            _k, _v = _line.split("=", 1)
-            os.environ.setdefault(_k.strip(), _v.strip())
 import time
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -39,6 +28,12 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+# .env must be loaded before the modules that read it are imported -- notably the
+# auth middleware, which decides on DEV_AUTH_BYPASS and ENV. Import order is
+# execution order, so this import states that constraint instead of a loop wedged
+# between the imports below (which is what made every one of them an E402).
+import src.env_bootstrap  # noqa: F401  # imported for its side effect, first
+from src.api import decisions as decisions_router_module
 from src.api import governance as governance_router_module
 from src.api import incidents as incidents_router_module
 from src.api import interventions as interventions_router_module
@@ -188,6 +183,10 @@ def create_app() -> FastAPI:
     app.include_router(
         incidents_router_module.router,
         tags=["Incidents"],
+    )
+    app.include_router(
+        decisions_router_module.router,
+        tags=["Decision Assurance"],
     )
 
     # ── Health endpoint ───────────────────────────────────────────────────────
