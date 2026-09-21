@@ -18,7 +18,6 @@ from typing import Any
 import jsonschema
 import numpy as np
 import pytest
-
 from causal_core.contract import CONTRACT_VERSION
 
 from causal_mcp.server import TOOLS

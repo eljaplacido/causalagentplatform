@@ -291,3 +291,120 @@ def causal_verify_narrative(text: str, outcome: dict[str, Any]) -> VerifyRespons
         causal_language=v.causal_language,
         reasons=v.reasons(),
     )
+
+
+# ── the decision layer (optional: pip install causal-mcp[decision]) ───────────
+
+try:
+    from causal_decision import (
+        Decision,
+        DecisionPolicy,
+        DecisionRequest,
+        RiskClass,
+        decide,
+        explain,
+    )
+
+    HAS_DECISION = True
+except ImportError:  # pragma: no cover - exercised by the packaging test
+    HAS_DECISION = False
+
+
+if HAS_DECISION:
+
+    class DecideResponse(BaseModel):
+        """A verdict, the evidence it rested on, and an explanation whose numbers are claims."""
+
+        decision: Decision
+        outcome: CausalResult | Abstention | ApparatusFailure = Field(discriminator="kind")
+        explanation: str
+
+    def causal_decide(
+        graph: str,
+        treatment: str,
+        outcome: str,
+        action: str,
+        direction: Literal["increase", "decrease"],
+        data: dict[str, list[Cell]] | None = None,
+        data_path: str | None = None,
+        risk_class: Literal["low", "medium", "high"] = "medium",
+        reversible: bool = True,
+        minimum_worthwhile_effect: float = 0.0,
+        harm_threshold: float = 0.0,
+        can_randomize: bool = True,
+        randomization_unit: str = "unit",
+        units_per_day: float | None = None,
+        population: str | None = None,
+        horizon: str | None = None,
+        design: Literal["observational", "randomized"] = "observational",
+        adjust_for: list[str] | None = None,
+        instruments: list[str] | None = None,
+        treatment_proxies: list[str] | None = None,
+        outcome_proxies: list[str] | None = None,
+        negative_control_outcomes: list[str] | None = None,
+        expected_treated_share: float | None = None,
+        policy: dict[str, Any] | None = None,
+        decision_policy: dict[str, Any] | None = None,
+    ) -> DecideResponse:
+        """Decide whether a proposed action is justified by the evidence.
+
+        Returns one verdict: `act`, `act_with_approval`, `experiment` or `refuse`.
+
+        Analyses the data and applies the decision policy in a single call, so nothing can
+        change the evidence between the estimate and the verdict -- not even you. The verdict
+        is a pure function of (outcome, request, policy) and carries the digests of all three,
+        so it can be replayed and disputed later.
+
+        State what acting is worth before you ask: `minimum_worthwhile_effect` is the smallest
+        benefit, in outcome units, that justifies the action, and `direction` says which way the
+        outcome should move (so a benefit is always positive). `risk_class` and `reversible`
+        describe the cost of being wrong; high risk always goes to a person.
+
+        When the evidence cannot settle it, the response carries the experiment that would,
+        sized from the data. Relay `explanation` rather than writing your own: its numbers are
+        bound to the analysis.
+        """
+        try:
+            query = _query(
+                treatment,
+                outcome,
+                design,
+                adjust_for,
+                instruments,
+                treatment_proxies,
+                outcome_proxies,
+                negative_control_outcomes,
+                None,
+                expected_treated_share,
+            )
+            request = DecisionRequest(
+                action=action,
+                outcome=outcome,
+                direction=direction,
+                risk_class=RiskClass(risk_class),
+                reversible=reversible,
+                minimum_worthwhile_effect=minimum_worthwhile_effect,
+                harm_threshold=harm_threshold,
+                can_randomize=can_randomize,
+                randomization_unit=randomization_unit,
+                units_per_day=units_per_day,
+                population=population,
+                horizon=horizon,
+            )
+            dpol = DecisionPolicy.model_validate(decision_policy or {})
+            pol = AnalysisPolicy.model_validate(policy or {})
+            frame = load_table(data, data_path)
+        except Exception as exc:
+            refusal = Abstention(
+                reason=AbstentionReason.INVALID_INPUT,
+                detail=f"{type(exc).__name__}: {exc}"[:2000],
+                provenance=Provenance(
+                    contract_version=cc.CONTRACT_VERSION, core_version=cc.__version__
+                ),
+            )
+            bad = DecisionRequest(action=action, outcome=outcome, direction=direction)
+            d = decide(refusal, bad, DecisionPolicy())
+            return DecideResponse(decision=d, outcome=refusal, explanation=explain(d, refusal))
+        out = cc.analyze(frame, graph, query=query, policy=pol)
+        d = decide(out, request, dpol)
+        return DecideResponse(decision=d, outcome=out, explanation=explain(d, out))

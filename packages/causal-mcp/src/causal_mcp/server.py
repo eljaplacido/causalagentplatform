@@ -34,7 +34,11 @@ The LLM proposes; statistics decide. Recommended flow:
 3. causal_analyze -- estimate, or receive a typed refusal (a correct answer, not an error).
 4. causal_verify_narrative -- check your prose before replying: numbers must be claims, and
    causal wording is allowed only for a `supported` result.
-Never state a causal effect that no tool returned. If the outcome is a refusal, say so and
+When the question is whether to *do* something, use causal_decide instead of steps 3-4: it
+analyses and rules in one call, so the evidence cannot change between the two, and it returns
+a verdict (act, act_with_approval, experiment, refuse) with an explanation you can relay.
+Never state a causal effect that no tool returned, and never act on your own reading of an
+estimate: the verdict is the tool's, not yours. If the outcome is a refusal, say so and
 relay its `missing_information`.
 """
 
@@ -51,6 +55,14 @@ TOOLS: dict[str, tuple[Callable[..., Any], str]] = {
         "Verify prose against an outcome (claims and causal language)",
     ),
 }
+
+# The decision layer is optional (pip install causal-mcp[decision]). Without it the server
+# still serves evidence; it just will not rule on whether an action is justified.
+if tools.HAS_DECISION:
+    TOOLS["causal_decide"] = (
+        tools.causal_decide,
+        "Decide whether an action is justified: act, approve, experiment or refuse",
+    )
 
 
 def build_server() -> MCPServer:
