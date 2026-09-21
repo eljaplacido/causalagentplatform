@@ -4,7 +4,7 @@
 
 A governed platform for causal reasoning, decision simulation, and intervention recommendation. Built around a canonical semantic layer, a Guardian-mediated approval workflow, and a shared library of causal-inference skills that are callable both internally (LangGraph agents) and externally (Model Context Protocol).
 
-> **Status:** Pre-1.0. The causal numbers the platform serves come from the causal-core kernel, which identifies before it estimates, refuses with a typed reason, and passes pre-registered correctness and real-data benchmarks. Several platform features are still heuristic (and labelled so) or not built: counterfactuals, discovery, the LLM layer, signed governance verdicts. [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAGE.md) lists what is implemented, each row with the test that pins it, and what is declared but not implemented. `.gnomon/ci.sh` is the gate; `scripts/status_claims.py` keeps that page in step with the code.
+> **Status:** Pre-1.0. The causal numbers the platform serves come from the causal-core kernel, which identifies before it estimates, refuses with a typed reason, and passes pre-registered correctness and real-data benchmarks. On top of it, causal-decision rules on whether an agent may act on that evidence. Several platform features are still heuristic (and labelled so) or not built: counterfactuals, discovery, the LLM layer, signed governance verdicts, and calibration of the decisions themselves. [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAGE.md) lists what is implemented, each row with the test that pins it, and what is declared but not implemented. `.gnomon/ci.sh` is the gate; `scripts/status_claims.py` keeps that page in step with the code.
 
 ## Start here: the causal kernel
 
@@ -20,9 +20,32 @@ out.kind           # "result" | "refusal" | "apparatus_failure"
 print(cc.report(out))
 ```
 
+## Then: may the agent act on it?
+
+[`packages/causal-decision`](packages/causal-decision) is the layer between an agent's proposed
+action and the system that action would change. The kernel says what the effect is; this says what
+to do about it — **act**, **act with approval**, **run an experiment first**, or **refuse** — from
+the risk of being wrong, the smallest effect worth having, and whether the action can be undone.
+
+```python
+from causal_decision import DecisionRequest, decide, explain
+
+d = decide(out, DecisionRequest(action="apply remediation playbook X", outcome="minutes",
+                                direction="decrease", minimum_worthwhile_effect=5.0))
+d.verdict          # act | act_with_approval | experiment | refuse
+d.experiment       # when the evidence cannot settle it: the trial that would, sized
+print(explain(d, out))
+```
+
+It is a ladder, not a score: every check names the strongest verdict it still allows, and the
+weakest of those wins, so no amount of good news outvotes one blocking problem. The verdict is a
+pure function of (outcome, request, policy) and carries digests of all three, so it can be
+replayed and disputed. It executes nothing.
+
 For agents: [`packages/causal-mcp`](packages/causal-mcp) serves the kernel over MCP (SDK v2, stdio
-or stateless HTTP). It has four read-only tools: check a graph, identify, analyze, and verify a
-narrative before it reaches a user.
+or stateless HTTP). Four read-only tools: check a graph, identify, analyze, and verify a narrative
+before it reaches a user — plus `causal_decide` with the `[decision]` extra, which analyses and
+rules in one call so nothing can change the evidence in between, not even the agent.
 
 **Evidence, pre-registered before each run.** Each benchmark's thresholds are committed before it
 runs, and failing runs are kept.
@@ -32,6 +55,7 @@ runs, and failing runs are kept.
 | T0: 29 identification cases, 14 estimation designs, 7 seeded defects ([`benchmarks/t0`](benchmarks/t0)) | Identification agrees with y0 on 200/200 random graphs. Pooled 95% coverage is 94.9%. Every seeded defect is caught. |
 | T3: LaLonde, real data with an experimental benchmark ([`benchmarks/t3-lalonde`](benchmarks/t3-lalonde)) | No confident wrong answer. Naive estimates are off by up to −$15,205; every kernel interval covers the experimental $1,794. |
 | T2: IHDP-100, semi-synthetic ([`benchmarks/t2-ihdp`](benchmarks/t2-ihdp)) | ATT coverage 0.99 / 0.98; supported results miss the truth 1.5% of the time. |
+| D0: the decision procedure ([`benchmarks/d0-decision-policy`](benchmarks/d0-decision-policy)) | 15/15 scenarios return the verdict the table names; 8 properties hold over 400 seeded cases; each of 6 seeded defects makes the gate fail. |
 
 Known limits are listed, not hidden: [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAGE.md) and
 [`conformance/declared_not_implemented.json`](conformance/declared_not_implemented.json).

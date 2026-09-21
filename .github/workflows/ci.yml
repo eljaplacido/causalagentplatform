@@ -63,7 +63,8 @@ jobs:
           python -m venv packages/causal-core/.venv
           packages/causal-core/.venv/bin/pip install -q \
             -e "packages/causal-core[dev,crosscheck,ml]" \
-            -e "packages/causal-mcp[dev,http]" httpx
+            -e "packages/causal-decision[dev]" \
+            -e "packages/causal-mcp[dev,http,decision]" httpx
 
       - name: Frontend dependencies
         run: npm ci
@@ -72,6 +73,7 @@ jobs:
         run: |
           packages/causal-core/.venv/bin/python packages/causal-core/scripts/check_licenses.py causal-core
           packages/causal-core/.venv/bin/python packages/causal-core/scripts/check_licenses.py causal-mcp
+          packages/causal-core/.venv/bin/python packages/causal-core/scripts/check_licenses.py causal-decision
 
       - name: Run the gate
         run: bash .gnomon/ci.sh 2>&1 | tee ci-gate.log; exit "${PIPESTATUS[0]}"

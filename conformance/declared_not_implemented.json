@@ -619,6 +619,33 @@
         "path": "packages/causal-core/tests/bench/test_ihdp_overlap_refusal.py",
         "asserts": "a pre-registered IHDP bar that the ATE is refused or flagged for the overlap violation, e.g. via a flexible or covariate-profile overlap check"
       }
+    },
+    {
+      "id": "decision-calibration",
+      "status": "planned",
+      "capability": "Calibration of decisions: comparing the effect predicted before acting with the effect realized after",
+      "claimed_in": [
+        {
+          "at": "docs/ROADMAP.md:53",
+          "says": "**Outcome capture and calibration.** Compare predicted with realized effects; publish regret and"
+        },
+        {
+          "at": "packages/causal-decision/README.md:138",
+          "says": "**Calibrate.** Whether actions taken under `act` produced the predicted effect needs the"
+        }
+      ],
+      "reality": "Nothing captures what happened after a verdict. packages/causal-decision holds the procedure to the policy it was given and proves it consistent (D0: 15 scenarios, 8 properties, 6 seeded defects); it cannot say the thresholds are right, and no regret or calibration number exists anywhere in this repository.",
+      "evidence": [
+        {
+          "at": "benchmarks/d0-decision-policy/PRE-REGISTRATION.md:90",
+          "says": "records which policy a verdict followed. Calibration"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "packages/causal-decision/tests/d0/test_calibration.py",
+        "asserts": "predicted and realized effects are compared over recorded decisions, with a pre-registered calibration bar and a seeded defect that breaks it"
+      }
     }
   ],
   "left_the_list": [

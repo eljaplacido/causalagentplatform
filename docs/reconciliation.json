@@ -52,20 +52,20 @@
         "specs"
       ],
       "baseline": {
-        "on": "2026-09-20",
+        "on": "2026-09-21",
         "sha256": {
-          "conformance/declared_not_implemented.json": "fba02eb7a064f8c2570caa3d44ab826fbb641e1bab6a2ed142e31323bf891e2a",
+          "conformance/declared_not_implemented.json": "392180054079c309aa7949c7a9f172bc8ce890758373874c21d1aabecdf84e57",
           "backend/src": "7f5ec7b834e21271aecbac06b58cca1fcf6794c83575d8107afe8d73623684ac",
           "backend/mcp_server": "906126ac2e95942d33fa44c6abe372051ab452e3022a978c6d5ad78c28a2f6d5",
           "backend/tests": "d12064cef2f51b4466058e761555e1aa5f96929a6f949d0b51c5e153f0ebdf33",
           "frontend/src": "43b4fec5fbddbf1cbeab0cc5dc3aa23933dd6678419738027cbf5fa27d48f428",
-          "packages": "f42acbfddcc2aed12d163ed15a05c9c1b17efe3254b2b60e327b841df12288c4",
+          "packages": "8423c59c5800a670c63a1a27ddb78df0a6604ba22f589698d98e2e0f73070906",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
-        "on": "2026-09-20",
-        "by": "Claude (CI row closed after the first green run; gates summary re-verified)"
+        "on": "2026-09-21",
+        "by": "Claude (decision layer added; rows and summary rewritten against the code)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -287,16 +287,16 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-09-20",
+        "on": "2026-09-21",
         "sha256": {
-          "packages/causal-core/src/causal_core": "f396004f6a438a53d07a7fb225b56b8df0ded62639ba18d3879901aad9cc55a9",
-          "conformance/declared_not_implemented.json": "c68f3542aee4f475e627cf20c10a3aa6709bfe3283a76d80221c09fa97713b66",
-          "docs/CURRENT_STAGE.md": "3e79ee228e06a4cc3db3a9c8cb8aed8a619a99cc2cd438f85da64d21c0000504"
+          "packages/causal-core/src/causal_core": "ac35243850d467d5a65a057dc056ab7534b17c29e2f0d8f73ef9f6a43fde27af",
+          "conformance/declared_not_implemented.json": "392180054079c309aa7949c7a9f172bc8ce890758373874c21d1aabecdf84e57",
+          "docs/CURRENT_STAGE.md": "4ef88779b4b6c885875d3bfa8544747434815e4ba10ba5bad0034e48bacaff0c"
         }
       },
       "last_read": {
-        "on": "2026-09-20",
-        "by": "Claude (written against the kernel and the register on 2026-09-20)"
+        "on": "2026-09-21",
+        "by": "Claude (steps 1 and 4 done; table re-checked against packages/causal-decision)"
       }
     }
   }

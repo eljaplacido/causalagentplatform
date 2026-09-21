@@ -1,6 +1,7 @@
 name: Release to PyPI
 
-# Publishes packages/causal-core and packages/causal-mcp when a v* tag is pushed.
+# Publishes packages/causal-core, packages/causal-decision and packages/causal-mcp when a
+# v* tag is pushed.
 #
 # Authentication is PyPI Trusted Publishing (OIDC): no API token is stored in this
 # repository, in an environment, or anywhere on a laptop. Each project must have a
@@ -29,19 +30,26 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install both packages with their test extras
+      - name: Install all three packages with their test extras
         run: |
           python -m pip install -q -e "packages/causal-core[dev,crosscheck,ml]" \
-                                     -e "packages/causal-mcp[dev,http]" httpx
+                                     -e "packages/causal-decision[dev]" \
+                                     -e "packages/causal-mcp[dev,http,decision]" httpx
       - name: Licences must stay permissive
         run: |
           python packages/causal-core/scripts/check_licenses.py causal-core
           python packages/causal-core/scripts/check_licenses.py causal-mcp
+          python packages/causal-core/scripts/check_licenses.py causal-decision
       - name: causal-core (unit, then the pre-registered T0 gate and seeded defects)
         working-directory: packages/causal-core
         run: |
           python -m pytest -q -m "not t0 and not slow and not real_data"
           python -m pytest -q -m t0
+      - name: causal-decision (unit, then the pre-registered D0 gate and seeded defects)
+        working-directory: packages/causal-decision
+        run: |
+          python -m pytest -q -m "not d0"
+          python -m pytest -q -m d0
       - name: causal-mcp
         working-directory: packages/causal-mcp
         run: python -m pytest -q
@@ -56,9 +64,10 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install -q build
-      - name: Build sdist and wheel for both packages
+      - name: Build sdist and wheel for all three packages
         run: |
           python -m build --outdir dist/causal-core packages/causal-core
+          python -m build --outdir dist/causal-decision packages/causal-decision
           python -m build --outdir dist/causal-mcp packages/causal-mcp
       - uses: actions/upload-artifact@v4
         with:
@@ -75,7 +84,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [causal-core, causal-mcp]
+        package: [causal-core, causal-decision, causal-mcp]
     steps:
       - uses: actions/download-artifact@v4
         with:

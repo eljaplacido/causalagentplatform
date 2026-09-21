@@ -1,6 +1,6 @@
 # Platform Current Stage
 
-> **Last reconciled:** 2026-09-19, against the code at `d2a5e6a` plus the change that introduced this page.
+> **Last reconciled:** 2026-09-21, against the code at `f4889f2` plus the change that added `packages/causal-decision`.
 > **How to read it:** every row has one of four statuses. `implemented` rows link to the test that pins the behaviour. Every other row names its entry in [`conformance/declared_not_implemented.json`](../conformance/declared_not_implemented.json), which cites where the claim was made, says in one line what the code does instead, and names what must exist for the entry to leave the list.
 > **Checked, not asserted:** `scripts/status_claims.py` (run by `.gnomon/ci.sh`) fails if a row's status disagrees with the register, an `implemented` row's test is missing, an open register entry is missing from this page, or a cited claim or piece of code has changed under the register.
 
@@ -9,6 +9,7 @@ This page replaces an earlier version that marked "Phase 1" finished. A Septembe
 ## Summary
 
 - **Causal numbers the platform serves.** They come from `packages/causal-core`. The backend's `effect_estimate` and `identification_check` skills delegate to it, and so do the API and the legacy MCP server. Without observational data they return no estimate and say why; the old graph-heuristic numbers and the constant interval are gone. Ground truth is gated by the pre-registered T0, LaLonde and IHDP benchmarks.
+- **Whether an agent may act on those numbers.** `packages/causal-decision` turns an outcome into one of four verdicts (`act`, `act_with_approval`, `experiment`, `refuse`) from a policy the caller sets, and returns the experiment that would settle an unsettled question. It is deterministic and gated by the pre-registered D0 suite. It decides; it does not execute, and nothing yet checks whether the decisions were *right* — that is the calibration row below.
 - **What is still heuristic, and labelled so.** `counterfactual_reason` and `intervention_estimate` return triage scores with `heuristic: true` and a caveat. No counterfactual is computed. Rosenbaum bounds and discovery are not implemented.
 - **The kernel's own limits** are on the register too: triangulation at moderate n, overlap detection and general-ID estimation.
 - **LLMs.** No LLM is called anywhere. The agents are rule-based code.
@@ -39,6 +40,21 @@ This page replaces an earlier version that marked "Phase 1" finished. A Septembe
 | `causal-core`: estimation of general ID functionals (napkin) | `declared-not-implemented` | [dni:kernel-general-id-estimation](../conformance/declared_not_implemented.json) | Identified, then refused `NO_ESTIMATOR` |
 | `causal-core`: nonparametric front-door, discovery, time series, sequential tests, interference | `planned` | [dni:kernel-methods-roadmap](../conformance/declared_not_implemented.json) | |
 
+### Decision assurance
+
+The layer between an agent's proposed action and the system it would change: given the evidence,
+may the agent act? Separate package, separate gate, and it executes nothing -- it returns a verdict.
+
+| Capability | Status | Evidence | Note |
+|---|---|---|---|
+| `causal-decision`: one verdict (`act`, `act_with_approval`, `experiment`, `refuse`) from an outcome, a request and a policy, per its pre-registered D0 gate | `implemented` | [packages/causal-decision/tests/d0/test_d0_gate.py](../packages/causal-decision/tests/d0/test_d0_gate.py) | 15 scenarios, 8 properties over a 400-case sweep; bars in `benchmarks/d0-decision-policy/PRE-REGISTRATION.md` |
+| `causal-decision`: the gate catches every seeded defect, including reading a contested result as supported | `implemented` | [packages/causal-decision/tests/d0/test_seeded_defects.py](../packages/causal-decision/tests/d0/test_seeded_defects.py) | 6 defects, each named in the pre-registration with the check that must catch it |
+| `causal-decision`: a decision is a pure function of its inputs and carries digests of all three | `implemented` | [packages/causal-decision/tests/test_policy.py](../packages/causal-decision/tests/test_policy.py) | Replayable; a verdict names the policy it followed |
+| `causal-decision`: an unsettled question returns the experiment that would settle it (randomized units, size, duration, guardrails) | `implemented` | [packages/causal-decision/tests/test_policy.py](../packages/causal-decision/tests/test_policy.py) | Sized from the outcome's spread and the minimum worthwhile effect |
+| `causal-decision`: every verdict's prose verifies against the analysis that produced it | `implemented` | [packages/causal-decision/tests/test_render.py](../packages/causal-decision/tests/test_render.py) | Unverifiable prose raises rather than prints |
+| `causal_decide` over MCP: analysis and verdict in one call, so the evidence cannot change in between | `implemented` | [packages/causal-mcp/tests/test_decision_tool.py](../packages/causal-mcp/tests/test_decision_tool.py) | Optional extra `causal-mcp[decision]`; annotated read-only |
+| Calibration: were the actions taken under `act` right? | `planned` | [dni:decision-calibration](../conformance/declared_not_implemented.json) | No outcome capture; verdicts are consistent, not yet calibrated |
+
 ### Governance
 
 | Capability | Status | Evidence | Note |
@@ -59,7 +75,7 @@ This page replaces an earlier version that marked "Phase 1" finished. A Septembe
 | Capability | Status | Evidence | Note |
 |---|---|---|---|
 | Backend MCP server (`backend/mcp_server`): 7 causal tools over stdio, stdout reserved for protocol frames | `implemented` | [backend/tests/integration/test_mcp_stdio.py](../backend/tests/integration/test_mcp_stdio.py) | Outputs are only as real as the causal rows above |
-| `packages/causal-mcp`: causal-core over MCP (check graph, identify, analyze, verify narrative) | `implemented` | [packages/causal-mcp/tests/test_stdio_flow.py](../packages/causal-mcp/tests/test_stdio_flow.py) | Separate server; wired into `.gnomon/tools.toml` as `causal_core` |
+| `packages/causal-mcp`: causal-core over MCP (check graph, identify, analyze, verify narrative, and `causal_decide` with the decision extra) | `implemented` | [packages/causal-mcp/tests/test_stdio_flow.py](../packages/causal-mcp/tests/test_stdio_flow.py) | Separate server; wired into `.gnomon/tools.toml` as `causal_core` |
 | LLM capability routing used by the agents | `declared-not-implemented` | [dni:llm-routing-no-callers](../conformance/declared_not_implemented.json) | `get_llm` has no callers |
 | Session orchestration API (`/api/v1/session/run`, `/incident`) | `implemented` | [backend/tests/integration/test_session_api.py](../backend/tests/integration/test_session_api.py) | Agents are rule-based code |
 | Intervention feedback endpoint | `implemented` | [backend/tests/unit/test_interventions.py](../backend/tests/unit/test_interventions.py) | |

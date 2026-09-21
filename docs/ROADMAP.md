@@ -28,16 +28,17 @@ sustainability investment assurance follow, in that order.
 | Decide identified / partially identified / unsupported | Done, except bounds: complete ID, back-door with the optimal adjustment set, front-door, conditional IV, proximal; 11 typed refusals, each with what is missing |
 | Estimate impact and uncertainty | Done for ATE and ATT with coverage-tested intervals; missing segment effects, difference-in-differences, policy value, sequential tests, interference-aware designs |
 | Robustness checks | Done: placebo, negative controls, graph-implied independences with measured power, overlap, balance, E-values, robustness values |
-| Decide: act, ask, experiment, refuse | Missing. The kernel returns the evidence for a verdict; nothing turns it into one |
-| Evidence record | Partial: every result carries digests and its refutations; nothing is persisted, no approval binding, no observed outcome |
-| Recommend the next experiment | Missing |
+| Decide: act, ask, experiment, refuse | Done: `packages/causal-decision` turns an outcome, a request and a policy into one verdict, deterministically, gated by the pre-registered D0 suite (15 scenarios, 8 properties, 6 seeded defects) |
+| Evidence record | Partial: every result and every decision carries digests of its inputs and itself; nothing is persisted, no approval binding, no observed outcome |
+| Recommend the next experiment | Done for the case the layer can size: randomized units, with the minimum detectable effect, per-arm size, duration and guardrails. Clustered, switchback and sequential designs are not sized |
 
 ## Order of work
 
-1. **Decision policy.** Risk classes and pre-registered thresholds over what the kernel already
-   returns (identification tier, interval versus decision threshold, E-value versus plausible
-   confounding, refuter status, reversibility, cost) → `auto`, `approve`, `experiment first`,
-   `refuse`. "Do nothing" is always a candidate. Deterministic, tested, with seeded defects.
+1. ~~**Decision policy.**~~ **Done** (`packages/causal-decision`, `causal_decide` over MCP). Risk
+   classes and pre-registered thresholds over what the kernel already returns → `act`,
+   `act_with_approval`, `experiment`, `refuse`. "Do nothing" is always a candidate. Deterministic,
+   with seeded defects. What it does *not* settle: whether the thresholds are the right ones.
+   That needs step 5.
 2. **Evidence record and assumption registry.** Persist request → certificate → result → verdict →
    approver, hash-chained; version graphs and the provenance of every edge. Fix the Guardian
    (today `/check` can never return APPROVED, and verdicts can be forged and replayed).
@@ -45,11 +46,13 @@ sustainability investment assurance follow, in that order.
    difference-in-differences and event studies, anytime-valid sequential tests for canaries,
    cluster and switchback designs for interference. Each with its own pre-registered gate and a
    seeded defect.
-4. **Experiment recommendation.** Turn a refusal into a concrete minimal experiment: randomization
-   unit, duration from a minimum-detectable-effect calculation, guardrails. The refusals already
-   carry why the question could not be answered.
+4. ~~**Experiment recommendation.**~~ **Done for randomized units**, in the same package: unit,
+   per-arm size and duration from a minimum-detectable-effect calculation, guardrails. A refusal
+   now carries the outcome's spread even when identification is what failed, so an unanswerable
+   question can still be sized. Clustered, switchback and sequential designs are step 3's.
 5. **Outcome capture and calibration.** Compare predicted with realized effects; publish regret and
-   calibration. This is the ROI evidence.
+   calibration. This is the ROI evidence, and it is what would let anyone claim the decision
+   thresholds are calibrated rather than merely consistent. Not built.
 6. **Domain packs.** Operations first, then energy flexibility.
 
 ## What this project will not do first
