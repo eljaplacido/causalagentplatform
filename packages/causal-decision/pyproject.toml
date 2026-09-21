@@ -1,0 +1,63 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "causal-decision"
+version = "0.1.0"
+description = "Decide whether an agent's proposed action is causally justified: act, ask, experiment, or refuse."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+authors = [{ name = "Eljas Suhonen" }]
+keywords = ["causal inference", "decision", "agents", "governance", "experiment design"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "causal-core>=0.3.0",
+    "pydantic>=2.7",
+    "scipy>=1.11",
+]
+
+[project.urls]
+Homepage = "https://github.com/eljaplacido/causalagentplatform"
+Source = "https://github.com/eljaplacido/causalagentplatform/tree/main/packages/causal-decision"
+Issues = "https://github.com/eljaplacido/causalagentplatform/issues"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "hypothesis>=6.100",
+    "ruff>=0.15,<0.16",
+    "mypy>=1.20,<1.21",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/causal_decision"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["scipy.*", "pandas.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--tb=short", "-q"]
+markers = [
+    "d0: the pre-registered decision-table gate (benchmarks/d0-decision-policy/PRE-REGISTRATION.md)",
+]

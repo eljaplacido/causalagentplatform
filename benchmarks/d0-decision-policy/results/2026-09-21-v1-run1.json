@@ -1,0 +1,125 @@
+{
+  "suite": "D0",
+  "prereg_sha256": "sha256:991d57e570f20d74165674a1eaab465afccd408ae684b037d41bb7e2405fe5b5",
+  "prereg_version": 1,
+  "git": "f4889f2d732ad6c2b8e769d1dd604cda61d3ebde-dirty",
+  "table": [
+    {
+      "id": "strong_effect_low_risk",
+      "expected": "act",
+      "got": "act",
+      "passed": true,
+      "why": "a precise, supported, robust effect well past the bar, on a reversible low-risk action"
+    },
+    {
+      "id": "strong_effect_medium_risk",
+      "expected": "act",
+      "got": "act",
+      "passed": true,
+      "why": "the same evidence clears the stricter medium-risk rule"
+    },
+    {
+      "id": "strong_effect_high_risk",
+      "expected": "act_with_approval",
+      "got": "act_with_approval",
+      "passed": true,
+      "why": "high risk always goes to a person, however good the evidence"
+    },
+    {
+      "id": "strong_effect_irreversible",
+      "expected": "act_with_approval",
+      "got": "act_with_approval",
+      "passed": true,
+      "why": "an irreversible action is never automated"
+    },
+    {
+      "id": "effect_below_bar",
+      "expected": "refuse",
+      "got": "refuse",
+      "passed": true,
+      "why": "the whole interval lies below what would make acting worthwhile: do nothing"
+    },
+    {
+      "id": "uncertain_worth",
+      "expected": "experiment",
+      "got": "experiment",
+      "passed": true,
+      "why": "the interval straddles the bar: the evidence cannot say whether it is worth acting"
+    },
+    {
+      "id": "contested_result",
+      "expected": "experiment",
+      "got": "experiment",
+      "passed": true,
+      "why": "a negative control fired: the design is contested, so test it rather than trust it"
+    },
+    {
+      "id": "provisional_graph",
+      "expected": "act_with_approval",
+      "got": "act_with_approval",
+      "passed": true,
+      "why": "an unreviewed LLM-proposed edge means a person reviews before acting"
+    },
+    {
+      "id": "identified_only_by_iv",
+      "expected": "act_with_approval",
+      "got": "act_with_approval",
+      "passed": true,
+      "why": "tier B: identification rests on assumptions the graph cannot state"
+    },
+    {
+      "id": "not_identified_can_test",
+      "expected": "experiment",
+      "got": "experiment",
+      "passed": true,
+      "why": "nothing in the data identifies the effect, but the action can be randomized"
+    },
+    {
+      "id": "not_identified_cannot_test",
+      "expected": "refuse",
+      "got": "refuse",
+      "passed": true,
+      "why": "no identification and no experiment: there is nothing to act on"
+    },
+    {
+      "id": "no_overlap_can_test",
+      "expected": "experiment",
+      "got": "experiment",
+      "passed": true,
+      "why": "load decides the playbook outright, so only an experiment separates them"
+    },
+    {
+      "id": "broken_question",
+      "expected": "refuse",
+      "got": "refuse",
+      "passed": true,
+      "why": "a counterfactual question this kernel does not answer: fix the question"
+    },
+    {
+      "id": "unreviewed_assumptions",
+      "expected": "refuse",
+      "got": "refuse",
+      "passed": true,
+      "why": "the analysis refused for a reason no experiment resolves"
+    },
+    {
+      "id": "analysis_failed",
+      "expected": "refuse",
+      "got": "refuse",
+      "passed": true,
+      "why": "the apparatus failed, so there is no evidence either way"
+    }
+  ],
+  "scenarios_matched": 1.0,
+  "property_violations": [],
+  "seeded_defects_caught": {
+    "best_check_wins": true,
+    "ignore_contested": true,
+    "ignore_reversibility": true,
+    "ignore_risk_class": true,
+    "ignore_worthwhile_effect": true,
+    "refusal_becomes_approval": true
+  },
+  "failures": [],
+  "passed": true
+}
