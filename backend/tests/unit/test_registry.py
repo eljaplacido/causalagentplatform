@@ -28,6 +28,10 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 import pytest
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from tests.conftest import VerdictFactory
 
 from src.exceptions import GuardianBlockedError, ObjectNotFoundError
 from src.semantic_layer.models import (
@@ -109,12 +113,13 @@ def _edge(verdict_id: UUID, domain: str = "devops") -> CausalEdge:
 async def test_propose_draft_causal_entity(
     db_engine: object,
     approved_audit_entry_id: UUID,
+    verdict_for: VerdictFactory,
 ) -> None:
     """propose_draft(CausalEntity) must persist the entity and return its UUID."""
     registry = SemanticLayerRegistry()
     entity = _entity()
 
-    result_id = await registry.propose_draft(entity, approved_audit_entry_id)
+    result_id = await registry.propose_draft(entity, await verdict_for(entity.id))
 
     assert isinstance(result_id, UUID)
     assert result_id == entity.id
@@ -126,12 +131,13 @@ async def test_propose_draft_causal_entity(
 async def test_propose_draft_graph_fragment(
     db_engine: object,
     approved_audit_entry_id: UUID,
+    verdict_for: VerdictFactory,
 ) -> None:
     """propose_draft(GraphFragment) must persist the fragment and return its UUID."""
     registry = SemanticLayerRegistry()
     fragment = _fragment()
 
-    result_id = await registry.propose_draft(fragment, approved_audit_entry_id)
+    result_id = await registry.propose_draft(fragment, await verdict_for(fragment.id))
 
     assert isinstance(result_id, UUID)
     assert result_id == fragment.id
@@ -143,12 +149,13 @@ async def test_propose_draft_graph_fragment(
 async def test_propose_draft_assumption(
     db_engine: object,
     approved_audit_entry_id: UUID,
+    verdict_for: VerdictFactory,
 ) -> None:
     """propose_draft(Assumption) must persist the assumption and return its UUID."""
     registry = SemanticLayerRegistry()
     assumption = _assumption()
 
-    result_id = await registry.propose_draft(assumption, approved_audit_entry_id)
+    result_id = await registry.propose_draft(assumption, await verdict_for(assumption.id))
 
     assert isinstance(result_id, UUID)
     assert result_id == assumption.id
@@ -184,12 +191,13 @@ async def test_propose_draft_rejects_unknown_verdict(db_engine: object) -> None:
 async def test_get_entity_returns_persisted_entity(
     db_engine: object,
     approved_audit_entry_id: UUID,
+    verdict_for: VerdictFactory,
 ) -> None:
     """get_entity must return the correct entity after it has been proposed."""
     registry = SemanticLayerRegistry()
     entity = _entity(name="payment-service")
 
-    await registry.propose_draft(entity, approved_audit_entry_id)
+    await registry.propose_draft(entity, await verdict_for(entity.id))
     fetched = await registry.get_entity(entity.id)
 
     assert fetched.id == entity.id
@@ -214,14 +222,15 @@ async def test_get_entity_not_found(db_engine: object) -> None:
 async def test_list_entities_returns_all(
     db_engine: object,
     approved_audit_entry_id: UUID,
+    verdict_for: VerdictFactory,
 ) -> None:
     """list_entities() without filters must return all persisted entities."""
     registry = SemanticLayerRegistry()
     e1 = _entity(name="svc-a")
     e2 = _entity(name="svc-b")
 
-    await registry.propose_draft(e1, approved_audit_entry_id)
-    await registry.propose_draft(e2, approved_audit_entry_id)
+    await registry.propose_draft(e1, await verdict_for(e1.id))
+    await registry.propose_draft(e2, await verdict_for(e2.id))
 
     results = await registry.list_entities()
     ids = {e.id for e in results}
@@ -235,14 +244,15 @@ async def test_list_entities_returns_all(
 async def test_list_entities_filters_by_domain(
     db_engine: object,
     approved_audit_entry_id: UUID,
+    verdict_for: VerdictFactory,
 ) -> None:
     """list_entities(domain=X) must return only entities in domain X."""
     registry = SemanticLayerRegistry()
     devops_entity = _entity(domain="devops")
     finance_entity = _entity(domain="finance")
 
-    await registry.propose_draft(devops_entity, approved_audit_entry_id)
-    await registry.propose_draft(finance_entity, approved_audit_entry_id)
+    await registry.propose_draft(devops_entity, await verdict_for(devops_entity.id))
+    await registry.propose_draft(finance_entity, await verdict_for(finance_entity.id))
 
     devops_results = await registry.list_entities(domain="devops")
     finance_results = await registry.list_entities(domain="finance")
@@ -261,12 +271,13 @@ async def test_list_entities_filters_by_domain(
 async def test_get_fragment_returns_persisted_fragment(
     db_engine: object,
     approved_audit_entry_id: UUID,
+    verdict_for: VerdictFactory,
 ) -> None:
     """get_fragment must return the correct fragment after propose_draft."""
     registry = SemanticLayerRegistry()
     fragment = _fragment(name="payment-flow")
 
-    await registry.propose_draft(fragment, approved_audit_entry_id)
+    await registry.propose_draft(fragment, await verdict_for(fragment.id))
     fetched = await registry.get_fragment(fragment.id)
 
     assert fetched.id == fragment.id
@@ -290,14 +301,15 @@ async def test_get_fragment_not_found(db_engine: object) -> None:
 async def test_list_fragments_filters_by_domain(
     db_engine: object,
     approved_audit_entry_id: UUID,
+    verdict_for: VerdictFactory,
 ) -> None:
     """list_fragments(domain=X) must return only fragments in domain X."""
     registry = SemanticLayerRegistry()
     f1 = _fragment(domain="devops")
     f2 = _fragment(domain="finance")
 
-    await registry.propose_draft(f1, approved_audit_entry_id)
-    await registry.propose_draft(f2, approved_audit_entry_id)
+    await registry.propose_draft(f1, await verdict_for(f1.id))
+    await registry.propose_draft(f2, await verdict_for(f2.id))
 
     devops_frags = await registry.list_fragments(domain="devops")
     finance_frags = await registry.list_fragments(domain="finance")
@@ -313,12 +325,13 @@ async def test_list_fragments_filters_by_domain(
 async def test_get_assumption_returns_persisted_assumption(
     db_engine: object,
     approved_audit_entry_id: UUID,
+    verdict_for: VerdictFactory,
 ) -> None:
     """get_assumption must return the correct assumption after propose_draft."""
     registry = SemanticLayerRegistry()
     assumption = _assumption()
 
-    await registry.propose_draft(assumption, approved_audit_entry_id)
+    await registry.propose_draft(assumption, await verdict_for(assumption.id))
     fetched = await registry.get_assumption(assumption.id)
 
     assert fetched.id == assumption.id
@@ -342,12 +355,13 @@ async def test_get_assumption_not_found(db_engine: object) -> None:
 async def test_list_pending_assumptions_returns_pending_only(
     db_engine: object,
     approved_audit_entry_id: UUID,
+    verdict_for: VerdictFactory,
 ) -> None:
     """list_pending_assumptions() must return only PENDING review_status assumptions."""
     registry = SemanticLayerRegistry()
     assumption = _assumption()
 
-    await registry.propose_draft(assumption, approved_audit_entry_id)
+    await registry.propose_draft(assumption, await verdict_for(assumption.id))
 
     pending = await registry.list_pending_assumptions()
     assert any(a.id == assumption.id for a in pending), (
@@ -358,14 +372,15 @@ async def test_list_pending_assumptions_returns_pending_only(
 async def test_list_pending_assumptions_filters_by_domain(
     db_engine: object,
     approved_audit_entry_id: UUID,
+    verdict_for: VerdictFactory,
 ) -> None:
     """list_pending_assumptions(domain=X) returns only assumptions in domain X."""
     registry = SemanticLayerRegistry()
     a_devops = _assumption(domain="devops")
     a_finance = _assumption(domain="finance")
 
-    await registry.propose_draft(a_devops, approved_audit_entry_id)
-    await registry.propose_draft(a_finance, approved_audit_entry_id)
+    await registry.propose_draft(a_devops, await verdict_for(a_devops.id))
+    await registry.propose_draft(a_finance, await verdict_for(a_finance.id))
 
     devops_pending = await registry.list_pending_assumptions(domain="devops")
     ids = {a.id for a in devops_pending}
@@ -379,6 +394,7 @@ async def test_list_pending_assumptions_filters_by_domain(
 async def test_list_pending_review_queue_returns_draft_objects(
     db_engine: object,
     approved_audit_entry_id: UUID,
+    verdict_for: VerdictFactory,
 ) -> None:
     """
     list_pending_review_queue() must return DRAFT entities, fragments, and edges
@@ -388,8 +404,8 @@ async def test_list_pending_review_queue_returns_draft_objects(
     entity = _entity(name="queue-entity")
     fragment = _fragment(name="queue-fragment")
 
-    await registry.propose_draft(entity, approved_audit_entry_id)
-    await registry.propose_draft(fragment, approved_audit_entry_id)
+    await registry.propose_draft(entity, await verdict_for(entity.id))
+    await registry.propose_draft(fragment, await verdict_for(fragment.id))
 
     queue = await registry.list_pending_review_queue(limit=50)
 
@@ -474,11 +490,12 @@ def test_parse_json_fields_invalid_json_leaves_unchanged() -> None:
 async def test_list_entities_with_status_filter(
     db_engine: object,
     approved_audit_entry_id: UUID,
+    verdict_for: VerdictFactory,
 ) -> None:
     """list_entities(status=DRAFT) must only return entities with DRAFT status."""
     registry = SemanticLayerRegistry()
     entity = _entity(name="status-filter-entity")
-    await registry.propose_draft(entity, approved_audit_entry_id)
+    await registry.propose_draft(entity, await verdict_for(entity.id))
 
     # Newly proposed entities default to DRAFT
     draft_results = await registry.list_entities(status=ApprovalStatus.DRAFT)
@@ -489,11 +506,12 @@ async def test_list_entities_with_status_filter(
 async def test_list_fragments_with_status_filter(
     db_engine: object,
     approved_audit_entry_id: UUID,
+    verdict_for: VerdictFactory,
 ) -> None:
     """list_fragments(status=DRAFT) must only return DRAFT fragments."""
     registry = SemanticLayerRegistry()
     fragment = _fragment(name="status-filter-fragment")
-    await registry.propose_draft(fragment, approved_audit_entry_id)
+    await registry.propose_draft(fragment, await verdict_for(fragment.id))
 
 
     draft_results = await registry.list_fragments(
@@ -506,21 +524,27 @@ async def test_list_fragments_with_status_filter(
 async def test_get_edge_audit_trail_returns_entries(
     db_engine: object,
     approved_audit_entry_id: UUID,
+    verdict_for: VerdictFactory,
 ) -> None:
     """
     get_edge_audit_trail must return AuditEntry records associated with the edge.
 
-    The CausalEdge references the approved_audit_entry_id as its guardian_verdict_ref.
-    After proposing the edge, the audit trail should contain at least that entry.
+    propose_draft records the verdict that authorised the write as the edge's
+    guardian_verdict_ref, so the trail must lead back to that verdict -- not to
+    whatever the caller happened to put on the draft.
     """
     registry = SemanticLayerRegistry()
     edge = _edge(verdict_id=approved_audit_entry_id)
+    authorising = await verdict_for(edge.id)
 
-    await registry.propose_draft(edge, approved_audit_entry_id)
+    await registry.propose_draft(edge, authorising)
 
     trail = await registry.get_edge_audit_trail(edge.id)
     assert len(trail) >= 1
-    assert any(str(entry.id) == str(approved_audit_entry_id) for entry in trail)
+    assert any(str(entry.id) == str(authorising) for entry in trail)
+    assert trail[0].policy_rules_cited == ["PR-FIXTURE"], (
+        "policy rules must survive the round trip as a list, not as characters"
+    )
 
 
 async def test_get_edge_audit_trail_not_found(db_engine: object) -> None:
@@ -534,12 +558,13 @@ async def test_get_edge_audit_trail_not_found(db_engine: object) -> None:
 async def test_get_edge_returns_persisted_edge(
     db_engine: object,
     approved_audit_entry_id: UUID,
+    verdict_for: VerdictFactory,
 ) -> None:
     """get_edge must return the correct CausalEdge after propose_draft."""
     registry = SemanticLayerRegistry()
     edge = _edge(verdict_id=approved_audit_entry_id)
 
-    await registry.propose_draft(edge, approved_audit_entry_id)
+    await registry.propose_draft(edge, await verdict_for(edge.id))
     fetched = await registry.get_edge(edge.id)
 
     assert fetched.id == edge.id
@@ -557,7 +582,7 @@ async def test_get_edge_not_found(db_engine: object) -> None:
 
 async def test_propose_draft_raises_type_error_for_unsupported_type(
     db_engine: object,
-    approved_audit_entry_id: UUID,
+    verdict_for: VerdictFactory,
 ) -> None:
     """propose_draft must raise TypeError when given an unsupported object type."""
     registry = SemanticLayerRegistry()
@@ -565,44 +590,65 @@ async def test_propose_draft_raises_type_error_for_unsupported_type(
     class _UnsupportedType:
         id = uuid4()
 
+    draft = _UnsupportedType()
     with pytest.raises(TypeError, match="Unsupported draft type"):
-        await registry.propose_draft(_UnsupportedType(), approved_audit_entry_id)  # type: ignore[arg-type]
+        await registry.propose_draft(draft, await verdict_for(draft.id))  # type: ignore[arg-type]
 
 
 async def test_promote_to_approved_updates_edge_status(
     db_engine: object,
     approved_audit_entry_id: UUID,
+    verdict_for: VerdictFactory,
+    db_session: AsyncSession,
 ) -> None:
     """
     promote_to_approved must update the approval_status of the target object.
 
-    Uses CausalEdge because the test SQLite schema includes both
-    guardian_verdict_ref and lineage columns for causal_edges.
+    It used to assert only "must not raise", which is why neither the status flip
+    nor the lineage it appends was ever checked -- and the lineage was being
+    corrupted under the dev engine the whole time.
     """
     registry = SemanticLayerRegistry()
     edge = _edge(verdict_id=approved_audit_entry_id)
-    await registry.propose_draft(edge, approved_audit_entry_id)
+    await registry.propose_draft(edge, await verdict_for(edge.id))
 
-    # Must not raise
+    approving = await verdict_for(edge.id)
     await registry.promote_to_approved(
         object_id=edge.id,
         object_type="CausalEdge",
-        verdict_id=approved_audit_entry_id,
+        verdict_id=approving,
         approver=_user(),
     )
+
+    row = await db_session.execute(
+        text(
+            "SELECT approval_status, approved_by, guardian_verdict_ref, lineage "
+            "FROM causal_edges WHERE id = :eid"
+        ),
+        {"eid": str(edge.id)},
+    )
+    record = row.mappings().one()
+    assert record["approval_status"] == "APPROVED"
+    assert str(record["guardian_verdict_ref"]) == str(approving)
+    lineage = json.loads(record["lineage"])
+    assert isinstance(lineage, list) and lineage, "lineage must be a JSON array"
+    assert lineage[-1]["step_type"] == "APPROVED"
+    assert lineage[-1]["actor_id"] == _user().id
 
 
 async def test_promote_to_approved_raises_for_unknown_type(
     db_engine: object,
     approved_audit_entry_id: UUID,
+    verdict_for: VerdictFactory,
 ) -> None:
     """promote_to_approved must raise ValueError for an unsupported object_type."""
     registry = SemanticLayerRegistry()
 
+    object_id = uuid4()
     with pytest.raises(ValueError, match="unknown object_type"):
         await registry.promote_to_approved(
-            object_id=uuid4(),
+            object_id=object_id,
             object_type="UnknownType",
-            verdict_id=approved_audit_entry_id,
+            verdict_id=await verdict_for(object_id),
             approver=_user(),
         )

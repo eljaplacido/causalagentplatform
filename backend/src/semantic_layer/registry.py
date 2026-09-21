@@ -12,6 +12,10 @@ Every write method validates the guardian_verdict_ref against the audit_log
 table before proceeding.  GuardianBlockedError is raised if:
   - The verdict_id does not exist in audit_log
   - The verdict is not APPROVED
+  - The verdict is not signed by the Guardian (a row in an append-only log is a
+    record of what happened, not an authorisation)
+  - The verdict was issued for a different object, or for none
+  - The verdict has already been spent (see verdict_consumption)
 
 The registry never imports or calls the GovernanceAgent directly — it only
 reads the audit_log table to verify verdict status.  This prevents circular
@@ -22,14 +26,13 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Sequence
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 import structlog
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 
 from src.db.factory import CloudSqlFactory
 from src.exceptions import GuardianBlockedError, ObjectNotFoundError
@@ -45,6 +48,13 @@ from src.semantic_layer.models import (
     ReviewStatus,
     UserRef,
 )
+from src.semantic_layer.verdict import claim as verdict_claim
+from src.semantic_layer.verdict import verify as verdict_verify
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 log = structlog.get_logger(__name__)
 
@@ -55,17 +65,34 @@ log = structlog.get_logger(__name__)
 async def _assert_verdict_approved(
     session: AsyncSession,
     verdict_id: UUID,
+    subject_id: UUID,
     context: str = "write",
 ) -> AuditEntry:
     """
-    Fetch the audit_log entry and assert it has verdict=APPROVED.
+    Assert that this verdict authorises *this* write, then spend it.
 
-    Raises GuardianBlockedError if the entry is missing or not APPROVED.
+    Four questions, all of which used to go unasked except the first two:
+
+      1. Does the verdict exist, and does it say APPROVED?
+      2. Was it issued by the Guardian? An unsigned row, or one whose signature
+         does not verify, is history rather than authority -- which matters
+         because two code paths insert APPROVED rows without going through the
+         Guardian at all, one of them under no role requirement.
+      3. Was it issued for *this* object? A verdict for object A is refused for
+         object B.
+      4. Has it been spent? Recorded by inserting into `verdict_consumption`,
+         because audit_log is append-only and cannot be marked. The primary key
+         there is what makes the second attempt fail.
+
+    Raises GuardianBlockedError on any of them. The verdict is spent before the
+    caller's write, in the caller's transaction: if the write then fails and rolls
+    back, the consumption rolls back with it, so a failed write does not burn a
+    verdict and a successful one cannot be repeated.
     """
     row = await session.execute(
         text(
             "SELECT id, agent_id, action_type, payload_hash, guardian_verdict, "
-            "policy_rules_cited, session_id, created_at "
+            "policy_rules_cited, session_id, created_at, subject_id, signature "
             "FROM audit_log WHERE id = :vid"
         ),
         {"vid": str(verdict_id)},
@@ -86,9 +113,71 @@ async def _assert_verdict_approved(
             verdict_id=str(verdict_id),
         )
 
+    created_at = record["created_at"]
+    statement = verdict_claim(
+        verdict_id=record["id"],
+        subject_id=record["subject_id"],
+        payload_hash=record["payload_hash"],
+        verdict=str(verdict_status),
+        action_type=record["action_type"],
+        agent_id=record["agent_id"],
+        created_at=created_at if isinstance(created_at, str) else created_at.isoformat(),
+    )
+    if not verdict_verify(statement, record["signature"]):
+        raise GuardianBlockedError(
+            reason=(
+                f"Guardian verdict {verdict_id} is not signed by the issuer — {context} "
+                "blocked. A row in audit_log is a record of what happened, not an "
+                "authorisation; only the Guardian can issue one."
+            ),
+            verdict_id=str(verdict_id),
+        )
+
+    issued_for = record["subject_id"]
+    if not issued_for:
+        raise GuardianBlockedError(
+            reason=(
+                f"Guardian verdict {verdict_id} names no subject, so it authorises no "
+                f"write — {context} blocked"
+            ),
+            verdict_id=str(verdict_id),
+        )
+    if str(issued_for) != str(subject_id):
+        raise GuardianBlockedError(
+            reason=(
+                f"Guardian verdict {verdict_id} was issued for object {issued_for}, "
+                f"not {subject_id} — {context} blocked"
+            ),
+            verdict_id=str(verdict_id),
+            subject_id=str(subject_id),
+        )
+
+    try:
+        await session.execute(
+            text(
+                "INSERT INTO verdict_consumption (verdict_id, subject_id, context, consumed_at) "
+                "VALUES (:vid, :sid, :ctx, :ts)"
+            ),
+            {
+                "vid": str(verdict_id),
+                "sid": str(subject_id),
+                "ctx": context,
+                "ts": datetime.now(UTC).isoformat(),
+            },
+        )
+    except IntegrityError as exc:
+        raise GuardianBlockedError(
+            reason=(
+                f"Guardian verdict {verdict_id} has already been used — {context} blocked. "
+                "A verdict authorises one write; obtain a new one."
+            ),
+            verdict_id=str(verdict_id),
+        ) from exc
+
     log.debug(
         "registry.verdict_verified",
         verdict_id=str(verdict_id),
+        subject_id=str(subject_id),
         context=context,
     )
 
@@ -98,10 +187,40 @@ async def _assert_verdict_approved(
         action_type=record["action_type"],
         payload_hash=record["payload_hash"],
         guardian_verdict=GuardianVerdict(record["guardian_verdict"]),
-        policy_rules_cited=list(record["policy_rules_cited"] or []),
+        policy_rules_cited=_as_rule_list(record["policy_rules_cited"]),
         session_id=record["session_id"],
         created_at=record["created_at"],
     )
+
+
+def _as_lineage(value: Any) -> list[dict[str, Any]]:
+    """Lineage as a list, whatever the engine handed back (JSON text or a list)."""
+    if not value:
+        return []
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return []
+        return list(parsed) if isinstance(parsed, list) else []
+    return list(value)
+
+
+def _as_rule_list(value: Any) -> list[str]:
+    """Policy rules come back as a JSON string on SQLite and a list on Postgres.
+
+    `list()` of a JSON string gives a list of single characters, which is what this
+    used to return under the dev engine.
+    """
+    if not value:
+        return []
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return [value]
+        return [str(v) for v in parsed] if isinstance(parsed, list) else [str(parsed)]
+    return [str(v) for v in value]
 
 
 def _object_hash(obj: dict[str, Any]) -> str:
@@ -401,7 +520,10 @@ class SemanticLayerRegistry:
         async with CloudSqlFactory.get_session_factory()() as session:
             # Verify verdict
             await _assert_verdict_approved(
-                session, verdict_id, context=f"propose_draft({type(draft).__name__})"
+                session,
+                verdict_id,
+                subject_id=draft.id,
+                context=f"propose_draft({type(draft).__name__})",
             )
 
             obj_id = draft.id
@@ -573,7 +695,10 @@ class SemanticLayerRegistry:
 
         async with CloudSqlFactory.get_session_factory()() as session:
             await _assert_verdict_approved(
-                session, verdict_id, context=f"promote_to_approved({object_type})"
+                session,
+                verdict_id,
+                subject_id=object_id,
+                context=f"promote_to_approved({object_type})",
             )
 
             now = datetime.now(UTC)
@@ -587,6 +712,19 @@ class SemanticLayerRegistry:
                 default=str,
             )
 
+            # Read, append, write. `lineage || :entry` concatenates arrays on
+            # Postgres but *strings* on SQLite, where it produced '[][{...}]' --
+            # not JSON, and nothing read it closely enough to notice.
+            current = await session.execute(
+                text(f"SELECT lineage FROM {table} WHERE id = :oid"),
+                {"oid": str(object_id)},
+            )
+            found = current.mappings().one_or_none()
+            if found is None:
+                raise ObjectNotFoundError(str(object_id), object_type)
+            history = _as_lineage(found["lineage"])
+            history.append(json.loads(lineage_entry))
+
             await session.execute(
                 text(
                     f"UPDATE {table} "
@@ -594,7 +732,7 @@ class SemanticLayerRegistry:
                     f"    approved_at = :approved_at, "
                     f"    approved_by = :approved_by, "
                     f"    guardian_verdict_ref = :verdict_ref, "
-                    f"    lineage = lineage || :lineage_entry "
+                    f"    lineage = :lineage "
                     f"WHERE id = :oid"
                 ),
                 {
@@ -602,7 +740,7 @@ class SemanticLayerRegistry:
                     "approved_at": now,
                     "approved_by": approver.model_dump_json(),
                     "verdict_ref": str(verdict_id),
-                    "lineage_entry": f"[{lineage_entry}]",
+                    "lineage": json.dumps(history),
                 },
             )
             await session.commit()

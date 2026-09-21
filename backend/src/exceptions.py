@@ -26,6 +26,8 @@ class GuardianBlockedError(CausalPlatformError):
       - The verdict is REQUIRES_ESCALATION
       - The verdict_id does not exist in the audit_log table
       - No verdict was supplied at all
+      - The verdict is not signed by the Guardian, was issued for a different
+        object, or has already been spent
 
     Never catch and suppress this error without routing to human escalation.
     """
@@ -35,14 +37,17 @@ class GuardianBlockedError(CausalPlatformError):
         reason: str,
         verdict_status: str | None = None,
         verdict_id: str | None = None,
+        subject_id: str | None = None,
     ) -> None:
         self.reason = reason
         self.verdict_status = verdict_status
         self.verdict_id = verdict_id
+        self.subject_id = subject_id
         super().__init__(
             f"Guardian blocked operation: {reason}"
             + (f" [verdict={verdict_status}]" if verdict_status else "")
             + (f" [id={verdict_id}]" if verdict_id else "")
+            + (f" [subject={subject_id}]" if subject_id else "")
         )
 
 

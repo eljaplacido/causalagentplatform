@@ -39,6 +39,8 @@ from src.semantic_layer.models import (
     EpistemicState,
     GuardianVerdict,
 )
+from src.semantic_layer.verdict import claim as verdict_claim
+from src.semantic_layer.verdict import sign as verdict_sign
 
 log = structlog.get_logger(__name__)
 
@@ -55,6 +57,20 @@ _POLICY_RULES = {
     "PR-008": "Drift-triggered actions: Any action initiated by drift detection must include full evidence payload and cannot modify semantic layer without re-validation workflow.",
     "PR-009": "Data contract enforcement: Agent actions consuming data products with active contract violations must be blocked or warned. Violations are surfaced for human review.",
 }
+
+
+#: Where a payload names the object a verdict would authorise. An agent proposing a
+#: draft puts the object's own id here; the API passes the path's object id. A payload
+#: with none gets a verdict that records what was checked but authorises no write.
+_SUBJECT_KEYS = ("subject_id", "object_id")
+
+
+def _subject_of(payload: dict[str, Any]) -> str | None:
+    for key in _SUBJECT_KEYS:
+        value = payload.get(key)
+        if value:
+            return str(value)
+    return None
 
 
 class GuardianCheckOutput:
@@ -236,6 +252,9 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
             )
 
         # Write audit entry BEFORE returning — this is the immutability contract.
+        # The subject is what the verdict will be allowed to authorise, and nothing
+        # else: a payload that names no subject yields a verdict that can be read
+        # but cannot be spent.
         audit_entry_id = await self._write_audit_entry(
             agent_id=self.agent_id,
             action_type=action_payload.get("action_type", "GUARDIAN_CHECK"),
@@ -243,6 +262,7 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
             verdict=verdict,
             policy_rules_cited=rules_fired,
             session_id=state.session_id,
+            subject_id=_subject_of(action_payload),
         )
 
         self._log.info(
@@ -434,6 +454,7 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
         verdict: GuardianVerdict,
         policy_rules_cited: list[str],
         session_id: str | None,
+        subject_id: str | None = None,
     ) -> UUID:
         """
         Append an immutable entry to audit_log.
@@ -444,26 +465,44 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
         Raises AuditWriteError if the insert fails (which is a P0 incident).
         """
         entry_id = uuid4()
+        verdict_value = verdict.value if hasattr(verdict, "value") else str(verdict)
+        created_at = datetime.now(UTC).isoformat()
+        # Signed here and nowhere else. A verdict's authority comes from this
+        # signature, so the one method that writes audit_log is the one method that
+        # can confer it -- an INSERT from anywhere else produces history, not power.
+        signature = verdict_sign(
+            verdict_claim(
+                verdict_id=entry_id,
+                subject_id=subject_id,
+                payload_hash=payload_hash,
+                verdict=verdict_value,
+                action_type=action_type,
+                agent_id=agent_id,
+                created_at=created_at,
+            )
+        )
         try:
             async with CloudSqlFactory.get_session_factory()() as session:
                 await session.execute(
                     text(
                         "INSERT INTO audit_log "
                         "(id, agent_id, action_type, payload_hash, guardian_verdict, "
-                        " policy_rules_cited, session_id, created_at) "
+                        " policy_rules_cited, session_id, created_at, subject_id, signature) "
                         "VALUES "
                         "(:id, :agent_id, :action_type, :payload_hash, :verdict, "
-                        " :rules, :session_id, :created_at)"
+                        " :rules, :session_id, :created_at, :subject_id, :signature)"
                     ),
                     {
                         "id": str(entry_id),
                         "agent_id": agent_id,
                         "action_type": action_type,
                         "payload_hash": payload_hash,
-                        "verdict": verdict.value if hasattr(verdict, "value") else str(verdict),
+                        "verdict": verdict_value,
                         "rules": json.dumps(list(policy_rules_cited)),
                         "session_id": session_id,
-                        "created_at": datetime.now(UTC).isoformat(),
+                        "created_at": created_at,
+                        "subject_id": subject_id,
+                        "signature": signature,
                     },
                 )
                 await session.commit()

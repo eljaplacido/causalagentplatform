@@ -53,6 +53,151 @@ def _get_env() -> str:
     return os.getenv("ENV", "local").lower()
 
 
+#: The schema the local/dev engine creates. The test suite runs *this* string --
+#: it used to keep its own copy in tests/conftest.py, which is how a suite ends up
+#: green against a schema production does not have.
+SQLITE_DDL = """
+CREATE TABLE IF NOT EXISTS audit_log (
+    id                  TEXT PRIMARY KEY,
+    agent_id            TEXT NOT NULL,
+    action_type         TEXT NOT NULL,
+    payload_hash        TEXT NOT NULL,
+    guardian_verdict    TEXT NOT NULL
+        CHECK (guardian_verdict IN ('APPROVED','REJECTED','REQUIRES_ESCALATION')),
+    policy_rules_cited  TEXT NOT NULL DEFAULT '[]',
+    session_id          TEXT,
+    created_at          TEXT NOT NULL,
+    subject_id          TEXT,
+    signature           TEXT
+);
+-- One verdict, one write. audit_log cannot carry a "used" flag because it is
+-- append-only, so consumption is an insert here and the primary key is the rule:
+-- the second attempt to spend a verdict violates it.
+CREATE TABLE IF NOT EXISTS verdict_consumption (
+    verdict_id          TEXT PRIMARY KEY
+        REFERENCES audit_log(id),
+    subject_id          TEXT NOT NULL,
+    context             TEXT NOT NULL,
+    consumed_at         TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS causal_entities (
+    id                  TEXT PRIMARY KEY,
+    name                TEXT NOT NULL,
+    entity_type         TEXT NOT NULL,
+    domain              TEXT NOT NULL,
+    description         TEXT,
+    attributes          TEXT NOT NULL DEFAULT '{}',
+    ontology_version    TEXT NOT NULL DEFAULT '1.0.0',
+    approval_status     TEXT NOT NULL DEFAULT 'DRAFT',
+    created_by          TEXT NOT NULL,
+    created_at          TEXT NOT NULL,
+    approved_at         TEXT,
+    approved_by         TEXT,
+    guardian_verdict_ref TEXT,
+    lineage             TEXT NOT NULL DEFAULT '[]',
+    tags                TEXT NOT NULL DEFAULT '[]'
+);
+CREATE TABLE IF NOT EXISTS assumptions (
+    id                  TEXT PRIMARY KEY,
+    statement           TEXT NOT NULL,
+    assumption_type     TEXT NOT NULL,
+    scope               TEXT NOT NULL DEFAULT '[]',
+    justification       TEXT NOT NULL,
+    elicited_from       TEXT NOT NULL,
+    elicited_by         TEXT NOT NULL,
+    elicited_at         TEXT NOT NULL,
+    review_status       TEXT NOT NULL DEFAULT 'PENDING',
+    last_reviewed_at    TEXT,
+    next_review_due     TEXT,
+    sensitivity_result  TEXT,
+    domain              TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS causal_edges (
+    id                  TEXT PRIMARY KEY,
+    source_id           TEXT NOT NULL,
+    source_type         TEXT NOT NULL,
+    target_id           TEXT NOT NULL,
+    target_type         TEXT NOT NULL,
+    edge_type           TEXT NOT NULL,
+    direction           TEXT NOT NULL DEFAULT 'FORWARD',
+    confidence          REAL NOT NULL,
+    evidence_refs       TEXT NOT NULL DEFAULT '[]',
+    assumption_refs     TEXT NOT NULL DEFAULT '[]',
+    approval_status     TEXT NOT NULL DEFAULT 'DRAFT',
+    approved_by         TEXT,
+    approved_at         TEXT,
+    guardian_verdict_ref TEXT NOT NULL
+        REFERENCES audit_log(id) DEFERRABLE INITIALLY DEFERRED,
+    version             TEXT NOT NULL DEFAULT '1.0.0',
+    lineage             TEXT NOT NULL DEFAULT '[]',
+    domain              TEXT NOT NULL,
+    created_at          TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS graph_fragments (
+    id                  TEXT PRIMARY KEY,
+    name                TEXT NOT NULL,
+    domain              TEXT NOT NULL,
+    description         TEXT NOT NULL DEFAULT '',
+    edge_ids            TEXT NOT NULL DEFAULT '[]',
+    entry_nodes         TEXT NOT NULL DEFAULT '[]',
+    exit_nodes          TEXT NOT NULL DEFAULT '[]',
+    approval_status     TEXT NOT NULL DEFAULT 'DRAFT',
+    version             TEXT NOT NULL DEFAULT '1.0.0',
+    usage_count         INTEGER NOT NULL DEFAULT 0,
+    tags                TEXT NOT NULL DEFAULT '[]',
+    guardian_verdict_ref TEXT REFERENCES audit_log(id),
+    created_by          TEXT NOT NULL,
+    created_at          TEXT NOT NULL,
+    approved_at         TEXT,
+    approved_by         TEXT
+);
+CREATE TABLE IF NOT EXISTS interventions (
+    id                      TEXT PRIMARY KEY,
+    name                    TEXT NOT NULL,
+    treatment_ref           TEXT,
+    target_entity_ref       TEXT,
+    initiated_by            TEXT NOT NULL,
+    initiated_at            TEXT NOT NULL,
+    approved_by             TEXT NOT NULL,
+    approval_timestamp      TEXT NOT NULL,
+    guardian_verdict_ref    TEXT NOT NULL REFERENCES audit_log(id),
+    expected_effect         TEXT NOT NULL,
+    actual_effect           TEXT,
+    feedback_loop_closed    INTEGER NOT NULL DEFAULT 0,
+    outcome_observed_at     TEXT,
+    created_at              TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS session_state (
+    session_id           TEXT PRIMARY KEY,
+    user_id              TEXT,
+    agent_id             TEXT NOT NULL,
+    state_json           TEXT NOT NULL,
+    created_at           TEXT NOT NULL,
+    updated_at           TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS incidents (
+    id                       TEXT PRIMARY KEY,
+    title                    TEXT NOT NULL,
+    severity                 TEXT NOT NULL,
+    affected_services        TEXT NOT NULL DEFAULT '[]',
+    status                   TEXT NOT NULL DEFAULT 'ACTIVE',
+    session_id               TEXT,
+    cynefin_domain           TEXT,
+    domain_confidence        REAL,
+    overall_confidence       REAL,
+    guardian_verdict         TEXT,
+    draft_explanation        TEXT NOT NULL DEFAULT '',
+    causal_hypotheses        TEXT NOT NULL DEFAULT '[]',
+    proposed_interventions   TEXT NOT NULL DEFAULT '[]',
+    submitted_by             TEXT NOT NULL,
+    created_at               TEXT NOT NULL,
+    updated_at               TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_incidents_created_at ON incidents (created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_incidents_status ON incidents (status);
+"""
+
+
 def _sqlite_url() -> str:
     """Return the aiosqlite connection URL for local development."""
     db_path = os.getenv(
@@ -214,136 +359,8 @@ class CloudSqlFactory:
         env = _get_env()
 
         if env == "local":
-            # SQLite-compatible DDL (mirrors 001_initial.sql without PG-only features)
-            _SQLITE_DDL = """
-CREATE TABLE IF NOT EXISTS audit_log (
-    id                  TEXT PRIMARY KEY,
-    agent_id            TEXT NOT NULL,
-    action_type         TEXT NOT NULL,
-    payload_hash        TEXT NOT NULL,
-    guardian_verdict    TEXT NOT NULL
-        CHECK (guardian_verdict IN ('APPROVED','REJECTED','REQUIRES_ESCALATION')),
-    policy_rules_cited  TEXT NOT NULL DEFAULT '[]',
-    session_id          TEXT,
-    created_at          TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS causal_entities (
-    id                  TEXT PRIMARY KEY,
-    name                TEXT NOT NULL,
-    entity_type         TEXT NOT NULL,
-    domain              TEXT NOT NULL,
-    description         TEXT,
-    attributes          TEXT NOT NULL DEFAULT '{}',
-    ontology_version    TEXT NOT NULL DEFAULT '1.0.0',
-    approval_status     TEXT NOT NULL DEFAULT 'DRAFT',
-    created_by          TEXT NOT NULL,
-    created_at          TEXT NOT NULL,
-    approved_at         TEXT,
-    approved_by         TEXT,
-    lineage             TEXT NOT NULL DEFAULT '[]',
-    tags                TEXT NOT NULL DEFAULT '[]'
-);
-CREATE TABLE IF NOT EXISTS assumptions (
-    id                  TEXT PRIMARY KEY,
-    statement           TEXT NOT NULL,
-    assumption_type     TEXT NOT NULL,
-    scope               TEXT NOT NULL DEFAULT '[]',
-    justification       TEXT NOT NULL,
-    elicited_from       TEXT NOT NULL,
-    elicited_by         TEXT NOT NULL,
-    elicited_at         TEXT NOT NULL,
-    review_status       TEXT NOT NULL DEFAULT 'PENDING',
-    last_reviewed_at    TEXT,
-    next_review_due     TEXT,
-    sensitivity_result  TEXT,
-    domain              TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS causal_edges (
-    id                  TEXT PRIMARY KEY,
-    source_id           TEXT NOT NULL,
-    source_type         TEXT NOT NULL,
-    target_id           TEXT NOT NULL,
-    target_type         TEXT NOT NULL,
-    edge_type           TEXT NOT NULL,
-    direction           TEXT NOT NULL DEFAULT 'FORWARD',
-    confidence          REAL NOT NULL,
-    evidence_refs       TEXT NOT NULL DEFAULT '[]',
-    assumption_refs     TEXT NOT NULL DEFAULT '[]',
-    approval_status     TEXT NOT NULL DEFAULT 'DRAFT',
-    approved_by         TEXT,
-    approved_at         TEXT,
-    guardian_verdict_ref TEXT NOT NULL
-        REFERENCES audit_log(id) DEFERRABLE INITIALLY DEFERRED,
-    version             TEXT NOT NULL DEFAULT '1.0.0',
-    lineage             TEXT NOT NULL DEFAULT '[]',
-    domain              TEXT NOT NULL,
-    created_at          TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS graph_fragments (
-    id                  TEXT PRIMARY KEY,
-    name                TEXT NOT NULL,
-    domain              TEXT NOT NULL,
-    description         TEXT NOT NULL DEFAULT '',
-    edge_ids            TEXT NOT NULL DEFAULT '[]',
-    entry_nodes         TEXT NOT NULL DEFAULT '[]',
-    exit_nodes          TEXT NOT NULL DEFAULT '[]',
-    approval_status     TEXT NOT NULL DEFAULT 'DRAFT',
-    version             TEXT NOT NULL DEFAULT '1.0.0',
-    usage_count         INTEGER NOT NULL DEFAULT 0,
-    tags                TEXT NOT NULL DEFAULT '[]',
-    guardian_verdict_ref TEXT REFERENCES audit_log(id),
-    created_by          TEXT NOT NULL,
-    created_at          TEXT NOT NULL,
-    approved_at         TEXT,
-    approved_by         TEXT
-);
-CREATE TABLE IF NOT EXISTS interventions (
-    id                      TEXT PRIMARY KEY,
-    name                    TEXT NOT NULL,
-    treatment_ref           TEXT,
-    target_entity_ref       TEXT,
-    initiated_by            TEXT NOT NULL,
-    initiated_at            TEXT NOT NULL,
-    approved_by             TEXT NOT NULL,
-    approval_timestamp      TEXT NOT NULL,
-    guardian_verdict_ref    TEXT NOT NULL REFERENCES audit_log(id),
-    expected_effect         TEXT NOT NULL,
-    actual_effect           TEXT,
-    feedback_loop_closed    INTEGER NOT NULL DEFAULT 0,
-    outcome_observed_at     TEXT,
-    created_at              TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS session_state (
-    session_id           TEXT PRIMARY KEY,
-    user_id              TEXT,
-    agent_id             TEXT NOT NULL,
-    state_json           TEXT NOT NULL,
-    created_at           TEXT NOT NULL,
-    updated_at           TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS incidents (
-    id                       TEXT PRIMARY KEY,
-    title                    TEXT NOT NULL,
-    severity                 TEXT NOT NULL,
-    affected_services        TEXT NOT NULL DEFAULT '[]',
-    status                   TEXT NOT NULL DEFAULT 'ACTIVE',
-    session_id               TEXT,
-    cynefin_domain           TEXT,
-    domain_confidence        REAL,
-    overall_confidence       REAL,
-    guardian_verdict         TEXT,
-    draft_explanation        TEXT NOT NULL DEFAULT '',
-    causal_hypotheses        TEXT NOT NULL DEFAULT '[]',
-    proposed_interventions   TEXT NOT NULL DEFAULT '[]',
-    submitted_by             TEXT NOT NULL,
-    created_at               TEXT NOT NULL,
-    updated_at               TEXT NOT NULL
-);
-CREATE INDEX IF NOT EXISTS ix_incidents_created_at ON incidents (created_at DESC);
-CREATE INDEX IF NOT EXISTS ix_incidents_status ON incidents (status);
-"""
             async with engine.begin() as conn:
-                for stmt in _SQLITE_DDL.strip().split(";"):
+                for stmt in SQLITE_DDL.strip().split(";"):
                     stmt = stmt.strip()
                     if stmt:
                         await conn.execute(sa_text(stmt))

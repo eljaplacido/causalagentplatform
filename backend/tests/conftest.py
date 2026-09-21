@@ -14,8 +14,8 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from collections.abc import AsyncGenerator
-from datetime import datetime
+from collections.abc import AsyncGenerator, Awaitable, Callable
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 import pytest
@@ -33,7 +33,7 @@ os.environ.setdefault("ENV", "local")
 
 # ── Import after ENV is set ────────────────────────────────────────────────────
 from src.agents.governance import GovernanceAgent
-from src.db.factory import CloudSqlFactory
+from src.db.factory import SQLITE_DDL, CloudSqlFactory
 from src.semantic_layer.models import (
     CausalEdge,
     CausalEntity,
@@ -46,124 +46,13 @@ from src.semantic_layer.models import (
     UserRef,
 )
 from src.semantic_layer.registry import SemanticLayerRegistry
+from src.semantic_layer.verdict import claim as verdict_claim
+from src.semantic_layer.verdict import sign as verdict_sign
 
-# ── SQLite DDL compatible with the PostgreSQL schema ──────────────────────────
-# SQLite does not support all PostgreSQL DDL features. We use a simplified
-# schema that covers the columns needed by the test suite.
-
-SQLITE_SCHEMA = """
-CREATE TABLE IF NOT EXISTS audit_log (
-    id                  TEXT PRIMARY KEY,
-    agent_id            TEXT NOT NULL,
-    action_type         TEXT NOT NULL,
-    payload_hash        TEXT NOT NULL,
-    guardian_verdict    TEXT NOT NULL
-        CHECK (guardian_verdict IN ('APPROVED','REJECTED','REQUIRES_ESCALATION')),
-    policy_rules_cited  TEXT NOT NULL DEFAULT '[]',
-    session_id          TEXT,
-    created_at          TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS causal_entities (
-    id                  TEXT PRIMARY KEY,
-    name                TEXT NOT NULL,
-    entity_type         TEXT NOT NULL,
-    domain              TEXT NOT NULL,
-    description         TEXT,
-    attributes          TEXT NOT NULL DEFAULT '{}',
-    ontology_version    TEXT NOT NULL DEFAULT '1.0.0',
-    approval_status     TEXT NOT NULL DEFAULT 'DRAFT',
-    created_by          TEXT NOT NULL,
-    created_at          TEXT NOT NULL,
-    approved_at         TEXT,
-    approved_by         TEXT,
-    lineage             TEXT NOT NULL DEFAULT '[]',
-    tags                TEXT NOT NULL DEFAULT '[]'
-);
-
-CREATE TABLE IF NOT EXISTS assumptions (
-    id                  TEXT PRIMARY KEY,
-    statement           TEXT NOT NULL,
-    assumption_type     TEXT NOT NULL,
-    scope               TEXT NOT NULL DEFAULT '[]',
-    justification       TEXT NOT NULL,
-    elicited_from       TEXT NOT NULL,
-    elicited_by         TEXT NOT NULL,
-    elicited_at         TEXT NOT NULL,
-    review_status       TEXT NOT NULL DEFAULT 'PENDING',
-    last_reviewed_at    TEXT,
-    next_review_due     TEXT,
-    sensitivity_result  TEXT,
-    domain              TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS causal_edges (
-    id                  TEXT PRIMARY KEY,
-    source_id           TEXT NOT NULL,
-    source_type         TEXT NOT NULL,
-    target_id           TEXT NOT NULL,
-    target_type         TEXT NOT NULL,
-    edge_type           TEXT NOT NULL,
-    direction           TEXT NOT NULL DEFAULT 'FORWARD',
-    confidence          REAL NOT NULL,
-    evidence_refs       TEXT NOT NULL DEFAULT '[]',
-    assumption_refs     TEXT NOT NULL DEFAULT '[]',
-    approval_status     TEXT NOT NULL DEFAULT 'DRAFT',
-    approved_by         TEXT,
-    approved_at         TEXT,
-    guardian_verdict_ref TEXT NOT NULL
-        REFERENCES audit_log(id) DEFERRABLE INITIALLY DEFERRED,
-    version             TEXT NOT NULL DEFAULT '1.0.0',
-    lineage             TEXT NOT NULL DEFAULT '[]',
-    domain              TEXT NOT NULL,
-    created_at          TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS graph_fragments (
-    id                  TEXT PRIMARY KEY,
-    name                TEXT NOT NULL,
-    domain              TEXT NOT NULL,
-    description         TEXT NOT NULL DEFAULT '',
-    edge_ids            TEXT NOT NULL DEFAULT '[]',
-    entry_nodes         TEXT NOT NULL DEFAULT '[]',
-    exit_nodes          TEXT NOT NULL DEFAULT '[]',
-    approval_status     TEXT NOT NULL DEFAULT 'DRAFT',
-    version             TEXT NOT NULL DEFAULT '1.0.0',
-    usage_count         INTEGER NOT NULL DEFAULT 0,
-    tags                TEXT NOT NULL DEFAULT '[]',
-    guardian_verdict_ref TEXT REFERENCES audit_log(id),
-    created_by          TEXT NOT NULL,
-    created_at          TEXT NOT NULL,
-    approved_at         TEXT,
-    approved_by         TEXT
-);
-
-CREATE TABLE IF NOT EXISTS interventions (
-    id                      TEXT PRIMARY KEY,
-    name                    TEXT NOT NULL,
-    treatment_ref           TEXT,
-    target_entity_ref       TEXT,
-    initiated_by            TEXT NOT NULL,
-    initiated_at            TEXT NOT NULL,
-    approved_by             TEXT NOT NULL,
-    approval_timestamp      TEXT NOT NULL,
-    guardian_verdict_ref    TEXT NOT NULL REFERENCES audit_log(id),
-    expected_effect         TEXT NOT NULL,
-    actual_effect           TEXT,
-    feedback_loop_closed    INTEGER NOT NULL DEFAULT 0,
-    outcome_observed_at     TEXT,
-    created_at              TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS session_state (
-    session_id           TEXT PRIMARY KEY,
-    user_id              TEXT,
-    agent_id             TEXT NOT NULL,
-    state_json           TEXT NOT NULL,
-    created_at           TEXT NOT NULL,
-    updated_at           TEXT NOT NULL
-);
-"""
+# The tests run the schema the dev engine creates, imported rather than copied.
+# This file used to hold its own near-identical version of it, which drifted:
+# the suite was green against an audit_log that production did not have.
+SQLITE_SCHEMA = SQLITE_DDL
 
 
 # ── Engine fixture (per-test isolated in-memory SQLite) ───────────────────────
@@ -195,7 +84,7 @@ async def db_engine() -> AsyncGenerator[AsyncEngine, None]:
 
     # Create schema
     async with engine.begin() as conn:
-        for statement in SQLITE_SCHEMA.strip().split(";\n\n"):
+        for statement in SQLITE_SCHEMA.strip().split(";"):
             stmt = statement.strip()
             if stmt:
                 await conn.execute(text(stmt))
@@ -231,63 +120,141 @@ async def db_session(db_engine: AsyncEngine) -> AsyncGenerator[AsyncSession, Non
         yield session
 
 
-# ── Pre-seeded approved audit entry ──────────────────────────────────────────
+#: What `verdict_for` is: give it the object you are about to write, get back a
+#: verdict that authorises that write and nothing else.
+VerdictFactory = Callable[[UUID], Awaitable[UUID]]
+
+
+# ── Issuing Guardian verdicts in tests ───────────────────────────────────────
+#
+# A verdict authorises exactly one write: it is signed by the issuer, names the
+# object it was issued for, and is spent on use. So a test cannot hold one
+# pre-seeded verdict and spend it on whatever it likes -- it asks for one per
+# object, the way real code does.
+#
+# `insert_raw_audit_entry` is the *unsigned* insert these fixtures used to do. It
+# is kept because forging is now something worth testing: a row written straight
+# into audit_log must be readable as history and refused as authority.
+
+
+async def insert_raw_audit_entry(
+    session: AsyncSession,
+    *,
+    verdict: str = "APPROVED",
+    subject_id: UUID | None = None,
+    signature: str | None = None,
+    agent_id: str = "test-agent",
+    action_type: str = "TEST_FIXTURE",
+    payload_hash: str | None = None,
+) -> UUID:
+    """Insert a row into audit_log directly, bypassing the Guardian.
+
+    This is what an attacker with database access -- or the interventions API --
+    can do. Without a valid signature the row cannot authorise a semantic write.
+    """
+    entry_id = uuid4()
+    await session.execute(
+        text(
+            "INSERT INTO audit_log "
+            "(id, agent_id, action_type, payload_hash, guardian_verdict, "
+            " policy_rules_cited, session_id, created_at, subject_id, signature) "
+            "VALUES (:id, :agent_id, :action_type, :hash, :verdict, :rules, :sid, :ts, "
+            " :subject_id, :signature)"
+        ),
+        {
+            "id": str(entry_id),
+            "agent_id": agent_id,
+            "action_type": action_type,
+            "hash": payload_hash or hashlib.sha256(b"fixture").hexdigest(),
+            "verdict": verdict,
+            "rules": json.dumps(["PR-FIXTURE"]),
+            "sid": "test-session-001",
+            "ts": datetime.now(UTC).isoformat(),
+            "subject_id": str(subject_id) if subject_id else None,
+            "signature": signature,
+        },
+    )
+    await session.commit()
+    return entry_id
+
+
+async def issue_verdict_for(
+    session: AsyncSession,
+    subject_id: UUID,
+    *,
+    verdict: str = "APPROVED",
+    agent_id: str = "test-agent",
+    action_type: str = "TEST_FIXTURE",
+) -> UUID:
+    """Issue a properly signed verdict bound to ``subject_id``.
+
+    Signs the same claim the Guardian signs, so the registry accepts it, without
+    needing to stand up a GovernanceAgent for every fixture.
+    """
+    entry_id = uuid4()
+    created_at = datetime.now(UTC).isoformat()
+    payload_hash = hashlib.sha256(str(subject_id).encode()).hexdigest()
+    signature = verdict_sign(
+        verdict_claim(
+            verdict_id=entry_id,
+            subject_id=subject_id,
+            payload_hash=payload_hash,
+            verdict=verdict,
+            action_type=action_type,
+            agent_id=agent_id,
+            created_at=created_at,
+        )
+    )
+    await session.execute(
+        text(
+            "INSERT INTO audit_log "
+            "(id, agent_id, action_type, payload_hash, guardian_verdict, "
+            " policy_rules_cited, session_id, created_at, subject_id, signature) "
+            "VALUES (:id, :agent_id, :action_type, :hash, :verdict, :rules, :sid, :ts, "
+            " :subject_id, :signature)"
+        ),
+        {
+            "id": str(entry_id),
+            "agent_id": agent_id,
+            "action_type": action_type,
+            "hash": payload_hash,
+            "verdict": verdict,
+            "rules": json.dumps(["PR-FIXTURE"]),
+            "sid": "test-session-001",
+            "ts": created_at,
+            "subject_id": str(subject_id),
+            "signature": signature,
+        },
+    )
+    await session.commit()
+    return entry_id
 
 
 @pytest_asyncio.fixture
 async def approved_audit_entry_id(db_session: AsyncSession) -> UUID:
-    """
-    Insert an APPROVED audit_log entry and return its UUID.
+    """An APPROVED row in audit_log, written directly -- which is all this ever was.
 
-    Used by tests that need a valid guardian_verdict_ref.
+    Useful as a `guardian_verdict_ref` foreign key and as the forged verdict the
+    binding tests must see refused. It authorises nothing: it is unsigned and names
+    no subject. Tests that need authority use `verdict_for`.
     """
-    entry_id = uuid4()
-    await db_session.execute(
-        text(
-            "INSERT INTO audit_log "
-            "(id, agent_id, action_type, payload_hash, guardian_verdict, "
-            " policy_rules_cited, session_id, created_at) "
-            "VALUES (:id, :agent_id, :action_type, :hash, :verdict, :rules, :sid, :ts)"
-        ),
-        {
-            "id": str(entry_id),
-            "agent_id": "test-agent",
-            "action_type": "TEST_FIXTURE",
-            "hash": hashlib.sha256(b"fixture").hexdigest(),
-            "verdict": "APPROVED",
-            "rules": json.dumps(["PR-FIXTURE"]),
-            "sid": "test-session-001",
-            "ts": datetime.utcnow().isoformat(),
-        },
-    )
-    await db_session.commit()
-    return entry_id
+    return await insert_raw_audit_entry(db_session)
+
+
+@pytest_asyncio.fixture
+async def verdict_for(db_session: AsyncSession) -> VerdictFactory:
+    """Factory: ``await verdict_for(obj.id)`` -> a verdict that authorises that write."""
+
+    async def _issue(subject_id: UUID, verdict: str = "APPROVED") -> UUID:
+        return await issue_verdict_for(db_session, subject_id, verdict=verdict)
+
+    return _issue
 
 
 @pytest_asyncio.fixture
 async def rejected_audit_entry_id(db_session: AsyncSession) -> UUID:
-    """Insert a REJECTED audit_log entry and return its UUID."""
-    entry_id = uuid4()
-    await db_session.execute(
-        text(
-            "INSERT INTO audit_log "
-            "(id, agent_id, action_type, payload_hash, guardian_verdict, "
-            " policy_rules_cited, session_id, created_at) "
-            "VALUES (:id, :agent_id, :action_type, :hash, :verdict, :rules, :sid, :ts)"
-        ),
-        {
-            "id": str(entry_id),
-            "agent_id": "test-agent",
-            "action_type": "TEST_FIXTURE",
-            "hash": hashlib.sha256(b"rejected-fixture").hexdigest(),
-            "verdict": "REJECTED",
-            "rules": json.dumps(["PR-001"]),
-            "sid": "test-session-rejected",
-            "ts": datetime.utcnow().isoformat(),
-        },
-    )
-    await db_session.commit()
-    return entry_id
+    """A REJECTED verdict, properly signed: refused because of its verdict, not its shape."""
+    return await issue_verdict_for(db_session, uuid4(), verdict="REJECTED")
 
 
 # ── Shared model factories ─────────────────────────────────────────────────────

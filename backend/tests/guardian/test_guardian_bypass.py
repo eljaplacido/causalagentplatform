@@ -28,7 +28,7 @@ from src.semantic_layer.models import (
     CynefinDomain,
     GuardianVerdict,
 )
-from tests.conftest import make_causal_edge, make_epistemic_state
+from tests.conftest import VerdictFactory, make_causal_edge, make_epistemic_state
 
 pytestmark = pytest.mark.guardian
 
@@ -342,6 +342,7 @@ async def test_audit_log_no_delete(
 async def test_every_semantic_write_has_audit_entry(
     db_session: AsyncSession,
     approved_audit_entry_id: UUID,
+    verdict_for: VerdictFactory,
     registry: Any,
 ) -> None:
     """
@@ -358,7 +359,7 @@ async def test_every_semantic_write_has_audit_entry(
          audit entry with guardian_verdict=APPROVED.'
     """
     edge = make_causal_edge(approved_audit_entry_id)
-    edge_id = await registry.propose_draft(edge, approved_audit_entry_id)
+    edge_id = await registry.propose_draft(edge, await verdict_for(edge.id))
 
     # Verify the edge was persisted
     edge_row = await db_session.execute(
