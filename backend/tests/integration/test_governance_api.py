@@ -167,21 +167,26 @@ async def test_guardian_check_requires_auth(db_engine: object) -> None:
 async def test_guardian_check_high_risk_confidence(
     gov_client: AsyncClient, db_engine: object
 ) -> None:
-    """Guardian check with hallucination risk payload returns a verdict (not a 5xx)."""
+    """A high hallucination risk must be refused *by the hallucination rule*.
+
+    This test used to put `hallucination_risk` inside `payload`, where no rule
+    reads it, and assert the verdict was one of two values. It passed because
+    every call was rejected by PR-006 for having no Cynefin domain -- a green test
+    that could not tell PR-002 working from PR-002 missing. Now it names the rule
+    it is testing and classifies the domain so that rule is the one reached.
+    """
     resp = await gov_client.post(
         "/api/governance/check",
         json={
             "action_type": "EDGE_PROPOSAL",
-            "payload": {
-                "hallucination_risk": 0.95,  # Above threshold — should trigger PR-002
-                "confidence": 0.3,
-                "source": "unknown",
-                "target": "unknown",
-            },
+            "payload": {"confidence": 0.3, "source": "unknown", "target": "unknown"},
+            "cynefin_domain": "COMPLICATED",
+            "hallucination_risk_score": 0.95,
         },
     )
     assert resp.status_code == 200
-    assert resp.json()["verdict"] in ("REJECTED", "REQUIRES_ESCALATION")
+    assert resp.json()["verdict"] == "REJECTED"
+    assert resp.json()["policy_rules_cited"] == ["PR-002"]
 
 
 # ── GET /review-queue ─────────────────────────────────────────────────────────

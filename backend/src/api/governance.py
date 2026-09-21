@@ -33,6 +33,7 @@ from src.exceptions import GuardianBlockedError, ObjectNotFoundError
 from src.middleware.auth import get_current_user, require_role
 from src.semantic_layer.models import (
     AuditEntry,
+    CynefinDomain,
     EpistemicState,
     GuardianVerdict,
     UserRef,
@@ -57,6 +58,28 @@ class GuardianCheckRequest(BaseModel):
     action_type: str = Field(..., description="Type of action being checked")
     payload: dict[str, Any] = Field(
         ..., description="The action payload to be evaluated by the Guardian"
+    )
+    subject_id: UUID | None = Field(
+        None,
+        description="The object this verdict would authorise a write to. Without it the "
+        "verdict records what was checked but authorises nothing, and /approve will "
+        "refuse it.",
+    )
+    cynefin_domain: CynefinDomain | None = Field(
+        None,
+        description="The situation's Cynefin domain, as classified by the caller. "
+        "Omitting it means DISORDER, which rule PR-006 rejects: the platform does not "
+        "approve actions in a situation nobody has classified.",
+    )
+    cycle_count: int = Field(
+        0, ge=0, description="Reasoning cycles so far; PR-005 escalates at 5."
+    )
+    hallucination_risk_score: float = Field(
+        0.0,
+        ge=0.0,
+        le=1.0,
+        description="The caller's own hallucination-risk estimate for this output. "
+        "PR-002 rejects above its threshold.",
     )
     session_id: str | None = Field(None, description="Current reasoning session ID")
 
@@ -131,15 +154,26 @@ async def guardian_check(
     uid = user.get("uid", "unknown")
     session_id = body.session_id or f"api-check-{uid}"
 
+    # The state is what the policy rules read. Building it bare was the whole of
+    # the defect this endpoint carried: `cynefin_domain` then defaulted to DISORDER,
+    # PR-006 fired before any other rule, and every call returned REJECTED --
+    # including calls whose payload was meant to trip a different rule entirely.
+    # Unclassified still means DISORDER and still gets rejected; the difference is
+    # that a caller who has classified the situation can now say so.
     state = EpistemicState(
         session_id=session_id,
         agent_id=f"api-user-{uid}",
+        cycle_count=body.cycle_count,
+        hallucination_risk_score=body.hallucination_risk_score,
+        **({"cynefin_domain": body.cynefin_domain} if body.cynefin_domain else {}),
     )
 
-    action_payload = {
+    action_payload: dict[str, Any] = {
         "action_type": body.action_type,
         **body.payload,
     }
+    if body.subject_id is not None:
+        action_payload["subject_id"] = str(body.subject_id)
 
     log.info(
         "api.governance.check",
