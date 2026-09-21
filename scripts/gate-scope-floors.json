@@ -55,12 +55,9 @@
       "items": []
     },
     "routes-tested": {
-      "why": "State-changing routes no test calls, over HTTP or by handler. /approve left this list on 2026-09-21 with backend/tests/integration/test_governance_approval_flow.py; /reject is still untested and still ignores the verdict it is handed.",
+      "why": "State-changing routes no test calls, over HTTP or by handler. The governance and intervention decision routes left this list on 2026-09-21; what remains is a provenance delete and a calibration endpoint.",
       "items": [
         "DELETE /api/v1/provenance/session/{session_id}",
-        "POST /api/governance/reject/{object_id}",
-        "POST /api/v1/interventions/{intervention_id}/approve",
-        "POST /api/v1/interventions/{intervention_id}/reject",
         "POST /api/v1/platform/evaluation/calibration"
       ]
     },

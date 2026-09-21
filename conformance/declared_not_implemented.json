@@ -209,66 +209,12 @@
       }
     },
     {
-      "id": "governance-reasons-not-stored",
-      "status": "declared-not-implemented",
-      "capability": "Approval notes and rejection reasons recorded in the audit trail",
-      "claimed_in": [
-        {
-          "at": "backend/src/api/governance.py:106",
-          "says": "notes: str | None = Field(None, description=\"Optional approval notes\")"
-        },
-        {
-          "at": "docs/UIX.md:127",
-          "says": "formally approve a proposed intervention with a reason attached, so the decision is recorded in the audit trail"
-        }
-      ],
-      "reality": "approve_object never passes the notes on, so they are discarded; a rejection's reason reaches audit_log only inside the SHA-256 payload_hash. No reason text is stored anywhere.",
-      "evidence": [
-        {
-          "at": "backend/src/api/governance.py:230",
-          "says": "await _registry.promote_to_approved("
-        },
-        {
-          "at": "backend/src/agents/governance.py:489",
-          "says": "(id, agent_id, action_type, payload_hash, guardian_verdict, "
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/integration/test_governance_reasons_recorded.py",
-        "asserts": "approve notes and reject reason are returned as text by GET /api/governance/audit-log for the decision's entry"
-      }
-    },
-    {
-      "id": "governance-reject-verdict-unchecked",
-      "status": "declared-not-implemented",
-      "capability": "Reject validates the Guardian verdict it is given",
-      "claimed_in": [
-        {
-          "at": "backend/src/api/governance.py:116",
-          "says": "description=\"ID of the Guardian REJECTED audit_log entry\""
-        }
-      ],
-      "reality": "RejectRequest requires verdict_id, but reject_object never reads it: any UUID is accepted.",
-      "evidence": [
-        {
-          "at": "backend/src/api/governance.py:260",
-          "says": "async def reject_object("
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/integration/test_governance_reject_verdict.py",
-        "asserts": "/reject with an unknown or non-REJECTED verdict_id is refused with a 4xx"
-      }
-    },
-    {
       "id": "review-queue-risk-tier",
       "status": "declared-not-implemented",
       "capability": "Review queue ordered by risk tier, showing who submitted each item",
       "claimed_in": [
         {
-          "at": "backend/src/api/governance.py:333",
+          "at": "backend/src/api/governance.py:338",
           "says": "summary=\"List pending drafts ordered by risk tier\""
         }
       ],
@@ -306,7 +252,7 @@
       "reality": "GET /api/governance/audit-log reads page and page_size; the client's `limit` query parameter is silently ignored and page_size defaults to 100.",
       "evidence": [
         {
-          "at": "backend/src/api/governance.py:381",
+          "at": "backend/src/api/governance.py:386",
           "says": "page_size: Annotated[int, Query(ge=1, le=500)] = 100,"
         }
       ],
@@ -395,7 +341,7 @@
       "reality": "The semantic layer (fragments, edges) is stored through SQLAlchemy (SQLite/PostgreSQL); Neo4j code exists only for the experience buffer and drift alerts, is exercised only against mocks, and no d-separation or path query runs in Neo4j.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:410",
+          "at": "backend/src/semantic_layer/registry.py:418",
           "says": "FROM graph_fragments"
         }
       ],
@@ -584,52 +530,6 @@
         "path": "packages/causal-decision/tests/d0/test_calibration.py",
         "asserts": "predicted and realized effects are compared over recorded decisions, with a pre-registered calibration bar and a seeded defect that breaks it"
       }
-    },
-    {
-      "id": "intervention-approval-no-role",
-      "status": "declared-not-implemented",
-      "capability": "Intervention approval restricted to governance roles",
-      "claimed_in": [
-        {
-          "at": "docs/CYBERSECURITY.md:70",
-          "says": "RBAC enforced at API layer, database layer, and semantic layer"
-        }
-      ],
-      "reality": "POST /api/v1/interventions/{id}/approve depends on get_current_user only, with no require_role, so any authenticated user can approve an intervention -- and doing so hand-writes an APPROVED row into audit_log. That row can no longer authorise a semantic-layer write (it is unsigned; see guardian-verdict-binding in left_the_list), but the intervention itself is approved by someone who may hold no governance role.",
-      "evidence": [
-        {
-          "at": "backend/src/api/interventions.py:437",
-          "says": "user: dict[str, Any] = Depends(get_current_user),"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/integration/test_intervention_approval_role.py",
-        "asserts": "approving an intervention without a governance role is refused with 403"
-      }
-    },
-    {
-      "id": "guardian-audit-write-skill",
-      "status": "declared-not-implemented",
-      "capability": "Agents cannot choose their own Guardian verdict",
-      "claimed_in": [
-        {
-          "at": "docs/AGENTS.md:19",
-          "says": "Every agent output passes the Guardian policy engine before persistence."
-        }
-      ],
-      "reality": "GovernanceAgent._execute_skill exposes an `audit_write` skill whose verdict comes from its own inputs, defaulting to APPROVED: an agent calling it writes whatever verdict it likes into audit_log. The row cannot authorise a semantic write (it is signed for no subject), but it still enters the audit trail as though the Guardian had ruled.",
-      "evidence": [
-        {
-          "at": "backend/src/agents/governance.py:558",
-          "says": "verdict=GuardianVerdict(inputs.get(\"verdict\", \"APPROVED\")),"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/guardian/test_audit_write_skill.py",
-        "asserts": "the audit_write skill cannot record a verdict the policy evaluation did not reach"
-      }
     }
   ],
   "left_the_list": [
@@ -698,6 +598,30 @@
       "was": "/check builds its EpistemicState with no Cynefin domain, which defaults to DISORDER, and Guardian rule PR-006 rejects every verdict in DISORDER -- so /check never returns APPROVED and /approve can never be satisfied through the API.",
       "fixed_in": "PENDING",
       "pinned_by": "backend/tests/integration/test_governance_approval_flow.py"
+    },
+    {
+      "id": "governance-reasons-not-stored",
+      "was": "approve_object never passes the notes on, so they are discarded; a rejection's reason reaches audit_log only inside the SHA-256 payload_hash. No reason text is stored anywhere.",
+      "fixed_in": "PENDING",
+      "pinned_by": "backend/tests/integration/test_governance_reasons_recorded.py"
+    },
+    {
+      "id": "governance-reject-verdict-unchecked",
+      "was": "RejectRequest requires verdict_id, but reject_object never reads it: any UUID is accepted.",
+      "fixed_in": "PENDING",
+      "pinned_by": "backend/tests/integration/test_governance_reject_verdict.py"
+    },
+    {
+      "id": "intervention-approval-no-role",
+      "was": "POST /api/v1/interventions/{id}/approve depends on get_current_user only, with no require_role, so any authenticated user can approve an intervention -- and doing so hand-writes an APPROVED row into audit_log. That row can no longer authorise a semantic-layer write (it is unsigned; see guardian-verdict-binding in left_the_list), but the intervention itself is approved by someone who may hold no governance role.",
+      "fixed_in": "PENDING",
+      "pinned_by": "backend/tests/integration/test_intervention_approval_role.py"
+    },
+    {
+      "id": "guardian-audit-write-skill",
+      "was": "GovernanceAgent._execute_skill exposes an `audit_write` skill whose verdict comes from its own inputs, defaulting to APPROVED: an agent calling it writes whatever verdict it likes into audit_log. The row cannot authorise a semantic write (it is signed for no subject), but it still enters the audit trail as though the Guardian had ruled.",
+      "fixed_in": "PENDING",
+      "pinned_by": "backend/tests/guardian/test_audit_write_skill.py"
     }
   ]
 }

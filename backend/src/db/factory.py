@@ -63,12 +63,13 @@ CREATE TABLE IF NOT EXISTS audit_log (
     action_type         TEXT NOT NULL,
     payload_hash        TEXT NOT NULL,
     guardian_verdict    TEXT NOT NULL
-        CHECK (guardian_verdict IN ('APPROVED','REJECTED','REQUIRES_ESCALATION')),
+        CHECK (guardian_verdict IN ('APPROVED','REJECTED','REQUIRES_ESCALATION','PENDING')),
     policy_rules_cited  TEXT NOT NULL DEFAULT '[]',
     session_id          TEXT,
     created_at          TEXT NOT NULL,
     subject_id          TEXT,
-    signature           TEXT
+    signature           TEXT,
+    notes               TEXT
 );
 -- One verdict, one write. audit_log cannot carry a "used" flag because it is
 -- append-only, so consumption is an insert here and the primary key is the rule:

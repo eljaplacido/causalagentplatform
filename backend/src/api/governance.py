@@ -240,12 +240,24 @@ async def approve_object(
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
+    # What the approver said, in the trail, as text. Written unsigned, so the
+    # record of a human decision can never be spent as authority for a write.
+    decision_id = await _governance.record_decision(
+        action_type="HUMAN_APPROVAL",
+        subject_id=str(object_id),
+        verdict=GuardianVerdict.APPROVED,
+        notes=body.notes,
+        actor_id=uid,
+        session_id=f"api-approve-{uid}",
+    )
+
     return {
         "status": "approved",
         "object_id": str(object_id),
         "object_type": body.object_type,
         "approved_by": uid,
         "verdict_id": str(body.verdict_id),
+        "audit_entry_id": str(decision_id),
     }
 
 
@@ -278,48 +290,41 @@ async def reject_object(
         reason=body.reason[:100],
     )
 
-    # Write the rejection to audit_log
-    action_payload: dict[str, Any] = {
-        "action_type": "REJECTION",
-        "object_id": str(object_id),
-        "object_type": body.object_type,
-        "reason": body.reason,
-        "rejected_by": uid,
-    }
-    state = EpistemicState(
+    # The verdict is checked, not merely required. This endpoint used to accept any
+    # UUID here and instead run a *fresh* Guardian check to manufacture an audit row
+    # -- one whose comment claimed it would be APPROVED, while in fact every check
+    # returned REJECTED for having no classified domain. Two bugs cancelling out.
+    rejector = UserRef(id=uid, email=user.get("email"), name=user.get("name"))
+    try:
+        await _registry.reject_draft(
+            object_id=object_id,
+            object_type=body.object_type,
+            verdict_id=body.verdict_id,
+            rejector=rejector,
+            reason=body.reason,
+        )
+    except GuardianBlockedError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ObjectNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    decision_id = await _governance.record_decision(
+        action_type="HUMAN_REJECTION",
+        subject_id=str(object_id),
+        verdict=GuardianVerdict.REJECTED,
+        notes=body.reason,
+        actor_id=uid,
         session_id=f"api-reject-{uid}",
-        agent_id=f"api-user-{uid}",
     )
-
-    # Run a governance check to create the audit entry
-    # (The check will return APPROVED since there's nothing blocking a rejection audit)
-    result = await _governance.check(action_payload, state)
-
-    # Update the object status to DEPRECATED (rejection marks it as deprecated)
-    table_map = {
-        "CausalEdge": "causal_edges",
-        "GraphFragment": "graph_fragments",
-        "CausalEntity": "causal_entities",
-    }
-    table = table_map.get(body.object_type)
-    if table:
-        async with CloudSqlFactory.get_session_factory()() as session:
-            await session.execute(
-                text(
-                    f"UPDATE {table} "
-                    f"SET approval_status = 'DEPRECATED' "
-                    f"WHERE id = :oid AND approval_status IN ('DRAFT', 'UNDER_REVIEW')"
-                ),
-                {"oid": str(object_id)},
-            )
-            await session.commit()
 
     return {
         "status": "rejected",
         "object_id": str(object_id),
         "object_type": body.object_type,
         "rejected_by": uid,
-        "audit_entry_id": str(result.audit_entry_id),
+        "audit_entry_id": str(decision_id),
         "reason": body.reason,
     }
 
@@ -420,7 +425,7 @@ async def get_audit_log(
         rows = await session.execute(
             text(
                 f"SELECT id, agent_id, action_type, payload_hash, guardian_verdict, "
-                f"policy_rules_cited, session_id, created_at "
+                f"policy_rules_cited, session_id, created_at, subject_id, notes "
                 f"FROM audit_log {where} "
                 f"ORDER BY created_at DESC "
                 f"LIMIT :limit OFFSET :offset"

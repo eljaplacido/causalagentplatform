@@ -560,8 +560,6 @@ class AuditEntry(BaseModel):
     Mirrors the audit_log DDL in 001_initial.sql and the AuditEntry TS interface.
     """
 
-    model_config = _SHARED_CONFIG
-
     id: UUID = Field(default_factory=uuid4)
     agent_id: str = Field(..., min_length=1)
     action_type: str = Field(..., min_length=1)
@@ -570,6 +568,12 @@ class AuditEntry(BaseModel):
     policy_rules_cited: list[str] = Field(default_factory=list)
     session_id: str | None = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    subject_id: UUID | None = Field(
+        default=None, description="The object this entry is about, when it is about one."
+    )
+    notes: str | None = Field(
+        default=None, description="What a person said when they decided: notes, or a reason."
+    )
 
     model_config = ConfigDict(
         populate_by_name=True,

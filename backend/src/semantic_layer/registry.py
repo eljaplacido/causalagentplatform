@@ -67,9 +67,14 @@ async def _assert_verdict_approved(
     verdict_id: UUID,
     subject_id: UUID,
     context: str = "write",
+    expected: GuardianVerdict = GuardianVerdict.APPROVED,
 ) -> AuditEntry:
     """
-    Assert that this verdict authorises *this* write, then spend it.
+    Assert that this verdict authorises *this* decision, then spend it.
+
+    ``expected`` is APPROVED for a write. A rejection needs the same four checks
+    against a REJECTED verdict: a human confirming a refusal should be acting on a
+    Guardian ruling about *this* object, not on any UUID they happened to send.
 
     Four questions, all of which used to go unasked except the first two:
 
@@ -106,9 +111,12 @@ async def _assert_verdict_approved(
         )
 
     verdict_status = record["guardian_verdict"]
-    if verdict_status != GuardianVerdict.APPROVED:
+    if verdict_status != expected:
         raise GuardianBlockedError(
-            reason=f"Guardian verdict is {verdict_status}, not APPROVED — {context} blocked",
+            reason=(
+                f"Guardian verdict is {verdict_status}, not {expected.value} — "
+                f"{context} blocked"
+            ),
             verdict_status=verdict_status,
             verdict_id=str(verdict_id),
         )
@@ -750,6 +758,80 @@ class SemanticLayerRegistry:
             object_type=object_type,
             object_id=str(object_id),
             approver_id=approver.id,
+            verdict_id=str(verdict_id),
+        )
+
+    #: Rejection marks an object DEPRECATED. ApprovalStatus has no REJECTED member,
+    #: and inventing one here would put a value in the column that the CHECK
+    #: constraint in 001_initial.sql does not allow.
+    _TABLES = {
+        "CausalEdge": "causal_edges",
+        "GraphFragment": "graph_fragments",
+        "CausalEntity": "causal_entities",
+    }
+
+    async def reject_draft(
+        self,
+        object_id: UUID,
+        object_type: str,
+        verdict_id: UUID,
+        rejector: UserRef,
+        reason: str,
+    ) -> None:
+        """Mark a draft REJECTED (stored as DEPRECATED), against a real REJECTED verdict.
+
+        The API has always *required* a verdict_id on rejection and never read it, so
+        any UUID was accepted. It gets the same four checks approval gets -- exists,
+        is the verdict it claims to be, signed by the Guardian, issued for this object,
+        not already spent -- because "this was refused for a reason" is a claim about
+        the record, and an unchecked one is worth nothing.
+        """
+        table = self._TABLES.get(object_type)
+        if table is None:
+            raise ValueError(f"reject_draft: unknown object_type '{object_type}'")
+
+        async with CloudSqlFactory.get_session_factory()() as session:
+            await _assert_verdict_approved(
+                session,
+                verdict_id,
+                subject_id=object_id,
+                context=f"reject_draft({object_type})",
+                expected=GuardianVerdict.REJECTED,
+            )
+
+            now = datetime.now(UTC)
+            current = await session.execute(
+                text(f"SELECT lineage, approval_status FROM {table} WHERE id = :oid"),
+                {"oid": str(object_id)},
+            )
+            found = current.mappings().one_or_none()
+            if found is None:
+                raise ObjectNotFoundError(str(object_id), object_type)
+            history = _as_lineage(found["lineage"])
+            history.append(
+                {
+                    "step_type": "REJECTED",
+                    "actor_id": rejector.id,
+                    "timestamp": now.isoformat(),
+                    "description": f"Rejected via verdict {verdict_id}: {reason}",
+                }
+            )
+
+            await session.execute(
+                text(
+                    f"UPDATE {table} "
+                    f"SET approval_status = 'DEPRECATED', lineage = :lineage "
+                    f"WHERE id = :oid AND approval_status IN ('DRAFT', 'UNDER_REVIEW')"
+                ),
+                {"oid": str(object_id), "lineage": json.dumps(history)},
+            )
+            await session.commit()
+
+        log.info(
+            "registry.object.rejected",
+            object_type=object_type,
+            object_id=str(object_id),
+            rejector_id=rejector.id,
             verdict_id=str(verdict_id),
         )
 

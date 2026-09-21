@@ -31,10 +31,14 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 
 from src.db.factory import CloudSqlFactory
-from src.middleware.auth import get_current_user
+from src.middleware.auth import get_current_user, require_role
 
 log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/api/v1/interventions", tags=["Interventions"])
+
+#: Who may decide an intervention. Reading them needs only authentication;
+#: deciding one writes a row that says a human approved it.
+DECISION_ROLES = ("governance_officer", "platform_engineer", "sre")
 
 
 # ── Request/Response ──────────────────────────────────────────────────────────
@@ -434,8 +438,14 @@ async def _record_decision(
 async def approve_intervention(
     intervention_id: str,
     body: InterventionDecisionRequest,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(require_role(*DECISION_ROLES)),
 ) -> InterventionDecisionResponse:
+    """Approving an intervention is a governance act, so it needs a governance role.
+
+    This endpoint required authentication and nothing else, while writing a row
+    into audit_log with `guardian_verdict = APPROVED`. CYBERSECURITY.md has always
+    claimed "RBAC enforced at API layer, database layer, and semantic layer".
+    """
     return await _record_decision(intervention_id, "APPROVED", body, user)
 
 
@@ -447,8 +457,9 @@ async def approve_intervention(
 async def reject_intervention(
     intervention_id: str,
     body: InterventionDecisionRequest,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(require_role(*DECISION_ROLES)),
 ) -> InterventionDecisionResponse:
+    """Rejecting is as much a decision of record as approving, so the same role."""
     return await _record_decision(intervention_id, "REJECTED", body, user)
 
 

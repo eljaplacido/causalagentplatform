@@ -283,6 +283,45 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
             session_id=state.session_id,
         )
 
+    # ── record_decision() — what a person decided, and why ───────────────────
+
+    async def record_decision(
+        self,
+        *,
+        action_type: str,
+        subject_id: str,
+        verdict: GuardianVerdict,
+        notes: str | None,
+        actor_id: str,
+        session_id: str | None = None,
+    ) -> UUID:
+        """Record a human decision in the audit trail, with the words they gave.
+
+        This is not a ruling and does not pretend to be one: no policy runs, and the
+        row is written *unsigned*, so it can be read back as history and can never be
+        spent as authority for a write. It exists because the API has always accepted
+        approval notes and a mandatory rejection reason and then dropped both -- the
+        reason reached audit_log only inside the payload hash, where nothing can read
+        it.
+        """
+        payload = {
+            "action_type": action_type,
+            "subject_id": subject_id,
+            "actor_id": actor_id,
+            "verdict": str(verdict),
+        }
+        return await self._write_audit_entry(
+            agent_id=f"human:{actor_id}",
+            action_type=action_type,
+            payload_hash=self._hash_payload(payload),
+            verdict=verdict,
+            policy_rules_cited=[],
+            session_id=session_id,
+            subject_id=subject_id,
+            notes=notes,
+            authority=False,
+        )
+
     # ── Policy evaluation ─────────────────────────────────────────────────────
 
     def _evaluate_policies(
@@ -455,6 +494,8 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
         policy_rules_cited: list[str],
         session_id: str | None,
         subject_id: str | None = None,
+        notes: str | None = None,
+        authority: bool = True,
     ) -> UUID:
         """
         Append an immutable entry to audit_log.
@@ -470,16 +511,25 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
         # Signed here and nowhere else. A verdict's authority comes from this
         # signature, so the one method that writes audit_log is the one method that
         # can confer it -- an INSERT from anywhere else produces history, not power.
-        signature = verdict_sign(
-            verdict_claim(
-                verdict_id=entry_id,
-                subject_id=subject_id,
-                payload_hash=payload_hash,
-                verdict=verdict_value,
-                action_type=action_type,
-                agent_id=agent_id,
-                created_at=created_at,
+        #
+        # `authority=False` writes the row unsigned on purpose. A record of a human
+        # decision belongs in the trail, but it is not a ruling and must never be
+        # spendable as one: unsigned is exactly how the registry reads "history, not
+        # authority", so the record is safe by the same rule that stops a forgery.
+        signature = (
+            verdict_sign(
+                verdict_claim(
+                    verdict_id=entry_id,
+                    subject_id=subject_id,
+                    payload_hash=payload_hash,
+                    verdict=verdict_value,
+                    action_type=action_type,
+                    agent_id=agent_id,
+                    created_at=created_at,
+                )
             )
+            if authority
+            else None
         )
         try:
             async with CloudSqlFactory.get_session_factory()() as session:
@@ -487,10 +537,11 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
                     text(
                         "INSERT INTO audit_log "
                         "(id, agent_id, action_type, payload_hash, guardian_verdict, "
-                        " policy_rules_cited, session_id, created_at, subject_id, signature) "
+                        " policy_rules_cited, session_id, created_at, subject_id, signature, "
+                        " notes) "
                         "VALUES "
                         "(:id, :agent_id, :action_type, :payload_hash, :verdict, "
-                        " :rules, :session_id, :created_at, :subject_id, :signature)"
+                        " :rules, :session_id, :created_at, :subject_id, :signature, :notes)"
                     ),
                     {
                         "id": str(entry_id),
@@ -503,6 +554,7 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
                         "created_at": created_at,
                         "subject_id": subject_id,
                         "signature": signature,
+                        "notes": notes,
                     },
                 )
                 await session.commit()
@@ -551,14 +603,33 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
                 "policy_rules_cited": result.policy_rules_cited,
             }
         if skill_name == "audit_write":
+            # The verdict is not the caller's to choose. This used to read
+            # `GuardianVerdict(inputs.get("verdict", "APPROVED"))`, so an agent
+            # asked to submit itself for review could instead write down that it
+            # had passed -- the one thing a policy engine exists to prevent.
+            #
+            # The row is still written, because a request to record something is
+            # worth recording. It is written as a note, unsigned, with no verdict
+            # of its own: PENDING is what "nobody has ruled on this" means, and an
+            # unsigned row authorises nothing. An agent that wants a ruling calls
+            # guardian_check, which runs the policies.
             entry_id = await self._write_audit_entry(
                 agent_id=inputs.get("agent_id", self.agent_id),
                 action_type=inputs.get("action_type", "MANUAL_AUDIT"),
                 payload_hash=inputs.get("payload_hash", self._hash_payload(inputs)),
-                verdict=GuardianVerdict(inputs.get("verdict", "APPROVED")),
-                policy_rules_cited=inputs.get("policy_rules_cited", []),
+                verdict=GuardianVerdict.PENDING,
+                policy_rules_cited=[],
                 session_id=inputs.get("session_id"),
+                notes=inputs.get("notes"),
+                authority=False,
             )
-            return {"audit_entry_id": str(entry_id)}
+            return {
+                "audit_entry_id": str(entry_id),
+                "verdict": str(GuardianVerdict.PENDING),
+                "note": (
+                    "Recorded, not ruled on. Call guardian_check for a verdict; "
+                    "this skill cannot issue one."
+                ),
+            }
 
         return await super()._execute_skill(skill_name, inputs, state)

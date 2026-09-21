@@ -54,10 +54,10 @@
       "baseline": {
         "on": "2026-09-21",
         "sha256": {
-          "conformance/declared_not_implemented.json": "64ea645e28a1cf28154fcf551165f44584dfb818efd674d39c1f0c9e65997e90",
-          "backend/src": "4fa1240770344772df9e828e2b41bc77d89ccc35dd623e383bb73bbc99d546ce",
+          "conformance/declared_not_implemented.json": "2f507532d7f26177c82a260e012a3b6319828c544498b6e7d796c5b0754d72b8",
+          "backend/src": "4a8f189efecaca0c7ae92adc8188cb60c650ec7a09a118dc61b93c238556584c",
           "backend/mcp_server": "906126ac2e95942d33fa44c6abe372051ab452e3022a978c6d5ad78c28a2f6d5",
-          "backend/tests": "19b7478e236439dc3b4dcd4cc8e95ec83cadca40655222c88545d80e3efee5d9",
+          "backend/tests": "b5e3c93f7de6a3b8cfced29fc8829ac67fc9811e94bcc1e5fa2d20a642882a9f",
           "frontend/src": "43b4fec5fbddbf1cbeab0cc5dc3aa23933dd6678419738027cbf5fa27d48f428",
           "packages": "52280bd8b424eb9c8d673c1859ed092b9e9275f77b081a1d346bb9284d272f3c",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
@@ -65,7 +65,7 @@
       },
       "last_read": {
         "on": "2026-09-21",
-        "by": "Claude (governance rows rewritten after the verdict-binding change)"
+        "by": "Claude (four governance rows now implemented)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {

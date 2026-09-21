@@ -76,3 +76,41 @@ ALTER TABLE causal_entities
 COMMENT ON COLUMN causal_entities.guardian_verdict_ref IS
     'The Guardian verdict that approved this entity. NULL for rows approved '
     'before the approval path worked end to end.';
+
+-- ===========================================================================
+-- audit_log.notes
+--
+-- What a person said when they approved or rejected something. The API has
+-- always accepted `notes` on /approve and a required `reason` on /reject, and
+-- discarded both: the reason reached audit_log only inside the SHA-256
+-- payload_hash, from which it cannot be read back. "The reason is stored in
+-- the audit trail" was in the endpoint's own docstring.
+--
+-- Not covered by the signature, deliberately. A signature is what makes a row
+-- an *authorisation*; these rows are records of a human decision and are
+-- written unsigned precisely so they can never be spent as authority. The
+-- table is append-only, so the text cannot be altered after the fact either
+-- way.
+-- ===========================================================================
+
+ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS notes TEXT;
+
+COMMENT ON COLUMN audit_log.notes IS
+    'Free text a person gave with a decision: approval notes, rejection reason.';
+
+-- ===========================================================================
+-- audit_log.guardian_verdict: allow PENDING
+--
+-- GuardianVerdict has four members and this column has always allowed three,
+-- so any code path serialising PENDING raised AuditWriteError -- an error the
+-- platform treats as a P0 incident -- rather than writing a row.
+--
+-- It is needed now for an honest reason. The `audit_write` skill used to let
+-- an agent name its own verdict, defaulting to APPROVED; it now records the
+-- request without ruling on it, and PENDING is what "nobody has ruled on this"
+-- means. The row is also written unsigned, so it authorises nothing.
+-- ===========================================================================
+
+ALTER TABLE audit_log DROP CONSTRAINT IF EXISTS audit_log_guardian_verdict_check;
+ALTER TABLE audit_log ADD CONSTRAINT audit_log_guardian_verdict_check
+    CHECK (guardian_verdict IN ('APPROVED', 'REJECTED', 'REQUIRES_ESCALATION', 'PENDING'));
