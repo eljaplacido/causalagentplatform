@@ -564,7 +564,7 @@
       "capability": "Calibration of decisions: comparing the effect predicted before acting with the effect realized after",
       "claimed_in": [
         {
-          "at": "docs/ROADMAP.md:53",
+          "at": "docs/ROADMAP.md:58",
           "says": "**Outcome capture and calibration.** Compare predicted with realized effects; publish regret and"
         },
         {
