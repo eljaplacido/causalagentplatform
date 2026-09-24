@@ -258,6 +258,53 @@ def _parse_json_fields(raw: dict[str, Any], fields: list[str]) -> dict[str, Any]
     return result
 
 
+def _force_draft_status(
+    draft: CausalEdge | GraphFragment | CausalEntity | Assumption,
+) -> CausalEdge | GraphFragment | CausalEntity | Assumption:
+    """Return the object as a DRAFT, whatever status it claimed to arrive with.
+
+    The approval state of a semantic object is decided by the review flow, not
+    by the object.  Everything the model validators inspect before permitting
+    APPROVED -- `approved_by`, `approved_at`, `guardian_verdict_ref` -- comes
+    from the submitter, so validation cannot be the control here; the write
+    path has to be.
+
+    The approver fields are cleared alongside the status: leaving a name and a
+    timestamp on a DRAFT would put an approval in the record that never
+    happened, which is the same lie one field further down.
+
+    `Assumption` carries no approval fields and is returned untouched.
+    """
+    updates: dict[str, Any]
+    if isinstance(draft, GraphFragment):
+        # A fragment's validator requires guardian_verdict_ref when APPROVED.
+        # Back at DRAFT it carries no meaning, and keeping a submitter-chosen
+        # UUID there would leave a reference nothing issued.
+        updates = {
+            "approval_status": FragmentApprovalStatus.DRAFT,
+            "guardian_verdict_ref": None,
+        }
+    elif isinstance(draft, CausalEdge | CausalEntity):
+        updates = {
+            "approval_status": ApprovalStatus.DRAFT,
+            "approved_by": None,
+            "approved_at": None,
+        }
+    else:
+        return draft
+
+    if all(getattr(draft, field) == value for field, value in updates.items()):
+        return draft
+
+    log.warning(
+        "registry.draft_status_forced",
+        object_type=type(draft).__name__,
+        object_id=str(draft.id),
+        submitted_as=_sv(draft.approval_status),
+    )
+    return draft.model_copy(update=updates)
+
+
 def _sv(v: Any) -> Any:
     """
     Serialize a value for SQLite/PostgreSQL binding.
@@ -519,12 +566,22 @@ class SemanticLayerRegistry:
         """
         Persist a draft semantic object after verifying the Guardian verdict.
 
-        The verdict must be APPROVED.  Draft objects may be persisted with
-        approval_status=DRAFT — they require a *separate* promote_to_approved
-        call after human review.
+        The verdict must be APPROVED.  The object is persisted as a DRAFT
+        whatever status it arrived with — promotion is a *separate*
+        promote_to_approved call after human review.
+
+        That is enforced here rather than trusted from the caller, because the
+        approval fields travel inside the submitted object: `approval_status`,
+        and the `approved_by` / `approved_at` / `guardian_verdict_ref` the model
+        validators ask for before allowing APPROVED are all chosen by whoever
+        submitted it.  A verdict authorises *a write*; it does not license the
+        object to say what is written.  See
+        tests/guardian/test_draft_cannot_self_approve.py.
 
         Returns the UUID of the newly created object.
         """
+        draft = _force_draft_status(draft)
+
         async with CloudSqlFactory.get_session_factory()() as session:
             # Verify verdict
             await _assert_verdict_approved(

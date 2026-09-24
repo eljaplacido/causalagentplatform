@@ -546,7 +546,6 @@ REVIEW_ENTITIES = [
 def seed_review_queue(engine: Any) -> dict[str, Any]:
     """Seed the governance review queue with DRAFT and UNDER_REVIEW objects."""
     created: dict[str, Any] = {"fragments": [], "entities": []}
-    now = _now_iso()
 
     async def _seed():
         async with CloudSqlFactory.get_session_factory()() as session:

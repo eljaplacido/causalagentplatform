@@ -194,7 +194,7 @@ async def store_incident(
                 "guardian_verdict": guardian_verdict or "",
             }
         )
-        record = await result.single()
+        await result.single()  # consume the cursor
 
         # Create service nodes and relationships
         for service in (services or []):

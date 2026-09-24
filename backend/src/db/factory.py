@@ -63,11 +63,49 @@ def ddl_statements(ddl: str) -> list[str]:
     how a schema change can fail with "near 'the': syntax error" and take a while to
     place. Comments are stripped first, and the split is on the statement terminator
     at the end of a line.
+
+    A trigger body is the other place a ``;`` is not a terminator: SQLite's
+    ``CREATE TRIGGER ... BEGIN SELECT RAISE(...); END;`` carries one inside the
+    block. Splitting naively yields two fragments, neither of which parses, so
+    a schema that declares triggers would fail to build -- or, worse, be
+    dropped quietly by a caller that tolerates errors. Inside a trigger, only a
+    line ending in ``END;`` terminates the statement.
     """
-    stripped = "\n".join(
+    stripped = [
         line for line in ddl.splitlines() if not line.lstrip().startswith("--")
-    )
-    return [stmt.strip() for stmt in stripped.split(";") if stmt.strip()]
+    ]
+
+    statements: list[str] = []
+    buffer: list[str] = []
+    in_trigger = False
+
+    for line in stripped:
+        buffer.append(line)
+        text = line.strip()
+        upper = text.upper()
+
+        if not in_trigger and upper.startswith("CREATE TRIGGER"):
+            in_trigger = True
+
+        if in_trigger:
+            if upper.endswith("END;"):
+                statements.append("\n".join(buffer).strip().rstrip(";").strip())
+                buffer = []
+                in_trigger = False
+            continue
+
+        while ";" in text:
+            head, _, text = text.partition(";")
+            buffer[-1] = head
+            candidate = "\n".join(buffer).strip()
+            if candidate:
+                statements.append(candidate)
+            buffer = [text]
+
+    tail = "\n".join(buffer).strip().rstrip(";").strip()
+    if tail:
+        statements.append(tail)
+    return statements
 
 
 SQLITE_DDL = """
@@ -225,6 +263,22 @@ CREATE TABLE IF NOT EXISTS incidents (
 );
 CREATE INDEX IF NOT EXISTS ix_incidents_created_at ON incidents (created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_incidents_status ON incidents (status);
+
+-- audit_log is append-only. 001_initial.sql enforces this in PostgreSQL with
+-- fn_audit_log_no_mutation; these are the SQLite equivalents, added 2026-09-24.
+-- Without them the invariant held in production and not in any test: the
+-- guardian suite's UPDATE and DELETE cases ran against a store that allowed
+-- both, and passed because neither re-read the row afterwards.
+CREATE TRIGGER IF NOT EXISTS tg_audit_log_no_update
+BEFORE UPDATE ON audit_log
+BEGIN
+    SELECT RAISE(ABORT, 'audit_log is append-only: UPDATE operations are forbidden');
+END;
+CREATE TRIGGER IF NOT EXISTS tg_audit_log_no_delete
+BEFORE DELETE ON audit_log
+BEGIN
+    SELECT RAISE(ABORT, 'audit_log is append-only: DELETE operations are forbidden');
+END;
 """
 
 

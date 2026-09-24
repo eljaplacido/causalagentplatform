@@ -341,7 +341,7 @@
       "reality": "The semantic layer (fragments, edges) is stored through SQLAlchemy (SQLite/PostgreSQL); Neo4j code exists only for the experience buffer and drift alerts, is exercised only against mocks, and no d-separation or path query runs in Neo4j.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:418",
+          "at": "backend/src/semantic_layer/registry.py:465",
           "says": "FROM graph_fragments"
         }
       ],

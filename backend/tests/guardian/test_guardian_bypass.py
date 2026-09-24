@@ -241,9 +241,23 @@ async def test_audit_log_no_update(
         # Either outcome is acceptable.
         pass
 
-    # Re-read: if SQLite silently updated, the test verifies that the production
-    # code path (via application layer) never generates UPDATEs.
-    # The crucial guard is: application code never calls UPDATE audit_log.
+    # Re-read and compare. Until 2026-09-24 this test captured `original_action`
+    # above, attempted the UPDATE, and then stopped -- so whether the row had
+    # actually been tampered with was never checked, and the assertion the test
+    # is named for was not made. The static check above is about the application
+    # code; this is about the store.
+    after = (
+        await db_session.execute(
+            text("SELECT action_type FROM audit_log WHERE id = :id"),
+            {"id": str(approved_audit_entry_id)},
+        )
+    ).scalar_one()
+    assert after == original_action, (
+        "the audit row was silently rewritten: the UPDATE neither raised nor was "
+        f"refused, and action_type went from {original_action!r} to {after!r}. "
+        "In the production schema 001_initial.sql's trigger blocks this; under the "
+        "test's SQLite this assertion is what stands in for it."
+    )
 
 
 @pytest.mark.asyncio
