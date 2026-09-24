@@ -3,7 +3,7 @@
 > **Status:** Proposed
 > **Date:** 2026-05-05
 > **Decision Owner:** Platform Architecture
-> **Trigger:** World Models for Agents & LLMs report (§2.2 Causal Reasoning, §2.5 Long-Horizon Planning)
+> **Trigger:** [World Models for Agents & LLMs report](research/world-models-for-agents-and-llms.md) (§2.2 Causal Reasoning, §2.5 Long-Horizon Planning)
 > **Replaces:** N/A — extends existing LangGraph orchestration
 
 ## Summary

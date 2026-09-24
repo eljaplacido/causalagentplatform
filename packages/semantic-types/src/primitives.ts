@@ -27,7 +27,8 @@ export type CausalEntityType =
   | "INCIDENT"
   | "DEPLOYMENT"
   | "FEATURE"
-  | "EMPLOYEE";
+  | "EMPLOYEE"
+  | "OTHER";
 
 export type EdgeType = "CAUSES" | "MEDIATES" | "CONFOUNDS" | "MODERATES" | "BLOCKS";
 export type EdgeDirection = "FORWARD" | "BACKWARD" | "BIDIRECTIONAL_FORBIDDEN";

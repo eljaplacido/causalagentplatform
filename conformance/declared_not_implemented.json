@@ -79,7 +79,7 @@
         },
         {
           "at": "backend/src/agents/causal_discovery.py:394",
-          "says": "stub \u2014 real data required"
+          "says": "stub — real data required"
         }
       ],
       "leaves_by": {
@@ -188,7 +188,7 @@
         },
         {
           "at": "docs/AGENTS.md:613",
-          "says": "the LLM factory resolves capability \u2192 provider at runtime"
+          "says": "the LLM factory resolves capability → provider at runtime"
         },
         {
           "at": "docs/AGENTS.md:623",
@@ -598,6 +598,76 @@
         "kind": "test",
         "path": "packages/causal-decision/tests/test_segments.py",
         "asserts": "a result whose segments differ is not automated on the pooled effect; the verdict names the heterogeneity"
+      }
+    },
+    {
+      "id": "frontend-vocabulary-divergence",
+      "status": "declared-not-implemented",
+      "capability": "The frontend narrows on the canonical semantic-layer vocabulary",
+      "claimed_in": [
+        {
+          "at": "frontend/src/lib/types.ts:4",
+          "says": " * Canonical semantic layer types are imported from @causalplatform/semantic-types."
+        },
+        {
+          "at": "frontend/src/lib/types.ts:5",
+          "says": " * This file contains ONLY frontend-specific extensions and UI-facing types that"
+        }
+      ],
+      "reality": "types.ts imports two names and redeclares seventeen that the canonical package already defines. Two of those carry a different vocabulary: ReviewStatus is PENDING/UNDER_REVIEW/APPROVED/REJECTED/ESCALATED in the frontend against PENDING/ACCEPTED/CONTESTED/REJECTED in the backend enum and the package, and EvidenceType is STATISTICAL_TEST/DOCUMENT_CITATION/EXPERT_KNOWLEDGE/METRIC_OBSERVATION against STATISTICAL_TEST/DOCUMENT/EXPERT_KNOWLEDGE/EXPERIMENT/SIMULATION. tsc cannot see this, because a union redeclared in a second file is a second type and not a conflict: the frontend narrows on values no endpoint sends, and has no branch for values that are sent. Both are listed in scripts/contract-parity.json and the contract-parity gate fails on any new one.",
+      "evidence": [
+        {
+          "at": "frontend/src/lib/types.ts:248",
+          "says": "  | \"UNDER_REVIEW\""
+        },
+        {
+          "at": "frontend/src/lib/types.ts:74",
+          "says": "  | \"DOCUMENT_CITATION\""
+        },
+        {
+          "at": "backend/src/semantic_layer/models.py:137",
+          "says": "class ReviewStatus(StrEnum):"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "frontend/src/lib/__tests__/types-parity.test.ts",
+        "asserts": "the frontend imports ReviewStatus and EvidenceType from @causalplatform/semantic-types rather than redeclaring them, and scripts/contract-parity.json lists no divergence"
+      }
+    },
+    {
+      "id": "evaluation-endpoints-not-measured",
+      "status": "declared-not-implemented",
+      "capability": "Agent evaluation endpoints (consistency, calibration, decision quality) measure the running platform",
+      "claimed_in": [
+        {
+          "at": "backend/src/api/platform.py:719",
+          "says": "    summary=\"Agent confidence calibration probe\","
+        },
+        {
+          "at": "backend/src/api/platform.py:761",
+          "says": "    summary=\"Composite decision quality index\","
+        }
+      ],
+      "reality": "None of the three observes an agent. /evaluation/consistency scores num_runs identical EMPTY recommendation lists against each other, so the variance it reports is 0 by construction whatever the platform is doing. /evaluation/calibration scores the confidences in the request body, and CalibrationProbe states it uses their variance as a proxy because there is no ground truth -- calibration needs realized outcomes, and nothing records one. /evaluation/decision-quality combines four numbers taken as query parameters, defaulting to 0.75/0.05/0.80/0.70, so its 'index' is whatever the caller passes. The module docstring claimed 'No static or mock values' until 2026-09-24; it now names these three as excluded.",
+      "evidence": [
+        {
+          "at": "backend/src/api/platform.py:699",
+          "says": "    mock_recommendations: list[list[Any]] = [[] for _ in range(num_runs)]"
+        },
+        {
+          "at": "backend/src/evaluation/probes.py:58",
+          "says": "        - Variance of confidence scores as a proxy for calibration"
+        },
+        {
+          "at": "backend/src/api/platform.py:767",
+          "says": "    calibration_score: float = Query(default=0.70, ge=0.0, le=1.0),"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/integration/test_evaluation_endpoints.py",
+        "asserts": "each endpoint's answer changes when the platform's recorded behaviour changes, and does not change when only its own request parameters do -- or the endpoints are withdrawn and this entry is retracted"
       }
     }
   ],

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Linux launcher for the causal-platform backend on gx10.
-# Mirrors launch_backend.bat but uses bash + Linux paths.
+# Mirrors scripts/windows/launch_backend.bat but uses bash + Linux paths.
 # Port 49234 is chosen to avoid Windows Hyper-V reserved ranges; safe on Linux too.
 
 set -euo pipefail

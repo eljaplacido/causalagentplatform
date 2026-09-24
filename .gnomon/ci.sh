@@ -324,6 +324,13 @@ done
 #                listed gap that has been closed but not struck off.
 # status-claims  docs/CURRENT_STAGE.md and conformance/declared_not_implemented.json
 #                agree with each other and with the tree (scripts/status_claims.py).
+# contract-parity  the shared enumerations mean the same thing in the backend,
+#                the published TypeScript contract and the frontend. tsc cannot
+#                see this: a union redeclared in a second file is a second type,
+#                so a frontend narrowing on a value the backend never sends
+#                typechecks and matches nothing. Today's divergences are named in
+#                scripts/contract-parity.json; a NEW one fails, and so does a
+#                listed one that has been fixed but not struck off.
 # doc-reconciliation  which documents are owed a re-read because the code they
 #                describe changed. REPORTED, not failed -- a hard gate on every
 #                code change would be switched off within a month (gnomon's
@@ -346,6 +353,13 @@ if indented "$PY" scripts/status_claims.py; then
     record status-claims PASS "$(grep -m1 -oE 'register: .*' "$LOG_DIR/.indented" | cut -c1-230)" $((SECONDS - t0))
 else
     record status-claims FAIL "$(grep -m1 FAIL "$LOG_DIR/.indented" | sed 's/^ *FAIL *//' | cut -c1-150)" $((SECONDS - t0))
+fi
+
+t0=$SECONDS
+if indented "$PY" scripts/contract_parity.py; then
+    record contract-parity PASS "$(grep -m1 -oE 'contract-parity: .*' "$LOG_DIR/.indented" | sed 's/^contract-parity: //' | cut -c1-200)" $((SECONDS - t0))
+else
+    record contract-parity FAIL "$(grep -m1 FAIL "$LOG_DIR/.indented" | sed 's/^ *FAIL *//' | cut -c1-150)" $((SECONDS - t0))
 fi
 
 t0=$SECONDS

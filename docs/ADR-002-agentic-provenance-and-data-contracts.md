@@ -3,7 +3,7 @@
 > **Status:** Proposed
 > **Date:** 2026-05-05
 > **Decision Owner:** Platform Architecture
-> **Trigger:** Missing Standards for Agentic Data Engineering report (§2 Provenance, §4 Data Contracts)
+> **Trigger:** [Missing Standards for Agentic Data Engineering report](research/missing-standards-agentic-data-engineering.md) (§2 Provenance, §4 Data Contracts)
 > **Replaces:** N/A — new capability
 
 ## Summary

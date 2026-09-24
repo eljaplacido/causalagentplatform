@@ -91,6 +91,7 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 | Session orchestration API (`/api/v1/session/run`, `/incident`) | `implemented` | [backend/tests/integration/test_session_api.py](../backend/tests/integration/test_session_api.py) | Agents are rule-based code |
 | Intervention feedback endpoint | `implemented` | [backend/tests/unit/test_interventions.py](../backend/tests/unit/test_interventions.py) | |
 | Health endpoint | `implemented` | [backend/tests/unit/test_health_api.py](../backend/tests/unit/test_health_api.py) | |
+| Agent evaluation endpoints (consistency, calibration, decision quality) measure the platform | `declared-not-implemented` | [dni:evaluation-endpoints-not-measured](../conformance/declared_not_implemented.json) | Each scores its own inputs; `calibration` here is confidence spread, not calibration |
 
 ### Data and infrastructure
 
@@ -105,6 +106,8 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 | Capability | Status | Evidence | Note |
 |---|---|---|---|
 | DAG Workbench (unified graph authoring) | `planned` | [dni:dag-workbench](../conformance/declared_not_implemented.json) | Not built |
+| The frontend narrows on the canonical vocabulary | `declared-not-implemented` | [dni:frontend-vocabulary-divergence](../conformance/declared_not_implemented.json) | `ReviewStatus` and `EvidenceType` are redeclared with values no endpoint sends |
+| Shared enumerations mean the same thing in backend, contract package and frontend | `implemented` | [backend/tests/unit/test_contract_parity.py](../backend/tests/unit/test_contract_parity.py) | 15 of 17 shared names agree; the 2 that do not are named in `scripts/contract-parity.json` and may only shrink |
 
 ## Fixed items (moved off the register)
 

@@ -63,9 +63,8 @@ Out of scope (please do not report):
   codebase — please report those upstream first; we will pick them up via
   dependabot or equivalent
 - Missing security headers on pages that do not handle authenticated state
-- Issues in research / scratch notes at the repo root (e.g.
-  `World Models for Agents...md`) that are not part of the deployable
-  product surface
+- Issues in the research notes under `docs/research/`, which are background
+  reading rather than part of the deployable product surface
 
 ## Coordinated disclosure
 
