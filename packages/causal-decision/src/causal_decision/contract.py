@@ -165,6 +165,24 @@ class Check(_Model):
     detail: str = ""
 
 
+class SegmentEvidence(_Model):
+    """One declared subgroup, read in the requested direction.
+
+    `benefit_ci` is the kernel's **family-wise** interval, not the segment's own.
+    Having looked at k subgroups, the unadjusted interval no longer means what it
+    says, and a verdict is a claim -- so it uses the figure claims are allowed to
+    use. A segment the kernel refused carries `refusal` and no numbers, and is
+    never silently treated as unharmed.
+    """
+
+    level: str
+    variable: str
+    n_used: int
+    benefit: float | None = None
+    benefit_ci: tuple[float, float] | None = None
+    refusal: str | None = None
+
+
 class Evidence(_Model):
     """The part of the causal outcome the verdict rested on, copied so a record stands alone."""
 
@@ -186,6 +204,17 @@ class Evidence(_Model):
     n_used: int | None = None
     outcome_sd: float | None = None
     result_digest: str | None = None
+    segments: tuple[SegmentEvidence, ...] = Field(
+        default=(),
+        description="The declared subgroups, when the analysis examined any. Empty means none "
+        "were declared -- which is not evidence that the effect is uniform, only that nobody "
+        "asked.",
+    )
+    heterogeneity_differs: bool | None = Field(
+        default=None,
+        description="Cochran's Q across the segments: True when they can be told apart, False "
+        "when they cannot, None when no segments were examined.",
+    )
 
 
 class ExperimentSpec(_Model):

@@ -104,3 +104,50 @@ def test_the_server_registers_the_tool_and_annotates_it_read_only() -> None:
     assert server.READ_ONLY.read_only_hint is True
     # Deciding is not acting: the tool returns a verdict, it does not execute anything.
     assert server.READ_ONLY.destructive_hint is False
+
+
+def ops_by_severity(n: int = 4000) -> dict[str, list[Any]]:
+    """The same operation, helping P1 incidents and harming P3 ones."""
+    rng = np.random.default_rng(11)
+    severity = rng.choice(["P1", "P3"], size=n, p=[0.65, 0.35])
+    load = rng.normal(size=n)
+    playbook = (0.9 * load + rng.logistic(size=n) > 0).astype(float)
+    effect = np.where(severity == "P1", -20.0, 6.0)
+    minutes = 60 + effect * playbook + 8 * load + rng.normal(0, 10, size=n)
+    frame = pd.DataFrame(
+        {"load": load, "playbook": playbook, "minutes": minutes, "severity": severity}
+    )
+    return {c: frame[c].tolist() for c in frame}
+
+
+def test_declared_segments_reach_the_verdict() -> None:
+    """An agent that declares subgroups gets a verdict that accounts for them.
+
+    Pooled, this action is a large and precise saving and the tool automates it.
+    It also adds six minutes to every P3 incident, which only the declared
+    subgroups can show.
+    """
+    kwargs: dict[str, Any] = dict(
+        graph=GRAPH,
+        treatment="playbook",
+        outcome="minutes",
+        action="apply remediation playbook X",
+        direction="decrease",
+        data=ops_by_severity(),
+        minimum_worthwhile_effect=2.0,
+    )
+
+    blind = tools.causal_decide(**kwargs)
+    assert blind.decision.verdict == "act", (
+        f"the fixture must look good pooled for this test to mean anything, got "
+        f"{blind.decision.verdict}"
+    )
+
+    seeing = tools.causal_decide(**kwargs, segment_by=["severity"])
+    assert seeing.decision.verdict != "act"
+    assert {s.level for s in seeing.decision.evidence.segments} == {"P1", "P3"}
+    harmed = next(
+        c for c in seeing.decision.checks if c.name == "no declared segment is materially harmed"
+    )
+    assert not harmed.passed and "P3" in harmed.detail
+    assert "P3" in seeing.explanation

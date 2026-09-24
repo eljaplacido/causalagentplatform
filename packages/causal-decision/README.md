@@ -103,6 +103,35 @@ Two rules worth stating plainly, because both are easy to get wrong:
   "not worth doing" is no better supported than "worth doing". The evidence cannot settle it, so
   the answer is the experiment that would. The gate caught this one; see the pre-registration.
 
+## For whom, not just whether
+
+An average can describe nobody. A remediation playbook that takes twelve minutes off P1 incidents
+and adds six to P3 pools to roughly nothing, and "roughly nothing" is wrong about both groups. So
+when the analysis declared subgroups, the verdict reads them:
+
+```python
+out = cc.analyze(df, graph, treatment="playbook", outcome="minutes",
+                 segment_by=("severity",))      # declared BEFORE any answer is seen
+d = decide(out, request)
+```
+
+- **A segment the action materially harms blocks `act`.** If a segment's interval lies wholly
+  beyond the harm threshold, the ceiling is `refuse` — `experiment` when the estimate is contested,
+  because a contested estimate cannot establish harm any more than benefit. If harm merely cannot
+  be excluded, the ceiling is `experiment`. This holds whatever the pooled effect says: a large,
+  precise, worthwhile pooled saving does not buy the right to hurt an identified group.
+- **The interval used is the family-wise one.** Having examined k subgroups, the unadjusted
+  interval no longer means what it says, and a verdict is a claim.
+- **A segment that could not be estimated is not a segment that was cleared.** It caps at
+  `act_with_approval` and is named.
+- **Heterogeneity alone caps at `act_with_approval`.** If Cochran's Q separates the segments, the
+  pooled effect is an average over groups the action treats differently, so a person sees the
+  breakdown before it is automated.
+
+**Declaring no subgroups adds no checks, and means nothing either way.** An empty segment list is
+not evidence that the effect is uniform — only that nobody asked. The decision layer will not
+invent a reassurance the analysis never produced.
+
 ## When the evidence cannot settle it
 
 The decision carries the experiment that would: the randomization unit, arms, a size from the

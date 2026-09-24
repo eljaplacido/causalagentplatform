@@ -514,7 +514,7 @@
           "says": "**Outcome capture and calibration.** Compare predicted with realized effects; publish regret and"
         },
         {
-          "at": "packages/causal-decision/README.md:165",
+          "at": "packages/causal-decision/README.md:194",
           "says": "**Calibrate.** Whether actions taken under `act` produced the predicted effect needs the"
         }
       ],
@@ -537,7 +537,7 @@
       "capability": "The decision chain's head digest anchored outside the writer's control",
       "claimed_in": [
         {
-          "at": "packages/causal-decision/README.md:131",
+          "at": "packages/causal-decision/README.md:160",
           "says": "**What the chain does not do.** It makes tampering *detectable*, not impossible"
         }
       ],
@@ -575,29 +575,6 @@
         "kind": "test",
         "path": "packages/causal-core/tests/t4/test_discovery.py",
         "asserts": "a discovered subgroup's reported interval covers its true effect at the nominal rate under a pre-registered discovery procedure, on data where no subgroup differs"
-      }
-    },
-    {
-      "id": "decision-ignores-segments",
-      "status": "declared-not-implemented",
-      "capability": "The decision layer accounts for heterogeneity across segments",
-      "claimed_in": [
-        {
-          "at": "packages/causal-decision/README.md:3",
-          "says": "**The layer between an agent's proposed action and the system that action would change.**"
-        }
-      ],
-      "reality": "causal_decision.decide reads the pooled estimate and ignores result.segments and result.heterogeneity entirely. So an action whose effect is +6 in one segment and -12 in another can be approved on a pooled effect of about -3, which describes nobody. The kernel now detects that case; the decision layer does not yet read it.",
-      "evidence": [
-        {
-          "at": "packages/causal-decision/src/causal_decision/policy.py:61",
-          "says": "def _evidence(out: CausalOutcome, request: DecisionRequest) -> Evidence:"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "packages/causal-decision/tests/test_segments.py",
-        "asserts": "a result whose segments differ is not automated on the pooled effect; the verdict names the heterogeneity"
       }
     },
     {
@@ -802,6 +779,12 @@
       "was": "causal_decision.ledger builds and verifies the chain in memory, with tests for an edited, removed and reordered entry. Nothing in the platform writes a record, serves one, or anchors a head digest anywhere the writer does not control -- so today the chain proves internal consistency of a list somebody is already holding.",
       "fixed_in": "PENDING",
       "pinned_by": "backend/tests/integration/test_decision_ledger.py"
+    },
+    {
+      "id": "decision-ignores-segments",
+      "was": "causal_decision.decide reads the pooled estimate and ignores result.segments and result.heterogeneity entirely. So an action whose effect is +6 in one segment and -12 in another can be approved on a pooled effect of about -3, which describes nobody. The kernel now detects that case; the decision layer does not yet read it.",
+      "fixed_in": "PENDING",
+      "pinned_by": "packages/causal-decision/tests/test_segments.py"
     }
   ]
 }

@@ -119,3 +119,24 @@ on the text being unchanged, which the diff shows.
 
 - v1 (2026-09-21): initial registration. Two implementation faults found on the first run; no bar
   altered. See **First run**.
+- v1.1 (2026-09-24): **segment-aware checks added; no bar in this document changed, and none
+  covers them.** `causal_decision.decide` now reads `result.segments` and
+  `result.heterogeneity`, so an action that materially harms a declared subgroup is not
+  automated on a favourable pooled effect. Every D0 scenario and every sweep case analyses
+  without `segment_by`, which is why the suite stayed green through the change: it cannot see
+  these checks at all.
+
+  That is stated here rather than quietly relied on. The new behaviour is pinned by
+  `packages/causal-decision/tests/test_segments.py`, whose load-bearing case is the one this
+  table could never contain — data where the pooled evidence is unambiguously good (a large,
+  precise, worthwhile saving, every pooled check passing, verdict `act`) and one declared
+  segment is still made worse. Removing the checks turns five of its ten tests red, including
+  that one.
+
+  **What is still not established:** that the ceilings are the right ones. A segment whose
+  family-wise interval lies wholly beyond the harm threshold caps the verdict at `refuse`
+  (`experiment` when the estimate is contested, by the same reasoning as the worthwhile-effect
+  check); one that merely cannot exclude harm caps at `experiment`; detected heterogeneity on
+  its own caps at `act_with_approval`. Those are judgements, and like every other threshold in
+  this layer they are consistent rather than calibrated until outcome capture exists. A future
+  version of this gate should carry segment scenarios in the table proper.

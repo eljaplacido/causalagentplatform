@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "causal-decision"
-version = "0.1.0"
+version = "0.2.0"
 description = "Decide whether an agent's proposed action is causally justified: act, ask, experiment, or refuse."
 readme = "README.md"
 requires-python = ">=3.11"

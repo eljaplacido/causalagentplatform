@@ -28,7 +28,7 @@ sustainability investment assurance follow, in that order.
 | Decide identified / partially identified / unsupported | Done, except bounds: complete ID, back-door with the optimal adjustment set, front-door, conditional IV, proximal; 11 typed refusals, each with what is missing |
 | Estimate impact and uncertainty | Done for ATE and ATT with coverage-tested intervals, and for effects within declared segments with family-wise correction and a heterogeneity test (pre-registered T4). Missing: difference-in-differences, policy value, sequential tests, interference-aware designs, and subgroup *discovery* |
 | Robustness checks | Done: placebo, negative controls, graph-implied independences with measured power, overlap, balance, E-values, robustness values |
-| Decide: act, ask, experiment, refuse | Done: `packages/causal-decision` turns an outcome, a request and a policy into one verdict, deterministically, gated by the pre-registered D0 suite (15 scenarios, 8 properties, 6 seeded defects) |
+| Decide: act, ask, experiment, refuse | Done: `packages/causal-decision` turns an outcome, a request and a policy into one verdict, deterministically, gated by the pre-registered D0 suite (15 scenarios, 8 properties, 6 seeded defects). Declared segments now reach the verdict: an action that harms one of them is not automated on a favourable pooled effect |
 | Evidence record | Partial: every result and every decision carries digests of its inputs and itself; nothing is persisted, no approval binding, no observed outcome |
 | Recommend the next experiment | Done for the case the layer can size: randomized units, with the minimum detectable effect, per-arm size, duration and guardrails. Clustered, switchback and sequential designs are not sized |
 

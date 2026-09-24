@@ -25,7 +25,9 @@ from causal_core.contract import (
     AbstentionReason,
     ApparatusFailure,
     CausalResult,
+    Interval,
     ResultStatus,
+    SegmentEffect,
     Tier,
 )
 from scipy import stats
@@ -40,6 +42,7 @@ from causal_decision.contract import (
     Evidence,
     ExperimentSpec,
     RiskRule,
+    SegmentEvidence,
     Verdict,
 )
 
@@ -73,10 +76,7 @@ def _evidence(out: CausalOutcome, request: DecisionRequest) -> Evidence:
         )
     sign = 1.0 if request.direction == "increase" else -1.0
     ci = out.primary.ci
-    lo_hi = None
-    if ci is not None:
-        a, b = sign * ci.lo, sign * ci.hi
-        lo_hi = (min(a, b), max(a, b))
+    lo_hi = _signed_interval(ci, sign)
     return Evidence(
         kind="result",
         status=out.status.value,
@@ -95,7 +95,125 @@ def _evidence(out: CausalOutcome, request: DecisionRequest) -> Evidence:
         n_used=out.diagnostics.n_used,
         outcome_sd=out.diagnostics.outcome_sd,
         result_digest=out.result_digest,
+        segments=tuple(_segment_evidence(s, sign) for s in out.segments),
+        heterogeneity_differs=out.heterogeneity.differs if out.heterogeneity else None,
     )
+
+
+def _signed_interval(ci: Interval | None, sign: float) -> tuple[float, float] | None:
+    """Read an interval in the requested direction, so a benefit is always positive."""
+    if ci is None:
+        return None
+    a, b = sign * ci.lo, sign * ci.hi
+    return (min(a, b), max(a, b))
+
+
+def _segment_evidence(seg: SegmentEffect, sign: float) -> SegmentEvidence:
+    """Copy one segment across, using the family-wise interval a claim is allowed to use."""
+    if seg.estimate is None:
+        return SegmentEvidence(
+            level=seg.level,
+            variable=seg.variable,
+            n_used=seg.n_used,
+            refusal=seg.refusal.value if seg.refusal else "NO_ESTIMATE",
+        )
+    return SegmentEvidence(
+        level=seg.level,
+        variable=seg.variable,
+        n_used=seg.n_used,
+        benefit=sign * seg.estimate.point,
+        benefit_ci=_signed_interval(seg.family_wise_ci, sign),
+    )
+
+
+def _segment_checks(
+    ev: Evidence, request: DecisionRequest, trustworthy: bool
+) -> list[Check]:
+    """What the declared subgroups say, for an action judged on the pooled effect.
+
+    A pooled estimate is an average, and an average can describe nobody: a
+    playbook that saves twelve minutes on P1 incidents and costs six on P3 pools
+    to roughly nothing, and "roughly nothing" is wrong about both groups. The
+    kernel detects that case; until this function existed the decision layer
+    could not see it, and would approve such an action on the pooled figure.
+
+    These run only when subgroups were *declared*. An empty segment list means
+    nobody asked, which is not evidence that the effect is uniform -- so it
+    lowers nothing, and says nothing either way.
+    """
+    if not ev.segments:
+        # Nothing to inspect, so nothing to report. A "no segment is harmed"
+        # check that passed over zero segments would be a check that inspected
+        # nothing and called it success -- and it would read, in the record, as
+        # a statement that the subgroups were fine.
+        return []
+
+    checks: list[Check] = []
+    harmful = -request.harm_threshold if request.harm_threshold else 0.0
+
+    unestimated = [s for s in ev.segments if s.benefit_ci is None]
+    if unestimated:
+        named = ", ".join(f"{s.level} ({s.refusal or 'no interval'})" for s in unestimated)
+        checks.append(Check(
+            name="every declared segment could be estimated",
+            passed=False, allows=Verdict.act_with_approval,
+            detail=f"no effect for {named}: the action may help or harm these groups and this "
+                   "analysis cannot say which",
+        ))
+
+    # The family-wise interval is what SegmentEvidence carries, so "harmed" here
+    # already accounts for how many subgroups were examined.
+    harmed = [s for s in ev.segments if s.benefit_ci is not None and s.benefit_ci[0] < harmful]
+    confident = [s for s in harmed if s.benefit_ci is not None and s.benefit_ci[1] < harmful]
+
+    if confident:
+        named = ", ".join(
+            f"{s.level} [{s.benefit_ci[0]:.4g}, {s.benefit_ci[1]:.4g}]"  # type: ignore[index]
+            for s in confident
+        )
+        checks.append(Check(
+            name="no declared segment is materially harmed",
+            passed=False,
+            # A contested estimate cannot establish harm any more than it can
+            # establish benefit -- the same reasoning as the worthwhile-effect
+            # check above, which the D0 gate forced.
+            allows=Verdict.refuse if trustworthy else Verdict.experiment,
+            detail=f"the whole family-wise interval lies beyond the harm threshold "
+                   f"{harmful:.4g} for {named}"
+                   + ("" if trustworthy else ", but this estimate is contested"),
+        ))
+    elif harmed:
+        named = ", ".join(
+            f"{s.level} [{s.benefit_ci[0]:.4g}, {s.benefit_ci[1]:.4g}]"  # type: ignore[index]
+            for s in harmed
+        )
+        checks.append(Check(
+            name="no declared segment is materially harmed",
+            passed=False, allows=Verdict.experiment,
+            detail=f"harm beyond {harmful:.4g} cannot be excluded for {named}",
+        ))
+    else:
+        checks.append(Check(
+            name="no declared segment is materially harmed",
+            passed=True, allows=Verdict.act,
+            detail=f"every family-wise interval stays above {harmful:.4g} "
+                   f"across {len(ev.segments)} declared segment(s)",
+        ))
+
+    if ev.heterogeneity_differs is not None:
+        same = not ev.heterogeneity_differs
+        checks.append(Check(
+            name="the effect is the same across the declared segments",
+            passed=same,
+            allows=Verdict.act if same else Verdict.act_with_approval,
+            detail="Cochran's Q could not tell the segments apart, so the pooled effect "
+                   "stands for all of them"
+            if same else
+            "Cochran's Q separates the segments: the pooled effect is an average over "
+            "groups the action treats differently, so a person should see the breakdown "
+            "before this is automated",
+        ))
+    return checks
 
 
 def _result_checks(
@@ -193,6 +311,7 @@ def _result_checks(
                   allows=Verdict.act if ok else Verdict.experiment,
                   detail=f"interval width is {ratio:.2f}x the effect "
                   f"(limit {rule.max_ci_width_over_effect:.2f}x)"))
+    checks.extend(_segment_checks(ev, request, trustworthy))
     return checks
 
 

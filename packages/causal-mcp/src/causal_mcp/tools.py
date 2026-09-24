@@ -356,6 +356,7 @@ if HAS_DECISION:
         outcome_proxies: list[str] | None = None,
         negative_control_outcomes: list[str] | None = None,
         expected_treated_share: float | None = None,
+        segment_by: list[str] | None = None,
         policy: dict[str, Any] | None = None,
         decision_policy: dict[str, Any] | None = None,
     ) -> DecideResponse:
@@ -373,6 +374,14 @@ if HAS_DECISION:
         outcome should move (so a benefit is always positive). `risk_class` and `reversible`
         describe the cost of being wrong; high risk always goes to a person.
 
+        `segment_by` names discrete, pre-treatment columns whose subgroups you want judged
+        as well as the whole population -- declare them BEFORE you see any answer. A pooled
+        effect is an average, and an average can describe nobody: an action that helps one
+        group and harms another can pool to something that looks fine. When you declare
+        subgroups, the verdict accounts for them, and it will not automate an action that
+        materially harms one of them. Not declaring any is not evidence that the effect is
+        uniform -- it only means nobody looked.
+
         When the evidence cannot settle it, the response carries the experiment that would,
         sized from the data. Relay `explanation` rather than writing your own: its numbers are
         bound to the analysis.
@@ -389,6 +398,7 @@ if HAS_DECISION:
                 negative_control_outcomes,
                 None,
                 expected_treated_share,
+                segment_by,
             )
             request = DecisionRequest(
                 action=action,
