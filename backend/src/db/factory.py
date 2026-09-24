@@ -141,6 +141,17 @@ CREATE TABLE IF NOT EXISTS decision_records (
     recorded_at         TEXT NOT NULL,
     record              TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS decision_followups (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    entry_digest        TEXT NOT NULL,
+    decision_digest     TEXT NOT NULL,
+    kind                TEXT NOT NULL CHECK (kind IN ('plan', 'realization')),
+    decidable           INTEGER,
+    created_at          TEXT NOT NULL,
+    payload             TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_decision_followups_entry
+    ON decision_followups (entry_digest, id);
 CREATE TABLE IF NOT EXISTS verdict_consumption (
     verdict_id          TEXT PRIMARY KEY
         REFERENCES audit_log(id),
@@ -269,6 +280,30 @@ CREATE INDEX IF NOT EXISTS ix_incidents_status ON incidents (status);
 -- Without them the invariant held in production and not in any test: the
 -- guardian suite's UPDATE and DELETE cases ran against a store that allowed
 -- both, and passed because neither re-read the row afterwards.
+-- decision_records and decision_followups are append-only too, and were
+-- enforced only by 003/004's PostgreSQL triggers before 2026-09-24. A record of
+-- what was decided is worth nothing if the decider can revise it afterwards, and
+-- a calibration row is worth nothing if a disappointing one can be deleted.
+CREATE TRIGGER IF NOT EXISTS tg_decision_records_no_update
+BEFORE UPDATE ON decision_records
+BEGIN
+    SELECT RAISE(ABORT, 'decision_records is append-only: UPDATE is not permitted');
+END;
+CREATE TRIGGER IF NOT EXISTS tg_decision_records_no_delete
+BEFORE DELETE ON decision_records
+BEGIN
+    SELECT RAISE(ABORT, 'decision_records is append-only: DELETE is not permitted');
+END;
+CREATE TRIGGER IF NOT EXISTS tg_decision_followups_no_update
+BEFORE UPDATE ON decision_followups
+BEGIN
+    SELECT RAISE(ABORT, 'decision_followups is append-only: UPDATE is not permitted');
+END;
+CREATE TRIGGER IF NOT EXISTS tg_decision_followups_no_delete
+BEFORE DELETE ON decision_followups
+BEGIN
+    SELECT RAISE(ABORT, 'decision_followups is append-only: DELETE is not permitted');
+END;
 CREATE TRIGGER IF NOT EXISTS tg_audit_log_no_update
 BEFORE UPDATE ON audit_log
 BEGIN

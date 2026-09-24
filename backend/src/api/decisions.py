@@ -23,6 +23,7 @@ import structlog
 from causal_core.contract import AnalysisPolicy
 from causal_decision import DecisionPolicy, DecisionRequest, RiskClass, decide, explain
 from causal_decision.ledger import ChainReport, DecisionRecord
+from causal_decision.outcome import CalibrationReport, Realization, compare, plan, report
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
@@ -122,6 +123,21 @@ async def make_decision(
         # better than returning a verdict the ledger does not have.
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
+    # The plan is written now, not reconstructed later: it copies the prediction
+    # this verdict used, and a plan rebuilt afterwards would carry whatever a
+    # fresh analysis says today -- the target moving after the result is known.
+    # Only a result can be re-measured; a refusal predicted nothing.
+    if isinstance(outcome, cc.contract.CausalResult):
+        await _store.save_plan(
+            record.entry_digest,
+            plan(
+                decision,
+                outcome,
+                graph=body.graph,
+                observe_from=record.recorded_at,
+            ),
+        )
+
     log.info(
         "api.decisions.decided",
         action=body.action,
@@ -167,3 +183,110 @@ async def verify_ledger(user: dict[str, Any] = Depends(get_current_user)) -> Cha
     this database's owner does not control is what turns detection into evidence.
     """
     return await _store.verify()
+
+
+# ── What happened next ────────────────────────────────────────────────────────
+
+
+class FollowUpRequest(BaseModel):
+    """The later window, to be judged by the plan recorded when the decision was made."""
+
+    data: dict[str, list[Cell]] = Field(
+        ...,
+        description="Columns as lists, covering the period AFTER the decision. The graph, "
+        "the estimand and the prediction come from the stored plan, not from here.",
+    )
+    analysis_policy: dict[str, Any] | None = None
+
+
+class FollowUpResponse(BaseModel):
+    realization: Realization
+    explanation: str
+
+
+@router.post(
+    "/{entry_digest}/followup",
+    response_model=FollowUpResponse,
+    summary="Measure what actually happened after a decision",
+)
+async def record_followup(
+    entry_digest: str,
+    body: FollowUpRequest,
+    user: dict[str, Any] = Depends(get_current_user),
+) -> FollowUpResponse:
+    """Re-run the decision's own analysis over a later window and score the prediction.
+
+    The caller supplies rows; it does not supply the answer. The graph, the query
+    and the effect being scored all come from the plan sealed at decision time, so
+    a follow-up cannot be re-aimed at a more flattering estimand after the fact.
+
+    **A refusal here is a result.** If the action was rolled out to everyone there
+    is no comparison group left and no later data recovers one; the kernel says so
+    with its own typed reason, and that is recorded as an undecidable realization
+    rather than dropped. Dropping them would score the platform on the decisions
+    whose effects happened to stay measurable.
+    """
+    followup = await _store.plan_for(entry_digest)
+    if followup is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"no follow-up plan for {entry_digest}: either no such decision, or it "
+                "refused and so predicted nothing to measure"
+            ),
+        )
+
+    try:
+        analysis = AnalysisPolicy.model_validate(body.analysis_policy or {})
+        frame = pd.DataFrame(body.data)
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=f"{type(exc).__name__}: {exc}") from exc
+
+    later = cc.analyze(frame, followup.graph, query=followup.query, policy=analysis)
+    realization = compare(followup, later)
+    await _store.save_realization(entry_digest, realization)
+
+    log.info(
+        "api.decisions.followup",
+        entry_digest=entry_digest,
+        decidable=realization.decidable,
+        reason=realization.undecidable_reason,
+        uid=user.get("uid"),
+    )
+
+    if realization.decidable:
+        detail = (
+            f"predicted {followup.predicted_benefit:.4g}, measured "
+            f"{realization.realized_benefit:.4g} in the same direction"
+            if followup.predicted_benefit is not None and realization.realized_benefit is not None
+            else "the later window produced an estimate"
+        )
+    else:
+        detail = (
+            f"the later window cannot answer this question ({realization.undecidable_reason}): "
+            f"{realization.undecidable_detail}"
+        )
+    return FollowUpResponse(realization=realization, explanation=detail)
+
+
+@router.get(
+    "/calibration",
+    response_model=CalibrationReport,
+    summary="Were the decisions right?",
+)
+async def calibration(
+    limit: Annotated[int | None, Query(ge=1, le=5000)] = None,
+    user: dict[str, Any] = Depends(get_current_user),
+) -> CalibrationReport:
+    """Predicted against measured, over every follow-up taken.
+
+    Every rate is null when nothing stands behind it: a report over no decidable
+    measurements says so rather than reporting a perfect score. The undecidable
+    ones are counted beside the rates, by reason, because they are not missing at
+    random.
+
+    This is what separates thresholds that are *consistent* from thresholds that
+    are *calibrated*, and until enough follow-ups exist the honest reading of this
+    endpoint is the counts, not the rates.
+    """
+    return report(await _store.realizations(limit=limit))

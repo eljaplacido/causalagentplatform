@@ -29,7 +29,7 @@ sustainability investment assurance follow, in that order.
 | Estimate impact and uncertainty | Done for ATE and ATT with coverage-tested intervals, and for effects within declared segments with family-wise correction and a heterogeneity test (pre-registered T4). Missing: difference-in-differences, policy value, sequential tests, interference-aware designs, and subgroup *discovery* |
 | Robustness checks | Done: placebo, negative controls, graph-implied independences with measured power, overlap, balance, E-values, robustness values |
 | Decide: act, ask, experiment, refuse | Done: `packages/causal-decision` turns an outcome, a request and a policy into one verdict, deterministically, gated by the pre-registered D0 suite (15 scenarios, 8 properties, 6 seeded defects). Declared segments now reach the verdict: an action that harms one of them is not automated on a favourable pooled effect |
-| Evidence record | Partial: every result and every decision carries digests of its inputs and itself; nothing is persisted, no approval binding, no observed outcome |
+| Evidence record | Partial: every result and every decision carries digests of its inputs and itself, and decisions are persisted into a verified hash chain with the observed outcome recorded against them. Missing: assumption/graph versioning and retrieval, and anchoring the chain head outside the writer's control |
 | Recommend the next experiment | Done for the case the layer can size: randomized units, with the minimum detectable effect, per-arm size, duration and guardrails. Clustered, switchback and sequential designs are not sized |
 
 ## Order of work
@@ -57,9 +57,16 @@ sustainability investment assurance follow, in that order.
    per-arm size and duration from a minimum-detectable-effect calculation, guardrails. A refusal
    now carries the outcome's spread even when identification is what failed, so an unanswerable
    question can still be sized. Clustered, switchback and sequential designs are step 3's.
-5. **Outcome capture and calibration.** Compare predicted with realized effects; publish regret and
-   calibration. This is the ROI evidence, and it is what would let anyone claim the decision
-   thresholds are calibrated rather than merely consistent. Not built.
+5. **Outcome capture and calibration.** *Machinery built; evidence not yet gathered.* Every
+   decision now seals a follow-up plan carrying the prediction it used;
+   `POST /api/v1/decisions/{entry_digest}/followup` re-runs that plan's own analysis over a
+   later window and scores it; `GET /api/v1/decisions/calibration` aggregates. The hard part
+   was not the arithmetic: calibrating a causal prediction needs a causal estimate afterwards,
+   and an action rolled out to everybody leaves no comparison group. That case is the kernel's
+   own refusal, recorded as an undecidable measurement and counted beside the rates rather than
+   dropped — those decisions are not missing at random. What remains is operational history:
+   until follow-ups have been taken, every rate reads null, and the thresholds are consistent
+   rather than calibrated (`decision-thresholds-uncalibrated`).
 6. **Domain packs.** Operations first, then energy flexibility.
 
 ## What this project will not do first

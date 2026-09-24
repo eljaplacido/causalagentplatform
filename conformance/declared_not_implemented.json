@@ -505,33 +505,6 @@
       }
     },
     {
-      "id": "decision-calibration",
-      "status": "planned",
-      "capability": "Calibration of decisions: comparing the effect predicted before acting with the effect realized after",
-      "claimed_in": [
-        {
-          "at": "docs/ROADMAP.md:60",
-          "says": "**Outcome capture and calibration.** Compare predicted with realized effects; publish regret and"
-        },
-        {
-          "at": "packages/causal-decision/README.md:194",
-          "says": "**Calibrate.** Whether actions taken under `act` produced the predicted effect needs the"
-        }
-      ],
-      "reality": "Nothing captures what happened after a verdict. packages/causal-decision holds the procedure to the policy it was given and proves it consistent (D0: 15 scenarios, 8 properties, 6 seeded defects); it cannot say the thresholds are right, and no regret or calibration number exists anywhere in this repository.",
-      "evidence": [
-        {
-          "at": "benchmarks/d0-decision-policy/PRE-REGISTRATION.md:90",
-          "says": "records which policy a verdict followed. Calibration"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "packages/causal-decision/tests/d0/test_calibration.py",
-        "asserts": "predicted and realized effects are compared over recorded decisions, with a pre-registered calibration bar and a seeded defect that breaks it"
-      }
-    },
-    {
       "id": "decision-ledger-not-anchored",
       "status": "planned",
       "capability": "The decision chain's head digest anchored outside the writer's control",
@@ -544,7 +517,7 @@
       "reality": "The chain is built, persisted, served and verified, and decision_records is append-only in the production schema. All of that is still inside one trust boundary: whoever can write the rows can rewrite the chain from the altered entry onward and it verifies again. Nothing publishes or countersigns the head digest, so the ledger evidences internal consistency and not much more.",
       "evidence": [
         {
-          "at": "backend/src/api/decisions.py:164",
+          "at": "backend/src/api/decisions.py:180",
           "says": "A pass means the chain is *internally* consistent. It cannot mean more than"
         }
       ],
@@ -681,6 +654,29 @@
         "path": "backend/tests/unit/test_agent_skills_not_stubbed.py",
         "asserts": "each named skill returns a different answer for two inputs that should differ -- citations for a claim with stored evidence and none for one without, a non-uniform prior for a confident expert statement, a disagreement when expert and data conflict -- or the AGENTS.md sections are rewritten to describe what the agents do"
       }
+    },
+    {
+      "id": "decision-thresholds-uncalibrated",
+      "status": "partial",
+      "capability": "The decision thresholds are calibrated rather than merely consistent",
+      "claimed_in": [
+        {
+          "at": "docs/ROADMAP.md:12",
+          "says": "> target outcome — and is that evidence strong enough to act on without asking a human?"
+        }
+      ],
+      "reality": "The machinery is built and pinned: every decision seals a follow-up plan carrying the prediction it used, POST /api/v1/decisions/{entry_digest}/followup re-runs that plan's own analysis over a later window, and GET /api/v1/decisions/calibration aggregates. What does not exist is the evidence: no follow-up has been taken on any real operation, so every rate in the report is null. That is the honest state and the report says so rather than reading as a perfect score. This entry leaves the list when a body of follow-ups exists and the thresholds have been moved by what it showed -- which is operational history, not code.",
+      "evidence": [
+        {
+          "at": "packages/causal-decision/src/causal_decision/outcome.py:1",
+          "says": "What happened after the verdict, and whether the verdict deserved to be trusted."
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/integration/test_calibration_evidence.py",
+        "asserts": "a stored body of follow-ups yields non-null rates, and docs/CURRENT_STAGE.md cites a measured calibration figure with the run that produced it"
+      }
     }
   ],
   "left_the_list": [
@@ -785,6 +781,13 @@
       "was": "causal_decision.decide reads the pooled estimate and ignores result.segments and result.heterogeneity entirely. So an action whose effect is +6 in one segment and -12 in another can be approved on a pooled effect of about -3, which describes nobody. The kernel now detects that case; the decision layer does not yet read it.",
       "fixed_in": "PENDING",
       "pinned_by": "packages/causal-decision/tests/test_segments.py"
+    },
+    {
+      "id": "decision-calibration",
+      "was": "Nothing captures what happened after a verdict. packages/causal-decision holds the procedure to the policy it was given and proves it consistent (D0: 15 scenarios, 8 properties, 6 seeded defects); it cannot say the thresholds are right, and no regret or calibration number exists anywhere in this repository.",
+      "fixed_in": "PENDING",
+      "pinned_by": "backend/tests/integration/test_decision_followup.py",
+      "note": "The loop exists and produces numbers: a plan is sealed with each decision, /followup re-runs that plan's own analysis over a later window, and /calibration aggregates. What it does NOT yet establish is that the thresholds are right -- that needs enough follow-ups to have been taken, which is operational history rather than code. The report reads null for every rate with nothing behind it, so an empty platform cannot read as a calibrated one."
     }
   ]
 }

@@ -62,7 +62,8 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 | `causal-decision`: a decision is sealed into a hash chain with the evidence and approval behind it, and an edited, removed or reordered entry is detected and located | `implemented` | [packages/causal-decision/tests/test_ledger.py](../packages/causal-decision/tests/test_ledger.py) | Detects tampering; does not prevent it — anchoring the head digest is a deployment decision |
 | Decisions made, recorded and served by the platform (`POST/GET /api/v1/decisions`, `/verify`) | `implemented` | [backend/tests/integration/test_decision_ledger.py](../backend/tests/integration/test_decision_ledger.py) | Analyse and rule in one call; the chain verifies from the stored rows, and an edited row is caught |
 | The chain's head digest anchored outside the writer's control | `planned` | [dni:decision-ledger-not-anchored](../conformance/declared_not_implemented.json) | Detection is inside one trust boundary until the head is published |
-| Calibration: were the actions taken under `act` right? | `planned` | [dni:decision-calibration](../conformance/declared_not_implemented.json) | No outcome capture; verdicts are consistent, not yet calibrated |
+| Outcome capture: a decision records what would have to be re-measured, and the platform measures it | `implemented` | [backend/tests/integration/test_decision_followup.py](../backend/tests/integration/test_decision_followup.py) | `POST /api/v1/decisions/{entry_digest}/followup` re-runs the sealed plan's own analysis; `GET /api/v1/decisions/calibration` aggregates |
+| Calibration: were the actions taken under `act` right? | `partial` | [dni:decision-thresholds-uncalibrated](../conformance/declared_not_implemented.json) | The loop produces the numbers; no follow-up has been taken on a real operation, so every rate is null |
 
 ### Governance
 

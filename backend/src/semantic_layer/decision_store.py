@@ -21,10 +21,12 @@ Two rules the store holds to:
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 import structlog
 from causal_decision.ledger import ChainReport, DecisionRecord, append, verify_chain
+from causal_decision.outcome import FollowUp, Realization
 from sqlalchemy import text
 
 from src.db.factory import CloudSqlFactory
@@ -135,6 +137,91 @@ class DecisionStore:
             )
             raws = [r[0] for r in rows.all()]
         return [DecisionRecord.model_validate(_loads(r)) for r in raws]
+
+    # ── follow-ups: what was going to be re-measured, and what came back ──────
+
+    async def save_plan(self, entry_digest: str, followup: FollowUp) -> None:
+        """Record, at decision time, what would have to be re-run to score this verdict.
+
+        Written now rather than reconstructed later, because the plan carries a
+        copy of the prediction the verdict used. Rebuilt afterwards it would carry
+        whatever a fresh analysis says today, which is the target moving after the
+        result is known.
+        """
+        await self._append_followup(entry_digest, followup.decision_digest, "plan", None, followup)
+
+    async def plan_for(self, entry_digest: str) -> FollowUp | None:
+        async with CloudSqlFactory.get_session_factory()() as session:
+            row = await session.execute(
+                text(
+                    "SELECT payload FROM decision_followups "
+                    "WHERE entry_digest = :d AND kind = 'plan' ORDER BY id ASC LIMIT 1"
+                ),
+                {"d": entry_digest},
+            )
+            raw = row.scalar()
+        return None if raw is None else FollowUp.model_validate(_loads(raw))
+
+    async def save_realization(self, entry_digest: str, realization: Realization) -> None:
+        await self._append_followup(
+            entry_digest,
+            realization.decision_digest,
+            "realization",
+            realization.decidable,
+            realization,
+        )
+
+    async def realizations(self, limit: int | None = None) -> list[Realization]:
+        """Every measurement taken, decidable or not.
+
+        Undecidable ones come back with the rest. They are not missing at random --
+        an action rolled out to everybody is precisely the one whose effect can no
+        longer be estimated -- so filtering them here would quietly select the
+        flattering subset.
+        """
+        sql = (
+            "SELECT payload FROM decision_followups WHERE kind = 'realization' ORDER BY id ASC"
+        )
+        params: dict[str, Any] = {}
+        if limit is not None:
+            sql += " LIMIT :limit"
+            params["limit"] = limit
+        async with CloudSqlFactory.get_session_factory()() as session:
+            rows = await session.execute(text(sql), params)
+            raws = [r[0] for r in rows.all()]
+        return [Realization.model_validate(_loads(r)) for r in raws]
+
+    async def _append_followup(
+        self,
+        entry_digest: str,
+        decision_digest: str,
+        kind: str,
+        decidable: bool | None,
+        payload: FollowUp | Realization,
+    ) -> None:
+        async with CloudSqlFactory.get_session_factory()() as session:
+            await session.execute(
+                text(
+                    "INSERT INTO decision_followups ("
+                    "  entry_digest, decision_digest, kind, decidable, created_at, payload"
+                    ") VALUES (:e, :d, :k, :ok, :at, :p)"
+                ),
+                {
+                    "e": entry_digest,
+                    "d": decision_digest,
+                    "k": kind,
+                    "ok": decidable,
+                    "at": datetime.now(UTC).isoformat(),
+                    "p": payload.model_dump_json(),
+                },
+            )
+            await session.commit()
+        log.info(
+            "decision_store.followup_appended",
+            entry_digest=entry_digest,
+            kind=kind,
+            decidable=decidable,
+        )
 
     async def by_digest(self, entry_digest: str) -> DecisionRecord | None:
         async with CloudSqlFactory.get_session_factory()() as session:
