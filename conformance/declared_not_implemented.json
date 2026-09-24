@@ -36,11 +36,11 @@
       "capability": "Counterfactual reasoning over a structural causal model",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:271",
+          "at": "docs/AGENTS.md:273",
           "says": "Structural causal model (SCM), observation, query (intervention or counterfactual)"
         },
         {
-          "at": "docs/AGENTS.md:272",
+          "at": "docs/AGENTS.md:274",
           "says": "Estimated counterfactual distribution"
         },
         {
@@ -67,7 +67,7 @@
       "capability": "Causal discovery: candidate edges and independence tests from data",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:31",
+          "at": "docs/AGENTS.md:33",
           "says": "Proposes candidate edges, confounders, mediators, and missing variables in the causal graph from data and document evidence."
         }
       ],
@@ -94,7 +94,7 @@
       "capability": "Sensitivity to unmeasured confounding (E-values, Rosenbaum bounds)",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:373",
+          "at": "docs/AGENTS.md:375",
           "says": "Computes Rosenbaum sensitivity bounds and E-values for unmeasured confounders"
         }
       ],
@@ -117,15 +117,15 @@
       "capability": "EconML / PyMC estimation backends",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:51",
+          "at": "docs/AGENTS.md:53",
           "says": "DoWhy / EconML for statistical estimation"
         },
         {
-          "at": "docs/AGENTS.md:359",
+          "at": "docs/AGENTS.md:361",
           "says": "(DoWhy, PyMC)"
         },
         {
-          "at": "docs/AGENTS.md:663",
+          "at": "docs/AGENTS.md:665",
           "says": "DoWhy, EconML, statsmodels"
         },
         {
@@ -152,15 +152,15 @@
       "capability": "Rust crates (cynepic-causal, cynepic-bayes) backing DAG operations and belief tracking",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:51",
+          "at": "docs/AGENTS.md:53",
           "says": "`cynepic-causal` crate (Rust) for DAG operations"
         },
         {
-          "at": "docs/AGENTS.md:156",
+          "at": "docs/AGENTS.md:158",
           "says": "cynepic-bayes Bayesian belief tracking"
         },
         {
-          "at": "docs/AGENTS.md:264",
+          "at": "docs/AGENTS.md:266",
           "says": "`cynepic-causal` Rust crate"
         }
       ],
@@ -183,15 +183,15 @@
       "capability": "Capability-based LLM routing used by the agents",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:22",
+          "at": "docs/AGENTS.md:24",
           "says": "Provider-agnostic LLM"
         },
         {
-          "at": "docs/AGENTS.md:613",
+          "at": "docs/AGENTS.md:615",
           "says": "the LLM factory resolves capability → provider at runtime"
         },
         {
-          "at": "docs/AGENTS.md:623",
+          "at": "docs/AGENTS.md:625",
           "says": "Routing is handled by `src/agents/llm_factory.py`"
         }
       ],
@@ -365,7 +365,7 @@
           "says": "3.3 Kafka (Event Streaming)"
         },
         {
-          "at": "docs/AGENTS.md:132",
+          "at": "docs/AGENTS.md:134",
           "says": "Alert emission via Kafka ready for integration"
         },
         {
@@ -668,6 +668,41 @@
         "kind": "test",
         "path": "backend/tests/integration/test_evaluation_endpoints.py",
         "asserts": "each endpoint's answer changes when the platform's recorded behaviour changes, and does not change when only its own request parameters do -- or the endpoints are withdrawn and this entry is retracted"
+      }
+    },
+    {
+      "id": "agent-skills-are-stubs",
+      "status": "declared-not-implemented",
+      "capability": "EvidenceGroundingAgent and DomainExpertElicitationAgent produce the outputs AGENTS.md specifies",
+      "claimed_in": [
+        {
+          "at": "docs/AGENTS.md:182",
+          "says": "- Evidence citations with relevance scores"
+        },
+        {
+          "at": "docs/AGENTS.md:68",
+          "says": "- Disagreement flags when expert statements conflict with existing graph assets"
+        }
+      ],
+      "reality": "Both agents run, and every skill under them is a labelled stub that returns a constant. EvidenceGroundingAgent: evidence retrieval returns no citations, statistical validation returns valid for any non-empty citation, contradiction detection returns none, and the semantic-layer read returns an empty context. DomainExpertElicitationAgent: elicitation returns no assumptions, prior encoding returns the uniform Beta(1,1) whatever the expert said, and disagreement surfacing returns none. The code is honest about this -- each docstring says 'Stub:' and names what production would do -- but AGENTS.md is loaded as shared context by every agent and presents the outputs as capabilities, so the two disagree. No evidence store is populated for the first agent to read, and no elicitation UI exists to feed the second.",
+      "evidence": [
+        {
+          "at": "backend/src/agents/evidence_grounding.py:250",
+          "says": "        Stub: returns empty (no evidence store populated yet)."
+        },
+        {
+          "at": "backend/src/agents/evidence_grounding.py:274",
+          "says": "        Stub: returns no contradictions."
+        },
+        {
+          "at": "backend/src/agents/domain_expert_elicitation.py:276",
+          "says": "        Stub: returns neutral prior."
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/unit/test_agent_skills_not_stubbed.py",
+        "asserts": "each named skill returns a different answer for two inputs that should differ -- citations for a claim with stored evidence and none for one without, a non-uniform prior for a confident expert statement, a disagreement when expert and data conflict -- or the AGENTS.md sections are rewritten to describe what the agents do"
       }
     }
   ],
