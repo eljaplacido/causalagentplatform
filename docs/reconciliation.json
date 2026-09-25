@@ -32,12 +32,12 @@
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "frontend/package.json": "328e50541f6341ef44bdb0664d818c5de9c95444d15fa3cc19d076f971e4303e",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "e5dab78816a8c72761a655279756526bd77252865c7ec6bceeced953f0f68c86"
+          "docs/CURRENT_STAGE.md": "eb44c610656469391268893c3c432a94a37377d653bb8522c4885440db7caf2e"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (MCP section, legacy-server status, quick-start commands and benchmark table against causal-mcp, backend/pyproject.toml, launch_backend.sh, CURRENT_STAGE)"
+        "by": "Claude (CURRENT_STAGE changed only a test count; the README quotes none)"
       }
     },
     "docs/CURRENT_STAGE.md": {
