@@ -13,7 +13,6 @@ unexpected exception is an apparatus failure that names the stage it happened in
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
-from importlib.metadata import PackageNotFoundError, version
 from typing import Any, TypeVar
 
 import numpy as np
@@ -22,6 +21,7 @@ from pydantic import ValidationError
 
 from causal_core import estimators as est_registry
 from causal_core import refute as refuters
+from causal_core._version import __version__
 from causal_core.canonical import data_digest, digest
 from causal_core.claims import build_claims
 from causal_core.contract import (
@@ -58,10 +58,7 @@ from causal_core.refute import RefutationContext, holm
 from causal_core.segments import estimate_segments
 from causal_core.sensitivity import analyze_sensitivity
 
-try:
-    CORE_VERSION = version("causal-core")
-except PackageNotFoundError:  # running from a source checkout
-    CORE_VERSION = "0.2.0.dev0+src"
+CORE_VERSION = __version__
 
 Outcome = CausalResult | Abstention | ApparatusFailure
 T = TypeVar("T")

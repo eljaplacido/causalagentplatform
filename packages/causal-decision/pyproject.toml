@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "causal-decision"
-version = "0.3.0"
+dynamic = ["version"]
 description = "Decide whether an agent's proposed action is causally justified: act, ask, experiment, or refuse."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -34,6 +34,11 @@ dev = [
     "ruff>=0.15,<0.16",
     "mypy>=1.20,<1.21",
 ]
+
+[tool.hatch.version]
+# One source: the code reports the version it was built as, even from an editable
+# install whose metadata was written before the last bump.
+path = "src/causal_decision/_version.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/causal_decision"]

@@ -51,7 +51,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/causal-core
-          key: causal-core-data-${{ hashFiles('benchmarks/*/PRE-REGISTRATION.md') }}
+          key: causal-core-data-${{ hashFiles('benchmarks/t2-ihdp/PRE-REGISTRATION.md', 'benchmarks/t3-lalonde/PRE-REGISTRATION.md') }}
 
       - name: Backend environment (backend/.venv)
         run: |

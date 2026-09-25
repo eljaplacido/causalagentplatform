@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "causal-core"
-version = "0.4.0"
+dynamic = ["version"]
 description = "Causal inference kernel that identifies before it estimates, abstains when it cannot, and proves every number it returns."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -52,6 +52,11 @@ causal-core = "causal_core.cli:main"
 
 [project.entry-points."causal_core.estimators"]
 # Third-party packages register estimators under this group; see causal_core.estimators.
+
+[tool.hatch.version]
+# One source: the code reports the version it was built as, even from an editable
+# install whose metadata was written before the last bump.
+path = "src/causal_core/_version.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/causal_core"]

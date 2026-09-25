@@ -25,6 +25,7 @@ can be replayed and disputed.
 
 from __future__ import annotations
 
+from causal_decision._version import __version__
 from causal_decision.contract import (
     Check,
     Decision,
@@ -72,6 +73,7 @@ __all__ = [
     "RiskClass",
     "RiskRule",
     "Verdict",
+    "__version__",
     "append",
     "compare",
     "decide",

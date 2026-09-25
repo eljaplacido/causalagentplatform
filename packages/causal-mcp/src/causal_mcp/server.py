@@ -23,7 +23,7 @@ from causal_core.contract import CONTRACT_VERSION, json_schemas
 from mcp.server.mcpserver import MCPServer
 from mcp.types import ToolAnnotations
 
-from causal_mcp import tools
+from causal_mcp import __version__, tools
 
 INSTRUCTIONS = f"""\
 Causal inference as tools (causal-core {cc.__version__}, contract {CONTRACT_VERSION}).
@@ -70,7 +70,7 @@ def build_server() -> MCPServer:
         "causal-core",
         title="Causal Platform kernel",
         instructions=INSTRUCTIONS,
-        version=cc.__version__,
+        version=__version__,
     )
     for name, (fn, title) in TOOLS.items():
         server.add_tool(fn, name=name, title=title, annotations=READ_ONLY, structured_output=True)
