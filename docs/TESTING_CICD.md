@@ -43,7 +43,8 @@ it does not block on is **ADVISORY** (today only `doc-reconciliation`).
 
 | Step | What it runs | Passes when |
 |---|---|---|
-| `backend-pytest` | The full backend suite (`backend/tests`: unit, integration, guardian) once, with coverage | Exit 0, a non-zero pass count above its floor (`scripts/gate-scope-floors.json`), and every `backend/tests/**/test_*.py` reported a test in the JUnit report |
+| `backend-pytest` | The full backend suite (`backend/tests`: unit, integration, guardian) once, on SQLite (`TEST_DATABASE_URL` is unset for it), with coverage | Exit 0, a non-zero pass count above its floor (`scripts/gate-scope-floors.json`), and every `backend/tests/**/test_*.py` reported a test in the JUnit report |
+| `backend-pytest-postgres` | The same full suite with `TEST_DATABASE_URL` set: the test database is built on that PostgreSQL server from `backend/src/db/migrations/*.sql` (§3.1). No coverage (judged once, above) | As `backend-pytest`, and **no test skipped**: in this run a skip is a PostgreSQL test that did not run. SKIPPED with "no TEST_DATABASE_URL" when the variable is unset, so a local run without a database exits 2, not 0 |
 | `backend-coverage` | `scripts/coverage_gate.py` on that run's coverage | Line coverage ≥ the floor in `scripts/coverage-floor.json` |
 | `backend-ruff`, `scripts-ruff` | `scripts/lint_ratchet.py` (ruff over `backend/`, and over `scripts/`) | Findings ≤ `max_findings` in `scripts/lint-baseline.json` (`scripts/` is held at 0) |
 | `backend-mypy` | `mypy src/ --strict` via the ratchet | Findings ≤ its `max_findings` |
@@ -95,9 +96,36 @@ Only 0 is done. `.septacore.json` maps the same codes to `passed`, `failed`,
 | `integration/` | FastAPI routes through `httpx`: governance approval flow, rejection verdicts, recorded reasons, intervention roles, the role matrix and domain isolation (`test_rbac_matrix.py`: every state-changing route has a row, and is refused without a granted role), session API and store, the decision ledger (checkpoints and anchored verification included) and follow-ups, the assumption registry (`/api/v1/models`), and the MCP server over stdio |
 | `guardian/` | Guardian bypass prevention, verdict binding (signed, subject-bound, single-use), drafts that cannot approve themselves, a risk score and cycle count the caller cannot supply, the `audit_write` skill, and `audit_log` refusing UPDATE and DELETE |
 
-The backend suite runs against the **SQLite** schema (`SQLITE_DDL` in
-`backend/src/db/factory.py`). No test applies the PostgreSQL migrations (register
-`postgres-schema-missing-session-incidents`). Neo4j code paths are tested only with mocks
+The backend suite runs against one of two schemas, chosen by `TEST_DATABASE_URL`
+(`backend/tests/conftest.py`, fixture `db_engine`):
+
+- **Unset (the default): SQLite.** A fresh in-memory database per test, built from `SQLITE_DDL`
+  in `backend/src/db/factory.py`.
+- **Set to a `postgresql+asyncpg://` URL: PostgreSQL.** Once per run the fixture creates a
+  database named `causal_test_<random>` on that server (it connects to the URL's database only
+  to do so), applies `backend/src/db/migrations/*.sql` in order, and drops it at the end. Before
+  each test it TRUNCATEs every table and re-enables any trigger a tamper test disabled. The
+  URL's role needs to create databases, roles and extensions (001 creates both), so use a
+  superuser on a disposable server.
+
+The gate runs both (`backend-pytest` and `backend-pytest-postgres`). SQLite's loose typing
+accepts what PostgreSQL refuses, so code that binds values must use the bind types in
+`backend/src/db/types.py` (`TIMESTAMP`, `TEXT_ARRAY`, `UUID_ARRAY`, `BOOLEAN`) and read back
+through `timestamp_text` and `json_value`; until both ran, the Guardian could not write
+`audit_log` on PostgreSQL and no test said so. `tests/integration/test_postgres_schema_parity.py`
+holds the two schemas to the same tables and columns. To run the PostgreSQL half locally, with a
+throwaway server bound to localhost:
+
+```bash
+docker run -d --name causal-pg-test -p 127.0.0.1:5433:5432 \
+  -e POSTGRES_PASSWORD=<a throwaway password> postgres:16-alpine
+export TEST_DATABASE_URL='postgresql+asyncpg://postgres:<that password>@127.0.0.1:5433/postgres'
+cd backend && .venv/bin/pytest -q --no-cov      # the whole suite, on PostgreSQL
+bash .gnomon/ci.sh                               # or the gate, with both backend steps
+docker rm -f causal-pg-test
+```
+
+Neo4j code paths are tested only with mocks
 (register `neo4j-graph-store`). No backend test asserts a causal estimate against ground truth:
 the backend delegates estimation to `packages/causal-core`, and that is where estimates are
 gated (§3.2).
@@ -176,12 +204,15 @@ published since the last push fails the dependency audits without waiting for on
 1. Check out with full history. The register cites some claims at the revision where they were
    made (`file@rev:line`), and a shallow clone cannot verify those.
 2. Set up Python 3.12 and Node 20; cache the benchmark data (keyed on the pre-registrations).
+   A `postgres:16-alpine` service container (health-checked with `pg_isready`, a CI-only
+   throwaway password) runs beside the job for `backend-pytest-postgres`.
 3. Build `backend/.venv` (backend plus `causal-core` and `causal-decision`) and
    `packages/causal-core/.venv` (the three packages with their test extras), each after
    upgrading pip, which the gate's pip-audit audits with the rest; `npm ci`.
 4. **Licence gate**: `check_licenses.py` for `causal-core`, `causal-mcp` and `causal-decision`
    (runtime dependencies must be permissive).
-5. Run `.gnomon/ci.sh`, teeing its log, and act on its exit code (§2): 1 fails the job, and so
+5. Run `.gnomon/ci.sh` with `TEST_DATABASE_URL` pointing at that service, teeing its log, and
+   act on its exit code (§2): 1 fails the job, and so
    does 2, because in CI a step that could not be measured means the environment above is
    broken, or an advisory database was unreachable and the dependency audit did not happen. 3 (docs owed a re-read) is annotated as a warning and does not block a merge.
 6. Upload the gate log as an artifact.

@@ -31,7 +31,11 @@ provenance -- usually a register id (`register:<id>`). `septacore claim` it
 before starting and `septacore close` it only when the gate is at 0 with the
 register entry moved to `left_the_list`.
 
-**What it runs**, in order: the backend suite with coverage; the ruff and
+**What it runs**, in order: the backend suite with coverage, on SQLite; the
+same suite on PostgreSQL (`backend-pytest-postgres`: the test database is built
+from `backend/src/db/migrations/*.sql` on the server `TEST_DATABASE_URL` names,
+and any skipped test fails it -- unset, the step is SKIPPED, "no
+TEST_DATABASE_URL", and the gate exits 2); the ruff and
 mypy ratchets; the frontend (tsc, vitest, and eslint held at zero by
 the lint baseline -- SKIPPED unless its tools resolve inside the repo after `npm ci`); one row per Python package under `packages/`
 (causal-core first, then causal-decision and causal-mcp -- the set is derived
@@ -100,6 +104,10 @@ gates above are the verifier's through `.gnomon/ci.sh`, not one by one.
     backend/.venv/bin/python scripts/lint_ratchet.py ruff --bin backend/.venv/bin/ruff
     backend/.venv/bin/python scripts/lint_ratchet.py mypy --bin backend/.venv/bin/mypy
     cd backend && .venv/bin/pytest tests/unit -q --no-cov
+    # the backend on PostgreSQL: any disposable server whose role may create
+    # databases (docker compose up -d postgres will do; docs/TESTING_CICD.md §3.1)
+    cd backend && TEST_DATABASE_URL=postgresql+asyncpg://USER:PASS@HOST:PORT/DB \
+        .venv/bin/pytest -q --no-cov
 
     # packages: all three run in the kernel's venv
     cd packages/causal-core && .venv/bin/pytest -m "not t0 and not t4 and not slow"

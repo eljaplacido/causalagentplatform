@@ -319,8 +319,9 @@ async def test_audit_log_no_delete(
 
     This test used to be unable to fail: it looked for "DELETE FROM audit_log" in
     upper-cased source (the lowercase needle can never match), and swallowed any
-    outcome of the DELETE it then attempted. Both halves now assert. The SQLite
-    triggers in db/factory.py stand in for 001_initial.sql's under test.
+    outcome of the DELETE it then attempted. Both halves now assert. On SQLite the
+    triggers in db/factory.py stand in for 001_initial.sql's; with TEST_DATABASE_URL
+    set it is 001_initial.sql's own that refuse it.
 
     From TESTING_CICD.md §4.2:
         'DELETE on audit_log table must be rejected.'
