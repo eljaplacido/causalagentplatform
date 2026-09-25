@@ -139,3 +139,12 @@ says `holds`. The class balance is a scope floor: the gate must have looked at b
   Disclosed: this change was chosen after seeing the v1 result. It enlarges the sample the fixed
   bars are applied to; it cannot make a wrong `impact` pass, because agreement must still be 1.0
   on every case, and more cases can only find more disagreements.
+- **v2, harness fix (2026-09-25): the cases now depend on the seed alone. No bar or design
+  parameter changed.** v2 run 1 (`results/2026-09-25-v2-run1.json`, passed) drew its (treatment,
+  outcome) pairs by iterating `nx.descendants()`, a set of strings, and Python salts string hashing
+  per process — so the case set depended on `PYTHONHASHSEED`, not only on `seed`. A re-run found
+  698/102 become 706/94. Two consequences, both stated rather than smoothed over: run 1 is not
+  reproducible from this document, and the v2 note above that "the first 400 cases of v2 are
+  exactly v1's" could never have been checked, and was not true in general. The iteration is now
+  sorted; the full gate output is byte-identical under three hash seeds, and a test pins that.
+  Run 1 stays on file; run 2 is the reproducible one.

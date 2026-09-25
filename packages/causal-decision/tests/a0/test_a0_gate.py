@@ -51,3 +51,27 @@ def test_the_gate_looked_at_both_answers(cfg: dict[str, Any], cases: list[a0.Cas
 def test_the_properties_hold(cfg: dict[str, Any], cases: list[a0.Case]) -> None:
     violations = a0.check_properties(cases)
     assert len(violations) <= cfg["properties"]["violations_allowed"], violations[:10]
+
+
+def test_the_cases_depend_on_the_registered_seed_and_nothing_else() -> None:
+    """v2 run 1's cases depended on PYTHONHASHSEED: a set was iterated unsorted."""
+    import subprocess
+    import sys
+
+    probe = (
+        "from causal_decision.bench import a0;"
+        "cases, other = a0.generate(20260925, 60);"
+        "print([(c.query.treatment, c.query.outcome, c.edit, c.new) for c in cases], "
+        "sorted(other.items()))"
+    )
+    outs = {
+        subprocess.run(
+            [sys.executable, "-c", probe],
+            env={"PYTHONHASHSEED": seed, "PATH": ""},
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout
+        for seed in ("1", "2", "3")
+    }
+    assert len(outs) == 1, "the generated cases differ between processes"

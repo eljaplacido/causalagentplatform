@@ -128,7 +128,10 @@ def generate(seed: int, n_pairs: int, max_tries: int = 200_000) -> tuple[list[Ca
         dag = nx.DiGraph(directed)
         dag.add_nodes_from(names)
         if rng.random() < 0.5:
-            pairs = [(x, y) for x in names for y in nx.descendants(dag, x)]
+            # sorted: nx.descendants is a set of strings, and string hashing is salted
+            # per process -- iterating it unsorted made the case set depend on
+            # PYTHONHASHSEED rather than on the registered seed.
+            pairs = [(x, y) for x in names for y in sorted(nx.descendants(dag, x))]
             if not pairs:
                 continue
             x, y = pairs[int(rng.integers(len(pairs)))]
