@@ -1,0 +1,77 @@
+# Dependency-update PRs. Every PR runs CI: the gate (.gnomon/ci.sh), whose
+# python-lock step fails a PR that edits a pyproject.toml's dependencies without
+# re-locking, and the image job, whose Trivy scan judges the new base image.
+#
+# Python has two layers, updated separately:
+#   /requirements   the hash-pinned locks CI and the backend image install from
+#                   (scripts/py_lock.py). A PR here moves pins and their hashes
+#                   inside the ranges the pyprojects allow; the inputs are unchanged,
+#                   so the lock stays current, and CI proves the environment whole.
+#   pyproject.toml  the ranges themselves. increase-if-necessary: a PR only when a
+#                   release falls outside a range (a deliberate ceiling: fastapi <0.142,
+#                   mcp <2 in the backend, ruff/mypy/bandit pinned to a minor because
+#                   the ratchets count per version). Such a PR is red until someone
+#                   re-locks on its branch (python3 scripts/py_lock.py relock) and
+#                   re-measures a ratchet it moves -- which is the review it needs.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /requirements
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      python-locks-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: pip
+    directories:
+      - /backend
+      - /packages/causal-core
+      - /packages/causal-decision
+      - /packages/causal-mcp
+    schedule:
+      interval: weekly
+      day: monday
+    versioning-strategy: increase-if-necessary
+    open-pull-requests-limit: 5
+    groups:
+      python-ranges:
+        patterns: ["*"]
+
+  # One lock at the root covers every workspace (frontend, packages/semantic-types).
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      npm-dev:
+        dependency-type: development
+        update-types: [minor, patch]
+      npm-prod-minor-patch:
+        dependency-type: production
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  # The base images, pinned by digest in each Dockerfile: a PR moves tag and digest.
+  - package-ecosystem: docker
+    directories:
+      - /backend
+      - /frontend
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      base-images:
+        patterns: ["*"]

@@ -11,6 +11,9 @@ name: Release to PyPI
 #
 # Nothing is published before the kernel's own gates pass on the tagged commit,
 # including the pre-registered T0 correctness gate and its seeded defects.
+#
+# Every run writes a CycloneDX SBOM of the published packages' runtime environment
+# (artifact `sbom`); a v* tag also attaches it to that tag's GitHub release.
 
 on:
   push:
@@ -33,10 +36,17 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install all three packages with their test extras
+        # The same hash-pinned environment CI tests the kernel in (requirements/kernel.txt,
+        # scripts/py_lock.py): the lock with --require-hashes, then this checkout's
+        # packages editable with --no-deps, built with the lock's hatchling.
         run: |
-          python -m pip install -q -e "packages/causal-core[dev,crosscheck,ml]" \
-                                     -e "packages/causal-decision[dev]" \
-                                     -e "packages/causal-mcp[dev,http,decision]" httpx
+          python -m venv "$RUNNER_TEMP/kernel" && echo "$RUNNER_TEMP/kernel/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/kernel/bin/python" -m pip install -q --require-hashes --no-deps -r requirements/kernel.txt
+          "$RUNNER_TEMP/kernel/bin/python" -m pip install -q --no-deps --no-build-isolation \
+            -e "packages/causal-core[dev,crosscheck,ml]" \
+            -e "packages/causal-decision[dev]" \
+            -e "packages/causal-mcp[dev,http,decision]"
+          "$RUNNER_TEMP/kernel/bin/python" -m pip check
       - name: Licences must stay permissive
         run: |
           python packages/causal-core/scripts/check_licenses.py causal-core
@@ -69,7 +79,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: python -m pip install -q build twine
+      # The release tooling, each at a pinned version (cyclonedx-bom writes the SBOM;
+      # packaging reads the lock's markers in scripts/sbom_check.py).
+      - run: python -m pip install -q build==1.6.1 twine==7.0.0 cyclonedx-bom==7.4.0 packaging==26.3
       - name: Build sdist and wheel for all three packages
         run: |
           python -m build --outdir dist/causal-core packages/causal-core
@@ -77,9 +89,16 @@ jobs:
           python -m build --outdir dist/causal-mcp packages/causal-mcp
           python -m twine check --strict dist/*/*
       - name: The built wheels install and report the versions they were built as
-        # The tests above ran against editable installs; this is what users get.
+        # The tests above ran against editable installs; this is what users get. The
+        # environment holds only the wheels and their runtime dependencies, from the
+        # hash-pinned lock requirements/release.txt (no pip of its own: the runner's pip
+        # installs into it), so the SBOM below describes exactly that.
         run: |
-          python -m venv /tmp/wheels && /tmp/wheels/bin/pip install -q dist/*/*.whl
+          python -m venv --without-pip /tmp/wheels
+          python -m pip --python /tmp/wheels/bin/python install -q --require-hashes --no-deps \
+            -r requirements/release.txt
+          python -m pip --python /tmp/wheels/bin/python install -q --no-deps dist/*/*.whl
+          python -m pip --python /tmp/wheels/bin/python check
           /tmp/wheels/bin/python - <<'PY'
           import importlib.metadata as m, causal_core, causal_decision, causal_mcp
           for dist, mod in [("causal-core", causal_core), ("causal-decision", causal_decision),
@@ -87,10 +106,46 @@ jobs:
               assert m.version(dist) == mod.__version__, (dist, m.version(dist), mod.__version__)
               print(dist, mod.__version__)
           PY
+      - name: SBOM of the published packages (CycloneDX 1.6)
+        # Generated from the environment above (cyclonedx-py validates it against the
+        # schema as it writes), then checked: it parses, and lists every locked pin at
+        # its version, the three packages, and nothing else (scripts/sbom_check.py).
+        run: |
+          mkdir -p sbom
+          cyclonedx-py environment --sv 1.6 --of JSON --output-reproducible \
+            -o sbom/causal-packages.cdx.json /tmp/wheels/bin/python
+          python scripts/sbom_check.py sbom/causal-packages.cdx.json --lock release \
+            --package causal-core --package causal-decision --package causal-mcp
       - uses: actions/upload-artifact@v4
         with:
           name: distributions
           path: dist/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom/
+
+  attach-sbom:
+    name: Attach the SBOM to the GitHub release
+    needs: publish
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the release for this tag if absent, and upload to it
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: sbom
+          path: sbom/
+      - name: Upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
+            || gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --title "$TAG" \
+                 --notes "causal-core, causal-decision and causal-mcp as published to PyPI. The SBOM (CycloneDX) lists the runtime environment they were verified in."
+          gh release upload "$TAG" sbom/causal-packages.cdx.json --repo "$GITHUB_REPOSITORY" --clobber
 
   publish:
     name: Publish ${{ matrix.package }}

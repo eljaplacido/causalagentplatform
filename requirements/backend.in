@@ -1,0 +1,15 @@
+# Inputs of requirements/backend.txt: the environment .gnomon/ci.sh tests the
+# backend in (backend/.venv in CI). Re-lock after editing this file or any
+# pyproject.toml it names:  python3 scripts/py_lock.py relock
+#
+# The local packages are resolved from their pyproject.toml and left out of the
+# lock (they install editable, from this checkout, with --no-deps). pip, hatchling
+# and editables are locked too: pip because the gate audits it, the other two
+# because the editable installs build with --no-build-isolation, from the lock,
+# instead of fetching an unhashed build backend.
+pip
+hatchling
+editables
+-e ./packages/causal-core
+-e ./packages/causal-decision
+-e ./backend[dev]

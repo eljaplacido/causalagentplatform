@@ -47,9 +47,15 @@ register entry moved to `left_the_list`.
 - one row per Python package under `packages/`, with its own mypy row
   (`causal-core` first, then causal-decision and causal-mcp -- the set is
   derived from the directory, not listed);
+- `python-lock`: every `requirements/*.txt` hash-pinned and current with the
+  `pyproject.toml` files it was made from (a dependency edit without
+  `python3 scripts/py_lock.py relock` fails), and the backend and package
+  environments equal to their locks (`scripts/py_lock.py sync` fixes a
+  drifted venv);
 - security: `bandit-backend`, `bandit-packages`, `secret-scan`,
-  `pip-audit-backend`, `pip-audit-packages` and `npm-audit` (an audit whose
-  advisory database cannot be reached is SKIPPED, not passed);
+  `pip-audit-backend`, `pip-audit-packages`, `pip-audit-image` (pip-audit over
+  the locks) and `npm-audit` (an audit whose advisory database cannot be
+  reached is SKIPPED, not passed);
 - then `gate-scope`, `status-claims`, `contract-parity`, `doc-figures`,
   `skill-refs` and `doc-reconciliation`.
 
