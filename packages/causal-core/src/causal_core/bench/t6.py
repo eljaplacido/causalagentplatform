@@ -223,13 +223,19 @@ CATCHER: dict[str, str] = {
 }
 
 
-def defect_caught(name: str, cfg: Mapping[str, Any], reps: int | None = None) -> bool:
+def defect_report(name: str, cfg: Mapping[str, Any],
+                  reps: int | None = None) -> tuple[bool, StreamReport]:
+    """Whether the registered bar caught the defect, and what the stream measured under it."""
     from causal_core.bench.defects_t6 import DEFECTS
 
     stream = CATCHER[name]
     with DEFECTS[name]():
-        _, failures = check_streams(cfg, reps=reps, only=(stream,))
-    return any(f.startswith(f"{stream}: uniform coverage") for f in failures)
+        reports, failures = check_streams(cfg, reps=reps, only=(stream,))
+    return any(f.startswith(f"{stream}: uniform coverage") for f in failures), reports[0]
+
+
+def defect_caught(name: str, cfg: Mapping[str, Any], reps: int | None = None) -> bool:
+    return defect_report(name, cfg, reps)[0]
 
 
 def run(cfg: Mapping[str, Any], reps: int | None = None) -> dict[str, Any]:
@@ -237,7 +243,8 @@ def run(cfg: Mapping[str, Any], reps: int | None = None) -> dict[str, Any]:
 
     reports, failures = check_streams(cfg, reps)
     refusals, refusal_failures = check_refusals(cfg)
-    caught = {name: defect_caught(name, cfg, reps) for name in sorted(DEFECTS)}
+    under = {name: defect_report(name, cfg, reps) for name in sorted(DEFECTS)}
+    caught = {name: ok for name, (ok, _) in under.items()}
     failures += refusal_failures
     if set(cfg["seeded_defects"]["required"]) != set(caught):
         failures.append(f"registered defects {sorted(cfg['seeded_defects']['required'])} != "
@@ -247,6 +254,9 @@ def run(cfg: Mapping[str, Any], reps: int | None = None) -> dict[str, Any]:
         "streams": [asdict(r) for r in reports],
         "refusals": refusals,
         "seeded_defects_caught": caught,
+        # What each defect's stream measured, so a quoted figure such as "the fixed-n
+        # interval covers 72.9%" is a number in this file, not in someone's terminal.
+        "seeded_defect_streams": {name: asdict(rep) for name, (_, rep) in under.items()},
         "failures": failures,
         "passed": not failures,
     }
