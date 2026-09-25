@@ -24,7 +24,7 @@ import hashlib
 import json
 from datetime import UTC, datetime
 from typing import Any
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -49,7 +49,10 @@ __all__ = ["DECISION_ROLES", "router"]
 
 
 class FeedbackRequest(BaseModel):
-    intervention_id: str = Field(..., min_length=1)
+    # An executed intervention's id: interventions.id is a uuid column. A proposal id
+    # (``int-<rank>-<session>``) or any other string is refused here as a 422 rather
+    # than reaching PostgreSQL's uuid column and failing there as a 500.
+    intervention_id: UUID
     actual_effect: float
     measurement_method: str = Field(default="observed")
     notes: str | None = None
@@ -178,7 +181,7 @@ async def close_feedback_loop(
     Every closure is appended to the audit log as a PENDING row: a record of what
     was observed, not a Guardian verdict on it.
     """
-    intervention_id = body.intervention_id
+    intervention_id = str(body.intervention_id)
     now = datetime.now(UTC)
 
     async with CloudSqlFactory.get_session_factory()() as session:
