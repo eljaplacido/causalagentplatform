@@ -80,16 +80,16 @@
       "baseline": {
         "on": "2026-09-25",
         "sha256": {
-          "backend/src/semantic_layer": "aa57f82a717c3992bedf573aec894f1d46b86c02242f22e255bec0def0121ccd",
+          "backend/src/semantic_layer": "b7c7d7cd2505170562b8a1b3dfaecce1d03a7da34c711ac785b9ac25f8e22f53",
           "backend/src/agents/governance.py": "69dc9fc55c24bd453ead3b80f58d40de5f7bdad4689e9c4b3f189494108cfa1b",
-          "packages/semantic-types/src": "7c537a32e22e98ff2361df9d258d51437d63574dc2b571c11d24e87a1c510a7b",
+          "packages/semantic-types/src": "ac003940c3b04f965fad994a9da0610884d5934b69f525b1f12c4de5effd4179",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
           "backend/src/orchestration/graph.py": "1c42a22eed003aa1e67b1ffc70545347304a0cc5170959464f263439b727eacc"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (lifecycle, versioning, Guardian integration points and TS alignment re-read against registry, graph.py, semantic-types)"
+        "by": "Claude (lifecycle incl. InvalidTransitionError 409, versioning vs the assumption registry model_store, semantic-types src unchanged)"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -177,19 +177,19 @@
         "on": "2026-09-25",
         "sha256": {
           "backend/src/middleware": "d8281470bc1c1fe3195aa55c663968251147d96b6e8bb27bc0b77e35b5394f3c",
-          "backend/src/api/governance.py": "a235528e1569c492eb04ba534f45a9d3d76157a564f02264bd0e56d6dd5d15e1",
+          "backend/src/api/governance.py": "ac1e06c2b17d7331b2d6d427afb97a0ed617cada1936a6974ca717bbffed30bc",
           "backend/src/agents/governance.py": "69dc9fc55c24bd453ead3b80f58d40de5f7bdad4689e9c4b3f189494108cfa1b",
-          "backend/src/semantic_layer/registry.py": "69fd9826a92feef9f71127788c290fd1024c51b9bfee5346996d83fabcbb8a2c",
-          "backend/src/api/interventions.py": "63db0b2781081c9c13bb80a2aa00d6e525d1c77eadb4843d4042399562589ce0",
+          "backend/src/semantic_layer/registry.py": "ba41f77c384a19b97a590afe55da43e563518554ba48bda6174e404253753005",
+          "backend/src/api/interventions.py": "2e5bd0b6114bed3819504398198dbe0a92e1ad46c6f24d61fee515b091ee6f6c",
           "backend/src/api/provenance.py": "48bc9f32a3d847e547364c1e92075c2eec3cb5b4f67f4d6cc08d24427b47d264",
-          "backend/src/db/migrations": "99e4bd6803d305afabce0ba57e5de4e9a37c5babad40a1740b35218fae51ebd6",
+          "backend/src/db/migrations": "4ab4b5ad6dcc513cbb149dba3bd9fb4f7a7ff7dd35393cb51ee688baaec3d671",
           "backend/src/semantic_layer/verdict.py": "eda2e3481f24fb45ad19d5e11051fa65cd4ba75f8fba77e17415e5ad9479b9bf",
-          ".github/workflows": "3eb6b77c45c04c74476ed8a790087dd29b64fee9314b6272d45a39e7e1c34056"
+          ".github/workflows": "e5ea18edea7e9bae1835f357631ab484d9de718fb7dfb779f0172bd6476a6689"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (auth, RBAC, verdict binding, secrets, privacy and scanning re-read against middleware, api/, verdict.py, migrations, workflows)"
+        "by": "Claude (role sets and their routes incl. /api/v1/models reviews, auth public paths, dev bypass, verdict signing, migrations 006-007, workflows for scanning, Dockerfile users)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -378,16 +378,16 @@
         "on": "2026-09-25",
         "sha256": {
           "backend/src/middleware": "d8281470bc1c1fe3195aa55c663968251147d96b6e8bb27bc0b77e35b5394f3c",
-          "backend/src/api/governance.py": "a235528e1569c492eb04ba534f45a9d3d76157a564f02264bd0e56d6dd5d15e1",
-          "backend/src/api/interventions.py": "63db0b2781081c9c13bb80a2aa00d6e525d1c77eadb4843d4042399562589ce0",
+          "backend/src/api/governance.py": "ac1e06c2b17d7331b2d6d427afb97a0ed617cada1936a6974ca717bbffed30bc",
+          "backend/src/api/interventions.py": "2e5bd0b6114bed3819504398198dbe0a92e1ad46c6f24d61fee515b091ee6f6c",
           "backend/src/agents/governance.py": "69dc9fc55c24bd453ead3b80f58d40de5f7bdad4689e9c4b3f189494108cfa1b",
-          "backend/src/semantic_layer/registry.py": "69fd9826a92feef9f71127788c290fd1024c51b9bfee5346996d83fabcbb8a2c",
+          "backend/src/semantic_layer/registry.py": "ba41f77c384a19b97a590afe55da43e563518554ba48bda6174e404253753005",
           "backend/src/semantic_layer/verdict.py": "eda2e3481f24fb45ad19d5e11051fa65cd4ba75f8fba77e17415e5ad9479b9bf"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (auth, RBAC, verdict binding, secrets, privacy and scanning re-read against middleware, api/, verdict.py, migrations, workflows)"
+        "by": "Claude (role sets and their routes incl. /api/v1/models reviews, auth public paths, dev bypass, verdict signing, migrations 006-007, workflows for scanning, Dockerfile users)"
       }
     }
   }

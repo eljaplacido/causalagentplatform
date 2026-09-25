@@ -49,7 +49,7 @@ These are best-effort targets, not contractual commitments:
 In scope:
 - The backend service (`backend/src/`) and its REST + MCP surfaces
 - The Guardian policy engine and audit trail integrity
-- The MCP server (`backend/mcp_server/`) and its tool wrappers
+- The legacy MCP server (`backend/mcp_server/`, deprecated but still shipped) and its tool wrappers
 - The frontend (`frontend/`) and any code that handles auth tokens
 - The published packages under `packages/` (`causal-core`, `causal-decision`, `causal-mcp`)
 - Build / packaging configuration (`pyproject.toml`, `package.json`, the `Dockerfile`s)
@@ -103,12 +103,15 @@ custom claim. Two role sets are checked:
 
 - `GOVERNANCE_ROLES` = `governance_officer`, `platform_engineer`
   (`backend/src/api/governance.py`). Needed for `/api/governance/approve/{id}`,
-  `/reject/{id}`, `/review-queue` and `/audit-log`.
+  `/reject/{id}`, `/review-queue` and `/audit-log`, and for reviewing a causal
+  model's edges, `POST /api/v1/models/{name}/reviews` (`backend/src/api/models.py`),
+  where a reviewer is also refused on edges they introduced.
 - `DECISION_ROLES` = `governance_officer`, `platform_engineer`, `sre`
   (`backend/src/api/interventions.py`). Needed for
   `/api/v1/interventions/{id}/approve` and `/reject`.
 
-Every other route, including several that write, needs only a valid token.
+Every other route, including several that write (registering or revising a
+model, `POST /api/v1/decisions`, follow-ups), needs only a valid token.
 That gap is registered as `rbac-matrix-and-domain-isolation`.
 
 **Guardian verdicts.** `GovernanceAgent` (`backend/src/agents/governance.py`)

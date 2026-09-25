@@ -73,7 +73,9 @@ Evidence         → id, evidenceType, sourceRef, snippet, statisticalResult,
 | `DEPRECATED` | Superseded or rejected, retained for audit | (terminal) |
 
 There is no `REJECTED` status. A rejection is stored as `DEPRECATED` with a `REJECTED` lineage
-step, and the reason is kept in `audit_log.notes`.
+step, and the reason is kept in `audit_log.notes`. A review only moves forward: approving or
+rejecting an object that is already `APPROVED` or `DEPRECATED` raises `InvalidTransitionError`,
+which the governance API returns as 409.
 
 **Rules:**
 - Only `APPROVED` objects participate in simulations (AGENTS.md §2.1 SimulationAgent)
@@ -107,7 +109,11 @@ Guardian integration points, as built:
 
 ### 4. Versioning Rules
 
-> **Status:** not implemented. See register `semantic-objects-mutated-in-place`.
+> **Status:** not implemented for the semantic objects below. See register
+> `semantic-objects-mutated-in-place`. Causal *models* are versioned by a separate mechanism, the
+> assumption registry (`causal_decision.assumptions`, `backend/src/semantic_layer/model_store.py`,
+> `/api/v1/models`): immutable, content-addressed versions, each built on its parent, append-only
+> in the PostgreSQL schema (`007_causal_models.sql`). It does not version the objects in §1.
 
 - Semantic objects use `version: string` (semver-style: `1.0.0`, `1.1.0`, `2.0.0`). Today only
   `CausalEdge` and `GraphFragment` have the field (`CausalEntity` has `ontology_version`), and

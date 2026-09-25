@@ -60,6 +60,10 @@ An adversary injects false or misleading causal edges or evidence into the graph
 - **Partial:** CausalEdge objects carry a version and a lineage list, but approval mutates
   the row in place and the version never changes (registers
   `semantic-objects-mutated-in-place`, `lineage-partial`).
+- **In place, for causal models:** the assumption registry (`/api/v1/models`, migration
+  `007_causal_models.sql`) keeps each model as immutable, content-addressed versions, append-only
+  in the PostgreSQL schema. A revision may propose edges but not approve them; approving is a
+  review that needs a governance role, and nobody may review an edge they introduced.
 - **Partial:** the Guardian rejects a payload whose proposed edges form a cycle (PR-001). No
   other contradiction check triggers a review.
 - **Target:** sensitivity analysis on every newly approved edge. PR-007 is declared and never
@@ -99,8 +103,8 @@ An agent or user attempts to write to the semantic layer without a Guardian verd
 A lower-privilege user or agent attempts to access or modify resources above their permission tier.
 
 **Mitigations:**
-- **Partial:** RBAC at the API layer covers four governance routes and two intervention-decision
-  routes (§4). **Target:** RBAC at the database and semantic layers.
+- **Partial:** RBAC at the API layer covers four governance routes, two intervention-decision
+  routes and the model-review route (§4). **Target:** RBAC at the database and semantic layers.
 - **Target:** agent identities as service accounts with scoped permissions. Agents run
   in-process today and have no identity of their own.
 - **Target:** re-authentication on human escalation paths.
@@ -175,13 +179,14 @@ Exactly two role sets are checked (`require_role` in `backend/src/middleware/aut
 
 | Role set | Members | Routes |
 |---|---|---|
-| `GOVERNANCE_ROLES` (`api/governance.py`) | `governance_officer`, `platform_engineer` | `POST /api/governance/approve/{id}`, `POST /api/governance/reject/{id}`, `GET /api/governance/review-queue`, `GET /api/governance/audit-log` |
+| `GOVERNANCE_ROLES` (`api/governance.py`) | `governance_officer`, `platform_engineer` | `POST /api/governance/approve/{id}`, `POST /api/governance/reject/{id}`, `GET /api/governance/review-queue`, `GET /api/governance/audit-log`, `POST /api/v1/models/{name}/reviews` (`api/models.py`, which also refuses a reviewer on their own edges) |
 | `DECISION_ROLES` (`api/interventions.py`) | `governance_officer`, `platform_engineer`, `sre` | `POST /api/v1/interventions/{id}/approve`, `POST /api/v1/interventions/{id}/reject` |
 
 Every other route needs only a valid token. That includes state-changing ones:
 `POST /api/semantic/drafts`, `POST /api/governance/check`, `POST /api/v1/decisions` and its
-`/followup`, `POST /api/v1/interventions/feedback`, `POST /api/v1/session/run` and `/incident`,
-and `DELETE /api/v1/provenance/session/{id}` (register `rbac-matrix-and-domain-isolation`).
+`/followup`, `POST /api/v1/models` and `/{name}/versions`, `POST /api/v1/interventions/feedback`,
+`POST /api/v1/session/run` and `/incident`, and `DELETE /api/v1/provenance/session/{id}`
+(register `rbac-matrix-and-domain-isolation`).
 
 ### 4.1 Platform Roles
 
