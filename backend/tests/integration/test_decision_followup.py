@@ -258,3 +258,62 @@ async def test_the_followup_table_refuses_to_be_edited(db_session: AsyncSession)
     with pytest.raises(Exception, match="append-only"):
         await db_session.execute(text("DELETE FROM decision_followups WHERE entry_digest = 'e'"))
         await db_session.commit()
+
+
+async def test_a_decision_is_measured_once_and_the_first_measurement_stands(
+    client: AsyncClient,
+) -> None:
+    """A second, friendlier window must not join the average and outvote the first."""
+    digest = await _decide(client)
+    first = await client.post(
+        f"/api/v1/decisions/{digest}/followup", json={"data": window(effect=4.0, seed=1)}
+    )
+    assert first.status_code == 200, first.text
+    assert first.json()["realization"]["realized_harm"] is True
+
+    second = await client.post(
+        f"/api/v1/decisions/{digest}/followup", json={"data": window(effect=-9.0, seed=2)}
+    )
+    assert second.status_code == 409, second.text
+    assert "first measurement stands" in second.json()["detail"]
+
+    rep = (await client.get("/api/v1/decisions/calibration")).json()
+    assert rep["n_decisions"] == 1
+    assert rep["acted_and_harmful"] == 1, "the harmful measurement is the one that counts"
+
+
+async def test_the_database_refuses_a_second_measurement_too(db_session: AsyncSession) -> None:
+    """The endpoint checks first; the unique index holds when two requests race."""
+    insert = text(
+        "INSERT INTO decision_followups "
+        "(entry_digest, decision_digest, kind, decidable, created_at, payload) "
+        "VALUES ('race', 'd', 'realization', 1, 'now', '{}')"
+    )
+    await db_session.execute(insert)
+    await db_session.commit()
+    with pytest.raises(Exception, match="(?i)unique"):
+        await db_session.execute(insert)
+        await db_session.commit()
+
+
+async def test_a_calibration_limit_means_the_most_recent_decisions(client: AsyncClient) -> None:
+    older = await _decide(client, action="playbook, older")
+    await client.post(
+        f"/api/v1/decisions/{older}/followup", json={"data": window(effect=-9.0, seed=1)}
+    )
+    newer = await _decide(client, action="playbook, newer")
+    await client.post(
+        f"/api/v1/decisions/{newer}/followup",
+        json={"data": window(effect=-9.0, treated_share=1.0, seed=1)},
+    )
+
+    rep = (await client.get("/api/v1/decisions/calibration", params={"limit": 1})).json()
+    assert rep["n_decisions"] == 1
+    assert rep["n_undecidable"] == 1, "limit=1 must return the newer (undecidable) one"
+
+
+async def test_followup_and_calibration_require_authentication(db_engine: object) -> None:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as anon:
+        assert (await anon.get("/api/v1/decisions/calibration")).status_code == 401
+        resp = await anon.post("/api/v1/decisions/x/followup", json={"data": {"a": [1]}})
+        assert resp.status_code == 401

@@ -35,6 +35,7 @@ and re-checked anywhere.
 from __future__ import annotations
 
 from collections import Counter
+from datetime import datetime
 from typing import Literal
 
 from causal_core.contract import (
@@ -147,6 +148,18 @@ class CalibrationReport(_Model):
     interval_overlap_rate: float | None = None
     acted_and_worthwhile_rate: float | None = None
     acted_and_harmful: int = 0
+    not_acted_but_worthwhile: int = Field(
+        default=0,
+        description="Decidable realizations whose verdict did not act, yet whose whole realized "
+        "interval cleared the minimum worthwhile effect: the opportunities the thresholds "
+        "turned down. The mirror of `acted_and_harmful`; a policy tuned only against harm "
+        "drives this up without showing it anywhere else.",
+    )
+    by_verdict: dict[str, int] = Field(
+        default_factory=dict,
+        description="Realizations per verdict. The pooled interval rates mix verdicts; this is "
+        "how a reader sees what they are pooled over.",
+    )
 
     note: str = Field(
         default="",
@@ -193,9 +206,21 @@ def plan(
 
 
 def _horizon_end(decision: Decision) -> str | None:
-    """The request's horizon, when it gave one. It is free text, so it is not parsed."""
+    """The request's horizon, when it is an ISO 8601 timestamp; otherwise None.
+
+    ``observe_until`` is documented as ISO 8601 and read as a time. The horizon is
+    free text ("30 days", "Q3"), and copying it across unparsed put prose in a
+    field that callers compare with clocks. A horizon that does not parse is left
+    in the request, where it came from, rather than guessed into a date here.
+    """
     horizon = decision.request.horizon
-    return horizon or None
+    if not horizon:
+        return None
+    try:
+        datetime.fromisoformat(horizon)
+    except ValueError:
+        return None
+    return horizon
 
 
 # ── comparing against what followed ───────────────────────────────────────────
@@ -209,6 +234,18 @@ def compare(followup: FollowUp, later: CausalOutcome) -> Realization:
     refuses: this module does not second-guess the kernel about whether the data
     can carry an estimate.
     """
+    later_query = getattr(later, "query", None)
+    if later_query is not None and later_query != followup.query:
+        # The plan exists so the estimand cannot drift after the verdict. A re-run
+        # asked a different question is not evidence about this one, whatever it
+        # found -- refusing it here holds the rule for every caller, not only the
+        # HTTP route that happens to pass the plan's query through.
+        raise ValueError(
+            "the re-run answered a different query than the one this decision was planned "
+            f"with ({later_query.model_dump(exclude_defaults=True)} vs "
+            f"{followup.query.model_dump(exclude_defaults=True)})"
+        )
+
     if isinstance(later, ApparatusFailure):
         return Realization(
             decision_digest=followup.decision_digest,
@@ -280,7 +317,20 @@ _NOTE = (
 
 
 def report(realizations: list[Realization]) -> CalibrationReport:
-    """Aggregate realizations, reporting None for any rate with nothing behind it."""
+    """Aggregate realizations, reporting None for any rate with nothing behind it.
+
+    One realization per decision. A decision measured twice would count twice, and
+    a caller unhappy with one window could outvote it with a more flattering one;
+    the store enforces "the first measurement stands", and this refuses a list
+    that breaks it rather than silently picking one.
+    """
+    seen = Counter(r.decision_digest for r in realizations)
+    repeated = sorted(d for d, n in seen.items() if n > 1)
+    if repeated:
+        raise ValueError(
+            f"{len(repeated)} decision(s) have more than one realization, e.g. {repeated[0]}; "
+            "calibration takes exactly one per decision"
+        )
     acted = [r for r in realizations if r.verdict in ACTED]
     decidable = [r for r in realizations if r.decidable]
     undecidable = [r for r in realizations if not r.decidable]
@@ -302,6 +352,12 @@ def report(realizations: list[Realization]) -> CalibrationReport:
         interval_overlap_rate=_rate(overlap),
         acted_and_worthwhile_rate=_rate(worthwhile),
         acted_and_harmful=sum(1 for r in acted_decidable if r.realized_harm),
+        not_acted_but_worthwhile=sum(
+            1
+            for r in decidable
+            if r.verdict not in ACTED and r.cleared_worthwhile
+        ),
+        by_verdict=dict(Counter(str(r.verdict) for r in realizations)),
         note=_NOTE,
     )
 

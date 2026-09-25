@@ -152,6 +152,9 @@ CREATE TABLE IF NOT EXISTS decision_followups (
 );
 CREATE INDEX IF NOT EXISTS ix_decision_followups_entry
     ON decision_followups (entry_digest, id);
+-- One plan and one realization per decision (005_one_followup_per_decision.sql).
+CREATE UNIQUE INDEX IF NOT EXISTS ux_decision_followups_one_per_kind
+    ON decision_followups (entry_digest, kind);
 CREATE TABLE IF NOT EXISTS verdict_consumption (
     verdict_id          TEXT PRIMARY KEY
         REFERENCES audit_log(id),

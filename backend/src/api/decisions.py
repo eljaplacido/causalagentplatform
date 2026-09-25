@@ -20,15 +20,28 @@ from typing import Annotated, Any, Literal
 import causal_core as cc
 import pandas as pd
 import structlog
-from causal_core.contract import AnalysisPolicy
-from causal_decision import DecisionPolicy, DecisionRequest, RiskClass, decide, explain
+from causal_core.contract import AnalysisPolicy, CausalQuery
+from causal_decision import (
+    Decision,
+    DecisionPolicy,
+    DecisionRequest,
+    RiskClass,
+    Verdict,
+    decide,
+    explain,
+)
+from causal_decision.contract import CausalOutcome  # noqa: TC002 -- pydantic resolves it at runtime
 from causal_decision.ledger import ChainReport, DecisionRecord
 from causal_decision.outcome import CalibrationReport, Realization, compare, plan, report
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, create_model
 
 from src.middleware.auth import get_current_user
-from src.semantic_layer.decision_store import DecisionStore, LedgerConflictError
+from src.semantic_layer.decision_store import (
+    DecisionStore,
+    FollowUpConflictError,
+    LedgerConflictError,
+)
 
 log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/api/v1/decisions", tags=["Decision Assurance"])
@@ -37,9 +50,29 @@ _store = DecisionStore()
 
 Cell = float | int | str | bool | None
 
+#: CausalQuery fields this endpoint sets itself or names at the top level. Every
+#: other CausalQuery field is accepted under `query`, derived from the kernel's
+#: own model so the HTTP surface cannot fall behind it again: the flat copy this
+#: replaced dropped eleven fields, `segment_by` among them, which left the
+#: segment-aware verdict unreachable over HTTP while the register said it shipped.
+_QUERY_FIELDS_SET_HERE = frozenset({"treatment", "outcome", "estimand", "rung"})
+
+QueryOptions = create_model(  # type: ignore[call-overload]
+    "QueryOptions",
+    __config__=ConfigDict(extra="forbid", frozen=True),
+    __doc__="Everything else the analysis can be asked -- causal_core.contract.CausalQuery.",
+    **{
+        name: (field.annotation, field)
+        for name, field in CausalQuery.model_fields.items()
+        if name not in _QUERY_FIELDS_SET_HERE
+    },
+)
+
 
 class DecideRequest(BaseModel):
     """What the agent proposes, and the data to judge it on."""
+
+    model_config = ConfigDict(extra="forbid")
 
     action: str = Field(..., min_length=1, description="The action, as it would be executed.")
     graph: str = Field(..., min_length=1, description="Causal graph, e.g. 'Z -> X -> Y; Z -> Y'.")
@@ -49,23 +82,28 @@ class DecideRequest(BaseModel):
         description="Which way the outcome should move, so a benefit is always positive."
     )
     data: dict[str, list[Cell]] = Field(..., description="Columns as lists.")
-    risk_class: Literal["low", "medium", "high"] = "medium"
+    estimand: Literal["ate", "att"] = "ate"
+    query: QueryOptions = Field(
+        default_factory=QueryOptions,
+        description="Further CausalQuery fields: segment_by, design, adjust_for, instruments, "
+        "proxies, negative controls, treatment_levels, population, horizon.",
+    )
+    risk_class: RiskClass = RiskClass.medium
     reversible: bool = True
     minimum_worthwhile_effect: float = Field(default=0.0, ge=0.0)
     harm_threshold: float = Field(default=0.0, ge=0.0)
     can_randomize: bool = True
     randomization_unit: str = "unit"
     units_per_day: float | None = Field(default=None, gt=0)
-    estimand: Literal["ate", "att"] = "ate"
-    analysis_policy: dict[str, Any] | None = None
-    decision_policy: dict[str, Any] | None = None
+    analysis_policy: AnalysisPolicy | None = None
+    decision_policy: DecisionPolicy | None = None
 
 
 class DecideResponse(BaseModel):
-    verdict: str
+    verdict: Verdict
     explanation: str
-    decision: dict[str, Any]
-    outcome: dict[str, Any]
+    decision: Decision
+    outcome: Annotated[CausalOutcome, Field(discriminator="kind")]
     record: DecisionRecord
 
 
@@ -85,32 +123,35 @@ async def make_decision(
     explanation whose numbers are claims of the analysis, and the ledger entry the
     decision was sealed into.
     """
+    options = body.query.model_dump(exclude_unset=True)
     try:
+        query = CausalQuery(
+            treatment=body.treatment,
+            outcome=body.outcome,
+            estimand=body.estimand,
+            **options,
+        )
         request = DecisionRequest(
             action=body.action,
             outcome=body.outcome,
             direction=body.direction,
-            risk_class=RiskClass(body.risk_class),
+            risk_class=body.risk_class,
             reversible=body.reversible,
             minimum_worthwhile_effect=body.minimum_worthwhile_effect,
             harm_threshold=body.harm_threshold,
+            population=query.population,
+            horizon=query.horizon,
             can_randomize=body.can_randomize,
             randomization_unit=body.randomization_unit,
             units_per_day=body.units_per_day,
         )
-        policy = DecisionPolicy.model_validate(body.decision_policy or {})
-        analysis = AnalysisPolicy.model_validate(body.analysis_policy or {})
         frame = pd.DataFrame(body.data)
     except Exception as exc:
         raise HTTPException(status_code=422, detail=f"{type(exc).__name__}: {exc}") from exc
+    policy = body.decision_policy or DecisionPolicy()
 
     outcome = cc.analyze(
-        frame,
-        body.graph,
-        treatment=body.treatment,
-        outcome=body.outcome,
-        estimand=body.estimand,
-        policy=analysis,
+        frame, body.graph, query=query, policy=body.analysis_policy or AnalysisPolicy()
     )
     decision = decide(outcome, request, policy)
 
@@ -147,10 +188,10 @@ async def make_decision(
     )
 
     return DecideResponse(
-        verdict=str(decision.verdict),
+        verdict=decision.verdict,
         explanation=explain(decision, outcome),
-        decision=decision.model_dump(mode="json"),
-        outcome=outcome.model_dump(mode="json"),
+        decision=decision,
+        outcome=outcome,
         record=record,
     )
 
@@ -199,6 +240,12 @@ class FollowUpRequest(BaseModel):
     analysis_policy: dict[str, Any] | None = None
 
 
+_ALREADY_MEASURED = (
+    "decision {} has already been measured, and the first measurement stands: a second one "
+    "would join the calibration average and could outvote the first"
+)
+
+
 class FollowUpResponse(BaseModel):
     realization: Realization
     explanation: str
@@ -215,6 +262,9 @@ async def record_followup(
     user: dict[str, Any] = Depends(get_current_user),
 ) -> FollowUpResponse:
     """Re-run the decision's own analysis over a later window and score the prediction.
+
+    **Once per decision.** The first measurement stands and a second is refused
+    with 409; otherwise a disappointing window could be outvoted by friendlier ones.
 
     The caller supplies rows; it does not supply the answer. The graph, the query
     and the effect being scored all come from the plan sealed at decision time, so
@@ -236,6 +286,9 @@ async def record_followup(
             ),
         )
 
+    if await _store.has_realization(entry_digest):
+        raise HTTPException(status_code=409, detail=_ALREADY_MEASURED.format(entry_digest))
+
     try:
         analysis = AnalysisPolicy.model_validate(body.analysis_policy or {})
         frame = pd.DataFrame(body.data)
@@ -244,7 +297,12 @@ async def record_followup(
 
     later = cc.analyze(frame, followup.graph, query=followup.query, policy=analysis)
     realization = compare(followup, later)
-    await _store.save_realization(entry_digest, realization)
+    try:
+        await _store.save_realization(entry_digest, realization)
+    except FollowUpConflictError as exc:  # a concurrent follow-up got there first
+        raise HTTPException(
+            status_code=409, detail=_ALREADY_MEASURED.format(entry_digest)
+        ) from exc
 
     log.info(
         "api.decisions.followup",

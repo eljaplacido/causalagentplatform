@@ -8,6 +8,7 @@ everyone" is exactly the case that disappears.
 
 from __future__ import annotations
 
+import itertools
 from datetime import UTC, datetime
 
 import causal_core as cc
@@ -163,9 +164,13 @@ def test_an_apparatus_failure_is_undecidable_and_names_its_stage(decided) -> Non
 # ── the report ────────────────────────────────────────────────────────────────
 
 
+_digests = itertools.count()
+
+
 def _realization(**over) -> Realization:
+    """One realization per decision, so each gets its own digest unless a test says otherwise."""
     base = dict(
-        decision_digest="sha256:" + "0" * 64,
+        decision_digest=f"sha256:{next(_digests):064d}",
         verdict=Verdict.act,
         predicted_benefit=12.0,
         predicted_ci=(8.0, 16.0),
@@ -247,3 +252,45 @@ def test_the_note_says_what_the_rate_is_not() -> None:
     """This number will be quoted; the caveat travels with it or it will not travel."""
     rep = report([_realization()])
     assert "not interval coverage of the truth" in rep.note
+
+
+def test_one_decision_measured_twice_is_refused_not_averaged() -> None:
+    """Otherwise a caller unhappy with one window outvotes it with a friendlier one."""
+    digest = "sha256:" + "f" * 64
+    with pytest.raises(ValueError, match="more than one realization"):
+        report([_realization(decision_digest=digest), _realization(decision_digest=digest)])
+
+
+def test_turned_down_opportunities_are_counted() -> None:
+    """The mirror of acted_and_harmful: a policy tuned only against harm hides these."""
+    entries = [
+        _realization(verdict=Verdict.refuse, cleared_worthwhile=True),
+        _realization(verdict=Verdict.experiment, cleared_worthwhile=True),
+        _realization(verdict=Verdict.refuse, cleared_worthwhile=False),
+        _realization(verdict=Verdict.act, cleared_worthwhile=True),
+    ]
+    rep = report(entries)
+    assert rep.not_acted_but_worthwhile == 2
+    assert rep.by_verdict == {"refuse": 2, "experiment": 1, "act": 1}
+
+
+def test_a_re_run_that_asked_a_different_question_is_refused(decided) -> None:
+    """The plan fixes the estimand; the library holds that, not only the HTTP route."""
+    _, _, fu = decided
+    later = cc.analyze(
+        incidents(-12.0, seed=9), GRAPH, treatment="playbook", outcome="minutes", estimand="att"
+    )
+    with pytest.raises(ValueError, match="different query"):
+        compare(fu, later)
+
+
+def test_a_free_text_horizon_is_not_passed_off_as_a_timestamp(decided) -> None:
+    d, out, _ = decided
+    loose = d.model_copy(update={"request": d.request.model_copy(update={"horizon": "30 days"})})
+    assert plan(loose, out, graph=GRAPH, observe_from=NOW).observe_until is None
+    exact = d.model_copy(
+        update={"request": d.request.model_copy(update={"horizon": "2026-12-31T00:00:00+00:00"})}
+    )
+    assert plan(exact, out, graph=GRAPH, observe_from=NOW).observe_until == (
+        "2026-12-31T00:00:00+00:00"
+    )
