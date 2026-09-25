@@ -255,6 +255,42 @@
       "bench": "t6-sequential",
       "path": "/seeded_defect_streams/fixed_n_interval/uniform_coverage",
       "scale": 100
+    },
+    {
+      "doc": "README.md",
+      "says": "matches the kernel's ATT error (0.247 vs 0.252)",
+      "figure": "0.247",
+      "bench": "t2-ihdp",
+      "path": "/rivals/ols_with_covariates_hc1/att_mean_abs_error"
+    },
+    {
+      "doc": "README.md",
+      "says": "matches the kernel's ATT error (0.247 vs 0.252)",
+      "figure": "0.252",
+      "bench": "t2-ihdp",
+      "path": "/summary/att~1C1/mean_abs_error"
+    },
+    {
+      "doc": "README.md",
+      "says": "its ATE intervals cover only 73%",
+      "figure": "73",
+      "bench": "t2-ihdp",
+      "path": "/rivals/ols_with_covariates_hc1/ate_coverage",
+      "scale": 100
+    },
+    {
+      "doc": "README.md",
+      "says": "worse than a naive difference in means (0.88 vs 0.29)",
+      "figure": "0.88",
+      "bench": "t2-ihdp",
+      "path": "/summary/ate~1C1/mean_abs_error"
+    },
+    {
+      "doc": "README.md",
+      "says": "worse than a naive difference in means (0.88 vs 0.29)",
+      "figure": "0.29",
+      "bench": "t2-ihdp",
+      "path": "/rivals/naive_difference_in_means/ate_mean_abs_error"
     }
   ]
 }
