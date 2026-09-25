@@ -26,7 +26,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
-CONTRACT_VERSION = "0.8.0"
+CONTRACT_VERSION = "0.9.0"
 
 
 class _Model(BaseModel):
@@ -202,6 +202,13 @@ class CausalQuery(_Model):
         description="Randomized designs only: the column identifying the unit of randomization "
         "(service, region, tenant) when outcomes are measured on finer units (requests, users). "
         "Standard errors are then cluster-robust; treatment must be constant within a cluster.",
+    )
+    washout: float | None = Field(
+        default=None,
+        ge=0,
+        description="Switchback designs (cluster = the time block, time = within-block time): "
+        "drop, from every block whose arm differs from the previous block's, the observations "
+        "within this many time units of its start -- the settling-in after a switch.",
     )
     sequence: str | None = Field(
         default=None,
