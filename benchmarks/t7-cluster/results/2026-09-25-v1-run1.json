@@ -1,0 +1,101 @@
+{
+  "suite": "T7",
+  "prereg_sha256": "sha256:d0997bac3ce4c77644c658868c546d8861a5ed58ee075ab7e9c16679fb0753b2",
+  "prereg_version": 1,
+  "git": "0b9793962e11bd2a992bb8d75f071b13b5ef4c3b",
+  "designs": [
+    {
+      "id": "many_clusters",
+      "reps": 1000,
+      "results": 1000,
+      "mean_error": 0.0020476417875215152,
+      "mcse": 0.002556115177155944,
+      "bias_in_mcse": 0.8010757127931221,
+      "coverage": 0.926,
+      "mean_icc": 0.09978701926165609,
+      "first_failure": ""
+    },
+    {
+      "id": "moderate",
+      "reps": 1000,
+      "results": 1000,
+      "mean_error": 0.0003022098731965779,
+      "mcse": 0.0057649319516826615,
+      "bias_in_mcse": 0.05242210588598001,
+      "coverage": 0.942,
+      "mean_icc": 0.2987078376269552,
+      "first_failure": ""
+    },
+    {
+      "id": "few_clusters",
+      "reps": 1000,
+      "results": 1000,
+      "mean_error": -0.011496568191772963,
+      "mcse": 0.00782422268461368,
+      "bias_in_mcse": 1.4693559546024864,
+      "coverage": 0.948,
+      "mean_icc": 0.2947870474834699,
+      "first_failure": ""
+    },
+    {
+      "id": "null_effect",
+      "reps": 1000,
+      "results": 1000,
+      "mean_error": -0.0024056093894399026,
+      "mcse": 0.005542076551330047,
+      "bias_in_mcse": 0.4340628223301208,
+      "coverage": 0.947,
+      "mean_icc": 0.295556797857794,
+      "first_failure": ""
+    },
+    {
+      "id": "size_dependent",
+      "reps": 1000,
+      "results": 1000,
+      "mean_error": -0.001507361617260974,
+      "mcse": 0.00335873039460256,
+      "bias_in_mcse": 0.4487891078376776,
+      "coverage": 0.95,
+      "mean_icc": 0.10054534752418261,
+      "first_failure": ""
+    }
+  ],
+  "refusals": {
+    "varies_within_cluster": "refusal:DESIGN_CHECK_FAILED",
+    "too_few_clusters": "refusal:LOW_N",
+    "not_randomized": "refusal:INVALID_INPUT"
+  },
+  "seeded_defects_caught": {
+    "cluster_weighted_estimate": false,
+    "unit_level_se": true
+  },
+  "seeded_defect_designs": {
+    "cluster_weighted_estimate": {
+      "id": "size_dependent",
+      "reps": 1000,
+      "results": 1000,
+      "mean_error": -0.009264142870370922,
+      "mcse": 0.0033680587889430283,
+      "bias_in_mcse": 2.7505882322434805,
+      "coverage": 0.947,
+      "mean_icc": 0.10054534752418261,
+      "first_failure": ""
+    },
+    "unit_level_se": {
+      "id": "moderate",
+      "reps": 1000,
+      "results": 1000,
+      "mean_error": 0.0003022098731965779,
+      "mcse": 0.0057649319516826615,
+      "bias_in_mcse": 0.05242210588598001,
+      "coverage": 0.351,
+      "mean_icc": 0.2987078376269552,
+      "first_failure": ""
+    }
+  },
+  "failures": [
+    "many_clusters: coverage 0.926 outside [0.93, 0.97]",
+    "seeded defect cluster_weighted_estimate went undetected"
+  ],
+  "passed": false
+}
