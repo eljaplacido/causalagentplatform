@@ -44,7 +44,7 @@
           "says": "Estimated counterfactual distribution"
         },
         {
-          "at": "docs/TESTING_CICD.md:80",
+          "at": "docs/TESTING_CICD.md@13e7d92:80",
           "says": "scm.counterfactual(observation, intervention)"
         }
       ],
@@ -288,12 +288,16 @@
       "capability": "TLA+ model of Guardian policy, model-checked in CI",
       "claimed_in": [
         {
-          "at": "docs/TESTING_CICD.md:584",
+          "at": "docs/TESTING_CICD.md@13e7d92:584",
           "says": "verified in CI via TLC model checker"
         },
         {
           "at": "specs/guardian_policy.tla:5",
           "says": "Critical safety properties verified by this spec"
+        },
+        {
+          "at": "docs/TESTING_CICD.md@13e7d92:583",
+          "says": "**Z3 Solver** for verifying constraint satisfaction in GovernanceAgent policies"
         }
       ],
       "reality": "No CI job runs TLC, and the spec cannot be checked as written: it uses Range, which none of its EXTENDS'd standard modules define, and Next quantifies over STRING, which TLC cannot enumerate.",

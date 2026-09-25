@@ -299,22 +299,31 @@
         "frontend/playwright.config.ts",
         ".gnomon/ci.sh",
         "scripts",
-        "specs"
+        "specs",
+        "benchmarks",
+        "packages/causal-core/tests",
+        "packages/causal-decision/tests"
       ],
       "baseline": {
-        "on": "2026-09-19",
+        "on": "2026-09-25",
         "sha256": {
-          ".github/workflows": "0c4bc072227bfe37cc11a0b7b80a7ff0a6819a8555af8619dc0f6e0193273a1b",
-          "backend/tests": "151660b847befe31db0b6099dc223578a1bdbde70b83d1d8b52be30d3b53f83d",
-          "backend/pyproject.toml": "669f2ad657d35c2fde9ed8bebdbb128cefa1f546a866bf2ccf8bb10381995ff1",
+          ".github/workflows": "3eb6b77c45c04c74476ed8a790087dd29b64fee9314b6272d45a39e7e1c34056",
+          "backend/tests": "bd1e7cb497abf8d5027555619c239f4dce2b3012097b3f55ac254dd3061e60ae",
+          "backend/pyproject.toml": "5d3358d2d4bdf6e81b60e550696e489c54e18d04fa6399d058cdb620ddc5004c",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
-          ".gnomon/ci.sh": "37bdb28e1afac2b7e7abf457a537ccf4f2db8186544c05ae7adf729ea5c17689",
-          "scripts": "244d769305352e094253d0bebc213821d1581b83aa73fe85c3f48e09612c5577",
-          "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
+          ".gnomon/ci.sh": "91adbbcca0c447259f18a8546374876847a3dbceeb45fa3b13b70e27511c9eba",
+          "scripts": "f0f3fbcc4c2460f5a5f980c0265d1ad111e20b52e788373cad72329c0efd820a",
+          "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
+          "benchmarks": "064e8d20213e72d0a9023e3eae5fca1c5f1123a956c07578a98d3de2210cba71",
+          "packages/causal-core/tests": "13e9529d8bbd2d7c1bfa30a6f7c6e5115619ef3088f927aeaa939de1d9660876",
+          "packages/causal-decision/tests": "d03df868adb97ab0f643c9ace7196cdb4030662bcc010b704638fe0a83510996"
         }
       },
-      "last_read": null
+      "last_read": {
+        "on": "2026-09-25",
+        "by": "Claude (rewritten from ci.sh, ci.yml, release.yml, the ratchet files and the benchmark pre-registrations)"
+      }
     },
     "docs/UIX.md": {
       "why": "personas, user stories and component contracts for the frontend",
