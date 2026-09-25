@@ -28,7 +28,7 @@
       "baseline": {
         "on": "2026-09-25",
         "sha256": {
-          "backend/pyproject.toml": "31ec12890a7bf5512c8e918e0fed4bafe37f88d8826a7604f0aa1b9b6fa16b2b",
+          "backend/pyproject.toml": "eb8981b94a831f96ab3e93b9d91d676baab95bb8020aac71fa00f19020de0319",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
@@ -37,7 +37,7 @@
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-28: CURRENT_STAGE moved one row to implemented; README only links the page, status paragraph unchanged)"
+        "by": "Claude (septa-50: re-read for SQL/bandit claims; README names SQLAlchemy only, no scanner or injection claim; pyproject change is the [tool.bandit] skips)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -54,10 +54,10 @@
       "baseline": {
         "on": "2026-09-25",
         "sha256": {
-          "conformance/declared_not_implemented.json": "2ba62e2c7f4191580a631ad383b104d46c3d310714e9cadd2cbdab7816930949",
-          "backend/src": "00d97c69e593761e94466c25b256500de7cd03ce52cf7b66dbc7087179cf0d2c",
+          "conformance/declared_not_implemented.json": "31d9cd06b19bc6968f0b3fda4fb0b7ad4c48b5da813a2b55bb01a4be9950df86",
+          "backend/src": "f640fc82cf37abd54d7762986849d44ef25804f11caa742ae68ecf9eb1416c65",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "677b9e6eb7b0c36f0e471bd952b173ea75537461cd19dadcf4646cefffdfd163",
+          "backend/tests": "fbacb33982f8dcb3b771041930549763931ef15349878d171fd5b3dc2711455c",
           "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
           "packages": "1d0130c75356f3dfc99a697584c821cbd9a20f53d95dc79b26fd299c21b61482",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
@@ -65,7 +65,7 @@
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-28: secrets-in-env row now implemented, pinned by test_signing_key_rotation.py, fixed in cd00985)"
+        "by": "Claude (septa-50: re-read after the Core queries moved to named untyped bindparams (no asyncpg casts) and the register was re-cited again; no SQL, bandit or injection claim in it changes)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -80,7 +80,7 @@
       "baseline": {
         "on": "2026-09-25",
         "sha256": {
-          "backend/src/semantic_layer": "efe8da2cbc1cf69ea3ea533ca4716310751b6a8f6afaa154086161d667683f32",
+          "backend/src/semantic_layer": "33a471aa2e87158ba48e81ff5970e72c73ad5ac9579bdbc5057bb60dbda7ebbf",
           "backend/src/agents/governance.py": "9ec8f7b9cf6fdf7a45570c18cff694c079f3f6211536a05d6a9d0dea0d1ce0c3",
           "packages/semantic-types/src": "fe7182fc233b307aa02d26a958898db94ead599601fe740dcfe2981bf5a1150d",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
@@ -89,7 +89,7 @@
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-28: semantic_layer changed only in verdict.py key sourcing and rotation; 'signed, subject-bound, single-use' still true, no claim here changes)"
+        "by": "Claude (septa-50: re-read after registry.py's Core queries moved to named untyped bindparams; states and transitions it lists (UNDER_REVIEW accepted by queue and reject_draft) unchanged)"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -177,10 +177,10 @@
         "on": "2026-09-25",
         "sha256": {
           "backend/src/middleware": "059d9ba59b9d9dc8772f861212ffa03e02b9e45530e21f8386b06814508f077e",
-          "backend/src/api/governance.py": "818a998f357b9445aae47350d2ff86debc7f17f1a353f3e6ecec39766aefe373",
+          "backend/src/api/governance.py": "5b5cdb81e0d9f7e1399a744089f368bbbc6ebc411521a57c573c982a469b5de9",
           "backend/src/agents/governance.py": "9ec8f7b9cf6fdf7a45570c18cff694c079f3f6211536a05d6a9d0dea0d1ce0c3",
-          "backend/src/semantic_layer/registry.py": "3b8c816d3729127bcff72112504a3c92bde225d47a475c6bd45044c72e21d60a",
-          "backend/src/api/interventions.py": "ab12f730fbf7083ef7ea27b1da9e913919f32ca95464e0b22789844e627d0602",
+          "backend/src/semantic_layer/registry.py": "652543c1a3d95f5b51d6aa65e53f553b1989525511ff47aadbc922a782ca8edd",
+          "backend/src/api/interventions.py": "3cf8298f7efe2961d75759ff479b4da4cf4e19ae6e5879cb63ffd41f7edc6436",
           "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
           "backend/src/db/migrations": "4ab4b5ad6dcc513cbb149dba3bd9fb4f7a7ff7dd35393cb51ee688baaec3d671",
           "backend/src/semantic_layer/verdict.py": "2807535994f0073bd9f58cc2774822d9f7bd1749aa7801d669eb2301bde3ac00",
@@ -189,7 +189,7 @@
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-28: 8.2 rewritten to the supported mechanism -- env or NAME_FILE, no secret-manager client, start-up refusal outside ENV=local, rotation via GUARDIAN_SIGNING_KEYS_PREVIOUS, compose password as local-dev exception; 3.2 bullet matches)"
+        "by": "Claude (septa-50: re-read after the Core queries moved to named untyped bindparams (no asyncpg casts) and the register was re-cited again; no SQL, bandit or injection claim in it changes)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -212,14 +212,14 @@
           "backend/src/semantic_layer/models.py": "f3b7a600ac8e8c4ce7beb48145a188b2394f3775b6ad7d094613cbb9798d3b05",
           "backend/src/sensors": "d38f988ccb52659ac4ecc8724e8aa775b2e6e9fca76b73dbba6576c3f3d1dcba",
           "docker-compose.yml": "c2118a27d9bd334c63935f3b82336c693cc97c1ac2114e81ac602a45fc8be38e",
-          "backend/src/semantic_layer/registry.py": "3b8c816d3729127bcff72112504a3c92bde225d47a475c6bd45044c72e21d60a",
+          "backend/src/semantic_layer/registry.py": "652543c1a3d95f5b51d6aa65e53f553b1989525511ff47aadbc922a782ca8edd",
           "backend/src/agents/drift_monitor.py": "9279c31636b3b663007f21e7aa671ffe738a535432f610ecb5b6de00ae6bd815",
           "backend/src/skills/drift_detect.py": "9432982258b155287a90701d76dc9bf331dd8c65fbc692ad37fcd124fcab7111"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-28: cloud-deployment line names DATABASE_URL_FILE; factory _get_env now shares secret_source's ENV rule, same values)"
+        "by": "Claude (septa-50: re-read after the Core queries moved to named untyped bindparams (no asyncpg casts) and the register was re-cited again; no SQL, bandit or injection claim in it changes)"
       }
     },
     "docs/HANDOFFS.md": {
@@ -280,7 +280,7 @@
           "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docker-compose.yml": "c2118a27d9bd334c63935f3b82336c693cc97c1ac2114e81ac602a45fc8be38e",
-          "backend/pyproject.toml": "31ec12890a7bf5512c8e918e0fed4bafe37f88d8826a7604f0aa1b9b6fa16b2b",
+          "backend/pyproject.toml": "eb8981b94a831f96ab3e93b9d91d676baab95bb8020aac71fa00f19020de0319",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
           ".env.example": "ac8e9212ebb369e44916a16d97f41316b195c229f578a26df88894513e658752",
@@ -289,7 +289,7 @@
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-28: configuration gains the Guardian signing key -- optional locally, required outside ENV=local, NAME_FILE form, rotation via previous keys; PostgreSQL row names the compose password as local-dev only)"
+        "by": "Claude (septa-50: pyproject change is only [tool.bandit] skips; no setup step or command changes)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -311,12 +311,12 @@
         "on": "2026-09-25",
         "sha256": {
           ".github/workflows": "7f02b9e4121a9913600d30b2fdbec2ab680ccc29f2ba5ae8008ff3c6207f9376",
-          "backend/tests": "677b9e6eb7b0c36f0e471bd952b173ea75537461cd19dadcf4646cefffdfd163",
-          "backend/pyproject.toml": "31ec12890a7bf5512c8e918e0fed4bafe37f88d8826a7604f0aa1b9b6fa16b2b",
+          "backend/tests": "fbacb33982f8dcb3b771041930549763931ef15349878d171fd5b3dc2711455c",
+          "backend/pyproject.toml": "eb8981b94a831f96ab3e93b9d91d676baab95bb8020aac71fa00f19020de0319",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
           ".gnomon/ci.sh": "085c4db273b06cb4815acf62e1108052d346268e78f320a9a3280d3557a1531a",
-          "scripts": "b6101703ba143f257c233bf1b5ca95eee5682ce5910f1da1fbe91b9c06e25898",
+          "scripts": "d6b238d4612e6588e2cc931b858946c35350e5ef54a5919de425460529f094a1",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "3dcea1af4dd3bbdd68778cbb91715e1663c850fb9681fe42096b50d1145550dc",
           "packages/causal-core/tests": "b73dcfd6530b951cdacdaaaac95e7e4068843b27cbd6635fdbe7b9efe306ecb3",
@@ -325,7 +325,7 @@
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (ruff ratchet 416->415 at ruff 0.15.22; the doc quotes no counts)"
+        "by": "Claude (septa-50: re-read after the Core queries moved to named untyped bindparams (no asyncpg casts) and the register was re-cited again; no SQL, bandit or injection claim in it changes)"
       }
     },
     "docs/UIX.md": {
@@ -355,13 +355,13 @@
         "on": "2026-09-25",
         "sha256": {
           "packages/causal-core/src/causal_core": "f504a91cfae574117c3accbd936ee039a34cde0bbd0579f77c4571207a366683",
-          "conformance/declared_not_implemented.json": "2ba62e2c7f4191580a631ad383b104d46c3d310714e9cadd2cbdab7816930949",
+          "conformance/declared_not_implemented.json": "31d9cd06b19bc6968f0b3fda4fb0b7ad4c48b5da813a2b55bb01a4be9950df86",
           "docs/CURRENT_STAGE.md": "ae7f02500e2f0233eefd1dd55e3abd3cafa8c1663d863c56a02d21d23e6ecc8e"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-28: p0 list says secrets come from NAME or NAME_FILE, start-up refusal and key rotation are in, no secret-manager client)"
+        "by": "Claude (septa-50: re-read after the Core queries moved to named untyped bindparams (no asyncpg casts) and the register was re-cited again; no SQL, bandit or injection claim in it changes)"
       }
     },
     "SECURITY.md": {
@@ -378,16 +378,16 @@
         "on": "2026-09-25",
         "sha256": {
           "backend/src/middleware": "059d9ba59b9d9dc8772f861212ffa03e02b9e45530e21f8386b06814508f077e",
-          "backend/src/api/governance.py": "818a998f357b9445aae47350d2ff86debc7f17f1a353f3e6ecec39766aefe373",
-          "backend/src/api/interventions.py": "ab12f730fbf7083ef7ea27b1da9e913919f32ca95464e0b22789844e627d0602",
+          "backend/src/api/governance.py": "5b5cdb81e0d9f7e1399a744089f368bbbc6ebc411521a57c573c982a469b5de9",
+          "backend/src/api/interventions.py": "3cf8298f7efe2961d75759ff479b4da4cf4e19ae6e5879cb63ffd41f7edc6436",
           "backend/src/agents/governance.py": "9ec8f7b9cf6fdf7a45570c18cff694c079f3f6211536a05d6a9d0dea0d1ce0c3",
-          "backend/src/semantic_layer/registry.py": "3b8c816d3729127bcff72112504a3c92bde225d47a475c6bd45044c72e21d60a",
+          "backend/src/semantic_layer/registry.py": "652543c1a3d95f5b51d6aa65e53f553b1989525511ff47aadbc922a782ca8edd",
           "backend/src/semantic_layer/verdict.py": "2807535994f0073bd9f58cc2774822d9f7bd1749aa7801d669eb2301bde3ac00"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-28: Guardian-verdicts paragraph says non-local start-up refuses without a >=32-byte key and previous keys verify; Secrets paragraph added: NAME or NAME_FILE, no secret-manager client, compose password is the local-dev exception)"
+        "by": "Claude (septa-50: re-read after the Core queries moved to named untyped bindparams (no asyncpg casts) and the register was re-cited again; no SQL, bandit or injection claim in it changes)"
       }
     }
   }

@@ -234,7 +234,7 @@
       "capability": "Review queue ordered by risk tier, showing who submitted each item",
       "claimed_in": [
         {
-          "at": "backend/src/api/governance.py:377",
+          "at": "backend/src/api/governance.py:394",
           "says": "summary=\"List pending drafts ordered by risk tier\""
         },
         {
@@ -245,7 +245,7 @@
       "reality": "ReviewQueueItem carries no risk tier and no submitter, the queue is not ordered by risk, and the UI fills riskTier \"MEDIUM\" and submittedBy \"system\" for every item.",
       "evidence": [
         {
-          "at": "backend/src/api/governance.py:147",
+          "at": "backend/src/api/governance.py:164",
           "says": "class ReviewQueueItem(BaseModel):"
         },
         {
@@ -346,7 +346,7 @@
       "reality": "The semantic layer (fragments, edges) is stored through SQLAlchemy (SQLite/PostgreSQL); Neo4j code exists only for the experience buffer and drift alerts, is exercised only against mocks, and no d-separation or path query runs in Neo4j.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:512",
+          "at": "backend/src/semantic_layer/registry.py:559",
           "says": "FROM graph_fragments"
         }
       ],
@@ -518,7 +518,7 @@
       "reality": "The chain is built, persisted, served and verified, and decision_records is append-only in the production schema. Both ends of anchoring now exist in code: GET /api/v1/decisions/checkpoint returns the head to publish, and POST /api/v1/decisions/verify-anchored checks the chain against checkpoints kept elsewhere, catching a rewrite that re-seals every later entry (which /verify passes) and a truncation below a checkpoint. What does not exist is the publishing: nothing sends a checkpoint to a store the platform cannot rewrite, so until a deployment does, the ledger still evidences internal consistency only.",
       "evidence": [
         {
-          "at": "backend/src/api/decisions.py:313",
+          "at": "backend/src/api/decisions.py:316",
           "says": "A pass means the chain is *internally* consistent. It cannot mean more than"
         },
         {
@@ -738,12 +738,12 @@
       "reality": "Approval and rejection UPDATE the object's own row: promote_to_approved rewrites approval_status, approved_at, approved_by, guardian_verdict_ref and lineage, and reject_draft rewrites approval_status (to DEPRECATED) and lineage. The version column keeps its 1.0.0 default, because no code path increments it and no new row is written for a new version. The previous state survives only as lineage entries and audit_log rows. The interventions feedback endpoint likewise UPDATEs interventions in place.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:853",
-          "says": "f\"SET approval_status = 'APPROVED', \""
+          "at": "backend/src/semantic_layer/registry.py:901",
+          "says": "\"status\": \"APPROVED\","
         },
         {
-          "at": "backend/src/semantic_layer/registry.py:941",
-          "says": "f\"SET approval_status = 'DEPRECATED', lineage = :lineage \""
+          "at": "backend/src/semantic_layer/registry.py:981",
+          "says": ".values(approval_status=bindparam(\"status\"), lineage=bindparam(\"lineage\")),"
         }
       ],
       "leaves_by": {
@@ -773,8 +773,8 @@
       "reality": "Approval and rejection each append one step (APPROVED or REJECTED: actor, time, verdict id), and an edge keeps whatever lineage list its submitter sent. Nothing records the data source, the transformation steps or the policy rules into lineage, and no platform code constructs a LineageRecord. An entity's submitted lineage is not stored (the INSERT omits the column). Fragments had no lineage column at all until 006_graph_fragment_lineage.sql, so approving or rejecting one failed outright. The Guardian verdict, its cited rules, and the evidence and assumption ids are linked by reference, so the chain can be partly rebuilt by joins. Nothing shows that this satisfies EU AI Act Art. 13.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:836",
-          "says": "text(f\"SELECT lineage, approval_status, domain FROM {table} WHERE id = :oid\"),"
+          "at": "backend/src/semantic_layer/registry.py:869",
+          "says": "select(t.c.lineage, t.c.approval_status, t.c.domain).where("
         },
         {
           "at": "backend/src/semantic_layer/models.py:200",
@@ -1328,7 +1328,7 @@
       "was": "CI is one job running .gnomon/ci.sh, and neither it nor release.yml runs Bandit, pip-audit, safety, Trivy, an SBOM generator or ZAP. There is no dependabot configuration. pip-audit and bandit are declared as backend dev dependencies, and bandit has a config section in backend/pyproject.toml, so they install and nothing runs them. Dependencies are ranges in pyproject.toml, not hash-pinned. The one supply-chain gate is the licence check on the published packages' runtime dependencies.",
       "fixed_in": "5423094",
       "pinned_by": ".gnomon/ci.sh",
-      "note": "The SAST and dependency-audit part left: .gnomon/ci.sh runs bandit-backend and bandit-packages (MEDIUM+ held at 0 by scripts/lint-baseline.json), secret-scan (scripts/secret_scan.py over the working tree), and pip-audit-backend, pip-audit-packages and npm-audit (scripts/dep_audit.py; any advisory not in the reviewed, dated scripts/audit-allowlist.json fails). CI fails on exit 2, so an audit that could not reach its advisory database cannot pass. The negative controls are backend/tests/unit/test_secret_scan.py and test_dep_audit.py. pip-audit runs on every push and weekly; `safety` is not run. bandit-backend inherits backend/pyproject.toml's blanket skip of B608 (13 unreviewed MEDIUM findings with it enabled). The container scan, SBOM, DAST, hash-pinning and dependabot parts of the claim did not leave: they are supply-chain-scanning-not-in-ci."
+      "note": "The SAST and dependency-audit part left: .gnomon/ci.sh runs bandit-backend and bandit-packages (MEDIUM+ held at 0 by scripts/lint-baseline.json), secret-scan (scripts/secret_scan.py over the working tree), and pip-audit-backend, pip-audit-packages and npm-audit (scripts/dep_audit.py; any advisory not in the reviewed, dated scripts/audit-allowlist.json fails). CI fails on exit 2, so an audit that could not reach its advisory database cannot pass. The negative controls are backend/tests/unit/test_secret_scan.py and test_dep_audit.py. pip-audit runs on every push and weekly; `safety` is not run. bandit-backend inherited backend/pyproject.toml's blanket skip of B608 (13 unreviewed MEDIUM findings with it enabled) until septa-50 reviewed the sites (none carried a request value into SQL text), rewrote them without string-built SQL, and removed the skip; B608 is now enforced. The container scan, SBOM, DAST, hash-pinning and dependabot parts of the claim did not leave: they are supply-chain-scanning-not-in-ci."
     },
     {
       "id": "secrets-in-env",

@@ -28,7 +28,7 @@ from uuid import UUID
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field, model_validator
-from sqlalchemy import text
+from sqlalchemy import bindparam, column, func, select, table
 
 from src.agents.governance import GovernanceAgent
 from src.agents.grounding_risk import grounding_risk
@@ -47,6 +47,23 @@ from src.semantic_layer.registry import SemanticLayerRegistry
 
 log = structlog.get_logger(__name__)
 router = APIRouter()
+
+#: The audit_log columns GET /audit-log returns, as a lightweight Core table.
+#: Untyped on purpose: values are bound through bindparam() and typed by the driver,
+#: as they would be in text() (a typed bind renders a cast under asyncpg).
+_AUDIT_LOG = table(
+    "audit_log",
+    column("id"),
+    column("agent_id"),
+    column("action_type"),
+    column("payload_hash"),
+    column("guardian_verdict"),
+    column("policy_rules_cited"),
+    column("session_id"),
+    column("created_at"),
+    column("subject_id"),
+    column("notes"),
+)
 
 _registry = SemanticLayerRegistry()
 _governance = GovernanceAgent(agent_id="governance-agent-api")
@@ -431,44 +448,43 @@ async def get_audit_log(
     Requires governance_officer or platform_engineer role.
     Results are paginated.  Maximum page_size=500.
     """
-    conditions: list[str] = []
+    # Built with SQLAlchemy Core, so no SQL is assembled from strings (bandit B608).
+    # Every value is a named, untyped bindparam() given at execution, as with
+    # text(): a literal would take a type from the Python value, and asyncpg would
+    # render a cast PostgreSQL may refuse (see _AUDIT_LOG).
+    filters = []
     params: dict[str, Any] = {
         "limit": page_size,
         "offset": (page - 1) * page_size,
     }
-
     if from_ts:
-        conditions.append("created_at >= :from_ts")
+        filters.append(_AUDIT_LOG.c.created_at >= bindparam("from_ts"))
         params["from_ts"] = from_ts
     if to_ts:
-        conditions.append("created_at <= :to_ts")
+        filters.append(_AUDIT_LOG.c.created_at <= bindparam("to_ts"))
         params["to_ts"] = to_ts
     if agent_id:
-        conditions.append("agent_id = :agent_id")
+        filters.append(_AUDIT_LOG.c.agent_id == bindparam("agent_id"))
         params["agent_id"] = agent_id
     if verdict:
-        conditions.append("guardian_verdict = :verdict")
+        filters.append(_AUDIT_LOG.c.guardian_verdict == bindparam("verdict"))
         params["verdict"] = str(verdict.value if hasattr(verdict, "value") else verdict)
-
-    where = "WHERE " + " AND ".join(conditions) if conditions else ""
 
     async with CloudSqlFactory.get_session_factory()() as session:
         # Total count
         count_row = await session.execute(
-            text(f"SELECT COUNT(*) AS cnt FROM audit_log {where}"),
+            select(func.count().label("cnt")).select_from(_AUDIT_LOG).where(*filters),
             params,
         )
         total = count_row.scalar() or 0
 
         # Paginated data
         rows = await session.execute(
-            text(
-                f"SELECT id, agent_id, action_type, payload_hash, guardian_verdict, "
-                f"policy_rules_cited, session_id, created_at, subject_id, notes "
-                f"FROM audit_log {where} "
-                f"ORDER BY created_at DESC "
-                f"LIMIT :limit OFFSET :offset"
-            ),
+            select(_AUDIT_LOG)
+            .where(*filters)
+            .order_by(_AUDIT_LOG.c.created_at.desc())
+            .limit(bindparam("limit"))
+            .offset(bindparam("offset")),
             params,
         )
         import json as _json

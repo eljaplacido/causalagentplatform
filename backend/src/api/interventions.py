@@ -508,6 +508,22 @@ async def reject_intervention(
     return await _record_decision(intervention_id, "REJECTED", body, user)
 
 
+# Whole literal statements, one per filter shape, never assembled from strings:
+# the incident filter only ever reaches them as a bound parameter.
+_LIST_DECISIONS = (
+    "SELECT id, action_type, payload_hash, session_id, created_at, agent_id "
+    "FROM audit_log "
+    "WHERE action_type IN ('INTERVENTION_APPROVED', 'INTERVENTION_REJECTED') "
+    "ORDER BY created_at DESC LIMIT :limit"
+)
+_LIST_DECISIONS_FOR_INCIDENT = (
+    "SELECT id, action_type, payload_hash, session_id, created_at, agent_id "
+    "FROM audit_log "
+    "WHERE action_type IN ('INTERVENTION_APPROVED', 'INTERVENTION_REJECTED') "
+    "AND session_id = :incident ORDER BY created_at DESC LIMIT :limit"
+)
+
+
 @router.get(
     "/decisions",
     response_model=list[InterventionDecisionRecord],
@@ -524,20 +540,13 @@ async def list_decisions(
     after a page reload or for the governance audit trail.
     """
     params: dict[str, Any] = {"limit": limit}
-    where = "action_type IN ('INTERVENTION_APPROVED', 'INTERVENTION_REJECTED')"
+    sql = _LIST_DECISIONS
     if incident_id:
-        where += " AND session_id = :incident"
+        sql = _LIST_DECISIONS_FOR_INCIDENT
         params["incident"] = incident_id
 
     async with CloudSqlFactory.get_session_factory()() as session:
-        rows = await session.execute(
-            text(
-                f"SELECT id, action_type, payload_hash, session_id, created_at, agent_id "
-                f"FROM audit_log WHERE {where} "
-                f"ORDER BY created_at DESC LIMIT :limit"
-            ),
-            params,
-        )
+        rows = await session.execute(text(sql), params)
 
         results: list[InterventionDecisionRecord] = []
         for r in rows.mappings():

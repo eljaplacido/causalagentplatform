@@ -31,7 +31,7 @@ from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 import structlog
-from sqlalchemy import text
+from sqlalchemy import bindparam, column, select, table, text, update
 from sqlalchemy.exc import IntegrityError
 
 from src.db.factory import CloudSqlFactory
@@ -55,6 +55,7 @@ if TYPE_CHECKING:
     from collections.abc import Collection, Sequence
 
     from sqlalchemy.ext.asyncio import AsyncSession
+    from sqlalchemy.sql.expression import TableClause
 
 log = structlog.get_logger(__name__)
 
@@ -204,7 +205,6 @@ async def _assert_verdict_approved(
 #: The statuses a review may move an object out of. APPROVED and DEPRECATED are
 #: terminal for approval and rejection alike.
 _REVIEWABLE = ("DRAFT", "UNDER_REVIEW")
-_REVIEWABLE_SQL = ", ".join(f"'{s}'" for s in _REVIEWABLE)
 
 
 def _assert_reviewable(current: Any, object_id: UUID, object_type: str, attempted: str) -> None:
@@ -344,16 +344,69 @@ def _sv(v: Any) -> Any:
 # existence of another domain's objects by id.
 
 
-def _domain_condition(domains: Collection[str] | None, params: dict[str, Any]) -> str | None:
-    """A SQL condition restricting `domain` to `domains`, binding into `params`."""
+def _domain_filter(
+    tbl: TableClause, domains: Collection[str] | None, params: dict[str, Any]
+) -> list[Any]:
+    """The WHERE clauses restricting `tbl.domain` to `domains`, binding into `params`.
+
+    None when unscoped. An empty scope compiles to an IN over the empty set, which
+    matches nothing.
+    """
     if domains is None:
-        return None
-    names = sorted(domains)
-    if not names:
-        return "1 = 0"
-    keys = [f"scope_d{i}" for i in range(len(names))]
-    params.update(dict(zip(keys, names, strict=True)))
-    return "domain IN (" + ", ".join(f":{k}" for k in keys) + ")"
+        return []
+    params["scope"] = sorted(domains)
+    return [tbl.c.domain.in_(bindparam("scope", expanding=True))]
+
+
+# ── Tables ────────────────────────────────────────────────────────────────────
+#
+# Lightweight SQLAlchemy Core tables (no ORM, no metadata): the queries below that
+# vary by filter or by object type are built from these, so a table or column
+# name comes from this module and every value is a bound parameter. No statement
+# is assembled from strings (bandit B608 is enforced over backend/src).
+#
+# The columns are untyped and every value goes through a named bindparam() given
+# at execution, exactly as with text(): a literal compared to a column would take
+# a type from the Python value, and asyncpg would then render a cast (`$1::VARCHAR`)
+# that PostgreSQL refuses against the JSONB and UUID columns of 001_initial.sql.
+
+
+def _table(name: str, *columns: str) -> TableClause:
+    return table(name, *(column(c) for c in columns))
+
+
+_ENTITY_COLUMNS = (
+    "id", "name", "entity_type", "domain", "description", "attributes",
+    "ontology_version", "approval_status", "created_by", "created_at",
+    "approved_at", "approved_by", "lineage", "tags",
+)
+_FRAGMENT_COLUMNS = (
+    "id", "name", "domain", "description", "edge_ids", "entry_nodes",
+    "exit_nodes", "approval_status", "version", "usage_count", "tags",
+    "guardian_verdict_ref", "created_by", "created_at", "approved_at", "approved_by",
+)
+_ASSUMPTION_COLUMNS = (
+    "id", "statement", "assumption_type", "scope", "justification",
+    "elicited_from", "elicited_by", "elicited_at", "review_status",
+    "last_reviewed_at", "next_review_due", "sensitivity_result", "domain",
+)
+
+_CAUSAL_ENTITIES = _table("causal_entities", *_ENTITY_COLUMNS, "guardian_verdict_ref")
+_GRAPH_FRAGMENTS = _table("graph_fragments", *_FRAGMENT_COLUMNS, "lineage")
+_ASSUMPTIONS = _table("assumptions", *_ASSUMPTION_COLUMNS)
+_CAUSAL_EDGES = _table(
+    "causal_edges", "id", "edge_type", "domain", "approval_status", "created_at",
+    "approved_at", "approved_by", "guardian_verdict_ref", "lineage",
+)
+
+#: The object types a review may approve or reject: their table, and the column
+#: the review queue shows as the object's name. A closed mapping; an object_type
+#: outside it is refused before any SQL is built.
+_REVIEWABLE_TABLES: dict[str, tuple[TableClause, str]] = {
+    "CausalEdge": (_CAUSAL_EDGES, "edge_type"),
+    "GraphFragment": (_GRAPH_FRAGMENTS, "name"),
+    "CausalEntity": (_CAUSAL_ENTITIES, "name"),
+}
 
 
 def _outside(domains: Collection[str] | None, domain: Any) -> bool:
@@ -405,27 +458,21 @@ class SemanticLayerRegistry:
         domains: Collection[str] | None = None,
     ) -> Sequence[CausalEntity]:
         """List CausalEntities inside `domains`, optionally filtered by domain and/or status."""
-        conditions: list[str] = []
+        t = _CAUSAL_ENTITIES
         params: dict[str, Any] = {}
-        scoped = _domain_condition(domains, params)
-        if scoped:
-            conditions.append(scoped)
+        filters = _domain_filter(t, domains, params)
         if domain:
-            conditions.append("domain = :domain")
+            filters.append(t.c.domain == bindparam("domain"))
             params["domain"] = domain
         if status:
-            conditions.append("approval_status = :status")
+            filters.append(t.c.approval_status == bindparam("status"))
             params["status"] = status.value
 
-        where = "WHERE " + " AND ".join(conditions) if conditions else ""
         async with CloudSqlFactory.get_session_factory()() as session:
             rows = await session.execute(
-                text(
-                    f"SELECT id, name, entity_type, domain, description, attributes, "
-                    f"ontology_version, approval_status, created_by, created_at, "
-                    f"approved_at, approved_by, lineage, tags "
-                    f"FROM causal_entities {where} ORDER BY created_at DESC"
-                ),
+                select(*(t.c[c] for c in _ENTITY_COLUMNS))
+                .where(*filters)
+                .order_by(t.c.created_at.desc()),
                 params,
             )
             return [
@@ -530,27 +577,21 @@ class SemanticLayerRegistry:
         domains: Collection[str] | None = None,
     ) -> Sequence[GraphFragment]:
         """List GraphFragments inside `domains`, filtered by domain and/or approval status."""
-        conditions: list[str] = []
+        t = _GRAPH_FRAGMENTS
         params: dict[str, Any] = {}
-        scoped = _domain_condition(domains, params)
-        if scoped:
-            conditions.append(scoped)
+        filters = _domain_filter(t, domains, params)
         if domain:
-            conditions.append("domain = :domain")
+            filters.append(t.c.domain == bindparam("domain"))
             params["domain"] = domain
         if status:
-            conditions.append("approval_status = :status")
+            filters.append(t.c.approval_status == bindparam("status"))
             params["status"] = status.value
 
-        where = "WHERE " + " AND ".join(conditions) if conditions else ""
         async with CloudSqlFactory.get_session_factory()() as session:
             rows = await session.execute(
-                text(
-                    f"SELECT id, name, domain, description, edge_ids, entry_nodes, "
-                    f"exit_nodes, approval_status, version, usage_count, tags, "
-                    f"guardian_verdict_ref, created_by, created_at, approved_at, approved_by "
-                    f"FROM graph_fragments {where} ORDER BY created_at DESC"
-                ),
+                select(*(t.c[c] for c in _FRAGMENT_COLUMNS))
+                .where(*filters)
+                .order_by(t.c.created_at.desc()),
                 params,
             )
             results = []
@@ -586,20 +627,17 @@ class SemanticLayerRegistry:
 
     async def list_pending_assumptions(self, domain: str | None = None) -> Sequence[Assumption]:
         """List assumptions in PENDING review status, for governance queue."""
+        t = _ASSUMPTIONS
         params: dict[str, Any] = {"status": ReviewStatus.PENDING.value}
-        where_extra = ""
+        filters = [t.c.review_status == bindparam("status")]
         if domain:
-            where_extra = " AND domain = :domain"
+            filters.append(t.c.domain == bindparam("domain"))
             params["domain"] = domain
         async with CloudSqlFactory.get_session_factory()() as session:
             rows = await session.execute(
-                text(
-                    f"SELECT id, statement, assumption_type, scope, justification, "
-                    f"elicited_from, elicited_by, elicited_at, review_status, "
-                    f"last_reviewed_at, next_review_due, sensitivity_result, domain "
-                    f"FROM assumptions WHERE review_status = :status{where_extra} "
-                    f"ORDER BY elicited_at ASC"
-                ),
+                select(*(t.c[c] for c in _ASSUMPTION_COLUMNS))
+                .where(*filters)
+                .order_by(t.c.elicited_at.asc()),
                 params,
             )
             return [
@@ -800,15 +838,10 @@ class SemanticLayerRegistry:
 
         object_type must be one of: "CausalEdge", "GraphFragment", "CausalEntity".
         """
-        table_map = {
-            "CausalEdge": "causal_edges",
-            "GraphFragment": "graph_fragments",
-            "CausalEntity": "causal_entities",
-        }
-        if object_type not in table_map:
+        if object_type not in _REVIEWABLE_TABLES:
             raise ValueError(f"promote_to_approved: unknown object_type '{object_type}'")
 
-        table = table_map[object_type]
+        t, _ = _REVIEWABLE_TABLES[object_type]
 
         async with CloudSqlFactory.get_session_factory()() as session:
             await _assert_verdict_approved(
@@ -833,7 +866,9 @@ class SemanticLayerRegistry:
             # Postgres but *strings* on SQLite, where it produced '[][{...}]' --
             # not JSON, and nothing read it closely enough to notice.
             current = await session.execute(
-                text(f"SELECT lineage, approval_status, domain FROM {table} WHERE id = :oid"),
+                select(t.c.lineage, t.c.approval_status, t.c.domain).where(
+                    t.c.id == bindparam("oid")
+                ),
                 {"oid": str(object_id)},
             )
             found = current.mappings().one_or_none()
@@ -848,17 +883,22 @@ class SemanticLayerRegistry:
             history.append(json.loads(lineage_entry))
 
             await session.execute(
-                text(
-                    f"UPDATE {table} "
-                    f"SET approval_status = 'APPROVED', "
-                    f"    approved_at = :approved_at, "
-                    f"    approved_by = :approved_by, "
-                    f"    guardian_verdict_ref = :verdict_ref, "
-                    f"    lineage = :lineage "
-                    f"WHERE id = :oid AND approval_status IN ({_REVIEWABLE_SQL})"
+                update(t)
+                .where(
+                    t.c.id == bindparam("oid"),
+                    t.c.approval_status.in_(bindparam("reviewable", expanding=True)),
+                )
+                .values(
+                    approval_status=bindparam("status"),
+                    approved_at=bindparam("approved_at"),
+                    approved_by=bindparam("approved_by"),
+                    guardian_verdict_ref=bindparam("verdict_ref"),
+                    lineage=bindparam("lineage"),
                 ),
                 {
                     "oid": str(object_id),
+                    "reviewable": list(_REVIEWABLE),
+                    "status": "APPROVED",
                     "approved_at": now,
                     "approved_by": approver.model_dump_json(),
                     "verdict_ref": str(verdict_id),
@@ -878,12 +918,6 @@ class SemanticLayerRegistry:
     #: Rejection marks an object DEPRECATED. ApprovalStatus has no REJECTED member,
     #: and inventing one here would put a value in the column that the CHECK
     #: constraint in 001_initial.sql does not allow.
-    _TABLES = {
-        "CausalEdge": "causal_edges",
-        "GraphFragment": "graph_fragments",
-        "CausalEntity": "causal_entities",
-    }
-
     async def reject_draft(
         self,
         object_id: UUID,
@@ -901,9 +935,10 @@ class SemanticLayerRegistry:
         not already spent -- because "this was refused for a reason" is a claim about
         the record, and an unchecked one is worth nothing.
         """
-        table = self._TABLES.get(object_type)
-        if table is None:
+        if object_type not in _REVIEWABLE_TABLES:
             raise ValueError(f"reject_draft: unknown object_type '{object_type}'")
+
+        t, _ = _REVIEWABLE_TABLES[object_type]
 
         async with CloudSqlFactory.get_session_factory()() as session:
             await _assert_verdict_approved(
@@ -916,7 +951,9 @@ class SemanticLayerRegistry:
 
             now = datetime.now(UTC)
             current = await session.execute(
-                text(f"SELECT lineage, approval_status, domain FROM {table} WHERE id = :oid"),
+                select(t.c.lineage, t.c.approval_status, t.c.domain).where(
+                    t.c.id == bindparam("oid")
+                ),
                 {"oid": str(object_id)},
             )
             found = current.mappings().one_or_none()
@@ -936,12 +973,18 @@ class SemanticLayerRegistry:
             )
 
             await session.execute(
-                text(
-                    f"UPDATE {table} "
-                    f"SET approval_status = 'DEPRECATED', lineage = :lineage "
-                    f"WHERE id = :oid AND approval_status IN ({_REVIEWABLE_SQL})"
-                ),
-                {"oid": str(object_id), "lineage": json.dumps(history)},
+                update(t)
+                .where(
+                    t.c.id == bindparam("oid"),
+                    t.c.approval_status.in_(bindparam("reviewable", expanding=True)),
+                )
+                .values(approval_status=bindparam("status"), lineage=bindparam("lineage")),
+                {
+                    "oid": str(object_id),
+                    "reviewable": list(_REVIEWABLE),
+                    "status": "DEPRECATED",
+                    "lineage": json.dumps(history),
+                },
             )
             await session.commit()
 
@@ -964,24 +1007,23 @@ class SemanticLayerRegistry:
         approval_status, created_at.
         """
         results: list[dict[str, Any]] = []
-        statuses = ("'DRAFT'", "'UNDER_REVIEW'")
         async with CloudSqlFactory.get_session_factory()() as session:
-            for obj_type, table, name_col in [
-                ("CausalEdge", "causal_edges", "edge_type"),
-                ("GraphFragment", "graph_fragments", "name"),
-                ("CausalEntity", "causal_entities", "name"),
-            ]:
-                params: dict[str, Any] = {"lim": limit}
-                scoped = _domain_condition(domains, params)
+            for obj_type, (t, name_col) in _REVIEWABLE_TABLES.items():
+                params: dict[str, Any] = {"reviewable": list(_REVIEWABLE), "lim": limit}
                 rows = await session.execute(
-                    text(
-                        f"SELECT id, {name_col} AS name, domain, approval_status, created_at "
-                        f"FROM {table} "
-                        f"WHERE approval_status IN ({', '.join(statuses)}) "
-                        f"{'AND ' + scoped if scoped else ''} "
-                        f"ORDER BY created_at ASC "
-                        f"LIMIT :lim"
-                    ),
+                    select(
+                        t.c.id,
+                        t.c[name_col].label("name"),
+                        t.c.domain,
+                        t.c.approval_status,
+                        t.c.created_at,
+                    )
+                    .where(
+                        t.c.approval_status.in_(bindparam("reviewable", expanding=True)),
+                        *_domain_filter(t, domains, params),
+                    )
+                    .order_by(t.c.created_at.asc())
+                    .limit(bindparam("lim")),
                     params,
                 )
                 for r in rows.mappings():
