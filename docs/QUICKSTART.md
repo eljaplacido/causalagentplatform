@@ -1,22 +1,23 @@
-# Quickstart — Unified Enterprise Causal Platform
+# Quickstart — Causal Platform
 
-> **Target:** New developers and AI agents onboarding to the gx10 satellite.
-> **Assumption:** You are on Linux (gx10) with Python 3.12+, Node 20+, and Docker available.
+> **Target:** developers and coding agents setting up a local checkout.
+> **Assumption:** Linux or macOS with Python 3.12+ and Node 20+. Docker is optional.
+> Coding agents: read the root [`AGENTS.md`](../AGENTS.md) first.
 
 ---
 
 ## 1. Prerequisites
 
-| Tool | Minimum Version | Verify |
+| Tool | Minimum version | Verify |
 |---|---|---|
 | Python | 3.12 | `python3 --version` |
 | Node.js | 20.x | `node --version` |
 | npm | 10.x | `npm --version` |
-| Docker + Compose | 24.x | `docker compose version` |
+| Docker + Compose (optional) | 24.x | `docker compose version` |
 
 ---
 
-## 2. Repository Setup
+## 2. Repository setup
 
 ```bash
 cd /path/to/causalplatform   # your clone
@@ -24,24 +25,37 @@ cd /path/to/causalplatform   # your clone
 
 ### Backend virtual environment
 
+The backend depends on the causal kernel and the decision layer, which are local packages:
+
 ```bash
 cd backend
 python3 -m venv .venv
-source .venv/bin/activate          # gx10 uses bash, not Windows
-pip install -e ../packages/causal-core -e ".[dev]"   # the causal kernel is a local package
+.venv/bin/pip install -e ../packages/causal-core -e ../packages/causal-decision -e ".[dev]"
 cd ..
 ```
 
-> **Note:** The repo already has a populated `.venv`. If it ever breaks, delete it and rerun the commands above.
+### Kernel virtual environment
+
+`packages/causal-core`, `packages/causal-decision` and `packages/causal-mcp` share one environment
+of their own (causal-mcp is on MCP SDK v2, the backend's legacy server on v1):
+
+```bash
+python3 -m venv packages/causal-core/.venv
+packages/causal-core/.venv/bin/pip install \
+  -e "packages/causal-core[dev,crosscheck,ml]" \
+  -e "packages/causal-decision[dev]" \
+  -e "packages/causal-mcp[dev,http,decision]" httpx
+```
 
 ### Frontend dependencies
 
 ```bash
-# From repo ROOT (not frontend/)
+# From the repo ROOT (npm workspaces), not frontend/
 npm ci
 ```
 
-> **Windows cross-build warning:** If `node_modules` was previously installed from Windows (NTFS), binary symlinks and execute bits may be corrupted. If `npm run type-check` fails with "Permission denied" or missing binaries, purge and reinstall:
+> If `node_modules` was copied from another OS and `npm run type-check` fails with "Permission
+> denied" or missing binaries, purge and reinstall:
 > ```bash
 > rm -rf node_modules frontend/node_modules packages/*/node_modules
 > npm ci
@@ -57,226 +71,215 @@ npm ci
 cp backend/.env.example backend/.env
 ```
 
-Edit `backend/.env` and set at minimum:
+The backend loads `backend/.env` itself at startup (`src/env_bootstrap.py`); variables already in
+the environment win. The minimum for local development:
 
 ```bash
 ENV=local
 DEV_AUTH_BYPASS=true
-
-# LLM provider (choose one)
-# For cloud inference:
-ANTHROPIC_API_KEY=sk-ant-...
-# DEEPSEEK_API_KEY=sk-...
-#
-# For gx10 local inference (Ollama / OpenFang):
-# OLLAMA_BASE_URL=http://127.0.0.1:11434
-# OPENFANG_BASE_URL=http://127.0.0.1:4200
-
-HALLUCINATION_RISK_THRESHOLD=0.7
-MAX_AGENT_CYCLES=5
 ```
 
-> **Security:** Never commit `.env` files. They are already gitignored.
+**Database engine.** `ENV` decides it, not `DATABASE_URL` (`backend/src/db/factory.py`):
+
+| `ENV` | Engine |
+|---|---|
+| `local`, or unset | SQLite via aiosqlite, at `SQLITE_PATH` (default `backend/local_dev.db`). `DATABASE_URL` is ignored. |
+| anything else | PostgreSQL via asyncpg: the Cloud SQL socket when `CLOUD_SQL_INSTANCE_CONNECTION_NAME` is set, otherwise `DATABASE_URL`. Startup fails if neither is set. |
+
+The dev auth bypass works only with `ENV=local`, so a local session with the bypass is always on
+SQLite. Neo4j is used only when `NEO4J_URI` is set; otherwise the graph and experience-buffer paths
+fall back to SQL.
+
+**LLM providers.** `backend/.env.example` lists them, and `src/agents/llm_factory.py` can build a
+client for each, but no agent or skill calls it today (`llm-routing-no-callers` in the register).
+Nothing needs an API key to run.
+
+> **Security:** never commit `.env` files. They are gitignored.
 
 ### Frontend environment
 
-The frontend reads from `frontend/.env.local` (optional). Defaults are sufficient for local dev.
+`frontend/.env.local` is optional. To point the UI at a backend on a non-default port, and to have
+it send the dev bypass token:
 
 ```bash
-echo 'NEXT_PUBLIC_API_BASE_URL=http://localhost:8000' > frontend/.env.local
+cat > frontend/.env.local <<'EOF'
+NEXT_PUBLIC_API_BASE_URL=http://localhost:49234
+NEXT_PUBLIC_ENVIRONMENT=local
+EOF
 ```
 
 ---
 
-## 4. Start Infrastructure (Docker)
+## 4. Optional infrastructure (Docker)
 
-The platform requires PostgreSQL 16, Neo4j 5, Kafka (KRaft), and Redis.
-
-```bash
-docker compose up -d
-```
-
-Services available:
-
-| Service | URL / Port | Notes |
-|---|---|---|
-| PostgreSQL | `localhost:5432` | User: `causal` / Pass: `causal_local_dev` |
-| Neo4j Browser | `http://localhost:7474` | Bolt: `localhost:7687` |
-| Kafka | `localhost:9092` | KRaft mode (no Zookeeper) |
-| Kafka UI | `http://localhost:8080` | Dev convenience |
-| Redis | `localhost:6379` | Session cache |
-
-Stop with:
+Nothing is required: with `ENV=local` the backend runs on SQLite with no services.
+Earlier versions of this page said: "The platform requires PostgreSQL 16, Neo4j 5, Kafka (KRaft), and Redis." That was not true. No code talks to Kafka or Redis (`kafka-streaming` in the register), so `docker-compose.yml` puts them behind a `future` profile.
 
 ```bash
+docker compose up -d                        # PostgreSQL and Neo4j
+docker compose --profile future up -d       # also Kafka, Kafka UI and Redis (nothing uses them)
 docker compose down
 ```
 
-> **Local dev shortcut:** The backend can also run with **SQLite** (no Docker required). Leave `DATABASE_URL` unset in `backend/.env` and the factory auto-detects SQLite.
+| Service | URL / port | Notes |
+|---|---|---|
+| PostgreSQL | `localhost:5432` | User `causal`, password `causal_local_dev`. Used only when `ENV` is not `local` and `DATABASE_URL` points here. |
+| Neo4j Browser | `http://localhost:7474` | Bolt `localhost:7687`. Used when `NEO4J_URI` is set. |
+| Kafka, Kafka UI, Redis | `9092`, `8080`, `6379` | `future` profile only. |
 
 ---
 
-## 5. Start the Application
+## 5. Start the application
 
-### Option A: One-shot launcher (`start.sh`)
+### Option A: two launchers (the README's route)
 
 ```bash
-./start.sh            # Starts backend + frontend in background
-./start.sh backend    # Backend only
-./start.sh frontend   # Frontend only
-./start.sh test       # Run backend tests
-./start.sh e2e        # Run Playwright E2E tests (requires running stack)
+bash launch_backend.sh                         # backend on http://127.0.0.1:49234
+cd frontend && NEXT_PUBLIC_API_BASE_URL=http://localhost:49234 npm run dev
 ```
 
-### Option B: Manual (two terminals)
+### Option B: `start.sh`
 
-**Terminal 1 — Backend:**
+```bash
+./start.sh            # backend (:49234) + frontend (:3000)
+./start.sh backend    # backend only
+./start.sh frontend   # frontend only
+./start.sh test       # backend test suite
+./start.sh e2e        # Playwright E2E tests (needs the running stack)
+```
+
+### Option C: by hand
 
 ```bash
 cd backend
-.venv/bin/uvicorn src.api.main:app --reload --port 8000 --host 0.0.0.0
+ENV=local DEV_AUTH_BYPASS=true .venv/bin/uvicorn src.api.main:app --reload --host 127.0.0.1 --port 49234
 ```
 
-**Terminal 2 — Frontend:**
-
-```bash
-cd frontend
-npm run dev
-```
+The frontend's built-in default API URL is `http://localhost:8000`; set `NEXT_PUBLIC_API_BASE_URL`
+whenever the backend is on another port.
 
 ---
 
-## 6. Verify Everything Works
+## 6. Verify
 
 | Check | Command | Expected |
 |---|---|---|
-| Backend health | `curl http://localhost:8000/health` | `{"status":"ok"}` |
-| API docs | Open `http://localhost:8000/docs` | Swagger UI |
-| Frontend | Open `http://localhost:3000` | Next.js dev server |
-| Backend tests | `cd backend && .venv/bin/python -m pytest tests/ -v` | 510+ passed, 80%+ coverage |
-| Frontend type-check | `npm run type-check` | No errors |
-| Frontend unit tests | `cd frontend && npm test` | 27 passed |
+| Backend health | `curl http://localhost:49234/health` | `{"status":"ok", ...}` |
+| API docs | open `http://localhost:49234/docs` | Swagger UI |
+| Frontend | open `http://localhost:3000` | Next.js dev server |
+| **The gate** | `bash .gnomon/ci.sh` | a per-step summary table, every step PASS or a named SKIPPED |
 
----
+`.gnomon/ci.sh` runs every suite (backend, frontend, each package with its pre-registered gates)
+and the claim checks, and is what CI runs. Test counts are read from the tools each run, so none is
+written here. Pieces, when iterating:
 
-## 7. Common gx10 Issues
-
-### `python: command not found`
-Use `python3` or activate the venv:
 ```bash
-cd backend && source .venv/bin/activate
-```
-
-### `pytest` not found outside venv
-Always use the venv binary:
-```bash
-cd backend && .venv/bin/python -m pytest tests/
-```
-
-### `tsc: Permission denied` (frontend)
-`node_modules` was copied from Windows. Fix:
-```bash
-rm -rf node_modules frontend/node_modules packages/*/node_modules
-npm ci
-```
-
-### Docker services won't start
-Ensure ports 5432, 7474, 7687, 9092, 8080, 6379 are free:
-```bash
-lsof -i :5432 || echo "Port 5432 is free"
-```
-
-### Drift tests fail with `scipy` errors
-SciPy must be installed in the venv (it's now in `pyproject.toml`):
-```bash
-cd backend && .venv/bin/pip install scipy>=1.11.0
+cd backend && .venv/bin/pytest -q                          # backend suite
+cd packages/causal-core && .venv/bin/pytest                # kernel, incl. the T0 and T4 gates
+cd frontend && npm run type-check && npx vitest run        # frontend
 ```
 
 ---
 
-## 8. Seed Test Data
+## 7. Try the MCP servers
 
-Seed simulated data for the four use cases:
+**The kernel server (canonical).** `packages/causal-mcp`, console script `causal-mcp`:
+
+```bash
+packages/causal-core/.venv/bin/causal-mcp                   # stdio
+packages/causal-core/.venv/bin/causal-mcp --http --port 8765   # stateless HTTP
+```
+
+Point an MCP client at it with `{"mcpServers": {"causal": {"command": "/abs/path/to/packages/causal-core/.venv/bin/causal-mcp"}}}`.
+Its tools, flow and `data_path` rules: [`packages/causal-mcp/README.md`](../packages/causal-mcp/README.md).
+
+**The legacy demo.** `backend/mcp_server/examples/client_demo.py` spawns the *legacy* server
+(`python -m mcp_server.server`, console script `causal-platform-mcp`, deprecated) and calls two of
+its tools; on its eight toy rows the estimate is a `LOW_N` refusal:
+
+```bash
+cd backend && .venv/bin/python -m mcp_server.examples.client_demo
+```
+
+---
+
+## 8. Seed test data
 
 ```bash
 cd backend
-
-# Seed DevOps domain (service entities + graph fragments)
-.venv/bin/python -m scripts.seed_data --devops
-
-# Seed Marketing domain (customer churn model)
-.venv/bin/python -m scripts.seed_data --marketing
-
-# Seed evaluation metrics (30 days of audit data)
-.venv/bin/python -m scripts.seed_data --evaluation
-
-# Seed everything
-.venv/bin/python -m scripts.seed_data --all
-
-# Clear seeded data
-.venv/bin/python -m scripts.seed_data --clear
+.venv/bin/python -m scripts.seed_data --devops       # service entities + graph fragments
+.venv/bin/python -m scripts.seed_data --marketing    # customer churn model
+.venv/bin/python -m scripts.seed_data --evaluation   # 30 days of evaluation metrics
+.venv/bin/python -m scripts.seed_data --reviews      # objects for the governance queue
+.venv/bin/python -m scripts.seed_data --incidents    # incidents with intervention verdicts
+.venv/bin/python -m scripts.seed_data --all          # everything
+.venv/bin/python -m scripts.seed_data --clear        # remove seeded data
 ```
 
-Test the outcome feedback loop:
+With `ENV=local` and `DEV_AUTH_BYPASS=true`, the backend accepts the fixed dev token
+`dev-local-token` (`backend/src/middleware/auth.py`) — it is not a real credential and is refused
+in any other configuration:
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/interventions/feedback \
-  -H "Authorization: Bearer test-token" \
+curl -X POST http://localhost:49234/api/v1/interventions/feedback \
+  -H "Authorization: Bearer dev-local-token" \
   -H "Content-Type: application/json" \
   -d '{"intervention_id": "<id>", "actual_effect": 0.45}'
 
-curl http://localhost:8000/api/v1/interventions/accuracy \
-  -H "Authorization: Bearer test-token"
+curl http://localhost:49234/api/v1/interventions/accuracy \
+  -H "Authorization: Bearer dev-local-token"
 ```
 
 ---
 
-## 9. Project Layout
+## 9. Project layout
 
 ```
 causalplatform/
-├── backend/                 # FastAPI + LangGraph + agents
+├── AGENTS.md                # entry point for coding agents
+├── packages/
+│   ├── causal-core/         # the causal kernel (identification, estimation, refutation)
+│   ├── causal-decision/     # verdicts, decision ledger, outcome follow-up
+│   ├── causal-mcp/          # the kernel's MCP server (canonical)
+│   └── semantic-types/      # published TypeScript contract
+├── backend/                 # FastAPI platform
 │   ├── src/
-│   │   ├── agents/          # 9 platform agents
+│   │   ├── agents/          # platform agents
 │   │   ├── api/             # REST routers
-│   │   ├── db/              # CloudSqlFactory + Neo4jFactory
-│   │   ├── skills/          # 12 causal skills
+│   │   ├── db/              # engine factories (SQLite / PostgreSQL, Neo4j)
+│   │   ├── skills/          # backend skills; causal ones delegate to the kernel
 │   │   └── semantic_layer/  # Pydantic models + registry
-│   ├── tests/
-│   │   ├── unit/            # 400+ unit tests
-│   │   └── integration/     # API integration tests
-│   └── pyproject.toml       # deps, ruff, mypy, pytest config
-├── frontend/                # Next.js 15 + React 19
-│   ├── src/app/             # Persona pages (analyst, engineer, ...)
-│   ├── src/components/      # Shared + domain components
-│   └── package.json
-├── docs/                    # Canonical platform docs
-│   ├── AGENTS.md            # Agent registry + EpistemicState
-│   ├── DATA_LAYER.md        # Semantic layer spec
-│   ├── CYBERSECURITY.md     # Threat model + compliance
-│   ├── UIX.md               # Personas + user stories
-│   └── CURRENT_STAGE.md     # Phase tracking
-├── prompts/                 # 12 versioned skill prompts
-├── docker-compose.yml       # Local infra stack
-└── start.sh                 # Convenience launcher
+│   ├── mcp_server/          # legacy MCP server (deprecated)
+│   ├── tests/               # unit, integration, guardian
+│   └── pyproject.toml
+├── frontend/                # Next.js UI
+├── benchmarks/              # pre-registered gates and their results
+├── conformance/             # claim-contract schemas + the declared-not-implemented register
+├── docs/                    # specifications, status page (CURRENT_STAGE.md), ADRs
+├── prompts/                 # prompt specifications (not loaded at runtime)
+├── scripts/                 # the gate's checks and ratchets
+├── .gnomon/                 # agent harness surface; ci.sh is the gate
+├── docker-compose.yml       # optional local services
+├── launch_backend.sh        # backend launcher
+└── start.sh                 # convenience launcher
 ```
 
 ---
 
-## 9. Next Steps
+## 10. Next steps
 
-1. **Read the docs** — Start with `docs/AGENTS.md` for the EpistemicState contract and `docs/CURRENT_STAGE.md` for active work streams.
-2. **Run the test suite** — `cd backend && .venv/bin/python -m pytest tests/ -v`
-3. **Seed test data** — `.venv/bin/python -m scripts.seed_data --all`
-4. **Explore the REST API** — `http://localhost:8000/docs` after starting the backend.
-5. **Try the MCP skill surface** — From `backend/`, run `.venv/bin/python -m mcp_server.examples.client_demo` to spawn the `causal-mcp` server and call two causal skills end-to-end. See `mcp_server/README.md` for the full MCP client setup.
-6. **Load the `herm` skill** — All platform work should load the `herm` skill first (`@herm` in OpenCode) to ensure governance and audit alignment.
+1. **Read the status page**, `docs/CURRENT_STAGE.md`: what is implemented, each row with its test.
+2. **Run the gate**: `bash .gnomon/ci.sh`.
+3. **Seed data** and explore the REST API at `http://localhost:49234/docs`.
+4. **Call the kernel over MCP** (section 7).
+5. **Contribute**: [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 ---
 
-## 10. Support
+## 11. Where to look
 
-- **Platform contracts:** `docs/AGENTS.md`
+- **Working rules for agents:** `AGENTS.md`, `.gnomon/skills/`
+- **What is implemented:** `docs/CURRENT_STAGE.md`
+- **What is claimed but not implemented:** `conformance/declared_not_implemented.json`
+- **Agent architecture (specification):** `docs/AGENTS.md`
 - **Security boundaries:** `docs/CYBERSECURITY.md`
-- **Skill definitions:** `docs/AGENTS.md` §3
-- **Current priorities:** `docs/CURRENT_STAGE.md`
