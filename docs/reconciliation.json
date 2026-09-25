@@ -254,12 +254,12 @@
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
           ".github": "6f9f02d0b5f9ac918f23fb74a20b87f2188eb9ce2ef2df6ef907c1c1714d4c27",
-          ".gnomon": "214c12a3714905658f51ffb9fa50843d207a281c632a6e1c636b3c7adc1e2435"
+          ".gnomon": "65bb4eedac90110e94f670a77e0dd2153e792bc0c2317574aa97bf16b93012b0"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-3: re-read; the .gnomon changes are the skill-refs ci.sh step, skill edits and roles/tools comment rewording; the page names the surface files and the gate, all still true)"
+        "by": "Claude (septa-3: .gnomon/verify.sh's tsc gate now resolves typescript; the page says only that [verify] runs verify.sh, still true)"
       }
     },
     "docs/QUICKSTART.md": {
