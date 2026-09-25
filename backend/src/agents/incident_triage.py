@@ -406,8 +406,6 @@ class IncidentTriageAgent(BaseAgent):
         domain (register: cynefin-classifier-keyword-stub). Nothing should rely on
         its label for safety; see that entry before routing anything on it.
         """
-        signals = inputs.get("signals", {})
-        assumptions_count = int(signals.get("active_assumptions", 0))
         description = str(inputs.get("description", "")).lower()
 
         # Keyword heuristics for domain classification
@@ -425,13 +423,18 @@ class IncidentTriageAgent(BaseAgent):
         }
         if desc_words & chaotic_keywords:
             return {"domain": CynefinDomain.CHAOTIC, "confidence": 0.85}
-        if desc_words & complex_keywords or assumptions_count == 0:
+        if desc_words & complex_keywords:
             return {"domain": CynefinDomain.COMPLEX, "confidence": 0.70}
         if desc_words & complicated_keywords:
             return {"domain": CynefinDomain.COMPLICATED, "confidence": 0.80}
 
-        # Default for operational incidents with known services
-        return {"domain": CynefinDomain.COMPLICATED, "confidence": 0.60}
+        # Nothing matched: say so. This used to answer COMPLEX whenever no assumption
+        # was active and COMPLICATED otherwise -- a confident label for "the keywords
+        # did not fire", which is most of the time (register:
+        # cynefin-classifier-keyword-stub). DISORDER is the honest label: triage runs
+        # no analysis on it, DisorderProtocol asks once more and then hands it to a
+        # person, and the Guardian's PR-006 approves nothing in it.
+        return {"domain": CynefinDomain.DISORDER, "confidence": 0.0}
 
     async def _skill_causal_propose_edge(
         self, inputs: dict[str, Any], state: EpistemicState
