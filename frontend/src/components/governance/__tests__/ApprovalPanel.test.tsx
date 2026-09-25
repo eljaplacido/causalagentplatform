@@ -59,10 +59,11 @@ describe("ApprovalPanel — success only after backend confirmation", () => {
     );
 
     await user.click(screen.getByTestId("approve-button"));
+    await user.selectOptions(screen.getByTestId("approval-domain"), "COMPLICATED");
     await user.type(screen.getByLabelText(/approval reason/i), REASON);
     await user.click(screen.getByTestId("confirm-approval"));
 
-    expect(onApprove).toHaveBeenCalledWith(makeItem().id, REASON);
+    expect(onApprove).toHaveBeenCalledWith(makeItem().id, REASON, "COMPLICATED");
     // Request in flight: no success claim yet
     expect(screen.queryByTestId("approval-success")).toBeNull();
     expect(screen.queryByText(/recorded in the immutable audit trail/i)).toBeNull();
@@ -117,6 +118,7 @@ describe("ApprovalPanel — backend failure is shown, never marked approved", ()
     );
 
     await user.click(screen.getByTestId("approve-button"));
+    await user.selectOptions(screen.getByTestId("approval-domain"), "COMPLICATED");
     await user.type(screen.getByLabelText(/approval reason/i), REASON);
     await user.click(screen.getByTestId("confirm-approval"));
 
@@ -167,6 +169,7 @@ describe("ApprovalPanel — backend failure is shown, never marked approved", ()
     );
 
     await user.click(screen.getByTestId("approve-button"));
+    await user.selectOptions(screen.getByTestId("approval-domain"), "COMPLICATED");
     await user.click(screen.getByTestId("confirm-approval"));
     await screen.findByTestId("approval-success");
 
@@ -209,5 +212,29 @@ describe("ApprovalPanel — decisions disabled (mock data)", () => {
     expect(onApprove).not.toHaveBeenCalled();
     expect(onReject).not.toHaveBeenCalled();
     expect(screen.queryByTestId("approval-success")).toBeNull();
+  });
+});
+
+describe("ApprovalPanel — an approval carries the approver's classification", () => {
+  it("cannot be confirmed until a Cynefin domain is chosen, and DISORDER is not offered", async () => {
+    const user = userEvent.setup();
+    const onApprove = vi.fn(() => Promise.resolve());
+    render(<ApprovalPanel item={makeItem()} onApprove={onApprove} onReject={vi.fn()} />);
+
+    await user.click(screen.getByTestId("approve-button"));
+    await user.type(screen.getByLabelText(/approval reason/i), REASON);
+    // Nothing is pre-selected: a default that happens to pass Guardian would be
+    // the UI classifying the situation instead of the person approving it.
+    expect(screen.getByTestId("approval-domain")).toHaveValue("");
+    expect(screen.getByTestId("confirm-approval")).toBeDisabled();
+    const offered = Array.from(
+      screen.getByTestId("approval-domain").querySelectorAll("option")
+    ).map((o) => o.getAttribute("value"));
+    expect(offered).not.toContain("DISORDER");
+
+    await user.selectOptions(screen.getByTestId("approval-domain"), "COMPLEX");
+    expect(screen.getByTestId("confirm-approval")).toBeEnabled();
+    await user.click(screen.getByTestId("confirm-approval"));
+    expect(onApprove).toHaveBeenCalledWith(makeItem().id, REASON, "COMPLEX");
   });
 });

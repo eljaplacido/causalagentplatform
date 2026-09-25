@@ -35,7 +35,7 @@ import { ReviewQueue } from "@/components/governance/ReviewQueue";
 import { ApprovalPanel } from "@/components/governance/ApprovalPanel";
 import { governanceApi, type ReviewQueueItemResponse } from "@/lib/api";
 import { toAuditLogRow } from "@/lib/mappers";
-import type { ReviewQueueItem, AuditLogRow } from "@/lib/types";
+import type { ReviewQueueItem, AuditLogRow, CynefinDomain } from "@/lib/types";
 
 // ─── Mock fallback data (dev-only, gated by env flag) ───────────────────────
 // NEVER silently shown in production. Must be explicitly opted-in via:
@@ -275,6 +275,10 @@ interface DecisionVariables {
   reason: string;
 }
 
+interface ApproveVariables extends DecisionVariables {
+  cynefinDomain: CynefinDomain;
+}
+
 // ─── Page component ────────────────────────────────────────────────────────────
 
 export default function GovernancePage() {
@@ -357,13 +361,19 @@ export default function GovernancePage() {
   }
 
   const approveMutation = useMutation({
-    mutationFn: async ({ item, reason }: DecisionVariables) => {
+    mutationFn: async ({ item, reason, cynefinDomain }: ApproveVariables) => {
       const objectType = assertDecidable(item);
       // The backend requires a Guardian APPROVED verdict (audit_log id) to
-      // authorise the promotion — obtain it from /check first.
+      // authorise the promotion — obtain it from /check first. The verdict must
+      // name the object it authorises (subject_id: /approve refuses one that
+      // names nothing), and carry the approver's classification of the
+      // situation: without one Guardian treats it as DISORDER and PR-006
+      // rejects, which is why this button could never succeed before.
       const check = await governanceApi.check({
         action_type: "GOVERNANCE_APPROVE",
         payload: { object_id: item.id, object_type: objectType, reason },
+        subject_id: item.id,
+        cynefin_domain: cynefinDomain,
       });
       if (check.verdict !== "APPROVED") {
         throw new Error(`Guardian verdict was ${check.verdict}: ${check.reason}`);
@@ -390,6 +400,7 @@ export default function GovernancePage() {
       const check = await governanceApi.check({
         action_type: "GOVERNANCE_REJECT",
         payload: { object_id: item.id, object_type: objectType, reason },
+        subject_id: item.id,
       });
       await governanceApi.reject(item.id, objectType, reason, check.audit_entry_id);
     },
@@ -404,8 +415,12 @@ export default function GovernancePage() {
     return item;
   }
 
-  async function handleApprove(id: string, reason: string): Promise<void> {
-    await approveMutation.mutateAsync({ item: findQueueItem(id), reason });
+  async function handleApprove(
+    id: string,
+    reason: string,
+    cynefinDomain: CynefinDomain
+  ): Promise<void> {
+    await approveMutation.mutateAsync({ item: findQueueItem(id), reason, cynefinDomain });
   }
 
   async function handleReject(id: string, reason: string): Promise<void> {
