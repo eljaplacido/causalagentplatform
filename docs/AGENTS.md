@@ -508,7 +508,7 @@ interface EpistemicState {
   // Uncertainty
   overallConfidence: number;
   uncertaintySources: UncertaintySource[];
-  hallucinationRiskScore: number;    // H-Neuron output
+  hallucinationRiskScore: number;    // grounding risk (Guardian PR-002), computed by the platform
 
   // Governance
   guardianVerdict: "APPROVED" | "REJECTED" | "REQUIRES_ESCALATION" | "PENDING";
@@ -635,7 +635,7 @@ Before any new agent or skill is merged into the platform, it must satisfy:
 - [ ] Guardian integration tested (APPROVED / REJECTED / ESCALATION paths all exercised)
 - [ ] Cynefin domain handling documented (which domains the agent supports)
 - [ ] Audit trail write verified in tests
-- [ ] H-Neuron hallucination risk thresholds configured
+- [ ] Narratives it emits are submitted to Guardian with the kernel outcome they report (PR-002 grounding)
 - [ ] Prompt template versioned in `prompts/`
 - [ ] Skill used is in the shared skill library (no duplicates)
 - [ ] Circuit breaker behavior tested
@@ -655,7 +655,7 @@ Before any new agent or skill is merged into the platform, it must satisfy:
 | Guardian policy engine | `src/agents/governance.py` |
 | LangGraph orchestration | `src/orchestration/graph.py` |
 | EpistemicState schema | `src/semantic_layer/models.py` |
-| Hallucination-risk gating | `src/agents/evidence_grounding.py` |
+| Grounding-risk gating (PR-002) | `src/agents/grounding_risk.py` |
 | LLM capability routing | `src/agents/llm_factory.py` |
 | MCP skill exposure | `packages/causal-mcp/` (canonical); `backend/mcp_server/` is legacy (see §3.4) |
 

@@ -76,10 +76,12 @@ No LLM is called anywhere in the platform today (register `llm-routing-no-caller
 plane has no live surface yet. When one exists:
 - Structured I/O contracts: agents accept typed inputs, never raw strings from untrusted
   sources. **In place** for the API, which validates request bodies with Pydantic.
-- **Target:** hallucination-risk scoring of every LLM output. Nothing computes
-  `hallucination_risk_score`. It defaults to 0.0, and `POST /api/governance/check` takes it from
-  the request body, so the rule that reads it (PR-002) checks the caller's own number (register
-  `guardian-risk-score-caller-supplied`).
+- **In place:** grounding-risk scoring of prose submitted to `POST /api/governance/check`
+  (`src/agents/grounding_risk.py`). Every number must be a claim of the kernel outcome the
+  narrative reports, and causal wording needs a supported result; otherwise PR-002 rejects. The
+  request cannot supply the score or the cycle count (422). When a session is named, that
+  session supplies the domain and cycle count. This is a deterministic grounding check, not a
+  model of hallucination, and it scores only the prose it is given.
 - **Target:** input sanitization before any LLM skill call.
 - **Target:** agent outputs validated against an output schema before any downstream action.
 
@@ -258,7 +260,7 @@ assessment, and the Status column says how much of each control exists.
 
 | EU AI Act Requirement | Platform Control | Status |
 |---|---|---|
-| Art. 9 – Risk management system | GovernanceAgent + Guardian policy engine | Partial: rules PR-001 to PR-006 and PR-008 evaluate; PR-007 does not; PR-002 and PR-009 read caller-supplied inputs |
+| Art. 9 – Risk management system | GovernanceAgent + Guardian policy engine | Partial: rules PR-001 to PR-006 and PR-008 evaluate; PR-007 does not; PR-009 reads caller-supplied inputs; PR-002's score is computed from the prose checked |
 | Art. 10 – Data governance | Semantic layer lineage, PII pseudonymization | Partial lineage (`lineage-partial`); no pseudonymization (`gdpr-controls`) |
 | Art. 11 – Technical documentation | DATA_LAYER.md, AGENTS.md, assumption registries | Documents exist; the register lists where they overclaim |
 | Art. 13 – Transparency | explanation_generate skill, assumption disclosure in outputs | Partial |
@@ -391,7 +393,7 @@ path and response targets are in [`SECURITY.md`](../SECURITY.md).
 - Cloud Armor WAF alerts
 - Audit trail anomaly detection (statistical deviation from baseline write patterns)
 - Guardian verdict anomaly (unusual REJECTED rate → possible evasion attempt)
-- Hallucination-risk score spike across agent pool (needs a score something computes; see §2.2)
+- Grounding-risk rejections (PR-002) spiking across the agent pool (the score is computed per `/check`, see §2.2; nothing aggregates it yet)
 - Secret Manager access anomaly (unexpected secret reads)
 
 ---

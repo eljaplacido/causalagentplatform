@@ -92,8 +92,9 @@ The order of work above is the direction. The next items come from the work ledg
 priority first. As of 2026-09-25 all 44 entries are ready, and the priorities put hardening the
 platform before new estimators:
 
-- **p0, the platform's own trust boundary.** The Guardian computes hallucination and risk scores
-  itself instead of reading them from the caller (`septa-25`); role-based access per route and
+- **p0, the platform's own trust boundary.** Done: the Guardian computes the PR-002 score itself,
+  from the prose and the kernel outcome it reports, instead of reading it from the caller
+  (`septa-25`). Open: role-based access per route and
   working domain isolation (`septa-26`); security scanning in the gate (`septa-27`); secrets from
   a secret store, with a rotation path for the Guardian signing key (`septa-28`).
 - **p1, release and drift.** Protect `main` (`septa-1`); a first PyPI release of the three
