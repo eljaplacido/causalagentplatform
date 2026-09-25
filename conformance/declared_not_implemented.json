@@ -79,7 +79,7 @@
         },
         {
           "at": "backend/src/agents/causal_discovery.py:394",
-          "says": "stub — real data required"
+          "says": "stub \u2014 real data required"
         }
       ],
       "leaves_by": {
@@ -188,7 +188,7 @@
         },
         {
           "at": "docs/AGENTS.md:615",
-          "says": "the LLM factory resolves capability → provider at runtime"
+          "says": "the LLM factory resolves capability \u2192 provider at runtime"
         },
         {
           "at": "docs/AGENTS.md:625",
@@ -214,7 +214,7 @@
       "capability": "Review queue ordered by risk tier, showing who submitted each item",
       "claimed_in": [
         {
-          "at": "backend/src/api/governance.py:338",
+          "at": "backend/src/api/governance.py:342",
           "says": "summary=\"List pending drafts ordered by risk tier\""
         }
       ],
@@ -252,7 +252,7 @@
       "reality": "GET /api/governance/audit-log reads page and page_size; the client's `limit` query parameter is silently ignored and page_size defaults to 100.",
       "evidence": [
         {
-          "at": "backend/src/api/governance.py:386",
+          "at": "backend/src/api/governance.py:390",
           "says": "page_size: Annotated[int, Query(ge=1, le=500)] = 100,"
         }
       ],
@@ -341,7 +341,7 @@
       "reality": "The semantic layer (fragments, edges) is stored through SQLAlchemy (SQLite/PostgreSQL); Neo4j code exists only for the experience buffer and drift alerts, is exercised only against mocks, and no d-separation or path query runs in Neo4j.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:465",
+          "at": "backend/src/semantic_layer/registry.py:476",
           "says": "FROM graph_fragments"
         }
       ],
@@ -410,11 +410,11 @@
       "capability": "Triangulation flags outcome-model misspecification in causal-core",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:42",
-          "says": "Estimators that rest on different assumptions are compared"
+          "at": "packages/causal-core/README.md:123",
+          "says": "Its power was 0.04 at n = 2,000"
         }
       ],
-      "reality": "Measured power against a planted misspecification that biases regression adjustment by ~0.16 (~1.2 SE of the difference): 0.035 at n=2,000 (reported), 1.00 at n=50,000 (gated). At moderate n, 'estimators agree' is weak evidence that a model is right.",
+      "reality": "Measured power against a planted misspecification that biases regression adjustment by ~0.16 (~1.2 SE of the difference): 0.04 at n=2,000 (reported), 1.00 at n=50,000 (gated). At moderate n, 'estimators agree' is weak evidence that a model is right.",
       "evidence": [
         {
           "at": "benchmarks/t0/PRE-REGISTRATION.md:183",
@@ -517,7 +517,7 @@
       "reality": "The chain is built, persisted, served and verified, and decision_records is append-only in the production schema. All of that is still inside one trust boundary: whoever can write the rows can rewrite the chain from the altered entry onward and it verifies again. Nothing publishes or countersigns the head digest, so the ledger evidences internal consistency and not much more.",
       "evidence": [
         {
-          "at": "backend/src/api/decisions.py:180",
+          "at": "backend/src/api/decisions.py:221",
           "says": "A pass means the chain is *internally* consistent. It cannot mean more than"
         }
       ],
@@ -529,15 +529,10 @@
     },
     {
       "id": "segment-discovery",
-      "status": "declared-not-implemented",
+      "status": "planned",
       "capability": "Finding which subgroups an effect differs across, rather than testing declared ones",
-      "claimed_in": [
-        {
-          "at": "docs/ROADMAP.md:29",
-          "says": "and for effects within declared segments with family-wise correction"
-        }
-      ],
-      "reality": "causal_core.segments estimates effects within subgroups the caller declares in advance and corrects for how many were examined. Nothing searches for subgroups, and this is deliberate: a subgroup chosen after looking is not covered by the correction, and honest post-hoc subgroup discovery needs machinery (sample splitting, or a method with its own guarantees) that is not here.",
+      "claimed_in": [],
+      "reality": "No document claims it: ROADMAP.md lists subgroup discovery as missing. causal_core.segments estimates effects within subgroups the caller declares in advance and corrects for how many were examined. Nothing searches for subgroups, and this is deliberate: a subgroup chosen after looking is not covered by the correction, and honest post-hoc subgroup discovery needs machinery (sample splitting, or a method with its own guarantees) that is not here.",
       "evidence": [
         {
           "at": "packages/causal-core/src/causal_core/segments.py:13",
@@ -662,7 +657,7 @@
       "claimed_in": [
         {
           "at": "docs/ROADMAP.md:12",
-          "says": "> target outcome — and is that evidence strong enough to act on without asking a human?"
+          "says": "> target outcome \u2014 and is that evidence strong enough to act on without asking a human?"
         }
       ],
       "reality": "The machinery is built and pinned: every decision seals a follow-up plan carrying the prediction it used, POST /api/v1/decisions/{entry_digest}/followup re-runs that plan's own analysis over a later window, and GET /api/v1/decisions/calibration aggregates. What does not exist is the evidence: no follow-up has been taken on any real operation, so every rate in the report is null. That is the honest state and the report says so rather than reading as a perfect score. This entry leaves the list when a body of follow-ups exists and the thresholds have been moved by what it showed -- which is operational history, not code.",
@@ -697,7 +692,7 @@
       "was": "planned: packages/causal-core -- identification before estimation, influence-function intervals, typed refusals, a claim contract and a pre-registered T0 correctness gate",
       "fixed_in": "06fd061",
       "pinned_by": "packages/causal-core/tests/t0/test_t0_gate.py",
-      "note": "The backend skills and the backend MCP server do not use it (packages/causal-mcp, a separate server, does), so the platform rows (intervals, identification, frontdoor, sensitivity) stay open until the backend does."
+      "note": "The backend now takes its causal numbers from it (backend/src/skills/_kernel.py; effect_estimate, identification_check and sensitivity_analysis delegate), and packages/causal-mcp serves it over MCP. The legacy backend MCP server still exposes heuristic tools beside it."
     },
     {
       "id": "effect-estimate-unpinned",
@@ -737,55 +732,56 @@
     {
       "id": "guardian-verdict-binding",
       "was": "The registry checks only that the verdict id exists in audit_log with verdict APPROVED: not that it was issued for this object or payload, not that it is unused, and it carries no signature -- one APPROVED row authorises any number of unrelated writes (replay), and anything that can insert into audit_log can mint one (forge).",
-      "fixed_in": "PENDING",
+      "fixed_in": "41f60ce",
       "pinned_by": "backend/tests/guardian/test_verdict_binding.py"
     },
     {
       "id": "guardian-check-always-rejects",
       "was": "/check builds its EpistemicState with no Cynefin domain, which defaults to DISORDER, and Guardian rule PR-006 rejects every verdict in DISORDER -- so /check never returns APPROVED and /approve can never be satisfied through the API.",
-      "fixed_in": "PENDING",
+      "fixed_in": "66ec1a6",
       "pinned_by": "backend/tests/integration/test_governance_approval_flow.py"
     },
     {
       "id": "governance-reasons-not-stored",
       "was": "approve_object never passes the notes on, so they are discarded; a rejection's reason reaches audit_log only inside the SHA-256 payload_hash. No reason text is stored anywhere.",
-      "fixed_in": "PENDING",
+      "fixed_in": "ac53d3a",
       "pinned_by": "backend/tests/integration/test_governance_reasons_recorded.py"
     },
     {
       "id": "governance-reject-verdict-unchecked",
       "was": "RejectRequest requires verdict_id, but reject_object never reads it: any UUID is accepted.",
-      "fixed_in": "PENDING",
+      "fixed_in": "ac53d3a",
       "pinned_by": "backend/tests/integration/test_governance_reject_verdict.py"
     },
     {
       "id": "intervention-approval-no-role",
       "was": "POST /api/v1/interventions/{id}/approve depends on get_current_user only, with no require_role, so any authenticated user can approve an intervention -- and doing so hand-writes an APPROVED row into audit_log. That row can no longer authorise a semantic-layer write (it is unsigned; see guardian-verdict-binding in left_the_list), but the intervention itself is approved by someone who may hold no governance role.",
-      "fixed_in": "PENDING",
+      "fixed_in": "ac53d3a",
       "pinned_by": "backend/tests/integration/test_intervention_approval_role.py"
     },
     {
       "id": "guardian-audit-write-skill",
       "was": "GovernanceAgent._execute_skill exposes an `audit_write` skill whose verdict comes from its own inputs, defaulting to APPROVED: an agent calling it writes whatever verdict it likes into audit_log. The row cannot authorise a semantic write (it is signed for no subject), but it still enters the audit trail as though the Guardian had ruled.",
-      "fixed_in": "PENDING",
+      "fixed_in": "ac53d3a",
       "pinned_by": "backend/tests/guardian/test_audit_write_skill.py"
     },
     {
       "id": "decision-ledger-not-persisted",
       "was": "causal_decision.ledger builds and verifies the chain in memory, with tests for an edited, removed and reordered entry. Nothing in the platform writes a record, serves one, or anchors a head digest anywhere the writer does not control -- so today the chain proves internal consistency of a list somebody is already holding.",
-      "fixed_in": "PENDING",
+      "fixed_in": "751c6a6",
       "pinned_by": "backend/tests/integration/test_decision_ledger.py"
     },
     {
       "id": "decision-ignores-segments",
       "was": "causal_decision.decide reads the pooled estimate and ignores result.segments and result.heterogeneity entirely. So an action whose effect is +6 in one segment and -12 in another can be approved on a pooled effect of about -3, which describes nobody. The kernel now detects that case; the decision layer does not yet read it.",
-      "fixed_in": "PENDING",
-      "pinned_by": "packages/causal-decision/tests/test_segments.py"
+      "fixed_in": "7772eff",
+      "pinned_by": "packages/causal-decision/tests/test_segments.py",
+      "note": "Reachable over HTTP only from fbb1d71: POST /api/v1/decisions re-declared the query without segment_by until then (backend/tests/integration/test_decisions_query.py)."
     },
     {
       "id": "decision-calibration",
       "was": "Nothing captures what happened after a verdict. packages/causal-decision holds the procedure to the policy it was given and proves it consistent (D0: 15 scenarios, 8 properties, 6 seeded defects); it cannot say the thresholds are right, and no regret or calibration number exists anywhere in this repository.",
-      "fixed_in": "PENDING",
+      "fixed_in": "13e7d92",
       "pinned_by": "backend/tests/integration/test_decision_followup.py",
       "note": "The loop exists and produces numbers: a plan is sealed with each decision, /followup re-runs that plan's own analysis over a later window, and /calibration aggregates. What it does NOT yet establish is that the thresholds are right -- that needs enough follow-ups to have been taken, which is operational history rather than code. The report reads null for every rate with nothing behind it, so an empty platform cannot read as a calibrated one."
     }
