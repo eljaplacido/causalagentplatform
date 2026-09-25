@@ -415,7 +415,7 @@
       "capability": "Triangulation flags outcome-model misspecification in causal-core",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:124",
+          "at": "packages/causal-core/README.md:137",
           "says": "Its power was 0.04 at n = 2,000"
         }
       ],
@@ -438,7 +438,7 @@
       "capability": "Estimation of effects identified only by the general ID algorithm (e.g. the napkin graph)",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:146",
+          "at": "packages/causal-core/README.md:159",
           "says": "Estimation for general ID functionals"
         }
       ],
@@ -461,22 +461,22 @@
       "capability": "causal-core methods beyond the current portfolio: nonparametric front-door, discovery, time series, anytime-valid sequential tests, interference-aware designs",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:148",
+          "at": "packages/causal-core/README.md:161",
           "says": "Nonparametric front-door"
         },
         {
-          "at": "packages/causal-core/README.md:150",
+          "at": "packages/causal-core/README.md:163",
           "says": "Discovery"
         },
         {
-          "at": "packages/causal-core/README.md:152",
+          "at": "packages/causal-core/README.md:165",
           "says": "Sequential (anytime-valid) tests"
         }
       ],
       "reality": "Listed as not implemented in the package README; none of these exists in the kernel.",
       "evidence": [
         {
-          "at": "packages/causal-core/README.md:143",
+          "at": "packages/causal-core/README.md:156",
           "says": "Not implemented yet"
         }
       ],
@@ -1143,6 +1143,24 @@
         "kind": "test",
         "path": "backend/tests/guardian/test_pr007_sensitivity_gate.py",
         "asserts": "a check whose proposed edge has no sensitivity result is not APPROVED and cites PR-007, and the same edge with a passing result is not refused on PR-007"
+      }
+    },
+    {
+      "id": "did-extensions",
+      "status": "planned",
+      "capability": "Difference-in-differences beyond the v1 design: covariate-conditional parallel trends, not-yet-treated comparisons, anticipation, repeated cross-sections, and sensitivity to parallel-trends violations",
+      "claimed_in": [],
+      "reality": "causal_core.panel estimates unconditional group-time effects against never-treated units on a balanced panel with an absorbing binary treatment, and refuses everything else with a typed reason. A passing pre-trends test is reported as weak evidence; nothing bounds how wrong the estimate is if parallel trends fails by a given amount.",
+      "evidence": [
+        {
+          "at": "benchmarks/t5-did/PRE-REGISTRATION.md:4",
+          "says": "`packages/causal-core` (`causal_core.panel`"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "packages/causal-core/tests/t5/test_did_extensions.py",
+        "asserts": "each extension ships with its own pre-registered T5 version and seeded defect -- sensitivity first: a Rambachan-Roth style bound whose coverage is gated under planted violations"
       }
     }
   ],

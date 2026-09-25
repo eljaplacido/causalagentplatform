@@ -120,6 +120,19 @@ before any run. It runs on every change:
   (α = 0.05) and 100% of planted differences; with every segment null, Holm rejects something in
   4% of runs. Each of four seeded defects fails the specific bar it was registered against.
 
+- **T5 (difference-in-differences):** on simulated staggered rollouts with AR(1) errors, overall
+  ATT coverage 0.938–0.958 and event-time coverage 0.933–0.956 across four designs — one of them
+  built so that two-way fixed effects is biased — with bias within one Monte Carlo SE; the
+  pre-trends test fires on at most 2.2% of panels with parallel trends and on all panels without.
+  v1 failed on over-coverage (the simulation fixed cohort sizes, the intervals assume sampled
+  units) and is kept beside v2.
+
+**Panel designs.** `analyze(df, graph, treatment=, outcome=, design="difference_in_differences",
+unit=, time=, estimand="att")` estimates group-time effects against never-treated units
+(Callaway & Sant'Anna), aggregated to an overall ATT and an event study, with unit-clustered
+influence-function intervals. The certificate is tier C — parallel trends is not in the graph —
+and a failed pre-trends test makes the result `contested`.
+
 **Known limit.** Triangulation does *not* reliably detect moderate outcome-model misspecification
 at moderate n. Its power was 0.04 at n = 2,000 against a bias of about 1.2 standard errors. The v1
 run that showed this is kept in `benchmarks/t0/results/`. The doubly robust primary estimator stays
@@ -151,6 +164,9 @@ Data can be pandas, a dict of columns, pyarrow, polars, or any dataframe-interch
 - Time series
 - Sequential (anytime-valid) tests
 - Interference-aware designs
+- For difference-in-differences: covariate-conditional parallel trends, not-yet-treated
+  comparisons, anticipation windows, repeated cross-sections, and sensitivity to parallel-trends
+  violations (e.g. Rambachan & Roth bounds)
 
 Each is listed in the repository's `conformance/declared_not_implemented.json`, and leaves that
 list only by being implemented and tested.

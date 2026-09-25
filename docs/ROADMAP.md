@@ -26,7 +26,7 @@ sustainability investment assurance follow, in that order.
 | A typed causal question | Partial: `CausalQuery` is typed, but `population` and `horizon` are free text, and nothing translates an agent's action into an estimand |
 | Retrieve the assumptions and evidence that apply | Missing: edges carry origin, status and evidence in the contract, but nothing stores, versions or retrieves them |
 | Decide identified / partially identified / unsupported | Done, except bounds: complete ID, back-door with the optimal adjustment set, front-door, conditional IV, proximal; 11 typed refusals, each with what is missing |
-| Estimate impact and uncertainty | Done for ATE and ATT with coverage-tested intervals, and for effects within declared segments with family-wise correction and a heterogeneity test (pre-registered T4). Missing: difference-in-differences, policy value, sequential tests, interference-aware designs, and subgroup *discovery* |
+| Estimate impact and uncertainty | Done for ATE and ATT with coverage-tested intervals, and for effects within declared segments with family-wise correction and a heterogeneity test (pre-registered T4). and for staggered rollouts by difference-in-differences with unit-clustered intervals and a pre-trends test (pre-registered T5). Missing: policy value, sequential tests, interference-aware designs, DiD with covariates or parallel-trends sensitivity, and subgroup *discovery* |
 | Robustness checks | Done: placebo, negative controls, graph-implied independences with measured power, overlap, balance, E-values, robustness values |
 | Decide: act, ask, experiment, refuse | Done: `packages/causal-decision` turns an outcome, a request and a policy into one verdict, deterministically, gated by the pre-registered D0 suite (15 scenarios, 8 properties, 6 seeded defects). Declared segments now reach the verdict: an action that harms one of them is not automated on a favourable pooled effect |
 | Evidence record | Partial: every result and every decision carries digests of its inputs and itself, and decisions are persisted into a verified hash chain with the observed outcome recorded against them. Missing: assumption/graph versioning and retrieval, and anchoring the chain head outside the writer's control |
@@ -51,9 +51,12 @@ sustainability investment assurance follow, in that order.
    (`decision-ledger-not-anchored`).
 3. **The estimators operations actually need.** Segment-level effects are **done**
    (`causal_core.segments`, pre-registered T4: declared subgroups, Bonferroni family-wise
-   intervals, Holm across the family, one Cochran's Q before anything is compared). Still to
-   come: staggered difference-in-differences and event studies, anytime-valid sequential tests
-   for canaries, cluster and switchback designs for interference. Each with its own
+   intervals, Holm across the family, one Cochran's Q before anything is compared). Staggered
+   difference-in-differences and event studies are **done** (`causal_core.panel`, pre-registered
+   T5: group-time effects against never-treated units, unit-clustered influence-function
+   intervals, a pre-trends falsification test, tier C). Still to come: anytime-valid sequential
+   tests for canaries, cluster and switchback designs for interference, and DiD with covariates
+   and parallel-trends sensitivity. Each with its own
    pre-registered gate and a seeded defect.
 4. ~~**Experiment recommendation.**~~ **Done for randomized units**, in the same package: unit,
    per-arm size and duration from a minimum-detectable-effect calculation, guardrails. A refusal

@@ -107,3 +107,29 @@ def test_every_causal_query_field_is_reachable() -> None:
     )
     missing = set(CausalQuery.model_fields) - reachable - {"rung"}
     assert missing == set(), f"CausalQuery fields the HTTP API cannot set: {missing}"
+
+
+async def test_a_staggered_rollout_is_decided_over_http(client: AsyncClient) -> None:
+    """The panel design arrives with no endpoint change: the options derive from CausalQuery."""
+    from causal_core.bench import t5
+
+    frame = t5.simulate(t5.DESIGNS["staggered_constant"], 8, 0.5, np.random.default_rng(6))
+    resp = await client.post(
+        "/api/v1/decisions",
+        json={
+            "action": "keep the rollout",
+            "graph": t5.GRAPH,
+            "treatment": "rollout",
+            "outcome": "latency",
+            "direction": "increase",
+            "data": {c: frame[c].tolist() for c in frame},
+            "estimand": "att",
+            "minimum_worthwhile_effect": 0.5,
+            "query": {"design": "difference_in_differences", "unit": "unit", "time": "period"},
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    out = resp.json()
+    assert out["outcome"]["certificate"]["tier"] == "C"
+    assert out["verdict"] == "act_with_approval", out["explanation"]
+    assert out["outcome"]["event_study"]
