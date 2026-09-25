@@ -44,8 +44,9 @@ replayed and disputed. It executes nothing.
 
 For agents: [`packages/causal-mcp`](packages/causal-mcp) serves the kernel over MCP (SDK v2, stdio
 or stateless HTTP). Four read-only tools: check a graph, identify, analyze, and verify a narrative
-before it reaches a user — plus `causal_decide` with the `[decision]` extra, which analyses and
-rules in one call so nothing can change the evidence in between, not even the agent.
+before it reaches a user — plus two with the `[decision]` extra: `causal_decide`, which analyses and
+rules in one call so nothing can change the evidence in between, not even the agent, and
+`causal_impact`, which says whether a revised graph breaks an earlier estimate.
 
 **Evidence, pre-registered before each run.** Each benchmark's thresholds are committed before it
 runs, and failing runs are kept.
@@ -67,7 +68,7 @@ Known limits are listed, not hidden: [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAG
 
 - **Backend** (`backend/`): Python 3.12, FastAPI, SQLAlchemy and LangGraph. `.gnomon/ci.sh` prints the current test count and coverage.
 - **Frontend** (`frontend/`): Next.js, TypeScript and Tailwind. Persona-scoped views: workbench, governance, incidents, engineer, analyst and executive.
-- **Legacy MCP server** (`backend/mcp_server/`): exposes seven backend skills as MCP tools; console script `causal-platform-mcp`. Which of them return real estimates is listed in `docs/CURRENT_STAGE.md`. Prefer `packages/causal-mcp` for estimates.
+- **Legacy MCP server** (`backend/mcp_server/`): **deprecated** — it warns on startup, and no gnomon role is granted it. It exposes seven backend skills (console script `causal-platform-mcp`) and is kept only for client configurations that still launch it; its retirement is tracked as `legacy-mcp-server` in `conformance/declared_not_implemented.json`. Use `packages/causal-mcp`.
 - **Docs** (`docs/`): architecture (AGENTS.md), data layer, ADRs, quickstart and testing standards.
 
 ## Quick start
@@ -84,7 +85,7 @@ python -m venv .venv
 cd ../frontend
 npm install
 
-# 3. Launch (two terminals)
+# 3. Launch (two terminals, both from the repository root)
 bash launch_backend.sh             # backend on :49234
 cd frontend && NEXT_PUBLIC_API_BASE_URL=http://localhost:49234 npm run dev
 ```
@@ -95,14 +96,17 @@ Container: `docker build -f backend/Dockerfile .` from the repository root.
 
 Full guide: [`docs/QUICKSTART.md`](docs/QUICKSTART.md).
 
-## Calling skills from an external agent
+## Calling the kernel from an external agent
+
+In its own virtualenv — the backend pins MCP SDK v1 for the legacy server, causal-mcp needs v2:
 
 ```bash
-cd backend
-.venv/bin/python -m mcp_server.examples.client_demo
+pip install -e 'packages/causal-core' -e 'packages/causal-decision' -e 'packages/causal-mcp[decision]'
+causal-mcp                        # stdio; `causal-mcp --http --port 8765` needs the [http] extra
 ```
 
-Full MCP client setup: [`backend/mcp_server/README.md`](backend/mcp_server/README.md).
+Client configuration and the tool list: [`packages/causal-mcp/README.md`](packages/causal-mcp/README.md).
+The legacy server's docs remain at [`backend/mcp_server/README.md`](backend/mcp_server/README.md).
 
 ## Documentation
 

@@ -26,18 +26,18 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-09-19",
+        "on": "2026-09-25",
         "sha256": {
-          "backend/pyproject.toml": "f882373b919703041b8a24cbb028909309c6ec51d9e915985a008eaf9e6616c8",
-          "backend/mcp_server": "906126ac2e95942d33fa44c6abe372051ab452e3022a978c6d5ad78c28a2f6d5",
+          "backend/pyproject.toml": "0d5612eb3b07ad74501e28cfe32a392fd69d228e639b8dcc99f04232618693c4",
+          "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "frontend/package.json": "328e50541f6341ef44bdb0664d818c5de9c95444d15fa3cc19d076f971e4303e",
-          "launch_backend.sh": "3fd5bf0bc3060014f319befd6966d4b33f851a1bce01b15d3dc6facc35f5ec00",
-          "docs/CURRENT_STAGE.md": "78ecc8e54da0d60f3390077abd93aa9ea5bb59f5e30e86e6c8ef8ef677f5d13d"
+          "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
+          "docs/CURRENT_STAGE.md": "e5dab78816a8c72761a655279756526bd77252865c7ec6bceeced953f0f68c86"
         }
       },
       "last_read": {
-        "on": "2026-09-19",
-        "by": "Claude (status line, install and container instructions re-verified)"
+        "on": "2026-09-25",
+        "by": "Claude (MCP section, legacy-server status, quick-start commands and benchmark table against causal-mcp, backend/pyproject.toml, launch_backend.sh, CURRENT_STAGE)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -275,19 +275,22 @@
         "backend/scripts"
       ],
       "baseline": {
-        "on": "2026-09-19",
+        "on": "2026-09-25",
         "sha256": {
-          "start.sh": "4f0ef07d1fcf8e772b21b9e1125d621fdb40cb5691046c84f975da5d925aefc3",
-          "launch_backend.sh": "3fd5bf0bc3060014f319befd6966d4b33f851a1bce01b15d3dc6facc35f5ec00",
-          "docker-compose.yml": "02c9683c93234b2e4c6c6a6c0ff9408fa983708e7fbfd162975af301dd131362",
-          "backend/pyproject.toml": "669f2ad657d35c2fde9ed8bebdbb128cefa1f546a866bf2ccf8bb10381995ff1",
+          "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
+          "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
+          "docker-compose.yml": "c2118a27d9bd334c63935f3b82336c693cc97c1ac2114e81ac602a45fc8be38e",
+          "backend/pyproject.toml": "0d5612eb3b07ad74501e28cfe32a392fd69d228e639b8dcc99f04232618693c4",
           "frontend/package.json": "328e50541f6341ef44bdb0664d818c5de9c95444d15fa3cc19d076f971e4303e",
           "package.json": "1d6357ca0a5bff2cf56bc7fa16eaf4e54253728875d5e7161f443542bf8ec478",
-          ".env.example": "47d136b5abe9d6dd32a06aa1efc8d73a9508e836afff9b01c29ef91a71817cf3",
-          "backend/scripts": "f97a5f431db23e4a8a279c5f5bb1ba5fba1b3cc0d8978ccf8a6b284eec0aa858"
+          ".env.example": "48f330ad41a48b5d03d0ba3f2910d171f65587998b67b75c4ad21df8656585ce",
+          "backend/scripts": "ccd196982e05a128b6c27d502a3b1a127f803b58b33d60e675f2b556116bdc95"
         }
       },
-      "last_read": null
+      "last_read": {
+        "on": "2026-09-25",
+        "by": "Claude (every command, env var, port, compose service, seed flag and endpoint against start.sh, launch_backend.sh, docker-compose.yml, db/factory.py, auth.py, pyproject extras; no personal infrastructure found)"
+      }
     },
     "docs/TESTING_CICD.md": {
       "why": "test pyramid, quality gates and CI pipeline -- what blocks a merge",
