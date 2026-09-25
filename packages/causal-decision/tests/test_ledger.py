@@ -194,3 +194,33 @@ def test_the_record_is_immutable_in_memory_too(outcome: CausalResult) -> None:
     record = append(None, decide(outcome, BASE), outcome, recorded_at=NOW)
     with pytest.raises(ValidationError):
         record.executed = True  # type: ignore[misc]
+
+
+def test_records_sealed_before_the_model_field_existed_still_verify() -> None:
+    """A contract may grow; the records already in a ledger must keep verifying."""
+    import json
+    from pathlib import Path
+
+    raw = json.loads(
+        (Path(__file__).parent / "fixtures" / "ledger_chain_before_model_ref.json").read_text()
+    )
+    records = [DecisionRecord.model_validate(r) for r in raw["records"]]
+    assert all(r.evidence.model is None for r in records)
+    report = verify_chain(records)
+    assert report.ok, report.reason
+
+
+def test_the_model_a_decision_rested_on_is_part_of_what_the_digest_covers(
+    outcome: CausalResult,
+) -> None:
+    from causal_decision.assumptions import ModelRef
+
+    ref = ModelRef(name="incident-remediation", version=3, digest="sha256:" + "a" * 64)
+    with_model = append(None, decide(outcome, BASE), outcome, recorded_at=NOW, model=ref)
+    without = append(None, decide(outcome, BASE), outcome, recorded_at=NOW)
+    assert with_model.evidence.model == ref
+    assert with_model.entry_digest != without.entry_digest
+    forged = with_model.model_copy(
+        update={"evidence": with_model.evidence.model_copy(update={"model": None})}
+    )
+    assert not verify_chain([forged]).ok, "dropping the model reference must break the seal"

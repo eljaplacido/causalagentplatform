@@ -460,18 +460,32 @@ def _certify(g: Graph, query: CausalQuery) -> tuple[IdentificationCertificate | 
         return None, str(exc)
 
 
+def _unmeasured(spec: CausalGraph, unmeasured: Iterable[str]) -> CausalGraph:
+    """The graph as the analysis saw it: nodes the data lacked are latent (as the kernel does)."""
+    missing = sorted(set(unmeasured) & set(spec.nodes) - set(spec.latent))
+    if not missing:
+        return spec
+    return spec.model_copy(update={"latent": tuple(sorted(set(spec.latent) | set(missing)))})
+
+
 def impact(
     old: ModelVersion | CausalGraph | str,
     new: ModelVersion | CausalGraph | str,
     query: CausalQuery,
+    *,
+    unmeasured: Iterable[str] = (),
 ) -> Impact:
     """If ``new`` is the true graph, does the estimate made under ``old`` still stand?
 
-    ``query`` is the decision's own query (the plan's, for a recorded decision), so
-    a user-chosen adjustment set is judged as the set that was actually used.
+    ``query`` is the decision's own query. For a recorded decision, pin
+    ``adjust_for`` to the set its analysis actually used, so that set -- not whatever
+    the kernel would choose today -- is what gets judged. ``unmeasured`` names the
+    graph nodes the data had no column for; the kernel treated them as latent, and
+    so does this.
     """
-    g_old = Graph.from_spec(_graph_of(old))
-    g_new = Graph.from_spec(_graph_of(new))
+    gaps = tuple(unmeasured)
+    g_old = Graph.from_spec(_unmeasured(_graph_of(old), gaps))
+    g_new = Graph.from_spec(_unmeasured(_graph_of(new), gaps))
     before = tuple(g_old.unreviewed_edges())
     after = tuple(g_new.unreviewed_edges())
     x, y = query.treatment, query.outcome
@@ -483,7 +497,10 @@ def impact(
         return out.model_copy(update={"digest": digest(out.model_dump(mode="json"))})
 
     cert_old, why_old = _certify(g_old, query)
-    cert_new, why_new = _certify(g_new, query)
+    # What the kernel would choose under the new graph, free of any pinned set: the old
+    # set is judged separately below, and reporting "the pinned set is invalid" as the
+    # new certificate would say nothing about what to use instead.
+    cert_new, why_new = _certify(g_new, query.model_copy(update={"adjust_for": None}))
     new_kw: dict[str, object] = {}
     if cert_new is not None and cert_new.status is IdentificationStatus.identified:
         new_kw = {

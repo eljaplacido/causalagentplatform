@@ -25,6 +25,7 @@ from typing import Literal
 from causal_core.canonical import digest
 from pydantic import BaseModel, ConfigDict, Field
 
+from causal_decision.assumptions import ModelRef
 from causal_decision.contract import Decision
 
 #: What the first entry points back at. A fixed, recognisable value: an empty
@@ -60,6 +61,12 @@ class EvidenceRef(_Model):
     query_digest: str | None = None
     contract_version: str | None = None
     core_version: str | None = None
+    model: ModelRef | None = Field(
+        default=None,
+        description="The registered causal model version the analysis used, when it used one "
+        "(causal_decision.assumptions). None means the graph arrived inline and nothing but "
+        "graph_digest records which one it was.",
+    )
 
 
 class DecisionRecord(_Model):
@@ -80,8 +87,18 @@ class DecisionRecord(_Model):
     entry_digest: str = ""
 
     def content(self) -> dict[str, object]:
-        """The bytes the digest covers: everything except the digest itself."""
-        return self.model_dump(mode="json", exclude={"entry_digest"})
+        """The bytes the digest covers: everything except the digest itself.
+
+        ``evidence.model`` is left out when it is None, so every record sealed before
+        the field existed digests exactly as it did then (pinned by
+        tests/fixtures/ledger_chain_before_model_ref.json). A contract may grow; the
+        records already in a ledger must keep verifying.
+        """
+        out = self.model_dump(mode="json", exclude={"entry_digest"})
+        evidence = out["evidence"]
+        if isinstance(evidence, dict) and evidence.get("model") is None:
+            evidence.pop("model", None)
+        return out
 
     def sealed(self) -> DecisionRecord:
         return self.model_copy(update={"entry_digest": digest(self.content())})
@@ -97,7 +114,7 @@ class ChainReport(_Model):
     reason: str = ""
 
 
-def _evidence_of(outcome: object) -> EvidenceRef:
+def _evidence_of(outcome: object, model: ModelRef | None = None) -> EvidenceRef:
     prov = getattr(outcome, "provenance", None)
     kind = getattr(outcome, "kind", None)
     if kind not in ("result", "refusal", "apparatus_failure"):
@@ -110,6 +127,7 @@ def _evidence_of(outcome: object) -> EvidenceRef:
         query_digest=getattr(prov, "query_digest", None),
         contract_version=getattr(prov, "contract_version", None),
         core_version=getattr(prov, "core_version", None),
+        model=model,
     )
 
 
@@ -120,13 +138,21 @@ def append(
     recorded_at: str,
     approval: Approval | None = None,
     executed: bool = False,
+    model: ModelRef | None = None,
 ) -> DecisionRecord:
-    """Seal a new entry onto the chain whose last entry is ``tail``."""
+    """Seal a new entry onto the chain whose last entry is ``tail``.
+
+    ``model`` names the registered model version the analysis ran on. It sits beside
+    ``graph_digest``, which covers the graph the kernel actually analysed (a model
+    node with no data column becomes latent there, and refuted edges are dropped), so
+    the two digests differ by design; the caller is trusted to pass the version it
+    analysed with, and the backend does so from the same object.
+    """
     return DecisionRecord(
         sequence=0 if tail is None else tail.sequence + 1,
         recorded_at=recorded_at,
         decision=decision,
-        evidence=_evidence_of(outcome),
+        evidence=_evidence_of(outcome, model),
         approval=approval,
         executed=executed,
         prev_digest=GENESIS if tail is None else tail.entry_digest,

@@ -41,6 +41,7 @@ from typing import Literal
 from causal_core.contract import (
     Abstention,
     ApparatusFailure,
+    CausalGraph,
     CausalQuery,
     CausalResult,
 )
@@ -71,7 +72,10 @@ class FollowUp(_Model):
     action: str
     outcome: str
     direction: Literal["increase", "decrease"]
-    graph: str = Field(description="The graph as given to the original analysis, verbatim.")
+    graph: str | CausalGraph = Field(
+        description="The graph as given to the original analysis: verbatim text, or the "
+        "registered model version's graph."
+    )
     query: CausalQuery = Field(description="Re-run with this, so the estimand cannot drift.")
     predicted_benefit: float | None = None
     predicted_ci: tuple[float, float] | None = None
@@ -174,7 +178,7 @@ def plan(
     decision: Decision,
     result: CausalResult,
     *,
-    graph: str,
+    graph: str | CausalGraph,
     observe_from: str,
     observe_until: str | None = None,
 ) -> FollowUp:

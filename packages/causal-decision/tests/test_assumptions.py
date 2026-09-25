@@ -235,3 +235,22 @@ def test_a_review_changes_what_is_unreviewed_not_what_is_identified() -> None:
     got = impact(m1, m2, Q)
     assert got.status is ImpactStatus.holds
     assert got.unreviewed_before == ("backlog -> minutes",) and got.unreviewed_after == ()
+
+
+def test_a_pinned_set_is_the_one_judged() -> None:
+    """A recorded decision pins the set its analysis used; that set is what a revision tests."""
+    old = "load -> playbook; load -> minutes; playbook -> minutes; season -> load"
+    new = "load -> playbook; load -> minutes; playbook -> minutes; playbook -> season; " \
+        "season -> minutes"
+    used = Q.model_copy(update={"adjust_for": ("load", "season")})  # valid under old
+    got = impact(old, new, used)
+    assert got.old_adjustment_set == ("load", "season")
+    assert got.status is ImpactStatus.invalidated, "season is now a mediator"
+    assert impact(old, new, Q).status is ImpactStatus.holds, "the kernel's own set, {load}, holds"
+
+
+def test_nodes_the_data_lacked_are_latent_in_both_graphs() -> None:
+    """The analysis could not adjust for a variable it had no column for; neither can impact."""
+    old = "load -> playbook; load -> minutes; playbook -> minutes"
+    assert impact(old, old, Q).status is ImpactStatus.holds
+    assert impact(old, old, Q, unmeasured=["load"]).status is ImpactStatus.still_unidentified
