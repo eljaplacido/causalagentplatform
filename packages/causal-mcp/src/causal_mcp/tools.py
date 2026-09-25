@@ -128,8 +128,10 @@ def _query(
     unit: str | None = None,
     time: str | None = None,
     estimand: Literal["ate", "att"] = "ate",
+    sequence: str | None = None,
 ) -> CausalQuery:
     return CausalQuery(
+        sequence=sequence,
         unit=unit,
         time=time,
         estimand=estimand,
@@ -165,6 +167,7 @@ def causal_analyze(
     unit: str | None = None,
     time: str | None = None,
     estimand: Literal["ate", "att"] = "ate",
+    sequence: str | None = None,
     policy: dict[str, Any] | None = None,
 ) -> AnalyzeResponse:
     """Estimate the effect of `treatment` on `outcome`, or return a typed refusal saying why not.
@@ -192,6 +195,13 @@ def causal_analyze(
     `estimand="att"`. Identification rests on parallel trends, which no graph can state, so
     the certificate is tier C and a failed pre-trends test makes the result `contested`.
 
+    **Watched canaries** (a randomized rollout you will look at repeatedly): pass
+    `design="randomized"`, `sequence` (the column giving arrival order) and
+    `expected_treated_share` (the randomizer's probability). The result carries an
+    anytime-valid confidence sequence at every look: you may read it, and stop on it, as
+    often as you like. Do not re-run a fixed-sample analysis after every batch instead --
+    read that way its error rate is far above 5%.
+
     `graph` syntax: `Z -> X -> Y; Z -> Y`; `X <-> Y` means an unmeasured common cause;
     `latent U` declares an unmeasured node. Data: either `data` as {column: [values]} or
     `data_path` (CSV / Parquet / JSON under the server's allowed data roots).
@@ -212,6 +222,7 @@ def causal_analyze(
             unit=unit,
             time=time,
             estimand=estimand,
+            sequence=sequence,
         )
         pol = AnalysisPolicy.model_validate(policy or {})
         frame = load_table(data, data_path)
@@ -380,6 +391,7 @@ if HAS_DECISION:
         unit: str | None = None,
         time: str | None = None,
         estimand: Literal["ate", "att"] = "ate",
+        sequence: str | None = None,
         policy: dict[str, Any] | None = None,
         decision_policy: dict[str, Any] | None = None,
     ) -> DecideResponse:
@@ -425,6 +437,7 @@ if HAS_DECISION:
                 unit=unit,
                 time=time,
                 estimand=estimand,
+                sequence=sequence,
             )
             request = DecisionRequest(
                 action=action,

@@ -202,3 +202,19 @@ def test_a_staggered_rollout_can_be_analysed_and_decided_over_mcp() -> None:
     decided = tools.causal_decide(**common, action="keep the rollout", direction="increase",
                                   minimum_worthwhile_effect=0.5)
     assert decided.decision.verdict.value == "act_with_approval", decided.explanation
+
+
+def test_a_watched_canary_is_monitored_and_decided_over_mcp() -> None:
+    from causal_core.bench import t6
+
+    frame = t6.simulate(t6.STREAMS["harm"], 3000, np.random.default_rng(8))
+    common = {"graph": t6.GRAPH, "treatment": "canary", "outcome": "latency",
+              "data": {c: frame[c].tolist() for c in frame}, "design": "randomized",
+              "sequence": "arrival", "expected_treated_share": 0.5}
+    analysed = tools.causal_analyze(**common)
+    assert analysed.outcome.kind == "result", analysed.report
+    assert analysed.outcome.sequential is not None
+    assert analysed.outcome.sequential.first_below_zero is not None
+    decided = tools.causal_decide(**common, action="continue the canary", direction="increase",
+                                  minimum_worthwhile_effect=0.0)
+    assert decided.decision.verdict.value == "refuse", decided.explanation
