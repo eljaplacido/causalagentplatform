@@ -3,7 +3,7 @@
 **Suite:** T5, staggered-adoption difference-in-differences on simulated panels with known effects
 **System under test:** `packages/causal-core` (`causal_core.panel`, reached through `analyze(...,
 design="difference_in_differences")`)
-**Registered:** 2026-09-25, version 1; version 2 the same day (see Changelog)
+**Registered:** 2026-09-25, version 1; versions 2 and 3 the same day (see Changelog)
 **Runs:** every PR, via `pytest -m t5` in `packages/causal-core`
 
 ## Status of this document
@@ -71,6 +71,24 @@ Pre-period truths are 0 under parallel trends.
 | `treated_from_the_start` | one cohort treated in period 1, no other cohort | `DESIGN_CHECK_FAILED` |
 | `tiny_cohort` | a cohort of 3 units beside the rest | `LOW_N` |
 
+**Sensitivity to parallel-trends violations (v3).** Beside the point estimate, the kernel reports
+intervals valid under the restriction that the post-adoption bias of the overall ATT is at most
+`M̄` times the largest pre-adoption deviation from the base period — a simplified form of the
+"relative magnitudes" restriction of Rambachan & Roth (2023), stated on event-time deviations.
+For each `M̄` in a grid the interval is
+
+`θ̂ ± ( M̄ · U + z_{1−α₂/2} · se(θ̂) )`,
+
+where `U` is an upper confidence bound on the largest absolute pre-adoption event-time effect
+(Bonferroni across the pre-periods, at level `α₁`), and `α₁ + α₂ = α`. By a union bound the
+interval covers the ATT with probability at least `1 − α` whenever the restriction holds. The
+**breakdown** `M̄*` is the largest `M̄` at which the interval still excludes zero.
+
+In `trends_violated` the ratio the restriction must accommodate is known from the design: the
+aggregate post-adoption bias is 0.775 and the largest pre-adoption deviation (event time −5,
+cohort 6 only) is 1.2, so `M̄_true = 0.646`. The interval at the smallest grid point at or above
+`M̄_true` must cover. Under parallel trends (`M̄_true = 0`) every grid point must.
+
 **Seeded defects.**
 
 | id | defect | must be caught by |
@@ -79,13 +97,14 @@ Pre-period truths are 0 under parallel trends.
 | `forbidden_comparisons` | already-treated units are used as controls | bias bar, `staggered_dynamic` |
 | `cells_independent` | the aggregate's variance ignores the covariance between cells of the same unit | coverage bar, `staggered_dynamic` |
 | `pretrend_blind` | the pre-trends test always passes | power bar, `trends_violated` |
+| `last_pre_period_only` | `U` is bounded from event time −2 alone, the period next to the base (v3) | sensitivity coverage, `trends_violated` |
 
 ## Pass bars
 
 ```toml
 [meta]
 suite = "T5"
-version = 2
+version = 3
 registered = "2026-09-25"
 
 [panels]
@@ -107,12 +126,20 @@ alpha = 0.01                   # the kernel's refutation_alpha default
 false_alarm_max = 0.03         # rejection rate in each design where trends are parallel
 power_min = 0.80               # rejection rate in `trends_violated`
 
+[sensitivity]
+grid = [0.0, 0.5, 1.0, 1.5, 2.0]
+alpha_pre = 0.025              # α₁, for the bound on pre-adoption deviations
+alpha_effect = 0.025           # α₂, for the estimate; α₁ + α₂ = 0.05
+m_true = { staggered_dynamic = 0.0, staggered_constant = 0.0, single_cohort = 0.0, null_effect = 0.0, trends_violated = 0.646 }
+coverage_min = 0.93            # at the smallest grid point >= m_true, per design
+
 [refusals]
 must_refuse = ["unbalanced", "treatment_turns_off", "no_never_treated",
                "treated_from_the_start", "tiny_cohort"]
 
 [seeded_defects]
-required = ["twfe_static", "forbidden_comparisons", "cells_independent", "pretrend_blind"]
+required = ["twfe_static", "forbidden_comparisons", "cells_independent", "pretrend_blind",
+            "last_pre_period_only"]
 ```
 
 **Why these bars.** With 500 replications a coverage estimate near 0.95 has a standard error near
@@ -130,7 +157,9 @@ unit variance, over three pre-periods for the latest cohort) is not missed.
 - Covariate-conditional parallel trends, not-yet-treated comparison groups, anticipation,
   continuous or reversible treatments, and repeated cross-sections. Each is refused or not
   offered in v1.
-- Sensitivity to violations of parallel trends (e.g. Rambachan & Roth bounds). Not implemented.
+- The full Rambachan & Roth machinery: their restriction is on consecutive changes, not levels,
+  and their confidence sets are sharper than a union bound. v3's intervals are valid and
+  conservative, not optimal.
 
 ## Changelog
 
@@ -152,3 +181,8 @@ unit variance, over three pre-periods for the latest cohort) is not missed.
   real data whenever composition is itself random. Disclosed: this change was chosen after seeing
   v1's result. It changes what the simulation draws, not what any bar requires; the refusal panels
   keep their fixed sizes, since a "tiny cohort of 3" must be exactly 3.
+- **v3 (2026-09-25): sensitivity to parallel-trends violations. No v2 bar changed.** Adds the
+  `[sensitivity]` section, its coverage bar, and the `last_pre_period_only` defect — the first of
+  the extensions the register's `did-extensions` entry names. Written before the sensitivity code
+  exists. `m_true` for `trends_violated` is computed from the design (bias 0.775, largest
+  pre-period deviation 1.2), not observed; the v2 run's measured bias of 0.770 agrees with it.
