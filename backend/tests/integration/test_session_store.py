@@ -19,7 +19,7 @@ async def auth_client(db_engine: object):
     """Authenticated test client with Firebase verification mocked out."""
     with patch(
         "src.middleware.auth._verify_firebase_token",
-        new=AsyncMock(return_value={"uid": "test-user-001"}),
+        new=AsyncMock(return_value={"uid": "test-user-001", "roles": ["analyst"]}),
     ):
         async with AsyncClient(
             transport=ASGITransport(app=app),

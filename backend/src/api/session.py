@@ -26,6 +26,7 @@ from pydantic import BaseModel, Field
 from src.agents.incident_triage import IncidentTriageAgent
 from src.exceptions import CircuitBreakerError
 from src.middleware.auth import get_current_user
+from src.middleware.rbac import guard
 from src.orchestration.graph import PlatformState, compile_platform_graph
 from src.orchestration.session_store import SessionStateStore
 from src.semantic_layer.models import (
@@ -214,7 +215,7 @@ async def _run_graph(initial_state: EpistemicState) -> EpistemicState:
 )
 async def run_session(
     body: RunSessionRequest,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("POST", "/api/v1/session/run")),
 ) -> SessionStateResponse:
     """
     Run an EpistemicState through the full platform graph.
@@ -286,7 +287,7 @@ async def run_session(
 )
 async def triage_incident(
     body: IncidentSessionRequest,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("POST", "/api/v1/session/incident")),
 ) -> SessionStateResponse:
     """
     Dedicated incident triage endpoint for the SRE / Incident Commander persona.

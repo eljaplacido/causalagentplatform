@@ -16,7 +16,7 @@ import structlog
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 
-from src.middleware.auth import get_current_user
+from src.middleware.rbac import guard
 from src.semantic_layer.provenance import (
     LLMInvocation,
     ProvenanceGraph,
@@ -159,7 +159,7 @@ class ProvJsonResponse(BaseModel):
 async def trace_provenance(
     session_id: str,
     include_invocations: bool = Query(default=True),
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/provenance/trace/{session_id}")),
 ) -> TraceResponse:
     """
     Return the full provenance chain for a session.
@@ -190,7 +190,7 @@ async def trace_provenance(
 )
 async def export_prov_json(
     session_id: str,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/provenance/export/{session_id}")),
 ) -> ProvJsonResponse:
     """
     Export the provenance graph as W3C PROV-JSON format.
@@ -257,7 +257,7 @@ async def export_prov_json(
 async def list_invocations(
     session_id: str,
     capability: str | None = Query(default=None),
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/provenance/invocations/{session_id}")),
 ) -> list[dict[str, Any]]:
     """
     List all LLM invocations for a session, optionally filtered by capability.
@@ -275,7 +275,7 @@ async def list_invocations(
 )
 async def clear_session(
     session_id: str,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("DELETE", "/api/v1/provenance/session/{session_id}")),
 ) -> None:
     """Remove all provenance and invocation data for a session."""
     _provenance_store.pop(session_id, None)

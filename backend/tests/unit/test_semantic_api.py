@@ -38,7 +38,14 @@ pytestmark = pytest.mark.asyncio
 
 @pytest.fixture
 def mock_user() -> dict[str, Any]:
-    return {"uid": "semantic-test-001", "email": "semantic@test.com"}
+    # An analyst reads all statuses; the domains claim is their domain scope
+    # (src/middleware/rbac.py), which the handlers pass on to the registry.
+    return {
+        "uid": "semantic-test-001",
+        "email": "semantic@test.com",
+        "roles": ["analyst"],
+        "domains": ["devops"],
+    }
 
 
 # ── list_entities ─────────────────────────────────────────────────────────────
@@ -67,7 +74,9 @@ async def test_list_entities_with_domain_filter(mock_user: dict[str, Any]) -> No
         return_value=[],
     ) as mock_list:
         await list_entities(domain="devops", user=mock_user)
-        mock_list.assert_awaited_once_with(domain="devops", status=None)
+        mock_list.assert_awaited_once_with(
+            domain="devops", status=None, domains=frozenset({"devops"})
+        )
 
 
 async def test_list_entities_with_status_filter(mock_user: dict[str, Any]) -> None:
@@ -78,7 +87,9 @@ async def test_list_entities_with_status_filter(mock_user: dict[str, Any]) -> No
         return_value=[],
     ) as mock_list:
         await list_entities(status=ApprovalStatus.APPROVED, user=mock_user)
-        mock_list.assert_awaited_once_with(domain=None, status=ApprovalStatus.APPROVED)
+        mock_list.assert_awaited_once_with(
+            domain=None, status=ApprovalStatus.APPROVED, domains=frozenset({"devops"})
+        )
 
 
 # ── get_entity ────────────────────────────────────────────────────────────────

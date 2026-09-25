@@ -8,12 +8,15 @@ Endpoints:
   GET  /api/governance/review-queue         — list pending drafts by risk tier
   GET  /api/governance/audit-log            — paginated audit log
 
-Role requirements:
-  - /check          → any authenticated user
+Role requirements (the rows of src/middleware/rbac.py ROUTE_ROLES):
+  - /check          → graph_author, governance_officer, platform_engineer or agent
   - /approve        → governance_officer or platform_engineer
   - /reject         → governance_officer or platform_engineer
   - /review-queue   → governance_officer or platform_engineer
   - /audit-log      → governance_officer or platform_engineer
+
+/approve, /reject and /review-queue are also bounded by the user's domain scope:
+an object outside it is not found, and is not listed.
 """
 
 from __future__ import annotations
@@ -31,7 +34,7 @@ from src.agents.governance import GovernanceAgent
 from src.agents.grounding_risk import grounding_risk
 from src.db.factory import CloudSqlFactory
 from src.exceptions import GuardianBlockedError, InvalidTransitionError, ObjectNotFoundError
-from src.middleware.auth import get_current_user, require_role
+from src.middleware.rbac import GOVERNANCE_ROLES, domain_scope, guard
 from src.orchestration.session_store import SessionStateStore
 from src.semantic_layer.models import (
     AuditEntry,
@@ -49,7 +52,7 @@ _registry = SemanticLayerRegistry()
 _governance = GovernanceAgent(agent_id="governance-agent-api")
 _sessions = SessionStateStore()
 
-GOVERNANCE_ROLES = ("governance_officer", "platform_engineer")
+__all__ = ["GOVERNANCE_ROLES", "router"]
 
 
 # ── Request / Response schemas ────────────────────────────────────────────────
@@ -167,7 +170,7 @@ class AuditLogResponse(BaseModel):
 )
 async def guardian_check(
     body: GuardianCheckRequest,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("POST", "/api/governance/check")),
 ) -> GuardianCheckResponse:
     """
     Submit an action payload to the Guardian for policy evaluation.
@@ -234,7 +237,7 @@ async def guardian_check(
 async def approve_object(
     object_id: UUID,
     body: ApproveRequest,
-    user: dict[str, Any] = Depends(require_role(*GOVERNANCE_ROLES)),
+    user: dict[str, Any] = Depends(guard("POST", "/api/governance/approve/{object_id}")),
 ) -> dict[str, str]:
     """
     Promote a DRAFT / UNDER_REVIEW semantic object to APPROVED status.
@@ -262,6 +265,7 @@ async def approve_object(
             object_type=body.object_type,
             verdict_id=body.verdict_id,
             approver=approver,
+            domains=domain_scope(user),
         )
     except GuardianBlockedError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
@@ -304,7 +308,7 @@ async def approve_object(
 async def reject_object(
     object_id: UUID,
     body: RejectRequest,
-    user: dict[str, Any] = Depends(require_role(*GOVERNANCE_ROLES)),
+    user: dict[str, Any] = Depends(guard("POST", "/api/governance/reject/{object_id}")),
 ) -> dict[str, str]:
     """
     Mark a draft semantic object as REJECTED and write an audit entry.
@@ -334,6 +338,7 @@ async def reject_object(
             verdict_id=body.verdict_id,
             rejector=rejector,
             reason=body.reason,
+            domains=domain_scope(user),
         )
     except GuardianBlockedError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
@@ -374,7 +379,7 @@ async def reject_object(
 async def review_queue(
     domain: Annotated[str | None, Query(description="Filter by domain")] = None,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
-    user: dict[str, Any] = Depends(require_role(*GOVERNANCE_ROLES)),
+    user: dict[str, Any] = Depends(guard("GET", "/api/governance/review-queue")),
 ) -> list[ReviewQueueItem]:
     """
     Return all DRAFT / UNDER_REVIEW semantic objects pending review.
@@ -383,7 +388,7 @@ async def review_queue(
     Requires governance_officer or platform_engineer role.
     """
     log.info("api.governance.review_queue", domain=domain, limit=limit)
-    items = await _registry.list_pending_review_queue(limit=limit)
+    items = await _registry.list_pending_review_queue(limit=limit, domains=domain_scope(user))
 
     if domain:
         items = [i for i in items if i.get("domain") == domain]
@@ -418,7 +423,7 @@ async def get_audit_log(
     ] = None,
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=500)] = 100,
-    user: dict[str, Any] = Depends(require_role(*GOVERNANCE_ROLES)),
+    user: dict[str, Any] = Depends(guard("GET", "/api/governance/audit-log")),
 ) -> AuditLogResponse:
     """
     Query the append-only audit log with optional time range, agent, and verdict filters.
