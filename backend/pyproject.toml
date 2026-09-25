@@ -35,7 +35,7 @@ dependencies = [
     "langgraph>=0.2.50",
     "langchain-anthropic>=0.3.0",
     "langchain-core>=0.3.0",
-    "langchain-ollama>=0.2.0",    # Ollama local inference (gx10 primary)
+    "langchain-ollama>=0.2.0",    # Ollama local inference (preferred when OLLAMA_BASE_URL is set)
     "langchain-openai>=0.2.0",    # OpenAI / DeepSeek compatible API
     # Observability
     "structlog>=24.4.0",

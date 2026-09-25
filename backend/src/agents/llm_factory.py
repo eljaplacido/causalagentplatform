@@ -6,7 +6,7 @@ This factory selects the provider based on environment configuration and
 capability routing rules.
 
 Provider selection order:
-    1. OLLAMA_BASE_URL (set)     → Ollama (local)   — preferred on gx10
+    1. OLLAMA_BASE_URL (set)     → Ollama (local)   — preferred on a local GPU host
     2. ANTHROPIC_API_KEY (set)   → Anthropic Claude — primary cloud
     3. OPENAI_API_KEY (set)      → OpenAI GPT       — fallback cloud
     4. DEEPSEEK_API_KEY (set)    → DeepSeek          — fallback cloud
@@ -48,7 +48,7 @@ Capability = Literal[
 
 def _detect_provider() -> str:
     """Detect the active LLM provider from environment variables."""
-    # gx10 preference: Ollama first
+    # Local-first preference: Ollama first
     if os.getenv("OLLAMA_BASE_URL"):
         return "ollama"
     if os.getenv("ANTHROPIC_API_KEY"):
