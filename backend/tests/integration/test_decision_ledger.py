@@ -24,6 +24,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
 from src.api.main import app
+from src.db.types import json_value
 from src.semantic_layer.decision_store import DecisionStore
 
 if TYPE_CHECKING:
@@ -162,10 +163,18 @@ async def _lift_append_only_guard(session: AsyncSession) -> None:
     that prove tampering is *detected* have to become that attacker first, and they
     do it explicitly here rather than by quietly relying on an unguarded table.
 
-    No restore: each test builds a fresh in-memory database.
+    SQLite: the triggers are dropped; each test builds a fresh in-memory database.
+    PostgreSQL: they are disabled, not dropped, because the database outlives the
+    test; the db_engine fixture re-enables every disabled trigger before the next one.
     """
+    postgres = session.bind.dialect.name == "postgresql"
     for trigger in ("tg_decision_records_no_update", "tg_decision_records_no_delete"):
-        await session.execute(text(f"DROP TRIGGER IF EXISTS {trigger}"))
+        if postgres:
+            await session.execute(
+                text(f"ALTER TABLE decision_records DISABLE TRIGGER {trigger}")
+            )
+        else:
+            await session.execute(text(f"DROP TRIGGER IF EXISTS {trigger}"))
     await session.commit()
 
 
@@ -179,19 +188,20 @@ async def test_editing_a_stored_record_is_caught_by_verification(
     row = await db_session.execute(
         text("SELECT record FROM decision_records WHERE sequence = 0")
     )
-    raw = row.scalar()
-    assert isinstance(raw, str)
+    # JSON text on SQLite, decoded JSONB on PostgreSQL.
+    stored = json_value(row.scalar())
+    assert isinstance(stored, dict)
     # Rewrite the thing an operator would actually want to change after the fact:
     # a decision that was never carried out, recorded as though it had been.
     # (Edit the parsed JSON rather than the text: a string replace that silently
     # matches nothing produces a tamper test that never tampers.)
     import json
 
-    parsed = json.loads(raw)
+    parsed = json.loads(json.dumps(stored))
     assert parsed["executed"] is False
     parsed["executed"] = True
     tampered = json.dumps(parsed)
-    assert tampered != raw, "the edit must actually change the stored bytes"
+    assert parsed != stored, "the edit must actually change the stored record"
 
     await _lift_append_only_guard(db_session)
     await db_session.execute(
@@ -299,7 +309,7 @@ async def test_a_resealed_rewrite_passes_verify_but_not_a_published_checkpoint(
     rows = (
         await db_session.execute(text("SELECT record FROM decision_records ORDER BY sequence"))
     ).scalars().all()
-    first, second = (DecisionRecord.model_validate(json.loads(r)) for r in rows)
+    first, second = (DecisionRecord.model_validate(json_value(r)) for r in rows)
     first = first.model_copy(update={"executed": True}).sealed()
     second = second.model_copy(update={"prev_digest": first.entry_digest}).sealed()
 

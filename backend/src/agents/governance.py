@@ -29,10 +29,10 @@ from typing import Any
 from uuid import UUID, uuid4
 
 import structlog
-from sqlalchemy import text
 
 from src.agents.base import HALLUCINATION_THRESHOLD, BaseAgent
 from src.db.factory import CloudSqlFactory
+from src.db.types import TEXT_ARRAY, TIMESTAMP, typed_text
 from src.exceptions import AuditWriteError
 from src.semantic_layer.models import (
     CynefinDomain,
@@ -511,7 +511,11 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
         """
         entry_id = uuid4()
         verdict_value = verdict.value if hasattr(verdict, "value") else str(verdict)
-        created_at = datetime.now(UTC).isoformat()
+        now = datetime.now(UTC)
+        # The claim signs the ISO text; the column is bound as the datetime it came
+        # from. The registry reads it back through timestamp_text(), which renders a
+        # TIMESTAMPTZ as this same text, so the signature verifies on either store.
+        created_at = now.isoformat()
         # Signed here and nowhere else. A verdict's authority comes from this
         # signature, so the one method that writes audit_log is the one method that
         # can confer it -- an INSERT from anywhere else produces history, not power.
@@ -538,14 +542,16 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
         try:
             async with CloudSqlFactory.get_session_factory()() as session:
                 await session.execute(
-                    text(
+                    typed_text(
                         "INSERT INTO audit_log "
                         "(id, agent_id, action_type, payload_hash, guardian_verdict, "
                         " policy_rules_cited, session_id, created_at, subject_id, signature, "
                         " notes) "
                         "VALUES "
                         "(:id, :agent_id, :action_type, :payload_hash, :verdict, "
-                        " :rules, :session_id, :created_at, :subject_id, :signature, :notes)"
+                        " :rules, :session_id, :created_at, :subject_id, :signature, :notes)",
+                        rules=TEXT_ARRAY,
+                        created_at=TIMESTAMP,
                     ),
                     {
                         "id": str(entry_id),
@@ -553,9 +559,9 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
                         "action_type": action_type,
                         "payload_hash": payload_hash,
                         "verdict": verdict_value,
-                        "rules": json.dumps(list(policy_rules_cited)),
+                        "rules": list(policy_rules_cited),
                         "session_id": session_id,
-                        "created_at": created_at,
+                        "created_at": now,
                         "subject_id": subject_id,
                         "signature": signature,
                         "notes": notes,

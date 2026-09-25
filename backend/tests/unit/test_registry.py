@@ -31,8 +31,7 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from tests.conftest import VerdictFactory
-
+from src.db.types import json_value
 from src.exceptions import GuardianBlockedError, ObjectNotFoundError
 from src.semantic_layer.models import (
     ApprovalStatus,
@@ -51,6 +50,7 @@ from src.semantic_layer.models import (
     UserRef,
 )
 from src.semantic_layer.registry import SemanticLayerRegistry, _object_hash, _sv
+from tests.conftest import VerdictFactory
 
 pytestmark = pytest.mark.asyncio
 
@@ -630,7 +630,7 @@ async def test_promote_to_approved_updates_edge_status(
     record = row.mappings().one()
     assert record["approval_status"] == "APPROVED"
     assert str(record["guardian_verdict_ref"]) == str(approving)
-    lineage = json.loads(record["lineage"])
+    lineage = json_value(record["lineage"])
     assert isinstance(lineage, list) and lineage, "lineage must be a JSON array"
     assert lineage[-1]["step_type"] == "APPROVED"
     assert lineage[-1]["actor_id"] == _user().id

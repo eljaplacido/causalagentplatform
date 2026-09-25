@@ -1,7 +1,8 @@
 """
 Platform operational API.
 
-Computed at request time from the live SQLite database, with no static values:
+Computed at request time from the live database (SQLite in local development,
+PostgreSQL deployed), with no static values:
   GET /api/v1/platform/connectors  — health of each backend component (DB, registry, pipeline)
   GET /api/v1/platform/metrics     — computed operational metrics from audit_log + sessions
   GET /api/v1/platform/drift       — drift alerts derived from recent rejected verdicts
@@ -31,6 +32,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 
 from src.db.factory import CloudSqlFactory
+from src.db.types import TIMESTAMP, timestamp_text, typed_text
 from src.middleware.auth import get_current_user
 from src.middleware.rbac import guard
 from src.orchestration.graph import compile_platform_graph
@@ -38,6 +40,24 @@ from src.semantic_layer.registry import SemanticLayerRegistry
 
 log = structlog.get_logger(__name__)
 router = APIRouter()
+
+#: What the database connector calls itself, by SQLAlchemy dialect name.
+_DATABASE_NAMES = {
+    "sqlite": "SQLite (local dev database)",
+    "postgresql": "PostgreSQL",
+}
+
+
+def _as_utc(value: Any) -> datetime | None:
+    """A stored timestamp as an aware UTC datetime (TIMESTAMPTZ or SQLite's ISO text)."""
+    text_value = timestamp_text(value)
+    if not text_value:
+        return None
+    try:
+        moment = datetime.fromisoformat(text_value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return moment.replace(tzinfo=UTC) if moment.tzinfo is None else moment.astimezone(UTC)
 
 _registry = SemanticLayerRegistry()
 
@@ -150,14 +170,14 @@ async def get_connector_health(
     Check the health of every backend component and return current status.
 
     Components checked:
-      - SQLite database (connection + record counts)
+      - The database (connection + record counts), named by its dialect
       - Semantic layer registry (entities, fragments, assumptions)
       - Audit log (entry count, last entry timestamp)
       - LangGraph agent pipeline (compiled graph check)
     """
     results: list[ConnectorStatus] = []
 
-    # ── 1. SQLite / Database ─────────────────────────────────────────────────
+    # ── 1. Database ──────────────────────────────────────────────────────────
     t0 = time.perf_counter()
     db_healthy = False
     db_error: str | None = None
@@ -187,9 +207,7 @@ async def get_connector_health(
                 row = await session.execute(
                     text("SELECT MAX(created_at) FROM audit_log")
                 )
-                last = row.scalar()
-                if last:
-                    db_last_sync = str(last) if not isinstance(last, str) else last
+                db_last_sync = timestamp_text(row.scalar())
             except Exception:
                 pass
 
@@ -201,10 +219,14 @@ async def get_connector_health(
 
     db_duration = round((time.perf_counter() - t0) * 1000)
 
+    # Named for the database it is connected to. It said "SQLite (local dev
+    # database)" whatever the engine was, so a PostgreSQL deployment reported
+    # itself as SQLite.
+    dialect = CloudSqlFactory.get_engine().dialect.name
     results.append(
         ConnectorStatus(
-            connector_id="db-sqlite",
-            connector_name="SQLite (local dev database)",
+            connector_id=f"db-{dialect}",
+            connector_name=_DATABASE_NAMES.get(dialect, dialect),
             connector_type="DATABASE",
             healthy=db_healthy,
             last_successful_sync=db_last_sync if db_healthy else None,
@@ -284,8 +306,7 @@ async def get_connector_health(
                     "escalated": row["escalated"] or 0,
                 }
                 audit_objects = audit_raw["total_entries"]
-                if row["last_entry"]:
-                    audit_last = str(row["last_entry"])
+                audit_last = timestamp_text(row["last_entry"])
         audit_healthy = True
     except Exception as exc:
         audit_error = str(exc)
@@ -369,7 +390,7 @@ async def get_platform_metrics(
       - Aggregate totals
     """
     now = datetime.now(UTC)
-    four_weeks_ago = (now - timedelta(weeks=4)).isoformat()
+    four_weeks_ago = now - timedelta(weeks=4)
 
     weekly_sessions: list[WeeklySessionMetric] = []
     policy_patterns: list[PolicyPattern] = []
@@ -383,41 +404,46 @@ async def get_platform_metrics(
         # ── Weekly session metrics ───────────────────────────────────────────
         # Group audit_log entries by week (each session produces at least one entry)
         # We approximate "sessions" as unique session_ids in audit_log
+        # Grouped here, not in SQL: strftime() is SQLite's, and on PostgreSQL the
+        # failed statement also aborted the transaction, so every query after it in
+        # this session failed too and the endpoint returned nothing but padding.
+        # '%Y-%W' is the same week key SQLite's strftime produced.
         try:
             weekly_rows = await session.execute(
-                text(
-                    "SELECT "
-                    "  strftime('%Y-%W', created_at) as yr_week, "
-                    "  MIN(created_at) as week_start, "
-                    "  COUNT(DISTINCT session_id) as sessions, "
-                    "  SUM(CASE WHEN guardian_verdict='APPROVED' THEN 1 ELSE 0 END) as approved, "
-                    "  COUNT(*) as total_checks, "
-                    "  SUM(CASE WHEN guardian_verdict='REQUIRES_ESCALATION' THEN 1 ELSE 0 END) as escalated "
+                typed_text(
+                    "SELECT created_at, session_id, guardian_verdict "
                     "FROM audit_log "
                     "WHERE created_at >= :cutoff "
-                    "  AND session_id IS NOT NULL "
-                    "GROUP BY yr_week "
-                    "ORDER BY yr_week ASC "
-                    "LIMIT 4"
+                    "  AND session_id IS NOT NULL",
+                    cutoff=TIMESTAMP,
                 ),
                 {"cutoff": four_weeks_ago},
             )
+            weeks: dict[str, dict[str, Any]] = {}
             for row in weekly_rows.mappings():
-                try:
-                    ws = datetime.fromisoformat(str(row["week_start"]).replace(" ", "T").split(".")[0])
-                except Exception:
-                    ws = now - timedelta(days=7)
-
-                total_checks = max(row["total_checks"] or 1, 1)
-                approval_rate = round((row["approved"] or 0) / total_checks, 3)
-
+                at = _as_utc(row["created_at"])
+                if at is None:
+                    continue
+                week = weeks.setdefault(
+                    at.strftime("%Y-%W"),
+                    {"start": at, "sessions": set(), "approved": 0, "total": 0, "escalated": 0},
+                )
+                week["start"] = min(week["start"], at)
+                week["sessions"].add(row["session_id"])
+                week["total"] += 1
+                week["approved"] += row["guardian_verdict"] == "APPROVED"
+                week["escalated"] += row["guardian_verdict"] == "REQUIRES_ESCALATION"
+            for key in sorted(weeks)[:4]:
+                week = weeks[key]
+                ws = week["start"].replace(microsecond=0)
+                total_checks = max(week["total"], 1)
                 weekly_sessions.append(
                     WeeklySessionMetric(
                         week=_week_label(ws),
                         week_start=ws.isoformat(),
-                        session_count=row["sessions"] or 0,
-                        approval_rate=approval_rate,
-                        escalation_count=row["escalated"] or 0,
+                        session_count=len(week["sessions"]),
+                        approval_rate=round(week["approved"] / total_checks, 3),
+                        escalation_count=week["escalated"],
                     )
                 )
         except Exception as exc:
@@ -443,7 +469,9 @@ async def get_platform_metrics(
                 text(
                     "SELECT policy_rules_cited, MAX(created_at) as last_seen "
                     "FROM audit_log "
-                    "WHERE policy_rules_cited IS NOT NULL AND policy_rules_cited != '[]' "
+                    # No "!= '[]'": that literal is not an array on PostgreSQL (TEXT[]),
+                    # so the filter failed there. Empty citations are skipped below.
+                    "WHERE policy_rules_cited IS NOT NULL "
                     "GROUP BY policy_rules_cited "
                     "ORDER BY COUNT(*) DESC "
                     "LIMIT 20"
@@ -475,7 +503,7 @@ async def get_platform_metrics(
                         rule_id=rule,
                         description=_POLICY_DESCRIPTIONS.get(rule, f"Policy rule {rule}"),
                         occurrences=data["count"],
-                        last_seen=str(data["last_seen"]),
+                        last_seen=timestamp_text(data["last_seen"]) or "",
                     )
                 )
         except Exception as exc:
@@ -494,7 +522,7 @@ async def get_platform_metrics(
             t = totals.mappings().fetchone()
             if t:
                 total_entries = t["total"] or 0
-                last_activity = str(t["last_at"]) if t["last_at"] else None
+                last_activity = timestamp_text(t["last_at"])
                 if total_entries > 0:
                     overall_approval_rate = round((t["approved"] or 0) / total_entries, 3)
         except Exception as exc:
@@ -551,19 +579,20 @@ async def get_drift_alerts(
       - The REQUIRES_ESCALATION verdict was triggered (indicates state anomaly)
     """
     alerts: list[DriftAlert] = []
-    cutoff = (datetime.now(UTC) - timedelta(hours=24)).isoformat()
+    cutoff = datetime.now(UTC) - timedelta(hours=24)
 
     try:
         async with CloudSqlFactory.get_session_factory()() as session:
             rows = await session.execute(
-                text(
+                typed_text(
                     "SELECT id, agent_id, guardian_verdict, policy_rules_cited, "
                     "session_id, created_at "
                     "FROM audit_log "
                     "WHERE guardian_verdict IN ('REJECTED', 'REQUIRES_ESCALATION') "
                     "  AND created_at >= :cutoff "
                     "ORDER BY created_at DESC "
-                    "LIMIT 50"
+                    "LIMIT 50",
+                    cutoff=TIMESTAMP,
                 ),
                 {"cutoff": cutoff},
             )
@@ -599,7 +628,7 @@ async def get_drift_alerts(
                                 f"REQUIRES_ESCALATION — agent circuit breaker or "
                                 f"double-rejection detected."
                             ),
-                            detected_at=str(row["created_at"]),
+                            detected_at=timestamp_text(row["created_at"]) or "",
                             affected_fragment_ids=[],
                         )
                     )
@@ -619,7 +648,7 @@ async def get_drift_alerts(
                                 f"Guardian rule {rule} triggered {len(entries)} times in 24h. "
                                 f"Rule: {desc}"
                             ),
-                            detected_at=str(entries[0]["created_at"]),
+                            detected_at=timestamp_text(entries[0]["created_at"]) or "",
                             affected_fragment_ids=[
                                 e["session_id"] for e in entries if e.get("session_id")
                             ][:5],

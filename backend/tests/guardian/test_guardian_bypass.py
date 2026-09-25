@@ -23,6 +23,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.db.types import TIMESTAMP, UUID_ARRAY, typed_text
 from src.exceptions import GuardianBlockedError
 from src.semantic_layer.models import (
     CynefinDomain,
@@ -34,6 +35,23 @@ pytestmark = pytest.mark.guardian
 
 
 # ── 1. Direct DB write without verdict raises IntegrityError ──────────────────
+
+
+#: A causal_edges row written straight to the table, bypassing the registry. The
+#: array columns are bound as arrays (UUID[] on PostgreSQL, JSON text on SQLite),
+#: so what refuses the row is the verdict FK the tests are about, not its shape.
+_INSERT_EDGE = typed_text(
+    "INSERT INTO causal_edges "
+    "(id, source_id, source_type, target_id, target_type, "
+    " edge_type, direction, confidence, evidence_refs, assumption_refs, "
+    " approval_status, guardian_verdict_ref, version, lineage, domain, created_at) "
+    "VALUES "
+    "(:id, :src, 'CausalEntity', :tgt, 'Outcome', "
+    " 'CAUSES', 'FORWARD', :confidence, :refs, :refs, "
+    " 'DRAFT', :verdict_ref, '1.0.0', '[]', 'devops', :ts)",
+    refs=UUID_ARRAY,
+    ts=TIMESTAMP,
+)
 
 
 @pytest.mark.asyncio
@@ -56,20 +74,13 @@ async def test_semantic_layer_write_blocked_without_verdict(
 
     with pytest.raises((IntegrityError, OperationalError, Exception)) as exc_info:
         await db_session.execute(
-            text(
-                "INSERT INTO causal_edges "
-                "(id, source_id, source_type, target_id, target_type, "
-                " edge_type, direction, confidence, evidence_refs, assumption_refs, "
-                " approval_status, guardian_verdict_ref, version, lineage, domain, created_at) "
-                "VALUES "
-                "(:id, :src, 'CausalEntity', :tgt, 'Outcome', "
-                " 'CAUSES', 'FORWARD', 0.9, '[]', '[]', "
-                " 'DRAFT', :verdict_ref, '1.0.0', '[]', 'devops', :ts)"
-            ),
+            _INSERT_EDGE,
             {
                 "id": str(uuid4()),
                 "src": str(uuid4()),
                 "tgt": str(uuid4()),
+                "confidence": 0.9,
+                "refs": [],
                 "verdict_ref": fake_verdict_id,
                 "ts": datetime.now(UTC).isoformat(),
             },
@@ -110,20 +121,13 @@ async def test_semantic_layer_write_succeeds_with_approved_verdict(
     blocks invalid ones).
     """
     await db_session.execute(
-        text(
-            "INSERT INTO causal_edges "
-            "(id, source_id, source_type, target_id, target_type, "
-            " edge_type, direction, confidence, evidence_refs, assumption_refs, "
-            " approval_status, guardian_verdict_ref, version, lineage, domain, created_at) "
-            "VALUES "
-            "(:id, :src, 'CausalEntity', :tgt, 'Outcome', "
-            " 'CAUSES', 'FORWARD', 0.85, '[]', '[]', "
-            " 'DRAFT', :verdict_ref, '1.0.0', '[]', 'devops', :ts)"
-        ),
+        _INSERT_EDGE,
         {
             "id": str(uuid4()),
             "src": str(uuid4()),
             "tgt": str(uuid4()),
+            "confidence": 0.85,
+            "refs": [],
             "verdict_ref": str(approved_audit_entry_id),
             "ts": datetime.now(UTC).isoformat(),
         },
@@ -243,8 +247,9 @@ async def test_audit_log_no_update(
         await db_session.commit()
     except Exception:
         # SQLite may raise; PostgreSQL definitely raises via trigger.
-        # Either outcome is acceptable.
-        pass
+        # Either outcome is acceptable. Roll back so the re-read below runs: on
+        # PostgreSQL the failed statement leaves the transaction aborted.
+        await db_session.rollback()
 
     # Re-read and compare. Until 2026-09-24 this test captured `original_action`
     # above, attempted the UPDATE, and then stopped -- so whether the row had

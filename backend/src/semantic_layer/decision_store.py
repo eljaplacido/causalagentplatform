@@ -31,6 +31,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
 from src.db.factory import CloudSqlFactory
+from src.db.types import BOOLEAN, TIMESTAMP, typed_text
 
 if TYPE_CHECKING:
     from causal_decision.assumptions import ModelRef
@@ -91,11 +92,14 @@ class DecisionStore:
         async with CloudSqlFactory.get_session_factory()() as session:
             try:
                 await session.execute(
-                    text(
+                    typed_text(
                         "INSERT INTO decision_records "
                         "(sequence, entry_digest, prev_digest, decision_digest, subject, "
                         " verdict, recorded_at, record) "
-                        "VALUES (:seq, :entry, :prev, :dd, :subject, :verdict, :at, :record)"
+                        "VALUES (:seq, :entry, :prev, :dd, :subject, :verdict, :at, :record)",
+                        # The sealed record keeps recorded_at as the text it hashed; the
+                        # column is an index over it, typed as the time it names.
+                        at=TIMESTAMP,
                     ),
                     {
                         "seq": entry.sequence,
@@ -227,17 +231,19 @@ class DecisionStore:
         async with CloudSqlFactory.get_session_factory()() as session:
             try:
                 await session.execute(
-                    text(
+                    typed_text(
                         "INSERT INTO decision_followups ("
-                    "  entry_digest, decision_digest, kind, decidable, created_at, payload"
-                        ") VALUES (:e, :d, :k, :ok, :at, :p)"
+                        "  entry_digest, decision_digest, kind, decidable, created_at, payload"
+                        ") VALUES (:e, :d, :k, :ok, :at, :p)",
+                        ok=BOOLEAN,
+                        at=TIMESTAMP,
                     ),
                     {
                         "e": entry_digest,
                         "d": decision_digest,
                         "k": kind,
                         "ok": decidable,
-                        "at": datetime.now(UTC).isoformat(),
+                        "at": datetime.now(UTC),
                         "p": payload.model_dump_json(),
                     },
                 )

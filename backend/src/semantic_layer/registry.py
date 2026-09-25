@@ -35,6 +35,7 @@ from sqlalchemy import bindparam, column, select, table, text, update
 from sqlalchemy.exc import IntegrityError
 
 from src.db.factory import CloudSqlFactory
+from src.db.types import TEXT_ARRAY, TIMESTAMP, UUID_ARRAY, timestamp_text, typed_text
 from src.exceptions import GuardianBlockedError, InvalidTransitionError, ObjectNotFoundError
 from src.semantic_layer.models import (
     ApprovalStatus,
@@ -130,7 +131,9 @@ async def _assert_verdict_approved(
         verdict=str(verdict_status),
         action_type=record["action_type"],
         agent_id=record["agent_id"],
-        created_at=created_at if isinstance(created_at, str) else created_at.isoformat(),
+        # TIMESTAMPTZ comes back as a datetime, SQLite's column as the text written;
+        # timestamp_text renders both as the ISO text the Guardian signed.
+        created_at=timestamp_text(created_at) or "",
     )
     if not verdict_verify(statement, record["signature"]):
         raise GuardianBlockedError(
@@ -163,15 +166,16 @@ async def _assert_verdict_approved(
 
     try:
         await session.execute(
-            text(
+            typed_text(
                 "INSERT INTO verdict_consumption (verdict_id, subject_id, context, consumed_at) "
-                "VALUES (:vid, :sid, :ctx, :ts)"
+                "VALUES (:vid, :sid, :ctx, :ts)",
+                ts=TIMESTAMP,
             ),
             {
                 "vid": str(verdict_id),
                 "sid": str(subject_id),
                 "ctx": context,
-                "ts": datetime.now(UTC).isoformat(),
+                "ts": datetime.now(UTC),
             },
         )
     except IntegrityError as exc:
@@ -684,7 +688,7 @@ class SemanticLayerRegistry:
 
             if isinstance(draft, CausalEdge):
                 await session.execute(
-                    text(
+                    typed_text(
                         "INSERT INTO causal_edges ("
                         "  id, source_id, source_type, target_id, target_type, "
                         "  edge_type, direction, confidence, evidence_refs, "
@@ -695,7 +699,10 @@ class SemanticLayerRegistry:
                         "  :edge_type, :direction, :confidence, :evidence_refs, "
                         "  :assumption_refs, :approval_status, :verdict_ref, "
                         "  :version, :lineage, :domain, :created_at"
-                        ")"
+                        ")",
+                        evidence_refs=UUID_ARRAY,
+                        assumption_refs=UUID_ARRAY,
+                        created_at=TIMESTAMP,
                     ),
                     {
                         "id": str(obj_id),
@@ -706,20 +713,20 @@ class SemanticLayerRegistry:
                         "edge_type": _sv(draft.edge_type),
                         "direction": _sv(draft.direction),
                         "confidence": float(draft.confidence),
-                        "evidence_refs": json.dumps([str(e) for e in draft.evidence_refs]),
-                        "assumption_refs": json.dumps([str(a) for a in draft.assumption_refs]),
+                        "evidence_refs": [str(e) for e in draft.evidence_refs],
+                        "assumption_refs": [str(a) for a in draft.assumption_refs],
                         "approval_status": _sv(draft.approval_status),
                         "verdict_ref": str(verdict_id),
                         "version": draft.version,
                         "lineage": json.dumps([r.model_dump() for r in draft.lineage], default=str),
                         "domain": draft.domain,
-                        "created_at": datetime.now(UTC).isoformat(),
+                        "created_at": datetime.now(UTC),
                     },
                 )
 
             elif isinstance(draft, GraphFragment):
                 await session.execute(
-                    text(
+                    typed_text(
                         "INSERT INTO graph_fragments ("
                         "  id, name, domain, description, edge_ids, entry_nodes, "
                         "  exit_nodes, approval_status, version, usage_count, tags, "
@@ -728,14 +735,17 @@ class SemanticLayerRegistry:
                         "  :id, :name, :domain, :description, :edge_ids, :entry_nodes, "
                         "  :exit_nodes, :approval_status, :version, 0, :tags, "
                         "  :verdict_ref, :created_by, :created_at"
-                        ")"
+                        ")",
+                        edge_ids=UUID_ARRAY,
+                        tags=TEXT_ARRAY,
+                        created_at=TIMESTAMP,
                     ),
                     {
                         "id": str(obj_id),
                         "name": draft.name,
                         "domain": draft.domain,
                         "description": draft.description,
-                        "edge_ids": json.dumps([str(e) for e in draft.edges]),
+                        "edge_ids": [str(e) for e in draft.edges],
                         "entry_nodes": json.dumps(
                             [n.model_dump() for n in draft.entry_nodes], default=str
                         ),
@@ -744,16 +754,16 @@ class SemanticLayerRegistry:
                         ),
                         "approval_status": _sv(draft.approval_status),
                         "version": draft.version,
-                        "tags": _sv(draft.tags),
+                        "tags": list(draft.tags),
                         "verdict_ref": str(verdict_id) if verdict_id else None,
                         "created_by": draft.created_by.model_dump_json(),
-                        "created_at": _sv(draft.created_at),
+                        "created_at": draft.created_at,
                     },
                 )
 
             elif isinstance(draft, CausalEntity):
                 await session.execute(
-                    text(
+                    typed_text(
                         "INSERT INTO causal_entities ("
                         "  id, name, entity_type, domain, description, attributes, "
                         "  ontology_version, approval_status, created_by, created_at, tags"
@@ -761,7 +771,9 @@ class SemanticLayerRegistry:
                         "  :id, :name, :entity_type, :domain, :description, "
                         "  :attributes, :ontology_version, :approval_status, "
                         "  :created_by, :created_at, :tags"
-                        ")"
+                        ")",
+                        created_at=TIMESTAMP,
+                        tags=TEXT_ARRAY,
                     ),
                     {
                         "id": str(obj_id),
@@ -776,14 +788,14 @@ class SemanticLayerRegistry:
                         "ontology_version": draft.ontology_version,
                         "approval_status": _sv(draft.approval_status),
                         "created_by": draft.created_by.model_dump_json(),
-                        "created_at": _sv(draft.created_at),
-                        "tags": _sv(draft.tags),
+                        "created_at": draft.created_at,
+                        "tags": list(draft.tags),
                     },
                 )
 
             elif isinstance(draft, Assumption):
                 await session.execute(
-                    text(
+                    typed_text(
                         "INSERT INTO assumptions ("
                         "  id, statement, assumption_type, scope, justification, "
                         "  elicited_from, elicited_by, elicited_at, review_status, domain"
@@ -791,7 +803,8 @@ class SemanticLayerRegistry:
                         "  :id, :statement, :assumption_type, :scope, :justification, "
                         "  :elicited_from, :elicited_by, :elicited_at, :review_status, "
                         "  :domain"
-                        ")"
+                        ")",
+                        elicited_at=TIMESTAMP,
                     ),
                     {
                         "id": str(obj_id),
@@ -803,7 +816,7 @@ class SemanticLayerRegistry:
                         "justification": draft.justification,
                         "elicited_from": _sv(draft.elicited_from),
                         "elicited_by": draft.elicited_by.model_dump_json(),
-                        "elicited_at": _sv(draft.elicited_at),
+                        "elicited_at": draft.elicited_at,
                         "review_status": _sv(draft.review_status),
                         "domain": draft.domain,
                     },
@@ -890,7 +903,7 @@ class SemanticLayerRegistry:
                 )
                 .values(
                     approval_status=bindparam("status"),
-                    approved_at=bindparam("approved_at"),
+                    approved_at=bindparam("approved_at", type_=TIMESTAMP),
                     approved_by=bindparam("approved_by"),
                     guardian_verdict_ref=bindparam("verdict_ref"),
                     lineage=bindparam("lineage"),

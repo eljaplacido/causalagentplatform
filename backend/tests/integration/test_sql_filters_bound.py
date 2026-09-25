@@ -8,7 +8,8 @@ no longer assembled from strings. These tests pin what each rewritten query must
 return, against rows seeded here with known values, so the rewrite is checked
 against the specification rather than against its own output.
 
-Preconditions: the in-memory SQLite schema (db_engine fixture); an authenticated
+Preconditions: the db_engine fixture's schema (SQLite, or PostgreSQL built from
+the migrations when TEST_DATABASE_URL is set); an authenticated
 caller (Firebase verification patched) with the roles each route requires.
 
 Postconditions:
@@ -36,6 +37,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
 from src.api.main import app
+from src.db.types import TEXT_ARRAY, TIMESTAMP, typed_text
 from src.semantic_layer.models import ApprovalStatus, FragmentApprovalStatus
 from src.semantic_layer.registry import SemanticLayerRegistry
 
@@ -43,6 +45,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
     from sqlalchemy.ext.asyncio import AsyncEngine
+    from sqlalchemy.sql.elements import TextClause
 
 pytestmark = pytest.mark.asyncio
 
@@ -78,10 +81,11 @@ async def client(db_engine: AsyncEngine) -> AsyncIterator[AsyncClient]:
             yield ac
 
 
-async def _exec(engine: AsyncEngine, sql: str, rows: list[dict[str, Any]]) -> None:
+async def _exec(engine: AsyncEngine, sql: str | TextClause, rows: list[dict[str, Any]]) -> None:
+    statement = text(sql) if isinstance(sql, str) else sql
     async with engine.begin() as conn:
         for row in rows:
-            await conn.execute(text(sql), row)
+            await conn.execute(statement, row)
 
 
 _COUNTS = {
@@ -95,10 +99,14 @@ async def _count(engine: AsyncEngine, table: str) -> int:
         return int((await conn.execute(text(_COUNTS[table]))).scalar() or 0)
 
 
-_AUDIT_SQL = (
+# Seed rows are bound with the column types (src/db/types.py), as the app's own
+# writes are, so they insert on SQLite and PostgreSQL alike.
+_AUDIT_SQL = typed_text(
     "INSERT INTO audit_log (id, agent_id, action_type, payload_hash, guardian_verdict, "
     "policy_rules_cited, session_id, created_at) "
-    "VALUES (:id, :agent, :action, :payload, :verdict, '[]', :session, :at)"
+    "VALUES (:id, :agent, :action, :payload, :verdict, :rules, :session, :at)",
+    rules=TEXT_ARRAY,
+    at=TIMESTAMP,
 )
 
 
@@ -108,7 +116,7 @@ def _audit(
 ) -> dict[str, Any]:
     return {
         "id": str(uuid4()), "agent": agent, "action": action, "payload": payload,
-        "verdict": verdict, "session": session, "at": at,
+        "verdict": verdict, "session": session, "at": at, "rules": [],
     }
 
 
@@ -163,10 +171,11 @@ async def test_audit_log_agent_id_injection_matches_nothing(
 # ── GET /api/v1/incidents/ ────────────────────────────────────────────────────
 
 
-_INCIDENT_SQL = (
+_INCIDENT_SQL = typed_text(
     "INSERT INTO incidents (id, title, severity, status, proposed_interventions, "
     "submitted_by, created_at, updated_at) "
-    "VALUES (:id, :title, 'P2', :status, :ints, 'u1', :at, :at)"
+    "VALUES (:id, :title, 'P2', :status, :ints, 'u1', :at, :at)",
+    at=TIMESTAMP,
 )
 
 
@@ -250,10 +259,11 @@ async def test_decision_incident_injection_matches_nothing(
 
 @pytest_asyncio.fixture
 async def semantic_rows(db_engine: AsyncEngine) -> None:
-    await _exec(db_engine, (
+    await _exec(db_engine, typed_text(
         "INSERT INTO causal_entities (id, name, entity_type, domain, approval_status, "
         "created_by, created_at, approved_by, approved_at) "
-        "VALUES (:id, :name, 'SERVICE', :domain, :status, :by, :at, :aby, :aat)"
+        "VALUES (:id, :name, 'SERVICE', :domain, :status, :by, :at, :aby, :aat)",
+        at=TIMESTAMP, aat=TIMESTAMP,
     ), [
         {"id": str(uuid4()), "name": n, "domain": d, "status": s, "by": _CREATED_BY, "at": at,
          "aby": _CREATED_BY if s == "APPROVED" else None,
@@ -264,9 +274,10 @@ async def semantic_rows(db_engine: AsyncEngine) -> None:
             ("e-fin-draft", "finance", "DRAFT", "2026-01-03T00:00:00"),
         ]
     ])
-    await _exec(db_engine, (
+    await _exec(db_engine, typed_text(
         "INSERT INTO graph_fragments (id, name, domain, approval_status, created_by, "
-        "created_at) VALUES (:id, :name, :domain, :status, :by, :at)"
+        "created_at) VALUES (:id, :name, :domain, :status, :by, :at)",
+        at=TIMESTAMP,
     ), [
         {"id": str(uuid4()), "name": n, "domain": d, "status": s, "by": _CREATED_BY, "at": at}
         for n, d, s, at in [
@@ -275,17 +286,20 @@ async def semantic_rows(db_engine: AsyncEngine) -> None:
             ("f-dev-old", "devops", "DEPRECATED", "2026-01-03T06:00:00"),
         ]
     ])
-    await _exec(db_engine, (
+    await _exec(db_engine, typed_text(
         "INSERT INTO assumptions (id, statement, assumption_type, justification, "
         "elicited_from, elicited_by, elicited_at, review_status, domain) "
         "VALUES (:id, :st, 'STRUCTURAL', 'seeded justification', 'DOMAIN_EXPERT', "
-        ":by, :at, :status, :domain)"
+        ":by, :at, :status, :domain)",
+        at=TIMESTAMP,
     ), [
         {"id": str(uuid4()), "st": st, "domain": d, "status": s, "by": _CREATED_BY, "at": at}
         for st, d, s, at in [
             ("a-dev-pending", "devops", "PENDING", "2026-01-02T00:00:00"),
             ("a-fin-pending", "finance", "PENDING", "2026-01-01T00:00:00"),
-            ("a-dev-done", "devops", "VALIDATED", "2026-01-03T00:00:00"),
+            # Not PENDING. It said VALIDATED, which ReviewStatus and the CHECK in
+            # 001_initial.sql do not allow; SQLite's schema has no CHECK to refuse it.
+            ("a-dev-done", "devops", "ACCEPTED", "2026-01-03T00:00:00"),
         ]
     ])
 
