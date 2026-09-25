@@ -26,7 +26,7 @@ def test_the_pre_registration_is_the_one_this_gate_runs(cfg: dict[str, Any]) -> 
 def test_estimates_are_unbiased_and_intervals_cover(cfg: dict[str, Any]) -> None:
     reports, failures = t8.check_estimation(cfg)
     assert not failures, failures[:8]
-    assert {r.id for r in reports} == set(cfg["estimation"]["designs"])
+    assert {r.id for r in reports} == set(cfg["estimation"]["designs"]) | {"long_carryover"}
 
 
 def test_designs_the_method_cannot_answer_are_refused(cfg: dict[str, Any]) -> None:
