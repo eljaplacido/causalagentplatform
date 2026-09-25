@@ -37,6 +37,8 @@ The LLM proposes; statistics decide. Recommended flow:
 When the question is whether to *do* something, use causal_decide instead of steps 3-4: it
 analyses and rules in one call, so the evidence cannot change between the two, and it returns
 a verdict (act, act_with_approval, experiment, refuse) with an explanation you can relay.
+When the graph behind an earlier answer changes, call causal_impact with the old and new graph
+and the adjustment set the earlier analysis used: it says whether that answer still stands.
 Never state a causal effect that no tool returned, and never act on your own reading of an
 estimate: the verdict is the tool's, not yours. If the outcome is a refusal, say so and
 relay its `missing_information`.
@@ -63,6 +65,34 @@ if tools.HAS_DECISION:
         tools.causal_decide,
         "Decide whether an action is justified: act, approve, experiment or refuse",
     )
+    TOOLS["causal_impact"] = (
+        tools.causal_impact,
+        "Does a revised graph break an earlier estimate? holds / invalidated / unverified",
+    )
+
+
+def _strip_prose(node: Any) -> Any:
+    if isinstance(node, dict):
+        return {k: _strip_prose(v) for k, v in node.items() if k not in ("description", "title")}
+    if isinstance(node, list):
+        return [_strip_prose(v) for v in node]
+    return node
+
+
+def _slim_output_schema(server: MCPServer, name: str) -> None:
+    """Drop descriptions and titles from a tool's OUTPUT schema; keep them on its input.
+
+    The Python SDK's stdio client reads each message as one line with a 64 KiB limit, and
+    the tool listing is one message. The output schemas embed the whole outcome contract --
+    causal_decide's alone was 34 KB -- so the listing reached 62.9 KB with five tools and
+    the sixth pushed it over, failing every call from such a client. The structure stays
+    (clients validate against it); the prose is what the causal://schemas resources and
+    conformance/causal-claims already publish in full. Input schemas keep every word,
+    because that is what an agent reads to call a tool correctly.
+    """
+    tool = server._tool_manager.get_tool(name)  # noqa: SLF001 -- mcp 2.2 exposes no setter
+    if tool is not None and tool.output_schema is not None:
+        tool.__dict__["output_schema"] = _strip_prose(tool.output_schema)
 
 
 def build_server() -> MCPServer:
@@ -74,6 +104,7 @@ def build_server() -> MCPServer:
     )
     for name, (fn, title) in TOOLS.items():
         server.add_tool(fn, name=name, title=title, annotations=READ_ONLY, structured_output=True)
+        _slim_output_schema(server, name)
 
     schemas = json_schemas()
 

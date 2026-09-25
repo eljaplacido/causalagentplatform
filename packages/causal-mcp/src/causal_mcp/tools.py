@@ -317,6 +317,7 @@ try:
         decide,
         explain,
     )
+    from causal_decision.assumptions import Impact, diff, edge_key, impact
 
     HAS_DECISION = True
 except ImportError:  # pragma: no cover - exercised by the packaging test
@@ -431,3 +432,65 @@ if HAS_DECISION:
         out = cc.analyze(frame, graph, query=query, policy=pol)
         d = decide(out, request, dpol)
         return DecideResponse(decision=d, outcome=out, explanation=explain(d, out))
+
+    class GraphChange(BaseModel):
+        """What the revision changed, as edge labels ("a -> b", "a <-> b")."""
+
+        added_edges: list[str]
+        removed_edges: list[str] = Field(
+            description="Each is a new assumption: that the effect it described does not exist."
+        )
+        changed_edges: list[str] = Field(description="Same edge; origin or review status changed.")
+
+    class ImpactResponse(BaseModel):
+        """Whether the estimate made under the old graph survives the revision, and what changed.
+
+        The diff is edge labels rather than full edge objects: the tool's schema stays small
+        enough for clients that cap a tool listing's size.
+        """
+
+        impact: Impact | None = None
+        changes: GraphChange | None = None
+        refusal: str | None = None
+
+    def causal_impact(
+        old_graph: str,
+        new_graph: str,
+        treatment: str,
+        outcome: str,
+        adjust_for: list[str] | None = None,
+        unmeasured: list[str] | None = None,
+    ) -> ImpactResponse:
+        """Ask whether a revised causal graph breaks an estimate made under the old one.
+
+        Call this whenever the graph behind an earlier analysis or decision changes: an
+        edge added, removed or reversed, a hidden confounder declared. The answer is
+        `holds` (the old estimate is still valid if the new graph is true), `invalidated`
+        (re-analyse before relying on anything that used it), `unverified` (a front-door,
+        IV or proximal estimate whose certificate changed: re-analyse), or, when the old
+        graph could not identify the effect, `gained` / `still_unidentified`.
+
+        Pass `adjust_for` as the adjustment set the original analysis USED (its certificate's
+        `adjustment_set`), so that set is judged -- not whatever the new graph would suggest.
+        Pass `unmeasured` for graph nodes the data had no column for. "The kernel still picks
+        back-door" and "the new adjustment set is valid" are NOT the same as "the old estimate
+        stands"; this tool answers the last one, and it is what a verdict depends on.
+        """
+        try:
+            query = CausalQuery(
+                treatment=treatment,
+                outcome=outcome,
+                adjust_for=tuple(adjust_for) if adjust_for else None,
+            )
+            got = impact(old_graph, new_graph, query, unmeasured=unmeasured or ())
+            d = diff(parse_graph(old_graph), parse_graph(new_graph))
+            return ImpactResponse(
+                impact=got,
+                changes=GraphChange(
+                    added_edges=[edge_key(e) for e in d.added_edges],
+                    removed_edges=[edge_key(e) for e in d.removed_edges],
+                    changed_edges=[c.edge for c in d.changed_edges],
+                ),
+            )
+        except (GraphSyntaxError, IdentificationError, InvalidAdjustmentSet, ValueError) as exc:
+            return ImpactResponse(refusal=f"{type(exc).__name__}: {exc}"[:2000])

@@ -151,3 +151,36 @@ def test_declared_segments_reach_the_verdict() -> None:
     )
     assert not harmed.passed and "P3" in harmed.detail
     assert "P3" in seeing.explanation
+
+
+def test_impact_says_a_new_confounder_breaks_the_old_estimate() -> None:
+    new = GRAPH + "; backlog -> playbook; backlog -> minutes"
+    resp = tools.causal_impact(GRAPH, new, "playbook", "minutes", adjust_for=["load"])
+    assert resp.impact is not None and resp.impact.status.value == "invalidated"
+    assert resp.changes is not None
+    assert resp.changes.added_edges == ["backlog -> minutes", "backlog -> playbook"]
+
+
+def test_impact_holds_for_an_irrelevant_revision_and_refuses_a_broken_graph() -> None:
+    held = tools.causal_impact(GRAPH, GRAPH + "; season -> load", "playbook", "minutes")
+    assert held.impact is not None and held.impact.status.value == "holds"
+    bad = tools.causal_impact(GRAPH, "a -> b; b -> a", "playbook", "minutes")
+    assert bad.impact is None and bad.refusal
+
+
+def test_the_server_registers_the_impact_tool_with_the_decision_layer() -> None:
+    assert "causal_impact" in server.TOOLS
+
+
+def test_the_tool_listing_stays_small_enough_for_line_limited_clients() -> None:
+    """The stdio client reads one JSON line per message with a 64 KiB limit; a listing
+    over it fails every call. Adding causal_impact first pushed it over (62.9 KB before)."""
+    import asyncio
+
+    listed = asyncio.run(server.build_server().list_tools())
+    size = sum(len(t.model_dump_json(exclude_none=True, by_alias=True)) for t in listed)
+    assert size < 55_000, f"tools/list is {size} bytes; the stdio line limit is 65,536"
+    assert all(t.input_schema for t in listed)
+    decide = next(t for t in listed if t.name == "causal_decide")
+    assert "segment_by" in (decide.description or ""), "the tool's own prose is untouched"
+    assert "title" in str(decide.input_schema), "input schemas are not slimmed"
