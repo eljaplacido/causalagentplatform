@@ -170,6 +170,57 @@ async def test_check_then_approve_promotes_the_object(
     assert "governance-test-001" in str(record["approved_by"])
 
 
+async def test_the_governance_pages_own_requests_approve_an_object(
+    gov_client: AsyncClient, db_session: AsyncSession, db_engine: object
+) -> None:
+    """The exact bodies frontend/src/app/governance/page.tsx sends, end to end.
+
+    The page's tests mock /check, so they passed while the real endpoint rejected
+    every approval the page could make: it sent neither a domain (PR-006 rejects
+    DISORDER) nor a subject (/approve refuses a verdict bound to nothing). This
+    pins the page's request shape to the backend that has to accept it.
+    """
+    entity = make_causal_entity()
+    await _seed_draft(db_session, entity)
+    reason = "Evidence reviewed; effect is identified and bounded."
+
+    check = await gov_client.post(
+        "/api/governance/check",
+        json={
+            "action_type": "GOVERNANCE_APPROVE",
+            "payload": {
+                "object_id": str(entity.id),
+                "object_type": "CausalEntity",
+                "reason": reason,
+            },
+            "subject_id": str(entity.id),
+            "cynefin_domain": "COMPLICATED",
+        },
+    )
+    assert check.status_code == 200, check.text
+    assert check.json()["verdict"] == "APPROVED", check.json()["reason"]
+
+    resp = await gov_client.post(
+        f"/api/governance/approve/{entity.id}",
+        json={
+            "object_type": "CausalEntity",
+            "verdict_id": check.json()["audit_entry_id"],
+            "notes": reason,
+        },
+    )
+    assert resp.status_code == 200, resp.text
+
+    # And the request the page sent before this fix is refused by the real rule.
+    old = await gov_client.post(
+        "/api/governance/check",
+        json={
+            "action_type": "GOVERNANCE_APPROVE",
+            "payload": {"object_id": str(entity.id), "object_type": "CausalEntity"},
+        },
+    )
+    assert old.json()["policy_rules_cited"] == ["PR-006"]
+
+
 async def test_the_same_verdict_cannot_approve_twice(
     gov_client: AsyncClient, db_session: AsyncSession, db_engine: object
 ) -> None:

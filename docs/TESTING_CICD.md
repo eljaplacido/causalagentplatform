@@ -53,7 +53,7 @@ it does not block on is **ADVISORY** (today only `doc-reconciliation`).
 | one step per `packages/*/pyproject.toml` | That package's own `pytest`, in its own environment | Exit 0, at least one test passed, and **no test skipped**: every skip these suites can produce is a registered gate that did not run, so a skip fails the step. `causal-core` is always named in the summary, RAN or NOT RUN |
 | `<package>-mypy`, one per package | mypy with the package's own strict config, via the ratchet | Findings ≤ its `mypy-<package>` entry in `scripts/lint-baseline.json`, which is 0 for all three; a package with no entry fails |
 | `gate-scope` | `scripts/gate_scope.py identity-all` | Every skill module is imported by a test, every tool of both MCP servers (the legacy one live, causal-mcp's from its `TOOLS` table) and every state-changing route is referenced by one, and every route is mounted, apart from the known gaps named in `scripts/gate-scope-floors.json` |
-| `status-claims` | `scripts/status_claims.py` | `docs/CURRENT_STAGE.md` and `conformance/declared_not_implemented.json` agree with each other and with the tree |
+| `status-claims` | `scripts/status_claims.py` | `docs/CURRENT_STAGE.md` and `conformance/declared_not_implemented.json` agree with each other and with the tree; every citation quotes its line verbatim, and every `fixed_in` commit is in HEAD's history (a squash or rebase that orphaned it fails) |
 | `contract-parity` | `scripts/contract_parity.py` | The shared enumerations agree across `models.py`, `packages/semantic-types` and `frontend/src/lib/types.ts`, apart from the divergences named in `scripts/contract-parity.json` |
 | `doc-figures` | `scripts/doc_figures.py` | Every benchmark figure the docs quote, as bound in `scripts/doc-figures.json`, matches the value in that benchmark's standing run |
 | `doc-reconciliation` | `scripts/doc_reconciliation.py` | Its manifest is sound (FAIL otherwise). When a tracked doc is owed a re-read, because the code it describes moved or it was never read, the step is **ADVISORY** rather than PASS |
@@ -130,7 +130,9 @@ because they are not implemented (registers `scm-counterfactuals`, `causal-disco
 
 - **Vitest + React Testing Library** (`src/**/__tests__/*.test.tsx`). Covers the
   `ThinkingIndicator` latency contract, `ApprovalPanel`, `InterventionCard`, and the governance
-  and incidents pages. The page tests pin the fail-closed contract. The governance page shows
+  and incidents pages. The page tests pin the fail-closed contract. They mock the API, so the governance page's
+  request bodies are also pinned against the real endpoints by a backend integration test
+  (`test_the_governance_pages_own_requests_approve_an_object`). The governance page shows
   only backend-confirmed decisions and audit rows, and the incidents page leaves a decision
   unchanged and shows the error when the API call fails.
   There is no coverage threshold.

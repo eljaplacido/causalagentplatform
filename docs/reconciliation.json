@@ -32,12 +32,12 @@
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "frontend/package.json": "328e50541f6341ef44bdb0664d818c5de9c95444d15fa3cc19d076f971e4303e",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "1bc297b116958b27ac7c49b81df448e80b12c358de44ad0f7d41e2511a0e69d9"
+          "docs/CURRENT_STAGE.md": "1963237211b8f5b66597213a07ba49cc57513d002f362ba17f7f55992d2c5f1a"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-26: re-read for role, route and domain claims; none made here, the CURRENT_STAGE change is the RBAC rows)"
+        "by": "Claude (septa-46: README makes no governance-page or approval-flow claim)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -57,15 +57,15 @@
           "conformance/declared_not_implemented.json": "4cfb946e9bcb2a1cb029338943a93648b266d3cd27f18efb41cc0af461f7aaec",
           "backend/src": "702821656c47f0e7081d45b2d48b9569cfb34f76df0d050f2579532a2460eb29",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "af073b75d594021aa3dc0a645bb56e2c8571cd84db2503d462443d40070d430f",
-          "frontend/src": "c3df3902912a569630231693995f5c926c4cb423d035a970635e86fe2e2b5845",
+          "backend/tests": "9b83a8a160ce3ae99ad4d8044a12a7fd284deaf130cb5bdfdcccd821fcb50661",
+          "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
           "packages": "91f77cd79719455dfa2732448800475a6beaeb538fe71298be4048fb67683ae5",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-26: RBAC row implemented, RLS and provenance rows added, governance bullet, gates table re-measured at db89e78)"
+        "by": "Claude (septa-46: approval-flow row names the page contract test)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -311,12 +311,12 @@
         "on": "2026-09-25",
         "sha256": {
           ".github/workflows": "041c8f41439f099603e2603010f35037b9b7c31006bda40713975a42d1b5b201",
-          "backend/tests": "af073b75d594021aa3dc0a645bb56e2c8571cd84db2503d462443d40070d430f",
+          "backend/tests": "9b83a8a160ce3ae99ad4d8044a12a7fd284deaf130cb5bdfdcccd821fcb50661",
           "backend/pyproject.toml": "ce3b260f18a72cb95508b54b0fdfc567c4501c6efd12616ec8379832b943acb5",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
           ".gnomon/ci.sh": "eff52277bd3b1621e25fe69ed849a59e1381ad6b6ee61aabf208e71d1130a43c",
-          "scripts": "3f41ba74504fc60c7718a4638f30964aaa86e9656ae1dd3e125a74bc1613783f",
+          "scripts": "ed1f7052ef160696de8406bb8c42e969faa20ffd20482f2a2222828e3f96945b",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "3dcea1af4dd3bbdd68778cbb91715e1663c850fb9681fe42096b50d1145550dc",
           "packages/causal-core/tests": "25b07f6046c1a2d7a690aaa44890558a98c42d05990e9d28b28f802a3ab40885",
@@ -325,7 +325,7 @@
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-26: integration row names test_rbac_matrix.py; routes-tested gaps closed in gate-scope-floors.json)"
+        "by": "Claude (status-claims row: fixed_in must be an ancestor of HEAD)"
       }
     },
     "docs/UIX.md": {
@@ -336,12 +336,12 @@
       "baseline": {
         "on": "2026-09-25",
         "sha256": {
-          "frontend/src": "c3df3902912a569630231693995f5c926c4cb423d035a970635e86fe2e2b5845"
+          "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-25: re-read for PR-002, /check request fields, risk score and cycle count; frontend change is a prop comment in EpistemicConfidenceBadge)"
+        "by": "Claude (septa-46: ApprovalPanel domain choice; governance persona and inventory re-read)"
       }
     },
     "docs/ROADMAP.md": {
@@ -356,12 +356,12 @@
         "sha256": {
           "packages/causal-core/src/causal_core": "80232957daa4ee016f5c040dec92015c62298b850371a4f142508297e1731b2e",
           "conformance/declared_not_implemented.json": "4cfb946e9bcb2a1cb029338943a93648b266d3cd27f18efb41cc0af461f7aaec",
-          "docs/CURRENT_STAGE.md": "1bc297b116958b27ac7c49b81df448e80b12c358de44ad0f7d41e2511a0e69d9"
+          "docs/CURRENT_STAGE.md": "1963237211b8f5b66597213a07ba49cc57513d002f362ba17f7f55992d2c5f1a"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-26: p0 list marks septa-26 done at the application layer, RLS still open)"
+        "by": "Claude (septa-46: p0 list notes the governance Approve fix)"
       }
     },
     "SECURITY.md": {

@@ -155,6 +155,7 @@ describe("GovernancePage — approve calls the backend and waits for it", () => 
     renderPage();
     await selectFirstItem(user);
     await user.click(screen.getByTestId("approve-button"));
+    await user.selectOptions(screen.getByTestId("approval-domain"), "COMPLICATED");
     await user.type(screen.getByLabelText(/approval reason/i), REASON);
     await user.click(screen.getByTestId("confirm-approval"));
 
@@ -166,9 +167,14 @@ describe("GovernancePage — approve calls the backend and waits for it", () => 
         REASON
       );
     });
+    // The verdict names the object it authorises and carries the approver's
+    // classification: without them the real backend rejects (PR-006) and
+    // /approve refuses a verdict bound to nothing.
     expect(governanceApiMock.check).toHaveBeenCalledWith({
       action_type: "GOVERNANCE_APPROVE",
       payload: { object_id: ITEM_ID, object_type: "CausalEdge", reason: REASON },
+      subject_id: ITEM_ID,
+      cynefin_domain: "COMPLICATED",
     });
 
     // Approve request still in flight → nothing claims success yet
@@ -226,6 +232,7 @@ describe("GovernancePage — backend failure never marks the item approved", () 
     renderPage();
     await selectFirstItem(user);
     await user.click(screen.getByTestId("approve-button"));
+    await user.selectOptions(screen.getByTestId("approval-domain"), "COMPLICATED");
     await user.type(screen.getByLabelText(/approval reason/i), REASON);
     await user.click(screen.getByTestId("confirm-approval"));
 
@@ -260,6 +267,7 @@ describe("GovernancePage — backend failure never marks the item approved", () 
     renderPage();
     await selectFirstItem(user);
     await user.click(screen.getByTestId("approve-button"));
+    await user.selectOptions(screen.getByTestId("approval-domain"), "COMPLICATED");
     await user.click(screen.getByTestId("confirm-approval"));
 
     const alert = await screen.findByTestId("approval-error");

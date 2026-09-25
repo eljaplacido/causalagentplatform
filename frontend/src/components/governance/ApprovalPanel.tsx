@@ -31,7 +31,24 @@ import {
 } from "lucide-react";
 import { cn, formatConfidence } from "@/lib/utils";
 import { CynefinBadge } from "@/components/shared/CynefinBadge";
-import type { ReviewQueueItem, Evidence, StatisticalTestResult, Assumption } from "@/lib/types";
+import type {
+  ReviewQueueItem,
+  Evidence,
+  StatisticalTestResult,
+  Assumption,
+  CynefinDomain,
+} from "@/lib/types";
+
+/**
+ * The situations an approver may declare. DISORDER is not offered: it means
+ * "not classified", and Guardian rule PR-006 refuses to approve in it.
+ */
+export const APPROVAL_DOMAINS: readonly Exclude<CynefinDomain, "DISORDER">[] = [
+  "CLEAR",
+  "COMPLICATED",
+  "COMPLEX",
+  "CHAOTIC",
+];
 
 export interface ApprovalPanelProps {
   item: ReviewQueueItem | null;
@@ -39,7 +56,7 @@ export interface ApprovalPanelProps {
    * Must resolve ONLY once the backend has confirmed the approval and reject
    * otherwise. The success state is shown only after this resolves.
    */
-  onApprove: (id: string, reason: string) => Promise<void>;
+  onApprove: (id: string, reason: string, cynefinDomain: CynefinDomain) => Promise<void>;
   /** Same contract as onApprove, for rejections. */
   onReject: (id: string, reason: string) => Promise<void>;
   /**
@@ -266,6 +283,10 @@ export function ApprovalPanel({
 }: ApprovalPanelProps) {
   const [mode, setMode] = useState<"idle" | "approve" | "reject">("idle");
   const [reason, setReason] = useState("");
+  // The approver's classification of the situation. Guardian reads it (PR-003,
+  // PR-006); nothing pre-selects it, so an approval always carries a human's
+  // judgement rather than a default that happens to pass.
+  const [cynefinDomain, setCynefinDomain] = useState<CynefinDomain | "">("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Set ONLY after onApprove/onReject resolved, i.e. the backend confirmed the
   // decision. Keyed by item so a confirmation never bleeds onto another item.
@@ -279,6 +300,7 @@ export function ApprovalPanel({
     setTrackedItemId(itemId);
     setMode("idle");
     setReason("");
+    setCynefinDomain("");
     setError(null);
     // itemId === null happens when the decided item drops out of the refetched
     // queue — keep the confirmation visible in that case.
@@ -296,7 +318,8 @@ export function ApprovalPanel({
     setError(null);
     try {
       if (kind === "approve") {
-        await onApprove(target.id, reason);
+        if (!cynefinDomain) return;
+        await onApprove(target.id, reason, cynefinDomain);
       } else {
         await onReject(target.id, reason);
       }
@@ -307,6 +330,7 @@ export function ApprovalPanel({
       });
       setMode("idle");
       setReason("");
+      setCynefinDomain("");
     } catch (err) {
       // Fail closed: keep the item and the typed reason as they were, show why.
       setError(formatDecisionError(kind, err));
@@ -318,6 +342,7 @@ export function ApprovalPanel({
   function handleReset() {
     setMode("idle");
     setReason("");
+    setCynefinDomain("");
     setError(null);
     setConfirmed(null);
   }
@@ -451,6 +476,33 @@ export function ApprovalPanel({
               {mode === "approve" ? "Approval reason" : "Rejection reason"}{" "}
               <span className="text-muted-foreground">(recorded in audit trail)</span>
             </label>
+            {mode === "approve" && (
+              <>
+                <label
+                  htmlFor="approval-domain"
+                  className="block text-xs font-semibold text-foreground"
+                >
+                  Situation (Cynefin domain){" "}
+                  <span className="text-muted-foreground">
+                    (required: Guardian does not approve in an unclassified situation)
+                  </span>
+                </label>
+                <select
+                  id="approval-domain"
+                  data-testid="approval-domain"
+                  value={cynefinDomain}
+                  onChange={(e) => setCynefinDomain(e.target.value as CynefinDomain | "")}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="">Choose…</option>
+                  {APPROVAL_DOMAINS.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
             <textarea
               id="approval-reason"
               value={reason}
@@ -526,7 +578,7 @@ export function ApprovalPanel({
             <button
               data-testid="confirm-approval"
               onClick={() => void submitDecision("approve")}
-              disabled={isSubmitting || decisionsDisabled}
+              disabled={isSubmitting || decisionsDisabled || !cynefinDomain}
               className={cn(
                 "flex flex-1 items-center justify-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold",
                 "bg-green-600 text-white hover:bg-green-700",

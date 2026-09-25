@@ -54,15 +54,19 @@ These are the steps `.github/workflows/ci.yml` runs. Running and launching the p
 ## The gate
 
 ```bash
-bash .gnomon/ci.sh
+bash .gnomon/ci.sh        # or: septacore check  (the same gate, declared in .septacore.json)
 ```
 
 This is the one command that decides whether a change passes, and it is what CI runs. It runs every
 step even after one fails and ends with a per-step table: the backend suite and its coverage floor,
 the ruff and mypy ratchets, the frontend (tsc, vitest), each package's suite including the
-pre-registered gates, gate scope, status claims, contract parity and doc reconciliation. A step that
-inspected nothing fails; a SKIPPED step names what was absent, and CI refuses unexpected skips. Put
-the summary table in your PR description.
+pre-registered gates, gate scope, status claims, contract parity, doc figures and doc
+reconciliation. A step that inspected nothing fails; a SKIPPED step names what was absent. It exits
+0 (every step ran and passed), 1 (a step failed), 2 (a step was skipped: not measured, which is not
+a pass) or 3 (docs are owed a re-read). Only 0 is done; CI fails on 1 and 2 and warns on 3. Put the
+summary table in your PR description.
+
+What to work on comes from the ledger: `septacore ready` lists `.beads/issues.jsonl` by priority.
 
 The ratchets (`scripts/coverage-floor.json`, `scripts/lint-baseline.json`) only move one way. If
 your change improves a number, move the committed value in the same change; moving one the wrong
@@ -119,7 +123,14 @@ Details: [`.gnomon/skills/register-hygiene.md`](.gnomon/skills/register-hygiene.
 ## Branches, commits and pull requests
 
 - Branch from `main` with a descriptive prefix (`feat/`, `fix/`, `docs/`, `chore/`, `refactor/`,
-  `test/`). Rebase, don't merge, when bringing `main` into your branch.
+  `test/`), one branch and one PR per piece of work. A change that needs another unmerged one is
+  a stacked PR, based on that branch and retargeted to `main` when it merges.
+- Commit SHAs are cited: a register entry's `fixed_in`, a benchmark result's `git`. So history
+  that has been cited is never rewritten. Rebase a branch onto `main` only before anything cites
+  one of its commits, never force-push `main`, and merge PRs with a **merge commit** -- never
+  squash or rebase-merge, which would orphan every SHA the branch recorded.
+  `scripts/status_claims.py` fails a `fixed_in` that is not an ancestor-reachable commit.
+- A PR merges when CI's gate is green (exit 0; exit 3 only with the owed readings named).
 - Commit subjects follow `<type>(<scope>): <short summary>`, with `<type>` one of `feat`, `fix`,
   `refactor`, `docs`, `test`, `chore`, `perf`, `build`, `ci`. The body explains *why*.
 - A PR says what changed, why, and how it was verified, and includes the `ci.sh` summary table.
