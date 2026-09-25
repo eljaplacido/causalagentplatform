@@ -458,7 +458,7 @@ export default function IncidentsPage() {
                 <li key={incident.id}>
                   <button
                     onClick={() => setSelectedIncidentId(incident.id)}
-                    aria-selected={isSelected}
+                    aria-current={isSelected ? "true" : undefined}
                     className={cn(
                       "flex w-full flex-col gap-1.5 border-b border-border px-4 py-3 text-left",
                       "hover:bg-muted/40 transition-colors",

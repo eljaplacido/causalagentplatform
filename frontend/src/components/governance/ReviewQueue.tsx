@@ -174,7 +174,7 @@ export function ReviewQueue({
                       onSelectItem(item);
                     }
                   }}
-                  aria-selected={isSelected}
+                  aria-current={isSelected ? "true" : undefined}
                   className={cn(
                     "cursor-pointer border-b border-border last:border-0 transition-colors",
                     "hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",

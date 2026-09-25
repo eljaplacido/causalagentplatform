@@ -21,7 +21,7 @@ import {
   AlertCircle,
   DollarSign,
 } from "lucide-react";
-import { cn, formatConfidence } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { GuardianVerdictBadge } from "@/components/shared/GuardianVerdictBadge";
 import { EpistemicConfidenceBadge } from "@/components/shared/EpistemicConfidenceBadge";
 import type { Intervention } from "@/lib/types";

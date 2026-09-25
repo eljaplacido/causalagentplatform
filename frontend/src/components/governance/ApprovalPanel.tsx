@@ -31,7 +31,6 @@ import {
 } from "lucide-react";
 import { cn, formatConfidence } from "@/lib/utils";
 import { CynefinBadge } from "@/components/shared/CynefinBadge";
-import { GuardianVerdictBadge } from "@/components/shared/GuardianVerdictBadge";
 import type { ReviewQueueItem, Evidence, StatisticalTestResult, Assumption } from "@/lib/types";
 
 export interface ApprovalPanelProps {

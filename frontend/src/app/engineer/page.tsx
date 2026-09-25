@@ -151,7 +151,7 @@ function ConnectorCard({
         !connector.healthy && "border-red-300 dark:border-red-800"
       )}
       onClick={() => onSelect(connector.connectorId)}
-      aria-selected={isSelected}
+      aria-current={isSelected ? "true" : undefined}
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-2">

@@ -22,7 +22,6 @@ import React, { useCallback, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { ApprovalStatus } from "@causalplatform/semantic-types";
 import type { CynefinDomain } from "@/lib/types";
-import { GuardianVerdictBadge } from "@/components/shared/GuardianVerdictBadge";
 import { CynefinBadge } from "@/components/shared/CynefinBadge";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -143,7 +142,6 @@ export function DAGCanvas({
   className,
 }: DAGCanvasProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [tooltipNode, setTooltipNode] = useState<DAGNode | null>(null);
 
   const isChaotic = cynefinDomain === "CHAOTIC";
@@ -166,12 +164,6 @@ export function DAGCanvas({
     }
     return defaultLayout(nodes, width, height);
   }, [nodes, width, height]);
-
-  const nodeById = useMemo(() => {
-    const m = new Map<string, DAGNode>();
-    nodes.forEach((n) => m.set(n.id, n));
-    return m;
-  }, [nodes]);
 
   const handleNodeClick = useCallback(
     (node: DAGNode) => {
@@ -304,7 +296,6 @@ export function DAGCanvas({
             const pos = positions.get(node.id);
             if (!pos) return null;
             const isSelected = selectedNodeId === node.id;
-            const isHovered = hoveredNodeId === node.id;
             const borderColour = isSelected
               ? NODE_TYPE_COLOUR[node.nodeType]
               : NODE_COLOUR[node.approvalStatus];
@@ -316,16 +307,14 @@ export function DAGCanvas({
                 transform={`translate(${pos.x}, ${pos.y})`}
                 role="button"
                 tabIndex={0}
-                aria-selected={isSelected}
+                aria-current={isSelected ? "true" : undefined}
                 aria-label={`Node: ${node.label}, type: ${node.nodeType}, status: ${node.approvalStatus}`}
                 onClick={() => handleNodeClick(node)}
                 onKeyDown={(e) => handleNodeKey(e, node)}
                 onMouseEnter={() => {
-                  setHoveredNodeId(node.id);
                   setTooltipNode(node);
                 }}
                 onMouseLeave={() => {
-                  setHoveredNodeId(null);
                   setTooltipNode(null);
                 }}
                 className="cursor-pointer"
