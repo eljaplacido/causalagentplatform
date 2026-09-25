@@ -114,6 +114,7 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 |---|---|---|---|
 | DAG Workbench (unified graph authoring) | `planned` | [dni:dag-workbench](../conformance/declared_not_implemented.json) | Not built |
 | The frontend narrows on the canonical vocabulary | `implemented` | [frontend/src/lib/\_\_tests\_\_/types-parity.test.ts](../frontend/src/lib/__tests__/types-parity.test.ts) | `EvidenceType` imported from the contract package; the queue's status renamed `ReviewQueueStatus`, a view model |
+| The TypeScript contract package matches the backend models field for field | `declared-not-implemented` | [dni:semantic-types-field-divergence](../conformance/declared_not_implemented.json) | Hand-written; seven interfaces declare fields the models lack |
 | Shared enumerations mean the same thing in backend, contract package and frontend | `implemented` | [backend/tests/unit/test_contract_parity.py](../backend/tests/unit/test_contract_parity.py) | 18 of 18 shared names agree; `scripts/contract-parity.json` lists no divergence, and a new one fails the gate |
 
 ## Fixed items (moved off the register)

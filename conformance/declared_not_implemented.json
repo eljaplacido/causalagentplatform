@@ -785,6 +785,37 @@
         "path": "backend/tests/integration/test_drift_pipeline_data.py",
         "asserts": "the periodic sensor, run over a fragment whose stored baseline differs from current data by a known shift, raises a drift alert carrying the measured divergence -- and does not for an unshifted copy"
       }
+    },
+    {
+      "id": "semantic-types-field-divergence",
+      "status": "declared-not-implemented",
+      "capability": "The published TypeScript contract matches the backend models field for field",
+      "claimed_in": [
+        {
+          "at": "docs/ADR-001-canonical-semantic-layer.md:28",
+          "says": "MUST implement these core types with exact field alignment"
+        },
+        {
+          "at": "docs/ADR-001-canonical-semantic-layer.md@13e7d92:104",
+          "says": "TypeScript interfaces generated from / aligned to the canonical schema"
+        }
+      ],
+      "reality": "packages/semantic-types/src/entities.ts is written by hand, not generated, and seven of its interfaces declare fields models.py does not have. Treatment, Confounder and Mediator add description, domain, approvalStatus, createdBy, createdAt and lineage; Outcome adds the same plus units; CausalEdge adds createdBy and createdAt; GraphFragment adds approvedBy, approvedAt and lineage; Intervention adds description, domain, graphFragmentRef and approvalReason. A client typed against the package expects fields the API never sends. scripts/contract_parity.py checks only the shared enumerations, not interface fields.",
+      "evidence": [
+        {
+          "at": "packages/semantic-types/src/entities.ts:205",
+          "says": "  createdBy: UserRef;"
+        },
+        {
+          "at": "backend/src/semantic_layer/models.py:397",
+          "says": "class CausalEdge(BaseModel):"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/unit/test_contract_fields.py",
+        "asserts": "for every interface in packages/semantic-types/src/entities.ts, the camelCased field set equals the field set of the same-named model in models.py (or the TypeScript is generated from the models)"
+      }
     }
   ],
   "left_the_list": [
