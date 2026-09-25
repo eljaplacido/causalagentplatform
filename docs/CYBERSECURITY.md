@@ -5,7 +5,7 @@
 > **This is the target security design, not a description of the running code.** The threat
 > model (§2) and incident classes (§9) are the reference for triage. Most controls in the other
 > sections are not built yet, and each section says so. What is enforced today (authentication,
-> the two role checks, verdict binding, audit immutability) is in the root
+> the role matrix and domain scope, verdict binding, audit immutability) is in the root
 > [`SECURITY.md`](../SECURITY.md#what-is-enforced-today). Controls this document once described
 > as in place, and which are not, are listed in
 > [`conformance/declared_not_implemented.json`](../conformance/declared_not_implemented.json)
@@ -105,8 +105,10 @@ An agent or user attempts to write to the semantic layer without a Guardian verd
 A lower-privilege user or agent attempts to access or modify resources above their permission tier.
 
 **Mitigations:**
-- **Partial:** RBAC at the API layer covers four governance routes, two intervention-decision
-  routes and the model-review route (§4). **Target:** RBAC at the database and semantic layers.
+- **In place:** RBAC at the API layer: one role matrix covers every state-changing route and
+  the audit, review-queue, provenance and semantic-layer reads (§4.0), and domain scope bounds
+  what a user sees of the semantic layer (§4.2). **Target:** the same checks at the database
+  layer; the RLS policies declared there bind nothing (register `rls-policies-bind-nothing`).
 - **Target:** agent identities as service accounts with scoped permissions. Agents run
   in-process today and have no identity of their own.
 - **Target:** re-authentication on human escalation paths.
@@ -141,8 +143,9 @@ return await call_next(request)
 ```
 
 The local-dev bypass needs all three conditions. The mock user carries the roles
-`governance_officer`, `platform_engineer`, `analyst` and `sre`, so under the bypass every role
-check passes.
+`governance_officer`, `platform_engineer`, `analyst` and `sre`, and every row of the role
+matrix grants at least one of them, so under the bypass every role check passes. It carries no
+`domains` claim, so (holding `governance_officer`) it sees every domain.
 
 ### 3.2 Service-to-Service Authentication
 
@@ -177,23 +180,57 @@ All internal service calls use **short-lived tokens** issued by the identity ser
 ### 4.0 What is enforced
 
 Roles come from the Firebase token's custom claims (`roles`, a list, or `role`, a string).
-Exactly two role sets are checked (`require_role` in `backend/src/middleware/auth.py`):
+One matrix, `ROUTE_ROLES` in `backend/src/middleware/rbac.py`, maps each route below, by
+method and full path, to the roles that may call it; holding one of them is enough. Every
+state-changing route of the API is a row, and each route depends on its row through
+`guard(method, path)`. `backend/tests/integration/test_rbac_matrix.py` walks the mounted app
+and fails on a state-changing route without a row, then checks every row: a token holding no
+granted role gets 403, a token holding a granted role does not.
 
-| Role set | Members | Routes |
-|---|---|---|
-| `GOVERNANCE_ROLES` (`api/governance.py`) | `governance_officer`, `platform_engineer` | `POST /api/governance/approve/{id}`, `POST /api/governance/reject/{id}`, `GET /api/governance/review-queue`, `GET /api/governance/audit-log`, `POST /api/v1/models/{name}/reviews` (`api/models.py`, which also refuses a reviewer on their own edges) |
-| `DECISION_ROLES` (`api/interventions.py`) | `governance_officer`, `platform_engineer`, `sre` | `POST /api/v1/interventions/{id}/approve`, `POST /api/v1/interventions/{id}/reject` |
+| Route | Roles |
+|---|---|
+| `GET /api/semantic/entities[/{id}]`, `/fragments[/{id}]`, `/edges/{id}[/audit-trail]` | any platform role; a `viewer` reads APPROVED objects only; bounded by domain scope (§4.2) |
+| `POST /api/semantic/drafts` | `analyst`, `graph_author`, `platform_engineer`, `agent` (`DRAFT_ROLES`); only into the user's domains |
+| `POST /api/governance/check` | `graph_author`, `governance_officer`, `platform_engineer`, `agent` |
+| `POST /api/governance/approve/{id}`, `/reject/{id}`, `GET /review-queue`, `GET /audit-log` | `governance_officer`, `platform_engineer` (`GOVERNANCE_ROLES`); approve, reject and the queue bounded by domain scope |
+| `POST /api/v1/models/{name}/reviews` | `GOVERNANCE_ROLES`; a reviewer is also refused on edges they introduced |
+| `POST /api/v1/models`, `POST /api/v1/models/{name}/versions` | `DRAFT_ROLES` |
+| `POST /api/v1/decisions`, `POST /api/v1/decisions/{digest}/followup` | `analyst`, `governance_officer`, `platform_engineer`, `sre` |
+| `POST /api/v1/interventions/{id}/approve`, `/reject`, `POST /api/v1/interventions/feedback` | `governance_officer`, `platform_engineer`, `sre` (`DECISION_ROLES`) |
+| `POST /api/v1/session/run`, `/incident`, `POST /api/v1/decisions/verify-anchored`, `POST /api/v1/platform/evaluation/calibration` | any platform role |
+| `GET /api/v1/provenance/trace/{id}`, `/export/{id}`, `/invocations/{id}`, `DELETE /api/v1/provenance/session/{id}` | `GOVERNANCE_ROLES` |
 
-Every other route needs only a valid token. That includes state-changing ones:
-`POST /api/semantic/drafts`, `POST /api/governance/check`, `POST /api/v1/decisions` and its
-`/followup`, `POST /api/v1/models` and `/{name}/versions`, `POST /api/v1/interventions/feedback`,
-`POST /api/v1/session/run` and `/incident`, and `DELETE /api/v1/provenance/session/{id}`
-(register `rbac-matrix-and-domain-isolation`).
+"Any platform role" is one of `viewer`, `analyst`, `graph_author`, `governance_officer`,
+`platform_engineer`, `agent`, `sre`: a valid token with none of them is refused. Every other
+read (decisions, models, incidents, interventions, platform metrics, session state) needs only
+a valid token.
+
+Where §4.1 does not say, these are the least-privilege choices made:
+
+- **Decisions and follow-ups** write the decision ledger, so they need a role that may save a
+  run (`analyst`, §4.1 "Run, save"), the operational decider (`sre`), or a governance role.
+  `viewer`, `graph_author` and `agent` may not record decisions.
+- **Model create and revise** propose edges, which is a draft (§4.1 "Graph Write"): the
+  drafting roles. A `governance_officer` reviews models and does not author them; a person who
+  should do both holds both roles.
+- **Intervention feedback** records what an intervention did; whoever may decide one may
+  record its outcome (`DECISION_ROLES`).
+- **`/api/governance/check`** issues the verdicts that authorise writes. §4.1 gives `agent` a
+  read-only check and `graph_author` "submit"; `analyst` drafts through `/drafts`, which runs
+  its own check, and gets no direct `/check`.
+- **Sessions** run the platform graph; §4.1 gives every role "Run".
+- **Provenance** is read like the audit log (governance roles only), and its erasure (a test
+  cleanup route) needs a governance role. It still erases: provenance is not append-only
+  (register `provenance-not-append-only`).
+- **`graph_author` "Audit Log: Read own"** is not provided: the audit log stays governance-only.
+- **`sre`** is not in §4.1. It is the incident-commander role that decides interventions, and
+  it reads all of the semantic layer.
 
 ### 4.1 Platform Roles
 
-> **Status:** target design. The roles `viewer`, `analyst`, `graph_author` and `agent` are
-> checked nowhere.
+> **Status:** in effect at the API layer, as the matrix in §4.0 implements it. The
+> Connectors column has no routes (no connector runs), and `graph_author`'s "Read own" audit
+> access is not provided.
 
 | Role | Semantic Layer | Simulation | Graph Write | Governance | Connectors | Audit Log |
 |---|---|---|---|---|---|---|
@@ -206,15 +243,34 @@ Every other route needs only a valid token. That includes state-changing ones:
 
 ### 4.2 Attribute-Based Overrides
 
-> **Status:** target design, not in effect (register `rbac-matrix-and-domain-isolation`).
+> **Status:** in effect at the application layer; not at the database layer (register
+> `rls-policies-bind-nothing`).
 
 Domain isolation: a `domain` attribute on every semantic object restricts cross-domain reads to users with explicit cross-domain grants. A DevOps analyst cannot read supply chain causal graphs without an explicit grant from the Governance Officer.
+
+What enforces it is the token's `domains` claim, a list of domain names
+(`domain_scope` in `backend/src/middleware/rbac.py`), applied in the semantic API and in the
+registry's queries:
+
+- Entities, edges and fragments are listed, and read by id, only inside the user's domains.
+  An object outside them is 404, not 403, so its existence is not disclosed. An edge's audit
+  trail follows its edge.
+- The review queue lists, and approve and reject act on, only objects inside the reviewer's
+  domains.
+- A draft into a domain outside the user's is refused (403) before the Guardian runs, so it
+  writes no audit row.
+- **No `domains` claim** means every domain for `governance_officer` and `platform_engineer`,
+  and no domain at all for every other role: fail closed. A claim that is present binds every
+  role, including those two. A malformed claim is the empty set.
+- The grant itself is a custom claim set in the identity provider; the platform has no route
+  that issues one.
+- Causal models (`/api/v1/models`), decisions and sessions carry no domain and are not scoped.
 
 Migration `001_initial.sql` declares row-level-security policies on `causal_entities` and
 `causal_edges` that read `current_setting('app.user_domains')` and `app.user_role`. No
 application code sets either. RLS does not apply to the table owner, which is the role
 `docker-compose.yml` connects as, so the policies isolate nothing. Connecting as `causal_app`
-would instead hide every row.
+would instead hide every row. `graph_fragments` has no policy.
 
 ---
 

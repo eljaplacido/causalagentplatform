@@ -52,7 +52,7 @@ from src.semantic_layer.verdict import claim as verdict_claim
 from src.semantic_layer.verdict import verify as verdict_verify
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Collection, Sequence
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -336,6 +336,30 @@ def _sv(v: Any) -> Any:
     return v
 
 
+# ── Domain scope ──────────────────────────────────────────────────────────────
+#
+# `domains` on a read is the caller's domain scope (src.middleware.rbac.domain_scope):
+# None reads every domain, a set reads only those. An object outside the scope is
+# reported as not found, never as forbidden, so a scoped user cannot probe for the
+# existence of another domain's objects by id.
+
+
+def _domain_condition(domains: Collection[str] | None, params: dict[str, Any]) -> str | None:
+    """A SQL condition restricting `domain` to `domains`, binding into `params`."""
+    if domains is None:
+        return None
+    names = sorted(domains)
+    if not names:
+        return "1 = 0"
+    keys = [f"scope_d{i}" for i in range(len(names))]
+    params.update(dict(zip(keys, names, strict=True)))
+    return "domain IN (" + ", ".join(f":{k}" for k in keys) + ")"
+
+
+def _outside(domains: Collection[str] | None, domain: Any) -> bool:
+    return domains is not None and domain not in domains
+
+
 # ── Registry ──────────────────────────────────────────────────────────────────
 
 
@@ -352,8 +376,10 @@ class SemanticLayerRegistry:
 
     # ── Entity ────────────────────────────────────────────────────────────────
 
-    async def get_entity(self, entity_id: UUID) -> CausalEntity:
-        """Fetch a CausalEntity by ID."""
+    async def get_entity(
+        self, entity_id: UUID, domains: Collection[str] | None = None
+    ) -> CausalEntity:
+        """Fetch a CausalEntity by ID, if it is inside `domains`."""
         async with CloudSqlFactory.get_session_factory()() as session:
             row = await session.execute(
                 text(
@@ -365,7 +391,7 @@ class SemanticLayerRegistry:
                 {"eid": str(entity_id)},
             )
             record = row.mappings().one_or_none()
-        if record is None:
+        if record is None or _outside(domains, record["domain"]):
             raise ObjectNotFoundError(str(entity_id), "CausalEntity")
         raw = _parse_json_fields(
             dict(record), ["attributes", "lineage", "tags", "created_by", "approved_by"]
@@ -376,10 +402,14 @@ class SemanticLayerRegistry:
         self,
         domain: str | None = None,
         status: ApprovalStatus | None = None,
+        domains: Collection[str] | None = None,
     ) -> Sequence[CausalEntity]:
-        """List CausalEntities, optionally filtered by domain and/or status."""
+        """List CausalEntities inside `domains`, optionally filtered by domain and/or status."""
         conditions: list[str] = []
         params: dict[str, Any] = {}
+        scoped = _domain_condition(domains, params)
+        if scoped:
+            conditions.append(scoped)
         if domain:
             conditions.append("domain = :domain")
             params["domain"] = domain
@@ -409,8 +439,10 @@ class SemanticLayerRegistry:
 
     # ── Edge ─────────────────────────────────────────────────────────────────
 
-    async def get_edge(self, edge_id: UUID) -> CausalEdge:
-        """Fetch a CausalEdge by ID."""
+    async def get_edge(
+        self, edge_id: UUID, domains: Collection[str] | None = None
+    ) -> CausalEdge:
+        """Fetch a CausalEdge by ID, if it is inside `domains`."""
         async with CloudSqlFactory.get_session_factory()() as session:
             row = await session.execute(
                 text(
@@ -423,7 +455,7 @@ class SemanticLayerRegistry:
                 {"eid": str(edge_id)},
             )
             record = row.mappings().one_or_none()
-        if record is None:
+        if record is None or _outside(domains, record["domain"]):
             raise ObjectNotFoundError(str(edge_id), "CausalEdge")
         # Reconstruct nested objects and parse JSON fields
         raw = dict(record)
@@ -435,16 +467,18 @@ class SemanticLayerRegistry:
         )
         return CausalEdge.model_validate(raw)
 
-    async def get_edge_audit_trail(self, edge_id: UUID) -> Sequence[AuditEntry]:
-        """Return all audit_log entries associated with a CausalEdge."""
+    async def get_edge_audit_trail(
+        self, edge_id: UUID, domains: Collection[str] | None = None
+    ) -> Sequence[AuditEntry]:
+        """Return all audit_log entries associated with a CausalEdge inside `domains`."""
         async with CloudSqlFactory.get_session_factory()() as session:
             # Get the edge's verdict ref
             edge_row = await session.execute(
-                text("SELECT guardian_verdict_ref FROM causal_edges WHERE id = :eid"),
+                text("SELECT guardian_verdict_ref, domain FROM causal_edges WHERE id = :eid"),
                 {"eid": str(edge_id)},
             )
             record = edge_row.mappings().one_or_none()
-            if record is None:
+            if record is None or _outside(domains, record["domain"]):
                 raise ObjectNotFoundError(str(edge_id), "CausalEdge")
 
             verdict_id = record["guardian_verdict_ref"]
@@ -465,8 +499,10 @@ class SemanticLayerRegistry:
 
     # ── GraphFragment ─────────────────────────────────────────────────────────
 
-    async def get_fragment(self, fragment_id: UUID) -> GraphFragment:
-        """Fetch a GraphFragment by ID."""
+    async def get_fragment(
+        self, fragment_id: UUID, domains: Collection[str] | None = None
+    ) -> GraphFragment:
+        """Fetch a GraphFragment by ID, if it is inside `domains`."""
         async with CloudSqlFactory.get_session_factory()() as session:
             row = await session.execute(
                 text(
@@ -478,7 +514,7 @@ class SemanticLayerRegistry:
                 {"fid": str(fragment_id)},
             )
             record = row.mappings().one_or_none()
-        if record is None:
+        if record is None or _outside(domains, record["domain"]):
             raise ObjectNotFoundError(str(fragment_id), "GraphFragment")
         raw = dict(record)
         raw["edges"] = raw.pop("edge_ids", []) or []
@@ -491,10 +527,14 @@ class SemanticLayerRegistry:
         self,
         domain: str | None = None,
         status: FragmentApprovalStatus | None = None,
+        domains: Collection[str] | None = None,
     ) -> Sequence[GraphFragment]:
-        """List GraphFragments filtered by domain and/or approval status."""
+        """List GraphFragments inside `domains`, filtered by domain and/or approval status."""
         conditions: list[str] = []
         params: dict[str, Any] = {}
+        scoped = _domain_condition(domains, params)
+        if scoped:
+            conditions.append(scoped)
         if domain:
             conditions.append("domain = :domain")
             params["domain"] = domain
@@ -750,6 +790,7 @@ class SemanticLayerRegistry:
         object_type: str,
         verdict_id: UUID,
         approver: UserRef,
+        domains: Collection[str] | None = None,
     ) -> None:
         """
         Promote a DRAFT / UNDER_REVIEW object to APPROVED status.
@@ -792,11 +833,11 @@ class SemanticLayerRegistry:
             # Postgres but *strings* on SQLite, where it produced '[][{...}]' --
             # not JSON, and nothing read it closely enough to notice.
             current = await session.execute(
-                text(f"SELECT lineage, approval_status FROM {table} WHERE id = :oid"),
+                text(f"SELECT lineage, approval_status, domain FROM {table} WHERE id = :oid"),
                 {"oid": str(object_id)},
             )
             found = current.mappings().one_or_none()
-            if found is None:
+            if found is None or _outside(domains, found["domain"]):
                 raise ObjectNotFoundError(str(object_id), object_type)
             # Checked here, inside the session that spent the verdict, so raising
             # rolls the spend back too. The UPDATE below used to match on id alone,
@@ -850,6 +891,7 @@ class SemanticLayerRegistry:
         verdict_id: UUID,
         rejector: UserRef,
         reason: str,
+        domains: Collection[str] | None = None,
     ) -> None:
         """Mark a draft REJECTED (stored as DEPRECATED), against a real REJECTED verdict.
 
@@ -874,11 +916,11 @@ class SemanticLayerRegistry:
 
             now = datetime.now(UTC)
             current = await session.execute(
-                text(f"SELECT lineage, approval_status FROM {table} WHERE id = :oid"),
+                text(f"SELECT lineage, approval_status, domain FROM {table} WHERE id = :oid"),
                 {"oid": str(object_id)},
             )
             found = current.mappings().one_or_none()
-            if found is None:
+            if found is None or _outside(domains, found["domain"]):
                 raise ObjectNotFoundError(str(object_id), object_type)
             # Without this the guarded UPDATE below matched nothing on an APPROVED
             # object, yet the verdict was spent and the rejection logged as done.
@@ -912,7 +954,7 @@ class SemanticLayerRegistry:
         )
 
     async def list_pending_review_queue(
-        self, limit: int = 50
+        self, limit: int = 50, domains: Collection[str] | None = None
     ) -> list[dict[str, Any]]:
         """
         Return all DRAFT / UNDER_REVIEW objects ordered by risk tier for the
@@ -929,15 +971,18 @@ class SemanticLayerRegistry:
                 ("GraphFragment", "graph_fragments", "name"),
                 ("CausalEntity", "causal_entities", "name"),
             ]:
+                params: dict[str, Any] = {"lim": limit}
+                scoped = _domain_condition(domains, params)
                 rows = await session.execute(
                     text(
                         f"SELECT id, {name_col} AS name, domain, approval_status, created_at "
                         f"FROM {table} "
                         f"WHERE approval_status IN ({', '.join(statuses)}) "
+                        f"{'AND ' + scoped if scoped else ''} "
                         f"ORDER BY created_at ASC "
                         f"LIMIT :lim"
                     ),
-                    {"lim": limit},
+                    params,
                 )
                 for r in rows.mappings():
                     results.append(

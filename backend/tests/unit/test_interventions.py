@@ -37,6 +37,8 @@ _MOCK_USER: dict[str, Any] = {
     "uid": "intervention-test-user",
     "email": "intervention@test.com",
     "name": "Test User",
+    # Closing a feedback loop is a DECISION_ROLES act (src/middleware/rbac.py).
+    "roles": ["sre"],
 }
 
 

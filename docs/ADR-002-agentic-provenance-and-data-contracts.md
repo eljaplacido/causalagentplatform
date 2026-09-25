@@ -46,10 +46,12 @@ Two critical gaps identified from cross-referencing the 2026 standards landscape
    - `GET /api/v1/provenance/trace/{session_id}` — full provenance trace
    - `GET /api/v1/provenance/export/{session_id}` — W3C PROV-JSON export
    - `GET /api/v1/provenance/invocations/{session_id}` — LLM invocation listing
+   - All four provenance routes need a governance role (`governance_officer` or
+     `platform_engineer`; the role matrix, CYBERSECURITY.md §4.0)
    - Provenance store: two module-level dicts in `src/api/provenance.py`, keyed by session id.
      They are not written to any database and are lost on restart. `DELETE
-     /api/v1/provenance/session/{session_id}` clears a session's records and needs only
-     authentication
+     /api/v1/provenance/session/{session_id}` clears a session's records (register
+     `provenance-not-append-only`)
 
 3. **Module `src/agents/llm_factory.py`** extended with:
    - `_ProvenanceCapturingLLM` wrapper that auto-captures LLMInvocation on every call

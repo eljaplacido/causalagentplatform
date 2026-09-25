@@ -94,8 +94,10 @@ platform before new estimators:
 
 - **p0, the platform's own trust boundary.** Done: the Guardian computes the PR-002 score itself,
   from the prose and the kernel outcome it reports, instead of reading it from the caller
-  (`septa-25`). Open: role-based access per route and
-  working domain isolation (`septa-26`); security scanning in the gate (`septa-27`); secrets from
+  (`septa-25`); every state-changing route is checked against one role matrix, and the token's
+  `domains` claim bounds what a user sees of the semantic layer, at the application layer
+  (`septa-26`; the database's RLS policies still bind nothing, register
+  `rls-policies-bind-nothing`). Open: security scanning in the gate (`septa-27`); secrets from
   a secret store, with a rotation path for the Guardian signing key (`septa-28`).
 - **p1, release and drift.** Protect `main` (`septa-1`); a first PyPI release of the three
   packages (`septa-2`); checks that the skills and agent docs name only things that exist

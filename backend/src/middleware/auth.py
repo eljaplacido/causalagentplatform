@@ -237,6 +237,20 @@ async def get_current_user(request: Request) -> dict[str, Any]:
     return user  # type: ignore[return-value]
 
 
+def roles_of(user: dict[str, Any]) -> list[str]:
+    """The roles a decoded token carries: its ``roles`` list (or string) and ``role``."""
+    user_roles: list[str] = []
+    claims = user.get("roles") or []
+    if isinstance(claims, list):
+        user_roles = [r for r in claims if isinstance(r, str)]
+    elif isinstance(claims, str):
+        user_roles = [claims]
+    single_role = user.get("role")
+    if single_role and isinstance(single_role, str):
+        user_roles.append(single_role)
+    return user_roles
+
+
 def require_role(*roles: str) -> Callable[[Request], dict[str, Any]]:
     """
     FastAPI dependency factory: assert the authenticated user has one of the
@@ -256,18 +270,7 @@ def require_role(*roles: str) -> Callable[[Request], dict[str, Any]]:
     """
     async def _checker(request: Request) -> dict[str, Any]:
         user = await get_current_user(request)
-        user_roles: list[str] = []
-
-        claims = user.get("roles") or []
-        if isinstance(claims, list):
-            user_roles = claims
-        elif isinstance(claims, str):
-            user_roles = [claims]
-
-        # Also check single "role" claim
-        single_role = user.get("role")
-        if single_role and isinstance(single_role, str):
-            user_roles.append(single_role)
+        user_roles = roles_of(user)
 
         if not any(r in user_roles for r in roles):
             log.warning(

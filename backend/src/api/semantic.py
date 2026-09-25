@@ -12,6 +12,11 @@ Endpoints:
 
 All write operations require a Guardian APPROVED verdict.  The draft submission
 endpoint runs a governance check inline before persisting.
+
+Access (src/middleware/rbac.py): every route needs a platform role; a viewer
+reads APPROVED objects only; and every read and draft is bounded by the user's
+domain scope. An object outside it is not found (404), so its existence is not
+disclosed. This is enforced here and in the registry's queries, not by RLS.
 """
 
 from __future__ import annotations
@@ -25,7 +30,7 @@ from pydantic import BaseModel, Field
 
 from src.agents.governance import GovernanceAgent
 from src.exceptions import ObjectNotFoundError
-from src.middleware.auth import get_current_user
+from src.middleware.rbac import approved_only, domain_scope, guard, in_scope
 from src.semantic_layer.models import (
     ApprovalStatus,
     Assumption,
@@ -86,15 +91,22 @@ async def list_entities(
         ApprovalStatus | None,
         Query(description="Filter by approval status"),
     ] = None,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/semantic/entities")),
 ) -> list[CausalEntity]:
     """
     List CausalEntity objects, optionally filtered by domain and/or approval status.
 
-    Requires authentication.  Domain-level RLS is enforced at the database layer.
+    Only entities inside the caller's domain scope are listed, and a viewer sees
+    APPROVED ones only.
     """
     log.info("api.semantic.list_entities", domain=domain, status=status)
-    entities = await _registry.list_entities(domain=domain, status=status)
+    if approved_only(user):
+        if status not in (None, ApprovalStatus.APPROVED):
+            return []
+        status = ApprovalStatus.APPROVED
+    entities = await _registry.list_entities(
+        domain=domain, status=status, domains=domain_scope(user)
+    )
     return list(entities)
 
 
@@ -105,13 +117,16 @@ async def list_entities(
 )
 async def get_entity(
     entity_id: UUID,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/semantic/entities/{entity_id}")),
 ) -> CausalEntity:
     """Fetch a single CausalEntity by its UUID."""
     try:
-        return await _registry.get_entity(entity_id)
+        entity = await _registry.get_entity(entity_id, domains=domain_scope(user))
     except ObjectNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    if approved_only(user) and entity.approval_status != ApprovalStatus.APPROVED:
+        raise HTTPException(status_code=404, detail=f"CausalEntity {entity_id} not found")
+    return entity
 
 
 # ── Graph Fragments ───────────────────────────────────────────────────────────
@@ -128,7 +143,7 @@ async def list_fragments(
         FragmentApprovalStatus | None,
         Query(description="Filter by approval status"),
     ] = None,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/semantic/fragments")),
 ) -> list[GraphFragment]:
     """
     List GraphFragment objects.
@@ -137,7 +152,13 @@ async def list_fragments(
     filter allows the UI to show DRAFT fragments in the review queue.
     """
     log.info("api.semantic.list_fragments", domain=domain, status=status)
-    fragments = await _registry.list_fragments(domain=domain, status=status)
+    if approved_only(user):
+        if status not in (None, FragmentApprovalStatus.APPROVED):
+            return []
+        status = FragmentApprovalStatus.APPROVED
+    fragments = await _registry.list_fragments(
+        domain=domain, status=status, domains=domain_scope(user)
+    )
     return list(fragments)
 
 
@@ -148,13 +169,16 @@ async def list_fragments(
 )
 async def get_fragment(
     fragment_id: UUID,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/semantic/fragments/{fragment_id}")),
 ) -> GraphFragment:
     """Fetch a single GraphFragment by its UUID."""
     try:
-        return await _registry.get_fragment(fragment_id)
+        fragment = await _registry.get_fragment(fragment_id, domains=domain_scope(user))
     except ObjectNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    if approved_only(user) and fragment.approval_status != FragmentApprovalStatus.APPROVED:
+        raise HTTPException(status_code=404, detail=f"GraphFragment {fragment_id} not found")
+    return fragment
 
 
 @router.get(
@@ -164,7 +188,7 @@ async def get_fragment(
 )
 async def get_edge(
     edge_id: UUID,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/semantic/edges/{edge_id}")),
 ) -> CausalEdge:
     """Fetch a single CausalEdge by its UUID.
 
@@ -172,10 +196,18 @@ async def get_edge(
     confidence, evidence refs, Guardian verdict ref) starting from the edge IDs
     embedded in a GraphFragment.
     """
+    return await _visible_edge(edge_id, user)
+
+
+async def _visible_edge(edge_id: UUID, user: dict[str, Any]) -> CausalEdge:
+    """The edge, if this user may see it; otherwise 404 (not 403: see the module doc)."""
     try:
-        return await _registry.get_edge(edge_id)
+        edge = await _registry.get_edge(edge_id, domains=domain_scope(user))
     except ObjectNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    if approved_only(user) and edge.approval_status != ApprovalStatus.APPROVED:
+        raise HTTPException(status_code=404, detail=f"CausalEdge {edge_id} not found")
+    return edge
 
 
 # ── Draft submission ──────────────────────────────────────────────────────────
@@ -190,7 +222,7 @@ async def get_edge(
 async def submit_draft(
     body: DraftSubmissionRequest,
     request: Request,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("POST", "/api/semantic/drafts")),
 ) -> DraftSubmissionResponse:
     """
     Submit a new draft causal semantic object.
@@ -249,6 +281,14 @@ async def submit_draft(
     # CausalEdge and Assumption have no such field and are left alone.
     if "created_by" in type(draft_obj).model_fields:
         draft_obj = draft_obj.model_copy(update={"created_by": user_ref})
+
+    # A user drafts only inside their domain scope. Checked before the Guardian
+    # runs, so an out-of-scope attempt writes no verdict to the audit log.
+    if not in_scope(domain_scope(user), draft_obj.domain):
+        raise HTTPException(
+            status_code=403,
+            detail=f"domain '{draft_obj.domain}' is outside this user's domain scope",
+        )
 
     # Build an EpistemicState for the governance check
     state = EpistemicState(
@@ -320,7 +360,7 @@ async def submit_draft(
 )
 async def get_edge_audit_trail(
     edge_id: UUID,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/semantic/edges/{edge_id}/audit-trail")),
 ) -> list[AuditEntry]:
     """
     Return the full audit trail for a CausalEdge.
@@ -329,8 +369,10 @@ async def get_edge_audit_trail(
     edge's guardian_verdict_ref.  This satisfies EU AI Act Art. 13 lineage
     requirements.
     """
+    if approved_only(user):
+        await _visible_edge(edge_id, user)
     try:
-        trail = await _registry.get_edge_audit_trail(edge_id)
+        trail = await _registry.get_edge_audit_trail(edge_id, domains=domain_scope(user))
         return list(trail)
     except ObjectNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc

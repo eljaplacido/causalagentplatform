@@ -84,7 +84,7 @@ Only 0 is done. `.septacore.json` maps the same codes to `passed`, `failed`,
 | Directory | What it holds |
 |---|---|
 | `unit/` | Skills, agents, the registry, the DB factory, connectors (HTTP mocked), MCP tool wrappers, provenance and contract models, planning, evaluation |
-| `integration/` | FastAPI routes through `httpx`: governance approval flow, rejection verdicts, recorded reasons, intervention roles, session API and store, the decision ledger (checkpoints and anchored verification included) and follow-ups, the assumption registry (`/api/v1/models`), and the MCP server over stdio |
+| `integration/` | FastAPI routes through `httpx`: governance approval flow, rejection verdicts, recorded reasons, intervention roles, the role matrix and domain isolation (`test_rbac_matrix.py`: every state-changing route has a row, and is refused without a granted role), session API and store, the decision ledger (checkpoints and anchored verification included) and follow-ups, the assumption registry (`/api/v1/models`), and the MCP server over stdio |
 | `guardian/` | Guardian bypass prevention, verdict binding (signed, subject-bound, single-use), drafts that cannot approve themselves, a risk score and cycle count the caller cannot supply, the `audit_write` skill, and `audit_log` refusing UPDATE and DELETE |
 
 The backend suite runs against the **SQLite** schema (`SQLITE_DDL` in

@@ -32,6 +32,7 @@ from sqlalchemy import text
 
 from src.db.factory import CloudSqlFactory
 from src.middleware.auth import get_current_user
+from src.middleware.rbac import guard
 from src.orchestration.graph import compile_platform_graph
 from src.semantic_layer.registry import SemanticLayerRegistry
 
@@ -723,7 +724,7 @@ async def get_consistency(
 )
 async def post_calibration(
     body: CalibrationRequest,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("POST", "/api/v1/platform/evaluation/calibration")),
 ) -> ProbeResponse:
     """
     Evaluate whether agent confidence scores are calibrated.

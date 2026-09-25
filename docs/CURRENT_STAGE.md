@@ -18,7 +18,7 @@ This page replaces an earlier version that marked "Phase 1" finished. A Septembe
 - **What is still heuristic, and labelled so.** `counterfactual_reason` and `intervention_estimate` return triage scores with `heuristic: true` and a caveat. No counterfactual is computed. Rosenbaum bounds and discovery are not implemented.
 - **The kernel's own limits** are on the register too: triangulation at moderate n, overlap detection and general-ID estimation.
 - **LLMs.** No LLM is called anywhere. The agents are rule-based code.
-- **Governance.** A Guardian verdict now authorises exactly one write: it is signed by the issuer, names the object it was issued for, and is spent on use, so it cannot be forged by inserting a row, replayed against a second write, or pointed at a different object. The `/check` → `/approve` flow completes through the API when the caller classifies the situation; an unclassified one is still refused by PR-006. The numbers the rules judge are the platform's: PR-002 scores the submitted narrative against the kernel outcome it reports, and a request that supplies its own score or cycle count is refused. Approving or rejecting records what the person said, as text, in a row that is deliberately unsigned so a record of a decision can never be spent as authority for the next one. Deciding an intervention now needs a governance role, and the `audit_write` skill records a request as PENDING instead of letting an agent write down that it passed.
+- **Governance.** A Guardian verdict now authorises exactly one write: it is signed by the issuer, names the object it was issued for, and is spent on use, so it cannot be forged by inserting a row, replayed against a second write, or pointed at a different object. The `/check` → `/approve` flow completes through the API when the caller classifies the situation; an unclassified one is still refused by PR-006. The numbers the rules judge are the platform's: PR-002 scores the submitted narrative against the kernel outcome it reports, and a request that supplies its own score or cycle count is refused. Approving or rejecting records what the person said, as text, in a row that is deliberately unsigned so a record of a decision can never be spent as authority for the next one. Every state-changing route is now checked against one role matrix (`backend/src/middleware/rbac.py`), and a token's `domains` claim bounds which semantic objects its holder lists, reads, drafts into and reviews; the database's own row-level security still binds nothing. Deciding an intervention needs a governance role, and the `audit_write` skill records a request as PENDING instead of letting an agent write down that it passed.
 - **Gates.** `.gnomon/ci.sh` is the gate, and GitHub Actions runs that same script: green on `main` (run 36159843491, 19 steps passed, 1 named skip: frontend eslint, which had no config until this branch). The workflow fails on exit 1 or 2, so a skipped step (a broken environment) cannot read as a pass, and turns 3 into a warning. The script exits 0 (passed), 1 (a step failed), 2 (a step could not be measured) or 3 (an advisory regressed: documents are owed a re-read); only 0 is done. `scripts/verify.sh` execs it, and `.septacore.json` declares it as the repository's one blocking step, so `septacore check` runs the same gate.
 
 ## Status
@@ -108,7 +108,9 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 | Runtime data contracts (freshness, schema) enforced by Guardian PR-009 | `declared-not-implemented` | [dni:data-contracts-not-enforced](../conformance/declared_not_implemented.json) | Models only; PR-009 reads violations from the caller's payload |
 | Grounding-risk scoring gating Guardian approval (PR-002) | `implemented` | [backend/tests/guardian/test_risk_score_not_caller_supplied.py](../backend/tests/guardian/test_risk_score_not_caller_supplied.py) | Computed from the narrative and the kernel outcome it reports; `/check` refuses a caller-supplied score or cycle count. Not an "H-Neuron" score: that claim is retracted |
 | Guardian PR-007 blocks edges without a sensitivity result | `declared-not-implemented` | [dni:sensitivity-gate-not-enforced](../conformance/declared_not_implemented.json) | In the rule table, never evaluated |
-| Role-based access per platform role; domain isolation | `partial` | [dni:rbac-matrix-and-domain-isolation](../conformance/declared_not_implemented.json) | Two role sets on seven routes; other writes need only a token; RLS never engaged |
+| Role-based access per platform role, and domain isolation, at the API layer | `implemented` | [backend/tests/integration/test_rbac_matrix.py](../backend/tests/integration/test_rbac_matrix.py) | One matrix (`src/middleware/rbac.py`) for every state-changing route; the token's `domains` claim bounds semantic reads, drafts and reviews. Fixed in `db89e78` |
+| Role and domain checks at the database layer (RLS) | `declared-not-implemented` | [dni:rls-policies-bind-nothing](../conformance/declared_not_implemented.json) | Policies declared; nothing sets `app.user_domains`, and the owner role bypasses them |
+| Provenance records append-only | `declared-not-implemented` | [dni:provenance-not-append-only](../conformance/declared_not_implemented.json) | In-process store; `DELETE /api/v1/provenance/session/{id}` erases, now with a governance role only |
 | Security scanning in CI (SAST, dependency audit, container scan) | `declared-not-implemented` | [dni:security-scanning-not-in-ci](../conformance/declared_not_implemented.json) | Tools declared as dev dependencies; no step runs them |
 | Credentials in a secret manager, not environment variables | `declared-not-implemented` | [dni:secrets-in-env](../conformance/declared_not_implemented.json) | All secrets, including the Guardian signing key, come from env |
 | PII pseudonymization, erasure and export | `declared-not-implemented` | [dni:gdpr-controls](../conformance/declared_not_implemented.json) | None exists |
@@ -166,19 +168,19 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 
 `.gnomon/ci.sh` is the command that decides whether a change passes. It prints PASS, FAIL, SKIPPED or ADVISORY for each step, with a count of what the step inspected, and exits 0, 1, 2 or 3 accordingly (see Summary). The numbers it holds are ratchets. Each file records when and against which commit its number was measured:
 
-| Gate | Committed baseline | Measured 2026-09-25 (at `3756751`) |
+| Gate | Committed baseline | Measured 2026-09-25 (at `db89e78`, the role matrix) |
 |---|---|---|
-| Backend tests (unit, integration, guardian) | at least 500 tests; every test file reports ([`scripts/gate-scope-floors.json`](../scripts/gate-scope-floors.json)) | 651 passed, 47 of 47 files |
-| Backend line coverage, full suite | floor 82.2%, may only rise ([`scripts/coverage-floor.json`](../scripts/coverage-floor.json)) | 82.47% here; 82.30% in CI on `main` (run 36159843491) |
+| Backend tests (unit, integration, guardian) | at least 500 tests; every test file reports ([`scripts/gate-scope-floors.json`](../scripts/gate-scope-floors.json)) | 741 passed, 49 of 49 files |
+| Backend line coverage, full suite | floor 83.0%, may only rise ([`scripts/coverage-floor.json`](../scripts/coverage-floor.json)) | 83.21% here; 82.30% in CI on `main` (run 36159843491) |
 | ruff (backend/) | at most 417 findings, may only fall ([`scripts/lint-baseline.json`](../scripts/lint-baseline.json)) | 417 |
 | ruff (scripts/) | zero | 0 |
 | mypy --strict (backend/src) | at most 39 errors, may only fall | 39 |
 | mypy --strict (each package's src) | zero, per package | 0 for causal-core, causal-decision and causal-mcp |
-| Frontend tsc / vitest | must pass | 54 files typecheck; 62 tests in 8 files |
+| Frontend tsc / vitest | must pass | 50 files typecheck; 62 tests in 8 files |
 | Frontend eslint (`frontend/src`, Next's core-web-vitals and TypeScript rules) | zero findings, may not rise ([`scripts/lint-baseline.json`](../scripts/lint-baseline.json)) | 0 over 44 files |
 | Every Python package under `packages/` | its suite must pass in the package's environment, and a skipped test fails it | causal-core 171 passed (T0, T4, T5, T6, T7 and T8 gates, and T2/T3 with their data cached); causal-decision 118 (D0 and A0); causal-mcp 26 |
 | Skill modules imported by a test | 2 known gaps, may only shrink | 9 of 11 |
-| State-changing routes called by a test | 2 known gaps, may only shrink | 15 of 17 |
+| State-changing routes called by a test | no gaps allowed | 17 of 17 |
 | MCP tools referenced by a test (legacy server) | no gaps allowed | 7 of 7 |
 | MCP tools referenced by a test (`packages/causal-mcp`) | no gaps allowed | 6 of 6 |
 

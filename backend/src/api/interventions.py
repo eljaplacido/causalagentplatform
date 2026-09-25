@@ -32,14 +32,16 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 
 from src.db.factory import CloudSqlFactory
-from src.middleware.auth import get_current_user, require_role
+from src.middleware.auth import get_current_user
+from src.middleware.rbac import DECISION_ROLES, guard
 
 log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/api/v1/interventions", tags=["Interventions"])
 
-#: Who may decide an intervention. Reading them needs only authentication;
-#: deciding one writes a row that says a human approved it.
-DECISION_ROLES = ("governance_officer", "platform_engineer", "sre")
+#: DECISION_ROLES (src/middleware/rbac.py) decide an intervention and record what
+#: it did. Reading them needs only authentication; deciding one writes a row that
+#: says a human approved it.
+__all__ = ["DECISION_ROLES", "router"]
 
 
 # ── Request/Response ──────────────────────────────────────────────────────────
@@ -161,7 +163,7 @@ async def _append_unruled_audit_row(
 )
 async def close_feedback_loop(
     body: FeedbackRequest,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("POST", "/api/v1/interventions/feedback")),
 ) -> FeedbackResponse:
     """
     Record the actual observed effect of an intervention.
@@ -479,7 +481,9 @@ async def _record_decision(
 async def approve_intervention(
     intervention_id: str,
     body: InterventionDecisionRequest,
-    user: dict[str, Any] = Depends(require_role(*DECISION_ROLES)),
+    user: dict[str, Any] = Depends(
+        guard("POST", "/api/v1/interventions/{intervention_id}/approve")
+    ),
 ) -> InterventionDecisionResponse:
     """Approving an intervention is a governance act, so it needs a governance role.
 
@@ -498,7 +502,7 @@ async def approve_intervention(
 async def reject_intervention(
     intervention_id: str,
     body: InterventionDecisionRequest,
-    user: dict[str, Any] = Depends(require_role(*DECISION_ROLES)),
+    user: dict[str, Any] = Depends(guard("POST", "/api/v1/interventions/{intervention_id}/reject")),
 ) -> InterventionDecisionResponse:
     """Rejecting is as much a decision of record as approving, so the same role."""
     return await _record_decision(intervention_id, "REJECTED", body, user)

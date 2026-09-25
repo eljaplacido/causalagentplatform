@@ -43,6 +43,8 @@ _MOCK_USER: dict[str, Any] = {
     "uid": "test-user-001",
     "email": "test@test.com",
     "name": "Test User",
+    # Running a session needs a platform role; every role may (src/middleware/rbac.py).
+    "roles": ["analyst"],
 }
 
 

@@ -44,6 +44,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field, create_model, model_validator
 
 from src.middleware.auth import get_current_user
+from src.middleware.rbac import guard
 from src.semantic_layer.decision_store import (
     DecisionStore,
     FollowUpConflictError,
@@ -175,7 +176,7 @@ class RecordList(BaseModel):
 @router.post("", response_model=DecideResponse, summary="Decide whether an action is justified")
 async def make_decision(
     body: DecideRequest,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("POST", "/api/v1/decisions")),
 ) -> DecideResponse:
     """Analyse, rule, and record -- in that order, in one call.
 
@@ -349,7 +350,8 @@ async def get_checkpoint(user: dict[str, Any] = Depends(get_current_user)) -> Ch
     summary="Verify the chain against checkpoints published earlier",
 )
 async def verify_anchored(
-    body: AnchorRequest, user: dict[str, Any] = Depends(get_current_user)
+    body: AnchorRequest,
+    user: dict[str, Any] = Depends(guard("POST", "/api/v1/decisions/verify-anchored")),
 ) -> AnchorReport:
     """Recompute the chain, then check it still holds every checkpoint you kept.
 
@@ -392,7 +394,7 @@ class FollowUpResponse(BaseModel):
 async def record_followup(
     entry_digest: str,
     body: FollowUpRequest,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("POST", "/api/v1/decisions/{entry_digest}/followup")),
 ) -> FollowUpResponse:
     """Re-run the decision's own analysis over a later window and score the prediction.
 

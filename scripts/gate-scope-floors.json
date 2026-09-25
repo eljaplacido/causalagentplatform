@@ -55,11 +55,8 @@
       "items": []
     },
     "routes-tested": {
-      "why": "State-changing routes no test calls, over HTTP or by handler. The governance and intervention decision routes left this list on 2026-09-21; what remains is a provenance delete and a calibration endpoint.",
-      "items": [
-        "DELETE /api/v1/provenance/session/{session_id}",
-        "POST /api/v1/platform/evaluation/calibration"
-      ]
+      "why": "None today: every state-changing route is called by a test. The governance and intervention decision routes left this list on 2026-09-21; the provenance delete and the calibration probe on 2026-09-25 (tests/integration/test_rbac_matrix.py).",
+      "items": []
     },
     "routes-mounted": {
       "why": "None today: every state-changing handler decorated in backend/src/api/ is mounted on the app.",

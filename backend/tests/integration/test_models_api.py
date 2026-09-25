@@ -28,7 +28,8 @@ if TYPE_CHECKING:
 
 pytestmark = pytest.mark.asyncio
 
-AUTHOR = {"uid": "sre-alice", "email": "a@test.com", "roles": ["sre"]}
+# Proposing a model is a draft (DRAFT_ROLES); deciding on it is sre's (LEDGER_ROLES).
+AUTHOR = {"uid": "sre-alice", "email": "a@test.com", "roles": ["sre", "graph_author"]}
 REVIEWER = {"uid": "gov-carol", "email": "c@test.com", "roles": ["governance_officer"]}
 AUTHOR_WITH_ROLE = {"uid": "sre-alice", "email": "a@test.com", "roles": ["governance_officer"]}
 

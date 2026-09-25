@@ -12,9 +12,11 @@ if the new graph is true?
 The rules -- a revision cannot approve an edge, nobody reviews an edge they
 introduced, a version is built on the head -- are enforced in
 `causal_decision.assumptions` and `src.semantic_layer.model_store`, not here.
-Reviewing is role-gated (GOVERNANCE_ROLES); proposing and revising need only
-authentication, because a proposal authorises nothing: an unreviewed edge makes
-every result on the model `provisional`, and `require_approved_graph` refuses it.
+Reviewing needs a governance role (GOVERNANCE_ROLES); proposing and revising need
+a drafting role (DRAFT_ROLES: analyst, graph_author, platform_engineer, agent),
+because a proposal is a draft: an unreviewed edge makes every result on the model
+`provisional`, and `require_approved_graph` refuses it. The rows are in
+src/middleware/rbac.py.
 """
 
 from __future__ import annotations
@@ -44,8 +46,8 @@ from causal_decision.assumptions import (
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.api.governance import GOVERNANCE_ROLES
-from src.middleware.auth import get_current_user, require_role
+from src.middleware.auth import get_current_user
+from src.middleware.rbac import guard
 from src.semantic_layer.model_store import ModelConflictError, ModelStore
 
 log = structlog.get_logger(__name__)
@@ -148,7 +150,7 @@ async def _append(version: ModelVersion) -> ModelVersion:
 
 @router.post("", response_model=ModelVersion, status_code=201, summary="Register a causal model")
 async def create_model(
-    body: CreateModel, user: dict[str, Any] = Depends(get_current_user)
+    body: CreateModel, user: dict[str, Any] = Depends(guard("POST", "/api/v1/models"))
 ) -> ModelVersion:
     try:
         v1 = create(
@@ -207,7 +209,9 @@ async def get_version(
     summary="Revise a model: a new graph and/or new assumptions",
 )
 async def revise_model(
-    name: str, body: ReviseModel, user: dict[str, Any] = Depends(get_current_user)
+    name: str,
+    body: ReviseModel,
+    user: dict[str, Any] = Depends(guard("POST", "/api/v1/models/{name}/versions")),
 ) -> ModelVersion:
     head = await _version_or_404(name)
     if head.digest != body.parent_digest:
@@ -239,7 +243,7 @@ async def revise_model(
 async def review_model(
     name: str,
     body: ReviewModel,
-    user: dict[str, Any] = Depends(require_role(*GOVERNANCE_ROLES)),
+    user: dict[str, Any] = Depends(guard("POST", "/api/v1/models/{name}/reviews")),
 ) -> ModelVersion:
     head = await _version_or_404(name)
     if head.digest != body.parent_digest:
