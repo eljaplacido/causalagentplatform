@@ -42,14 +42,31 @@ people act on, so these rules are stricter than the ones above:
 
 - Every causal number you state — an effect estimate, a confidence interval,
   an identification verdict, an E-value or sensitivity bound, a p-value, a
-  counterfactual range — must come from a tool result in this session: an
-  `mcp__causal__*` call, a test run, or a script you executed. Quote which
-  call produced it. A causal number you reasoned your way to is a guess
-  formatted as a finding; if no tool produced it, say it is unmeasured.
-- A tool result is provenance, not truth. Several of these tools return graph
-  heuristics or a constant interval. Report the labels the tool attaches
+  counterfactual range, a decision verdict — must come from a tool result in
+  this session: an `mcp__causal_core__*` call, a test run, or a script you
+  executed. Quote which call produced it. A causal number you reasoned your
+  way to is a guess formatted as a finding; if no tool produced it, say it is
+  unmeasured. `mcp__causal__*` is the legacy backend server (heuristic tools,
+  being deprecated): do not cite it for a causal number.
+- The kernel's flow, in order: `causal_check_graph` (draft the graph, read its
+  testable implications) → `causal_identify` (identifiable before any data?)
+  → `causal_analyze`, or `causal_decide` when the question is whether to act
+  → `causal_verify_narrative` on your prose before it reaches anyone. A
+  refusal is a result, not an error: report its reason and its
+  `missing_information`, and do not work around it with your own estimate.
+  The verdict (`act`, `act_with_approval`, `experiment`, `refuse`) is the
+  tool's, never yours.
+- A tool result is provenance, not truth. Report the labels the tool attaches
   (`estimator`, `identification_status`, `sensitivity_labels`) next to the
   number, and check `docs/CURRENT_STAGE.md` before calling a result real.
+- Kernel first. A new causal capability goes into `packages/causal-core` (or
+  `packages/causal-decision`) with a typed contract, influence-function
+  standard errors, a pre-registered benchmark and a seeded-defect negative
+  control — not into `backend/src/skills`, which is not to grow.
+- Pre-registration comes before results. A benchmark's
+  `benchmarks/<gate>/PRE-REGISTRATION.md`, with its TOML bars block, is
+  committed before the run it judges. A failing run is committed too, never
+  deleted. A bar changes only with a version bump and a changelog entry.
 - A test of a causal number asserts it against a known ground truth — data
   simulated from a structural model whose true effect you set — never
   against whatever the code returned last time.

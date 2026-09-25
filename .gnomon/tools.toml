@@ -112,8 +112,10 @@ enabled = true
 # gnomon passes the server only PATH/HOME/TMPDIR/LANG-type variables plus the
 # names in `env`; the server needs no secret, so `env` is empty.
 #
-# A tool RESULT is provenance, not truth: several of these tools return graph
-# heuristics or a constant interval -- see docs/CURRENT_STAGE.md for which.
+# LEGACY, being deprecated in favour of causal_core below. A tool RESULT is
+# provenance, not truth: two of these tools (counterfactual_reason,
+# intervention_estimate) return heuristic triage scores, not effects -- see
+# docs/CURRENT_STAGE.md.
 [mcp_servers.causal]
 transport = "stdio"
 command = "sh"
