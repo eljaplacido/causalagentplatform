@@ -32,7 +32,8 @@ interval and docs marking a phase finished over them.
 2. **Causal numbers come from tools.** Every effect, interval, identification verdict or decision
    you state comes from a tool call, test run or script in this session. With causal-mcp the flow
    is `causal_check_graph` → `causal_identify` → `causal_analyze` (or `causal_decide` when the
-   question is whether to act) → `causal_verify_narrative`. A refusal is a result: relay its
+   question is whether to act) → `causal_verify_narrative`, and `causal_impact` when the graph behind
+   an earlier answer is revised. A refusal is a result: relay its
    reason and `missing_information`. The verdict is the tool's, not yours.
 3. **Pre-register before you measure.** `benchmarks/<gate>/PRE-REGISTRATION.md`, with its TOML
    bars block, is committed before the run it judges. Failing runs are committed, never deleted.

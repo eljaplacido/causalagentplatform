@@ -10,7 +10,7 @@ and binds every number it returns to a claim.
 
 ```bash
 pip install causal-mcp                 # the four evidence tools
-pip install 'causal-mcp[decision]'     # adds causal_decide (installs causal-decision)
+pip install 'causal-mcp[decision]'     # adds causal_decide and causal_impact (installs causal-decision)
 pip install 'causal-mcp[http]'         # adds the HTTP transport (uvicorn)
 
 causal-mcp                        # stdio (default)
@@ -19,9 +19,11 @@ causal-mcp --http --port 8765     # stateless streamable HTTP; needs the [http] 
 
 ## Tools
 
-Four tools are always served, and a fifth, `causal_decide`, when the `[decision]` extra is
-installed (the server checks at import and registers it only then). Every tool is annotated
-read-only and idempotent, and all return typed structured output. The `outputSchema` is the causal
+Four tools are always served, and two more, `causal_decide` and `causal_impact`, when the
+`[decision]` extra is installed (the server checks at import and registers them only then). Every tool is annotated
+read-only and idempotent, and all return typed structured output. Output schemas carry structure
+only (no descriptions), which keeps the tool listing under the 64 KiB line limit of stdio clients;
+the full contract, prose included, is served as the `causal://schemas/*` resources. The `outputSchema` is the causal
 claim contract, published under `conformance/causal-claims/`.
 
 | Tool | Use it to |
@@ -31,6 +33,7 @@ claim contract, published under `conformance/causal-claims/`.
 | `causal_analyze` | Estimate the effect, or receive a typed refusal (`NON_IDENTIFIABLE`, `POSITIVITY`, `WEAK_INSTRUMENT`, …) together with what information would help. |
 | `causal_verify_narrative` | Check prose before it reaches a user. Every number must be a claim from the outcome, and causal wording is allowed only for a `supported` result. |
 | `causal_decide` | *(`[decision]` extra.)* Decide whether a proposed action is justified: analyses and applies the decision policy in one call, so the evidence cannot change between estimate and verdict. Returns one of `act`, `act_with_approval`, `experiment` or `refuse`, the outcome it rested on, and an explanation whose numbers are claims. |
+| `causal_impact` | *(`[decision]` extra.)* Does a revised graph break an earlier answer? Give the old and new graph and the adjustment set the earlier analysis used; returns `holds`, `invalidated` or `unverified` (or `gained` / `still_unidentified`) with the edge-level changes. Checked by the pre-registered A0 gate in `packages/causal-decision`. |
 
 **Recommended flow**, as the server's instructions give it: `causal_check_graph` →
 `causal_identify` → `causal_analyze` → `causal_verify_narrative`, or `causal_decide` in place of

@@ -46,9 +46,9 @@ sustainability investment assurance follow, in that order.
    (`causal_decision.assumptions`, `/api/v1/models`): edges carry their origin and review status,
    a revision cannot approve an edge, nobody reviews an edge they introduced, a decision names the
    version it used, and `impact` says which recorded verdicts a revision invalidates —
-   pre-registered as A0 against an oracle independent of the kernel. Still to do: anchoring the
-   chain's head outside the writer's control (`decision-ledger-not-anchored`), and a
-   `causal_impact` MCP tool so agents can ask the revision question without the backend.
+   pre-registered as A0 against an oracle independent of the kernel. `causal_impact` asks the same
+   question over MCP. Still to do: anchoring the chain's head outside the writer's control
+   (`decision-ledger-not-anchored`).
 3. **The estimators operations actually need.** Segment-level effects are **done**
    (`causal_core.segments`, pre-registered T4: declared subgroups, Bonferroni family-wise
    intervals, Holm across the family, one Cochran's Q before anything is compared). Still to

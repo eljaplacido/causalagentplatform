@@ -28,7 +28,8 @@
     "",
     "What this number is NOT: evidence that any causal number is right. 560 tests",
     "pass and none of them asserts an estimate against a known ground truth.",
-    "Coverage says which lines ran, not whether what they computed is true."
+    "Coverage says which lines ran, not whether what they computed is true.",
+    "Raised 2026-09-25 to 82.2 after this branch's alignment work and the assumption registry measured the full suite at 634 tests, 4781/5806 statements = 82.35%. 0.15 below the measurement: the 2026-09-20 lesson was that CI can read ~0.1 lower than a laptop on the same commit."
   ],
-  "line_percent": 80.6
+  "line_percent": 82.2
 }

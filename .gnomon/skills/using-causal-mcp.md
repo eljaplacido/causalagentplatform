@@ -23,6 +23,10 @@ return triage scores, not effects. Never cite it for a causal number.
    estimate and the verdict. It exists only when causal-mcp is installed with
    the `[decision]` extra; if it is missing from your tool list, say so rather
    than improvising a verdict from `causal_analyze`.
+   When the graph behind an earlier answer changes, call `causal_impact` with
+   the old graph, the new graph and the adjustment set the earlier analysis
+   used (its certificate's `adjustment_set`). "Still back-door" is not "still
+   valid"; only `holds` means the earlier answer stands.
 4. `causal_verify_narrative` -- pass your prose and the `outcome` object
    unchanged before replying. Every number must be a claim from the outcome;
    causal wording ("caused", "will reduce") is allowed only for a `supported`
