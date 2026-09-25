@@ -3,7 +3,7 @@
 **Suite:** T5, staggered-adoption difference-in-differences on simulated panels with known effects
 **System under test:** `packages/causal-core` (`causal_core.panel`, reached through `analyze(...,
 design="difference_in_differences")`)
-**Registered:** 2026-09-25, version 1
+**Registered:** 2026-09-25, version 1; version 2 the same day (see Changelog)
 **Runs:** every PR, via `pytest -m t5` in `packages/causal-core`
 
 ## Status of this document
@@ -34,8 +34,10 @@ parallel — while saying plainly that passing a pre-trends test does not establ
 
 ## Design
 
-**Panels.** `N = 400` units observed in periods `1..8`. Cohort sizes are fixed within a design
-(not drawn), so the true aggregate effect is exact. The outcome is
+**Panels.** `N = 400` units observed in periods `1..8`. Each replication draws every unit's cohort
+independently with the probabilities given by the table's sizes (so `4: 80, …, never: 160` means
+0.2, 0.2, 0.2, 0.4), matching the estimator's inference, which treats units as sampled and cohort
+shares as estimated. (v1 fixed the sizes; see the Changelog.) The outcome is
 
 `Y_it = α_i + λ_t + τ(g_i, t)·1[t ≥ g_i] + ε_it`,
 
@@ -52,8 +54,8 @@ wrong about its uncertainty).
 | `null_effect` | 4: 80, 5: 80, 6: 80, never: 160 | 0 | no effect: coverage of zero |
 | `trends_violated` | 4: 80, 5: 80, 6: 80, never: 160 | 2, plus a cohort-specific linear trend `0.3·(t − 1)` for every treated cohort | parallel trends fails |
 
-**Truth.** The overall ATT is `Σ_{g, t ≥ g} n_g · τ(g, t) / Σ_{g, t ≥ g} n_g` over observed
-post-treatment cells — the same simple aggregation the estimator targets. The event-study truth
+**Truth.** The overall ATT is `Σ_{g, t ≥ g} π_g · τ(g, t) / Σ_{g, t ≥ g} π_g` over observed
+post-treatment cells, with `π_g` the population cohort probabilities — the same simple aggregation the estimator targets. The event-study truth
 `θ(e)` for `e ≥ 0` is the cohort-size-weighted mean of `τ(g, g + e)` over cohorts with `g + e ≤ 8`.
 Pre-period truths are 0 under parallel trends.
 
@@ -83,7 +85,7 @@ Pre-period truths are 0 under parallel trends.
 ```toml
 [meta]
 suite = "T5"
-version = 1
+version = 2
 registered = "2026-09-25"
 
 [panels]
@@ -92,6 +94,7 @@ periods = 8
 reps = 500
 seed = 20260925
 ar1_rho = 0.5
+cohort_membership = "drawn"    # v1: "fixed" (sizes exactly as tabled)
 
 [estimation]
 designs = ["staggered_dynamic", "staggered_constant", "single_cohort", "null_effect"]
@@ -132,3 +135,20 @@ unit variance, over three pre-periods for the latest cohort) is not missed.
 ## Changelog
 
 - v1 (2026-09-25): initial registration.
+- **v2 (2026-09-25): cohort membership is drawn, not fixed. No bar changed.** v1 run 1
+  (`results/2026-09-25-v1-run1.json`) failed: `staggered_dynamic` covered 0.980 overall and 0.979
+  across event times, over the 0.975 ceiling; every other design, every refusal and every seeded
+  defect passed. The estimator's intervals come from influence functions that include the
+  uncertainty of the estimated cohort shares — the right inference when units are sampled and
+  cohort composition is random, which is the situation on real data. v1's panels fixed the sizes,
+  so the gate asked about a composition-conditional estimand the intervals are not for, and the
+  share term, proportional to how much cell effects vary around their average, over-covered in the
+  one design where they vary. On a development seed (not this document's) the same estimator
+  covers 0.948 with drawn membership and 0.975 with fixed sizes, SE 0.113 against an SD of 0.109
+  and 0.093 respectively.
+
+  The alternatives were rejected: widening the band would accept a real over-coverage the gate
+  exists to catch; dropping the share term from the estimator would make intervals too narrow on
+  real data whenever composition is itself random. Disclosed: this change was chosen after seeing
+  v1's result. It changes what the simulation draws, not what any bar requires; the refusal panels
+  keep their fixed sizes, since a "tiny cohort of 3" must be exactly 3.
