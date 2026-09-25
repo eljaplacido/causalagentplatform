@@ -15,25 +15,14 @@
     "",
     "Measured 2026-09-24 at f8f7d0f. Three divergences existed; CausalEntityType",
     "was closed in the same change by adding OTHER to the TypeScript union, which",
-    "was a plain omission. The two that remain are not omissions -- the frontend",
-    "declares a different vocabulary, so closing them is a behaviour change to the",
-    "UI and needs its own commit. Both are on",
-    "conformance/declared_not_implemented.json as `frontend-vocabulary-divergence`."
+    "was a plain omission. The other two were closed 2026-09-25:",
+    "",
+    "  ReviewStatus  the frontend union was never the backend's ReviewStatus (the",
+    "                Assumption review lifecycle) but a review-queue presentation",
+    "                state derived from ApprovalStatus; renamed ReviewQueueStatus.",
+    "  EvidenceType  the local union is gone; frontend/src/lib/types.ts imports",
+    "                the canonical one and the one mock value that used",
+    "                DOCUMENT_CITATION now says DOCUMENT."
   ],
-  "known_divergences": {
-    "ReviewStatus": {
-      "sources": "py+pkg agree; fe differs",
-      "py_and_pkg": ["PENDING", "ACCEPTED", "CONTESTED", "REJECTED"],
-      "fe": ["PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED", "ESCALATED"],
-      "why": "The frontend renders a review lifecycle the backend does not emit. UNDER_REVIEW, APPROVED and ESCALATED are never sent by any endpoint; ACCEPTED and CONTESTED are sent and the frontend has no branch for them. The UI's states appear to be conflated with FragmentApprovalStatus (DRAFT/APPROVED/DEPRECATED), which is a different enum about a different object.",
-      "closes_by": "Deciding which lifecycle is real, in the backend, and making the frontend narrow on that -- then deleting the local declaration and importing from @causalplatform/semantic-types."
-    },
-    "EvidenceType": {
-      "sources": "py+pkg agree; fe differs",
-      "py_and_pkg": ["STATISTICAL_TEST", "DOCUMENT", "EXPERT_KNOWLEDGE", "EXPERIMENT", "SIMULATION"],
-      "fe": ["STATISTICAL_TEST", "DOCUMENT_CITATION", "EXPERT_KNOWLEDGE", "METRIC_OBSERVATION"],
-      "why": "DOCUMENT_CITATION and METRIC_OBSERVATION exist in no backend enum; EXPERIMENT and SIMULATION are emitted and the frontend cannot represent them.",
-      "closes_by": "Deleting the local declaration and importing EvidenceType from @causalplatform/semantic-types, then fixing the call sites the compiler flags."
-    }
-  }
+  "known_divergences": {}
 }

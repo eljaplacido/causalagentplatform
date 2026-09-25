@@ -8,11 +8,12 @@
 
 import type {
   CynefinDomain,
+  EvidenceType,
   GuardianVerdict,
 } from "@causalplatform/semantic-types";
 
 // Re-export canonical enums for convenience
-export type { CynefinDomain, GuardianVerdict };
+export type { CynefinDomain, EvidenceType, GuardianVerdict };
 
 // ─── Confidence level (derived from numeric score) ───────────────────────────
 
@@ -25,16 +26,8 @@ export function toConfidenceLevel(score: number): ConfidenceLevel {
 }
 
 // ─── Causal graph primitives (UI-specific view, not canonical) ────────────────
-
-export interface CausalEdge {
-  id: string;
-  sourceVariable: string;
-  targetVariable: string;
-  edgeType: "DIRECT" | "MEDIATED" | "CONFOUNDED" | "BIDIRECTED";
-  confidence: number; // 0.0 – 1.0
-  evidenceCitations: string[]; // evidence IDs
-  approvalStatus: "DRAFT" | "UNDER_REVIEW" | "APPROVED" | "REJECTED";
-}
+// A causal edge as the backend sends it is CausalEdgeResponse in @/lib/api
+// (EdgeType and ApprovalStatus from @causalplatform/semantic-types).
 
 export interface EdgeProposal {
   id: string;
@@ -68,12 +61,8 @@ export interface Assumption {
 }
 
 // ─── Evidence (canonical type extended for UI) ────────────────────────────────
-
-export type EvidenceType =
-  | "STATISTICAL_TEST"
-  | "DOCUMENT_CITATION"
-  | "EXPERT_KNOWLEDGE"
-  | "METRIC_OBSERVATION";
+// EvidenceType is the canonical one (STATISTICAL_TEST, DOCUMENT,
+// EXPERT_KNOWLEDGE, EXPERIMENT, SIMULATION), the values backend Evidence sends.
 
 export interface Evidence {
   id: string;
@@ -243,7 +232,13 @@ export type ReviewObjectType =
   | "GRAPH_FRAGMENT"
   | "ASSUMPTION"
   | "INTERVENTION";
-export type ReviewStatus =
+/**
+ * How a review-queue row is presented. NOT the backend's ReviewStatus, which is
+ * the Assumption review lifecycle (PENDING/ACCEPTED/CONTESTED/REJECTED): a queue
+ * row is derived from the object's ApprovalStatus (DRAFT → PENDING,
+ * UNDER_REVIEW → UNDER_REVIEW) by mapBackendItem in app/governance/page.tsx.
+ */
+export type ReviewQueueStatus =
   | "PENDING"
   | "UNDER_REVIEW"
   | "APPROVED"
@@ -258,7 +253,7 @@ export interface ReviewQueueItem {
   riskTier: RiskTier;
   submittedBy: string;
   submittedAt: string; // ISO8601
-  status: ReviewStatus;
+  status: ReviewQueueStatus;
   evidenceCitations: Evidence[];
   sensitivityResults: StatisticalTestResult[];
   assumptions: Assumption[];

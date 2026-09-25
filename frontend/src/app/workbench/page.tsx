@@ -30,50 +30,20 @@ import { GitBranch, RefreshCw, AlertTriangle, Search } from "lucide-react";
 
 import { DAGCanvas, type DAGEdge, type DAGNode } from "@/components/graph/DAGCanvas";
 import { PersonaSelector } from "@/components/shared/PersonaSelector";
-import { semanticApi } from "@/lib/api";
+import {
+  semanticApi,
+  type CausalEdgeResponse,
+  type GraphFragmentResponse,
+} from "@/lib/api";
 
-// ── Backend response shapes (camelCase — alias_generator applied) ─────────────
-
-interface BackendFragmentSummary {
-  id: string;
-  name: string;
-  domain: string;
-  description: string;
-  edges: string[];                    // edge UUIDs
-  approvalStatus: "DRAFT" | "APPROVED" | "DEPRECATED";
-  version: string;
-  usageCount: number;
-  tags: string[];
-  createdAt: string;
-}
-
-interface BackendCausalObjectRef {
-  id: string;
-  objectType: string;
-}
-
-interface BackendEdge {
-  id: string;
-  source: BackendCausalObjectRef;
-  target: BackendCausalObjectRef;
-  edgeType: string;
-  direction: string;
-  confidence: number;
-  evidenceRefs: string[];
-  assumptionRefs: string[];
-  approvalStatus: "DRAFT" | "UNDER_REVIEW" | "APPROVED" | "REJECTED";
-  approvedBy: { id: string } | null;
-  approvedAt: string | null;
-  guardianVerdictRef: string;
-  version: string;
-  domain: string;
-}
+// Backend response shapes (camelCase, alias_generator applied) are declared
+// once, in @/lib/api, against the backend pydantic models.
 
 // ── Mock fallback (dev only, gated by env flag) ───────────────────────────────
 
 const ENABLE_MOCK = process.env["NEXT_PUBLIC_ENABLE_MOCK_FALLBACK"] === "true";
 
-const MOCK_FRAGMENT: BackendFragmentSummary = {
+const MOCK_FRAGMENT: GraphFragmentResponse = {
   id: "mock-frag-001",
   name: "deployment_latency_attribution",
   domain: "devops",
@@ -83,10 +53,11 @@ const MOCK_FRAGMENT: BackendFragmentSummary = {
   version: "1.0.0",
   usageCount: 0,
   tags: ["mock"],
+  guardianVerdictRef: "audit-mock-frag",
   createdAt: new Date().toISOString(),
 };
 
-const MOCK_EDGES: Record<string, BackendEdge> = {
+const MOCK_EDGES: Record<string, CausalEdgeResponse> = {
   "mock-edge-001": {
     id: "mock-edge-001",
     source: { id: "deployment_event", objectType: "Treatment" },
@@ -139,25 +110,18 @@ function objectTypeToNodeType(objectType: string): DAGNode["nodeType"] {
   }
 }
 
-function fragmentStatusToNodeStatus(
-  status: BackendFragmentSummary["approvalStatus"]
-): DAGNode["approvalStatus"] {
-  if (status === "DEPRECATED") return "REJECTED";
-  return status as DAGNode["approvalStatus"];
-}
-
 /**
  * Build the unique set of DAG nodes referenced by a fragment's edges.
  * Nodes inherit their approval status from the fragment for visualisation
  * purposes; the edge approval statuses drive edge colouring.
  */
 function buildNodesFromEdges(
-  edges: BackendEdge[],
-  fragment: BackendFragmentSummary | null
+  edges: CausalEdgeResponse[],
+  fragment: GraphFragmentResponse | null
 ): DAGNode[] {
   const seen = new Map<string, DAGNode>();
-  const fragStatus = fragment
-    ? fragmentStatusToNodeStatus(fragment.approvalStatus)
+  const fragStatus: DAGNode["approvalStatus"] = fragment
+    ? fragment.approvalStatus
     : "APPROVED";
 
   for (const edge of edges) {
@@ -175,7 +139,7 @@ function buildNodesFromEdges(
   return Array.from(seen.values());
 }
 
-function backendEdgeToDagEdge(edge: BackendEdge): DAGEdge {
+function backendEdgeToDagEdge(edge: CausalEdgeResponse): DAGEdge {
   return {
     id: edge.id,
     sourceId: edge.source.id,
@@ -205,15 +169,15 @@ export default function WorkbenchPage() {
     isLoading: fragmentsLoading,
     isError: fragmentsError,
     refetch: refetchFragments,
-  } = useQuery<BackendFragmentSummary[]>({
+  } = useQuery<GraphFragmentResponse[]>({
     queryKey: ["semantic", "fragments"],
-    queryFn: () => semanticApi.fragments() as Promise<BackendFragmentSummary[]>,
+    queryFn: () => semanticApi.fragments(),
     retry: 1,
     staleTime: 30_000,
   });
 
   const useMock = ENABLE_MOCK && fragmentsError;
-  const fragments: BackendFragmentSummary[] =
+  const fragments: GraphFragmentResponse[] =
     useMock && !backendFragments ? [MOCK_FRAGMENT] : (backendFragments ?? []);
 
   const dataSource = useMock ? "mock" : backendFragments ? "live" : fragmentsError ? "error" : "loading";
@@ -221,14 +185,14 @@ export default function WorkbenchPage() {
   // ── Selected fragment detail ────────────────────────────────────────────────
   const {
     data: selectedFragment,
-  } = useQuery<BackendFragmentSummary>({
+  } = useQuery<GraphFragmentResponse>({
     queryKey: ["semantic", "fragment", selectedFragmentId],
-    queryFn: () => semanticApi.fragment(selectedFragmentId!) as Promise<BackendFragmentSummary>,
+    queryFn: () => semanticApi.fragment(selectedFragmentId!),
     enabled: Boolean(selectedFragmentId) && !useMock,
     staleTime: 30_000,
   });
 
-  const effectiveFragment: BackendFragmentSummary | null =
+  const effectiveFragment: GraphFragmentResponse | null =
     useMock && selectedFragmentId === MOCK_FRAGMENT.id
       ? MOCK_FRAGMENT
       : selectedFragment ?? null;
@@ -241,7 +205,7 @@ export default function WorkbenchPage() {
       queryFn: () =>
         useMock
           ? Promise.resolve(MOCK_EDGES[edgeId]!)
-          : (semanticApi.edge(edgeId) as Promise<BackendEdge>),
+          : semanticApi.edge(edgeId),
       enabled: Boolean(edgeId),
       staleTime: 60_000,
     })),
@@ -249,9 +213,9 @@ export default function WorkbenchPage() {
 
   const edgesLoading = edgeQueries.some((q) => q.isLoading);
   const edgesError = edgeQueries.some((q) => q.isError);
-  const edges: BackendEdge[] = edgeQueries
+  const edges: CausalEdgeResponse[] = edgeQueries
     .map((q) => q.data)
-    .filter((e): e is BackendEdge => Boolean(e));
+    .filter((e): e is CausalEdgeResponse => Boolean(e));
 
   // ── DAG canvas inputs ───────────────────────────────────────────────────────
   const dagNodes: DAGNode[] = useMemo(
@@ -276,7 +240,7 @@ export default function WorkbenchPage() {
   }, [fragments, searchQuery]);
 
   const fragmentsByDomain = useMemo(() => {
-    const groups: Record<string, BackendFragmentSummary[]> = {};
+    const groups: Record<string, GraphFragmentResponse[]> = {};
     for (const frag of filteredFragments) {
       const d = frag.domain || "uncategorised";
       (groups[d] ??= []).push(frag);
@@ -285,7 +249,7 @@ export default function WorkbenchPage() {
   }, [filteredFragments]);
 
   // ── Selected edge (for detail pane) ─────────────────────────────────────────
-  const selectedEdge: BackendEdge | null =
+  const selectedEdge: CausalEdgeResponse | null =
     edges.find((e) => e.id === selectedEdgeId) ?? null;
 
   // ── Render ──────────────────────────────────────────────────────────────────

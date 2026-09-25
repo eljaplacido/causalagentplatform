@@ -74,7 +74,7 @@ const MOCK_REVIEW_ITEMS: ReviewQueueItem[] = [
       },
       {
         id: "ev-g2",
-        type: "DOCUMENT_CITATION",
+        type: "DOCUMENT",
         source: "Q3 Post-Mortem: Checkout Degradation",
         snippet:
           "During the August outage, checkout conversion dropped 34% in direct correlation with payment API degradation.",
