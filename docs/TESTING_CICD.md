@@ -47,7 +47,8 @@ Every step runs even after an earlier one fails. A step whose toolchain is absen
 | `frontend-tsc` | `tsc --noEmit` in `frontend/` | Exit 0 over at least its floor of project files |
 | `frontend-vitest` | `vitest run` in `frontend/` | Exit 0, pass count above its floor, every test file reported |
 | `frontend-eslint` | The eslint ratchet, once a config exists | **SKIPPED today**: `frontend/` has no `eslint.config.*`, and eslint 9 refuses to run without one |
-| one step per `packages/*/pyproject.toml` | That package's own `pytest`, in its own environment | Exit 0 and at least one test passed. `causal-core` is always named in the summary, RAN or NOT RUN |
+| one step per `packages/*/pyproject.toml` | That package's own `pytest`, in its own environment | Exit 0, at least one test passed, and **no test skipped**: every skip these suites can produce is a registered gate that did not run, so a skip fails the step. `causal-core` is always named in the summary, RAN or NOT RUN |
+| `<package>-mypy`, one per package | mypy with the package's own strict config, via the ratchet | Findings ≤ its `mypy-<package>` entry in `scripts/lint-baseline.json`, which is 0 for all three; a package with no entry fails |
 | `gate-scope` | `scripts/gate_scope.py identity-all` | Every skill module is imported by a test, every MCP tool and state-changing route is referenced by one, and every route is mounted, apart from the known gaps named in `scripts/gate-scope-floors.json` |
 | `status-claims` | `scripts/status_claims.py` | `docs/CURRENT_STAGE.md` and `conformance/declared_not_implemented.json` agree with each other and with the tree |
 | `contract-parity` | `scripts/contract_parity.py` | The shared enumerations agree across `models.py`, `packages/semantic-types` and `frontend/src/lib/types.ts`, apart from the divergences named in `scripts/contract-parity.json` |
@@ -67,7 +68,7 @@ them.
 | Directory | What it holds |
 |---|---|
 | `unit/` | Skills, agents, the registry, the DB factory, connectors (HTTP mocked), MCP tool wrappers, provenance and contract models, planning, evaluation |
-| `integration/` | FastAPI routes through `httpx`: governance approval flow, rejection verdicts, recorded reasons, intervention roles, session API and store, the decision ledger and follow-ups, and the MCP server over stdio |
+| `integration/` | FastAPI routes through `httpx`: governance approval flow, rejection verdicts, recorded reasons, intervention roles, session API and store, the decision ledger (checkpoints and anchored verification included) and follow-ups, the assumption registry (`/api/v1/models`), and the MCP server over stdio |
 | `guardian/` | Guardian bypass prevention, verdict binding (signed, subject-bound, single-use), drafts that cannot approve themselves, the `audit_write` skill, and `audit_log` refusing UPDATE and DELETE |
 
 The backend suite runs against the **SQLite** schema (`SQLITE_DDL` in
@@ -88,10 +89,17 @@ data, the metric, the pass threshold and the seeded defects the suite must catch
 | T2: IHDP, semi-synthetic | [`benchmarks/t2-ihdp/PRE-REGISTRATION.md`](../benchmarks/t2-ihdp/PRE-REGISTRATION.md) | `causal_core.analyze` | When the data is cached or `CAUSAL_FETCH=1` (CI sets it); also on demand via `python -m causal_core.bench.ihdp` |
 | T3: LaLonde, real data with an experimental benchmark | [`benchmarks/t3-lalonde/PRE-REGISTRATION.md`](../benchmarks/t3-lalonde/PRE-REGISTRATION.md) | `causal_core.analyze` | As T2; `python -m causal_core.bench.lalonde` |
 | T4: effects within declared segments | [`benchmarks/t4-segments/PRE-REGISTRATION.md`](../benchmarks/t4-segments/PRE-REGISTRATION.md) | `causal_core.segments` | Every PR (`pytest -m t4`) |
+| T5: staggered difference-in-differences | [`benchmarks/t5-did/PRE-REGISTRATION.md`](../benchmarks/t5-did/PRE-REGISTRATION.md) | `causal_core.panel` | Every PR (`pytest -m t5`) |
 | D0: the decision procedure | [`benchmarks/d0-decision-policy/PRE-REGISTRATION.md`](../benchmarks/d0-decision-policy/PRE-REGISTRATION.md) | `causal_decision.decide` | Every PR (`pytest -m d0` in `packages/causal-decision`) |
+| A0: whether a graph revision invalidates an estimate | [`benchmarks/a0-assumption-impact/PRE-REGISTRATION.md`](../benchmarks/a0-assumption-impact/PRE-REGISTRATION.md) | `causal_decision.assumptions.impact` | Every PR (`pytest -m a0` in `packages/causal-decision`) |
 
-The seeded-defect tests (`tests/t0/test_seeded_defects.py`, `tests/t4/…`, `tests/d0/…`) break
-the system under test on purpose and assert that the gate fails. A gate that cannot see a
+`packages/causal-core/tests/test_benchmark_results.py` holds the registrations to their runs:
+for every `benchmarks/*/PRE-REGISTRATION.md`, a committed result must record a passing run
+against that file's exact bytes (`prereg_sha256`), so a bar cannot move after the last run
+without a new one. Failing runs stay on file beside it.
+
+The seeded-defect tests (`tests/t0/test_seeded_defects.py`, `tests/t4/…`, `tests/t5/…`,
+`tests/d0/…`, `tests/a0/…`) break the system under test on purpose and assert that the gate fails. A gate that cannot see a
 known defect does not count as a gate. The benchmark results, and the limits they found, are on
 the register (for example `kernel-triangulation-moderate-n`).
 
@@ -121,7 +129,7 @@ errors". Each number only moves in the safe direction:
 | File | Holds | Rule |
 |---|---|---|
 | `scripts/coverage-floor.json` | Backend line-coverage floor (full suite) | Fails below the floor. Lowering it needs a `Ratchet-Exempt: <why>` commit trailer |
-| `scripts/lint-baseline.json` | Maximum ruff and mypy findings, with the exact args | Fails above the maximum. Raising it needs `Ratchet-Exempt`. When a run finds fewer, lower the number in the same change |
+| `scripts/lint-baseline.json` | Maximum ruff and mypy findings, with the exact args and tool version: backend ruff and mypy, `scripts/` ruff (0), and mypy for each package (0) | Fails above the maximum. Raising it needs `Ratchet-Exempt`. When a run finds fewer, lower the number in the same change |
 | `scripts/gate-scope-floors.json` | Minimum counts per step, and the named known gaps of `gate-scope` | A new gap fails, and so does a listed gap that has been closed but not struck off |
 | `scripts/contract-parity.json` | Known enumeration divergences | The list only shrinks |
 
@@ -149,8 +157,8 @@ One job, on every push and on pull requests to `main`:
 
 ### 5.2 Release (`.github/workflows/release.yml`)
 
-On a `v*` tag: re-run the three packages' suites, including the T0 and D0 gates and the licence
-check, then build sdists and wheels, then publish `causal-core`, `causal-decision` and
+On a `v*` tag: re-run the three packages' full suites (with `CAUSAL_FETCH=1`, so T2 and T3 run;
+T0 and D0 as their own steps) and the licence check, then build sdists and wheels, then publish `causal-core`, `causal-decision` and
 `causal-mcp` to PyPI with Trusted Publishing (OIDC, no stored token). The backend and frontend
 are not published or deployed. The repository has no deployment pipeline and no staging
 environment.
@@ -173,8 +181,9 @@ uses. The latency targets that DATA_LAYER.md used to list were never measured, a
 
 ## 7. Code quality configuration
 
-- **Python:** ruff and mypy (`--strict`) are configured in `backend/pyproject.toml` and run as
-  ratchets (§4). pytest runs with `asyncio_mode = "auto"`. There is no `--cov-fail-under`: it
+- **Python:** ruff and mypy (`--strict`) are configured in `backend/pyproject.toml` and in each
+  package's own `pyproject.toml`, pinned to one minor version each (a ratchet's count is only
+  comparable within a version), and run as ratchets (§4). pytest runs with `asyncio_mode = "auto"`. There is no `--cov-fail-under`: it
   applied to every invocation, so partial runs always failed, and the coverage floor replaced
   it.
 - **TypeScript:** `tsc --noEmit` is the frontend's type gate. ESLint is not configured, so it
