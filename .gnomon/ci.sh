@@ -358,7 +358,7 @@ t0=$SECONDS
 if [ -z "$PYBIN" ]; then
     record gate-scope SKIPPED "needs the backend toolchain (it loads the live MCP server and FastAPI app)" 0
 elif indented "$PY" scripts/gate_scope.py identity-all; then
-    detail="$(grep -oE '(skills-imported|mcp-tools|routes-tested|routes-mounted): [0-9]+/[0-9]+ covered(, [0-9]+ known gap\(s\) listed)?' "$LOG_DIR/.indented" \
+    detail="$(grep -oE '(skills-imported|mcp-tools|kernel-mcp-tools|routes-tested|routes-mounted): [0-9]+/[0-9]+ covered(, [0-9]+ known gap\(s\) listed)?' "$LOG_DIR/.indented" \
         | sed -E 's/ covered//; s/, ([0-9]+) known gap\(s\) listed/ (\1 known gaps)/' | paste -sd ';' - | sed 's/;/; /g')"
     record gate-scope PASS "$detail" $((SECONDS - t0))
 else
