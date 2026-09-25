@@ -54,10 +54,10 @@
       "baseline": {
         "on": "2026-09-25",
         "sha256": {
-          "conformance/declared_not_implemented.json": "04a2d94894f14840854b1b5290c11da708df6ae096c43c66a6474e798f71b539",
+          "conformance/declared_not_implemented.json": "23f2313e04ebacd13b82f9d5525c7b134bc7b2f06d9421a32a5c3e5f794682d7",
           "backend/src": "35f68c95fb477f82429739ad86d437f98172df80b6bcc304d18697390bd1d8a4",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "c16de518fb069642d435b0b6d14f3a4b3b593a4f8182371405df75c8c3330834",
+          "backend/tests": "8bd18ab1e9aa50f70e3f44b7a3480ff946f19fc93a899793335580a57d4f269a",
           "frontend/src": "60ea9f202103afd68c160146f94cf5d8514e5d5c5fe8d00ab6dc4a30568e5dff",
           "packages": "92aebf39973806afb70e2e641533c3470b3a684b4ab8b925ee307971c787f13f",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
@@ -65,7 +65,7 @@
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (re-checked after this session moved only citation line numbers in the register; no status, id or quote changed)"
+        "by": "Claude (re-checked after the kernel-mcp-tools gate check and the RBAC register text; gate-scope row and test counts updated)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -254,12 +254,12 @@
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
           ".github": "c973f0f0d03f9f681cfa4a4e97756cf443535f20deb8f89b1619377a5488cc9d",
-          ".gnomon": "c2fa33b511730244aebbb9f23fff04062d8655a5a840d899c11507e9000db3cc"
+          ".gnomon": "eff3051bd3d5888c7355c36309485279e3444f785ae463428f5d74bb1c5ccadb"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (chain stages, on_check, verifier write scope against .gnomon/config.toml [chain] and roles.toml; .github and templates/ file list; no change needed)"
+        "by": "Claude (re-checked after the kernel-mcp-tools gate check and the RBAC register text; gate-scope row and test counts updated)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -311,12 +311,12 @@
         "on": "2026-09-25",
         "sha256": {
           ".github/workflows": "e5ea18edea7e9bae1835f357631ab484d9de718fb7dfb779f0172bd6476a6689",
-          "backend/tests": "c16de518fb069642d435b0b6d14f3a4b3b593a4f8182371405df75c8c3330834",
+          "backend/tests": "8bd18ab1e9aa50f70e3f44b7a3480ff946f19fc93a899793335580a57d4f269a",
           "backend/pyproject.toml": "0d5612eb3b07ad74501e28cfe32a392fd69d228e639b8dcc99f04232618693c4",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
-          ".gnomon/ci.sh": "5dd0bb25189f616a126b255a55fa3cf0b9aec9625e9a915ddc09192452402a76",
-          "scripts": "189c0c42c7e4084255d14168c4b5a45bae6d1c0bfdcf9fb3cd640b763b12179f",
+          ".gnomon/ci.sh": "39ce6e8f6bd7d1ff7254c34b0b11f80d033120d4ab50ca8557a5da9132165814",
+          "scripts": "1bfe83c102dbdfae6b4332613c42ccd713bfddca5b674241175967390c7577e5",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "41154a54662a9c2ff48877229971d1074787bdd3023481d8d9d053ac9519a285",
           "packages/causal-core/tests": "d4b01120aa4b6af9139bfd6aa78df0569599b931e586d352eb2f5371acf48580",
@@ -325,7 +325,7 @@
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (gate steps against ci.sh incl. package mypy and skip-fails, benchmark table against markers and prereg dirs incl. T5/A0, test_benchmark_results, ci.yml and release.yml steps, ratchet files)"
+        "by": "Claude (re-checked after the kernel-mcp-tools gate check and the RBAC register text; gate-scope row and test counts updated)"
       }
     },
     "docs/UIX.md": {
@@ -355,13 +355,13 @@
         "on": "2026-09-25",
         "sha256": {
           "packages/causal-core/src/causal_core": "ec83e24c440e38350a84ea05fe6a82848b5e45ddffab5df00d4e5c1217d71c38",
-          "conformance/declared_not_implemented.json": "04a2d94894f14840854b1b5290c11da708df6ae096c43c66a6474e798f71b539",
-          "docs/CURRENT_STAGE.md": "e5dab78816a8c72761a655279756526bd77252865c7ec6bceeced953f0f68c86"
+          "conformance/declared_not_implemented.json": "23f2313e04ebacd13b82f9d5525c7b134bc7b2f06d9421a32a5c3e5f794682d7",
+          "docs/CURRENT_STAGE.md": "eb44c610656469391268893c3c432a94a37377d653bb8522c4885440db7caf2e"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (re-checked after this session moved only citation line numbers in the register; no status, id or quote changed)"
+        "by": "Claude (re-checked after the kernel-mcp-tools gate check and the RBAC register text; gate-scope row and test counts updated)"
       }
     },
     "SECURITY.md": {

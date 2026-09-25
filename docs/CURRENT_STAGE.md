@@ -158,7 +158,7 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 
 | Gate | Committed baseline | Measured 2026-09-25 (at `4b908bb`) |
 |---|---|---|
-| Backend tests (unit, integration, guardian) | at least 500 tests; every test file reports ([`scripts/gate-scope-floors.json`](../scripts/gate-scope-floors.json)) | 637 passed, 45 of 45 files |
+| Backend tests (unit, integration, guardian) | at least 500 tests; every test file reports ([`scripts/gate-scope-floors.json`](../scripts/gate-scope-floors.json)) | 640 passed, 46 of 46 files |
 | Backend line coverage, full suite | floor 82.2%, may only rise ([`scripts/coverage-floor.json`](../scripts/coverage-floor.json)) | 82.21% |
 | ruff (backend/) | at most 417 findings, may only fall ([`scripts/lint-baseline.json`](../scripts/lint-baseline.json)) | 417 |
 | ruff (scripts/) | zero | 0 |
