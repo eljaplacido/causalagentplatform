@@ -69,3 +69,12 @@ def test_the_current_registration_has_a_passing_run(gate: str) -> None:
         f"{gate}: no passing run against the current registration was recorded from a clean "
         "tree; commit the code, then run the gate"
     )
+
+
+def test_an_untracked_result_file_does_not_make_a_run_dirty() -> None:
+    """Gates run in parallel write result files; those must not taint each other's provenance."""
+    from causal_core.bench.t0 import _is_result_file
+
+    assert _is_result_file("benchmarks/t2-ihdp/results/2026-09-25-v1-run3.json")
+    assert not _is_result_file("packages/causal-core/src/causal_core/sequential.py")
+    assert not _is_result_file("benchmarks/t5-did/PRE-REGISTRATION.md")
