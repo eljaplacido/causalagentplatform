@@ -31,12 +31,18 @@ def fixed_n_interval() -> Iterator[None]:
 
 
 @contextmanager
-def boundary_without_mixture_term() -> Iterator[None]:
-    """The boundary's logarithm loses its sqrt(tρ² + 1) factor: log(1/α) instead."""
+def log10_boundary() -> Iterator[None]:
+    """The boundary's logarithm is base 10 -- math.log10 typed for math.log.
+
+    (v1 registered boundary_without_mixture_term here. At this setting the sequence
+    over-covers, so that narrower boundary was still valid and no coverage bar could
+    catch it: it was not a defect. This one is.)
+    """
 
     def fake(sigma: float, t: int, rho: float, alpha: float) -> float:
         r2 = rho * rho
-        return sigma * math.sqrt(2 * (t * r2 + 1) / (t * t * r2) * math.log(1 / alpha))
+        mixture = math.log10(math.sqrt(t * r2 + 1) / alpha)
+        return sigma * math.sqrt(2 * (t * r2 + 1) / (t * t * r2) * mixture)
 
     with mock.patch.object(seq_mod, "half_width", fake):
         yield
@@ -55,6 +61,6 @@ def ignore_allocation() -> Iterator[None]:
 
 DEFECTS: dict[str, Callable[[], Any]] = {
     "fixed_n_interval": fixed_n_interval,
-    "boundary_without_mixture_term": boundary_without_mixture_term,
+    "log10_boundary": log10_boundary,
     "ignore_allocation": ignore_allocation,
 }

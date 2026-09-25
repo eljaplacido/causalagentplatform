@@ -105,6 +105,7 @@ class StreamReport:
     below_rate: float
     median_first_above: float | None
     median_first_below: float | None
+    srm_refusals: int = 0
     first_failure: str = ""
 
 
@@ -117,8 +118,14 @@ def run_stream(s: Stream, cfg: Mapping[str, Any], reps: int | None = None) -> St
     above: list[int] = []
     below: list[int] = []
     first_failure = ""
+    srm = 0
     for _ in range(n_reps):
         out = analyse(simulate(s, st["units"], rng), s.p, cfg)
+        if getattr(out, "reason", None) is AbstentionReason.DESIGN_CHECK_FAILED and (
+            "sample ratio mismatch" in getattr(out, "detail", "")
+        ):
+            srm += 1  # counted, and bounded by srm_refusals_max (v2)
+            continue
         if not isinstance(out, CausalResult) or out.sequential is None:
             first_failure = first_failure or f"{out.kind}: {getattr(out, 'detail', '')}"[:200]
             continue
@@ -140,6 +147,7 @@ def run_stream(s: Stream, cfg: Mapping[str, Any], reps: int | None = None) -> St
         below_rate=len(below) / k,
         median_first_above=float(np.median(above)) if above else None,
         median_first_below=float(np.median(below)) if below else None,
+        srm_refusals=srm,
         first_failure=first_failure,
     )
 
@@ -149,9 +157,14 @@ def check_streams(cfg: Mapping[str, Any], reps: int | None = None,
     names = list(only or cfg["coverage"]["designs"])
     reports = [run_stream(STREAMS[name], cfg, reps) for name in names]
     failures: list[str] = []
+    srm_max = cfg["coverage"].get("srm_refusals_max")
     for r in reports:
-        if r.results < r.reps:
-            failures.append(f"{r.id}: {r.reps - r.results} replications produced no sequence "
+        if srm_max is not None and r.srm_refusals / r.reps > srm_max:
+            failures.append(f"{r.id}: {r.srm_refusals} of {r.reps} correctly randomized streams "
+                            f"refused as mismatched (> {srm_max})")
+        unexplained = r.reps - r.results - (r.srm_refusals if srm_max is not None else 0)
+        if unexplained > 0:
+            failures.append(f"{r.id}: {unexplained} replications produced no sequence "
                             f"({r.first_failure})")
         if r.uniform_coverage < cfg["coverage"]["uniform_min"]:
             failures.append(f"{r.id}: uniform coverage {r.uniform_coverage:.3f} < "
@@ -205,7 +218,7 @@ def check_refusals(cfg: Mapping[str, Any]) -> tuple[dict[str, str], list[str]]:
 
 CATCHER: dict[str, str] = {
     "fixed_n_interval": "null",
-    "boundary_without_mixture_term": "null",
+    "log10_boundary": "null",
     "ignore_allocation": "unequal_allocation",
 }
 
