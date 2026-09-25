@@ -2,7 +2,7 @@
 
 **Suite:** D0, the decision procedure on outcomes whose evidence is known by construction
 **System under test:** `packages/causal-decision` (`causal_decision.decide`)
-**Registered:** 2026-09-21, version 1
+**Registered:** 2026-09-21, version 1; version 2 on 2026-09-25 (see Changelog)
 **Runs:** every PR, via `pytest -m d0` in `packages/causal-decision`
 
 ## Status of this document
@@ -28,7 +28,21 @@ reproducible and the properties below are checkable rather than aspirational.
 policy must return. The evidence states come from real `causal_core.analyze` runs on simulated data
 wherever a real analysis can produce that state; the remaining ones (an apparatus failure, a result
 with no interval) are constructed contract objects, because no honest analysis produces them on
-demand. The table is in `causal_decision/bench/d0.py` (`SCENARIOS`).
+demand. The evidence builders are in `causal_decision/bench/d0.py` (`SCENARIOS`); **the verdict
+each scenario must return is registered here**, in `[table.expected]` below, and the gate fails if
+the code's table and this one differ in any id or any verdict. (In version 1 the expected verdicts
+lived only in the code, where a change to `decide()` and a change to what it was expected to do
+could land in the same commit without this document's hash moving.)
+
+Two scenarios declare segments (`segment_by = ("severity",)`), on incident data where the playbook
+takes 20 minutes off P1 incidents (65% of them) and adds 6 to P3:
+
+- `harmed_segment` — the pooled saving is large, precise and past the bar, and every pooled check
+  passes; the P3 segment is still made materially worse. Expected `refuse`: the policy's ceiling
+  for a declared segment whose family-wise interval lies wholly beyond the harm threshold, on a
+  supported estimate.
+- `uniform_segments` — the same design with a 12-minute saving in both segments. Expected `act`:
+  declared segments that agree cap nothing.
 
 **Properties.** Checked on a seeded sweep of requests and policies (`PROPERTIES`), not only on the
 table:
@@ -57,17 +71,37 @@ of them, and the table says which check is supposed to catch it.
 | `ignore_worthwhile_effect` | the minimum-worthwhile-effect comparison is skipped | scenario `effect_below_bar` |
 | `refusal_becomes_approval` | a refusal is treated as something a person may wave through | property 5 |
 | `ignore_contested` | a contested result is treated as supported | property 6, scenario `contested_result` |
+| `ignore_segments` | the segment checks are dropped, so only the pooled effect is read | scenario `harmed_segment` |
 
 ## Pass bars
 
 ```toml
 [meta]
 suite = "D0"
-version = 1
-registered = "2026-09-21"
+version = 2
+registered = "2026-09-25"
 
 [table]
 scenarios_must_match = 1.0      # every scenario returns exactly the verdict it names
+
+[table.expected]                # scenario id -> the verdict it must return
+strong_effect_low_risk = "act"
+strong_effect_medium_risk = "act"
+strong_effect_high_risk = "act_with_approval"
+strong_effect_irreversible = "act_with_approval"
+effect_below_bar = "refuse"
+uncertain_worth = "experiment"
+contested_result = "experiment"
+provisional_graph = "act_with_approval"
+identified_only_by_iv = "act_with_approval"
+not_identified_can_test = "experiment"
+not_identified_cannot_test = "refuse"
+no_overlap_can_test = "experiment"
+broken_question = "refuse"
+unreviewed_assumptions = "refuse"
+analysis_failed = "refuse"
+harmed_segment = "refuse"
+uniform_segments = "act"
 
 [properties]
 sweep = 400                     # random (request, policy) pairs per property
@@ -78,6 +112,7 @@ violations_allowed = 0
 required = [
   "ignore_reversibility", "ignore_risk_class", "best_check_wins",
   "ignore_worthwhile_effect", "refusal_becomes_approval", "ignore_contested",
+  "ignore_segments",
 ]
 ```
 
@@ -88,7 +123,9 @@ A single counterexample is a failure.
 0.8 E-value bar or a 5-minute worthwhile effect is correct for a given operation is a judgement for
 whoever owns that operation; the gate only holds the procedure to the policy it was given, and
 records which policy a verdict followed. Calibration — whether actions taken under `act` actually
-produced the predicted effect — needs the outcome-capture loop, which is not built.
+produced the predicted effect — is measured by the outcome-capture loop (`causal_decision.outcome`,
+`GET /api/v1/decisions/calibration`), not by this gate, and needs follow-ups on real operations
+before it says anything.
 
 ## First run
 
@@ -140,3 +177,15 @@ on the text being unchanged, which the diff shows.
   its own caps at `act_with_approval`. Those are judgements, and like every other threshold in
   this layer they are consistent rather than calibrated until outcome capture exists. A future
   version of this gate should carry segment scenarios in the table proper.
+- **v2 (2026-09-25): the expected verdicts move into this document, and segments join the table.**
+  No existing bar or expected verdict changed: the fifteen v1 scenarios are registered here with
+  the verdicts the v1 code already expected, which the v1 run (`results/2026-09-21-v1-run1.json`)
+  shows each returning. What changed is who holds them — this file, whose hash every result
+  records, rather than the code under test.
+
+  Added: scenarios `harmed_segment` and `uniform_segments`, and seeded defect `ignore_segments`,
+  closing the gap v1.1 disclosed (the table could not see the segment checks at all). Written
+  before either scenario exists in `d0.py` or has been run. Disclosure: the premise of both is
+  known from `packages/causal-decision/tests/test_segments.py` — a harmed segment is not `act`, a
+  uniform one is — but that test asserts only "not `act`" for the harmed case, so the `refuse`
+  registered above is a prediction from the policy's stated ceilings, not an observed output.
