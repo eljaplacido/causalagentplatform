@@ -96,6 +96,10 @@
         {
           "at": "docs/AGENTS.md:375",
           "says": "Computes Rosenbaum sensitivity bounds and E-values for unmeasured confounders"
+        },
+        {
+          "at": "docs/CYBERSECURITY.md:308",
+          "says": "- Rosenbaum sensitivity bounds"
         }
       ],
       "reality": "E-values are now correct and scale-aware (causal-core's e_value_rr; risk ratio, or difference plus outcome SD; otherwise null with the reason), and the kernel reports E-values and Cinelli-Hazlett robustness values from data. Rosenbaum bounds are not implemented: rosenbaum_gamma is always null (the previous values came from an invented multiplier).",
@@ -921,6 +925,212 @@
         "kind": "test",
         "path": "backend/tests/integration/test_planning_uses_estimates.py",
         "asserts": "given an APPROVED fragment and observational data in which one candidate action's effect is known to be harmful, the planner's simulated effect for it comes from causal-core and that action is not committed -- and the committed choice changes when the data does"
+      }
+    },
+    {
+      "id": "guardian-risk-score-caller-supplied",
+      "status": "declared-not-implemented",
+      "capability": "Hallucination-risk (H-Neuron) scoring of agent/LLM output, gating Guardian approval (PR-002)",
+      "claimed_in": [
+        {
+          "at": "backend/src/agents/governance.py:51",
+          "says": "\"PR-002\": \"Hallucination risk threshold: H-Neuron score must be < 0.7 for APPROVED verdict.\","
+        },
+        {
+          "at": "docs/AGENTS.md:510",
+          "says": "hallucinationRiskScore: number;    // H-Neuron output"
+        },
+        {
+          "at": "docs/CYBERSECURITY.md@13e7d92:54",
+          "says": "H-Neuron hallucination risk scoring on every LLM output"
+        },
+        {
+          "at": "docs/CYBERSECURITY.md@13e7d92:287",
+          "says": "H-Neuron hallucination score spike across agent pool"
+        }
+      ],
+      "reality": "Nothing computes a hallucination-risk score. EpistemicState.hallucination_risk_score defaults to 0.0, no agent sets it, and POST /api/governance/check copies it from the request body, beside the caller-declared cynefin_domain and cycle_count. So PR-002, and with it PR-005 and PR-006, evaluates numbers the caller chose, and any authenticated caller can obtain a signed APPROVED verdict for a payload by declaring a classified domain and a zero score. The /approve step still needs a governance role, which limits what that verdict can be spent on.",
+      "evidence": [
+        {
+          "at": "backend/src/semantic_layer/models.py:697",
+          "says": "hallucination_risk_score: float = Field(default=0.0, ge=0.0, le=1.0)"
+        },
+        {
+          "at": "backend/src/api/governance.py:167",
+          "says": "hallucination_risk_score=body.hallucination_risk_score,"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/guardian/test_risk_score_not_caller_supplied.py",
+        "asserts": "the risk score PR-002 reads is computed by the platform from the output being checked, and a request body that declares a low score for a high-risk output is still refused"
+      }
+    },
+    {
+      "id": "rbac-matrix-and-domain-isolation",
+      "status": "partial",
+      "capability": "Role-based access per platform role, and domain isolation of semantic objects",
+      "claimed_in": [
+        {
+          "at": "docs/CYBERSECURITY.md@13e7d92:70",
+          "says": "RBAC enforced at API layer, database layer, and semantic layer"
+        },
+        {
+          "at": "docs/CYBERSECURITY.md@13e7d92:130",
+          "says": "Domain isolation: a `domain` attribute on every semantic object restricts cross-domain reads"
+        },
+        {
+          "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md@13e7d92:84",
+          "says": "Both provenance and contract records are append-only"
+        }
+      ],
+      "reality": "Two role sets are checked, at the API layer only. GOVERNANCE_ROLES guards approve, reject, review-queue and audit-log; DECISION_ROLES guards the intervention approve and reject routes. Every other route needs only a valid token, including POST /api/semantic/drafts, POST /api/governance/check, POST /api/v1/decisions and /followup, POST /api/v1/interventions/feedback, the session run routes, and DELETE /api/v1/provenance/session/{id}, which erases a session's provenance records. The viewer, analyst, graph_author and agent roles are checked nowhere. The migrations declare RLS policies on causal_entities and causal_edges that read app.user_domains and app.user_role, but nothing sets either, and RLS does not bind the table owner that docker-compose connects as, so no domain isolation takes effect.",
+      "evidence": [
+        {
+          "at": "backend/src/api/provenance.py:281",
+          "says": "_provenance_store.pop(session_id, None)"
+        },
+        {
+          "at": "backend/src/api/semantic.py:193",
+          "says": "user: dict[str, Any] = Depends(get_current_user),"
+        },
+        {
+          "at": "backend/src/db/migrations/001_initial.sql:138",
+          "says": "current_setting('app.user_domains', true),"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/integration/test_rbac_matrix.py",
+        "asserts": "each state-changing route is refused (403) for a token without a role the matrix grants it, and a user limited to one domain reads no object of another domain through the API"
+      }
+    },
+    {
+      "id": "security-scanning-not-in-ci",
+      "status": "declared-not-implemented",
+      "capability": "Security scanning in CI: SAST, dependency audit, container scan, SBOM, DAST, hash-pinned dependencies",
+      "claimed_in": [
+        {
+          "at": "docs/CYBERSECURITY.md@13e7d92:255",
+          "says": "Trivy vulnerability scan as CI gate (block on HIGH/CRITICAL)"
+        },
+        {
+          "at": "docs/CYBERSECURITY.md@13e7d92:260",
+          "says": "`pip-audit` in CI pipeline"
+        },
+        {
+          "at": "docs/CYBERSECURITY.md@13e7d92:262",
+          "says": "Pinned dependencies with hash verification"
+        },
+        {
+          "at": "SECURITY.md@13e7d92:64",
+          "says": "dependabot or equivalent"
+        }
+      ],
+      "reality": "CI is one job running .gnomon/ci.sh, and neither it nor release.yml runs Bandit, pip-audit, safety, Trivy, an SBOM generator or ZAP. There is no dependabot configuration. pip-audit and bandit are declared as backend dev dependencies, and bandit has a config section in backend/pyproject.toml, so they install and nothing runs them. Dependencies are ranges in pyproject.toml, not hash-pinned. The one supply-chain gate is the licence check on the published packages' runtime dependencies.",
+      "evidence": [
+        {
+          "at": "backend/pyproject.toml:75",
+          "says": "\"pip-audit>=2.7.0\","
+        },
+        {
+          "at": "backend/pyproject.toml:76",
+          "says": "\"bandit[toml]>=1.7.0\","
+        }
+      ],
+      "leaves_by": {
+        "kind": "ci-run",
+        "path": ".gnomon/ci.sh",
+        "asserts": "a step runs bandit and pip-audit over backend/ (and a container scan over the built images) and fails on findings above a committed baseline, and .github/workflows/ci.yml does not allow that step to be skipped"
+      }
+    },
+    {
+      "id": "secrets-in-env",
+      "status": "declared-not-implemented",
+      "capability": "Credentials held in a secret manager, never in environment variables",
+      "claimed_in": [
+        {
+          "at": "docs/CYBERSECURITY.md@13e7d92:101",
+          "says": "Connector credentials: rotated via Secret Manager (GCP), never in environment variables or code"
+        },
+        {
+          "at": "docs/CYBERSECURITY.md@13e7d92:245",
+          "says": "No secrets in environment variables, code, or config files"
+        }
+      ],
+      "reality": "Every secret is read from an environment variable: GUARDIAN_SIGNING_KEY (the key that makes a verdict authoritative), DATABASE_URL, GOOGLE_APPLICATION_CREDENTIALS (a path to a key file) and the LLM providers' API keys. No Secret Manager client is used, nothing rotates a key, and docker-compose.yml carries the local database password in plain text (acceptable for a dev stack, but it is a config file).",
+      "evidence": [
+        {
+          "at": "backend/src/semantic_layer/verdict.py:62",
+          "says": "configured = os.getenv(KEY_ENV, \"\").strip()"
+        },
+        {
+          "at": "backend/src/db/factory.py:353",
+          "says": "url = os.getenv(\"DATABASE_URL\")"
+        }
+      ],
+      "leaves_by": {
+        "kind": "retraction",
+        "path": "docs/CYBERSECURITY.md",
+        "asserts": "either the deployment reads GUARDIAN_SIGNING_KEY and database credentials from a secret manager with rotation (and a test pins that the process refuses to start in a non-local ENV without it), or the docs state environment variables as the supported mechanism"
+      }
+    },
+    {
+      "id": "gdpr-controls",
+      "status": "declared-not-implemented",
+      "capability": "Privacy controls: PII pseudonymization at ingestion, logical erasure, portable export",
+      "claimed_in": [
+        {
+          "at": "docs/CYBERSECURITY.md@13e7d92:141",
+          "says": "PII fields are **pseudonymized at ingestion**"
+        },
+        {
+          "at": "docs/CYBERSECURITY.md@13e7d92:181",
+          "says": "| Art. 17 \u2013 Right to erasure | Pseudonymization + key deletion (logical erasure) |"
+        },
+        {
+          "at": "docs/CYBERSECURITY.md@13e7d92:182",
+          "says": "| Art. 20 \u2013 Data portability | Semantic layer export (JSON-LD format) |"
+        }
+      ],
+      "reality": "No code pseudonymizes, tokenizes or strips any field, no erasure path exists, and no JSON-LD (or other) export of the semantic layer exists. No connector runs in the platform, so today PII can enter only through API request bodies, and nothing inspects them for it. The Art. 30 row (records of processing) is the one backed by something real: audit_log.",
+      "evidence": [
+        {
+          "at": "backend/src/connectors/base.py:146",
+          "says": "def map_to_semantic_objects("
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/integration/test_privacy_controls.py",
+        "asserts": "a connector run over records containing configured PII fields stores only pseudonymous tokens; deleting a subject's key makes their records unlinkable; and an export endpoint returns the semantic layer in the documented format"
+      }
+    },
+    {
+      "id": "sensitivity-gate-not-enforced",
+      "status": "declared-not-implemented",
+      "capability": "Guardian PR-007: edges without a sensitivity result are blocked from APPROVED",
+      "claimed_in": [
+        {
+          "at": "backend/src/agents/governance.py:56",
+          "says": "\"PR-007\": \"Sensitivity analysis: edges without sensitivity_result blocked from APPROVED.\","
+        },
+        {
+          "at": "docs/CYBERSECURITY.md@13e7d92:219",
+          "says": "Every newly approved edge must pass a sensitivity analysis before it can be used in production simulations"
+        }
+      ],
+      "reality": "PR-007 is in the Guardian's rule table and nowhere in its evaluation: no check reads a sensitivity result, so an edge is approved whether or not any sensitivity analysis was run, and PR-007 is never cited on a verdict. The rules that are evaluated are PR-001 to PR-006, PR-008, and PR-009 (on one action type).",
+      "evidence": [
+        {
+          "at": "backend/src/agents/governance.py:372",
+          "says": "rules_fired.append(\"PR-002\")"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/guardian/test_pr007_sensitivity_gate.py",
+        "asserts": "a check whose proposed edge has no sensitivity result is not APPROVED and cites PR-007, and the same edge with a passing result is not refused on PR-007"
       }
     }
   ],

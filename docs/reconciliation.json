@@ -166,18 +166,31 @@
         "backend/src/middleware",
         "backend/src/api/governance.py",
         "backend/src/agents/governance.py",
-        "backend/src/semantic_layer/registry.py"
+        "backend/src/semantic_layer/registry.py",
+        "backend/src/api/interventions.py",
+        "backend/src/api/provenance.py",
+        "backend/src/db/migrations",
+        "backend/src/semantic_layer/verdict.py",
+        ".github/workflows"
       ],
       "baseline": {
-        "on": "2026-09-19",
+        "on": "2026-09-25",
         "sha256": {
           "backend/src/middleware": "d8281470bc1c1fe3195aa55c663968251147d96b6e8bb27bc0b77e35b5394f3c",
-          "backend/src/api/governance.py": "f898d3a60c93955b3993e1e1c1397384ffab18062df7a84d074159cc9ee82928",
-          "backend/src/agents/governance.py": "e6336c749099617dfe599545e5372df2cf2b35cc55ddd445e88cf50c154c1ab4",
-          "backend/src/semantic_layer/registry.py": "2e42990c59da8870118592886a584d57eef02b10d1d2d0d1d92e09ae86a96be9"
+          "backend/src/api/governance.py": "a235528e1569c492eb04ba534f45a9d3d76157a564f02264bd0e56d6dd5d15e1",
+          "backend/src/agents/governance.py": "69dc9fc55c24bd453ead3b80f58d40de5f7bdad4689e9c4b3f189494108cfa1b",
+          "backend/src/semantic_layer/registry.py": "69fd9826a92feef9f71127788c290fd1024c51b9bfee5346996d83fabcbb8a2c",
+          "backend/src/api/interventions.py": "63db0b2781081c9c13bb80a2aa00d6e525d1c77eadb4843d4042399562589ce0",
+          "backend/src/api/provenance.py": "48bc9f32a3d847e547364c1e92075c2eec3cb5b4f67f4d6cc08d24427b47d264",
+          "backend/src/db/migrations": "99e4bd6803d305afabce0ba57e5de4e9a37c5babad40a1740b35218fae51ebd6",
+          "backend/src/semantic_layer/verdict.py": "eda2e3481f24fb45ad19d5e11051fa65cd4ba75f8fba77e17415e5ad9479b9bf",
+          ".github/workflows": "3eb6b77c45c04c74476ed8a790087dd29b64fee9314b6272d45a39e7e1c34056"
         }
       },
-      "last_read": null
+      "last_read": {
+        "on": "2026-09-25",
+        "by": "Claude (auth, RBAC, verdict binding, secrets, privacy and scanning re-read against middleware, api/, verdict.py, migrations, workflows)"
+      }
     },
     "docs/DATA_LAYER.md": {
       "why": "object model, storage (Neo4j, PostgreSQL, Kafka), connectors, drift",
@@ -334,6 +347,32 @@
       "last_read": {
         "on": "2026-09-21",
         "by": "Claude (step 3 partly done: segments)"
+      }
+    },
+    "SECURITY.md": {
+      "why": "reporting path, scope, and what authentication, roles and Guardian verdicts enforce today",
+      "subjects": [
+        "backend/src/middleware",
+        "backend/src/api/governance.py",
+        "backend/src/api/interventions.py",
+        "backend/src/agents/governance.py",
+        "backend/src/semantic_layer/registry.py",
+        "backend/src/semantic_layer/verdict.py"
+      ],
+      "baseline": {
+        "on": "2026-09-25",
+        "sha256": {
+          "backend/src/middleware": "d8281470bc1c1fe3195aa55c663968251147d96b6e8bb27bc0b77e35b5394f3c",
+          "backend/src/api/governance.py": "a235528e1569c492eb04ba534f45a9d3d76157a564f02264bd0e56d6dd5d15e1",
+          "backend/src/api/interventions.py": "63db0b2781081c9c13bb80a2aa00d6e525d1c77eadb4843d4042399562589ce0",
+          "backend/src/agents/governance.py": "69dc9fc55c24bd453ead3b80f58d40de5f7bdad4689e9c4b3f189494108cfa1b",
+          "backend/src/semantic_layer/registry.py": "69fd9826a92feef9f71127788c290fd1024c51b9bfee5346996d83fabcbb8a2c",
+          "backend/src/semantic_layer/verdict.py": "eda2e3481f24fb45ad19d5e11051fa65cd4ba75f8fba77e17415e5ad9479b9bf"
+        }
+      },
+      "last_read": {
+        "on": "2026-09-25",
+        "by": "Claude (auth, RBAC, verdict binding, secrets, privacy and scanning re-read against middleware, api/, verdict.py, migrations, workflows)"
       }
     }
   }
