@@ -90,6 +90,24 @@ The dev auth bypass works only with `ENV=local`, so a local session with the byp
 SQLite. Neo4j is used only when `NEO4J_URI` is set; otherwise the graph and experience-buffer paths
 fall back to SQL.
 
+**Guardian signing key.** Every Guardian verdict is HMAC-signed with `GUARDIAN_SIGNING_KEY`.
+Locally you may leave it unset: each backend process then generates its own key and logs
+`guardian.signing_key.ephemeral` at CRITICAL, and its verdicts do not survive a restart. To keep
+them across restarts, generate one and put it in `backend/.env` (gitignored):
+
+```bash
+echo "GUARDIAN_SIGNING_KEY=$(python3 -c 'import secrets; print(secrets.token_hex(32))')" >> backend/.env
+```
+
+With any `ENV` other than `local` the backend **refuses to start** without a key of at least 32
+bytes. There, prefer a mounted secret file over a variable: set `GUARDIAN_SIGNING_KEY_FILE` to its
+path (a Docker or Kubernetes secret, or a secret manager's file mount). Every secret the backend
+reads accepts the same `<NAME>_FILE` form (`DATABASE_URL`, `NEO4J_PASSWORD`, the LLM API keys);
+setting both `NAME` and `NAME_FILE` is an error. To rotate the key, list the old one in
+`GUARDIAN_SIGNING_KEYS_PREVIOUS` (comma- or newline-separated, or `_FILE`), set the new one and
+restart; unspent verdicts signed with the old key keep working until you remove it from the list.
+`docs/CYBERSECURITY.md` §8.2 has the details.
+
 **LLM providers.** `backend/.env.example` lists them, and `src/agents/llm_factory.py` can build a
 client for each, but no agent or skill calls it today (`llm-routing-no-callers` in the register).
 Nothing needs an API key to run.
@@ -123,7 +141,7 @@ docker compose down
 
 | Service | URL / port | Notes |
 |---|---|---|
-| PostgreSQL | `localhost:5432` | User `causal`, password `causal_local_dev`. Used only when `ENV` is not `local` and `DATABASE_URL` points here. |
+| PostgreSQL | `localhost:5432` | User `causal`, password `causal_local_dev` (plain text in `docker-compose.yml`: a local-dev stack only). Used only when `ENV` is not `local` and `DATABASE_URL` points here. |
 | Neo4j Browser | `http://localhost:7474` | Bolt `localhost:7687`. Used when `NEO4J_URI` is set. |
 | Kafka, Kafka UI, Redis | `9092`, `8080`, `6379` | `future` profile only. |
 

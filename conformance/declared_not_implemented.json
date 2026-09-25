@@ -218,7 +218,7 @@
       "reality": "get_llm has no call site outside its own docstring: no agent invokes an LLM, and every agent's reasoning is rule or heuristic code.",
       "evidence": [
         {
-          "at": "backend/src/agents/llm_factory.py:139",
+          "at": "backend/src/agents/llm_factory.py:145",
           "says": "def get_llm("
         }
       ],
@@ -695,11 +695,11 @@
       "reality": "session_state and incidents are created only by the SQLite DDL in backend/src/db/factory.py. The PostgreSQL migrations (001-004) never create them, and CloudSqlFactory.init_db runs the DDL only when ENV=local, so on a PostgreSQL deployment session persistence and the incidents API would fail with a missing table. api/incidents.py also writes with INSERT OR REPLACE, which PostgreSQL does not accept. Neither schema has the evidence, preference or simulation-result tables DATA_LAYER.md used to list. The suite runs only against SQLite, so nothing notices.",
       "evidence": [
         {
-          "at": "backend/src/db/factory.py:254",
+          "at": "backend/src/db/factory.py:257",
           "says": "CREATE TABLE IF NOT EXISTS session_state ("
         },
         {
-          "at": "backend/src/db/factory.py:262",
+          "at": "backend/src/db/factory.py:265",
           "says": "CREATE TABLE IF NOT EXISTS incidents ("
         },
         {
@@ -1037,37 +1037,6 @@
       }
     },
     {
-      "id": "secrets-in-env",
-      "status": "declared-not-implemented",
-      "capability": "Credentials held in a secret manager, never in environment variables",
-      "claimed_in": [
-        {
-          "at": "docs/CYBERSECURITY.md@13e7d92:101",
-          "says": "Connector credentials: rotated via Secret Manager (GCP), never in environment variables or code"
-        },
-        {
-          "at": "docs/CYBERSECURITY.md@13e7d92:245",
-          "says": "No secrets in environment variables, code, or config files"
-        }
-      ],
-      "reality": "Every secret is read from an environment variable: GUARDIAN_SIGNING_KEY (the key that makes a verdict authoritative), DATABASE_URL, GOOGLE_APPLICATION_CREDENTIALS (a path to a key file) and the LLM providers' API keys. No Secret Manager client is used, nothing rotates a key, and docker-compose.yml carries the local database password in plain text (acceptable for a dev stack, but it is a config file).",
-      "evidence": [
-        {
-          "at": "backend/src/semantic_layer/verdict.py:62",
-          "says": "configured = os.getenv(KEY_ENV, \"\").strip()"
-        },
-        {
-          "at": "backend/src/db/factory.py:402",
-          "says": "url = os.getenv(\"DATABASE_URL\")"
-        }
-      ],
-      "leaves_by": {
-        "kind": "retraction",
-        "path": "docs/CYBERSECURITY.md",
-        "asserts": "either the deployment reads GUARDIAN_SIGNING_KEY and database credentials from a secret manager with rotation (and a test pins that the process refuses to start in a non-local ENV without it), or the docs state environment variables as the supported mechanism"
-      }
-    },
-    {
       "id": "gdpr-controls",
       "status": "declared-not-implemented",
       "capability": "Privacy controls: PII pseudonymization at ingestion, logical erasure, portable export",
@@ -1360,6 +1329,13 @@
       "fixed_in": "5423094",
       "pinned_by": ".gnomon/ci.sh",
       "note": "The SAST and dependency-audit part left: .gnomon/ci.sh runs bandit-backend and bandit-packages (MEDIUM+ held at 0 by scripts/lint-baseline.json), secret-scan (scripts/secret_scan.py over the working tree), and pip-audit-backend, pip-audit-packages and npm-audit (scripts/dep_audit.py; any advisory not in the reviewed, dated scripts/audit-allowlist.json fails). CI fails on exit 2, so an audit that could not reach its advisory database cannot pass. The negative controls are backend/tests/unit/test_secret_scan.py and test_dep_audit.py. pip-audit runs on every push and weekly; `safety` is not run. bandit-backend inherits backend/pyproject.toml's blanket skip of B608 (13 unreviewed MEDIUM findings with it enabled). The container scan, SBOM, DAST, hash-pinning and dependabot parts of the claim did not leave: they are supply-chain-scanning-not-in-ci."
+    },
+    {
+      "id": "secrets-in-env",
+      "was": "Every secret is read from an environment variable: GUARDIAN_SIGNING_KEY (the key that makes a verdict authoritative), DATABASE_URL, GOOGLE_APPLICATION_CREDENTIALS (a path to a key file) and the LLM providers' API keys. No Secret Manager client is used, nothing rotates a key, and docker-compose.yml carries the local database password in plain text (acceptable for a dev stack, but it is a config file).",
+      "fixed_in": "cd00985",
+      "pinned_by": "backend/tests/guardian/test_signing_key_rotation.py",
+      "note": "Left by retraction plus the start-up test the leaves_by names. docs/CYBERSECURITY.md 8.2 now states the supported mechanism: every secret is read by src/secret_source.py read_secret from NAME_FILE (a mounted secret file: Docker/Kubernetes secrets, a secret manager's CSI or file-mount driver) or NAME in the environment, never both; there is no built-in secret-manager client. GUARDIAN_SIGNING_KEY, GUARDIAN_SIGNING_KEYS_PREVIOUS, DATABASE_URL, NEO4J_PASSWORD and the three LLM API keys go through it; GOOGLE_APPLICATION_CREDENTIALS stays a path. Outside local development (ENV unset or 'local' is local, the rule factory.py uses to choose SQLite) the FastAPI lifespan refuses to start without a signing key of at least 32 bytes. Rotation: sign with the current key, verify against it and GUARDIAN_SIGNING_KEYS_PREVIOUS. Not built: a secret-manager client, scheduled rotation enforcement, in-platform audit of secret access. docker-compose.yml keeps the local-dev password in plain text, documented as the local-dev exception."
     }
   ]
 }

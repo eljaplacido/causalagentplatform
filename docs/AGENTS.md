@@ -623,7 +623,7 @@ Agents specify **capability requirements**, not model names — the LLM factory 
 | `code_generation` | `deepseek-r1:70b` | `claude-sonnet-4-20250514` | `gpt-4o` | `deepseek-reasoner` |
 | `planning` | declared, no model mapped (resolves to `unknown`) | same | same | same |
 
-Routing is handled by `src/agents/llm_factory.py`. Provider selection is never hardcoded in skill implementations. The provider is the first one configured, in the order Ollama (`OLLAMA_BASE_URL`), Anthropic (`ANTHROPIC_API_KEY`), OpenAI (`OPENAI_API_KEY`), DeepSeek (`DEEPSEEK_API_KEY`); if building its client fails, the others are tried in the same order. The capability then picks the model within that provider, as in the table; each default can be overridden by environment variable (`OLLAMA_CAUSAL_MODEL`, `ANTHROPIC_MODEL`, `OPENAI_FAST_MODEL`, ...). Nothing calls `get_llm` today (register `llm-routing-no-callers`).
+Routing is handled by `src/agents/llm_factory.py`. Provider selection is never hardcoded in skill implementations. The provider is the first one configured, in the order Ollama (`OLLAMA_BASE_URL`), Anthropic (`ANTHROPIC_API_KEY`), OpenAI (`OPENAI_API_KEY`), DeepSeek (`DEEPSEEK_API_KEY`; each key may instead be a file named by `<NAME>_FILE`, `src/secret_source.py`); if building its client fails, the others are tried in the same order. The capability then picks the model within that provider, as in the table; each default can be overridden by environment variable (`OLLAMA_CAUSAL_MODEL`, `ANTHROPIC_MODEL`, `OPENAI_FAST_MODEL`, ...). Nothing calls `get_llm` today (register `llm-routing-no-callers`).
 
 ---
 

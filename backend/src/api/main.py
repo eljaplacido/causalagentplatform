@@ -44,6 +44,7 @@ from src.api import semantic as semantic_router_module
 from src.api import session as session_router_module
 from src.db.factory import CloudSqlFactory
 from src.middleware.auth import FirebaseAuthMiddleware
+from src.semantic_layer.verdict import require_signing_key
 
 # ── Logging setup ─────────────────────────────────────────────────────────────
 
@@ -75,6 +76,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application startup / shutdown lifecycle."""
     env = os.getenv("ENV", "local")
     log.info("app.startup", env=env, version=app.version)
+
+    # Outside local development, no signing key means no start: a verdict signed
+    # with a per-process key would be refused by every other worker and after a
+    # restart. Raising here makes uvicorn exit before it serves a request.
+    require_signing_key()
 
     # Local dev: auto-create SQLite tables via ORM
     if env == "local":

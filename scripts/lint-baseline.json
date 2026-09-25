@@ -32,8 +32,8 @@
     "2026-09-25: bandit joins at zero MEDIUM+ (LOW is reported, not counted). bandit-backend runs with backend/pyproject.toml's [tool.bandit], which skips B101 (assert) and B608 (SQL built from strings) for the whole tree -- a config decision this entry inherits, not one it made: with B608 enabled, backend/src has 13 MEDIUM findings (f-strings inside text() in src/api/governance.py, incidents.py, interventions.py and src/semantic_layer/registry.py). They were not reviewed one by one in this change, and the blanket skip stays until they are. bandit-packages runs bandit's defaults over packages/*/src. The three B310 urlopen findings (src/connectors/prometheus.py, causal_core/bench/ihdp.py and lalonde.py) were fixed in code, not annotated."
   ],
   "ruff": {
-    "max_findings": 416,
-    "measured_with": "ruff 0.15.12",
+    "max_findings": 415,
+    "measured_with": "ruff 0.15.22",
     "cwd": "backend",
     "args": [
       "."

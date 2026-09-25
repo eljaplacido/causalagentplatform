@@ -32,12 +32,12 @@
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "e7d4419b51fc61fc262e7f207ed1b928a53e5c79b01c172a7525ea772bea1bc0"
+          "docs/CURRENT_STAGE.md": "ae7f02500e2f0233eefd1dd55e3abd3cafa8c1663d863c56a02d21d23e6ecc8e"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-27: stack line still Next.js/Python 3.12 after next 15.5.26 and the dependency floors; install lines unchanged)"
+        "by": "Claude (septa-28: CURRENT_STAGE moved one row to implemented; README only links the page, status paragraph unchanged)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -54,10 +54,10 @@
       "baseline": {
         "on": "2026-09-25",
         "sha256": {
-          "conformance/declared_not_implemented.json": "9ebcec645fbcf1881ca808abbd6cf114944cc3ef06fb4a702d26b75a7d7bcfac",
-          "backend/src": "8e5dc091d3ded5fe4aebd53e5a5616289d60fe3a883e940500beb6a3db1d1a88",
+          "conformance/declared_not_implemented.json": "2ba62e2c7f4191580a631ad383b104d46c3d310714e9cadd2cbdab7816930949",
+          "backend/src": "00d97c69e593761e94466c25b256500de7cd03ce52cf7b66dbc7087179cf0d2c",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "54896a032dabbc1ea6000ee4540221e537921c5ce7b0cf67f9dda611f2b6731e",
+          "backend/tests": "677b9e6eb7b0c36f0e471bd952b173ea75537461cd19dadcf4646cefffdfd163",
           "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
           "packages": "1d0130c75356f3dfc99a697584c821cbd9a20f53d95dc79b26fd299c21b61482",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
@@ -65,7 +65,7 @@
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-27: security-scanning row implemented, supply-chain-scanning-not-in-ci row added, Gates bullet names the security steps)"
+        "by": "Claude (septa-28: secrets-in-env row now implemented, pinned by test_signing_key_rotation.py, fixed in cd00985)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -80,7 +80,7 @@
       "baseline": {
         "on": "2026-09-25",
         "sha256": {
-          "backend/src/semantic_layer": "c35b33153743fdeb84130bf8d09fff1147f22ef0e1e326ced711e043cd9501f5",
+          "backend/src/semantic_layer": "efe8da2cbc1cf69ea3ea533ca4716310751b6a8f6afaa154086161d667683f32",
           "backend/src/agents/governance.py": "9ec8f7b9cf6fdf7a45570c18cff694c079f3f6211536a05d6a9d0dea0d1ce0c3",
           "packages/semantic-types/src": "fe7182fc233b307aa02d26a958898db94ead599601fe740dcfe2981bf5a1150d",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
@@ -89,7 +89,7 @@
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-26: re-read for role and domain claims; registry gained domain-scope parameters only, no claim here changes)"
+        "by": "Claude (septa-28: semantic_layer changed only in verdict.py key sourcing and rotation; 'signed, subject-bound, single-use' still true, no claim here changes)"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -107,13 +107,13 @@
           "backend/src/semantic_layer/provenance.py": "02fe831e092fb8bb01d05db9fc9d871ae544e09b2adca565d0df34e3086fa474",
           "backend/src/semantic_layer/contracts.py": "8af9432f179c0d3e8652b3b7d4a48db9edbff3f5acc1fb25c8a6e8d9af3eaaa4",
           "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
-          "backend/src/agents/llm_factory.py": "86a4c2764217aa29161c9cbc9727db4866efaf89633a4f3b9afb1b7f7406ce85",
+          "backend/src/agents/llm_factory.py": "f7a2d5514b4002494fe1cf9edf69c5b9cc31b8d2751fe39b335ecbfce4d8014a",
           "backend/src/agents/governance.py": "9ec8f7b9cf6fdf7a45570c18cff694c079f3f6211536a05d6a9d0dea0d1ce0c3"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-26: provenance routes now need a governance role; delete still erases, register provenance-not-append-only)"
+        "by": "Claude (septa-28: llm_factory now reads API keys via read_secret; the capture wrapper still exists and get_llm still has no callers)"
       }
     },
     "docs/ADR-003-hierarchical-planning-and-evaluation.md": {
@@ -148,7 +148,7 @@
       "baseline": {
         "on": "2026-09-25",
         "sha256": {
-          "backend/src/agents": "8f48385d3b8627df312618891728403bc212c3cfe8198129f1b9e6293b42e938",
+          "backend/src/agents": "7ac46e8cb94cf4eefd892bf611d487095c5017d961b9f1a5541ab6ec566ea8b5",
           "backend/src/skills": "7c14f6095d38b78711081427d4f98e3f621a0a72de4b377d6fc374c346c4ecea",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "backend/src/orchestration": "dec89bd24f81da4d46328dd0def76ef4c22e0e3c6370012ce27ea5812037acca",
@@ -157,7 +157,7 @@
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-25: re-read for PR-002, /check request fields, risk score and cycle count; EpistemicState comment, checklist and code map now name grounding_risk)"
+        "by": "Claude (septa-28: LLM routing paragraph notes each API key may be a <NAME>_FILE; provider order unchanged)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -183,13 +183,13 @@
           "backend/src/api/interventions.py": "ab12f730fbf7083ef7ea27b1da9e913919f32ca95464e0b22789844e627d0602",
           "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
           "backend/src/db/migrations": "4ab4b5ad6dcc513cbb149dba3bd9fb4f7a7ff7dd35393cb51ee688baaec3d671",
-          "backend/src/semantic_layer/verdict.py": "eda2e3481f24fb45ad19d5e11051fa65cd4ba75f8fba77e17415e5ad9479b9bf",
+          "backend/src/semantic_layer/verdict.py": "2807535994f0073bd9f58cc2774822d9f7bd1749aa7801d669eb2301bde3ac00",
           ".github/workflows": "7f02b9e4121a9913600d30b2fdbec2ab680ccc29f2ba5ae8008ff3c6207f9376"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-27: 8.4 describes the bandit, secret-scan and dependency-audit steps and the B608 skip; 8.3 and 10 point at supply-chain-scanning-not-in-ci)"
+        "by": "Claude (septa-28: 8.2 rewritten to the supported mechanism -- env or NAME_FILE, no secret-manager client, start-up refusal outside ENV=local, rotation via GUARDIAN_SIGNING_KEYS_PREVIOUS, compose password as local-dev exception; 3.2 bullet matches)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -207,7 +207,7 @@
       "baseline": {
         "on": "2026-09-25",
         "sha256": {
-          "backend/src/db": "73f4b4486583fb154c328a7348a4bbefd0e7551493e1dd5434116bbaec1fa68a",
+          "backend/src/db": "f84406e91045771219f6ce6606b1a19849e34ccb702a24070bc9f824bd0840cb",
           "backend/src/connectors": "47199e6fd213f90c59af28dda1c6469d256d6595cdd433fbbd1a2957ec723569",
           "backend/src/semantic_layer/models.py": "f3b7a600ac8e8c4ce7beb48145a188b2394f3775b6ad7d094613cbb9798d3b05",
           "backend/src/sensors": "d38f988ccb52659ac4ecc8724e8aa775b2e6e9fca76b73dbba6576c3f3d1dcba",
@@ -219,7 +219,7 @@
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-27: Prometheus row still true -- validate() now httpx on an http(s)-only base_url, tests still mock HTTP)"
+        "by": "Claude (septa-28: cloud-deployment line names DATABASE_URL_FILE; factory _get_env now shares secret_source's ENV rule, same values)"
       }
     },
     "docs/HANDOFFS.md": {
@@ -254,12 +254,12 @@
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
           ".github": "41fae14689ac86eea113f95a9a9061a67a56b609ce7953530272d48881088720",
-          ".gnomon": "a6a2118ccb7692a0820da2a5064f4adff52bf784cc0d6f8fcc6b6da4348e66e7"
+          ".gnomon": "4f0f9e805bef78f1fe38d81b297a3cdf38b7391e48ab6bac9454765d4fdbc72f"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (ci.sh frontend detection changed; the doc makes no claim about it)"
+        "by": "Claude (merge: ci.sh frontend detection; the doc makes no claim about it)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -283,13 +283,13 @@
           "backend/pyproject.toml": "31ec12890a7bf5512c8e918e0fed4bafe37f88d8826a7604f0aa1b9b6fa16b2b",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
-          ".env.example": "48f330ad41a48b5d03d0ba3f2910d171f65587998b67b75c4ad21df8656585ce",
+          ".env.example": "ac8e9212ebb369e44916a16d97f41316b195c229f578a26df88894513e658752",
           "backend/scripts": "ccd196982e05a128b6c27d502a3b1a127f803b58b33d60e675f2b556116bdc95"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-27: gate paragraph says pip-audit audits the venvs it runs in and is SKIPPED offline)"
+        "by": "Claude (septa-28: configuration gains the Guardian signing key -- optional locally, required outside ENV=local, NAME_FILE form, rotation via previous keys; PostgreSQL row names the compose password as local-dev only)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -311,12 +311,12 @@
         "on": "2026-09-25",
         "sha256": {
           ".github/workflows": "7f02b9e4121a9913600d30b2fdbec2ab680ccc29f2ba5ae8008ff3c6207f9376",
-          "backend/tests": "54896a032dabbc1ea6000ee4540221e537921c5ce7b0cf67f9dda611f2b6731e",
+          "backend/tests": "677b9e6eb7b0c36f0e471bd952b173ea75537461cd19dadcf4646cefffdfd163",
           "backend/pyproject.toml": "31ec12890a7bf5512c8e918e0fed4bafe37f88d8826a7604f0aa1b9b6fa16b2b",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
           ".gnomon/ci.sh": "5692f063efab9a80f519d1b5bba5507d9f092e0ed0f2779e180cb4ff0eeff0aa",
-          "scripts": "fa209a334f993a824a580a9de5159c9e4c008fea04d9371e23f6a8d4f9ac65f1",
+          "scripts": "b6101703ba143f257c233bf1b5ca95eee5682ce5910f1da1fbe91b9c06e25898",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "3dcea1af4dd3bbdd68778cbb91715e1663c850fb9681fe42096b50d1145550dc",
           "packages/causal-core/tests": "b73dcfd6530b951cdacdaaaac95e7e4068843b27cbd6635fdbe7b9efe306ecb3",
@@ -325,7 +325,7 @@
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (frontend toolchain detected by tool resolution, not a frontend/node_modules directory)"
+        "by": "Claude (merge: frontend toolchain text from #6 present beside this branch's changes)"
       }
     },
     "docs/UIX.md": {
@@ -355,13 +355,13 @@
         "on": "2026-09-25",
         "sha256": {
           "packages/causal-core/src/causal_core": "f504a91cfae574117c3accbd936ee039a34cde0bbd0579f77c4571207a366683",
-          "conformance/declared_not_implemented.json": "9ebcec645fbcf1881ca808abbd6cf114944cc3ef06fb4a702d26b75a7d7bcfac",
-          "docs/CURRENT_STAGE.md": "e7d4419b51fc61fc262e7f207ed1b928a53e5c79b01c172a7525ea772bea1bc0"
+          "conformance/declared_not_implemented.json": "2ba62e2c7f4191580a631ad383b104d46c3d310714e9cadd2cbdab7816930949",
+          "docs/CURRENT_STAGE.md": "ae7f02500e2f0233eefd1dd55e3abd3cafa8c1663d863c56a02d21d23e6ecc8e"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-27: p0 list says the security steps are in and what stays open)"
+        "by": "Claude (septa-28: p0 list says secrets come from NAME or NAME_FILE, start-up refusal and key rotation are in, no secret-manager client)"
       }
     },
     "SECURITY.md": {
@@ -382,12 +382,12 @@
           "backend/src/api/interventions.py": "ab12f730fbf7083ef7ea27b1da9e913919f32ca95464e0b22789844e627d0602",
           "backend/src/agents/governance.py": "9ec8f7b9cf6fdf7a45570c18cff694c079f3f6211536a05d6a9d0dea0d1ce0c3",
           "backend/src/semantic_layer/registry.py": "3b8c816d3729127bcff72112504a3c92bde225d47a475c6bd45044c72e21d60a",
-          "backend/src/semantic_layer/verdict.py": "eda2e3481f24fb45ad19d5e11051fa65cd4ba75f8fba77e17415e5ad9479b9bf"
+          "backend/src/semantic_layer/verdict.py": "2807535994f0073bd9f58cc2774822d9f7bd1749aa7801d669eb2301bde3ac00"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-26: roles paragraph rewritten to the role matrix, domain isolation added, dev-bypass roles corrected, RLS named as not in effect)"
+        "by": "Claude (septa-28: Guardian-verdicts paragraph says non-local start-up refuses without a >=32-byte key and previous keys verify; Secrets paragraph added: NAME or NAME_FILE, no secret-manager client, compose password is the local-dev exception)"
       }
     }
   }

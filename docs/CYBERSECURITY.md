@@ -157,8 +157,8 @@ All internal service calls use **short-lived tokens** issued by the identity ser
   Cloud SQL connector can use ADC; the repository contains no Cloud Run deployment.
 - Agent-to-agent calls: signed JWTs with 15-minute expiry. The agents are in-process function
   calls today.
-- Connector credentials rotated via Secret Manager (GCP). Today every credential, including
-  the Guardian signing key, is read from environment variables (register `secrets-in-env`).
+- Credentials, including the Guardian signing key, are read from an environment variable or
+  a mounted secret file, with no secret-manager client (§8.2).
 
 ### 3.3 MFA Requirements
 
@@ -393,15 +393,46 @@ Internet → Cloud Load Balancer (TLS 1.3 termination)
 
 ### 8.2 Secrets Management
 
-> **Status:** target design (register `secrets-in-env`). Today secrets are environment
-> variables: `GUARDIAN_SIGNING_KEY` (without it, verdicts are signed with a per-process key, and
-> the event is logged at CRITICAL), `DATABASE_URL`, `GOOGLE_APPLICATION_CREDENTIALS` (a key-file
-> path), and the LLM provider API keys.
+**Supported mechanism: an environment variable, or a file it names.** Every secret the backend
+reads goes through `read_secret` in `backend/src/secret_source.py`. For a secret `NAME` it takes
+exactly one of `NAME_FILE` (a path; the value is the file's contents less one trailing newline) or
+`NAME` (the value itself). Both set, or a `NAME_FILE` that is missing, unreadable or empty, stops
+the read with an error naming the variable and the path, never the value. The file form is how
+Docker and Kubernetes secrets and the secret managers' file-mount (CSI) drivers deliver a
+secret, and it keeps the value out of the process environment. There is **no built-in
+secret-manager client**: a secret manager is supported by mounting its secret as a file (or
+injecting it as a variable), and access logging and rotation schedules are the manager's.
 
-- All credentials in **Google Cloud Secret Manager**
-- No secrets in environment variables, code, or config files
-- Secret rotation enforced every 90 days for service accounts
-- Secret access is logged and audited
+| Secret | Read as | Used for |
+|---|---|---|
+| `GUARDIAN_SIGNING_KEY` | `_FILE` or env | The HMAC key every Guardian verdict is signed with |
+| `GUARDIAN_SIGNING_KEYS_PREVIOUS` | `_FILE` or env; comma- or newline-separated | Retired keys that still verify, never sign |
+| `DATABASE_URL` | `_FILE` or env | PostgreSQL, outside `ENV=local` without a Cloud SQL socket |
+| `NEO4J_PASSWORD` | `_FILE` or env | Neo4j, when `NEO4J_URI` is set |
+| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `DEEPSEEK_API_KEY` | `_FILE` or env | LLM clients (nothing calls `get_llm` today) |
+| `GOOGLE_APPLICATION_CREDENTIALS` | env, already a path to a key file | Firebase Admin; or ADC with no file at all |
+
+**Start-up refusal.** Local development is `ENV` unset or `local` (case and whitespace
+ignored), the same rule that chooses SQLite in `backend/src/db/factory.py`. With any other `ENV`
+the application refuses to start (the FastAPI lifespan raises `SigningKeyError` before it serves
+a request) when `GUARDIAN_SIGNING_KEY` is missing or shorter than 32 bytes, or a previous key is
+shorter than 32 bytes. In local development a missing key is replaced by one generated for the
+process, logged at CRITICAL (`guardian.signing_key.ephemeral`): its verdicts do not survive a
+restart or reach another worker. Pinned by `backend/tests/guardian/test_signing_key_rotation.py`.
+
+**Rotating the signing key.** New verdicts are signed with `GUARDIAN_SIGNING_KEY` only; a
+signature verifies against it or any key in `GUARDIAN_SIGNING_KEYS_PREVIOUS`. To rotate: move the
+current key into the previous list, set the new one, restart every worker. Verdicts issued
+before the rotation and not yet spent still authorise their one write. Drop the old key from the
+list once they have been spent (or to void them deliberately, if the old key leaked). Nothing
+schedules or enforces a rotation.
+
+**The local-dev exception.** `docker-compose.yml` carries the local PostgreSQL and Neo4j
+password (`causal_local_dev`) in plain text. It is a development stack bound to localhost and the
+password protects nothing else; do not reuse it, or the compose file, for a deployment.
+
+**Not built:** a secret-manager client, rotation enforced on a schedule, and audit of secret
+access inside the platform.
 
 ### 8.3 Container Security
 

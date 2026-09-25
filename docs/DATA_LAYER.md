@@ -370,7 +370,7 @@ triggers raise. The SQLite schema declares the same triggers.
 `UserRef` JSON (`JSONB`), and `guardian_verdict_ref` is `NOT NULL REFERENCES audit_log(id)`.
 
 **Cloud deployment:** `CloudSqlFactory` can connect to Cloud SQL through the Unix socket named by
-`CLOUD_SQL_INSTANCE_CONNECTION_NAME`, or to any PostgreSQL through `DATABASE_URL`. This
+`CLOUD_SQL_INSTANCE_CONNECTION_NAME`, or to any PostgreSQL through `DATABASE_URL` (or a file named by `DATABASE_URL_FILE`). This
 repository contains no Cloud Run deployment of it.
 
 ---

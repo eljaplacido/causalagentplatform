@@ -31,7 +31,23 @@ from typing import Any, Literal, overload
 
 import structlog
 
+from src.secret_source import read_secret
+
 log = structlog.get_logger(__name__)
+
+#: The API-key secret of each cloud provider. Each is read through
+#: ``src/secret_source.py``, so ``<NAME>_FILE`` naming a mounted file works as well
+#: as ``<NAME>`` in the environment.
+_API_KEY_SECRET: dict[str, str] = {
+    "anthropic": "ANTHROPIC_API_KEY",
+    "openai": "OPENAI_API_KEY",
+    "deepseek": "DEEPSEEK_API_KEY",
+}
+
+
+def _api_key(provider: str) -> str | None:
+    name = _API_KEY_SECRET.get(provider)
+    return read_secret(name) if name else None
 
 # ── Capability type ───────────────────────────────────────────────────────────
 
@@ -51,12 +67,9 @@ def _detect_provider() -> str:
     # Local-first preference: Ollama first
     if os.getenv("OLLAMA_BASE_URL"):
         return "ollama"
-    if os.getenv("ANTHROPIC_API_KEY"):
-        return "anthropic"
-    if os.getenv("OPENAI_API_KEY"):
-        return "openai"
-    if os.getenv("DEEPSEEK_API_KEY"):
-        return "deepseek"
+    for provider in ("anthropic", "openai", "deepseek"):
+        if _api_key(provider):
+            return provider
     return "none"
 
 
@@ -223,19 +236,23 @@ def _build_llm(
     elif provider == "anthropic":
         from langchain_anthropic import ChatAnthropic
 
+        key = _api_key("anthropic")
         return ChatAnthropic(
             model=model_name,
             temperature=temperature,
             max_tokens=int(os.getenv("ANTHROPIC_MAX_TOKENS", "4096")),
+            **({"api_key": key} if key else {}),
         )
 
     elif provider == "openai":
         from langchain_openai import ChatOpenAI
 
+        key = _api_key("openai")
         return ChatOpenAI(
             model=model_name,
             temperature=temperature,
             max_tokens=int(os.getenv("OPENAI_MAX_TOKENS", "4096")),
+            **({"api_key": key} if key else {}),
         )
 
     elif provider == "deepseek":
@@ -246,7 +263,7 @@ def _build_llm(
             temperature=temperature,
             max_tokens=int(os.getenv("DEEPSEEK_MAX_TOKENS", "4096")),
             base_url=os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1"),
-            api_key=os.getenv("DEEPSEEK_API_KEY", ""),
+            api_key=_api_key("deepseek") or "",
         )
 
     raise LLMNotAvailableError(f"Unknown provider: {provider}")
@@ -263,7 +280,7 @@ def _build_fallback_llm(capability: Capability, temperature: float) -> Any:
         try:
             if provider == "ollama" and os.getenv("OLLAMA_BASE_URL"):
                 pass  # Only use ollama if configured
-            elif provider == "anthropic" and os.getenv("ANTHROPIC_API_KEY") or provider == "openai" and os.getenv("OPENAI_API_KEY") or provider == "deepseek" and os.getenv("DEEPSEEK_API_KEY"):
+            elif _api_key(provider):
                 pass
             else:
                 continue
