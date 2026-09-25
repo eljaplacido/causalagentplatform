@@ -26,8 +26,8 @@ an inverse-probability score with a *predictable* baseline — each unit's outco
 mean of the outcomes before it — which is unbiased under randomization with a known allocation,
 even when the outcome's level drifts over the day, and much less variable than the raw score.
 
-The price is width: at the sample size it is tuned for, a confidence sequence is roughly 2.5–3
-times wider than a fixed-n interval. That is the cost of being allowed to look, and the bars below
+The price is width: at the sample size it is tuned for, a confidence sequence is about 1.55 times
+wider than a fixed-n interval. That is the cost of being allowed to look, and the bars below
 are set with it in mind rather than pretending otherwise.
 
 ## Design
@@ -117,3 +117,7 @@ so an effect of 0.2 is about two half-widths from zero, and a harm of 0.25 about
 ## Changelog
 
 - v1 (2026-09-25): initial registration.
+- v1, text correction before any run (2026-09-25): the width ratio in "What this gate is for" read
+  "roughly 2.5–3"; it is about 1.55 at the tuning size (a unit test of the boundary found it). No
+  bar depends on it — the power bars were derived from the final half-width, 0.097, which is
+  right — and no T6 run existed when the sentence was corrected.
