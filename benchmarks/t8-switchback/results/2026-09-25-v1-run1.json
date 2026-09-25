@@ -1,0 +1,106 @@
+{
+  "suite": "T8",
+  "prereg_sha256": "sha256:e3d3cde3103165484cf568901759687046f79fdeb68110d23e4f851aded1015e",
+  "prereg_version": 1,
+  "git": "3f75cc6d8c2d55ea3cdb561fd3b8a7f1443a29c5",
+  "designs": [
+    {
+      "id": "instant",
+      "tau": 0.3,
+      "reps": 1000,
+      "results": 1000,
+      "mean_error": -0.003435380791575999,
+      "mcse": 0.004062834768684171,
+      "bias_in_mcse": 0.8455625166092132,
+      "coverage": 0.955,
+      "carryover_flag_rate": 0.013,
+      "first_failure": ""
+    },
+    {
+      "id": "carryover",
+      "tau": 0.3,
+      "reps": 1000,
+      "results": 1000,
+      "mean_error": -0.0018568131008822695,
+      "mcse": 0.004187791408820096,
+      "bias_in_mcse": 0.443387198553288,
+      "coverage": 0.945,
+      "carryover_flag_rate": 0.007,
+      "first_failure": ""
+    },
+    {
+      "id": "null_effect",
+      "tau": 0.0,
+      "reps": 1000,
+      "results": 1000,
+      "mean_error": -0.0015909278201408678,
+      "mcse": 0.004002762836252222,
+      "bias_in_mcse": 0.39745742758780334,
+      "coverage": 0.956,
+      "carryover_flag_rate": 0.009,
+      "first_failure": ""
+    },
+    {
+      "id": "strong_autocorrelation",
+      "tau": 0.3,
+      "reps": 1000,
+      "results": 1000,
+      "mean_error": -0.0009899532264958486,
+      "mcse": 0.005341283832301962,
+      "bias_in_mcse": 0.18533994027971418,
+      "coverage": 0.953,
+      "carryover_flag_rate": 0.018,
+      "first_failure": ""
+    },
+    {
+      "id": "long_carryover",
+      "tau": 0.3,
+      "reps": 1000,
+      "results": 1000,
+      "mean_error": -0.08546836800572075,
+      "mcse": 0.004159883577045393,
+      "bias_in_mcse": 20.54585577282566,
+      "coverage": 0.887,
+      "carryover_flag_rate": 0.02,
+      "first_failure": ""
+    }
+  ],
+  "refusals": {
+    "varies_within_block": "refusal:DESIGN_CHECK_FAILED",
+    "washout_consumes_blocks": "refusal:INVALID_INPUT",
+    "too_few_blocks": "refusal:LOW_N",
+    "not_randomized": "refusal:INVALID_INPUT"
+  },
+  "seeded_defects_caught": {
+    "minute_level_se": true,
+    "no_washout": true
+  },
+  "seeded_defect_designs": {
+    "minute_level_se": {
+      "id": "instant",
+      "tau": 0.3,
+      "reps": 1000,
+      "results": 1000,
+      "mean_error": -0.003435380791575999,
+      "mcse": 0.004062834768684171,
+      "bias_in_mcse": 0.8455625166092132,
+      "coverage": 0.345,
+      "carryover_flag_rate": 0.013,
+      "first_failure": ""
+    },
+    "no_washout": {
+      "id": "carryover",
+      "tau": 0.3,
+      "reps": 1000,
+      "results": 1000,
+      "mean_error": -0.023628610647184634,
+      "mcse": 0.004005358927551158,
+      "bias_in_mcse": 5.899249249462635,
+      "coverage": 0.944,
+      "carryover_flag_rate": 0.007,
+      "first_failure": ""
+    }
+  },
+  "failures": [],
+  "passed": true
+}
