@@ -124,14 +124,17 @@
         "backend/src/api/platform.py"
       ],
       "baseline": {
-        "on": "2026-09-19",
+        "on": "2026-09-25",
         "sha256": {
-          "backend/src/orchestration": "d655abcaa426874b6198abc2cfb8dc45c2d06e0144c20983634f7a9b34ebe06f",
+          "backend/src/orchestration": "dec89bd24f81da4d46328dd0def76ef4c22e0e3c6370012ce27ea5812037acca",
           "backend/src/evaluation": "9a2708b95f3bae7f8b05075e62815c7f51cb3f6e7939a585c1c2c26e5b500b07",
-          "backend/src/api/platform.py": "a0dd49f95f78ab4c3d9e1328d93f853c7cdff32755f4d1928cbff72ff24937ab"
+          "backend/src/api/platform.py": "bc2cd507fe88c75c6b8f944378939b088ffafe5aad4907367ea288503b33a025"
         }
       },
-      "last_read": null
+      "last_read": {
+        "on": "2026-09-25",
+        "by": "Claude (planner simulation, constraints and evaluation endpoints re-read against planning.py, graph.py, platform.py)"
+      }
     },
     "docs/AGENTS.md": {
       "why": "agent registry, skill library, MCP exposure and LLM routing -- the densest set of capability claims in the repo",

@@ -98,6 +98,7 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 | Intervention feedback endpoint | `implemented` | [backend/tests/unit/test_interventions.py](../backend/tests/unit/test_interventions.py) | |
 | Health endpoint | `implemented` | [backend/tests/unit/test_health_api.py](../backend/tests/unit/test_health_api.py) | |
 | Agent evaluation endpoints (consistency, calibration, decision quality) measure the platform | `declared-not-implemented` | [dni:evaluation-endpoints-not-measured](../conformance/declared_not_implemented.json) | Each scores its own inputs; `calibration` here is confidence spread, not calibration |
+| FLARE planning simulates each action with the approved causal model | `declared-not-implemented` | [dni:planning-simulation-no-data](../conformance/declared_not_implemented.json) | Kernel refuses without data; lookahead rescales the action's own confidence |
 
 ### Data and infrastructure
 

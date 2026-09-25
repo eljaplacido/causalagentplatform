@@ -546,6 +546,18 @@
         {
           "at": "backend/src/api/platform.py:761",
           "says": "    summary=\"Composite decision quality index\","
+        },
+        {
+          "at": "docs/ADR-003-hierarchical-planning-and-evaluation.md@13e7d92:139",
+          "says": "| `POST /api/v1/platform/evaluation/calibration` | Confidence calibration check |"
+        },
+        {
+          "at": "docs/ADR-003-hierarchical-planning-and-evaluation.md@13e7d92:152",
+          "says": "8-run consistency probe quantifies the 37% lab-vs-production gap"
+        },
+        {
+          "at": "docs/ADR-003-hierarchical-planning-and-evaluation.md@13e7d92:153",
+          "says": "Confidence calibration measured per agent, detectable within single session"
         }
       ],
       "reality": "None of the three observes an agent. /evaluation/consistency scores num_runs identical EMPTY recommendation lists against each other, so the variance it reports is 0 by construction whatever the platform is doing. /evaluation/calibration scores the confidences in the request body, and CalibrationProbe states it uses their variance as a proxy because there is no ground truth -- calibration needs realized outcomes, and nothing records one. /evaluation/decision-quality combines four numbers taken as query parameters, defaulting to 0.75/0.05/0.80/0.70, so its 'index' is whatever the caller passes. The module docstring claimed 'No static or mock values' until 2026-09-24; it now names these three as excluded.",
@@ -866,6 +878,49 @@
         "kind": "test",
         "path": "backend/tests/integration/test_data_contract_enforced.py",
         "asserts": "an agent reading a data product whose registered contract's freshness SLA has lapsed is refused by the Guardian with PR-009 cited, the violation computed by the platform rather than supplied by the caller -- and a fresh product is not refused"
+      }
+    },
+    {
+      "id": "planning-simulation-no-data",
+      "status": "declared-not-implemented",
+      "capability": "FLARE planning forward-simulates each candidate action with the approved causal model before committing",
+      "claimed_in": [
+        {
+          "at": "backend/src/orchestration/planning.py:7",
+          "says": "1. SimulateAhead   \u2014 Forward-simulate action consequences using the approved SCM"
+        },
+        {
+          "at": "docs/AGENTS.md:542",
+          "says": "SimulateAhead (SCM lookahead)"
+        },
+        {
+          "at": "docs/ADR-003-hierarchical-planning-and-evaluation.md@13e7d92:37",
+          "says": "**SimulateAhead**: Forward-simulates each candidate action using the approved"
+        },
+        {
+          "at": "docs/ADR-003-hierarchical-planning-and-evaluation.md@13e7d92:72",
+          "says": "SCM used for effect estimation when approved fragment available"
+        }
+      ],
+      "reality": "_simulate_single_action calls effect_estimate with data=None, and the kernel refuses without data, so no action ever gets an estimate. Under an APPROVED fragment each action's confidence is halved (action.confidence * 0.5, never a failure). Without a fragment it keeps its own confidence and fails below 0.3. The lookahead is therefore arithmetic on the recommendations' own confidences. Under an APPROVED fragment an action needs confidence >= 0.8 to clear the node's 0.4 commit threshold, while without one it needs 0.4: an approved causal model makes the planner escalate more often, not less. SIMULATED_NOT_EXECUTED outcomes are not surfaced, and planning failure sets requires_human_review, not the CHAOTIC domain.",
+      "evidence": [
+        {
+          "at": "backend/src/orchestration/planning.py:335",
+          "says": "data=None,  # no observational data here: the kernel refuses, ate is None"
+        },
+        {
+          "at": "backend/src/orchestration/planning.py:343",
+          "says": "action.confidence * 0.5,"
+        },
+        {
+          "at": "backend/src/orchestration/planning.py:397",
+          "says": "confidence_threshold=0.4,"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/integration/test_planning_uses_estimates.py",
+        "asserts": "given an APPROVED fragment and observational data in which one candidate action's effect is known to be harmful, the planner's simulated effect for it comes from causal-core and that action is not committed -- and the committed choice changes when the data does"
       }
     }
   ],
