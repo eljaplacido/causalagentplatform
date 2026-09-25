@@ -40,8 +40,9 @@ from causal_core.identification import (
 from causal_core.refute import implied_independences
 from pydantic import BaseModel, Field
 
+from causal_mcp.query_params import IDENTIFICATION_FIELDS, takes_query
+
 Cell = float | int | str | bool | None
-Design = Literal["observational", "randomized", "difference_in_differences"]
 
 
 class AnalyzeResponse(BaseModel):
@@ -112,133 +113,46 @@ def load_table(data: dict[str, list[Cell]] | None, data_path: str | None) -> pd.
     return pd.read_csv(path)
 
 
-def _query(
-    treatment: str,
-    outcome: str,
-    design: Design,
-    adjust_for: list[str] | None,
-    instruments: list[str] | None,
-    treatment_proxies: list[str] | None,
-    outcome_proxies: list[str] | None,
-    negative_control_outcomes: list[str] | None,
-    treatment_levels: list[float] | None,
-    expected_treated_share: float | None,
-    segment_by: list[str] | None = None,
-    *,
-    unit: str | None = None,
-    time: str | None = None,
-    estimand: Literal["ate", "att"] = "ate",
-    sequence: str | None = None,
-    cluster: str | None = None,
-    washout: float | None = None,
-) -> CausalQuery:
-    return CausalQuery(
-        sequence=sequence,
-        cluster=cluster,
-        washout=washout,
-        unit=unit,
-        time=time,
-        estimand=estimand,
-        treatment=treatment,
-        outcome=outcome,
-        design=design,
-        adjust_for=tuple(adjust_for) if adjust_for is not None else None,
-        instruments=tuple(instruments) if instruments else None,
-        treatment_proxies=tuple(treatment_proxies or ()),
-        outcome_proxies=tuple(outcome_proxies or ()),
-        negative_control_outcomes=tuple(negative_control_outcomes or ()),
-        treatment_levels=(treatment_levels[0], treatment_levels[1]) if treatment_levels else None,
-        expected_treated_share=expected_treated_share,
-        segment_by=tuple(segment_by or ()),
-    )
-
-
+@takes_query()
 def causal_analyze(
     graph: str,
-    treatment: str,
-    outcome: str,
     data: dict[str, list[Cell]] | None = None,
     data_path: str | None = None,
-    design: Design = "observational",
-    adjust_for: list[str] | None = None,
-    instruments: list[str] | None = None,
-    treatment_proxies: list[str] | None = None,
-    outcome_proxies: list[str] | None = None,
-    negative_control_outcomes: list[str] | None = None,
-    treatment_levels: list[float] | None = None,
-    expected_treated_share: float | None = None,
-    segment_by: list[str] | None = None,
-    unit: str | None = None,
-    time: str | None = None,
-    estimand: Literal["ate", "att"] = "ate",
-    sequence: str | None = None,
-    cluster: str | None = None,
-    washout: float | None = None,
     policy: dict[str, Any] | None = None,
+    *,
+    query: dict[str, Any],
 ) -> AnalyzeResponse:
     """Estimate the effect of `treatment` on `outcome`, or return a typed refusal saying why not.
 
     Identification comes first (from `graph`), then design checks, a portfolio of estimators,
-    falsification tests and sensitivity analysis. The outcome is exactly one of:
-    `result` (an estimate with interval, certificate and diagnostics), `refusal` (a typed
-    reason plus what information would make the question answerable -- a correct answer,
-    not an error) or `apparatus_failure`.
+    falsification tests and sensitivity analysis. The outcome is exactly one of `result` (an
+    estimate with interval, certificate and diagnostics), `refusal` (a typed reason plus what
+    information would make the question answerable -- a correct answer, not an error) or
+    `apparatus_failure`. Use numbers in your reply only via `outcome.claims`, and pass your
+    text to `causal_verify_narrative` before replying to a user.
 
-    Use numbers in your reply only via claims: `outcome.claims` lists every number with its
-    rendered text. Before replying to a user, pass your text to `causal_verify_narrative`.
+    Each analysis parameter is described in the input schema, from the kernel's contract.
+    How they combine:
 
-    `segment_by` names discrete, pre-treatment columns to estimate the effect *within*.
-    Declare them before you see the answer: this kernel will not search for the subgroup
-    with the largest effect, because the subgroup that looks best after a search is
-    mostly noise. Each segment comes back with its own interval, a wider family-wise
-    interval that accounts for how many subgroups were examined, and one heterogeneity
-    test saying whether the segments differ at all. Quote the family-wise interval when
-    you make a claim about a segment, and if `heterogeneity.differs` is false, say the
-    segments could not be told apart rather than comparing them.
-
-    **Staggered rollouts** (panel data: the same units observed over periods, some treated
-    from some period on): `design="difference_in_differences"` with `unit`, `time` and
-    `estimand="att"`. Identification rests on parallel trends, which no graph can state, so
-    the certificate is tier C and a failed pre-trends test makes the result `contested`.
-
-    **Watched canaries** (a randomized rollout you will look at repeatedly): pass
-    `design="randomized"`, `sequence` (the column giving arrival order) and
-    `expected_treated_share` (the randomizer's probability). The result carries an
-    anytime-valid confidence sequence at every look: you may read it, and stop on it, as
-    often as you like. Do not re-run a fixed-sample analysis after every batch instead --
-    read that way its error rate is far above 5%.
-
-    **Randomized by service, measured by request?** Pass `cluster` (the column naming the unit
-    that was randomized). Requests within a service are not independent; without `cluster`
-    the interval can be several times too narrow. **A switchback** (the whole system switched
-    between arms in time blocks) is the same with `cluster` = the block, `time` = the minute and
-    `washout` = how long the system takes to settle after a switch. Choose the washout from what
-    you know of the system: the built-in carryover check is weak.
+    - **Segments** (`segment_by`, declared before you see the answer): quote a segment's
+      family-wise interval, and if `heterogeneity.differs` is false, say the segments could
+      not be told apart rather than comparing them.
+    - **Staggered rollout** (panel data): `design="difference_in_differences"`, `unit`, `time`,
+      `estimand="att"`. Parallel trends is not in the graph, so the certificate is tier C and a
+      failed pre-trends test makes the result `contested`.
+    - **Watched canary**: `design="randomized"`, `sequence`, `expected_treated_share`. Read and
+      stop on the confidence sequence as often as you like; do not re-run a fixed-sample
+      analysis after every batch instead -- read that way its error rate is far above 5%.
+    - **Randomized by service, measured by request**: `cluster`, or the interval can be several
+      times too narrow. **Switchback**: `cluster` = the block, `time` = the minute, `washout`
+      chosen from what you know of the system (the built-in carryover check is weak).
 
     `graph` syntax: `Z -> X -> Y; Z -> Y`; `X <-> Y` means an unmeasured common cause;
     `latent U` declares an unmeasured node. Data: either `data` as {column: [values]} or
     `data_path` (CSV / Parquet / JSON under the server's allowed data roots).
     """
     try:
-        query = _query(
-            treatment,
-            outcome,
-            design,
-            adjust_for,
-            instruments,
-            treatment_proxies,
-            outcome_proxies,
-            negative_control_outcomes,
-            treatment_levels,
-            expected_treated_share,
-            segment_by,
-            unit=unit,
-            time=time,
-            estimand=estimand,
-            sequence=sequence,
-            cluster=cluster,
-            washout=washout,
-        )
+        cq = CausalQuery(**query)
         pol = AnalysisPolicy.model_validate(policy or {})
         frame = load_table(data, data_path)
     except Exception as exc:
@@ -250,20 +164,12 @@ def causal_analyze(
             ),
         )
         return AnalyzeResponse(outcome=refusal, report=cc.report(refusal))
-    out = cc.analyze(frame, graph, query=query, policy=pol)
+    out = cc.analyze(frame, graph, query=cq, policy=pol)
     return AnalyzeResponse(outcome=out, report=cc.report(out))
 
 
-def causal_identify(
-    graph: str,
-    treatment: str,
-    outcome: str,
-    design: Design = "observational",
-    adjust_for: list[str] | None = None,
-    instruments: list[str] | None = None,
-    treatment_proxies: list[str] | None = None,
-    outcome_proxies: list[str] | None = None,
-) -> IdentifyResponse:
+@takes_query(IDENTIFICATION_FIELDS)
+def causal_identify(graph: str, *, query: dict[str, Any]) -> IdentifyResponse:
     """Decide whether the effect is identifiable from the graph alone -- before collecting data.
 
     Returns the identification certificate (strategy, adjustment set or instruments, the
@@ -271,20 +177,9 @@ def causal_identify(
     not identified and what would change that. A user-chosen `adjust_for` is validated.
     """
     try:
-        query = _query(
-            treatment,
-            outcome,
-            design,
-            adjust_for,
-            instruments,
-            treatment_proxies,
-            outcome_proxies,
-            None,
-            None,
-            None,
-        )
+        cq = CausalQuery(**query)
         g = Graph.from_spec(parse_graph(graph))
-        cert = identify(g, query)
+        cert = identify(g, cq)
     except InvalidAdjustmentSet as exc:
         hint = (
             [f"a valid adjustment set is {{{', '.join(exc.suggestion)}}}"]
@@ -299,7 +194,7 @@ def causal_identify(
             identified=False,
             certificate=cert,
             refusal=f"not identified: {cert.general_id}",
-            missing_information=list(missing_information(g, treatment, outcome)),
+            missing_information=list(missing_information(g, cq.treatment, cq.outcome)),
         )
     return IdentifyResponse(identified=True, certificate=cert)
 
@@ -378,10 +273,9 @@ if HAS_DECISION:
         outcome: CausalResult | Abstention | ApparatusFailure = Field(discriminator="kind")
         explanation: str
 
+    @takes_query()
     def causal_decide(
         graph: str,
-        treatment: str,
-        outcome: str,
         action: str,
         direction: Literal["increase", "decrease"],
         data: dict[str, list[Cell]] | None = None,
@@ -393,24 +287,10 @@ if HAS_DECISION:
         can_randomize: bool = True,
         randomization_unit: str = "unit",
         units_per_day: float | None = None,
-        population: str | None = None,
-        horizon: str | None = None,
-        design: Design = "observational",
-        adjust_for: list[str] | None = None,
-        instruments: list[str] | None = None,
-        treatment_proxies: list[str] | None = None,
-        outcome_proxies: list[str] | None = None,
-        negative_control_outcomes: list[str] | None = None,
-        expected_treated_share: float | None = None,
-        segment_by: list[str] | None = None,
-        unit: str | None = None,
-        time: str | None = None,
-        estimand: Literal["ate", "att"] = "ate",
-        sequence: str | None = None,
-        cluster: str | None = None,
-        washout: float | None = None,
         policy: dict[str, Any] | None = None,
         decision_policy: dict[str, Any] | None = None,
+        *,
+        query: dict[str, Any],
     ) -> DecideResponse:
         """Decide whether a proposed action is justified by the evidence.
 
@@ -426,41 +306,22 @@ if HAS_DECISION:
         outcome should move (so a benefit is always positive). `risk_class` and `reversible`
         describe the cost of being wrong; high risk always goes to a person.
 
-        `segment_by` names discrete, pre-treatment columns whose subgroups you want judged
-        as well as the whole population -- declare them BEFORE you see any answer. A pooled
-        effect is an average, and an average can describe nobody: an action that helps one
-        group and harms another can pool to something that looks fine. When you declare
-        subgroups, the verdict accounts for them, and it will not automate an action that
-        materially harms one of them. Not declaring any is not evidence that the effect is
-        uniform -- it only means nobody looked.
+        Declare `segment_by` BEFORE you see any answer: a pooled effect is an average, and an
+        action that helps one group and harms another can pool to something that looks fine.
+        The verdict will not automate an action that materially harms a declared subgroup.
+        Not declaring any is not evidence that the effect is uniform -- nobody looked.
+
+        The analysis parameters are `causal_analyze`'s, described in the input schema.
 
         When the evidence cannot settle it, the response carries the experiment that would,
         sized from the data. Relay `explanation` rather than writing your own: its numbers are
         bound to the analysis.
         """
         try:
-            query = _query(
-                treatment,
-                outcome,
-                design,
-                adjust_for,
-                instruments,
-                treatment_proxies,
-                outcome_proxies,
-                negative_control_outcomes,
-                None,
-                expected_treated_share,
-                segment_by,
-                unit=unit,
-                time=time,
-                estimand=estimand,
-                sequence=sequence,
-                cluster=cluster,
-                washout=washout,
-            )
+            cq = CausalQuery(**query)
             request = DecisionRequest(
                 action=action,
-                outcome=outcome,
+                outcome=cq.outcome,
                 direction=direction,
                 risk_class=RiskClass(risk_class),
                 reversible=reversible,
@@ -469,8 +330,9 @@ if HAS_DECISION:
                 can_randomize=can_randomize,
                 randomization_unit=randomization_unit,
                 units_per_day=units_per_day,
-                population=population,
-                horizon=horizon,
+                # The query's labels are the request's, as in the platform's HTTP endpoint.
+                population=cq.population,
+                horizon=cq.horizon,
             )
             dpol = DecisionPolicy.model_validate(decision_policy or {})
             pol = AnalysisPolicy.model_validate(policy or {})
@@ -483,10 +345,10 @@ if HAS_DECISION:
                     contract_version=cc.CONTRACT_VERSION, core_version=cc.__version__
                 ),
             )
-            bad = DecisionRequest(action=action, outcome=outcome, direction=direction)
+            bad = DecisionRequest(action=action, outcome=str(query["outcome"]), direction=direction)
             d = decide(refusal, bad, DecisionPolicy())
             return DecideResponse(decision=d, outcome=refusal, explanation=explain(d, refusal))
-        out = cc.analyze(frame, graph, query=query, policy=pol)
+        out = cc.analyze(frame, graph, query=cq, policy=pol)
         d = decide(out, request, dpol)
         return DecideResponse(decision=d, outcome=out, explanation=explain(d, out))
 
@@ -510,13 +372,13 @@ if HAS_DECISION:
         changes: GraphChange | None = None
         refusal: str | None = None
 
+    @takes_query(IDENTIFICATION_FIELDS)
     def causal_impact(
         old_graph: str,
         new_graph: str,
-        treatment: str,
-        outcome: str,
-        adjust_for: list[str] | None = None,
         unmeasured: list[str] | None = None,
+        *,
+        query: dict[str, Any],
     ) -> ImpactResponse:
         """Ask whether a revised causal graph breaks an estimate made under the old one.
 
@@ -527,19 +389,14 @@ if HAS_DECISION:
         IV or proximal estimate whose certificate changed: re-analyse), or, when the old
         graph could not identify the effect, `gained` / `still_unidentified`.
 
-        Pass `adjust_for` as the adjustment set the original analysis USED (its certificate's
-        `adjustment_set`), so that set is judged -- not whatever the new graph would suggest.
-        Pass `unmeasured` for graph nodes the data had no column for. "The kernel still picks
-        back-door" and "the new adjustment set is valid" are NOT the same as "the old estimate
-        stands"; this tool answers the last one, and it is what a verdict depends on.
+        Pass the earlier query: `adjust_for` as the set its analysis USED (its certificate's
+        `adjustment_set`), so that set is judged -- not whatever the new graph would suggest --
+        and its `design`, `instruments` and proxies, so its own strategy is re-certified.
+        Pass `unmeasured` for graph nodes the data had no column for. "Still back-door" and
+        "the new set is valid" are NOT "the old estimate stands"; this tool answers the last.
         """
         try:
-            query = CausalQuery(
-                treatment=treatment,
-                outcome=outcome,
-                adjust_for=tuple(adjust_for) if adjust_for else None,
-            )
-            got = impact(old_graph, new_graph, query, unmeasured=unmeasured or ())
+            got = impact(old_graph, new_graph, CausalQuery(**query), unmeasured=unmeasured or ())
             d = diff(parse_graph(old_graph), parse_graph(new_graph))
             return ImpactResponse(
                 impact=got,

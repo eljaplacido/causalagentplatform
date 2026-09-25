@@ -125,6 +125,7 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 |---|---|---|---|
 | Backend MCP server (`backend/mcp_server`): 7 causal tools over stdio, stdout reserved for protocol frames | `implemented` | [backend/tests/integration/test_mcp_stdio.py](../backend/tests/integration/test_mcp_stdio.py) | Outputs are only as real as the causal rows above |
 | `packages/causal-mcp`: causal-core over MCP (check graph, identify, analyze, verify narrative, and `causal_decide` and `causal_impact` with the decision extra) | `implemented` | [packages/causal-mcp/tests/test_stdio_flow.py](../packages/causal-mcp/tests/test_stdio_flow.py) | The canonical server; wired into `.gnomon/tools.toml` as `causal_core` and granted to every role except `smol` (summarisation only) |
+| `packages/causal-mcp`: every tool's analysis parameters are the kernel's `CausalQuery` fields, derived with the contract's type, default, bounds and description rather than copied | `implemented` | [packages/causal-mcp/tests/test_query_parity.py](../packages/causal-mcp/tests/test_query_parity.py) | Checked against the schemas as the server lists them; `rung` is not served (interventional only). The hand copies had left `causal_decide` without `treatment_levels` and `causal_impact` without `design`, `instruments` and proxies |
 | One MCP server: the legacy backend server retired | `planned` | [dni:legacy-mcp-server](../conformance/declared_not_implemented.json) | Deprecated: granted to no gnomon role, warns on startup; not yet deleted |
 | LLM capability routing used by the agents | `declared-not-implemented` | [dni:llm-routing-no-callers](../conformance/declared_not_implemented.json) | `get_llm` has no callers |
 | Cynefin-domain classification that routing and human escalation can rely on | `declared-not-implemented` | [dni:cynefin-classifier-keyword-stub](../conformance/declared_not_implemented.json) | A keyword stub: macro F1 0.07 on an external 456-item corpus, below the most-common-class baseline; 0 of 50 CHAOTIC items recalled |
@@ -179,7 +180,7 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 | mypy --strict (each package's src) | zero, per package | 0 for causal-core, causal-decision and causal-mcp |
 | Frontend tsc / vitest | must pass | 50 files typecheck; 62 tests in 8 files |
 | Frontend eslint (`frontend/src`, Next's core-web-vitals and TypeScript rules) | zero findings, may not rise ([`scripts/lint-baseline.json`](../scripts/lint-baseline.json)) | 0 over 44 files |
-| Every Python package under `packages/` | its suite must pass in the package's environment, and a skipped test fails it | causal-core 171 passed (T0, T4, T5, T6, T7 and T8 gates, and T2/T3 with their data cached); causal-decision 118 (D0 and A0); causal-mcp 26 |
+| Every Python package under `packages/` | its suite must pass in the package's environment, and a skipped test fails it | causal-core 180 passed (T0, T4, T5, T6, T7 and T8 gates, and T2/T3 with their data cached); causal-decision 118 (D0 and A0); causal-mcp 38 |
 | Skill modules imported by a test | 2 known gaps, may only shrink | 9 of 11 |
 | State-changing routes called by a test | no gaps allowed | 17 of 17 |
 | MCP tools referenced by a test (legacy server) | no gaps allowed | 7 of 7 |

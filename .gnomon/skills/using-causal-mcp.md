@@ -24,13 +24,27 @@ return triage scores, not effects. Never cite it for a causal number.
    the `[decision]` extra; if it is missing from your tool list, say so rather
    than improvising a verdict from `causal_analyze`.
    When the graph behind an earlier answer changes, call `causal_impact` with
-   the old graph, the new graph and the adjustment set the earlier analysis
-   used (its certificate's `adjustment_set`). "Still back-door" is not "still
-   valid"; only `holds` means the earlier answer stands.
+   the old graph, the new graph and the earlier query: the adjustment set its
+   analysis used (its certificate's `adjustment_set`), and its `design`,
+   `instruments` and proxies, so its own strategy is the one re-certified.
+   "Still back-door" is not "still valid"; only `holds` means the earlier
+   answer stands.
 4. `causal_verify_narrative` -- pass your prose and the `outcome` object
    unchanged before replying. Every number must be a claim from the outcome;
    causal wording ("caused", "will reduce") is allowed only for a `supported`
    result. It fails closed.
+
+**Parameters come from the kernel's contract.** Every analysis parameter
+(`design`, `estimand`, `segment_by`, `cluster`, `washout`, `sequence`, `unit`,
+`time`, ...) is a field of `causal_core.contract.CausalQuery`, published in
+the tool's input schema with the contract's type, default, bounds and
+description (packages/causal-mcp/src/causal_mcp/query_params.py). Read the
+description there rather than guessing a value. `causal_analyze` and
+`causal_decide` take every field but `rung` (the kernel answers interventional
+questions only); `causal_identify` and `causal_impact` take the fields
+identification reads. A bound violated over MCP (`expected_treated_share`
+outside (0, 1), a negative `washout`) is rejected by the server before the
+tool runs, as a tool error rather than a refusal.
 
 Graph syntax: `Z -> X -> Y; Z -> Y`; `X <-> Y` is an unmeasured common cause;
 `latent U` declares an unmeasured node. A graph node with no data column is

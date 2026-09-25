@@ -109,6 +109,14 @@ def test_every_causal_query_field_is_reachable() -> None:
     assert missing == set(), f"CausalQuery fields the HTTP API cannot set: {missing}"
 
 
+def test_the_query_option_docs_name_every_option() -> None:
+    """The `query` field's description once listed nine options by hand, six behind."""
+    words = DecideRequest.model_fields["query"].description or ""
+    unnamed = {name for name in QueryOptions.model_fields if name not in words}
+    assert {"washout", "cluster", "sequence"} <= set(QueryOptions.model_fields)
+    assert unnamed == set(), f"options the OpenAPI description does not name: {unnamed}"
+
+
 async def test_a_staggered_rollout_is_decided_over_http(client: AsyncClient) -> None:
     """The panel design arrives with no endpoint change: the options derive from CausalQuery."""
     from causal_core.bench import t5

@@ -240,3 +240,47 @@ def test_a_switchback_is_analysed_over_mcp() -> None:
                                data={c: frame[c].tolist() for c in frame}, design="randomized",
                                cluster="block", time="minute", washout=20)
     assert out.outcome.kind == "result", out.report
+
+
+def test_impact_recertifies_the_strategy_the_earlier_query_used() -> None:
+    """causal_impact once took only treatment, outcome and adjust_for, so it judged every
+    earlier answer as an observational one. The graph truths here are set by hand."""
+    # A randomized answer is broken by learning that W drives the treatment: the
+    # arms were not exchangeable. As an observational query the same revision holds.
+    old, new = "X -> Y; W -> Y", "X -> Y; W -> Y; W -> X"
+    as_randomized = tools.causal_impact(old, new, "X", "Y", design="randomized")
+    assert as_randomized.impact is not None
+    assert as_randomized.impact.old_strategy == "randomized"
+    assert as_randomized.impact.status.value == "invalidated"
+    # A proximal answer exists only with its proxies; without them the old graph
+    # identifies nothing, and the tool could not say the revision breaks it.
+    proximal = "X -> Y; P -> X; Q -> Y; U -> X; U -> Y; U -> P; U -> Q; latent U"
+    broken = proximal + "; P -> Y"
+    blind = tools.causal_impact(proximal, broken, "X", "Y")
+    assert blind.impact is not None and blind.impact.status.value == "still_unidentified"
+    seen = tools.causal_impact(
+        proximal, broken, "X", "Y", treatment_proxies=["P"], outcome_proxies=["Q"]
+    )
+    assert seen.impact is not None and seen.impact.old_strategy == "proximal"
+    assert seen.impact.status.value == "invalidated"
+
+
+def test_decide_takes_treatment_levels() -> None:
+    """A dose of 0 vs 2 is worth twice the per-unit effect; causal_decide used to drop the
+    levels (it passed None), so a continuous treatment was always ruled on per unit."""
+    rng = np.random.default_rng(3)
+    n = 3000
+    load = rng.normal(size=n)
+    dose = np.clip(1 + 0.5 * load + rng.normal(size=n), 0, None)
+    minutes = 60 - 3.0 * dose + 5 * load + rng.normal(0, 4, size=n)
+    data = {"load": load.tolist(), "playbook": dose.tolist(), "minutes": minutes.tolist()}
+    common: dict[str, Any] = {"graph": GRAPH, "treatment": "playbook", "outcome": "minutes",
+                              "data": data, "action": "double the dose",
+                              "direction": "decrease", "minimum_worthwhile_effect": 4.0}
+    per_unit = tools.causal_decide(**common)
+    doubled = tools.causal_decide(**common, treatment_levels=[0.0, 2.0])
+    assert per_unit.outcome.kind == doubled.outcome.kind == "result", doubled.explanation
+    assert abs(per_unit.outcome.primary.point - -3.0) < 0.3
+    assert abs(doubled.outcome.primary.point - -6.0) < 0.6
+    assert per_unit.decision.verdict.value != "act"  # 3 < 4: not worth it per unit
+    assert doubled.decision.verdict.value in ("act", "act_with_approval")

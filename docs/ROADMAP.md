@@ -109,11 +109,13 @@ priority first, and the priorities put hardening the platform before new estimat
   fixed (`septa-52`, gate step `backend-pytest-postgres`). No SQL in `backend/src` is built
   from strings, and bandit enforces it (`septa-50`). Open: rejecting a draft needs a Guardian
   REJECTED verdict, which a classified reject request never gets (`septa-53`).
-- **p1, release and drift.** Protect `main` (`septa-1`); a first PyPI release of the three
-  packages (`septa-2`); checks that the skills and agent docs name only things that exist
-  (`septa-3`) and that MCP tool parameters are derived from `CausalQuery` (`septa-4`); SeptaCore's
-  optional stages that fit (`septa-5`); deleting the legacy MCP server once no external client
-  needs it (`septa-6`).
+- **p1, release and drift.** Done: the gate checks that the skills and agent docs name only
+  things that exist (`septa-3`), and the MCP tools' parameters are derived from `CausalQuery`,
+  with a parity test (`septa-4`; it found `causal_impact` judging every earlier answer as
+  observational, and `causal_decide` dropping `treatment_levels`). Open: protect `main`
+  (`septa-1`; needs a public repository or a paid plan); a first PyPI release of the three
+  packages (`septa-2`); SeptaCore's optional stages that fit (`septa-5`); deleting the legacy MCP
+  server once no external client needs it (`septa-6`).
 - **p2, the kernel and decision layer.** Step 3's remaining estimators (`septa-7`, `septa-8`,
   `septa-9`), calibration (`septa-10`), anchoring (`septa-11`), Rosenbaum bounds (`septa-12`),
   Guardian PR-007 (`septa-33`), positivity detection and triangulation at moderate n (`septa-34`,
