@@ -97,6 +97,34 @@ def _evidence(out: CausalOutcome, request: DecisionRequest) -> Evidence:
         result_digest=out.result_digest,
         segments=tuple(_segment_evidence(s, sign) for s in out.segments),
         heterogeneity_differs=out.heterogeneity.differs if out.heterogeneity else None,
+        trend_breakdown=_trend_breakdown(out),
+    )
+
+
+def _trend_breakdown(out: CausalResult) -> float | None:
+    pt = out.sensitivity.parallel_trends if out.sensitivity is not None else None
+    if pt is None:
+        return None
+    return pt.breakdown if pt.breakdown is not None else 0.0
+
+
+def _trend_check(ev: Evidence, policy: DecisionPolicy) -> Check | None:
+    """Would a parallel-trends violation no larger than the data already shows flip it?
+
+    A seam for the seeded defects: `ignore_trend_breakdown` makes this return None.
+    """
+    if ev.trend_breakdown is None:
+        return None
+    bar = policy.min_trend_breakdown
+    ok = ev.trend_breakdown >= bar
+    return Check(
+        name="robust to parallel-trends violations as large as those before adoption",
+        passed=ok,
+        allows=Verdict.act if ok else Verdict.experiment,
+        detail=f"the interval reaches zero at {ev.trend_breakdown:.3g}x the largest pre-adoption "
+        f"deviation, against a bar of {bar:.3g}x"
+        + ("" if ok else ": the conclusion needs trends to hold more tightly than the data can "
+           "show, which only a randomized test settles"),
     )
 
 
@@ -303,6 +331,9 @@ def _result_checks(
                   detail=f"E-value for the interval bound {got:.3g} against a bar of {bar:.3g}"
                   if got is not None
                   else "no E-value could be computed for this outcome scale"))
+    trend = _trend_check(ev, policy)
+    if trend is not None:
+        add(trend)
     if rule.max_ci_width_over_effect is not None and ev.benefit_ci and ev.benefit:
         lo, hi = ev.benefit_ci
         ratio = (hi - lo) / abs(ev.benefit) if ev.benefit else math.inf

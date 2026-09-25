@@ -163,6 +163,35 @@ def uniform_segments() -> CausalOutcome:
                       outcome="minutes", estimand="att", segment_by=("severity",), policy=FAST)
 
 
+def _rollout(effect: float, seed: int) -> CausalOutcome:
+    from causal_core.bench import t5
+
+    design = t5.Design(f"d0-{effect}", t5.STAGGERED, lambda g, t: effect)
+    frame = t5.simulate(design, 8, 0.5, np.random.default_rng(seed), drawn=True)
+    out: CausalOutcome = t5.analyse(frame)
+    return out
+
+
+def did_robust() -> CausalOutcome:
+    return _rollout(2.0, seed=41)
+
+
+def did_fragile() -> CausalOutcome:
+    return _rollout(0.5, seed=42)
+
+
+DID_REQUEST = DecisionRequest(
+    action="keep the staggered rollout",
+    outcome="latency",
+    direction="increase",
+    risk_class=RiskClass.medium,
+    reversible=True,
+    minimum_worthwhile_effect=0.2,
+    randomization_unit="service",
+    units_per_day=20,
+)
+
+
 def apparatus_failure() -> CausalOutcome:
     return ApparatusFailure(stage="estimate", error_type="NumericalInstabilityError",
                             detail="constructed for the gate",
@@ -241,6 +270,10 @@ SCENARIOS: tuple[Scenario, ...] = (
         "pooled, every check passes; a declared segment is still made materially worse"),
     Scenario("uniform_segments", uniform_segments, BASE, Verdict.act,
         "declared segments that agree cap nothing"),
+    Scenario("did_robust_to_trends", did_robust, DID_REQUEST, Verdict.act_with_approval,
+        "robust to large trend violations, but tier C never automates"),
+    Scenario("did_fragile_to_trends", did_fragile, DID_REQUEST, Verdict.experiment,
+        "a violation smaller than the pre-adoption ones would reach zero"),
 )
 
 
@@ -375,6 +408,7 @@ CATCHER: dict[str, Callable[[dict[str, Any]], bool]] = {
     "ignore_contested": lambda cfg: _property_violated("P6", cfg)
     or _scenario_fails("contested_result"),
     "ignore_segments": lambda cfg: _scenario_fails("harmed_segment"),
+    "ignore_trend_breakdown": lambda cfg: _scenario_fails("did_fragile_to_trends"),
 }
 
 
