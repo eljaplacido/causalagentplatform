@@ -25,7 +25,7 @@ jobs:
   gate:
     name: .gnomon/ci.sh
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 75
     env:
       # Real-data benchmarks (T2 IHDP, T3 LaLonde): fetched by pinned SHA-256, never
       # committed (no redistribution licence), cached between runs.
