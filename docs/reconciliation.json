@@ -316,7 +316,7 @@
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
           ".gnomon/ci.sh": "085c4db273b06cb4815acf62e1108052d346268e78f320a9a3280d3557a1531a",
-          "scripts": "fa209a334f993a824a580a9de5159c9e4c008fea04d9371e23f6a8d4f9ac65f1",
+          "scripts": "b6101703ba143f257c233bf1b5ca95eee5682ce5910f1da1fbe91b9c06e25898",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "3dcea1af4dd3bbdd68778cbb91715e1663c850fb9681fe42096b50d1145550dc",
           "packages/causal-core/tests": "b73dcfd6530b951cdacdaaaac95e7e4068843b27cbd6635fdbe7b9efe306ecb3",
@@ -325,7 +325,7 @@
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-28: observability line says the missing key is CRITICAL only with ENV=local and stops start-up otherwise; new tests need no steps-table change)"
+        "by": "Claude (ruff ratchet 416->415 at ruff 0.15.22; the doc quotes no counts)"
       }
     },
     "docs/UIX.md": {
