@@ -58,6 +58,7 @@ runs, and failing runs are kept.
 | T2: IHDP-100, semi-synthetic ([`benchmarks/t2-ihdp`](benchmarks/t2-ihdp)) | ATT coverage 0.99 / 0.98; supported results miss the truth 1.5% of the time. |
 | T4: segment effects ([`benchmarks/t4-segments`](benchmarks/t4-segments)) | Per-segment coverage 0.93–0.97, family-wise coverage 0.945–0.98, 4% false discovery with every segment null. Bars registered before the code was written. |
 | T5: staggered difference-in-differences ([`benchmarks/t5-did`](benchmarks/t5-did)) | Coverage 0.938–0.958 across four simulated rollouts, including one where two-way fixed effects is biased; pre-trends test power 1.00 with false alarms ≤ 2.2%. v1 failed on over-coverage and is kept. |
+| T6: anytime-valid monitoring ([`benchmarks/t6-sequential`](benchmarks/t6-sequential)) | A watched canary's confidence sequence contains the effect at every look in 98.2–99.4% of runs; the fixed-n interval re-read at every look manages 72.9%. v1 failed on two faults of its registration and is kept. |
 | D0: the decision procedure ([`benchmarks/d0-decision-policy`](benchmarks/d0-decision-policy)) | 17/17 scenarios return the verdict the registration names (two with declared segments); 8 properties hold over 400 seeded cases; each of 7 seeded defects makes the gate fail. |
 | A0: whether a revised graph breaks a verdict ([`benchmarks/a0-assumption-impact`](benchmarks/a0-assumption-impact)) | 800/800 revisions judged as an independent linear-Gaussian oracle judges them; 4 seeded defects caught. v1 failed its class-balance floor and is kept. |
 

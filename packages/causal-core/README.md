@@ -127,6 +127,18 @@ before any run. It runs on every change:
   v1 failed on over-coverage (the simulation fixed cohort sizes, the intervals assume sampled
   units) and is kept beside v2.
 
+- **T6 (anytime-valid monitoring):** on six streamed randomized designs, the confidence sequence
+  contains the effect at *every one* of 39 looks in 98.2–99.4% of runs (nominal 95%), including a
+  level drifting during the run and a heavy-tailed outcome; it sees a benefit of 0.2 in 99.8% of
+  runs and a harm of 0.25 in 100%, with a median first exclusion at 700 units. The ordinary
+  fixed-sample interval read at every look covers 72.9%. v1 failed on two faults of its own
+  registration and is kept beside v2.
+
+**Watched canaries.** `analyze(df, graph, treatment=, outcome=, design="randomized",
+sequence=<arrival column>, expected_treated_share=p)` reports an asymptotic confidence sequence
+(Waudby-Smith et al. 2023) at every look: read it and stop on it as often as you like. About 1.55
+times the width of a fixed-sample interval at its tuning size — the price of looking.
+
 **Panel designs.** `analyze(df, graph, treatment=, outcome=, design="difference_in_differences",
 unit=, time=, estimand="att")` estimates group-time effects against never-treated units
 (Callaway & Sant'Anna), aggregated to an overall ATT and an event study, with unit-clustered
@@ -162,7 +174,6 @@ Data can be pandas, a dict of columns, pyarrow, polars, or any dataframe-interch
 - Subgroup *discovery* (declared segments are supported; searching for them is not)
 - Discovery
 - Time series
-- Sequential (anytime-valid) tests
 - Interference-aware designs
 - For difference-in-differences: covariate-conditional parallel trends, not-yet-treated
   comparisons, anticipation windows, repeated cross-sections, and sensitivity to parallel-trends

@@ -415,7 +415,7 @@
       "capability": "Triangulation flags outcome-model misspecification in causal-core",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:137",
+          "at": "packages/causal-core/README.md:149",
           "says": "Its power was 0.04 at n = 2,000"
         }
       ],
@@ -438,7 +438,7 @@
       "capability": "Estimation of effects identified only by the general ID algorithm (e.g. the napkin graph)",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:159",
+          "at": "packages/causal-core/README.md:171",
           "says": "Estimation for general ID functionals"
         }
       ],
@@ -458,25 +458,21 @@
     {
       "id": "kernel-methods-roadmap",
       "status": "planned",
-      "capability": "causal-core methods beyond the current portfolio: nonparametric front-door, discovery, time series, anytime-valid sequential tests, interference-aware designs",
+      "capability": "causal-core methods beyond the current portfolio: nonparametric front-door, discovery, time series, interference-aware designs",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:161",
+          "at": "packages/causal-core/README.md:173",
           "says": "Nonparametric front-door"
         },
         {
-          "at": "packages/causal-core/README.md:163",
+          "at": "packages/causal-core/README.md:175",
           "says": "Discovery"
-        },
-        {
-          "at": "packages/causal-core/README.md:165",
-          "says": "Sequential (anytime-valid) tests"
         }
       ],
-      "reality": "Listed as not implemented in the package README; none of these exists in the kernel.",
+      "reality": "Listed as not implemented in the package README; none of these exists in the kernel. (Anytime-valid sequential tests left this entry on 2026-09-25 with causal_core.sequential and the pre-registered T6 gate.)",
       "evidence": [
         {
-          "at": "packages/causal-core/README.md:156",
+          "at": "packages/causal-core/README.md:168",
           "says": "Not implemented yet"
         }
       ],

@@ -133,3 +133,28 @@ async def test_a_staggered_rollout_is_decided_over_http(client: AsyncClient) -> 
     assert out["outcome"]["certificate"]["tier"] == "C"
     assert out["verdict"] == "act_with_approval", out["explanation"]
     assert out["outcome"]["event_study"]
+
+
+async def test_a_watched_canary_is_decided_over_http(client: AsyncClient) -> None:
+    """`sequence` arrives through the derived query options, like the panel fields did."""
+    from causal_core.bench import t6
+
+    frame = t6.simulate(t6.STREAMS["benefit"], 3000, np.random.default_rng(9))
+    resp = await client.post(
+        "/api/v1/decisions",
+        json={
+            "action": "promote the canary",
+            "graph": t6.GRAPH,
+            "treatment": "canary",
+            "outcome": "latency",
+            "direction": "increase",
+            "data": {c: frame[c].tolist() for c in frame},
+            "risk_class": "low",
+            "query": {"design": "randomized", "sequence": "arrival",
+                      "expected_treated_share": 0.5},
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    out = resp.json()
+    assert out["outcome"]["sequential"]["looks"]
+    assert out["outcome"]["primary"]["ci"]["method"].startswith("asymptotic confidence sequence")
