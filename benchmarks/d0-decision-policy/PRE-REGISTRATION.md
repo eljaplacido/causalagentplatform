@@ -2,7 +2,7 @@
 
 **Suite:** D0, the decision procedure on outcomes whose evidence is known by construction
 **System under test:** `packages/causal-decision` (`causal_decision.decide`)
-**Registered:** 2026-09-21, version 1; version 2 on 2026-09-25 (see Changelog)
+**Registered:** 2026-09-21, version 1; version 2 on 2026-09-25; version 3 the same day (see Changelog)
 **Runs:** every PR, via `pytest -m d0` in `packages/causal-decision`
 
 ## Status of this document
@@ -44,6 +44,18 @@ takes 20 minutes off P1 incidents (65% of them) and adds 6 to P3:
 - `uniform_segments` — the same design with a 12-minute saving in both segments. Expected `act`:
   declared segments that agree cap nothing.
 
+Two scenarios (v3) are staggered rollouts analysed by difference-in-differences (T5's simulator,
+`staggered_constant` cohorts, drawn membership, parallel trends holding), with the request's
+minimum worthwhile effect set to 0.2 and direction `increase`:
+
+- `did_robust_to_trends` — effect 2. The conclusion survives a parallel-trends violation several
+  times the largest pre-adoption deviation (breakdown well above 1). Expected
+  `act_with_approval`: tier C identification never automates, whatever the robustness.
+- `did_fragile_to_trends` — effect 0.5. The interval clears the bar, but a violation *smaller* than
+  the pre-adoption deviations the data already shows would reach zero (breakdown below 1).
+  Expected `experiment`: the conclusion rests on trends holding more tightly than the data can
+  show, and a randomized test is what settles that.
+
 **Properties.** Checked on a seeded sweep of requests and policies (`PROPERTIES`), not only on the
 table:
 
@@ -72,13 +84,14 @@ of them, and the table says which check is supposed to catch it.
 | `refusal_becomes_approval` | a refusal is treated as something a person may wave through | property 5 |
 | `ignore_contested` | a contested result is treated as supported | property 6, scenario `contested_result` |
 | `ignore_segments` | the segment checks are dropped, so only the pooled effect is read | scenario `harmed_segment` |
+| `ignore_trend_breakdown` | the parallel-trends breakdown is not read (v3) | scenario `did_fragile_to_trends` |
 
 ## Pass bars
 
 ```toml
 [meta]
 suite = "D0"
-version = 2
+version = 3
 registered = "2026-09-25"
 
 [table]
@@ -102,6 +115,8 @@ unreviewed_assumptions = "refuse"
 analysis_failed = "refuse"
 harmed_segment = "refuse"
 uniform_segments = "act"
+did_robust_to_trends = "act_with_approval"
+did_fragile_to_trends = "experiment"
 
 [properties]
 sweep = 400                     # random (request, policy) pairs per property
@@ -112,7 +127,7 @@ violations_allowed = 0
 required = [
   "ignore_reversibility", "ignore_risk_class", "best_check_wins",
   "ignore_worthwhile_effect", "refusal_becomes_approval", "ignore_contested",
-  "ignore_segments",
+  "ignore_segments", "ignore_trend_breakdown",
 ]
 ```
 
@@ -189,3 +204,9 @@ on the text being unchanged, which the diff shows.
   known from `packages/causal-decision/tests/test_segments.py` — a harmed segment is not `act`, a
   uniform one is — but that test asserts only "not `act`" for the harmed case, so the `refuse`
   registered above is a prediction from the policy's stated ceilings, not an observed output.
+- **v3 (2026-09-25): the decision reads parallel-trends sensitivity.** A difference-in-differences
+  result carries (since T5 v3) the breakdown multiple at which its interval reaches zero; a new
+  check caps the verdict at `experiment` when that breakdown is below the policy's
+  `min_trend_breakdown` (default 1: a violation no larger than the pre-adoption deviations already
+  seen). Two DiD scenarios and the `ignore_trend_breakdown` defect join the table. Written before
+  the check exists; no earlier scenario or bar changed, and the seventeen v2 verdicts stand.
