@@ -127,8 +127,8 @@ enabled = true
 # The kernel's own MCP server (packages/causal-mcp, MCP SDK v2): identification before
 # estimation, typed refusals, and a narrative verifier that rejects numbers no tool
 # returned. Offered to roles that list "mcp__causal_core". It is the server whose
-# numbers the T0/T2/T3 gates stand behind; the legacy `causal` server above still
-# serves the backend's heuristic skills until the backend is rewired onto causal-core.
+# numbers the pre-registered gates (benchmarks/*/PRE-REGISTRATION.md) stand behind;
+# the legacy `causal` server above is commented out and granted to no role.
 # Same invocation constraints as above (no `cwd` key in gnomon 0.2.3's McpServerDef):
 # resolve the checkout root with git, and fall back to the main checkout's venv from
 # a worktree.

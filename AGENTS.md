@@ -45,9 +45,11 @@ interval and docs marking a phase finished over them.
    implemented (move it to `left_the_list` with `fixed_in` and `pinned_by`) or retracted, never by
    being dropped.
 5. **Done is `.gnomon/ci.sh`** (or `septacore check`, which runs it). It runs the backend suite
-   and coverage floor, lint and type ratchets, the frontend, every package suite (with the T0,
-   T4–T8, D0 and A0 gates, and T2/T3 when their data is cached), gate scope, status claims,
-   contract parity, doc figures and doc reconciliation, and prints a per-step table. Paste the
+   (on SQLite, then on PostgreSQL) and coverage floor, lint and type ratchets, the frontend, every
+   package suite (with the T0, T4–T8, D0 and A0 gates, and T2/T3 when their data is cached), the
+   security scans (bandit, secrets, dependency advisories), gate scope, status claims, contract
+   parity, doc figures, skill references (`scripts/skill_refs.py`: these instructions still point
+   at real paths, scripts and steps) and doc reconciliation, and prints a per-step table. Paste the
    table. Exit 0 passed, 1 failed, 2 not measured (a SKIPPED step checked nothing), 3 docs owed a
    re-read. Only 0 is done.
 6. **Work comes from the ledger.** `septacore ready` lists open work from `.beads/issues.jsonl`,
@@ -66,7 +68,7 @@ and each one is loaded by gnomon when a task matches it, but any agent can read 
 - `benchmark-discipline.md` — pre-registration, result files, seeded defects
 - `register-hygiene.md` — adding, re-citing and closing register entries
 - `verifying-changes.md` — what ci.sh runs, its exit codes, the ratchets, the ledger
-- `writing-tests.md`, `secrets.md`
+- `writing-tests.md`, `secrets.md`, `endpoints-and-models.md`
 
 Setup and contribution workflow: [`CONTRIBUTING.md`](CONTRIBUTING.md) and
 [`docs/QUICKSTART.md`](docs/QUICKSTART.md).
