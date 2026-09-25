@@ -32,12 +32,12 @@
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "ceec8dc5edee2e61daabc4e182c28a1e163a0b87b11d90d0e1539118cb5562c9"
+          "docs/CURRENT_STAGE.md": "ec7094d7f8aaa593a32bc73f2804605433c7258341a614c70870adba78d5617d"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (coverage floor and ledger changes; README quotes neither)"
+        "by": "Claude (septa-54: CURRENT_STAGE's feedback row changed; the README quotes no such row)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -55,9 +55,9 @@
         "on": "2026-09-26",
         "sha256": {
           "conformance/declared_not_implemented.json": "90161f087f2904e24cd576b6a2142f71d90f3a9600b02123db019e2a6c931500",
-          "backend/src": "66bcfbfa132f847c1eee5de54acc996c8bdd13847506ad85cdaa28e1790852df",
+          "backend/src": "8305b42236a6976763a795ee4ebe5c389d80508d9584636809afce0e43e109e8",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "4147f373dff0ffc372ecb3e1c7b319a4c1d1c062c3433ee523619c572cfd0f88",
+          "backend/tests": "f4409bf322cc35ad36a53a28d0edc227daea562a25fb041d5ea1c6bc14966fc8",
           "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
           "packages": "1d0130c75356f3dfc99a697584c821cbd9a20f53d95dc79b26fd299c21b61482",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
@@ -65,7 +65,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-3: re-read; the only backend/tests change is test_skill_refs.py, gate tooling the page makes no row or claim about, as for doc_figures and status_claims)"
+        "by": "Claude (septa-54: the feedback row says the id is a uuid, a 422 otherwise)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -180,7 +180,7 @@
           "backend/src/api/governance.py": "74095eefc36dc973a8dd5aae5d8bba89d44aa860c32862fa729a5c10b55bf3c3",
           "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
           "backend/src/semantic_layer/registry.py": "91529601ce53d74c25763a017f4a43ad552c13e94d562f513165b079c16c71b7",
-          "backend/src/api/interventions.py": "609249bedd4e09b475f997c8aabb5298a6e767b13531b85f2ca964685e9364bc",
+          "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
           "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
           "backend/src/db/migrations": "422177707fd73410822962706a49d25e7de4f38dad2b0018456ffa8e6e094f06",
           "backend/src/semantic_layer/verdict.py": "2807535994f0073bd9f58cc2774822d9f7bd1749aa7801d669eb2301bde3ac00",
@@ -189,7 +189,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: the audit-trail checklist item now says the PostgreSQL triggers are exercised by backend-pytest-postgres; RLS paragraph unchanged, still rls-policies-bind-nothing)"
+        "by": "Claude (septa-54: the feedback route's roles are unchanged; the id is now validated as a uuid)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -311,7 +311,7 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "4181e9975e863cfa2344aa9085a2cd06410ffa12a696037c60c45c66a0b28709",
-          "backend/tests": "4147f373dff0ffc372ecb3e1c7b319a4c1d1c062c3433ee523619c572cfd0f88",
+          "backend/tests": "f4409bf322cc35ad36a53a28d0edc227daea562a25fb041d5ea1c6bc14966fc8",
           "backend/pyproject.toml": "eb8981b94a831f96ab3e93b9d91d676baab95bb8020aac71fa00f19020de0319",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
@@ -325,7 +325,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-3: re-read against a871fa8; added the skill-refs step row and named the gate-script negative controls under unit/; the moved backend/tests, ci.sh and scripts are that change)"
+        "by": "Claude (septa-54: a new unit test only; the doc names no intervention tests)"
       }
     },
     "docs/UIX.md": {
@@ -356,12 +356,12 @@
         "sha256": {
           "packages/causal-core/src/causal_core": "f504a91cfae574117c3accbd936ee039a34cde0bbd0579f77c4571207a366683",
           "conformance/declared_not_implemented.json": "90161f087f2904e24cd576b6a2142f71d90f3a9600b02123db019e2a6c931500",
-          "docs/CURRENT_STAGE.md": "ceec8dc5edee2e61daabc4e182c28a1e163a0b87b11d90d0e1539118cb5562c9"
+          "docs/CURRENT_STAGE.md": "ec7094d7f8aaa593a32bc73f2804605433c7258341a614c70870adba78d5617d"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (p0 paragraph: septa-50 done, septa-53 open; dropped the stale 'all 44 ready' count)"
+        "by": "Claude (septa-54: CURRENT_STAGE's feedback row changed; the roadmap names neither the route nor septa-54)"
       }
     },
     "SECURITY.md": {
@@ -379,7 +379,7 @@
         "sha256": {
           "backend/src/middleware": "059d9ba59b9d9dc8772f861212ffa03e02b9e45530e21f8386b06814508f077e",
           "backend/src/api/governance.py": "74095eefc36dc973a8dd5aae5d8bba89d44aa860c32862fa729a5c10b55bf3c3",
-          "backend/src/api/interventions.py": "609249bedd4e09b475f997c8aabb5298a6e767b13531b85f2ca964685e9364bc",
+          "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
           "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
           "backend/src/semantic_layer/registry.py": "91529601ce53d74c25763a017f4a43ad552c13e94d562f513165b079c16c71b7",
           "backend/src/semantic_layer/verdict.py": "2807535994f0073bd9f58cc2774822d9f7bd1749aa7801d669eb2301bde3ac00"
@@ -387,7 +387,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: re-read for DB claims; the registry and audit writers changed only how they bind values for PostgreSQL, and every enforcement claim here, verdict checks, append-only audit_log, RLS not in effect, still holds)"
+        "by": "Claude (septa-54: interventions input typing changed; SECURITY.md makes no claim about it)"
       }
     }
   }
