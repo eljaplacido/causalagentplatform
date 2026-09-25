@@ -129,9 +129,11 @@ def _query(
     time: str | None = None,
     estimand: Literal["ate", "att"] = "ate",
     sequence: str | None = None,
+    cluster: str | None = None,
 ) -> CausalQuery:
     return CausalQuery(
         sequence=sequence,
+        cluster=cluster,
         unit=unit,
         time=time,
         estimand=estimand,
@@ -168,6 +170,7 @@ def causal_analyze(
     time: str | None = None,
     estimand: Literal["ate", "att"] = "ate",
     sequence: str | None = None,
+    cluster: str | None = None,
     policy: dict[str, Any] | None = None,
 ) -> AnalyzeResponse:
     """Estimate the effect of `treatment` on `outcome`, or return a typed refusal saying why not.
@@ -202,6 +205,10 @@ def causal_analyze(
     often as you like. Do not re-run a fixed-sample analysis after every batch instead --
     read that way its error rate is far above 5%.
 
+    **Randomized by service, measured by request?** Pass `cluster` (the column naming the unit
+    that was randomized). Requests within a service are not independent; without `cluster`
+    the interval can be several times too narrow.
+
     `graph` syntax: `Z -> X -> Y; Z -> Y`; `X <-> Y` means an unmeasured common cause;
     `latent U` declares an unmeasured node. Data: either `data` as {column: [values]} or
     `data_path` (CSV / Parquet / JSON under the server's allowed data roots).
@@ -223,6 +230,7 @@ def causal_analyze(
             time=time,
             estimand=estimand,
             sequence=sequence,
+            cluster=cluster,
         )
         pol = AnalysisPolicy.model_validate(policy or {})
         frame = load_table(data, data_path)
@@ -392,6 +400,7 @@ if HAS_DECISION:
         time: str | None = None,
         estimand: Literal["ate", "att"] = "ate",
         sequence: str | None = None,
+        cluster: str | None = None,
         policy: dict[str, Any] | None = None,
         decision_policy: dict[str, Any] | None = None,
     ) -> DecideResponse:
@@ -438,6 +447,7 @@ if HAS_DECISION:
                 time=time,
                 estimand=estimand,
                 sequence=sequence,
+                cluster=cluster,
             )
             request = DecisionRequest(
                 action=action,

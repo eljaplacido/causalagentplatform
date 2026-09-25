@@ -26,7 +26,7 @@ sustainability investment assurance follow, in that order.
 | A typed causal question | Partial: `CausalQuery` is typed, but `population` and `horizon` are free text, and nothing translates an agent's action into an estimand |
 | Retrieve the assumptions and evidence that apply | Done for causal models: `causal_decision.assumptions` and `/api/v1/models` keep each model as immutable, content-addressed versions whose edges carry origin and review status, and a decision names the version it used. Missing: retrieving evidence (documents, metrics) for an edge; nothing links it |
 | Decide identified / partially identified / unsupported | Done, except bounds: complete ID, back-door with the optimal adjustment set, front-door, conditional IV, proximal; 11 typed refusals, each with what is missing |
-| Estimate impact and uncertainty | Done for ATE and ATT with coverage-tested intervals, and for effects within declared segments with family-wise correction and a heterogeneity test (pre-registered T4), and for staggered rollouts by difference-in-differences with unit-clustered intervals and a pre-trends test (pre-registered T5). and for watched randomized rollouts by anytime-valid confidence sequences (pre-registered T6). Missing: policy value, interference-aware designs, DiD with covariates, and subgroup *discovery* |
+| Estimate impact and uncertainty | Done for ATE and ATT with coverage-tested intervals, and for effects within declared segments with family-wise correction and a heterogeneity test (pre-registered T4), and for staggered rollouts by difference-in-differences with unit-clustered intervals and a pre-trends test (pre-registered T5). and for watched randomized rollouts by anytime-valid confidence sequences (pre-registered T6). and for cluster-randomized rollouts with cluster-robust intervals (T7). Missing: policy value, switchback designs and spillovers, DiD with covariates, and subgroup *discovery* |
 | Robustness checks | Done: placebo, negative controls, graph-implied independences with measured power, overlap, balance, E-values, robustness values |
 | Decide: act, ask, experiment, refuse | Done: `packages/causal-decision` turns an outcome, a request and a policy into one verdict, deterministically, gated by the pre-registered D0 suite (v3: 19 scenarios, 8 properties, 8 seeded defects). Declared segments reach the verdict -- an action that harms one of them is not automated on a favourable pooled effect -- and so does a difference-in-differences result's parallel-trends breakdown: a conclusion a violation smaller than the pre-adoption ones would flip is sent to an experiment |
 | Evidence record | Partial: every result and every decision carries digests of its inputs and itself, decisions are persisted into a verified hash chain with the observed outcome recorded against them, and the model version a decision used is recorded. Checkpoints of the chain head can be taken and verified against (`/api/v1/decisions/checkpoint`, `/verify-anchored`). Missing: publishing a checkpoint somewhere the writer cannot edit |
@@ -57,8 +57,9 @@ sustainability investment assurance follow, in that order.
    T5: group-time effects against never-treated units, unit-clustered influence-function
    intervals, a pre-trends falsification test, tier C). Anytime-valid monitoring of
    randomized canaries is **done** (`causal_core.sequential`, pre-registered T6: asymptotic
-   confidence sequences over a predictable-baseline AIPW score). Still to come: cluster and
-   switchback designs for interference, and DiD with covariates
+   confidence sequences over a predictable-baseline AIPW score). Cluster-randomized designs are
+   **done** (`causal_core.cluster`, pre-registered T7: CR2 intervals on t(K − 2), a refusal where
+   a few clusters dominate). Still to come: switchback designs and spillovers between units, and DiD with covariates
    (parallel-trends sensitivity is **done**: intervals under a relative-magnitudes restriction and
    a breakdown multiple, T5 v3). Each with its own
    pre-registered gate and a seeded defect.

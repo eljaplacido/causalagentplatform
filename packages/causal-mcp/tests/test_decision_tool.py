@@ -218,3 +218,14 @@ def test_a_watched_canary_is_monitored_and_decided_over_mcp() -> None:
     decided = tools.causal_decide(**common, action="continue the canary", direction="increase",
                                   minimum_worthwhile_effect=0.0)
     assert decided.decision.verdict.value == "refuse", decided.explanation
+
+
+def test_a_cluster_randomized_rollout_is_analysed_over_mcp() -> None:
+    from causal_core.bench import t7
+
+    frame, _ = t7.simulate(t7.DESIGNS["moderate"], np.random.default_rng(10))
+    out = tools.causal_analyze(graph=t7.GRAPH, treatment="canary", outcome="latency",
+                               data={c: frame[c].tolist() for c in frame},
+                               design="randomized", cluster="service")
+    assert out.outcome.kind == "result", out.report
+    assert out.outcome.diagnostics.n_clusters == 40

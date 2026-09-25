@@ -415,7 +415,7 @@
       "capability": "Triangulation flags outcome-model misspecification in causal-core",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:152",
+          "at": "packages/causal-core/README.md:162",
           "says": "Its power was 0.04 at n = 2,000"
         }
       ],
@@ -438,7 +438,7 @@
       "capability": "Estimation of effects identified only by the general ID algorithm (e.g. the napkin graph)",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:174",
+          "at": "packages/causal-core/README.md:184",
           "says": "Estimation for general ID functionals"
         }
       ],
@@ -458,21 +458,21 @@
     {
       "id": "kernel-methods-roadmap",
       "status": "planned",
-      "capability": "causal-core methods beyond the current portfolio: nonparametric front-door, discovery, time series, interference-aware designs",
+      "capability": "causal-core methods beyond the current portfolio: nonparametric front-door, discovery, time series, interference between units and switchback designs",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:176",
+          "at": "packages/causal-core/README.md:186",
           "says": "Nonparametric front-door"
         },
         {
-          "at": "packages/causal-core/README.md:178",
+          "at": "packages/causal-core/README.md:188",
           "says": "Discovery"
         }
       ],
-      "reality": "Listed as not implemented in the package README; none of these exists in the kernel. (Anytime-valid sequential tests left this entry on 2026-09-25 with causal_core.sequential and the pre-registered T6 gate.)",
+      "reality": "Listed as not implemented in the package README; none of these exists in the kernel. (Anytime-valid sequential tests left this entry on 2026-09-25 with T6; cluster-randomized designs, which handle dependence within clusters but not spillovers between them, arrived the same day with T7.)",
       "evidence": [
         {
-          "at": "packages/causal-core/README.md:171",
+          "at": "packages/causal-core/README.md:181",
           "says": "Not implemented yet"
         }
       ],

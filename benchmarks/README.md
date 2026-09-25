@@ -14,6 +14,7 @@ the bars are fixed before the code is run against them, and the runs that failed
 | `t4-segments/` | T4 | Effects within declared segments: per-segment and family-wise coverage, heterogeneity test, Holm | `causal_core.segments` via `analyze` | every PR: `pytest -m t4` |
 | `t5-did/` | T5 | Staggered difference-in-differences on simulated rollouts: coverage, event-study coverage, pre-trends size and power, refusals | `causal_core.panel` via `analyze` | every PR: `pytest -m t5` |
 | `t6-sequential/` | T6 | Anytime-valid confidence sequences on watched randomized streams: coverage at every look, power, refusals | `causal_core.sequential` via `analyze` | every PR: `pytest -m t6` |
+| `t7-cluster/` | T7 | Cluster-randomized designs: unit-weighted effect, CR2 coverage, refusals where clusters dominate | `causal_core.cluster` via `analyze` | every PR: `pytest -m t7` |
 | `a0-assumption-impact/` | A0 | Whether a revised causal graph invalidates an estimate made under the old one, against an independent linear-Gaussian oracle | `causal_decision.assumptions.impact` | every PR: `pytest -m a0` |
 | `d0-decision-policy/` | D0 | The decision procedure on outcomes whose evidence is known by construction: a scenario table and properties | `packages/causal-decision` | every PR: `pytest -m d0` |
 
@@ -57,7 +58,7 @@ The gates run inside `.gnomon/ci.sh`, in each package's row. To run one by hand 
 the repository root; see `docs/QUICKSTART.md` for setting it up):
 
 ```bash
-cd packages/causal-core && .venv/bin/pytest -m t0      # or -m t4, -m t5, -m t6, or -m real_data (T2, T3)
+cd packages/causal-core && .venv/bin/pytest -m t0      # or -m t4, -m t5, -m t6, -m t7, or -m real_data (T2, T3)
 cd packages/causal-decision && ../causal-core/.venv/bin/pytest -m d0   # or -m a0
 ```
 
@@ -70,6 +71,7 @@ $V -m causal_core.bench.t4      --out benchmarks/t4-segments/results/<date>-v<ve
 $V -m causal_core.bench.ihdp    --out benchmarks/t2-ihdp/results/<date>-v<version>-run<N>.json
 $V -m causal_core.bench.lalonde --out benchmarks/t3-lalonde/results/<date>-v<version>-run<N>.json
 $V -m causal_core.bench.t5      --out benchmarks/t5-did/results/<date>-v<version>-run<N>.json
+$V -m causal_core.bench.t7      --out benchmarks/t7-cluster/results/<date>-v<version>-run<N>.json
 $V -m causal_core.bench.t6      --out benchmarks/t6-sequential/results/<date>-v<version>-run<N>.json
 $V -m causal_decision.bench.d0  --out benchmarks/d0-decision-policy/results/<date>-v<version>-run<N>.json
 $V -m causal_decision.bench.a0  --out benchmarks/a0-assumption-impact/results/<date>-v<version>-run<N>.json

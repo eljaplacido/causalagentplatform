@@ -134,6 +134,16 @@ before any run. It runs on every change:
   fixed-sample interval read at every look covers 72.9%. v1 failed on two faults of its own
   registration and is kept beside v2.
 
+- **T7 (cluster-randomized designs):** services randomized, requests measured, intra-cluster
+  correlation up to 0.3: interval coverage 0.942–0.952 across five designs of 20–80 clusters; the
+  same data analysed as independent requests covers 37%. When cluster sizes vary so much that a
+  few clusters dominate (size CV above 0.6) the kernel refuses — v2 of the gate showed coverage
+  falling to 0.879 there, and no variance correction repaired it. v1–v3 failed and are kept.
+
+**Randomized by cluster.** `analyze(..., design="randomized", cluster=<column>)` gives the
+unit-weighted effect with CR2 cluster-robust intervals on t(K − 2), and reports the intra-cluster
+correlation.
+
 **Watched canaries.** `analyze(df, graph, treatment=, outcome=, design="randomized",
 sequence=<arrival column>, expected_treated_share=p)` reports an asymptotic confidence sequence
 (Waudby-Smith et al. 2023) at every look: read it and stop on it as often as you like. About 1.55
@@ -177,7 +187,8 @@ Data can be pandas, a dict of columns, pyarrow, polars, or any dataframe-interch
 - Subgroup *discovery* (declared segments are supported; searching for them is not)
 - Discovery
 - Time series
-- Interference-aware designs
+- Interference between randomized units (spillovers from treated to untreated clusters) and
+  switchback (time-block) designs; cluster randomization handles dependence *within* clusters only
 - For difference-in-differences: covariate-conditional parallel trends, not-yet-treated
   comparisons, anticipation windows, repeated cross-sections, and the full Rambachan & Roth
   machinery (the kernel's parallel-trends sensitivity is a simplified, conservative form)

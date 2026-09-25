@@ -291,6 +291,54 @@
       "figure": "0.29",
       "bench": "t2-ihdp",
       "path": "/rivals/naive_difference_in_means/ate_mean_abs_error"
+    },
+    {
+      "doc": "README.md",
+      "says": "coverage 0.942–0.952 across five designs",
+      "figure": "0.942",
+      "bench": "t7-cluster",
+      "path": "/designs/*/coverage",
+      "agg": "min"
+    },
+    {
+      "doc": "README.md",
+      "says": "coverage 0.942–0.952 across five designs",
+      "figure": "0.952",
+      "bench": "t7-cluster",
+      "path": "/designs/*/coverage",
+      "agg": "max"
+    },
+    {
+      "doc": "README.md",
+      "says": "unit-level standard errors would cover 37%",
+      "figure": "37",
+      "bench": "t7-cluster",
+      "path": "/seeded_defect_designs/unit_level_se/coverage",
+      "scale": 100
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "interval coverage 0.942–0.952 across five designs",
+      "figure": "0.942",
+      "bench": "t7-cluster",
+      "path": "/designs/*/coverage",
+      "agg": "min"
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "interval coverage 0.942–0.952 across five designs",
+      "figure": "0.952",
+      "bench": "t7-cluster",
+      "path": "/designs/*/coverage",
+      "agg": "max"
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "the\n  same data analysed as independent requests covers 37%",
+      "figure": "37",
+      "bench": "t7-cluster",
+      "path": "/seeded_defect_designs/unit_level_se/coverage",
+      "scale": 100
     }
   ]
 }
