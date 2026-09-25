@@ -90,8 +90,18 @@ def truth(design: Design, periods: int) -> tuple[float, dict[int, float]]:
     return num / den, events
 
 
-def simulate(design: Design, periods: int, rho: float, rng: np.random.Generator) -> pd.DataFrame:
-    cohort = np.concatenate([np.full(n, g) for g, n in design.cohorts.items()])
+def simulate(
+    design: Design, periods: int, rho: float, rng: np.random.Generator, *, drawn: bool = False
+) -> pd.DataFrame:
+    """One panel. ``drawn``: each unit's cohort is sampled with the tabled proportions (v2);
+    otherwise the tabled sizes are exact (v1, and every refusal panel)."""
+    labels = list(design.cohorts)
+    sizes = np.array([design.cohorts[g] for g in labels], dtype=float)
+    if drawn:
+        n_total = int(sizes.sum())
+        cohort = np.asarray(labels)[rng.choice(len(labels), size=n_total, p=sizes / sizes.sum())]
+    else:
+        cohort = np.concatenate([np.full(int(k), g) for g, k in zip(labels, sizes, strict=True)])
     n = cohort.shape[0]
     level = np.where(cohort == NEVER, 0.0, 0.3 * cohort)  # selection on levels is allowed
     alpha = rng.normal(level, 1.0)
@@ -152,11 +162,12 @@ def run_design(design: Design, cfg: Mapping[str, Any], reps: int | None = None) 
     n_reps = reps or p["reps"]
     rng = _rng(p["seed"], design.id)
     true_att, true_events = truth(design, p["periods"])
+    drawn = p.get("cohort_membership", "fixed") == "drawn"
     points: list[float] = []
     covered = ev_hit = ev_total = rejected = 0
     first_failure = ""
     for _ in range(n_reps):
-        out = analyse(simulate(design, p["periods"], p["ar1_rho"], rng))
+        out = analyse(simulate(design, p["periods"], p["ar1_rho"], rng, drawn=drawn))
         if not isinstance(out, CausalResult):
             first_failure = first_failure or f"{out.kind}: {getattr(out, 'detail', '')}"[:200]
             continue
