@@ -84,8 +84,8 @@ unless 90 days have elapsed without a fix.
 
 ## What is enforced today
 
-Read against the code 2026-09-25. The target security design (RBAC matrix,
-secrets management, privacy controls, scanning) is in
+Read against the code 2026-09-25. The target security design (database-layer
+access control, secrets management, privacy controls, scanning) is in
 [`docs/CYBERSECURITY.md`](docs/CYBERSECURITY.md), which marks what is not built.
 
 **Authentication.** `FirebaseAuthMiddleware` (`backend/src/middleware/auth.py`)
@@ -94,25 +94,38 @@ route except `/health`, `/docs`, `/redoc`, `/openapi.json` and CORS preflight. A
 missing or invalid token gets 401.
 
 **Local-dev bypass.** When `ENV=local` *and* `DEV_AUTH_BYPASS=true`, the fixed
-token `dev-local-token` is accepted as a mock user holding every role
-(`governance_officer`, `platform_engineer`, `analyst`, `sre`). Any other
+token `dev-local-token` is accepted as a mock user holding `governance_officer`,
+`platform_engineer`, `analyst` and `sre` -- between them every row of the role
+matrix below -- and no `domains` claim, so every domain. Any other
 combination falls through to Firebase verification.
 
 **Roles.** Roles are read from the token's `roles` (list) or `role` (string)
-custom claim. Two role sets are checked:
+custom claim. One matrix, `ROUTE_ROLES` in `backend/src/middleware/rbac.py`,
+maps every state-changing route (and the audit-log, review-queue, provenance and
+semantic-layer reads) to the roles that may call it, and each route depends on
+its row; `backend/tests/integration/test_rbac_matrix.py` fails on a mounted
+state-changing route without one. The route-by-route table, and the choices made
+where the role design is silent, are in `docs/CYBERSECURITY.md` §4.0. In short:
 
-- `GOVERNANCE_ROLES` = `governance_officer`, `platform_engineer`
-  (`backend/src/api/governance.py`). Needed for `/api/governance/approve/{id}`,
-  `/reject/{id}`, `/review-queue` and `/audit-log`, and for reviewing a causal
-  model's edges, `POST /api/v1/models/{name}/reviews` (`backend/src/api/models.py`),
-  where a reviewer is also refused on edges they introduced.
-- `DECISION_ROLES` = `governance_officer`, `platform_engineer`, `sre`
-  (`backend/src/api/interventions.py`). Needed for
-  `/api/v1/interventions/{id}/approve` and `/reject`.
+- `GOVERNANCE_ROLES` = `governance_officer`, `platform_engineer`: approve, reject,
+  the review queue, the audit log, model reviews (where a reviewer is also
+  refused on edges they introduced), provenance reads and provenance erasure.
+- `DECISION_ROLES` = `governance_officer`, `platform_engineer`, `sre`: deciding
+  an intervention and recording its outcome.
+- Drafting semantic objects and proposing causal models needs `analyst`,
+  `graph_author`, `platform_engineer` or `agent`; recording a decision needs
+  `analyst`, `sre` or a governance role.
 
-Every other route, including several that write (registering or revising a
-model, `POST /api/v1/decisions`, follow-ups), needs only a valid token.
-That gap is registered as `rbac-matrix-and-domain-isolation`.
+A token with none of the platform roles is refused on every state-changing
+route. Reads outside the semantic layer, the audit log and provenance need only
+a valid token.
+
+**Domain isolation.** The token's `domains` claim (a list) bounds which semantic
+objects a user lists, reads, drafts into, and reviews; an object outside it is
+not found. Without the claim, `governance_officer` and `platform_engineer` see
+every domain and every other role sees none. This is enforced in the
+application. The database's row-level-security policies are not in effect
+(register `rls-policies-bind-nothing`).
 
 **Guardian verdicts.** `GovernanceAgent` (`backend/src/agents/governance.py`)
 refuses to start if `GUARDIAN_BYPASS_MODE` is set. The verdicts it issues are

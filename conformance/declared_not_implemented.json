@@ -98,7 +98,7 @@
           "says": "Computes Rosenbaum sensitivity bounds and E-values for unmeasured confounders"
         },
         {
-          "at": "docs/CYBERSECURITY.md:315",
+          "at": "docs/CYBERSECURITY.md:371",
           "says": "- Rosenbaum sensitivity bounds"
         },
         {
@@ -234,7 +234,7 @@
       "capability": "Review queue ordered by risk tier, showing who submitted each item",
       "claimed_in": [
         {
-          "at": "backend/src/api/governance.py:372",
+          "at": "backend/src/api/governance.py:377",
           "says": "summary=\"List pending drafts ordered by risk tier\""
         },
         {
@@ -245,7 +245,7 @@
       "reality": "ReviewQueueItem carries no risk tier and no submitter, the queue is not ordered by risk, and the UI fills riskTier \"MEDIUM\" and submittedBy \"system\" for every item.",
       "evidence": [
         {
-          "at": "backend/src/api/governance.py:144",
+          "at": "backend/src/api/governance.py:147",
           "says": "class ReviewQueueItem(BaseModel):"
         },
         {
@@ -273,7 +273,7 @@
           "says": "Append-only audit trail"
         },
         {
-          "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md:132",
+          "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md:134",
           "says": "`src/api/provenance.py` | Implemented"
         }
       ],
@@ -346,7 +346,7 @@
       "reality": "The semantic layer (fragments, edges) is stored through SQLAlchemy (SQLite/PostgreSQL); Neo4j code exists only for the experience buffer and drift alerts, is exercised only against mocks, and no d-separation or path query runs in Neo4j.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:476",
+          "at": "backend/src/semantic_layer/registry.py:512",
           "says": "FROM graph_fragments"
         }
       ],
@@ -518,7 +518,7 @@
       "reality": "The chain is built, persisted, served and verified, and decision_records is append-only in the production schema. Both ends of anchoring now exist in code: GET /api/v1/decisions/checkpoint returns the head to publish, and POST /api/v1/decisions/verify-anchored checks the chain against checkpoints kept elsewhere, catching a rewrite that re-seals every later entry (which /verify passes) and a truncation below a checkpoint. What does not exist is the publishing: nothing sends a checkpoint to a store the platform cannot rewrite, so until a deployment does, the ledger still evidences internal consistency only.",
       "evidence": [
         {
-          "at": "backend/src/api/decisions.py:312",
+          "at": "backend/src/api/decisions.py:313",
           "says": "A pass means the chain is *internally* consistent. It cannot mean more than"
         },
         {
@@ -556,11 +556,11 @@
       "capability": "Agent evaluation endpoints (consistency, calibration, decision quality) measure the running platform",
       "claimed_in": [
         {
-          "at": "backend/src/api/platform.py:722",
+          "at": "backend/src/api/platform.py:723",
           "says": "    summary=\"Agent confidence calibration probe\","
         },
         {
-          "at": "backend/src/api/platform.py:764",
+          "at": "backend/src/api/platform.py:765",
           "says": "    summary=\"Composite decision quality index\","
         },
         {
@@ -579,7 +579,7 @@
       "reality": "None of the three observes an agent. /evaluation/consistency scores num_runs identical EMPTY recommendation lists against each other, so the variance it reports is 0 by construction whatever the platform is doing. /evaluation/calibration scores the confidences in the request body, and CalibrationProbe states it uses their variance as a proxy because there is no ground truth -- calibration needs realized outcomes, and nothing records one. /evaluation/decision-quality combines four numbers taken as query parameters, defaulting to 0.75/0.05/0.80/0.70, so its 'index' is whatever the caller passes. The module docstring claimed 'No static or mock values' until 2026-09-24; it now names these three as excluded.",
       "evidence": [
         {
-          "at": "backend/src/api/platform.py:702",
+          "at": "backend/src/api/platform.py:703",
           "says": "    mock_recommendations: list[list[Any]] = [[] for _ in range(num_runs)]"
         },
         {
@@ -587,7 +587,7 @@
           "says": "        - Variance of confidence scores as a proxy for calibration"
         },
         {
-          "at": "backend/src/api/platform.py:770",
+          "at": "backend/src/api/platform.py:771",
           "says": "    calibration_score: float = Query(default=0.70, ge=0.0, le=1.0),"
         }
       ],
@@ -738,11 +738,11 @@
       "reality": "Approval and rejection UPDATE the object's own row: promote_to_approved rewrites approval_status, approved_at, approved_by, guardian_verdict_ref and lineage, and reject_draft rewrites approval_status (to DEPRECATED) and lineage. The version column keeps its 1.0.0 default, because no code path increments it and no new row is written for a new version. The previous state survives only as lineage entries and audit_log rows. The interventions feedback endpoint likewise UPDATEs interventions in place.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:812",
+          "at": "backend/src/semantic_layer/registry.py:853",
           "says": "f\"SET approval_status = 'APPROVED', \""
         },
         {
-          "at": "backend/src/semantic_layer/registry.py:899",
+          "at": "backend/src/semantic_layer/registry.py:941",
           "says": "f\"SET approval_status = 'DEPRECATED', lineage = :lineage \""
         }
       ],
@@ -762,7 +762,7 @@
           "says": "3. All approved objects carry lineage."
         },
         {
-          "at": "backend/src/api/semantic.py:329",
+          "at": "backend/src/api/semantic.py:369",
           "says": "This satisfies EU AI Act Art. 13 lineage"
         },
         {
@@ -773,8 +773,8 @@
       "reality": "Approval and rejection each append one step (APPROVED or REJECTED: actor, time, verdict id), and an edge keeps whatever lineage list its submitter sent. Nothing records the data source, the transformation steps or the policy rules into lineage, and no platform code constructs a LineageRecord. An entity's submitted lineage is not stored (the INSERT omits the column). Fragments had no lineage column at all until 006_graph_fragment_lineage.sql, so approving or rejecting one failed outright. The Guardian verdict, its cited rules, and the evidence and assumption ids are linked by reference, so the chain can be partly rebuilt by joins. Nothing shows that this satisfies EU AI Act Art. 13.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:795",
-          "says": "text(f\"SELECT lineage, approval_status FROM {table} WHERE id = :oid\"),"
+          "at": "backend/src/semantic_layer/registry.py:836",
+          "says": "text(f\"SELECT lineage, approval_status, domain FROM {table} WHERE id = :oid\"),"
         },
         {
           "at": "backend/src/semantic_layer/models.py:200",
@@ -940,42 +940,61 @@
       }
     },
     {
-      "id": "rbac-matrix-and-domain-isolation",
-      "status": "partial",
-      "capability": "Role-based access per platform role, and domain isolation of semantic objects",
+      "id": "rls-policies-bind-nothing",
+      "status": "declared-not-implemented",
+      "capability": "Role and domain checks at the database layer (PostgreSQL row-level security)",
       "claimed_in": [
         {
           "at": "docs/CYBERSECURITY.md@13e7d92:70",
           "says": "RBAC enforced at API layer, database layer, and semantic layer"
         },
         {
-          "at": "docs/CYBERSECURITY.md@13e7d92:130",
-          "says": "Domain isolation: a `domain` attribute on every semantic object restricts cross-domain reads"
+          "at": "backend/src/db/migrations/001_initial.sql:11",
+          "says": "Row-Level Security (RLS) policies restrict data access by domain"
         },
+        {
+          "at": "backend/src/db/migrations/001_initial.sql:134",
+          "says": "-- current_setting('app.user_domains') is set by the application layer"
+        }
+      ],
+      "reality": "The migrations declare RLS policies on causal_entities and causal_edges that read app.user_domains and app.user_role, but no application code sets either, and RLS does not bind the table owner that docker-compose connects as, so the policies isolate nothing; connecting as causal_app would instead hide every row. Roles and domain scope are enforced in the API and the registry's queries (src/middleware/rbac.py), not by the database. graph_fragments has no policy at all.",
+      "evidence": [
+        {
+          "at": "backend/src/db/migrations/001_initial.sql:138",
+          "says": "current_setting('app.user_domains', true),"
+        },
+        {
+          "at": "docker-compose.yml:20",
+          "says": "POSTGRES_USER: causal"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/integration/test_rls_domain_isolation.py",
+        "asserts": "against PostgreSQL, connected as a non-owner role with app.user_domains and app.user_role set per request from the token, a user limited to one domain selects no row of another domain from causal_entities, causal_edges or graph_fragments"
+      }
+    },
+    {
+      "id": "provenance-not-append-only",
+      "status": "declared-not-implemented",
+      "capability": "Append-only provenance records",
+      "claimed_in": [
         {
           "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md@13e7d92:84",
           "says": "Both provenance and contract records are append-only"
         }
       ],
-      "reality": "Two role sets are checked, at the API layer only. GOVERNANCE_ROLES guards approve, reject, review-queue, audit-log and POST /api/v1/models/{name}/reviews (where a reviewer is also refused on edges they introduced); DECISION_ROLES guards the intervention approve and reject routes. Every other route needs only a valid token, including POST /api/semantic/drafts, POST /api/governance/check, POST /api/v1/decisions and /followup, POST /api/v1/models and /{name}/versions, POST /api/v1/interventions/feedback, the session run routes, and DELETE /api/v1/provenance/session/{id}, which erases a session's provenance records. The viewer, analyst, graph_author and agent roles are checked nowhere. The migrations declare RLS policies on causal_entities and causal_edges that read app.user_domains and app.user_role, but nothing sets either, and RLS does not bind the table owner that docker-compose connects as, so no domain isolation takes effect.",
+      "reality": "Provenance records live in an in-process dict, lost on restart, and DELETE /api/v1/provenance/session/{id} erases a session's records. Since the role matrix that delete needs a governance role (governance_officer or platform_engineer), but it still erases, so the store is not append-only.",
       "evidence": [
         {
           "at": "backend/src/api/provenance.py:281",
           "says": "_provenance_store.pop(session_id, None)"
-        },
-        {
-          "at": "backend/src/api/semantic.py:193",
-          "says": "user: dict[str, Any] = Depends(get_current_user),"
-        },
-        {
-          "at": "backend/src/db/migrations/001_initial.sql:138",
-          "says": "current_setting('app.user_domains', true),"
         }
       ],
       "leaves_by": {
         "kind": "test",
-        "path": "backend/tests/integration/test_rbac_matrix.py",
-        "asserts": "each state-changing route is refused (403) for a token without a role the matrix grants it, and a user limited to one domain reads no object of another domain through the API"
+        "path": "backend/tests/integration/test_provenance_append_only.py",
+        "asserts": "provenance records are persisted, survive a process restart, and no route or store method removes or rewrites one"
       }
     },
     {
@@ -1327,6 +1346,13 @@
       "fixed_in": "c846096",
       "pinned_by": "backend/tests/guardian/test_risk_score_not_caller_supplied.py",
       "note": "Implemented as a grounding score, not an H-Neuron one; that claim is retracted. src/agents/grounding_risk.py scores the narrative against the kernel outcome it reports with causal_core.claims.verify (0.0 grounded, 1.0 not; a narrative with figures and no outcome is ungrounded). /check refuses hallucination_risk_score and cycle_count with 422; a stored session supplies the cycle count and domain. The caller still declares the domain when no session is named: that is cynefin-classifier-keyword-stub's to fix."
+    },
+    {
+      "id": "rbac-matrix-and-domain-isolation",
+      "was": "Two role sets guarded seven routes; every other route, including POST /api/semantic/drafts, POST /api/governance/check, the decision, model, session and intervention-feedback writes and DELETE /api/v1/provenance/session/{id}, needed only a valid token; viewer, analyst, graph_author and agent were checked nowhere; and no domain isolation took effect",
+      "fixed_in": "db89e78",
+      "pinned_by": "backend/tests/integration/test_rbac_matrix.py",
+      "note": "src/middleware/rbac.py ROUTE_ROLES maps every state-changing route (and the audit-log, review-queue, provenance and semantic-layer reads) to its roles, and each route depends on its row; the test fails on a mounted state-changing route without one. Domain isolation is application-level: the token's `domains` claim bounds semantic reads, the review queue, drafts, approvals and rejections (no claim = every domain for governance_officer/platform_engineer, none for any other role). The database-layer part of the claim did not leave: it is rls-policies-bind-nothing. The append-only provenance claim moved to provenance-not-append-only."
     }
   ]
 }
