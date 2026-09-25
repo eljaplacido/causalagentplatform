@@ -81,6 +81,8 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 | Governance UI shows only backend-confirmed decisions and audit rows | `implemented` | [frontend/src/app/governance/\_\_tests\_\_/page.test.tsx](../frontend/src/app/governance/__tests__/page.test.tsx) | Fixed in `85fe619` |
 | Provenance records written by real flows | `declared-not-implemented` | [dni:provenance-store-no-callers](../conformance/declared_not_implemented.json) | Writer has no callers |
 | TLA+ model of the Guardian policy, checked by TLC | `declared-not-implemented` | [dni:tla-spec-not-checked](../conformance/declared_not_implemented.json) | Not runnable as written |
+| Semantic objects versioned, never mutated in place | `declared-not-implemented` | [dni:semantic-objects-mutated-in-place](../conformance/declared_not_implemented.json) | Approve/reject UPDATE the row; `version` never changes |
+| Lineage from source data to approver on every approved object | `partial` | [dni:lineage-partial](../conformance/declared_not_implemented.json) | One step per human decision; fragments have no lineage column |
 
 ### Agents, MCP and API
 
@@ -103,6 +105,8 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 | Prometheus connector (queries, response parsing) | `implemented` | [backend/tests/unit/test_connectors.py](../backend/tests/unit/test_connectors.py) | HTTP is mocked in the tests |
 | Neo4j as the causal graph store | `declared-not-implemented` | [dni:neo4j-graph-store](../conformance/declared_not_implemented.json) | Graph lives in SQL; Neo4j paths tested only with mocks |
 | Kafka event streaming | `declared-not-implemented` | [dni:kafka-streaming](../conformance/declared_not_implemented.json) | No client; broker unused |
+| Session state and incidents persisted in PostgreSQL | `declared-not-implemented` | [dni:postgres-schema-missing-session-incidents](../conformance/declared_not_implemented.json) | Tables exist only in the SQLite DDL |
+| Drift monitoring raises alerts from live data | `declared-not-implemented` | [dni:drift-monitor-no-data](../conformance/declared_not_implemented.json) | The agent hands its drift skills no data |
 
 ### Frontend
 

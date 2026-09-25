@@ -167,19 +167,28 @@
         "backend/src/connectors",
         "backend/src/semantic_layer/models.py",
         "backend/src/sensors",
-        "docker-compose.yml"
+        "docker-compose.yml",
+        "backend/src/semantic_layer/registry.py",
+        "backend/src/agents/drift_monitor.py",
+        "backend/src/skills/drift_detect.py"
       ],
       "baseline": {
-        "on": "2026-09-19",
+        "on": "2026-09-25",
         "sha256": {
-          "backend/src/db": "2837e689c4580df727176f89a6f666825efaedc2bf3779789d6b37a43a073d8b",
+          "backend/src/db": "ebb7170d6fc77d8c28a13643bb03319be8d0a768a4ca11b221ce81cb3db95cc1",
           "backend/src/connectors": "7f2719189ff9ec75f9e7fec44c394f80c4ad9abfbf9c9d0d834c7cbdfab87e44",
-          "backend/src/semantic_layer/models.py": "43f3c67e216b78bcd16a05d0e185b7ecdf4da541fa71b26ef748cb0dc726a987",
+          "backend/src/semantic_layer/models.py": "8b89bc185388d810d635891b4b92dffb9219202f8aa5a02c696909f5eb7da198",
           "backend/src/sensors": "d38f988ccb52659ac4ecc8724e8aa775b2e6e9fca76b73dbba6576c3f3d1dcba",
-          "docker-compose.yml": "02c9683c93234b2e4c6c6a6c0ff9408fa983708e7fbfd162975af301dd131362"
+          "docker-compose.yml": "02c9683c93234b2e4c6c6a6c0ff9408fa983708e7fbfd162975af301dd131362",
+          "backend/src/semantic_layer/registry.py": "69fd9826a92feef9f71127788c290fd1024c51b9bfee5346996d83fabcbb8a2c",
+          "backend/src/agents/drift_monitor.py": "9279c31636b3b663007f21e7aa671ffe738a535432f610ecb5b6de00ae6bd815",
+          "backend/src/skills/drift_detect.py": "9432982258b155287a90701d76dc9bf331dd8c65fbc692ad37fcd124fcab7111"
         }
       },
-      "last_read": null
+      "last_read": {
+        "on": "2026-09-25",
+        "by": "Claude (storage, connectors, drift and lineage re-read against db/, registry, drift_monitor; targets labelled or moved to history)"
+      }
     },
     "docs/HANDOFFS.md": {
       "why": "handoff packet format and its verification commands",

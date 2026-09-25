@@ -303,11 +303,11 @@
       "capability": "Neo4j as the causal graph store (d-separation and backdoor-path queries)",
       "claimed_in": [
         {
-          "at": "docs/DATA_LAYER.md:251",
+          "at": "docs/DATA_LAYER.md:281",
           "says": "3.1 Neo4j (Graph Store)"
         },
         {
-          "at": "docs/DATA_LAYER.md:277",
+          "at": "docs/DATA_LAYER.md:312",
           "says": "d-separation query p95 < 50ms"
         },
         {
@@ -334,11 +334,11 @@
       "capability": "Kafka event streaming (ingestion bus, alert emission)",
       "claimed_in": [
         {
-          "at": "docs/DATA_LAYER.md:10",
+          "at": "docs/DATA_LAYER.md:22",
           "says": "Ingestion Bus (Kafka)"
         },
         {
-          "at": "docs/DATA_LAYER.md:328",
+          "at": "docs/DATA_LAYER.md:377",
           "says": "3.3 Kafka (Event Streaming)"
         },
         {
@@ -636,6 +636,154 @@
         "kind": "test",
         "path": "backend/tests/unit/test_prompt_templates_loaded.py",
         "asserts": "a runtime agent renders its prompt from the matching prompts/*.yaml template and fails when the template is missing or malformed -- or AGENTS.md:609 is retracted"
+      }
+    },
+    {
+      "id": "postgres-schema-missing-session-incidents",
+      "status": "declared-not-implemented",
+      "capability": "Session state and incidents persisted in PostgreSQL",
+      "claimed_in": [
+        {
+          "at": "docs/AGENTS.md:581",
+          "says": "| **Session memory** | PostgreSQL / Cloud SQL + in-process hot cache |"
+        },
+        {
+          "at": "docs/DATA_LAYER.md@13e7d92:288",
+          "says": "- User session history"
+        }
+      ],
+      "reality": "session_state and incidents are created only by the SQLite DDL in backend/src/db/factory.py. The PostgreSQL migrations (001-004) never create them, and CloudSqlFactory.init_db runs the DDL only when ENV=local, so on a PostgreSQL deployment session persistence and the incidents API would fail with a missing table. api/incidents.py also writes with INSERT OR REPLACE, which PostgreSQL does not accept. Neither schema has the evidence, preference or simulation-result tables DATA_LAYER.md used to list. The suite runs only against SQLite, so nothing notices.",
+      "evidence": [
+        {
+          "at": "backend/src/db/factory.py:249",
+          "says": "CREATE TABLE IF NOT EXISTS session_state ("
+        },
+        {
+          "at": "backend/src/db/factory.py:257",
+          "says": "CREATE TABLE IF NOT EXISTS incidents ("
+        },
+        {
+          "at": "backend/src/api/incidents.py:84",
+          "says": "\"INSERT OR REPLACE INTO incidents \""
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/integration/test_postgres_schema_parity.py",
+        "asserts": "the tables and columns created by applying backend/src/db/migrations/*.sql to PostgreSQL equal those of SQLITE_DDL, and a session snapshot and an incident round-trip through PostgreSQL"
+      }
+    },
+    {
+      "id": "semantic-objects-mutated-in-place",
+      "status": "declared-not-implemented",
+      "capability": "Semantic objects are versioned: no in-place mutation, deprecate and replace",
+      "claimed_in": [
+        {
+          "at": "backend/src/semantic_layer/registry.py:6",
+          "says": "2. All objects are versioned \u2014 no in-place mutation; deprecate and replace."
+        },
+        {
+          "at": "docs/DATA_LAYER.md@13e7d92:242",
+          "says": "No in-place mutation. Deprecate and replace."
+        },
+        {
+          "at": "docs/ADR-001-canonical-semantic-layer.md@13e7d92:71",
+          "says": "All objects are versioned \u2014 no in-place mutation (Rule #2)"
+        },
+        {
+          "at": "docs/ADR-001-canonical-semantic-layer.md@13e7d92:91",
+          "says": "Version increments on any field change"
+        }
+      ],
+      "reality": "Approval and rejection UPDATE the object's own row: promote_to_approved rewrites approval_status, approved_at, approved_by, guardian_verdict_ref and lineage, and reject_draft rewrites approval_status (to DEPRECATED) and lineage. The version column keeps its 1.0.0 default, because no code path increments it and no new row is written for a new version. The previous state survives only as lineage entries and audit_log rows. The interventions feedback endpoint likewise UPDATEs interventions in place.",
+      "evidence": [
+        {
+          "at": "backend/src/semantic_layer/registry.py:796",
+          "says": "f\"SET approval_status = 'APPROVED', \""
+        },
+        {
+          "at": "backend/src/semantic_layer/registry.py:880",
+          "says": "f\"SET approval_status = 'DEPRECATED', lineage = :lineage \""
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/unit/test_registry_versioning.py",
+        "asserts": "approving or rejecting an object leaves the prior row unchanged and writes a successor with an incremented version -- or the versioning claims are retracted from the registry docstring and the docs"
+      }
+    },
+    {
+      "id": "lineage-partial",
+      "status": "partial",
+      "capability": "Every approved semantic object carries lineage from source data to approver",
+      "claimed_in": [
+        {
+          "at": "backend/src/semantic_layer/registry.py:7",
+          "says": "3. All approved objects carry lineage."
+        },
+        {
+          "at": "backend/src/api/semantic.py:329",
+          "says": "This satisfies EU AI Act Art. 13 lineage"
+        },
+        {
+          "at": "docs/DATA_LAYER.md@13e7d92:449",
+          "says": "This satisfies EU AI Act Article 13 transparency requirements"
+        }
+      ],
+      "reality": "Approval and rejection each append one step (APPROVED or REJECTED: actor, time, verdict id), and an edge keeps whatever lineage list its submitter sent. Nothing records the data source, the transformation steps or the policy rules into lineage, and no platform code constructs a LineageRecord. An entity's submitted lineage is not stored (the INSERT omits the column). graph_fragments has no lineage column in either schema, so promote_to_approved and reject_draft on a GraphFragment read a column that does not exist. The Guardian verdict, its cited rules, and the evidence and assumption ids are linked by reference, so the chain can be partly rebuilt by joins. Nothing shows that this satisfies EU AI Act Art. 13.",
+      "evidence": [
+        {
+          "at": "backend/src/semantic_layer/registry.py:784",
+          "says": "text(f\"SELECT lineage FROM {table} WHERE id = :oid\"),"
+        },
+        {
+          "at": "backend/src/semantic_layer/models.py:200",
+          "says": "class LineageRecord(BaseModel):"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/integration/test_lineage_chain.py",
+        "asserts": "an object submitted, approved and used in an analysis carries lineage naming its source, each transforming agent/skill and version, the verdict and rules, and the approver -- for edges, entities and fragments alike"
+      }
+    },
+    {
+      "id": "drift-monitor-no-data",
+      "status": "declared-not-implemented",
+      "capability": "Continuous distribution, causal, semantic and concept drift monitoring",
+      "claimed_in": [
+        {
+          "at": "docs/AGENTS.md:134",
+          "says": "Production-ready with multi-type drift detection (distribution, causal, semantic, concept)"
+        },
+        {
+          "at": "docs/DATA_LAYER.md@13e7d92:432",
+          "says": "| **Causal drift** | Graph structure diverges from live data patterns | Flag graph fragment for re-review |"
+        },
+        {
+          "at": "docs/DATA_LAYER.md@13e7d92:435",
+          "says": "| **Concept drift** | Model performance degradation over time | Re-estimation trigger |"
+        }
+      ],
+      "reality": "The drift functions compute when called directly with data (KL/JS on histograms, a correlation-below-0.5 check labelled causal drift, Jaccard word overlap on definitions, a chi-squared test on labels). DriftMonitorAgent.process, which the periodic sensor runs, hands each skill only a fragment id, so drift_detect returns kl_divergence 0.0 with note no_data_for_comparison, the structure and semantic comparisons return no drift for want of edges and definitions, and concept_drift is passed as False. The pipeline therefore cannot raise a drift alert. Alerts go to an in-process AlertEmitter; the Kafka topic named in its return value has no producer.",
+      "evidence": [
+        {
+          "at": "backend/src/agents/drift_monitor.py:598",
+          "says": "\"note\": \"no_data_for_comparison\","
+        },
+        {
+          "at": "backend/src/agents/drift_monitor.py:186",
+          "says": "concept_drift=False,  # Would need label data"
+        },
+        {
+          "at": "backend/src/agents/drift_monitor.py:546",
+          "says": "\"topic\": \"platform.drift.alert.v1\","
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/integration/test_drift_pipeline_data.py",
+        "asserts": "the periodic sensor, run over a fragment whose stored baseline differs from current data by a known shift, raises a drift alert carrying the measured divergence -- and does not for an unshifted copy"
       }
     }
   ],
