@@ -26,7 +26,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
-CONTRACT_VERSION = "0.7.0"
+CONTRACT_VERSION = "0.8.0"
 
 
 class _Model(BaseModel):
@@ -197,6 +197,12 @@ class CausalQuery(_Model):
         "subgroup with the largest effect is a different activity with different statistics, "
         "and reporting it as if it had been declared is how a team fools itself.",
     )
+    cluster: str | None = Field(
+        default=None,
+        description="Randomized designs only: the column identifying the unit of randomization "
+        "(service, region, tenant) when outcomes are measured on finer units (requests, users). "
+        "Standard errors are then cluster-robust; treatment must be constant within a cluster.",
+    )
     sequence: str | None = Field(
         default=None,
         description="Randomized designs only: the column giving each unit's arrival order. When "
@@ -253,6 +259,12 @@ class AnalysisPolicy(_Model):
     )
     pt_alpha_pre: float = Field(default=0.025, gt=0, lt=0.5)
     pt_alpha_effect: float = Field(default=0.025, gt=0, lt=0.5)
+    min_clusters_per_arm: int = Field(
+        default=5,
+        ge=2,
+        description="Cluster-randomized designs: fewer clusters than this in either arm and the "
+        "cluster-level variance cannot be estimated; the analysis refuses.",
+    )
     cs_target_n: int = Field(
         default=2000,
         ge=10,
@@ -358,6 +370,13 @@ class Diagnostics(_Model):
     propensity: PropensityDiagnostics | None = None
     balance: tuple[BalanceRow, ...] = ()
     srm_p_value: float | None = None
+    n_clusters: int | None = None
+    icc: float | None = Field(
+        default=None,
+        description="Cluster-randomized designs: estimated intra-cluster correlation of the "
+        "outcome within arms. With clusters of size m, units carry about 1/(1 + (m-1)·ICC) of "
+        "the information independent units would.",
+    )
     first_stage_f: float | None = None
     checks: tuple[DesignCheck, ...] = ()
 

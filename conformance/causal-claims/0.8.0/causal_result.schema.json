@@ -67,6 +67,19 @@
           "description": "A user-chosen adjustment set. It is validated against the graph and refused if it is not a valid adjustment set.",
           "title": "Adjust For"
         },
+        "cluster": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Randomized designs only: the column identifying the unit of randomization (service, region, tenant) when outcomes are measured on finer units (requests, users). Standard errors are then cluster-robust; treatment must be constant within a cluster.",
+          "title": "Cluster"
+        },
         "design": {
           "$ref": "#/$defs/Design",
           "default": "observational"
@@ -379,6 +392,31 @@
           ],
           "default": null,
           "title": "First Stage F"
+        },
+        "icc": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Cluster-randomized designs: estimated intra-cluster correlation of the outcome within arms. With clusters of size m, units carry about 1/(1 + (m-1)\u00b7ICC) of the information independent units would.",
+          "title": "Icc"
+        },
+        "n_clusters": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "N Clusters"
         },
         "n_control": {
           "anyOf": [
@@ -1435,7 +1473,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:causalplatform:claims:0.7.0:causal_result",
+  "$id": "urn:causalplatform:claims:0.8.0:causal_result",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {

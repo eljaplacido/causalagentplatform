@@ -20,7 +20,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:causalplatform:claims:0.7.0:causal_query",
+  "$id": "urn:causalplatform:claims:0.8.0:causal_query",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
@@ -39,6 +39,19 @@
       "default": null,
       "description": "A user-chosen adjustment set. It is validated against the graph and refused if it is not a valid adjustment set.",
       "title": "Adjust For"
+    },
+    "cluster": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Randomized designs only: the column identifying the unit of randomization (service, region, tenant) when outcomes are measured on finer units (requests, users). Standard errors are then cluster-robust; treatment must be constant within a cluster.",
+      "title": "Cluster"
     },
     "design": {
       "$ref": "#/$defs/Design",

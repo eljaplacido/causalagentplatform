@@ -7,8 +7,8 @@ would go on vouching for a document that no longer existed. D0 sat in exactly
 that state from its v1.1 changelog edit until v2.
 
 The rule: a PRE-REGISTRATION.md may change only together with a passing run
-recorded against its exact bytes, from a committed (clean) tree. Failing runs stay on file beside it; they are
-evidence too (T0 v1, T2 run 1).
+recorded against its exact bytes, from a committed (clean) tree. Failing runs stay
+on file beside it; they are evidence too (T0 v1, T2 run 1).
 """
 
 from __future__ import annotations

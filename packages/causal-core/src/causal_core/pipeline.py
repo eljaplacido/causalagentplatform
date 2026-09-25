@@ -24,6 +24,7 @@ from causal_core import refute as refuters
 from causal_core._version import __version__
 from causal_core.canonical import data_digest, digest
 from causal_core.claims import build_claims
+from causal_core.cluster import analyze_cluster
 from causal_core.contract import (
     CONTRACT_VERSION,
     Abstention,
@@ -389,6 +390,18 @@ def _analyze(
     # A watched randomized stream: an anytime-valid confidence sequence at every
     # look, from causal_core.sequential. Identification above still had to certify
     # randomization; the sequential path refuses anything else.
+    if query.cluster is not None:
+        stage.name = "cluster"
+        return analyze_cluster(
+            frame,
+            query,
+            policy,
+            cert=cert,
+            unreviewed=unreviewed,
+            warnings=warnings,
+            prov=prov,
+            refuse=refuse,
+        )
     if query.sequence is not None:
         stage.name = "sequential"
         return analyze_sequential(

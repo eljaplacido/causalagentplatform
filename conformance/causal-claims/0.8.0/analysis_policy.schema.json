@@ -1,5 +1,5 @@
 {
-  "$id": "urn:causalplatform:claims:0.7.0:analysis_policy",
+  "$id": "urn:causalplatform:claims:0.8.0:analysis_policy",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Every threshold that can change an answer. Hashed into provenance.",
@@ -72,6 +72,13 @@
       "minimum": 0,
       "title": "Max Extreme Propensity Share",
       "type": "number"
+    },
+    "min_clusters_per_arm": {
+      "default": 5,
+      "description": "Cluster-randomized designs: fewer clusters than this in either arm and the cluster-level variance cannot be estimated; the analysis refuses.",
+      "minimum": 2,
+      "title": "Min Clusters Per Arm",
+      "type": "integer"
     },
     "min_first_stage_f": {
       "default": 10.0,
