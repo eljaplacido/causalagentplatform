@@ -953,7 +953,17 @@ def clear_seeded_data(engine: Any) -> dict[str, int]:
 import json
 
 
-def main():
+def main() -> None:
+    # The seeder acts for no user and writes into several domains: it declares a
+    # service scope, which the RLS policies let see every domain. Without it,
+    # on PostgreSQL, every write to the semantic tables would be refused.
+    from src.db.scope import service_scope
+
+    with service_scope("scripts.seed_data"):
+        _main()
+
+
+def _main() -> None:
     parser = argparse.ArgumentParser(description="Seed the Causal Platform with test data")
     parser.add_argument("--devops", action="store_true", help="Seed DevOps domain data")
     parser.add_argument("--marketing", action="store_true", help="Seed Marketing domain data")

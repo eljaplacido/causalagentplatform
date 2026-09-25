@@ -95,8 +95,8 @@ priority first, and the priorities put hardening the platform before new estimat
   from the prose and the kernel outcome it reports, instead of reading it from the caller
   (`septa-25`); every state-changing route is checked against one role matrix, and the token's
   `domains` claim bounds what a user sees of the semantic layer, at the application layer
-  (`septa-26`; the database's RLS policies still bind nothing, register
-  `rls-policies-bind-nothing`); the governance page's Approve, which could never succeed, now
+  (`septa-26`), and on PostgreSQL at the database layer too, by row-level security
+  (`septa-47`); the governance page's Approve, which could never succeed, now
   names the object and the approver's classification (`septa-46`); the gate runs bandit, a
   secret scan, pip-audit and npm audit, and every advisory they found was fixed rather than
   excused (`septa-27`; container scans, a release SBOM and hash-pinned Python installs are still
@@ -120,7 +120,7 @@ priority first, and the priorities put hardening the platform before new estimat
   `septa-9`), calibration (`septa-10`), anchoring (`septa-11`), Rosenbaum bounds (`septa-12`),
   Guardian PR-007 (`septa-33`), positivity detection and triangulation at moderate n (`septa-34`,
   `septa-35`), and the review queue's risk tier (`septa-36`).
-- **p3 and p4.** The rest of the register (PostgreSQL row-level security, versioned semantic objects, lineage,
+- **p3 and p4.** The rest of the register (versioned semantic objects, lineage,
   provenance, the LLM layer, Cynefin routing, frontend views and others), then the longer-range
   methods: discovery, rung-3 counterfactuals, general ID estimation, subgroup discovery. Many of
   these end either in the capability or in its claim being withdrawn from the docs.

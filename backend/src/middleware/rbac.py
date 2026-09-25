@@ -20,20 +20,29 @@ Domain isolation (§4.2) is application-level: the token's ``domains`` claim, a
 list of domain names, bounds which semantic objects a user reads, drafts in, or
 reviews. `domain_scope` returns ``None`` (no restriction) only when the claim is
 absent AND the user holds a role in `UNSCOPED_ROLES`; for everyone else an
-absent or malformed claim means no domain at all -- fail closed. The database's
-RLS policies are not what enforces this (register `rls-policies-bind-nothing`).
+absent or malformed claim means no domain at all -- fail closed.
+
+The database enforces the same scope a second time: `scope_for_user` turns it
+into the settings row-level security reads on ``causal_entities``,
+``causal_edges`` and ``graph_fragments`` (src/db/scope.py, migration
+``010_rls_binds.sql``), bound per request by the auth middleware. A query that
+forgets the application's filter still returns nothing outside the user's
+domains.
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from src.db.scope import user_scope
 from src.middleware.auth import require_role, roles_of
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection
 
     from fastapi import Request
+
+    from src.db.scope import DbScope
 
 # ── Roles ─────────────────────────────────────────────────────────────────────
 
@@ -165,3 +174,15 @@ def in_scope(scope: Collection[str] | None, domain: str | None) -> bool:
 def approved_only(user: dict[str, Any]) -> bool:
     """True when the user may read only APPROVED semantic objects (a viewer)."""
     return not (READ_ALL_ROLES & set(roles_of(user)))
+
+
+def scope_for_user(user: dict[str, Any] | None) -> DbScope:
+    """The database scope for `user`: `domain_scope` and the platform roles it holds.
+
+    Only roles in `ALL_ROLES` are forwarded, so a token cannot name the database's
+    service marker. No user is `NO_SCOPE`'s equivalent: no domain, no role.
+    """
+    if user is None:
+        return user_scope(frozenset(), (), label="anonymous")
+    roles = [r for r in roles_of(user) if r in ALL_ROLES]
+    return user_scope(domain_scope(user), roles, label=f"user:{user.get('uid', '?')}")

@@ -107,8 +107,10 @@ A lower-privilege user or agent attempts to access or modify resources above the
 **Mitigations:**
 - **In place:** RBAC at the API layer: one role matrix covers every state-changing route and
   the audit, review-queue, provenance and semantic-layer reads (§4.0), and domain scope bounds
-  what a user sees of the semantic layer (§4.2). **Target:** the same checks at the database
-  layer; the RLS policies declared there bind nothing (register `rls-policies-bind-nothing`).
+  what a user sees of the semantic layer (§4.2). **In place:** the same domain scope at the
+  database layer on PostgreSQL: row-level security on `causal_entities`, `causal_edges` and
+  `graph_fragments`, fed per request from the token and binding the role the app connects as
+  (§4.2). Role checks (which route a role may call) remain application-only.
 - **Target:** agent identities as service accounts with scoped permissions. Agents run
   in-process today and have no identity of their own.
 - **Target:** re-authentication on human escalation paths.
@@ -243,8 +245,8 @@ Where §4.1 does not say, these are the least-privilege choices made:
 
 ### 4.2 Attribute-Based Overrides
 
-> **Status:** in effect at the application layer; not at the database layer (register
-> `rls-policies-bind-nothing`).
+> **Status:** in effect at the application layer, and on PostgreSQL at the database layer too
+> (row-level security, below). SQLite, the local-development engine, has only the first.
 
 Domain isolation: a `domain` attribute on every semantic object restricts cross-domain reads to users with explicit cross-domain grants. A DevOps analyst cannot read supply chain causal graphs without an explicit grant from the Governance Officer.
 
@@ -266,11 +268,43 @@ registry's queries:
   that issues one.
 - Causal models (`/api/v1/models`), decisions and sessions carry no domain and are not scoped.
 
-Migration `001_initial.sql` declares row-level-security policies on `causal_entities` and
-`causal_edges` that read `current_setting('app.user_domains')` and `app.user_role`. No
-application code sets either. RLS does not apply to the table owner, which is the role
-`docker-compose.yml` connects as, so the policies isolate nothing. Connecting as `causal_app`
-would instead hide every row. `graph_fragments` has no policy.
+**The database's line.** On PostgreSQL the same scope is enforced a second time, by
+row-level security, so a query that forgets the application's filter still returns nothing
+outside the caller's domains:
+
+- **Policies.** Migration `010_rls_binds.sql` puts one policy on each of `causal_entities`,
+  `causal_edges` and `graph_fragments`, `USING` and `WITH CHECK` the predicate
+  `app_scope_allows(domain)`: the row's domain is in `app.user_domains`, or no domain list is
+  set and `app.user_role` holds `governance_officer`, `platform_engineer` or the service
+  marker. So the database applies the rule above itself -- a present claim binds every role --
+  and a write into another domain is refused, not just hidden. (001's policies, which this
+  replaces, split the list on commas and let the two governance roles through whatever their
+  claim said; `graph_fragments` had none.)
+- **Settings, per request and per transaction.** The auth middleware binds the caller's scope
+  (`rbac.scope_for_user`) around the rest of the request, in a context variable;
+  `backend/src/db/scope.py` opens every PostgreSQL transaction with
+  `set_config('app.user_domains', …, true)` and `set_config('app.user_role', …, true)`.
+  Transaction-local, so a pooled connection never carries one request's scope into the next.
+  `app.user_domains` is a JSON array of domain names, or empty exactly when the user is
+  unscoped (no claim, a governance role); `app.user_role` is a JSON array of the user's
+  platform roles.
+- **No user.** Outside a request the scope is empty: nothing visible, every write refused.
+  Code that acts for no one -- the seeder, a background job, an agent run outside a request --
+  must declare `service_scope(reason)`, which sees every domain; forgetting it fails closed.
+  An agent run inside a request acts for that request's user and gets that user's scope. No
+  token can claim the service marker: only the platform's own roles are forwarded.
+- **The connection role.** RLS binds neither a superuser, a `BYPASSRLS` role nor the tables'
+  owner, so the app connects as `causal_app`, which owns nothing (docs/QUICKSTART.md). The
+  owner remains the migration and repair role; `FORCE ROW LEVEL SECURITY` is not set. The
+  backend refuses to start on PostgreSQL as a role the policies would not bind.
+- **Grants.** `causal_app` may select and insert on every table, update the ones that are not
+  append-only, and use the sequences; it has no `DELETE` or `TRUNCATE` anywhere, and the
+  append-only triggers stay. `backend/tests/integration/test_rls_domain_isolation.py` pins all
+  of this on PostgreSQL, including negative controls with a policy dropped, RLS disabled, and
+  the owner's connection.
+
+What the database does not check: which route a role may call (the matrix in §4.0 is
+application-only), and the tables that carry no domain.
 
 ---
 
@@ -428,8 +462,9 @@ list once they have been spent (or to void them deliberately, if the old key lea
 schedules or enforces a rotation.
 
 **The local-dev exception.** `docker-compose.yml` carries the local PostgreSQL and Neo4j
-password (`causal_local_dev`) in plain text. It is a development stack bound to localhost and the
-password protects nothing else; do not reuse it, or the compose file, for a deployment.
+password (`causal_local_dev`), and the login it gives `causal_app` (`causal_app_local_dev`), in
+plain text. It is a development stack and these passwords protect nothing else; do not reuse
+them, or the compose file, for a deployment.
 
 **Not built:** a secret-manager client, rotation enforced on a schedule, and audit of secret
 access inside the platform.

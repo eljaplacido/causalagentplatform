@@ -43,6 +43,7 @@ from src.api import provenance as provenance_router_module
 from src.api import semantic as semantic_router_module
 from src.api import session as session_router_module
 from src.db.factory import CloudSqlFactory
+from src.db.scope import assert_rls_binds
 from src.middleware.auth import FirebaseAuthMiddleware
 from src.semantic_layer.verdict import require_signing_key
 
@@ -81,6 +82,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # with a per-process key would be refused by every other worker and after a
     # restart. Raising here makes uvicorn exit before it serves a request.
     require_signing_key()
+
+    # On PostgreSQL, no start as a role row-level security does not bind (the
+    # tables' owner, a superuser, BYPASSRLS): domain isolation would then rest
+    # on the application alone while the docs say the database backs it.
+    # A no-op on SQLite.
+    await assert_rls_binds(CloudSqlFactory.get_engine())
 
     # Local dev: auto-create SQLite tables via ORM
     if env == "local":

@@ -321,12 +321,14 @@ grants, row-level security and most `CHECK` constraints exist only on the Postgr
 (SQLite keeps three: `audit_log.guardian_verdict`, `decision_followups.kind` and
 `causal_model_versions.version`).
 
-- **PostgreSQL**: `backend/src/db/migrations/001_initial.sql` to `009_incidents.sql`, applied in
-  filename order. Two things in this repository apply them: `docker-compose.yml`, which mounts
-  them as the container's init scripts (so only when its volume is first created), and the test
-  fixtures when `TEST_DATABASE_URL` is set (`backend/tests/conftest.py`, which builds a fresh
-  database from them for the run; the gate's `backend-pytest-postgres` step and CI do this). No
-  deploy step runs them.
+- **PostgreSQL**: `backend/src/db/migrations/001_initial.sql` to `010_rls_binds.sql`, applied in
+  filename order. Two things in this repository apply them: `docker-compose.yml`, whose init
+  script (`backend/src/db/docker/initdb.sh`) runs them when the container's volume is first
+  created and then gives `causal_app` its local-dev login, and the test fixtures when
+  `TEST_DATABASE_URL` is set (`backend/tests/conftest.py`, which builds a fresh database from
+  them for the run; the gate's `backend-pytest-postgres` step and CI do this). No deploy step
+  runs them. They are run as a superuser (001 creates roles); the backend then connects as
+  `causal_app`, not as the owner.
 - **SQLite**: the `SQLITE_DDL` string in `backend/src/db/factory.py`, created by
   `CloudSqlFactory.init_db()` on a SQLite engine (the choice is by the engine's dialect, never
   run on PostgreSQL). The default test run, and the gate's `backend-pytest` step, use it.
@@ -341,6 +343,7 @@ grants, row-level security and most `CHECK` constraints exist only on the Postgr
 | `decision_followups` | 004, 005 | yes | The follow-up plan written at decision time, and each later realization. Append-only; 005 allows one row per decision and kind, so a decision is measured once |
 | `causal_model_versions`, `decision_model_refs` | 007 | yes | The assumption registry: immutable model versions (content-addressed, each naming its parent), and which decision used which version. Append-only |
 | `session_state` | 008 | yes | Latest `EpistemicState` snapshot per session (`orchestration/session_store.py`), upserted on `session_id`; also what the incident triage agent's experience buffer reads back |
+| (row-level security) | 001, replaced by 010 | no | Not a table: 010 puts a domain policy on `causal_entities`, `causal_edges` and `graph_fragments`, fed by the settings `backend/src/db/scope.py` sets on every transaction (docs/CYBERSECURITY.md §4.2), and grants `causal_app` the sequence 004 created after 001's grant |
 | `incidents` | 009 | yes | Incident records (`api/incidents.py`), upserted on `id` with `INSERT ... ON CONFLICT`, keeping the first `created_at`. Decisions on their interventions are `audit_log` rows, joined in on read |
 
 Until 008 and 009 (septa-52) `session_state` and `incidents` existed only in the SQLite schema,
@@ -382,13 +385,20 @@ On PostgreSQL, `audit_log`, `decision_records`, `decision_followups` and the 007
 ways: `UPDATE` and `DELETE` are revoked from the application roles, and `BEFORE UPDATE/DELETE`
 triggers raise. The SQLite schema declares the same triggers.
 
+**Roles.** 001 creates `causal_app` (what the backend connects as), `causal_governance` and
+`causal_readonly`, none of them owners. `causal_app` may `SELECT` and `INSERT` on every table,
+`UPDATE` those that are not append-only, and use the sequences; it has no `DELETE` or `TRUNCATE`
+anywhere. Row-level security binds it on the three semantic tables above; the backend refuses to
+start on PostgreSQL as a role it does not bind (a superuser, `BYPASSRLS`, or the owner).
+
 **`interventions`** (001) has no foreign keys to treatment or user tables, because none exist.
 `treatment_ref` and `target_entity_ref` are loose `UUID`s, `initiated_by` and `approved_by` are
 `UserRef` JSON (`JSONB`), and `guardian_verdict_ref` is `NOT NULL REFERENCES audit_log(id)`.
 
 **Cloud deployment:** `CloudSqlFactory` can connect to Cloud SQL through the Unix socket named by
-`CLOUD_SQL_INSTANCE_CONNECTION_NAME`, or to any PostgreSQL through `DATABASE_URL` (or a file named by `DATABASE_URL_FILE`). This
-repository contains no Cloud Run deployment of it.
+`CLOUD_SQL_INSTANCE_CONNECTION_NAME`, or to any PostgreSQL through `DATABASE_URL` (or a file named by `DATABASE_URL_FILE`),
+in either case as `causal_app` or a member of it that owns nothing (the socket path's `DB_USER`
+must be such a role). This repository contains no Cloud Run deployment of it.
 
 ---
 

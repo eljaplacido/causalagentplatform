@@ -2,9 +2,12 @@
 Shared pytest fixtures for the Unified Enterprise Causal Platform test suite.
 
 Fixture hierarchy:
-  - db_engine    — in-memory SQLite async engine (per test), or PostgreSQL
-                   built from the migrations when TEST_DATABASE_URL is set
-  - db_session   — AsyncSession bound to db_engine
+  - db_engine    — the engine the app's code runs on: in-memory SQLite (per
+                   test), or, when TEST_DATABASE_URL is set, PostgreSQL built from
+                   the migrations and connected as causal_app, so row-level
+                   security binds every query the app makes
+  - db_session   — AsyncSession for seeding and reading back: on db_engine for
+                   SQLite, on the owner's connection for PostgreSQL
   - governance   — GovernanceAgent instance wired to test DB
   - registry     — SemanticLayerRegistry wired to test DB
   - approved_audit_entry_id — UUID of a pre-written APPROVED audit entry
@@ -14,7 +17,9 @@ from __future__ import annotations
 
 import hashlib
 import os
+import secrets
 from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID, uuid4
@@ -36,6 +41,7 @@ os.environ.setdefault("ENV", "local")
 # ── Import after ENV is set ────────────────────────────────────────────────────
 from src.agents.governance import GovernanceAgent
 from src.db.factory import SQLITE_DDL, CloudSqlFactory, ddl_statements
+from src.db.scope import install_scope_listener, service_scope
 from src.db.types import TEXT_ARRAY, TIMESTAMP, typed_text
 from src.semantic_layer.models import (
     CausalEdge,
@@ -75,6 +81,22 @@ SQLITE_SCHEMA = SQLITE_DDL
 # database named in the URL is used only to create it), then every table is
 # TRUNCATEd before each test. TRUNCATE does not fire the append-only row
 # triggers, which is why it, and not DELETE, is what resets them.
+#
+# Two connections to that database. The URL's own user (it must be able to
+# create databases and roles) builds it, truncates it and seeds it: it owns the
+# tables, so row-level security does not bind it. The app's code -- everything
+# that goes through CloudSqlFactory -- connects as causal_app instead, the role
+# production connects as (docs/QUICKSTART.md), which RLS binds. The login is a
+# per-run role, ``causal_test_login_<random>``, member of causal_app, whose
+# default ``role`` setting makes every session it opens run AS causal_app; its
+# password is random, generated here, and dies with the role at the end of the
+# run. Nothing about causal_app itself is changed, so two runs on one server do
+# not collide.
+#
+# The domain scope the policies read comes from src/db/scope.py: per request,
+# the auth middleware binds the caller's. A test that calls the registry or the
+# stores directly has no request and so no user; `db_engine` declares a service
+# scope for it (every domain), explicitly, as any non-request code must.
 
 MIGRATIONS_DIR = Path(__file__).resolve().parent.parent / "src" / "db" / "migrations"
 
@@ -112,7 +134,11 @@ postgres_only = pytest.mark.skipif(
 )
 
 
-async def _create_migrated_database(url: URL, name: str) -> None:
+#: The role the application connects as (001_initial.sql creates it).
+APP_ROLE = "causal_app"
+
+
+async def _create_migrated_database(url: URL, name: str, login: str, password: str) -> None:
     import asyncpg
 
     admin = await asyncpg.connect(_asyncpg_dsn(url, url.database or "postgres"))
@@ -126,34 +152,64 @@ async def _create_migrated_database(url: URL, name: str) -> None:
             # No arguments: asyncpg uses the simple query protocol, which runs a
             # whole script (DO blocks, functions, BEGIN/COMMIT) as psql would.
             await conn.execute(path.read_text(encoding="utf-8"))
+        # The app's login for this run. Identifiers and the password are ours
+        # (hex), so formatting them in is not an injection path; CREATE ROLE
+        # takes no bind parameters.
+        await conn.execute(
+            f'CREATE ROLE "{login}" LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB '
+            f"NOCREATEROLE PASSWORD '{password}' IN ROLE {APP_ROLE}"
+        )
+        await conn.execute(f'ALTER ROLE "{login}" SET role = {APP_ROLE}')
     finally:
         await conn.close()
 
 
-async def _drop_database(url: URL, name: str) -> None:
+async def _drop_database(url: URL, name: str, login: str) -> None:
     import asyncpg
 
     admin = await asyncpg.connect(_asyncpg_dsn(url, url.database or "postgres"))
     try:
         await admin.execute(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)')
+        await admin.execute(f'DROP ROLE IF EXISTS "{login}"')
     finally:
         await admin.close()
 
 
+@dataclass(frozen=True)
+class PostgresTestDatabase:
+    """This run's migrated database: as its owner, and as the app connects."""
+
+    owner_url: URL
+    app_url: URL
+
+
 @pytest.fixture(scope="session")
-def postgres_test_url() -> Generator[URL | None, None, None]:
+def postgres_test_db() -> Generator[PostgresTestDatabase | None, None, None]:
     """A freshly migrated PostgreSQL database for this session, or None (SQLite run)."""
     if TEST_DB_URL is None:
         yield None
         return
     import asyncio
 
-    name = f"causal_test_{uuid4().hex[:12]}"
-    asyncio.run(_create_migrated_database(TEST_DB_URL, name))
+    suffix = uuid4().hex[:12]
+    name = f"causal_test_{suffix}"
+    login = f"causal_test_login_{suffix}"
+    password = secrets.token_hex(24)
+    asyncio.run(_create_migrated_database(TEST_DB_URL, name, login, password))
     try:
-        yield TEST_DB_URL.set(database=name)
+        owner_url = TEST_DB_URL.set(database=name)
+        yield PostgresTestDatabase(
+            owner_url=owner_url,
+            app_url=owner_url.set(username=login, password=password),
+        )
     finally:
-        asyncio.run(_drop_database(TEST_DB_URL, name))
+        asyncio.run(_drop_database(TEST_DB_URL, name, login))
+
+
+@pytest.fixture(scope="session")
+def postgres_test_url(postgres_test_db: PostgresTestDatabase | None) -> URL | None:
+    """The owner's URL of this run's PostgreSQL database, or None (SQLite run)."""
+    return None if postgres_test_db is None else postgres_test_db.owner_url
 
 
 async def _truncate_all(engine: AsyncEngine) -> None:
@@ -206,22 +262,42 @@ async def _sqlite_engine() -> AsyncEngine:
 
 
 @pytest_asyncio.fixture
-async def db_engine(postgres_test_url: URL | None) -> AsyncGenerator[AsyncEngine, None]:
+async def db_owner_engine(
+    postgres_test_db: PostgresTestDatabase | None,
+) -> AsyncGenerator[AsyncEngine | None, None]:
+    """PostgreSQL only: the owner's engine, emptied for this test. None on SQLite."""
+    if postgres_test_db is None:
+        yield None
+        return
+    engine = create_async_engine(postgres_test_db.owner_url, echo=False)
+    await _truncate_all(engine)
+    yield engine
+    await engine.dispose()
+
+
+@pytest_asyncio.fixture
+async def db_engine(
+    postgres_test_db: PostgresTestDatabase | None,
+    db_owner_engine: AsyncEngine | None,
+) -> AsyncGenerator[AsyncEngine, None]:
     """
-    A clean database for each test: in-memory SQLite, or PostgreSQL when
+    The engine the app's code runs on, over a clean database for each test:
+    in-memory SQLite, or PostgreSQL connected as causal_app when
     TEST_DATABASE_URL is set (see above).
 
-    Resets the CloudSqlFactory singleton so each test gets a clean state.
+    Resets the CloudSqlFactory singleton so each test gets a clean state, and
+    declares a service scope for the test's own direct calls (see above);
+    requests the test makes run under their caller's scope instead.
     """
     CloudSqlFactory.reset()
     os.environ["ENV"] = "local"
     os.environ["SQLITE_PATH"] = ":memory:"
 
-    if postgres_test_url is None:
+    if postgres_test_db is None:
         engine = await _sqlite_engine()
     else:
-        engine = create_async_engine(postgres_test_url, echo=False)
-        await _truncate_all(engine)
+        engine = create_async_engine(postgres_test_db.app_url, echo=False)
+        install_scope_listener(engine)
 
     # Inject the test engine directly via class-level cache variables
     CloudSqlFactory.reset()
@@ -234,17 +310,26 @@ async def db_engine(postgres_test_url: URL | None) -> AsyncGenerator[AsyncEngine
         autocommit=False,
     )
 
-    yield engine
+    with service_scope("test fixture: direct calls outside a request"):
+        yield engine
 
     await engine.dispose()
     CloudSqlFactory.reset()
 
 
 @pytest_asyncio.fixture
-async def db_session(db_engine: AsyncEngine) -> AsyncGenerator[AsyncSession, None]:
-    """Yield an AsyncSession connected to the test engine."""
+async def db_session(
+    db_engine: AsyncEngine, db_owner_engine: AsyncEngine | None
+) -> AsyncGenerator[AsyncSession, None]:
+    """An AsyncSession for seeding and reading back.
+
+    On PostgreSQL it connects as the tables' owner, which row-level security does
+    not bind, so a fixture can seed rows in any domain and a test can read back
+    what the app wrote whatever the scope. What the app itself can see is
+    db_engine's business.
+    """
     session_factory = async_sessionmaker(
-        db_engine,
+        db_owner_engine if db_owner_engine is not None else db_engine,
         class_=AsyncSession,
         expire_on_commit=False,
         autoflush=False,
