@@ -2,7 +2,7 @@
 
 **Suite:** A0, whether a revision to a causal model invalidates the verdicts made under the old one
 **System under test:** `packages/causal-decision` (`causal_decision.assumptions.impact`, `.diff`)
-**Registered:** 2026-09-25, version 1
+**Registered:** 2026-09-25, version 1; version 2 the same day (see Changelog)
 **Runs:** every PR, via `pytest -m a0` in `packages/causal-decision`
 
 ## Status of this document
@@ -88,12 +88,12 @@ claim about the old estimate:
 ```toml
 [meta]
 suite = "A0"
-version = 1
+version = 2
 registered = "2026-09-25"
 
 [cases]
 seed = 20260925
-n_pairs = 400                  # back-door cases kept after filtering
+n_pairs = 800                  # back-door cases kept after filtering (v1: 400)
 min_per_class = 60             # each of holds / invalidated must occur at least this often
 oracle_draws = 3
 oracle_tolerance = 1e-8
@@ -127,3 +127,15 @@ says `holds`. The class balance is a scope floor: the gate must have looked at b
 ## Changelog
 
 - v1 (2026-09-25): initial registration.
+- **v2 (2026-09-25): 800 cases instead of 400. No bar changed.** v1 run 1
+  (`results/2026-09-25-v1-run1.json`) failed on the scope floor alone: 51 of 400 cases were
+  `invalid` against `min_per_class = 60`. Everything the gate exists to check passed on that run —
+  400/400 agreement with the oracle, 0 `unverified`, 0 property violations, all four seeded defects
+  caught — but a floor is a bar, and it failed. Lowering it to fit what came out would be the move
+  this document forbids; so the floor stays at 60 and the gate looks at more cases. At the v1 rate
+  (12.75% invalid) 800 cases yield about 100, so the floor now has margin rather than being met by
+  a hair. The seed is unchanged, so the first 400 cases of v2 are exactly v1's.
+
+  Disclosed: this change was chosen after seeing the v1 result. It enlarges the sample the fixed
+  bars are applied to; it cannot make a wrong `impact` pass, because agreement must still be 1.0
+  on every case, and more cases can only find more disagreements.
