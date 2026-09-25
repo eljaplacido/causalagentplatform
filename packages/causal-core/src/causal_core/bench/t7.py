@@ -49,6 +49,7 @@ class Design:
     k: int
     icc: float
     effect: Callable[[np.ndarray], np.ndarray]  # cluster sizes -> tau_j
+    heavy_sizes: bool = False  # v2: 10 + floor(LogNormal(ln 40, 0.8)) instead of 10 + Poisson(40)
 
 
 DESIGNS = {
@@ -56,12 +57,16 @@ DESIGNS = {
     "moderate": Design("moderate", 40, 0.3, lambda m: np.full(m.shape, 0.3)),
     "few_clusters": Design("few_clusters", 20, 0.3, lambda m: np.full(m.shape, 0.3)),
     "null_effect": Design("null_effect", 40, 0.3, lambda m: np.zeros(m.shape)),
-    "size_dependent": Design("size_dependent", 40, 0.1, lambda m: 0.3 + 0.01 * (m - 50)),
+    "size_dependent": Design("size_dependent", 40, 0.1, lambda m: 0.3 + 0.01 * (m - 50),
+                             heavy_sizes=True),
 }
 
 
-def simulate(d: Design, rng: np.random.Generator) -> tuple[pd.DataFrame, float]:
-    sizes = 10 + rng.poisson(40, d.k)
+def simulate(d: Design, rng: np.random.Generator,
+             heavy: bool | None = None) -> tuple[pd.DataFrame, float]:
+    use_heavy = d.heavy_sizes if heavy is None else heavy
+    sizes = (10 + np.floor(rng.lognormal(np.log(40), 0.8, d.k)).astype(int) if use_heavy
+             else 10 + rng.poisson(40, d.k))
     treated = np.zeros(d.k)
     treated[rng.permutation(d.k)[: d.k // 2]] = 1.0
     tau = d.effect(sizes.astype(float))
@@ -107,8 +112,9 @@ def run_design(d: Design, cfg: Mapping[str, Any], reps: int | None = None) -> De
     covered = 0
     iccs: list[float] = []
     first_failure = ""
+    heavy = d.heavy_sizes and cfg["meta"]["version"] >= 2  # v1 stays reproducible from v1's text
     for _ in range(n_reps):
-        frame, truth = simulate(d, rng)
+        frame, truth = simulate(d, rng, heavy=heavy)
         out = analyse(frame, cfg)
         if not isinstance(out, CausalResult):
             first_failure = first_failure or f"{out.kind}: {getattr(out, 'detail', '')}"[:200]
