@@ -35,6 +35,7 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import DeclarativeBase
 
+from src.db.scope import install_scope_listener
 from src.secret_source import deployment_env, read_secret
 
 log = structlog.get_logger(__name__)
@@ -404,7 +405,9 @@ def _postgres_url() -> str:
             f"?host={socket_path}"
         )
 
-    # Fallback: explicit DATABASE_URL (TCP, used for integration tests)
+    # Fallback: explicit DATABASE_URL (TCP). Its user must be causal_app, or
+    # another role the RLS policies bind: the app refuses to start as the
+    # tables' owner, a superuser or a BYPASSRLS role (src/db/scope.py).
     url = read_secret("DATABASE_URL")
     if not url:
         raise RuntimeError(
@@ -474,6 +477,9 @@ class CloudSqlFactory:
             log.info("db.engine.postgres", env=env)
 
         cls._engine = create_async_engine(url, **_engine_kwargs(env))
+        # Every PostgreSQL transaction starts in the caller's domain scope, which
+        # the RLS policies read (src/db/scope.py). A no-op on SQLite.
+        install_scope_listener(cls._engine)
         log.info("db.engine.created", env=env, dialect=cls._engine.dialect.name)
         return cls._engine
 

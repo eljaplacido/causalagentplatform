@@ -91,7 +91,15 @@ def _statement() -> dict[str, Any]:
 # ── Start-up refusal outside local development ───────────────────────────────
 
 
+class _Dialect:
+    # Neither SQLite nor PostgreSQL: the start-up's RLS check (src/db/scope.py)
+    # has nothing to inspect on a stub.
+    name = "stub"
+
+
 class _Engine:
+    dialect = _Dialect()
+
     async def dispose(self) -> None:
         return None
 

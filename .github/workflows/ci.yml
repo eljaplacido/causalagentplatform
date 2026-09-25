@@ -39,7 +39,12 @@ jobs:
     # on the schema backend/src/db/migrations/*.sql builds, not on SQLite. The test
     # fixtures create (and drop) a fresh database on it per run. The password is a
     # CI-only throwaway for a container that lives as long as this job and listens
-    # only on the runner; it guards nothing.
+    # only on the runner; it guards nothing. The app's queries in that run connect
+    # as causal_app, which row-level security binds, through a login role the
+    # fixtures create for the run with a random password and drop at the end
+    # (backend/tests/conftest.py), so POSTGRES_USER must be able to create
+    # databases and roles -- the image's superuser can -- and nothing else here
+    # needs a password for it.
     services:
       postgres:
         image: postgres:16-alpine

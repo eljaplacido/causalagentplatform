@@ -6,6 +6,9 @@ Pattern from projectcarfcynepic / carfdevops (CYBERSECURITY.md §3.1):
     restricted environments where service account credentials are not present)
   - Extracts Bearer token from Authorization header
   - Attaches decoded user dict to request.state.user
+  - Binds that user's database scope (src/db/scope.py) around the rest of the
+    request, so PostgreSQL's row-level security sees the same domains the
+    application does
   - Returns 401 on invalid/missing tokens for protected routes
   - Unprotected routes (e.g. /health) are excluded via PUBLIC_PATHS
 
@@ -159,17 +162,32 @@ class FirebaseAuthMiddleware(BaseHTTPMiddleware):
         request: Request,
         call_next: RequestResponseEndpoint,
     ) -> Response:
+        response = await self._authenticate(request)
+        if response is not None:
+            return response
+        # Imported here: rbac imports this module.
+        from src.db.scope import bind_scope
+        from src.middleware.rbac import scope_for_user
+
+        # The rest of the request -- its dependencies, its handler, and anything
+        # they spawn -- runs under this user's database scope. No user (a public
+        # path) is the empty scope, not an open one.
+        with bind_scope(scope_for_user(request.state.user)):
+            return await call_next(request)
+
+    async def _authenticate(self, request: Request) -> Response | None:
+        """Set request.state.user, or return the 401 to send instead."""
         path = request.url.path
 
         # CORS preflight (OPTIONS) never requires auth
         if request.method == "OPTIONS":
             request.state.user = None
-            return await call_next(request)
+            return None
 
         # Always allow public paths
         if path in PUBLIC_PATHS or any(path.startswith(p) for p in PUBLIC_PATHS):
             request.state.user = None
-            return await call_next(request)
+            return None
 
         token = _extract_bearer_token(request)
 
@@ -182,7 +200,7 @@ class FirebaseAuthMiddleware(BaseHTTPMiddleware):
         ):
             request.state.user = _DEV_MOCK_USER
             log.debug("auth.dev_bypass", path=path)
-            return await call_next(request)
+            return None
 
         if not token:
             log.warning(
@@ -215,7 +233,7 @@ class FirebaseAuthMiddleware(BaseHTTPMiddleware):
                 content={"detail": f"Authentication failed: {exc}"},
             )
 
-        return await call_next(request)
+        return None
 
 
 # ── Route-level dependency ────────────────────────────────────────────────────

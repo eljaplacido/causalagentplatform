@@ -17,14 +17,21 @@ services:
     image: postgres:16-alpine
     container_name: causalplatform-postgres
     environment:
+      # The superuser that owns the schema: migrations and operations only.
       POSTGRES_USER: causal
       POSTGRES_PASSWORD: causal_local_dev
       POSTGRES_DB: causalplatform
+      # The backend connects as causal_app, which row-level security binds
+      # (backend/src/db/migrations/010_rls_binds.sql); the backend refuses to
+      # start as the owner. Local-dev throwaway, like the password above.
+      CAUSAL_APP_PASSWORD: causal_app_local_dev
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/src/db/migrations:/docker-entrypoint-initdb.d:ro
+      # On first start: every migration in order, then causal_app's login.
+      - ./backend/src/db/migrations:/migrations:ro
+      - ./backend/src/db/docker/initdb.sh:/docker-entrypoint-initdb.d/initdb.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U causal -d causalplatform"]
       interval: 5s
