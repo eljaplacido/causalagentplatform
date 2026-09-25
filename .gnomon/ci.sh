@@ -521,6 +521,22 @@ else
     record doc-figures FAIL "$(grep -m1 FAIL "$LOG_DIR/.indented" | sed 's/^ *FAIL *//' | cut -c1-150)" $((SECONDS - t0))
 fi
 
+# skill-refs: the agent-facing instructions (.gnomon/skills/*.md, AGENTS.md,
+# CONTRIBUTING.md, the prose in .gnomon/{roles,tools,policy}.toml) still point at
+# real things -- every path resolves, every script / septacore subcommand / venv
+# tool / pytest marker they tell an agent to run exists, the skill's gate table
+# matches benchmarks/*/PRE-REGISTRATION.md both ways, verifying-changes.md names
+# every step this file records, and each skill's front matter parses
+# (scripts/skill_refs.py). Prose drifts in silence when code moves; this makes it
+# loud. Deliberate non-paths: scripts/skill-refs.json, each with a reason. Zero
+# references checked is a FAIL (the script exits 1).
+t0=$SECONDS
+if indented "$PY" scripts/skill_refs.py; then
+    record skill-refs PASS "$(grep -m1 -oE 'skill-refs: .*' "$LOG_DIR/.indented" | sed 's/^skill-refs: //' | cut -c1-200)" $((SECONDS - t0))
+else
+    record skill-refs FAIL "$(grep -m1 FAIL "$LOG_DIR/.indented" | sed 's/^ *FAIL *//' | cut -c1-150)" $((SECONDS - t0))
+fi
+
 t0=$SECONDS
 if indented "$PY" scripts/doc_reconciliation.py; then
     tracked="$(grep -oE '[0-9]+ document\(s\) tracked' "$LOG_DIR/.indented" | grep -oE '[0-9]+')"

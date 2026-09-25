@@ -29,7 +29,8 @@
 #      finding count may not rise above scripts/lint-baseline.json.
 #   3. The backend unit + guardian suites, no coverage, stop at first failure.
 #   4. `tsc --noEmit` on the frontend, only if the turn changed a .ts/.tsx file
-#      there AND frontend/node_modules exists. Said out loud when skipped.
+#      there AND typescript resolves from frontend/ inside the repo (not "frontend/
+#      node_modules exists": npm workspaces hoist it to the root). Said out loud when skipped.
 #
 # NOT here, deliberately: mypy (10s+), the integration suite, coverage, vitest,
 # eslint, gate_scope, doc reconciliation. .gnomon/ci.sh runs all of them.
@@ -119,7 +120,7 @@ mapfile -t CHANGED_TS < <(
     } | sort -u
 )
 if [ "${#CHANGED_TS[@]}" -gt 0 ]; then
-    if [ -d frontend/node_modules ]; then
+    if ( cd frontend && node -e 'const r=require("path").resolve("..")+require("path").sep; if (!require.resolve("typescript/package.json").startsWith(r)) process.exit(1)' ) >/dev/null 2>&1; then
         TSC_LOG="$(mktemp)"
         if ( cd frontend && npx --no-install tsc --noEmit --listFiles ) > "$TSC_LOG" 2>&1; then
             ts_files=$(grep '^/' "$TSC_LOG" | grep -vc 'node_modules' || true)
@@ -131,7 +132,7 @@ if [ "${#CHANGED_TS[@]}" -gt 0 ]; then
         fi
         rm -f "$TSC_LOG"
     else
-        echo "⏭  SKIPPED tsc: ${#CHANGED_TS[@]} frontend TypeScript file(s) changed but frontend/node_modules is absent -- NOT typechecked"
+        echo "⏭  SKIPPED tsc: ${#CHANGED_TS[@]} frontend TypeScript file(s) changed but typescript does not resolve inside the repo (run npm ci) -- NOT typechecked"
     fi
 fi
 

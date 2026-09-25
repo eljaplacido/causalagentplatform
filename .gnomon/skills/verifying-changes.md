@@ -1,7 +1,7 @@
 +++
 name = "verifying changes"
 description = "Which command decides pass/fail in this repository, what its ratchets and gates mean, and how to move one honestly"
-match = '\b(verify|verifying|ci|ci\.sh|gate|ratchet|baseline|coverage|ruff|mypy|lint|done|passing|green|pytest|t0|t2|t3|t4|d0|parity)\b'
+match = '\b(verify|verifying|ci|ci\.sh|gate|ratchet|baseline|coverage|ruff|mypy|lint|done|passing|green|pytest|t0|t2|t3|t4|t5|t6|t7|t8|d0|a0|parity)\b'
 roles = ["implementor", "verifier", "implement", "critique", "coordinator"]
 +++
 
@@ -31,16 +31,27 @@ provenance -- usually a register id (`register:<id>`). `septacore claim` it
 before starting and `septacore close` it only when the gate is at 0 with the
 register entry moved to `left_the_list`.
 
-**What it runs**, in order: the backend suite with coverage, on SQLite; the
-same suite on PostgreSQL (`backend-pytest-postgres`: the test database is built
-from `backend/src/db/migrations/*.sql` on the server `TEST_DATABASE_URL` names,
-and any skipped test fails it -- unset, the step is SKIPPED, "no
-TEST_DATABASE_URL", and the gate exits 2); the ruff and
-mypy ratchets; the frontend (tsc, vitest, and eslint held at zero by
-the lint baseline -- SKIPPED unless its tools resolve inside the repo after `npm ci`); one row per Python package under `packages/`
-(causal-core first, then causal-decision and causal-mcp -- the set is derived
-from the directory, not listed); then gate-scope, status-claims,
-contract-parity and doc-reconciliation.
+**What it runs**, in order, by the step names the table prints:
+
+- `backend-pytest`, the backend suite on SQLite with coverage, and
+  `backend-coverage`, its floor;
+- `backend-pytest-postgres`, the same suite on PostgreSQL: the test database
+  is built from `backend/src/db/migrations/*.sql` on the server
+  `TEST_DATABASE_URL` names, and any skipped test fails it -- unset, the step
+  is SKIPPED, "no TEST_DATABASE_URL", and the gate exits 2;
+- the ratchets `backend-ruff`, `scripts-ruff` (the gate scripts, held at 0)
+  and `backend-mypy`;
+- the frontend: `semantic-types-build`, `frontend-tsc`, `frontend-vitest` and
+  `frontend-eslint` (held at zero by the lint baseline) -- SKIPPED unless its
+  tools resolve inside the repo after `npm ci`;
+- one row per Python package under `packages/`, with its own mypy row
+  (`causal-core` first, then causal-decision and causal-mcp -- the set is
+  derived from the directory, not listed);
+- security: `bandit-backend`, `bandit-packages`, `secret-scan`,
+  `pip-audit-backend`, `pip-audit-packages` and `npm-audit` (an audit whose
+  advisory database cannot be reached is SKIPPED, not passed);
+- then `gate-scope`, `status-claims`, `contract-parity`, `doc-figures`,
+  `skill-refs` and `doc-reconciliation`.
 
 **The pre-registered gates run inside the package rows.** A plain `pytest` in
 the package runs every marker:
@@ -69,7 +80,7 @@ and against which commit it was measured:
 | File | Holds | Direction |
 |---|---|---|
 | `scripts/coverage-floor.json` | backend line coverage, full suite | may only go UP |
-| `scripts/lint-baseline.json` | max ruff / mypy findings | may only go DOWN |
+| `scripts/lint-baseline.json` | max ruff / mypy / eslint / bandit findings | may only go DOWN |
 
 When your change improves a number, raise (or lower) the committed value in
 the same change -- the scripts print the exact value to write. Moving one the
@@ -77,7 +88,7 @@ wrong way fails against the merge base with main unless the commit message
 carries `Ratchet-Exempt: <why>`. That line is for a real reason (a tool
 upgrade that changed what it counts), never to make a red gate green.
 
-**Four more checks guard what the tree and the docs say:**
+**More checks guard what the tree and the docs say:**
 
 - `scripts/gate_scope.py identity-all` -- every skill module imported by a
   test, every MCP tool and state-changing route referenced by one. Today's
@@ -92,6 +103,18 @@ upgrade that changed what it counts), never to make a red gate green.
   in the backend, `packages/semantic-types` and the frontend. Today's real
   divergences are named in `scripts/contract-parity.json`; a new one fails,
   and so does a listed one that has been fixed but not removed.
+- `scripts/doc_figures.py` -- every benchmark number the docs quote matches
+  that benchmark's standing run (bound in `scripts/doc-figures.json`).
+- `scripts/skill_refs.py` -- these instructions still point at real things.
+  Over the skills, `AGENTS.md`, `CONTRIBUTING.md` and the prose in
+  `.gnomon/roles.toml`, `tools.toml` and `policy.toml`: every path named
+  resolves, every script, `septacore` subcommand, venv tool and `pytest -m`
+  marker exists, the gate table above matches `benchmarks/*/PRE-REGISTRATION.md`
+  both ways, this list names every step `.gnomon/ci.sh` records, a list of
+  three or more gates names them all, and each skill's front matter parses
+  with a compiling `match`. A deliberate non-path goes in
+  `scripts/skill-refs.json` with a reason. If you move a file or rename a
+  step, fix the prose it breaks in the same change.
 - `scripts/doc_reconciliation.py` -- which docs are owed a re-read. Reported,
   not failed. After actually reading one against the code:
   `--bless <doc> --by '<who>'`.

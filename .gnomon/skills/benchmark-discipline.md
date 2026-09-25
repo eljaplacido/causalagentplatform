@@ -1,7 +1,7 @@
 +++
 name = "benchmark discipline"
 description = "Freeze the bars before the run, keep every failing run, move a bar only with a version bump and a changelog, and prove the gate can fail before trusting a pass"
-match = '\b(benchmark|benchmarks|pre-?registration|pre-?register\w*|bars?|gate|t0|t2|t3|t4|d0|ihdp|lalonde|seeded[- ]defects?|negative control|coverage|power|results?)\b'
+match = '\b(benchmark|benchmarks|pre-?registration|pre-?register\w*|bars?|gate|t0|t2|t3|t4|t5|t6|t7|t8|d0|a0|ihdp|lalonde|seeded[- ]defects?|negative control|coverage|power|results?)\b'
 roles = ["coordinator", "implementor", "implement", "plan", "critique", "verifier"]
 +++
 
@@ -45,9 +45,10 @@ defect that the suite cannot see is a blind spot to write down, not a
 defect to drop.
 
 **5. Assert against known truth.** Cases are simulated from a structural
-model whose effect is set by construction (T0, T4, D0), or real data with an
-experimental benchmark (T3 LaLonde) or simulated outcomes on real covariates
-(T2 IHDP). Never against what the code returned last time.
+model whose effect is set by construction (every gate but T2 and T3; A0's
+truth is exact algebra over the graphs), or real data with an experimental
+benchmark (T3 LaLonde) or simulated outcomes on real covariates (T2 IHDP).
+Never against what the code returned last time.
 
 **6. Read the noise floor before a delta.** A coverage of 0.94 against a band
 of 0.925-0.975 at 400 reps is inside Monte Carlo error; so is a one-run

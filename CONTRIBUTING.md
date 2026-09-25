@@ -34,11 +34,13 @@ pin different MCP SDK majors (the backend's legacy server is on v1, causal-mcp o
 # Backend (backend/.venv) -- the kernel and decision layer are editable installs
 cd backend
 python -m venv .venv
+.venv/bin/python -m pip install --upgrade pip   # the gate's pip-audit audits pip too
 .venv/bin/pip install -e ../packages/causal-core -e ../packages/causal-decision -e ".[dev]"
 cd ..
 
 # Kernel (packages/causal-core/.venv) -- also runs causal-decision and causal-mcp
 python -m venv packages/causal-core/.venv
+packages/causal-core/.venv/bin/python -m pip install --upgrade pip
 packages/causal-core/.venv/bin/pip install \
   -e "packages/causal-core[dev,crosscheck,ml]" \
   -e "packages/causal-decision[dev]" \
@@ -59,9 +61,13 @@ bash .gnomon/ci.sh        # or: septacore check  (the same gate, declared in .se
 
 This is the one command that decides whether a change passes, and it is what CI runs. It runs every
 step even after one fails and ends with a per-step table: the backend suite and its coverage floor,
-the ruff and mypy ratchets, the frontend (tsc, vitest), each package's suite including the
-pre-registered gates, gate scope, status claims, contract parity, doc figures and doc
-reconciliation. A step that inspected nothing fails; a SKIPPED step names what was absent. It exits
+the same suite on PostgreSQL (set `TEST_DATABASE_URL`; unset, that step is skipped), the ruff and
+mypy ratchets, the frontend (tsc, vitest, eslint), each package's suite including the
+pre-registered gates, the security scans (bandit, the secret scan, pip-audit and npm audit), gate
+scope, status claims, contract parity, doc figures, skill references and doc reconciliation. The
+step names and what each checks are in
+[`.gnomon/skills/verifying-changes.md`](.gnomon/skills/verifying-changes.md) and
+[`docs/TESTING_CICD.md`](docs/TESTING_CICD.md). A step that inspected nothing fails; a SKIPPED step names what was absent. It exits
 0 (every step ran and passed), 1 (a step failed), 2 (a step was skipped: not measured, which is not
 a pass) or 3 (docs are owed a re-read). Only 0 is done; CI fails on 1 and 2 and warns on 3. Put the
 summary table in your PR description.

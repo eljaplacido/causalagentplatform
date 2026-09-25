@@ -24,7 +24,7 @@ temperature = 0.2
 top_p = 0.9
 max_steps = 20
 max_steps_total = 160
-# Reads the repo and writes specs/contracts. Two things hold that to be true:
+# Reads the repo and writes specs and contracts. Two things hold that to be true:
 # no edit, so it cannot revise existing code in place, and write_allow, so the
 # files it may create are the ones a planning turn produces. Without the second
 # it could still write src/main.rs — withholding edit narrows how a role can
@@ -34,7 +34,7 @@ max_steps_total = 160
 # you actually wanted is a scope you will delete in frustration; a scope that
 # matches your layout is one you keep.
 # MCP scope. `mcp__causal_core` is the kernel's server (packages/causal-mcp, declared
-# in tools.toml as causal_core): the one whose numbers the T0-T4/D0 gates stand
+# in tools.toml as causal_core): the one whose numbers the pre-registered gates stand
 # behind, and the one system.md points causal numbers at. The LEGACY backend server
 # (`mcp__causal`, backend/mcp_server: heuristic skills) is granted to no role as of
 # 2026-09-25 -- see dni:legacy-mcp-server; its declaration in tools.toml is commented out.
@@ -54,7 +54,8 @@ task_allow = ["implementor", "verifier"]
 # one (gnomon's benchmark-discipline, rule 6). Not the root *.md the scaffold
 # allowed: README.md carries status claims, and changing those is a reviewed
 # edit by the implementor alongside the evidence, not a planning side effect.
-# `**/` matches zero directories too, so benchmarks/PRE-REGISTRATION.md is in.
+# `**/` matches zero directories too, so a PRE-REGISTRATION.md directly under
+# benchmarks/ is in.
 write_allow = ["docs/**", "specs/**", "conformance/**", "benchmarks/**/PRE-REGISTRATION.md"]
 description = "Intent and contracts: turns a request into a spec, a contract, or a declared_not_implemented entry"
 

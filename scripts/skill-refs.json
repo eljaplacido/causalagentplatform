@@ -1,0 +1,50 @@
+{
+  "_comment": [
+    "Reviewed input to scripts/skill_refs.py, the check that the agent-facing instructions",
+    "(.gnomon/skills/*.md, AGENTS.md, CONTRIBUTING.md, .gnomon/{roles,tools,policy}.toml)",
+    "still point at things that exist.",
+    "",
+    "not_paths: references that look like repository paths and deliberately are not. Each",
+    "names the file it is in and why. An entry (or one of its refs) that no longer excuses a",
+    "failing reference fails the check, so this list cannot outlive what it excuses. Keep it",
+    "small: a real path that moved is fixed in the doc, never listed here. Paths git ignores",
+    "(build outputs such as backend/.coverage, a local .env) need no entry: they are counted",
+    "as ignored, not checked.",
+    "",
+    "septacore.subcommands: what `septacore <sub>` may name. Pinned rather than read live,",
+    "because CI does not install septacore (it is the operator's harness), and a check that",
+    "needs it would be SKIPPED on every CI run. Where septacore is on PATH its --help is read",
+    "and a pinned name it no longer lists fails; a new one it lists is a note."
+  ],
+  "not_paths": [
+    {
+      "refs": ["feat/", "fix/", "chore/", "refactor/", "test/"],
+      "in": "CONTRIBUTING.md",
+      "reason": "Branch-name prefixes, not directories."
+    },
+    {
+      "ref": "opencode-go/",
+      "in": ".gnomon/skills/endpoints-and-models.md",
+      "reason": "A model-id prefix the skill names in order to say it does not exist."
+    },
+    {
+      "ref": ".gnomon/skills/proposed/",
+      "in": ".gnomon/roles.toml",
+      "reason": "Where gnomon's skill tool writes a proposal; the directory exists only once one has been proposed and not yet accepted."
+    },
+    {
+      "ref": "packages/gnomon-core/src/mcp.ts",
+      "in": ".gnomon/tools.toml",
+      "reason": "A file in gnomon's repository (the harness), cited for what it was measured against; not this repository's packages/."
+    },
+    {
+      "ref": "deploy.sh",
+      "in": ".gnomon/policy.toml",
+      "reason": "A hypothetical script, the example of what a default verify command could run destructively."
+    }
+  ],
+  "septacore": {
+    "pinned_from": "septacore --help, 2026-09-26",
+    "subcommands": ["check", "ready", "list", "memory", "trace", "skills", "mutants", "init", "map", "claim", "close", "create"]
+  }
+}
