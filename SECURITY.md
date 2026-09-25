@@ -134,9 +134,20 @@ application. The database's row-level-security policies are not in effect
 
 **Guardian verdicts.** `GovernanceAgent` (`backend/src/agents/governance.py`)
 refuses to start if `GUARDIAN_BYPASS_MODE` is set. The verdicts it issues are
-HMAC-signed with `GUARDIAN_SIGNING_KEY`; without that variable, a per-process key
-is generated and the event is logged at CRITICAL. Each verdict names the object
-it was issued for and can be spent once (`verdict_consumption`).
+HMAC-signed with `GUARDIAN_SIGNING_KEY`. Outside local development (`ENV` set to
+anything but `local`) the backend refuses to start without that key, or with one
+shorter than 32 bytes; locally, a per-process key is generated and the event is
+logged at CRITICAL. A verdict also verifies against the retired keys listed in
+`GUARDIAN_SIGNING_KEYS_PREVIOUS`, so rotating the key does not void verdicts
+issued before it. Each verdict names the object it was issued for and can be
+spent once (`verdict_consumption`).
+
+**Secrets.** Every secret (the signing keys, `DATABASE_URL`, `NEO4J_PASSWORD`,
+the LLM API keys) is read from the environment variable or from the file named
+by `<NAME>_FILE`, the form Docker/Kubernetes secrets and secret-manager file
+mounts use; never both. There is no built-in secret-manager client. The plain
+password in `docker-compose.yml` is the local-dev exception. Details in
+`docs/CYBERSECURITY.md` §8.2.
 
 ## Security model snapshot
 

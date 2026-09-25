@@ -101,8 +101,10 @@ platform before new estimators:
   names the object and the approver's classification (`septa-46`); the gate runs bandit, a
   secret scan, pip-audit and npm audit, and every advisory they found was fixed rather than
   excused (`septa-27`; container scans, a release SBOM and hash-pinned Python installs are still
-  open, register `supply-chain-scanning-not-in-ci`). Open: secrets from
-  a secret store, with a rotation path for the Guardian signing key (`septa-28`).
+  open, register `supply-chain-scanning-not-in-ci`). Every secret is
+  read from its variable or a mounted `<NAME>_FILE`, the backend refuses to start outside
+  `ENV=local` without a signing key, and the key rotates through a previous-keys list
+  (`septa-28`; no secret-manager client).
 - **p1, release and drift.** Protect `main` (`septa-1`); a first PyPI release of the three
   packages (`septa-2`); checks that the skills and agent docs name only things that exist
   (`septa-3`) and that MCP tool parameters are derived from `CausalQuery` (`septa-4`); SeptaCore's

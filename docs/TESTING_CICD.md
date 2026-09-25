@@ -238,5 +238,6 @@ used anywhere.
 
 The backend logs structured events with `structlog`: `auth.*`, `governance.*`, `registry.*`,
 `plan_ahead.*`, `drift_sensor.*`, and so on. Every Guardian verdict is a row in `audit_log`.
-There is no metrics pipeline, dashboard or alerting on these. The verdict signing key's
-absence is logged at CRITICAL (`guardian.signing_key.ephemeral`).
+There is no metrics pipeline, dashboard or alerting on these. With `ENV=local`, the verdict
+signing key's absence is logged at CRITICAL (`guardian.signing_key.ephemeral`); with any other
+`ENV` it stops start-up instead.
