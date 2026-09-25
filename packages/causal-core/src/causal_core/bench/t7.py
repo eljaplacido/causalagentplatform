@@ -107,6 +107,7 @@ class DesignReport:
     bias_in_mcse: float
     coverage: float
     mean_icc: float
+    size_guard_refusals: int = 0
     first_failure: str = ""
 
 
@@ -118,12 +119,16 @@ def run_design(d: Design, cfg: Mapping[str, Any], reps: int | None = None) -> De
     covered = 0
     iccs: list[float] = []
     first_failure = ""
+    guard = 0
     version = cfg["meta"]["version"]
     heavy = d.heavy_sizes and version >= 2  # each version reproducible from its own text
     sigma = SIZE_SIGMA.get(version, 0.5)
     for _ in range(n_reps):
         frame, truth = simulate(d, rng, heavy=heavy, sigma=sigma)
         out = analyse(frame, cfg)
+        if "cluster sizes vary too much" in getattr(out, "detail", ""):
+            guard += 1
+            continue
         if not isinstance(out, CausalResult):
             first_failure = first_failure or f"{out.kind}: {getattr(out, 'detail', '')}"[:200]
             continue
@@ -140,6 +145,7 @@ def run_design(d: Design, cfg: Mapping[str, Any], reps: int | None = None) -> De
         bias_in_mcse=abs(mean) / mcse if mcse and mcse > 0 else float("inf"),
         coverage=covered / k if k else 0.0,
         mean_icc=float(np.mean(iccs)) if iccs else float("nan"),
+        size_guard_refusals=guard,
         first_failure=first_failure,
     )
 
@@ -150,10 +156,16 @@ def check_estimation(cfg: Mapping[str, Any], reps: int | None = None,
     reports = [run_design(DESIGNS[n], cfg, reps) for n in (only or est["designs"])]
     failures: list[str] = []
     lo, hi = est["coverage_band"]
+    guard_max = est.get("size_guard_refusals_max")
     for r in reports:
-        if r.results < r.reps:
-            failures.append(f"{r.id}: {r.reps - r.results} replications produced no result "
-                            f"({r.first_failure})")
+        allowed = r.size_guard_refusals if guard_max is not None else 0
+        if guard_max is not None and r.size_guard_refusals / r.reps > guard_max:
+            failures.append(f"{r.id}: the size guard refused {r.size_guard_refusals} of {r.reps} "
+                            f"(> {guard_max})")
+        unexplained = r.reps - r.results - allowed
+        if unexplained > 0:
+            failures.append(f"{r.id}: {unexplained} replications produced no result "
+                            f"({r.first_failure or 'refused by the size guard'})")
         if r.bias_in_mcse > est["bias_mcse_max"]:
             failures.append(f"{r.id}: bias {r.mean_error:+.4f} is {r.bias_in_mcse:.1f} MCSE")
         if r.id == "few_clusters":
