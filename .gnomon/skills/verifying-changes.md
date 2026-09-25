@@ -33,7 +33,7 @@ register entry moved to `left_the_list`.
 
 **What it runs**, in order: the backend suite with coverage; the ruff and
 mypy ratchets; the frontend (tsc, vitest, and eslint held at zero by
-the lint baseline -- SKIPPED without `frontend/node_modules`); one row per Python package under `packages/`
+the lint baseline -- SKIPPED unless its tools resolve inside the repo after `npm ci`); one row per Python package under `packages/`
 (causal-core first, then causal-decision and causal-mcp -- the set is derived
 from the directory, not listed); then gate-scope, status-claims,
 contract-parity and doc-reconciliation.
