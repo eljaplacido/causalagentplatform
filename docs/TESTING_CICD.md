@@ -63,10 +63,13 @@ it does not block on is **ADVISORY** (today only `doc-reconciliation`).
 | `doc-figures` | `scripts/doc_figures.py` | Every benchmark figure the docs quote, as bound in `scripts/doc-figures.json`, matches the value in that benchmark's standing run |
 | `doc-reconciliation` | `scripts/doc_reconciliation.py` | Its manifest is sound (FAIL otherwise). When a tracked doc is owed a re-read, because the code it describes moved or it was never read, the step is **ADVISORY** rather than PASS |
 
-The frontend steps need `frontend/node_modules` (`npm ci` at the repository root). In a git
-worktree, the script falls back to the main checkout's backend and package virtualenvs. It
-does not fall back for `node_modules`, so the frontend steps are SKIPPED there unless you install
-them.
+The frontend steps need the frontend's toolchain: `typescript`, `vitest`, `eslint` and `next`
+must resolve from `frontend/` to a copy inside the repository (`npm ci` at the repository root).
+The script does not look for a `frontend/node_modules` directory: npm workspaces hoist what they
+can to the root `node_modules`, so after some installs that directory is never created, and a
+Vite cache can create it with no tools in it. In a git worktree, the script falls back to the
+main checkout's backend and package virtualenvs. It does not fall back for `node_modules`, so the
+frontend steps are SKIPPED there unless you install them.
 
 The exit code sums the table:
 

@@ -78,7 +78,19 @@ else PY="$(command -v python3 || true)"; fi
 
 echo "ci.sh at $(git rev-parse --short HEAD 2>/dev/null || echo 'no-git')$(git diff --quiet 2>/dev/null || echo '-dirty')"
 echo "backend toolchain: ${PYBIN:-ABSENT}"
-echo "frontend toolchain: $([ -d frontend/node_modules ] && echo "frontend/node_modules present" || echo ABSENT)"
+# The frontend's toolchain is present when its tools resolve from frontend/ to a copy
+# inside this repository. Not "frontend/node_modules exists": npm workspaces hoist
+# everything they can to the root node_modules, so after an install whose versions all
+# hoist that directory is never created (CI then skipped the frontend) -- and a Vite
+# cache can create it with no tools in it (a local false "present").
+frontend_toolchain() {
+    ( cd frontend && node -e '
+        const root = require("path").resolve("..") + require("path").sep;
+        for (const m of ["typescript", "vitest", "eslint", "next"]) {
+            if (!require.resolve(m + "/package.json").startsWith(root)) process.exit(1);
+        }' ) >/dev/null 2>&1
+}
+echo "frontend toolchain: $(frontend_toolchain && echo "typescript, vitest, eslint, next resolve inside the repo" || echo ABSENT)"
 echo "logs: $LOG_DIR"
 
 # ── 1. Backend test suite + coverage floor ───────────────────────────────────
@@ -166,14 +178,13 @@ else
 fi
 
 # ── 3. Frontend ──────────────────────────────────────────────────────────────
-# Runs only when frontend/node_modules exists (npm workspaces hoist most of it to
-# the root node_modules). --no-install everywhere: without it npx FETCHES a
+# Runs only when the frontend toolchain resolves (frontend_toolchain, above). --no-install everywhere: without it npx FETCHES a
 # missing tool, which turns a 2s gate into a network call against whatever
 # version the registry serves today.
 header "frontend: tsc / vitest / eslint"
-if [ ! -d frontend/node_modules ]; then
+if ! frontend_toolchain; then
     for s in frontend-tsc frontend-vitest frontend-eslint; do
-        record "$s" SKIPPED "frontend/node_modules absent -- run npm ci at the repo root" 0
+        record "$s" SKIPPED "frontend toolchain absent (typescript/vitest/eslint/next do not resolve inside the repo) -- run npm ci at the repo root" 0
     done
 else
     # packages/semantic-types is a workspace dependency of the frontend, and its

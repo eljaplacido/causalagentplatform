@@ -254,12 +254,12 @@
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
           ".github": "41fae14689ac86eea113f95a9a9061a67a56b609ce7953530272d48881088720",
-          ".gnomon": "aaad85500079368314ac852ff6125c002a30d56f06113698c79d1c7a200cff96"
+          ".gnomon": "4f0f9e805bef78f1fe38d81b297a3cdf38b7391e48ab6bac9454765d4fdbc72f"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-28: .gnomon changed only in skills/secrets.md content; skills/ still listed, chain and roles unchanged)"
+        "by": "Claude (merge: ci.sh frontend detection; the doc makes no claim about it)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -315,7 +315,7 @@
           "backend/pyproject.toml": "eb8981b94a831f96ab3e93b9d91d676baab95bb8020aac71fa00f19020de0319",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
-          ".gnomon/ci.sh": "085c4db273b06cb4815acf62e1108052d346268e78f320a9a3280d3557a1531a",
+          ".gnomon/ci.sh": "5692f063efab9a80f519d1b5bba5507d9f092e0ed0f2779e180cb4ff0eeff0aa",
           "scripts": "d6b238d4612e6588e2cc931b858946c35350e5ef54a5919de425460529f094a1",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "3dcea1af4dd3bbdd68778cbb91715e1663c850fb9681fe42096b50d1145550dc",
@@ -325,7 +325,7 @@
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-50: re-read after the Core queries moved to named untyped bindparams (no asyncpg casts) and the register was re-cited again; no SQL, bandit or injection claim in it changes)"
+        "by": "Claude (merge: frontend toolchain text from #6 and the B608 row both present)"
       }
     },
     "docs/UIX.md": {
