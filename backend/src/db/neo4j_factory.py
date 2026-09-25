@@ -21,6 +21,8 @@ from typing import TYPE_CHECKING
 
 import structlog
 
+from src.secret_source import read_secret
+
 if TYPE_CHECKING:
     from neo4j import AsyncDriver
 
@@ -53,7 +55,7 @@ class Neo4jFactory:
             return None
 
         user = os.getenv("NEO4J_USER", "neo4j")
-        password = os.getenv("NEO4J_PASSWORD", "")
+        password = read_secret("NEO4J_PASSWORD") or ""
 
         try:
             from neo4j import AsyncGraphDatabase

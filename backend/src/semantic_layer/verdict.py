@@ -27,7 +27,6 @@ same claim.
 from __future__ import annotations
 
 import hmac
-import os
 import secrets
 from hashlib import sha256
 from typing import TYPE_CHECKING, Any
@@ -35,33 +34,73 @@ from typing import TYPE_CHECKING, Any
 import structlog
 from causal_core.canonical import canonical_json
 
+from src.secret_source import SecretConfigError, is_local_env, read_secret, read_secret_list
+
 if TYPE_CHECKING:
     from uuid import UUID
 
 log = structlog.get_logger(__name__)
 
-#: Environment variable holding the issuer's key. Set it in any deployment that
-#: runs more than one process, or verdicts issued by one worker will be refused
-#: by another.
+#: Secret holding the issuer's key: the variable itself, or ``GUARDIAN_SIGNING_KEY_FILE``
+#: naming a file that holds it (``src/secret_source.py``). Set it in any deployment that
+#: runs more than one process, or verdicts issued by one worker will be refused by
+#: another. Outside local development it is required.
 KEY_ENV = "GUARDIAN_SIGNING_KEY"
+
+#: Keys that no longer sign but still verify, so that rotating the key does not void
+#: verdicts issued and not yet spent. Comma- or newline-separated; ``_FILE`` form too.
+PREVIOUS_KEYS_ENV = "GUARDIAN_SIGNING_KEYS_PREVIOUS"
+
+#: Shortest key accepted outside local development: HMAC-SHA256's block of security.
+MIN_KEY_BYTES = 32
 
 SIGNATURE_VERSION = 1
 
 _EPHEMERAL_KEY: bytes | None = None
 
 
-def signing_key() -> bytes:
-    """The issuer's key.
+class SigningKeyError(SecretConfigError):
+    """The Guardian has no usable signing key in an environment that requires one."""
 
-    Without ``GUARDIAN_SIGNING_KEY`` a random key is generated for this process and
-    the fact is logged at CRITICAL. That is deliberately inconvenient: verdicts then
-    do not survive a restart and are not accepted by a sibling worker, which is
-    noisy and safe, rather than quiet and forgeable. Falling back to a fixed default
-    would mean shipping a key that everyone knows, which is the same as no key.
+
+def _checked(key: str, variable: str) -> bytes:
+    material = key.encode("utf-8")
+    if len(material) < MIN_KEY_BYTES:
+        detail = (
+            f"{variable} is {len(material)} bytes; at least {MIN_KEY_BYTES} are required "
+            "(for example the output of `python -c \"import secrets; "
+            "print(secrets.token_hex(32))\"`)."
+        )
+        if not is_local_env():
+            raise SigningKeyError(detail)
+        log.warning("guardian.signing_key.short", detail=detail)
+    return material
+
+
+def signing_key() -> bytes:
+    """The issuer's current key: the one every new verdict is signed with.
+
+    Outside local development (``ENV`` set to anything but ``local``) a missing key,
+    or one shorter than :data:`MIN_KEY_BYTES`, raises :class:`SigningKeyError`; the
+    application calls :func:`require_signing_key` at start-up so that it refuses to
+    start rather than failing on the first verdict.
+
+    In local development a random key is generated for this process instead and the
+    fact is logged at CRITICAL. That is deliberately inconvenient: verdicts then do
+    not survive a restart and are not accepted by a sibling worker, which is noisy
+    and safe, rather than quiet and forgeable. Falling back to a fixed default would
+    mean shipping a key that everyone knows, which is the same as no key.
     """
-    configured = os.getenv(KEY_ENV, "").strip()
+    configured = read_secret(KEY_ENV)
     if configured:
-        return configured.encode("utf-8")
+        return _checked(configured, KEY_ENV)
+
+    if not is_local_env():
+        raise SigningKeyError(
+            f"{KEY_ENV} (or {KEY_ENV}_FILE) is not set, and ENV is not 'local'. "
+            "Outside local development verdicts must be signed with a configured key: "
+            f"set {KEY_ENV}_FILE to a mounted secret file, or {KEY_ENV}."
+        )
 
     global _EPHEMERAL_KEY
     if _EPHEMERAL_KEY is None:
@@ -75,6 +114,28 @@ def signing_key() -> bytes:
             ),
         )
     return _EPHEMERAL_KEY
+
+
+def previous_keys() -> list[bytes]:
+    """Keys retired by a rotation that still verify (never sign)."""
+    return [_checked(k, PREVIOUS_KEYS_ENV) for k in read_secret_list(PREVIOUS_KEYS_ENV)]
+
+
+def verification_keys() -> list[bytes]:
+    """Every key a signature may have been made with: the current one first."""
+    return [signing_key(), *previous_keys()]
+
+
+def require_signing_key() -> None:
+    """Fail now, not at the first verdict, if the keys are not usable here.
+
+    Called from the application's start-up. Raises :class:`SigningKeyError` (or
+    :class:`~src.secret_source.SecretConfigError` for a malformed ``_FILE``) outside
+    local development without a key of at least :data:`MIN_KEY_BYTES`. Logs how
+    many previous keys verify -- a count, never a key.
+    """
+    keys = verification_keys()
+    log.info("guardian.signing_key.ready", previous_keys=len(keys) - 1)
 
 
 def claim(
@@ -115,10 +176,19 @@ def sign(statement: dict[str, Any], key: bytes | None = None) -> str:
 def verify(statement: dict[str, Any], signature: str | None, key: bytes | None = None) -> bool:
     """Whether ``signature`` is this issuer's signature over ``statement``.
 
+    With ``key``, only that key is tried. Without it, the current key and every
+    previous key (:data:`PREVIOUS_KEYS_ENV`) are, so a rotation does not void a
+    verdict issued before it; drop a key from the previous list to void them.
+
     A missing signature is not valid. Rows written straight into `audit_log` by
     something other than the Guardian have none, which is the point: they can still
     be read as an audit trail, they just cannot authorise a write.
     """
     if not signature:
         return False
-    return hmac.compare_digest(sign(statement, key), signature)
+    keys = [key] if key is not None else verification_keys()
+    # Every key is compared, match or not, so the time taken does not say which matched.
+    matched = False
+    for candidate in keys:
+        matched |= hmac.compare_digest(sign(statement, candidate), signature)
+    return matched

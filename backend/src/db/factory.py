@@ -35,6 +35,8 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import DeclarativeBase
 
+from src.secret_source import deployment_env, read_secret
+
 log = structlog.get_logger(__name__)
 
 # ── Sentinel: track whether the engine has been initialised ──────────────────
@@ -50,7 +52,8 @@ class Base(DeclarativeBase):
 
 
 def _get_env() -> str:
-    return os.getenv("ENV", "local").lower()
+    # The one local-vs-deployed rule, shared with the signing-key check.
+    return deployment_env()
 
 
 #: The schema the local/dev engine creates. The test suite runs *this* string --
@@ -399,11 +402,11 @@ def _postgres_url() -> str:
         )
 
     # Fallback: explicit DATABASE_URL (TCP, used for integration tests)
-    url = os.getenv("DATABASE_URL")
+    url = read_secret("DATABASE_URL")
     if not url:
         raise RuntimeError(
             "Running in non-local ENV but neither CLOUD_SQL_INSTANCE_CONNECTION_NAME "
-            "nor DATABASE_URL is set."
+            "nor DATABASE_URL (or DATABASE_URL_FILE) is set."
         )
     # Normalise postgres:// → postgresql+asyncpg://
     url = url.replace("postgres://", "postgresql+asyncpg://", 1)

@@ -218,7 +218,7 @@
       "reality": "get_llm has no call site outside its own docstring: no agent invokes an LLM, and every agent's reasoning is rule or heuristic code.",
       "evidence": [
         {
-          "at": "backend/src/agents/llm_factory.py:139",
+          "at": "backend/src/agents/llm_factory.py:145",
           "says": "def get_llm("
         }
       ],
@@ -695,11 +695,11 @@
       "reality": "session_state and incidents are created only by the SQLite DDL in backend/src/db/factory.py. The PostgreSQL migrations (001-004) never create them, and CloudSqlFactory.init_db runs the DDL only when ENV=local, so on a PostgreSQL deployment session persistence and the incidents API would fail with a missing table. api/incidents.py also writes with INSERT OR REPLACE, which PostgreSQL does not accept. Neither schema has the evidence, preference or simulation-result tables DATA_LAYER.md used to list. The suite runs only against SQLite, so nothing notices.",
       "evidence": [
         {
-          "at": "backend/src/db/factory.py:254",
+          "at": "backend/src/db/factory.py:257",
           "says": "CREATE TABLE IF NOT EXISTS session_state ("
         },
         {
-          "at": "backend/src/db/factory.py:262",
+          "at": "backend/src/db/factory.py:265",
           "says": "CREATE TABLE IF NOT EXISTS incidents ("
         },
         {
