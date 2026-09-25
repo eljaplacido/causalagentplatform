@@ -32,12 +32,12 @@
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "ceec8dc5edee2e61daabc4e182c28a1e163a0b87b11d90d0e1539118cb5562c9"
+          "docs/CURRENT_STAGE.md": "b901d321e117c9049ee22af5c63fa71179bc74b675949ed8756c7e9a788413fc"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (coverage floor and ledger changes; README quotes neither)"
+        "by": "Claude (septa-4: CURRENT_STAGE gained a row; README quotes no row or count from it, and its causal-mcp paragraph names tools, not parameters)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -55,17 +55,17 @@
         "on": "2026-09-26",
         "sha256": {
           "conformance/declared_not_implemented.json": "90161f087f2904e24cd576b6a2142f71d90f3a9600b02123db019e2a6c931500",
-          "backend/src": "66bcfbfa132f847c1eee5de54acc996c8bdd13847506ad85cdaa28e1790852df",
+          "backend/src": "2c89d7a6a41e99493bc22b3b08f484089dde4c12f424549407bc0a5b75662775",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "4147f373dff0ffc372ecb3e1c7b319a4c1d1c062c3433ee523619c572cfd0f88",
+          "backend/tests": "bd26de37121bbb0b7e704fdf9e5062309076ba9b06578f7481e1f20114a14f8a",
           "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
-          "packages": "1d0130c75356f3dfc99a697584c821cbd9a20f53d95dc79b26fd299c21b61482",
+          "packages": "5a9c8d9bba06ef8cf6b6674cc10d367803f7a2cd8739311ba0710ebcd6a4c7b9",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-3: re-read; the only backend/tests change is test_skill_refs.py, gate tooling the page makes no row or claim about, as for doc_figures and status_claims)"
+        "by": "Claude (septa-4: re-read; added the row for the MCP parameters derived from CausalQuery with test_query_parity.py as evidence, causal-mcp count 26 -> 38; the causal_decide/causal_impact rows still hold; the backend change is the decisions query description, which no row quotes)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -254,12 +254,12 @@
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
           ".github": "6f9f02d0b5f9ac918f23fb74a20b87f2188eb9ce2ef2df6ef907c1c1714d4c27",
-          ".gnomon": "65bb4eedac90110e94f670a77e0dd2153e792bc0c2317574aa97bf16b93012b0"
+          ".gnomon": "b06f519dbd3691c37f2e91dc1a4e30143d458ae2391aa679ce8881f47329be1d"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-3: .gnomon/verify.sh's tsc gate now resolves typescript; the page says only that [verify] runs verify.sh, still true)"
+        "by": "Claude (septa-4: the .gnomon change is the using-causal-mcp skill text on parameters; the page lists skills/ only as a directory, still true)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -311,7 +311,7 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "4181e9975e863cfa2344aa9085a2cd06410ffa12a696037c60c45c66a0b28709",
-          "backend/tests": "4147f373dff0ffc372ecb3e1c7b319a4c1d1c062c3433ee523619c572cfd0f88",
+          "backend/tests": "bd26de37121bbb0b7e704fdf9e5062309076ba9b06578f7481e1f20114a14f8a",
           "backend/pyproject.toml": "eb8981b94a831f96ab3e93b9d91d676baab95bb8020aac71fa00f19020de0319",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
@@ -325,7 +325,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-3: re-read against a871fa8; added the skill-refs step row and named the gate-script negative controls under unit/; the moved backend/tests, ci.sh and scripts are that change)"
+        "by": "Claude (septa-4: the backend/tests change is one test in integration/test_decisions_query.py; the integration/ row covers the decision ledger routes and names no per-file list, still true)"
       }
     },
     "docs/UIX.md": {
@@ -356,12 +356,12 @@
         "sha256": {
           "packages/causal-core/src/causal_core": "f504a91cfae574117c3accbd936ee039a34cde0bbd0579f77c4571207a366683",
           "conformance/declared_not_implemented.json": "90161f087f2904e24cd576b6a2142f71d90f3a9600b02123db019e2a6c931500",
-          "docs/CURRENT_STAGE.md": "ceec8dc5edee2e61daabc4e182c28a1e163a0b87b11d90d0e1539118cb5562c9"
+          "docs/CURRENT_STAGE.md": "b901d321e117c9049ee22af5c63fa71179bc74b675949ed8756c7e9a788413fc"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (p0 paragraph: septa-50 done, septa-53 open; dropped the stale 'all 44 ready' count)"
+        "by": "Claude (septa-4: CURRENT_STAGE gained a row; ROADMAP links to it and quotes none of its rows)"
       }
     },
     "SECURITY.md": {
