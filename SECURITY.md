@@ -129,8 +129,12 @@ a valid token.
 objects a user lists, reads, drafts into, and reviews; an object outside it is
 not found. Without the claim, `governance_officer` and `platform_engineer` see
 every domain and every other role sees none. This is enforced in the
-application. The database's row-level-security policies are not in effect
-(register `rls-policies-bind-nothing`).
+application and, on PostgreSQL, again by the database: row-level security on
+`causal_entities`, `causal_edges` and `graph_fragments` reads the caller's
+scope, which the backend sets on every transaction, and binds `causal_app`, the
+role the backend connects as. The backend refuses to start on PostgreSQL as a
+superuser, a `BYPASSRLS` role or the tables' owner. Details in
+`docs/CYBERSECURITY.md` §4.2.
 
 **Guardian verdicts.** `GovernanceAgent` (`backend/src/agents/governance.py`)
 refuses to start if `GUARDIAN_BYPASS_MODE` is set. The verdicts it issues are
@@ -146,7 +150,8 @@ spent once (`verdict_consumption`).
 the LLM API keys) is read from the environment variable or from the file named
 by `<NAME>_FILE`, the form Docker/Kubernetes secrets and secret-manager file
 mounts use; never both. There is no built-in secret-manager client. The plain
-password in `docker-compose.yml` is the local-dev exception. Details in
+passwords in `docker-compose.yml` (the owner's and `causal_app`'s) are the
+local-dev exception. Details in
 `docs/CYBERSECURITY.md` §8.2.
 
 ## Security model snapshot

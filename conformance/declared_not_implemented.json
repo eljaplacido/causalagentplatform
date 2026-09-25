@@ -98,7 +98,7 @@
           "says": "Computes Rosenbaum sensitivity bounds and E-values for unmeasured confounders"
         },
         {
-          "at": "docs/CYBERSECURITY.md:371",
+          "at": "docs/CYBERSECURITY.md:405",
           "says": "- Rosenbaum sensitivity bounds"
         },
         {
@@ -366,7 +366,7 @@
           "says": "Ingestion Bus (Kafka)"
         },
         {
-          "at": "docs/DATA_LAYER.md:395",
+          "at": "docs/DATA_LAYER.md:405",
           "says": "3.3 Kafka (Event Streaming)"
         },
         {
@@ -905,41 +905,6 @@
       }
     },
     {
-      "id": "rls-policies-bind-nothing",
-      "status": "declared-not-implemented",
-      "capability": "Role and domain checks at the database layer (PostgreSQL row-level security)",
-      "claimed_in": [
-        {
-          "at": "docs/CYBERSECURITY.md@13e7d92:70",
-          "says": "RBAC enforced at API layer, database layer, and semantic layer"
-        },
-        {
-          "at": "backend/src/db/migrations/001_initial.sql:11",
-          "says": "Row-Level Security (RLS) policies restrict data access by domain"
-        },
-        {
-          "at": "backend/src/db/migrations/001_initial.sql:134",
-          "says": "-- current_setting('app.user_domains') is set by the application layer"
-        }
-      ],
-      "reality": "The migrations declare RLS policies on causal_entities and causal_edges that read app.user_domains and app.user_role, but no application code sets either, and RLS does not bind the table owner that docker-compose connects as, so the policies isolate nothing; connecting as causal_app would instead hide every row. Roles and domain scope are enforced in the API and the registry's queries (src/middleware/rbac.py), not by the database. graph_fragments has no policy at all.",
-      "evidence": [
-        {
-          "at": "backend/src/db/migrations/001_initial.sql:138",
-          "says": "current_setting('app.user_domains', true),"
-        },
-        {
-          "at": "docker-compose.yml:20",
-          "says": "POSTGRES_USER: causal"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/integration/test_rls_domain_isolation.py",
-        "asserts": "against PostgreSQL, connected as a non-owner role with app.user_domains and app.user_role set per request from the token, a user limited to one domain selects no row of another domain from causal_entities, causal_edges or graph_fragments"
-      }
-    },
-    {
       "id": "provenance-not-append-only",
       "status": "declared-not-implemented",
       "capability": "Append-only provenance records",
@@ -991,7 +956,7 @@
           "says": "\"fastapi>=0.115,<0.142\","
         },
         {
-          "at": ".github/workflows/ci.yml:84",
+          "at": ".github/workflows/ci.yml:89",
           "says": "backend/.venv/bin/pip install -q -e packages/causal-core \\"
         }
       ],
@@ -1308,6 +1273,13 @@
       "fixed_in": "2386e15",
       "pinned_by": "backend/tests/integration/test_postgres_schema_parity.py",
       "note": "Implemented. Migrations 008_session_state.sql and 009_incidents.sql create the two tables, mirroring SQLITE_DDL column for column (TIMESTAMPTZ times, JSONB payloads, the REVOKE/GRANT convention; neither is append-only, both are upserted). api/incidents.py upserts with INSERT ... ON CONFLICT (id) DO UPDATE, which both dialects accept, keeping the first created_at. The leaves_by test runs on PostgreSQL in the new gate step backend-pytest-postgres (tests/conftest.py builds the database from backend/src/db/migrations/*.sql when TEST_DATABASE_URL is set; CI provides a postgres:16-alpine service) and asserts the migrated schema's (table, column) pairs equal SQLITE_DDL's, and that a session snapshot and an incident round-trip. Not changed: the evidence, preference and simulation-result tables DATA_LAYER.md used to list exist in neither schema, and SQLITE_DDL still carries only three of the migrations' CHECK constraints and none of their RLS policies or grants; the parity test compares tables and columns, not types or constraints."
+    },
+    {
+      "id": "rls-policies-bind-nothing",
+      "was": "The migrations declare RLS policies on causal_entities and causal_edges that read app.user_domains and app.user_role, but no application code sets either, and RLS does not bind the table owner that docker-compose connects as, so the policies isolate nothing; connecting as causal_app would instead hide every row. Roles and domain scope are enforced in the API and the registry's queries (src/middleware/rbac.py), not by the database. graph_fragments has no policy at all.",
+      "fixed_in": "e23adea",
+      "pinned_by": "backend/tests/integration/test_rls_domain_isolation.py",
+      "note": "Implemented, on PostgreSQL. Migration 010_rls_binds.sql replaces 001's two policies and gives graph_fragments one, each USING and WITH CHECK app_scope_allows(domain): the domain is in app.user_domains (now a JSON array; 001 split on commas) or no list is set and app.user_role (a JSON array of platform roles) holds governance_officer, platform_engineer or the causal_service marker -- so a present domains claim binds every role, as rbac.domain_scope says, where 001 let those two roles through regardless. src/db/scope.py keeps the scope in a context variable and opens every PostgreSQL transaction with set_config(..., true) for both settings (transaction-local, so pooled connections carry nothing over); the auth middleware binds rbac.scope_for_user(user) per request. Outside a request the scope is empty (nothing visible); code with no user declares service_scope(reason), which is unscoped on purpose (the seeder and the test fixtures' direct calls do). The app connects as causal_app, a non-owner role, rather than FORCE RLS on an owner connection, and refuses to start as a superuser, a BYPASSRLS role or the owner; docker-compose gives causal_app a local-dev login. 010 also grants causal_app USAGE on decision_followups_id_seq, created after 001's blanket grant, without which every followup insert as causal_app failed. The PostgreSQL test fixtures connect the app as causal_app (a per-run member login), so the whole suite runs under RLS. The leaves_by test asserts, over raw SQL as causal_app with the settings set as the app sets them, that a user limited to one domain selects no row of another from the three tables, and includes negative controls (policy dropped, RLS disabled, owner connection) that leak. Not changed: SQLite, the local engine, has no RLS, so there the application's filter is the only line; role checks (which route a role may call) stay in the API; tables without a domain are not scoped."
     }
   ]
 }

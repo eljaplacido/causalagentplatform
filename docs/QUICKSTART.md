@@ -86,6 +86,24 @@ DEV_AUTH_BYPASS=true
 | `local`, or unset | SQLite via aiosqlite, at `SQLITE_PATH` (default `backend/local_dev.db`). `DATABASE_URL` is ignored. |
 | anything else | PostgreSQL via asyncpg: the Cloud SQL socket when `CLOUD_SQL_INSTANCE_CONNECTION_NAME` is set, otherwise `DATABASE_URL`. Startup fails if neither is set. |
 
+**How the app connects (PostgreSQL).** As `causal_app`, never as the tables' owner: the
+database's row-level security, the second line of domain isolation (`docs/CYBERSECURITY.md`
+§4.2), does not bind the owner, a superuser or a `BYPASSRLS` role, and the backend **refuses to
+start** on PostgreSQL as any of them. The migrations create `causal_app` without a password; give
+it one (or an IAM login on Cloud SQL, with `DB_USER` naming it) when you provision the database,
+and put that role in `DATABASE_URL`:
+
+```bash
+# as the owner / a superuser, once:
+psql -c "ALTER ROLE causal_app LOGIN PASSWORD '<a real secret>'"
+# the backend:
+DATABASE_URL=postgresql+asyncpg://causal_app:<that secret>@<host>:5432/<db>
+```
+
+Against the compose stack (§4) that is
+`postgresql+asyncpg://causal_app:causal_app_local_dev@localhost:5432/causalplatform`: its init
+script sets that local-dev password. Migrations and seeding run as the owner (`causal`).
+
 The dev auth bypass works only with `ENV=local`, so a local session with the bypass is always on
 SQLite. Neo4j is used only when `NEO4J_URI` is set; otherwise the graph and experience-buffer paths
 fall back to SQL.
@@ -141,7 +159,7 @@ docker compose down
 
 | Service | URL / port | Notes |
 |---|---|---|
-| PostgreSQL | `localhost:5432` | User `causal`, password `causal_local_dev` (plain text in `docker-compose.yml`: a local-dev stack only). Used only when `ENV` is not `local` and `DATABASE_URL` points here, or by the tests through `TEST_DATABASE_URL` (§6). The schema is `backend/src/db/migrations/*.sql`, which the container applies only when its volume is first created: on an older volume, apply the newer files by hand (`psql -f`) or `docker compose down -v` to start over. |
+| PostgreSQL | `localhost:5432` | Owner `causal`, password `causal_local_dev`; the backend's role `causal_app`, password `causal_app_local_dev` (both plain text in `docker-compose.yml`: a local-dev stack only). Used only when `ENV` is not `local` and `DATABASE_URL` points here as `causal_app` (§3), or by the tests through `TEST_DATABASE_URL`, as `causal` (§6). The schema is `backend/src/db/migrations/*.sql`, which the container's init script (`backend/src/db/docker/initdb.sh`) applies only when its volume is first created, and then gives `causal_app` its login: on an older volume, apply the newer files by hand (`psql -f`) and run `ALTER ROLE causal_app LOGIN PASSWORD 'causal_app_local_dev'`, or `docker compose down -v` to start over. |
 | Neo4j Browser | `http://localhost:7474` | Bolt `localhost:7687`. Used when `NEO4J_URI` is set. |
 | Kafka, Kafka UI, Redis | `9092`, `8080`, `6379` | `future` profile only. |
 
@@ -204,8 +222,10 @@ cd frontend && npm run type-check && npx vitest run        # frontend
 **The backend suite on PostgreSQL.** Set `TEST_DATABASE_URL` to a `postgresql+asyncpg://` URL and
 the same suite runs on the schema the migrations build instead of SQLite: the test fixtures create
 a fresh database on that server for the run (and drop it afterwards), so the URL's own database is
-left alone, but its role must be allowed to create databases, roles and extensions. The compose
-stack's server (§4) will do:
+left alone, but its role must be allowed to create databases, roles and extensions. That role
+builds and seeds the database; the app's own queries in the run connect as `causal_app`, as in
+production, through a login role the fixtures create for the run and drop afterwards. The
+compose stack's server (§4) will do:
 
 ```bash
 docker compose up -d postgres

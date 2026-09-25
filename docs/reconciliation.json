@@ -32,12 +32,12 @@
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "ddeba991af40ef05c5da47da83858540edf3379d775ee0d81c85c0dee8dfe70b"
+          "docs/CURRENT_STAGE.md": "667d95a48ae10b44d972c44d46e29830be14a34bc42d1cff6fb2161cd66e2cb2"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #11 into septa-4: the README quotes neither #11's nor #12's rows)"
+        "by": "Claude (septa-47: README quotes no CURRENT_STAGE row and says nothing of RLS, roles or the database connection; unchanged)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -54,10 +54,10 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "90161f087f2904e24cd576b6a2142f71d90f3a9600b02123db019e2a6c931500",
-          "backend/src": "4e6bb4fc1e435b5b5317d4fbfba296c6fed8837e97a93f51e697c94ae9ca4f29",
+          "conformance/declared_not_implemented.json": "dcb39338bddcf03ebf0d9db8afda626dc3d0c10bf208a8427496886fee20e7ed",
+          "backend/src": "c06af80dee95babb1eed74ffbc5435ffe7f1cb1fdc8bf8f8489d087ad42aabe1",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "4d90896321a4e0799b105356c0e1dffe1696d627edb59ac1b38f97495cb40afb",
+          "backend/tests": "c610d5b607429b33c46a9854a647d9c8c0e03d3260714c2d602f103f3d083b3d",
           "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
           "packages": "5a9c8d9bba06ef8cf6b6674cc10d367803f7a2cd8739311ba0710ebcd6a4c7b9",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
@@ -65,7 +65,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #11 into septa-4: both the septa-54 feedback note and the septa-4 parity row are present)"
+        "by": "Claude (septa-47: the RLS row is implemented, pinned by test_rls_domain_isolation.py, fixed in e23adea; the Governance paragraph no longer says RLS binds nothing)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -176,20 +176,20 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/middleware": "059d9ba59b9d9dc8772f861212ffa03e02b9e45530e21f8386b06814508f077e",
+          "backend/src/middleware": "0a00dc9c734e148a08c531bcd281d3afe81a8189ef75ef669543b89cd0e4136b",
           "backend/src/api/governance.py": "74095eefc36dc973a8dd5aae5d8bba89d44aa860c32862fa729a5c10b55bf3c3",
           "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
           "backend/src/semantic_layer/registry.py": "91529601ce53d74c25763a017f4a43ad552c13e94d562f513165b079c16c71b7",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
           "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
-          "backend/src/db/migrations": "422177707fd73410822962706a49d25e7de4f38dad2b0018456ffa8e6e094f06",
+          "backend/src/db/migrations": "6b52679eb2132b16e3bb238da5d6a7bde969f409bba4bd63b431c94456db74f1",
           "backend/src/semantic_layer/verdict.py": "2807535994f0073bd9f58cc2774822d9f7bd1749aa7801d669eb2301bde3ac00",
-          ".github/workflows": "4181e9975e863cfa2344aa9085a2cd06410ffa12a696037c60c45c66a0b28709"
+          ".github/workflows": "c55226ed754b0be770e6296b1113c0008013eb292ace02539ebf6dfe88ba6369"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #11 into septa-4: #11 left the feedback route's roles unchanged)"
+        "by": "Claude (septa-47: section 2 privilege escalation and 4.2 rewritten for 010_rls_binds.sql, src/db/scope.py, causal_app and the grants; 8.2's local-dev exception names causal_app's compose login)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -207,11 +207,11 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/db": "bca49997a9dbcb744756b97024fbc0a2baef25d246de6354526feb9f22aefe52",
+          "backend/src/db": "d43e2f0b4736735ce4661b7a43652f2469db73154a1d01578812c463dd2a8251",
           "backend/src/connectors": "47199e6fd213f90c59af28dda1c6469d256d6595cdd433fbbd1a2957ec723569",
           "backend/src/semantic_layer/models.py": "f3b7a600ac8e8c4ce7beb48145a188b2394f3775b6ad7d094613cbb9798d3b05",
           "backend/src/sensors": "d38f988ccb52659ac4ecc8724e8aa775b2e6e9fca76b73dbba6576c3f3d1dcba",
-          "docker-compose.yml": "c2118a27d9bd334c63935f3b82336c693cc97c1ac2114e81ac602a45fc8be38e",
+          "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
           "backend/src/semantic_layer/registry.py": "91529601ce53d74c25763a017f4a43ad552c13e94d562f513165b079c16c71b7",
           "backend/src/agents/drift_monitor.py": "9279c31636b3b663007f21e7aa671ffe738a535432f610ecb5b6de00ae6bd815",
           "backend/src/skills/drift_detect.py": "9432982258b155287a90701d76dc9bf331dd8c65fbc692ad37fcd124fcab7111"
@@ -219,7 +219,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: section 3.2 rewritten: migrations 001-009 incl. 008 session_state and 009 incidents, who applies them, same tables and columns as SQLITE_DDL, binding through src/db/types.py; 3.4 and section 7 follow)"
+        "by": "Claude (septa-47: 3.2 lists migrations 001-010, the compose init script, the RLS row, the roles and grants, and that deployments connect as causal_app)"
       }
     },
     "docs/HANDOFFS.md": {
@@ -253,13 +253,13 @@
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
-          ".github": "6f9f02d0b5f9ac918f23fb74a20b87f2188eb9ce2ef2df6ef907c1c1714d4c27",
+          ".github": "70e47d77822f0ef8f9f21afde256fb89ea86afdd7c46e64f093714ec830e4bab",
           ".gnomon": "b06f519dbd3691c37f2e91dc1a4e30143d458ae2391aa679ce8881f47329be1d"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-4: the .gnomon change is the using-causal-mcp skill text on parameters; the page lists skills/ only as a directory, still true)"
+        "by": "Claude (septa-47: the .github change is a ci.yml comment on the app role; the page cites only .github/copilot files and issue templates, still true)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -275,21 +275,21 @@
         "backend/scripts"
       ],
       "baseline": {
-        "on": "2026-09-25",
+        "on": "2026-09-26",
         "sha256": {
           "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docker-compose.yml": "c2118a27d9bd334c63935f3b82336c693cc97c1ac2114e81ac602a45fc8be38e",
+          "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
           "backend/pyproject.toml": "eb8981b94a831f96ab3e93b9d91d676baab95bb8020aac71fa00f19020de0319",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
-          ".env.example": "ac8e9212ebb369e44916a16d97f41316b195c229f578a26df88894513e658752",
-          "backend/scripts": "ccd196982e05a128b6c27d502a3b1a127f803b58b33d60e675f2b556116bdc95"
+          ".env.example": "f5dbf40f551d60b4b91d5bbaa9b36a2404f89536421fe51b8bcbf17a6ae1258f",
+          "backend/scripts": "36d9419c9cb543ee85703a4d4008be1c16e383c5d7567d9c7bcb6dce92ad64da"
         }
       },
       "last_read": {
-        "on": "2026-09-25",
-        "by": "Claude (septa-50: pyproject change is only [tool.bandit] skips; no setup step or command changes)"
+        "on": "2026-09-26",
+        "by": "Claude (septa-47: new 'How the app connects' paragraph: DATABASE_URL as causal_app, refusal as owner; compose table gives causal_app's login and the init script; the PostgreSQL test note says app queries run as causal_app)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -310,13 +310,13 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          ".github/workflows": "4181e9975e863cfa2344aa9085a2cd06410ffa12a696037c60c45c66a0b28709",
-          "backend/tests": "4d90896321a4e0799b105356c0e1dffe1696d627edb59ac1b38f97495cb40afb",
+          ".github/workflows": "c55226ed754b0be770e6296b1113c0008013eb292ace02539ebf6dfe88ba6369",
+          "backend/tests": "c610d5b607429b33c46a9854a647d9c8c0e03d3260714c2d602f103f3d083b3d",
           "backend/pyproject.toml": "eb8981b94a831f96ab3e93b9d91d676baab95bb8020aac71fa00f19020de0319",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
           ".gnomon/ci.sh": "000eefb082364d77c90463d9b2e34a65a1c0bc4934b2d82f579f9ca0aab51eab",
-          "scripts": "5c5b913838b8877516d37f2e5baaaf3b9865ee97e815f294c32bc22a13db3e82",
+          "scripts": "c8f4ea6e5affdf2bfba0c1c942aa1a5ccee33dfcf8ff35afa2d3e3f8f0c197e0",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "3dcea1af4dd3bbdd68778cbb91715e1663c850fb9681fe42096b50d1145550dc",
           "packages/causal-core/tests": "b73dcfd6530b951cdacdaaaac95e7e4068843b27cbd6635fdbe7b9efe306ecb3",
@@ -325,7 +325,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #11 into septa-4: #11 added one unit test; the doc names none of them)"
+        "by": "Claude (septa-47: 3.1 describes the owner vs causal_app engines, the per-run login role, the service scope for direct calls, and test_rls_domain_isolation.py; the integration row names it)"
       }
     },
     "docs/UIX.md": {
@@ -355,13 +355,13 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "f504a91cfae574117c3accbd936ee039a34cde0bbd0579f77c4571207a366683",
-          "conformance/declared_not_implemented.json": "90161f087f2904e24cd576b6a2142f71d90f3a9600b02123db019e2a6c931500",
-          "docs/CURRENT_STAGE.md": "ddeba991af40ef05c5da47da83858540edf3379d775ee0d81c85c0dee8dfe70b"
+          "conformance/declared_not_implemented.json": "dcb39338bddcf03ebf0d9db8afda626dc3d0c10bf208a8427496886fee20e7ed",
+          "docs/CURRENT_STAGE.md": "667d95a48ae10b44d972c44d46e29830be14a34bc42d1cff6fb2161cd66e2cb2"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #11 into septa-4: no counts or intervention claims)"
+        "by": "Claude (septa-47: p0 says RLS now binds on PostgreSQL; PostgreSQL row-level security dropped from the p3/p4 remainder)"
       }
     },
     "SECURITY.md": {
@@ -377,7 +377,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/middleware": "059d9ba59b9d9dc8772f861212ffa03e02b9e45530e21f8386b06814508f077e",
+          "backend/src/middleware": "0a00dc9c734e148a08c531bcd281d3afe81a8189ef75ef669543b89cd0e4136b",
           "backend/src/api/governance.py": "74095eefc36dc973a8dd5aae5d8bba89d44aa860c32862fa729a5c10b55bf3c3",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
           "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
@@ -387,7 +387,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #11 into septa-4: #11 typed /feedback's id as a uuid; SECURITY.md makes no claim about it)"
+        "by": "Claude (septa-47: domain isolation now enforced also by PostgreSQL RLS binding causal_app, start-up refusal as owner/superuser/BYPASSRLS; the compose passwords sentence names both logins)"
       }
     }
   }
