@@ -26,7 +26,7 @@ sustainability investment assurance follow, in that order.
 | A typed causal question | Partial: `CausalQuery` is typed, but `population` and `horizon` are free text, and nothing translates an agent's action into an estimand |
 | Retrieve the assumptions and evidence that apply | Done for causal models: `causal_decision.assumptions` and `/api/v1/models` keep each model as immutable, content-addressed versions whose edges carry origin and review status, and a decision names the version it used. Missing: retrieving evidence (documents, metrics) for an edge; nothing links it |
 | Decide identified / partially identified / unsupported | Done, except bounds: complete ID, back-door with the optimal adjustment set, front-door, conditional IV, proximal; 11 typed refusals, each with what is missing |
-| Estimate impact and uncertainty | Done for ATE and ATT with coverage-tested intervals, and for effects within declared segments with family-wise correction and a heterogeneity test (pre-registered T4), and for staggered rollouts by difference-in-differences with unit-clustered intervals and a pre-trends test (pre-registered T5). and for watched randomized rollouts by anytime-valid confidence sequences (pre-registered T6). and for cluster-randomized rollouts with cluster-robust intervals (T7). and for switchbacks (T8). Missing: policy value, spillovers between units, DiD with covariates, and subgroup *discovery* |
+| Estimate impact and uncertainty | Done for ATE and ATT with coverage-tested intervals; for effects within declared segments with family-wise correction and a heterogeneity test (pre-registered T4); for staggered rollouts by difference-in-differences with unit-clustered intervals and a pre-trends test (T5); for watched randomized rollouts by anytime-valid confidence sequences (T6); for cluster-randomized rollouts with CR2 cluster-robust intervals (T7); and for switchbacks, where the caller chooses a washout that covers the carryover (T8). Missing: policy value, spillovers between units, DiD with covariates, a carryover check with real power, and subgroup *discovery* |
 | Robustness checks | Done: placebo, negative controls, graph-implied independences with measured power, overlap, balance, E-values, robustness values |
 | Decide: act, ask, experiment, refuse | Done: `packages/causal-decision` turns an outcome, a request and a policy into one verdict, deterministically, gated by the pre-registered D0 suite (v3: 19 scenarios, 8 properties, 8 seeded defects). Declared segments reach the verdict -- an action that harms one of them is not automated on a favourable pooled effect -- and so does a difference-in-differences result's parallel-trends breakdown: a conclusion a violation smaller than the pre-adoption ones would flip is sent to an experiment |
 | Evidence record | Partial: every result and every decision carries digests of its inputs and itself, decisions are persisted into a verified hash chain with the observed outcome recorded against them, and the model version a decision used is recorded. Checkpoints of the chain head can be taken and verified against (`/api/v1/decisions/checkpoint`, `/verify-anchored`). Missing: publishing a checkpoint somewhere the writer cannot edit |
@@ -49,7 +49,7 @@ sustainability investment assurance follow, in that order.
    pre-registered as A0 against an oracle independent of the kernel. `causal_impact` asks the same
    question over MCP. Anchoring is half done: the chain head can be checkpointed and the chain
    verified against checkpoints kept elsewhere; nothing yet publishes a checkpoint outside the
-   writer's control (`decision-ledger-not-anchored`).
+   writer's control (`decision-ledger-not-anchored`; on the ledger as `septa-11`).
 3. **The estimators operations actually need.** Segment-level effects are **done**
    (`causal_core.segments`, pre-registered T4: declared subgroups, Bonferroni family-wise
    intervals, Holm across the family, one Cochran's Q before anything is compared). Staggered
@@ -59,12 +59,14 @@ sustainability investment assurance follow, in that order.
    randomized canaries is **done** (`causal_core.sequential`, pre-registered T6: asymptotic
    confidence sequences over a predictable-baseline AIPW score). Cluster-randomized designs are
    **done** (`causal_core.cluster`, pre-registered T7: CR2 intervals on t(K − 2), a refusal where
-   a few clusters dominate). Switchback designs are **done**
-   (T8: a uniform washout, block means, Welch on t(K − 2); the carryover check is weak and says
-   so). Still to come: spillovers between units, and DiD with covariates
-   (parallel-trends sensitivity is **done**: intervals under a relative-magnitudes restriction and
-   a breakdown multiple, T5 v3). Each with its own
-   pre-registered gate and a seeded defect.
+   a few clusters dominate). Switchback designs are **done** (also `causal_core.cluster`,
+   pre-registered T8: a uniform washout, block means, Welch on t(K − 2); the carryover check is
+   reported, not gated, is weak, and says so: `carryover-check-weak`). Parallel-trends
+   sensitivity is **done** (intervals under a relative-magnitudes restriction and a breakdown
+   multiple, T5 v3). Still to come, in the ledger's order: spillovers between randomized units
+   (`septa-7`), DiD with covariates and not-yet-treated controls as T5 v4 (`septa-8`), and a
+   switchback carryover check with gated power as T8 v2, or a design that estimates the carryover
+   length (`septa-9`). Each with its own pre-registered gate and a seeded defect.
 4. ~~**Experiment recommendation.**~~ **Done for randomized units**, in the same package: unit,
    per-arm size and duration from a minimum-detectable-effect calculation, guardrails. A refusal
    now carries the outcome's spread even when identification is what failed, so an unanswerable
@@ -78,8 +80,35 @@ sustainability investment assurance follow, in that order.
    own refusal, recorded as an undecidable measurement and counted beside the rates rather than
    dropped — those decisions are not missing at random. What remains is operational history:
    until follow-ups have been taken, every rate reads null, and the thresholds are consistent
-   rather than calibrated (`decision-thresholds-uncalibrated`).
-6. **Domain packs.** Operations first, then energy flexibility.
+   rather than calibrated (`decision-thresholds-uncalibrated`). The gate that would judge that
+   evidence — a minimum follow-up count, intervals on each rate, "could not resolve" kept apart
+   from "no difference" — is `septa-10`.
+6. **Domain packs.** Operations first, then energy flexibility. Not yet on the ledger.
+
+## What is next
+
+The order of work above is the direction. The next items come from the work ledger,
+`.beads/issues.jsonl`; `septacore ready` in the repository root lists what is ready, highest
+priority first. As of 2026-09-25 all 44 entries are ready, and the priorities put hardening the
+platform before new estimators:
+
+- **p0, the platform's own trust boundary.** The Guardian computes hallucination and risk scores
+  itself instead of reading them from the caller (`septa-25`); role-based access per route and
+  working domain isolation (`septa-26`); security scanning in the gate (`septa-27`); secrets from
+  a secret store, with a rotation path for the Guardian signing key (`septa-28`).
+- **p1, release and drift.** Protect `main` (`septa-1`); a first PyPI release of the three
+  packages (`septa-2`); checks that the skills and agent docs name only things that exist
+  (`septa-3`) and that MCP tool parameters are derived from `CausalQuery` (`septa-4`); SeptaCore's
+  optional stages that fit (`septa-5`); deleting the legacy MCP server once no external client
+  needs it (`septa-6`).
+- **p2, the kernel and decision layer.** Step 3's remaining estimators (`septa-7`, `septa-8`,
+  `septa-9`), calibration (`septa-10`), anchoring (`septa-11`), Rosenbaum bounds (`septa-12`),
+  Guardian PR-007 (`septa-33`), positivity detection and triangulation at moderate n (`septa-34`,
+  `septa-35`), and the review queue's risk tier (`septa-36`).
+- **p3 and p4.** The rest of the register (Postgres, versioned semantic objects, lineage,
+  provenance, the LLM layer, Cynefin routing, frontend views and others), then the longer-range
+  methods: discovery, rung-3 counterfactuals, general ID estimation, subgroup discovery. Many of
+  these end either in the capability or in its claim being withdrawn from the docs.
 
 ## What this project will not do first
 

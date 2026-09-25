@@ -34,8 +34,11 @@ counts or coverage figures. `.gnomon/ci.sh` prints them on every run, and the ra
 ## 2. The gate: `.gnomon/ci.sh`
 
 One script decides "does it pass". Developers run it locally, and CI runs the same script.
-Every step runs even after an earlier one fails. A step whose toolchain is absent is
-**SKIPPED** by name with the reason. A tool that is present and crashes is a **FAIL**.
+`scripts/verify.sh` only execs it, and `.septacore.json` declares that file as the repository's
+one blocking step, so `septacore check` runs the same gate. Every step runs even after an
+earlier one fails. A step whose toolchain is absent is **SKIPPED** by name with the reason. A
+tool that is present and crashes is a **FAIL**. A step that inspected something and found drift
+it does not block on is **ADVISORY** (today only `doc-reconciliation`).
 
 | Step | What it runs | Passes when |
 |---|---|---|
@@ -46,18 +49,31 @@ Every step runs even after an earlier one fails. A step whose toolchain is absen
 | `semantic-types-build` | Builds `packages/semantic-types/dist` from source | `dist/index.d.ts` exists (the frontend typecheck reads it) |
 | `frontend-tsc` | `tsc --noEmit` in `frontend/` | Exit 0 over at least its floor of project files |
 | `frontend-vitest` | `vitest run` in `frontend/` | Exit 0, pass count above its floor, every test file reported |
-| `frontend-eslint` | The eslint ratchet, once a config exists | **SKIPPED today**: `frontend/` has no `eslint.config.*`, and eslint 9 refuses to run without one |
+| `frontend-eslint` | The eslint ratchet over `frontend/src/` with `frontend/eslint.config.mjs` (Next's core-web-vitals and TypeScript rule sets) | Findings ≤ its `eslint` entry in `scripts/lint-baseline.json`, which is 0. Without a config file the step is SKIPPED |
 | one step per `packages/*/pyproject.toml` | That package's own `pytest`, in its own environment | Exit 0, at least one test passed, and **no test skipped**: every skip these suites can produce is a registered gate that did not run, so a skip fails the step. `causal-core` is always named in the summary, RAN or NOT RUN |
 | `<package>-mypy`, one per package | mypy with the package's own strict config, via the ratchet | Findings ≤ its `mypy-<package>` entry in `scripts/lint-baseline.json`, which is 0 for all three; a package with no entry fails |
 | `gate-scope` | `scripts/gate_scope.py identity-all` | Every skill module is imported by a test, every tool of both MCP servers (the legacy one live, causal-mcp's from its `TOOLS` table) and every state-changing route is referenced by one, and every route is mounted, apart from the known gaps named in `scripts/gate-scope-floors.json` |
 | `status-claims` | `scripts/status_claims.py` | `docs/CURRENT_STAGE.md` and `conformance/declared_not_implemented.json` agree with each other and with the tree |
 | `contract-parity` | `scripts/contract_parity.py` | The shared enumerations agree across `models.py`, `packages/semantic-types` and `frontend/src/lib/types.ts`, apart from the divergences named in `scripts/contract-parity.json` |
-| `doc-reconciliation` | `scripts/doc_reconciliation.py` | Its manifest is sound. Which docs are owed a re-read is **reported, not gated** |
+| `doc-figures` | `scripts/doc_figures.py` | Every benchmark figure the docs quote, as bound in `scripts/doc-figures.json`, matches the value in that benchmark's standing run |
+| `doc-reconciliation` | `scripts/doc_reconciliation.py` | Its manifest is sound (FAIL otherwise). When a tracked doc is owed a re-read, because the code it describes moved or it was never read, the step is **ADVISORY** rather than PASS |
 
 The frontend steps need `frontend/node_modules` (`npm ci` at the repository root). In a git
 worktree, the script falls back to the main checkout's backend and package virtualenvs. It
 does not fall back for `node_modules`, so the frontend steps are SKIPPED there unless you install
 them.
+
+The exit code sums the table:
+
+| Exit | Meaning |
+|---|---|
+| 0 | Every step ran and passed |
+| 1 | At least one step FAILED |
+| 2 | No step failed, but at least one was SKIPPED: it was not measured, which is not a pass |
+| 3 | Every step ran and none failed, but an ADVISORY step reported drift: docs are owed a re-read |
+
+Only 0 is done. `.septacore.json` maps the same codes to `passed`, `failed`,
+`could-not-measure` and `regressed`.
 
 ---
 
@@ -90,9 +106,9 @@ data, the metric, the pass threshold and the seeded defects the suite must catch
 | T3: LaLonde, real data with an experimental benchmark | [`benchmarks/t3-lalonde/PRE-REGISTRATION.md`](../benchmarks/t3-lalonde/PRE-REGISTRATION.md) | `causal_core.analyze` | As T2; `python -m causal_core.bench.lalonde` |
 | T4: effects within declared segments | [`benchmarks/t4-segments/PRE-REGISTRATION.md`](../benchmarks/t4-segments/PRE-REGISTRATION.md) | `causal_core.segments` | Every PR (`pytest -m t4`) |
 | T5: staggered difference-in-differences | [`benchmarks/t5-did/PRE-REGISTRATION.md`](../benchmarks/t5-did/PRE-REGISTRATION.md) | `causal_core.panel` | Every PR (`pytest -m t5`) |
-| T8: switchback designs | [`benchmarks/t8-switchback/PRE-REGISTRATION.md`](../benchmarks/t8-switchback/PRE-REGISTRATION.md) | `causal_core.cluster` | Every PR (`pytest -m t8`) |
-| T7: cluster-randomized designs | [`benchmarks/t7-cluster/PRE-REGISTRATION.md`](../benchmarks/t7-cluster/PRE-REGISTRATION.md) | `causal_core.cluster` | Every PR (`pytest -m t7`) |
 | T6: anytime-valid monitoring of watched rollouts | [`benchmarks/t6-sequential/PRE-REGISTRATION.md`](../benchmarks/t6-sequential/PRE-REGISTRATION.md) | `causal_core.sequential` | Every PR (`pytest -m t6`) |
+| T7: cluster-randomized designs | [`benchmarks/t7-cluster/PRE-REGISTRATION.md`](../benchmarks/t7-cluster/PRE-REGISTRATION.md) | `causal_core.cluster` | Every PR (`pytest -m t7`) |
+| T8: switchback designs | [`benchmarks/t8-switchback/PRE-REGISTRATION.md`](../benchmarks/t8-switchback/PRE-REGISTRATION.md) | `causal_core.cluster`, through `causal_core.analyze` | Every PR (`pytest -m t8`) |
 | D0: the decision procedure | [`benchmarks/d0-decision-policy/PRE-REGISTRATION.md`](../benchmarks/d0-decision-policy/PRE-REGISTRATION.md) | `causal_decision.decide` | Every PR (`pytest -m d0` in `packages/causal-decision`) |
 | A0: whether a graph revision invalidates an estimate | [`benchmarks/a0-assumption-impact/PRE-REGISTRATION.md`](../benchmarks/a0-assumption-impact/PRE-REGISTRATION.md) | `causal_decision.assumptions.impact` | Every PR (`pytest -m a0` in `packages/causal-decision`) |
 
@@ -132,7 +148,7 @@ errors". Each number only moves in the safe direction:
 | File | Holds | Rule |
 |---|---|---|
 | `scripts/coverage-floor.json` | Backend line-coverage floor (full suite) | Fails below the floor. Lowering it needs a `Ratchet-Exempt: <why>` commit trailer |
-| `scripts/lint-baseline.json` | Maximum ruff and mypy findings, with the exact args and tool version: backend ruff and mypy, `scripts/` ruff (0), and mypy for each package (0) | Fails above the maximum. Raising it needs `Ratchet-Exempt`. When a run finds fewer, lower the number in the same change |
+| `scripts/lint-baseline.json` | Maximum ruff, mypy and eslint findings, with the exact args and tool version: backend ruff and mypy, `scripts/` ruff (0), mypy for each package (0), and eslint over `frontend/src/` (0) | Fails above the maximum. Raising it needs `Ratchet-Exempt`. When a run finds fewer, lower the number in the same change |
 | `scripts/gate-scope-floors.json` | Minimum counts per step, and the named known gaps of `gate-scope` | A new gap fails, and so does a listed gap that has been closed but not struck off |
 | `scripts/contract-parity.json` | Known enumeration divergences | The list only shrinks |
 
@@ -153,10 +169,12 @@ One job, on every push and on pull requests to `main`:
    `packages/causal-core/.venv` (the three packages with their test extras); `npm ci`.
 4. **Licence gate**: `check_licenses.py` for `causal-core`, `causal-mcp` and `causal-decision`
    (runtime dependencies must be permissive).
-5. Run `.gnomon/ci.sh`, teeing its log.
-6. **No unexpected skips**: fail if the summary shows any SKIPPED step other than
-   `frontend-eslint`. In CI a skip would mean the environment is broken.
-7. Upload the gate log as an artifact.
+5. Run `.gnomon/ci.sh`, teeing its log, and act on its exit code (§2): 1 fails the job, and so
+   does 2, because in CI a step that could not be measured means the environment above is
+   broken. 3 (docs owed a re-read) is annotated as a warning and does not block a merge.
+6. Upload the gate log as an artifact.
+
+The job has a 75-minute timeout.
 
 ### 5.2 Release (`.github/workflows/release.yml`)
 
@@ -170,7 +188,7 @@ environment.
 
 Security scanning (Bandit, pip-audit, container scans: register `security-scanning-not-in-ci`),
 TLC model checking of `specs/guardian_policy.tla` (register `tla-spec-not-checked`), Playwright,
-eslint, and any performance or load test.
+and any performance or load test.
 
 ---
 
@@ -189,8 +207,9 @@ uses. The latency targets that DATA_LAYER.md used to list were never measured, a
   comparable within a version), and run as ratchets (§4). pytest runs with `asyncio_mode = "auto"`. There is no `--cov-fail-under`: it
   applied to every invocation, so partial runs always failed, and the coverage floor replaced
   it.
-- **TypeScript:** `tsc --noEmit` is the frontend's type gate. ESLint is not configured, so it
-  does not run.
+- **TypeScript:** `tsc --noEmit` is the frontend's type gate. ESLint is configured in
+  `frontend/eslint.config.mjs` (Next's core-web-vitals and TypeScript rule sets) and runs as a
+  ratchet held at zero (§4).
 - **Rust:** none. The repository contains no Rust code.
 
 ---

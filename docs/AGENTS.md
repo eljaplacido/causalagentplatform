@@ -2,7 +2,7 @@
 
 > **Scope:** Canonical reference for all agents deployed across the Unified Enterprise Causal Platform. Every agent, skill, and orchestration pattern must conform to this document. This file is loaded as shared context by every agent in the system.
 >
-> **This document is a specification, not a description of the code.** All eight agents below exist and run, but several of the skills beneath them return a constant. What is actually implemented is in [`CURRENT_STAGE.md`](CURRENT_STAGE.md), where every row links to the test that pins it; what this document claims and the code does not do is in [`conformance/declared_not_implemented.json`](../conformance/declared_not_implemented.json), checked on every run by `scripts/status_claims.py`. As of 2026-09-24 that covers the evidence-grounding and expert-elicitation skills (`agent-skills-are-stubs`), causal discovery (`causal-discovery`), the counterfactual skill (`scm-counterfactuals`), the capability-routed LLM layer, which nothing calls (`llm-routing-no-callers`), and the Rust crates named under several agents, which do not exist in this repository (`rust-crates`).
+> **This document is a specification, not a description of the code.** All eight agents below exist and run, but several of the skills beneath them return a constant. What is actually implemented is in [`CURRENT_STAGE.md`](CURRENT_STAGE.md), where every row links to the test that pins it; what this document claims and the code does not do is in [`conformance/declared_not_implemented.json`](../conformance/declared_not_implemented.json), checked on every run by `scripts/status_claims.py`. As of 2026-09-25 that covers the evidence-grounding and expert-elicitation skills (`agent-skills-are-stubs`), causal discovery (`causal-discovery`), the counterfactual skill (`scm-counterfactuals`), the capability-routed LLM layer, which nothing calls (`llm-routing-no-callers`), the Cynefin classifier, which is a keyword stub (`cynefin-classifier-keyword-stub`), and the Rust crates named under several agents, which do not exist in this repository (`rust-crates`).
 
 ---
 
@@ -197,7 +197,7 @@ DriftMonitorAgent(
 #### `IncidentTriageAgent`
 **Role:** First-response agent for operational incidents. Classifies problem complexity via Cynefin, proposes likely causal drivers, retrieves relevant past incidents from the experience buffer, and surfaces actionable interventions.
 
-**Current implementation note:** The harness now uses a Neo4j-native experience buffer with TTL (90-day expiry) and relevance decay (30-day half-life) when `NEO4J_URI` is configured. Falls back to durable session-state snapshots when Neo4j is unavailable. Intervention and counterfactual reasoning use graph-grounded heuristics. Observationally calibrated incident estimators remain future work.
+**Current implementation note:** The harness now uses a Neo4j-native experience buffer with TTL (90-day expiry) and relevance decay (30-day half-life) when `NEO4J_URI` is configured. Falls back to durable session-state snapshots when Neo4j is unavailable. Intervention and counterfactual reasoning use graph-grounded heuristics. Observationally calibrated incident estimators remain future work. Cynefin classification is a keyword stub, measured below always guessing the most common domain (register `cynefin-classifier-keyword-stub`): a description with no chaotic, complex or complicated keyword is classified `DISORDER` with confidence 0.0, and triage then runs no analysis and flags the incident for human review.
 
 **Inputs:**
 - Incident alert payload (title, affected services, metrics snapshot, alert timestamps)
@@ -254,7 +254,7 @@ Classifies a problem into one of five Cynefin domains: `CLEAR`, `COMPLICATED`, `
 
 **Inputs:** Problem description, available data features, time sensitivity flag
 **Output:** Domain label, confidence score, recommended reasoning strategy
-**Reference implementation:** `cynepic-router` Rust crate
+**Reference implementation:** `IncidentTriageAgent._skill_cynefin_classify` in `src/agents/incident_triage.py`, a keyword stub that never returns `CLEAR` and returns `DISORDER` (confidence 0.0) when no keyword matches; the `cynepic-router` Rust crate named here earlier does not exist in this repository
 
 ---
 
@@ -548,7 +548,7 @@ Intake → CynefinClassify → [Router]
     │                               ↓                ↓
     │                           Output           [Human review]
     ├── CHAOTIC      → EscalateHuman → [Human approval required]
-    └── DISORDER     → DisorderProtocol → CynefinClassify [retry]
+    └── DISORDER     → DisorderProtocol → CynefinClassify [retry once, then EscalateHuman]
 ```
 
 ### 5.2 Graph Node Responsibilities
@@ -561,7 +561,7 @@ Intake → CynefinClassify → [Router]
 | `CausalDiscovery` | `CausalDiscoveryAgent` | Complex domain with low evidence |
 | `PlanAhead` | `plan_action_sequence` skill | Candidate recommendations exist |
 | `GuardianCheck` | `GovernanceAgent` | PlanAhead found safe action |
-| `EscalateHuman` | — | CHAOTIC domain, Guardian REQUIRES_ESCALATION, or PlanAhead found no safe action |
+| `EscalateHuman` | — | CHAOTIC domain, DISORDER still unresolved after one retry, Guardian REQUIRES_ESCALATION, or PlanAhead found no safe action |
 
 ### 5.3 Circuit Breaker Rules (enforced by `GovernanceAgent`)
 
@@ -615,15 +615,15 @@ Prompt templates are versioned in `prompts/` alongside their schema contracts. N
 
 Agents specify **capability requirements**, not model names — the LLM factory resolves capability → provider at runtime.
 
-| Capability | Default Provider | Fallback |
-|---|---|---|
-| Causal reasoning (complex) | Claude Sonnet 4.6 | OpenAI GPT-4o |
-| Fast classification (CLEAR/COMPLICATED) | Claude Haiku 4.5 | Mistral |
-| Document evidence extraction | Claude Sonnet 4.6 | Gemini 1.5 Pro |
-| Code generation | Claude Sonnet 4.6 | DeepSeek |
-| On-premise / air-gapped | Ollama (local) | — |
+| Capability | Ollama | Anthropic | OpenAI | DeepSeek |
+|---|---|---|---|---|
+| `causal_reasoning` | `qwen3.5:122b` | `claude-sonnet-4-20250514` | `gpt-4o` | `deepseek-chat` |
+| `fast_classification` | `phi4:14b` | `claude-haiku-4-5-20250413` | `gpt-4o-mini` | `deepseek-chat` |
+| `document_extraction` | `nemotron-super:120b` | `claude-sonnet-4-20250514` | `gpt-4o` | `deepseek-chat` |
+| `code_generation` | `deepseek-r1:70b` | `claude-sonnet-4-20250514` | `gpt-4o` | `deepseek-reasoner` |
+| `planning` | declared, no model mapped (resolves to `unknown`) | same | same | same |
 
-Routing is handled by `src/agents/llm_factory.py`. Provider selection is never hardcoded in skill implementations.
+Routing is handled by `src/agents/llm_factory.py`. Provider selection is never hardcoded in skill implementations. The provider is the first one configured, in the order Ollama (`OLLAMA_BASE_URL`), Anthropic (`ANTHROPIC_API_KEY`), OpenAI (`OPENAI_API_KEY`), DeepSeek (`DEEPSEEK_API_KEY`); if building its client fails, the others are tried in the same order. The capability then picks the model within that provider, as in the table; each default can be overridden by environment variable (`OLLAMA_CAUSAL_MODEL`, `ANTHROPIC_MODEL`, `OPENAI_FAST_MODEL`, ...). Nothing calls `get_llm` today (register `llm-routing-no-callers`).
 
 ---
 

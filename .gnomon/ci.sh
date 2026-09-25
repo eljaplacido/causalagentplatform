@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
-# The full local gate for this repository. `.github/workflows/ci.yml` is meant to
-# call this; until it does, this is the one command that decides "does it pass".
+# The full gate for this repository: the one command that decides "does it pass".
+# `.github/workflows/ci.yml` runs it, and so does `septacore check` (through
+# scripts/verify.sh, declared in .septacore.json).
 #
-#   .gnomon/ci.sh            run every step, print a per-step summary, exit 1 on any FAIL
+#   .gnomon/ci.sh            run every step, print a per-step summary, and exit
+#                            0 every step ran and passed   1 a step FAILED
+#                            2 a step was SKIPPED (not measured)
+#                            3 an ADVISORY step reported (docs owed a re-read)
 #
 # THREE RULES THIS FILE HOLDS ITSELF TO (all taken from gnomon's own ci.sh):
 #
