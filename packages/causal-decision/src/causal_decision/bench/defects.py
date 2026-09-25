@@ -138,6 +138,13 @@ def ignore_contested() -> Iterator[None]:
         yield
 
 
+@contextmanager
+def ignore_segments() -> Iterator[None]:
+    """Only the pooled effect is read -- "the average is good, ship it"."""
+    with mock.patch.object(policy_mod, "_segment_checks", lambda ev, request, trustworthy: []):
+        yield
+
+
 DEFECTS: dict[str, Callable[[], Any]] = {
     "ignore_reversibility": ignore_reversibility,
     "ignore_risk_class": ignore_risk_class,
@@ -145,4 +152,5 @@ DEFECTS: dict[str, Callable[[], Any]] = {
     "ignore_worthwhile_effect": ignore_worthwhile_effect,
     "refusal_becomes_approval": refusal_becomes_approval,
     "ignore_contested": ignore_contested,
+    "ignore_segments": ignore_segments,
 }

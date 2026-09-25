@@ -28,6 +28,11 @@ def test_the_pre_registration_is_the_one_this_gate_runs(cfg: dict[str, Any]) -> 
     assert cfg["properties"]["violations_allowed"] == 0
 
 
+def test_the_coded_table_is_the_registered_table(cfg: dict[str, Any]) -> None:
+    """The expected verdicts are the pre-registration's, not the code's (v2)."""
+    assert d0.registered_table_mismatch(cfg) == []
+
+
 def test_every_scenario_returns_the_verdict_it_names(cfg: dict[str, Any]) -> None:
     results = d0.check_table()
     assert len(results) == len(d0.SCENARIOS) >= 15

@@ -139,6 +139,30 @@ def iv_effect() -> CausalOutcome:
                       treatment="playbook", outcome="minutes", policy=FAST)
 
 
+def _severity_data(p1_effect: float, p3_effect: float, n: int = 4000,
+                   seed: int = 11) -> pd.DataFrame:
+    """Incidents whose playbook acts differently by severity. P1 is 65% of them."""
+    rng = np.random.default_rng(seed)
+    severity = np.where(rng.random(n) < 0.65, "P1", "P3")
+    load = rng.normal(size=n)
+    playbook = (0.9 * load + rng.logistic(size=n) > 0).astype(float)
+    effect = np.where(severity == "P1", p1_effect, p3_effect)
+    minutes = 60 + effect * playbook + 12 * load + rng.normal(0, 8, size=n)
+    return pd.DataFrame({"load": load, "playbook": playbook, "minutes": minutes,
+                         "severity": severity})
+
+
+def harmed_segment() -> CausalOutcome:
+    """A large pooled saving that makes P3 incidents six minutes worse."""
+    return cc.analyze(_severity_data(-20.0, 6.0), GRAPH, treatment="playbook",
+                      outcome="minutes", estimand="att", segment_by=("severity",), policy=FAST)
+
+
+def uniform_segments() -> CausalOutcome:
+    return cc.analyze(_severity_data(-12.0, -12.0), GRAPH, treatment="playbook",
+                      outcome="minutes", estimand="att", segment_by=("severity",), policy=FAST)
+
+
 def apparatus_failure() -> CausalOutcome:
     return ApparatusFailure(stage="estimate", error_type="NumericalInstabilityError",
                             detail="constructed for the gate",
@@ -213,6 +237,10 @@ SCENARIOS: tuple[Scenario, ...] = (
         "the analysis refused for a reason no experiment resolves"),
     Scenario("analysis_failed", apparatus_failure, BASE, Verdict.refuse,
         "the apparatus failed, so there is no evidence either way"),
+    Scenario("harmed_segment", harmed_segment, BASE, Verdict.refuse,
+        "pooled, every check passes; a declared segment is still made materially worse"),
+    Scenario("uniform_segments", uniform_segments, BASE, Verdict.act,
+        "declared segments that agree cap nothing"),
 )
 
 
@@ -346,7 +374,26 @@ CATCHER: dict[str, Callable[[dict[str, Any]], bool]] = {
     "refusal_becomes_approval": lambda cfg: _property_violated("P5", cfg),
     "ignore_contested": lambda cfg: _property_violated("P6", cfg)
     or _scenario_fails("contested_result"),
+    "ignore_segments": lambda cfg: _scenario_fails("harmed_segment"),
 }
+
+
+def registered_table_mismatch(cfg: dict[str, Any]) -> list[str]:
+    """Where the code's scenario table differs from the one the pre-registration holds.
+
+    The expected verdicts are registered, not coded: otherwise a change to decide() and a
+    change to what it is expected to do could land together, unseen by the prereg hash.
+    """
+    registered: dict[str, str] = cfg["table"]["expected"]
+    coded = {s.id: s.expect.value for s in SCENARIOS}
+    out = [f"scenario {i} is registered but not implemented" for i in registered.keys() - coded]
+    out += [f"scenario {i} is implemented but not registered" for i in coded.keys() - registered]
+    out += [
+        f"scenario {i}: registered {registered[i]}, coded {coded[i]}"
+        for i in registered.keys() & coded.keys()
+        if registered[i] != coded[i]
+    ]
+    return sorted(out)
 
 
 def check_defects(cfg: dict[str, Any]) -> dict[str, bool]:
@@ -369,7 +416,7 @@ def run(cfg: dict[str, Any]) -> dict[str, Any]:
     violations += check_evidence_monotonicity()
     caught = check_defects(cfg)
 
-    failures: list[str] = []
+    failures: list[str] = registered_table_mismatch(cfg)
     matched = sum(bool(r["passed"]) for r in table) / len(table)
     if matched < cfg["table"]["scenarios_must_match"]:
         failures += [f"scenario {r['id']}: expected {r['expected']}, got {r['got']}"
