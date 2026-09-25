@@ -1,0 +1,16 @@
+{
+  "_comment": [
+    "Reviewed exceptions to the dependency audits in .gnomon/ci.sh (pip-audit-backend,",
+    "pip-audit-packages, npm-audit), read by scripts/dep_audit.py. An advisory the audit reports",
+    "fails the gate unless an entry here names it. Each entry: id (the advisory id or an alias,",
+    "e.g. PYSEC-..., GHSA-..., CVE-...), ecosystem (pypi | npm), package, reason (why it cannot",
+    "be fixed now and why it does not reach this codebase), review_by (YYYY-MM-DD). An entry past",
+    "review_by fails, and so does one whose advisory is no longer reported (strike it off).",
+    "",
+    "2026-09-25: empty. Every advisory reported against the backend and kernel environments and",
+    "package-lock.json was fixed by raising a floor or upgrading (backend/pyproject.toml,",
+    "frontend/package.json, the root package.json's overrides); python-jose, unused, was removed",
+    "with its ecdsa dependency, whose CVE-2024-23342 has no fix upstream."
+  ],
+  "entries": []
+}

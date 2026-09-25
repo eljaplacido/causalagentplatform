@@ -23,6 +23,7 @@ import re
 import statistics
 from datetime import UTC, datetime
 from typing import Any
+from urllib.parse import urlsplit
 from uuid import uuid4
 
 import structlog
@@ -91,7 +92,7 @@ class PrometheusConnector(BaseCausalConnector):
             domain="devops",
             version="1.0",
         )
-        self._base_url = base_url.rstrip("/")
+        self._base_url = _http_base_url(base_url)
         self._step = step
         self._lookback_h = lookback_h
         self._auth_token = auth_token
@@ -389,25 +390,25 @@ class PrometheusConnector(BaseCausalConnector):
         """
         Check Prometheus connectivity (synchronous health ping).
 
-        Uses urllib since this is typically called at startup.
+        Synchronous because it is typically called at startup. httpx, not
+        urllib.request.urlopen: urlopen also opens file:// and custom schemes
+        (bandit B310), httpx speaks only http and https, and the base URL was
+        already held to those two in __init__.
         """
-        import urllib.error
-        import urllib.request
+        import httpx  # a backend dependency; imported here like fetch_events does
 
         healthy = False
         error_msg: str | None = None
         fields_missing: list[str] = []
 
+        headers: dict[str, str] = {}
+        if self._auth_token:
+            headers["Authorization"] = f"Bearer {self._auth_token}"
         try:
-            req = urllib.request.Request(
-                f"{self._base_url}/-/healthy",
-                method="GET",
-            )
-            if self._auth_token:
-                req.add_header("Authorization", f"Bearer {self._auth_token}")
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                healthy = resp.status == 200
-        except urllib.error.URLError as exc:
+            with httpx.Client(timeout=5.0) as client:
+                resp = client.get(f"{self._base_url}/-/healthy", headers=headers)
+            healthy = resp.status_code == 200
+        except httpx.TransportError as exc:
             error_msg = f"Prometheus unreachable: {exc}"
         except Exception as exc:
             error_msg = f"Health check failed: {exc}"
@@ -425,6 +426,20 @@ class PrometheusConnector(BaseCausalConnector):
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
+
+def _http_base_url(base_url: str) -> str:
+    """The base URL, held to http(s) with a host; anything else is refused.
+
+    A connector URL comes from configuration, and a file:// or custom-scheme
+    URL here would turn the health ping into a local file read.
+    """
+    parts = urlsplit(base_url)
+    if parts.scheme not in ("http", "https") or not parts.netloc:
+        raise ValueError(
+            f"Prometheus base_url must be an http:// or https:// URL with a host, got {base_url!r}"
+        )
+    return base_url.rstrip("/")
 
 
 def _redact_pii(labels: dict[str, str]) -> dict[str, str]:

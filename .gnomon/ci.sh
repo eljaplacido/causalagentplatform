@@ -337,7 +337,75 @@ for name in $PKG_ORDER; do
     fi
 done
 
-# ── 5. Scope, status claims, documents ───────────────────────────────────────
+# ── 5. Security: SAST, secrets, dependency advisories ────────────────────────
+# bandit-*       bandit over backend/src + backend/mcp_server (with backend/pyproject.toml's
+#                [tool.bandit]) and over every packages/*/src, through the lint ratchet:
+#                MEDIUM and HIGH findings count, held at scripts/lint-baseline.json (0).
+# secret-scan    scripts/secret_scan.py over every file git would commit from this working
+#                tree (never the history). A finding prints a fingerprint, never the value;
+#                test fixtures go in scripts/secret-scan-allowlist.json with a reason.
+# pip-audit-*    scripts/dep_audit.py: pip-audit over the environments THIS run tests (the
+#                backend toolchain above, and each distinct package environment), and
+# npm-audit      npm audit over package-lock.json. Any advisory not excused by a reviewed,
+#                unexpired entry in scripts/audit-allowlist.json FAILS. The advisory
+#                databases are remote: unreachable is SKIPPED (not measured), never PASS.
+header "security: bandit / secret scan / dependency audits"
+if [ -n "$PYBIN" ] && [ -x "$PYBIN/bandit" ]; then
+    ratchet_step bandit-backend bandit-backend "$PYBIN/bandit"
+    ratchet_step bandit-packages bandit-packages "$PYBIN/bandit"
+else
+    record bandit-backend SKIPPED "bandit not installed in the backend toolchain (backend[dev])" 0
+    record bandit-packages SKIPPED "bandit not installed in the backend toolchain (backend[dev])" 0
+fi
+
+t0=$SECONDS
+if indented "$PY" scripts/secret_scan.py; then
+    detail="$(grep -m1 -oE 'secret-scan: .*' "$LOG_DIR/.indented" | sed 's/^secret-scan: //' | cut -c1-200)"
+    n="$(echo "$detail" | grep -oE '[0-9]+ files scanned' | grep -oE '[0-9]+' | head -1)"
+    if scope_floor secret-scan-files "${n:-0}"; then  # (scope_floor overwrites .indented)
+        record secret-scan PASS "$detail" $((SECONDS - t0))
+    else
+        record secret-scan FAIL "${n:-0} files scanned -- under its scope floor (above)" $((SECONDS - t0))
+    fi
+else
+    record secret-scan FAIL "$(grep -m1 FAIL "$LOG_DIR/.indented" | sed 's/^ *FAIL *//' | cut -c1-150)" $((SECONDS - t0))
+fi
+
+audit_step() {  # step-name, then scripts/dep_audit.py's arguments
+    local name="$1" t0=$SECONDS rc; shift
+    indented "$PY" scripts/dep_audit.py "$@"
+    rc=$?
+    local line
+    if [ "$rc" -eq 0 ]; then
+        line="$(grep -m1 -oE '(pip-audit|npm audit)[^:]*: .*' "$LOG_DIR/.indented" | cut -c1-220)"
+        record "$name" PASS "$line" $((SECONDS - t0))
+    elif [ "$rc" -eq 2 ]; then
+        record "$name" SKIPPED "$(grep -m1 -oE 'NOT MEASURED .*' "$LOG_DIR/.indented" | sed 's/^NOT MEASURED //' | cut -c1-180)" $((SECONDS - t0))
+    else
+        line="$(grep -m1 -oE 'FAIL (pip-audit|npm audit)[^:]*: .*' "$LOG_DIR/.indented" | sed 's/^FAIL //')"
+        record "$name" FAIL "${line:-$(grep -m1 FAIL "$LOG_DIR/.indented" | sed 's/^ *FAIL *//')}" $((SECONDS - t0))
+    fi
+}
+if [ -n "$PYBIN" ] && [ -x "$PYBIN/pip-audit" ]; then
+    audit_step pip-audit-backend pip --pip-audit "$PYBIN/pip-audit" --python "$PY" --label backend
+    # Each distinct package environment once (in CI all three packages share causal-core's).
+    PKG_ENVS="$(for name in $PKG_ORDER; do pkg_python "$name" || true; done | awk 'NF && !seen[$0]++')"
+    if [ -z "$PKG_ENVS" ]; then
+        record pip-audit-packages SKIPPED "no package environment to audit (see the package rows above)" 0
+    else
+        i=0
+        for env_py in $PKG_ENVS; do
+            i=$((i + 1)); step=pip-audit-packages; [ "$i" -gt 1 ] && step="pip-audit-packages-$i"
+            audit_step "$step" pip --pip-audit "$PYBIN/pip-audit" --python "$env_py" --label packages
+        done
+    fi
+else
+    record pip-audit-backend SKIPPED "pip-audit not installed in the backend toolchain (backend[dev])" 0
+    record pip-audit-packages SKIPPED "pip-audit not installed in the backend toolchain (backend[dev])" 0
+fi
+audit_step npm-audit npm
+
+# ── 6. Scope, status claims, documents ───────────────────────────────────────
 # gate-scope     identity checks derived from the code: every skill module is
 #                imported by a test, every registered MCP tool and every
 #                state-changing route is referenced by one, every decorated route

@@ -1022,12 +1022,12 @@
       "reality": "CI is one job running .gnomon/ci.sh, and neither it nor release.yml runs Bandit, pip-audit, safety, Trivy, an SBOM generator or ZAP. There is no dependabot configuration. pip-audit and bandit are declared as backend dev dependencies, and bandit has a config section in backend/pyproject.toml, so they install and nothing runs them. Dependencies are ranges in pyproject.toml, not hash-pinned. The one supply-chain gate is the licence check on the published packages' runtime dependencies.",
       "evidence": [
         {
-          "at": "backend/pyproject.toml:75",
-          "says": "\"pip-audit>=2.7.0\","
+          "at": "backend/pyproject.toml:91",
+          "says": "\"pip-audit>=2.10,<3\","
         },
         {
-          "at": "backend/pyproject.toml:76",
-          "says": "\"bandit[toml]>=1.7.0\","
+          "at": "backend/pyproject.toml:92",
+          "says": "\"bandit[toml]>=1.9,<1.10\","
         }
       ],
       "leaves_by": {

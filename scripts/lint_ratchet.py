@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""lint_ratchet -- hold ruff / mypy / eslint finding counts at or below a committed maximum.
+"""lint_ratchet -- hold ruff / mypy / eslint / bandit finding counts at or below a committed maximum.
 
 WHY A RATCHET AND NOT "CLEAN". After the safe autofixes (81dc794) ruff still
 reports ~450 findings in backend/ and mypy --strict ~46 errors in backend/src.
@@ -33,6 +33,8 @@ Usage (the first argument is an entry in scripts/lint-baseline.json):
   scripts/lint_ratchet.py ruff-scripts --bin backend/.venv/bin/ruff
   scripts/lint_ratchet.py mypy         --bin backend/.venv/bin/mypy
   scripts/lint_ratchet.py eslint       # runs `npx --no-install eslint` in frontend/
+  scripts/lint_ratchet.py bandit-backend  --bin backend/.venv/bin/bandit   # MEDIUM+ only
+  scripts/lint_ratchet.py bandit-packages --bin backend/.venv/bin/bandit
 """
 
 from __future__ import annotations
@@ -137,13 +139,77 @@ def measure_eslint(_binary: str, spec: dict) -> tuple[int, int, collections.Coun
     return len(results), findings, by_rule, f"eslint {version}"
 
 
-MEASURE = {"ruff": measure_ruff, "mypy": measure_mypy, "eslint": measure_eslint}
+def expand_args(args: list[str], cwd: Path) -> list[str]:
+    """Expand an arg holding a glob (`packages/*/src`) against cwd, sorted.
+
+    So a set of directories is derived from the tree, not written down: a package
+    added under packages/ is scanned the day it lands. A glob that matches nothing
+    is an error, not an empty scan.
+    """
+    out: list[str] = []
+    for arg in args:
+        if "*" not in arg:
+            out.append(arg)
+            continue
+        hits = sorted(str(p.relative_to(cwd)) for p in cwd.glob(arg))
+        if not hits:
+            raise ToolDidNotReport(f"the pattern {arg!r} matches nothing under {cwd}")
+        out.extend(hits)
+    return out
+
+
+BANDIT_BLOCKING = ("MEDIUM", "HIGH")
+
+
+def measure_bandit(binary: str, spec: dict) -> tuple[int, int, collections.Counter[str], str]:
+    """Bandit findings of MEDIUM severity or above; LOW is reported by bandit, not counted.
+
+    A file bandit could not parse was not inspected, so any entry in its `errors`
+    is a failure to report, never a clean file. `# nosec` lines are not findings,
+    and the run prints how many there were, so a count held at zero by
+    annotations is visible.
+    """
+    cwd = ROOT / spec["cwd"]
+    version = run([binary, "--version"], cwd).stdout.strip().splitlines()[:1]
+    args = expand_args(spec["args"], cwd)
+    proc = run([binary, "-f", "json", "-q", *args], cwd)
+    # bandit: 0 no findings, 1 findings; anything else is a crash or usage error.
+    if proc.returncode not in (0, 1):
+        raise ToolDidNotReport(f"bandit exited {proc.returncode}: {(proc.stderr or proc.stdout).strip()[:400]}")
+    try:
+        report = json.loads(proc.stdout)
+    except json.JSONDecodeError as exc:
+        raise ToolDidNotReport(f"bandit printed no JSON ({exc}): {proc.stderr.strip()[:300]}") from exc
+    if report.get("errors"):
+        files = ", ".join(str(e.get("filename")) for e in report["errors"][:5])
+        raise ToolDidNotReport(f"bandit could not scan {len(report['errors'])} file(s): {files}")
+    metrics = report.get("metrics", {})
+    inspected = sum(1 for k in metrics if k != "_totals")
+    blocking = [r for r in report.get("results", []) if r.get("issue_severity") in BANDIT_BLOCKING]
+    by_rule = collections.Counter(str(r.get("test_id")) for r in blocking)
+    LAST_FINDINGS[:] = [
+        f"{r.get('filename')}:{r.get('line_number')}: [{r.get('test_id')}] "
+        f"{r.get('issue_severity')}: {r.get('issue_text')}"
+        for r in blocking
+    ]
+    totals = metrics.get("_totals", {})
+    print(f"   bandit: {len(blocking)} MEDIUM+ of {len(report.get('results', []))} findings "
+          f"(LOW is not counted); {int(totals.get('nosec', 0))} line(s) marked # nosec")
+    return inspected, len(blocking), by_rule, version[0] if version else "bandit"
+
+
+MEASURE = {
+    "ruff": measure_ruff,
+    "mypy": measure_mypy,
+    "eslint": measure_eslint,
+    "bandit": measure_bandit,
+}
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("entry", help="a key in scripts/lint-baseline.json (ruff, ruff-scripts, mypy, eslint)")
-    ap.add_argument("--bin", default="", help="path to the tool binary (ruff, mypy)")
+    ap.add_argument("entry", help="a key in scripts/lint-baseline.json (ruff, ruff-scripts, mypy, eslint, bandit-*)")
+    ap.add_argument("--bin", default="", help="path to the tool binary (ruff, mypy, bandit)")
     args = ap.parse_args()
 
     baseline = load_json(ROOT / BASELINE_FILE)

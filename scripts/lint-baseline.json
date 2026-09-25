@@ -28,10 +28,11 @@
     "2026-09-21: ruff 441 -> 424 after the .env loader moved out of src/api/main.py's import block into src/env_bootstrap.py (19 E402 findings describing one deliberate ordering constraint, now stated as an import). mypy 40 -> 39: pandas joined the stubless-module list beside firebase_admin and neo4j.",
     "2026-09-24: ruff 424 -> 417. Ten F841 unused locals and two B007 unused loop variables removed; three of them were the tell for something real -- a discarded `user_ref` where the submitter's identity should have been recorded, a discarded `original_action` in a guardian test that therefore never compared the row it was named for, and a `for` loop in planning.py whose only statement was `continue`. mypy unchanged at 39.",
     "2026-09-25: the three kernel packages join at zero (mypy --strict via each pyproject's [tool.mypy]). They were clean and nothing kept them so; causal-core 26 files, causal-decision 10, causal-mcp 4. Run with the kernel environment's mypy, not the backend's.",
-    "2026-09-25: eslint joins at zero. frontend/eslint.config.mjs (Next's core-web-vitals + typescript) was added and the 20 findings it surfaced were fixed, so frontend-eslint runs instead of being SKIPPED as it had been since it was declared."
+    "2026-09-25: eslint joins at zero. frontend/eslint.config.mjs (Next's core-web-vitals + typescript) was added and the 20 findings it surfaced were fixed, so frontend-eslint runs instead of being SKIPPED as it had been since it was declared.",
+    "2026-09-25: bandit joins at zero MEDIUM+ (LOW is reported, not counted). bandit-backend runs with backend/pyproject.toml's [tool.bandit], which skips B101 (assert) and B608 (SQL built from strings) for the whole tree -- a config decision this entry inherits, not one it made: with B608 enabled, backend/src has 13 MEDIUM findings (f-strings inside text() in src/api/governance.py, incidents.py, interventions.py and src/semantic_layer/registry.py). They were not reviewed one by one in this change, and the blanket skip stays until they are. bandit-packages runs bandit's defaults over packages/*/src. The three B310 urlopen findings (src/connectors/prometheus.py, causal_core/bench/ihdp.py and lalonde.py) were fixed in code, not annotated."
   ],
   "ruff": {
-    "max_findings": 417,
+    "max_findings": 416,
     "measured_with": "ruff 0.15.12",
     "cwd": "backend",
     "args": [
@@ -95,6 +96,35 @@
     "cwd": "frontend",
     "args": [
       "src/"
+    ]
+  },
+  "bandit-backend": {
+    "_why": "backend/src and backend/mcp_server under backend/pyproject.toml's [tool.bandit]. MEDIUM and HIGH count; zero, and it stays zero.",
+    "tool": "bandit",
+    "max_findings": 0,
+    "measured_with": "bandit 1.9.4",
+    "cwd": "backend",
+    "args": [
+      "-c",
+      "pyproject.toml",
+      "--severity-level",
+      "medium",
+      "-r",
+      "src",
+      "mcp_server"
+    ]
+  },
+  "bandit-packages": {
+    "_why": "Every packages/*/src (the glob is expanded against the tree, so a new package is scanned the day it lands), bandit's default rule set. MEDIUM and HIGH count; zero, and it stays zero.",
+    "tool": "bandit",
+    "max_findings": 0,
+    "measured_with": "bandit 1.9.4",
+    "cwd": ".",
+    "args": [
+      "--severity-level",
+      "medium",
+      "-r",
+      "packages/*/src"
     ]
   }
 }

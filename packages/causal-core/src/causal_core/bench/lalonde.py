@@ -19,13 +19,13 @@ import os
 import re
 import sys
 import tomllib
-import urllib.request
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 import pandas as pd
 
+from causal_core.bench._fetch import download
 from causal_core.contract import AnalysisPolicy, CausalResult, ResultStatus
 from causal_core.estimators._linalg import add_intercept, ols
 from causal_core.pipeline import analyze
@@ -73,10 +73,7 @@ def fetch(cfg: dict[str, Any]) -> dict[str, Path]:
         want = cfg["data"][name]
         if not path.exists() or hashlib.sha256(path.read_bytes()).hexdigest() != want:
             url = cfg["data"]["base_url"] + f"{name}.dta"
-            with urllib.request.urlopen(
-                url, timeout=60
-            ) as resp:  # pinned https URL, SHA-256 checked below
-                blob = resp.read()
+            blob = download(url, timeout=60)  # pinned URL, SHA-256 checked below
             got = hashlib.sha256(blob).hexdigest()
             if got != want:
                 raise ValueError(f"{name}: sha256 {got} does not match the pinned {want}")
