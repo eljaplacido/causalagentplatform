@@ -52,20 +52,20 @@
         "specs"
       ],
       "baseline": {
-        "on": "2026-09-21",
+        "on": "2026-09-25",
         "sha256": {
-          "conformance/declared_not_implemented.json": "38be7eafe900ea48bfa53cc4ee1863954774df22ecead8c9cbb16f40478b7463",
-          "backend/src": "c88bf379b4366a17267bf9edf76ab9cf790b44f55e656bc4c7d66252c8a9276c",
-          "backend/mcp_server": "906126ac2e95942d33fa44c6abe372051ab452e3022a978c6d5ad78c28a2f6d5",
-          "backend/tests": "eac24496b5c7eb7a72970c80b2910e4fe86d4ba45b920cdfe188265cc81afdd6",
-          "frontend/src": "43b4fec5fbddbf1cbeab0cc5dc3aa23933dd6678419738027cbf5fa27d48f428",
-          "packages": "dad9fcec8c1fd6b365a2f0c1f1e29cdccf5215d54391fa34c732b591d921fb32",
+          "conformance/declared_not_implemented.json": "70355626e268665d34351b5d54db8350c8feceab4e55b35da0ad92b5395c7f5a",
+          "backend/src": "35f68c95fb477f82429739ad86d437f98172df80b6bcc304d18697390bd1d8a4",
+          "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
+          "backend/tests": "c16de518fb069642d435b0b6d14f3a4b3b593a4f8182371405df75c8c3330834",
+          "frontend/src": "60ea9f202103afd68c160146f94cf5d8514e5d5c5fe8d00ab6dc4a30568e5dff",
+          "packages": "92aebf39973806afb70e2e641533c3470b3a684b4ab8b925ee307971c787f13f",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
-        "on": "2026-09-21",
-        "by": "Claude (segment rows)"
+        "on": "2026-09-25",
+        "by": "Claude (full read: every row against the register, DiD/checkpoint/assumption-registry summary, role counts, gnomon grants, gates table re-measured by ci.sh at 4b908bb)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -349,16 +349,16 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-09-21",
+        "on": "2026-09-25",
         "sha256": {
-          "packages/causal-core/src/causal_core": "33054d63f00443a2419b10f1b83b7b6c5fcc29d970062777c6653718036943f6",
-          "conformance/declared_not_implemented.json": "38be7eafe900ea48bfa53cc4ee1863954774df22ecead8c9cbb16f40478b7463",
-          "docs/CURRENT_STAGE.md": "d22f0bc2c50d52852aa1e5e0e6ba9c0fcee5afea36c5591b193bb754a90ef7c5"
+          "packages/causal-core/src/causal_core": "ec83e24c440e38350a84ea05fe6a82848b5e45ddffab5df00d4e5c1217d71c38",
+          "conformance/declared_not_implemented.json": "70355626e268665d34351b5d54db8350c8feceab4e55b35da0ad92b5395c7f5a",
+          "docs/CURRENT_STAGE.md": "e5dab78816a8c72761a655279756526bd77252865c7ec6bceeced953f0f68c86"
         }
       },
       "last_read": {
-        "on": "2026-09-21",
-        "by": "Claude (step 3 partly done: segments)"
+        "on": "2026-09-25",
+        "by": "Claude (full read: capability table and order of work against causal_core.panel, causal_decision.assumptions, ledger checkpoints, D0 v2 counts, the register)"
       }
     },
     "SECURITY.md": {

@@ -1,6 +1,6 @@
 # Platform Current Stage
 
-> **Last reconciled:** 2026-09-25, on branch `chore/alignment-and-cleanup`, after the change that added the assumption registry.
+> **Last reconciled:** 2026-09-25, on branch `chore/alignment-and-cleanup` at `4b908bb` (difference-in-differences, the assumption registry, ledger checkpoints and the legacy MCP server's deprecation included).
 > **How to read it:** every row has one of four statuses. `implemented` rows link to the test that pins the behaviour. Every other row names its entry in [`conformance/declared_not_implemented.json`](../conformance/declared_not_implemented.json), which cites where the claim was made, says in one line what the code does instead, and names what must exist for the entry to leave the list.
 > **Checked, not asserted:** `scripts/status_claims.py` (run by `.gnomon/ci.sh`) fails if a row's status disagrees with the register, an `implemented` row's test is missing, an open register entry is missing from this page, or a cited claim or piece of code has changed under the register.
 
@@ -9,9 +9,10 @@ This page replaces an earlier version that marked "Phase 1" finished. A Septembe
 ## Summary
 
 - **Segments.** The kernel answers "for whom does this work?" for subgroups the caller declares in advance, with an interval per segment, a wider family-wise interval that accounts for how many were looked at, and one heterogeneity test before any two are compared. It does not search for subgroups. The decision layer now reads them: an action that materially harms a declared segment cannot be automated whatever the pooled effect says, and segments the analysis could not estimate are not treated as cleared. Declaring no subgroups adds no checks — that is not evidence the effect is uniform, only that nobody asked.
-- **Causal numbers the platform serves.** They come from `packages/causal-core`. The backend's `effect_estimate` and `identification_check` skills delegate to it, and so do the API and the legacy MCP server. Without observational data they return no estimate and say why; the old graph-heuristic numbers and the constant interval are gone. Ground truth is gated by the pre-registered T0, LaLonde and IHDP benchmarks.
+- **Causal numbers the platform serves.** They come from `packages/causal-core`. The backend's `effect_estimate` and `identification_check` skills delegate to it, and so do the API and the legacy MCP server. Without observational data they return no estimate and say why; the old graph-heuristic numbers and the constant interval are gone. Ground truth is gated by the pre-registered T0, LaLonde (T3), IHDP (T2), segments (T4) and difference-in-differences (T5) benchmarks.
+- **Staggered rollouts.** `design="difference_in_differences"` with `unit` and `time` columns estimates group-time effects against never-treated units, with unit-clustered intervals and an event study. It is tier C: the result rests on parallel trends, which data cannot prove, and a failed pre-trends test makes it `contested`. Unbalanced panels and treatments that switch off are refused with a typed reason; covariates, not-yet-treated controls and anticipation are not offered (`did-extensions` on the register).
 - **Whether an agent may act on those numbers.** `packages/causal-decision` turns an outcome into one of four verdicts (`act`, `act_with_approval`, `experiment`, `refuse`) from a policy the caller sets, and returns the experiment that would settle an unsettled question. It is deterministic and gated by the pre-registered D0 suite. It decides; it does not execute, and nothing yet checks whether the decisions were *right* — that is the calibration row below.
-- **What was decided is kept.** `POST /api/v1/decisions` analyses and rules in one call — nothing can change the evidence in between — and seals the result into an append-only hash chain with the digests it rested on. `/api/v1/decisions/verify` recomputes the chain from the stored rows and names the first entry that fails. That detects tampering inside this platform's trust boundary; anchoring the head digest outside it is on the register, not done.
+- **What was decided is kept.** `POST /api/v1/decisions` analyses and rules in one call — nothing can change the evidence in between — and seals the result into an append-only hash chain with the digests it rested on. `/api/v1/decisions/verify` recomputes the chain from the stored rows and names the first entry that fails. That detects tampering inside this platform's trust boundary. `/api/v1/decisions/checkpoint` returns a head to publish elsewhere and `/api/v1/decisions/verify-anchored` checks the chain against such checkpoints; nothing publishes one yet, so anchoring is `partial` on the register.
 - **The assumptions a verdict rested on are kept, and a revision says what it breaks.** A causal model is registered once (`/api/v1/models`) and revised into immutable, content-addressed versions: the kernel's graph, each edge with its origin and review status, plus the assumptions a graph cannot state. A revision may propose edges but not approve them; approving is a review, role-gated, and nobody reviews an edge they introduced. A decision can name a version instead of sending a graph, the ledger records which, and `GET /api/v1/models/{name}/impact` answers, for every decision made on an older version, whether its estimate still stands if the new graph is true — gated by the pre-registered A0 suite against an oracle that shares no code with the kernel.
 - **What is still heuristic, and labelled so.** `counterfactual_reason` and `intervention_estimate` return triage scores with `heuristic: true` and a caveat. No counterfactual is computed. Rosenbaum bounds and discovery are not implemented.
 - **The kernel's own limits** are on the register too: triangulation at moderate n, overlap detection and general-ID estimation.
@@ -98,7 +99,7 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 | Runtime data contracts (freshness, schema) enforced by Guardian PR-009 | `declared-not-implemented` | [dni:data-contracts-not-enforced](../conformance/declared_not_implemented.json) | Models only; PR-009 reads violations from the caller's payload |
 | Hallucination-risk scoring gating Guardian approval (PR-002) | `declared-not-implemented` | [dni:guardian-risk-score-caller-supplied](../conformance/declared_not_implemented.json) | Nothing computes it; `/check` takes it from the request body |
 | Guardian PR-007 blocks edges without a sensitivity result | `declared-not-implemented` | [dni:sensitivity-gate-not-enforced](../conformance/declared_not_implemented.json) | In the rule table, never evaluated |
-| Role-based access per platform role; domain isolation | `partial` | [dni:rbac-matrix-and-domain-isolation](../conformance/declared_not_implemented.json) | Two role sets on six routes; other writes need only a token; RLS never engaged |
+| Role-based access per platform role; domain isolation | `partial` | [dni:rbac-matrix-and-domain-isolation](../conformance/declared_not_implemented.json) | Two role sets on seven routes; other writes need only a token; RLS never engaged |
 | Security scanning in CI (SAST, dependency audit, container scan) | `declared-not-implemented` | [dni:security-scanning-not-in-ci](../conformance/declared_not_implemented.json) | Tools declared as dev dependencies; no step runs them |
 | Credentials in a secret manager, not environment variables | `declared-not-implemented` | [dni:secrets-in-env](../conformance/declared_not_implemented.json) | All secrets, including the Guardian signing key, come from env |
 | PII pseudonymization, erasure and export | `declared-not-implemented` | [dni:gdpr-controls](../conformance/declared_not_implemented.json) | None exists |
@@ -111,7 +112,7 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 | Capability | Status | Evidence | Note |
 |---|---|---|---|
 | Backend MCP server (`backend/mcp_server`): 7 causal tools over stdio, stdout reserved for protocol frames | `implemented` | [backend/tests/integration/test_mcp_stdio.py](../backend/tests/integration/test_mcp_stdio.py) | Outputs are only as real as the causal rows above |
-| `packages/causal-mcp`: causal-core over MCP (check graph, identify, analyze, verify narrative, and `causal_decide` with the decision extra) | `implemented` | [packages/causal-mcp/tests/test_stdio_flow.py](../packages/causal-mcp/tests/test_stdio_flow.py) | The canonical server; wired into `.gnomon/tools.toml` as `causal_core` and granted to every role |
+| `packages/causal-mcp`: causal-core over MCP (check graph, identify, analyze, verify narrative, and `causal_decide` and `causal_impact` with the decision extra) | `implemented` | [packages/causal-mcp/tests/test_stdio_flow.py](../packages/causal-mcp/tests/test_stdio_flow.py) | The canonical server; wired into `.gnomon/tools.toml` as `causal_core` and granted to every role except `smol` (summarisation only) |
 | One MCP server: the legacy backend server retired | `planned` | [dni:legacy-mcp-server](../conformance/declared_not_implemented.json) | Deprecated: granted to no gnomon role, warns on startup; not yet deleted |
 | LLM capability routing used by the agents | `declared-not-implemented` | [dni:llm-routing-no-callers](../conformance/declared_not_implemented.json) | `get_llm` has no callers |
 | Agents render prompts from the versioned templates in `prompts/` | `declared-not-implemented` | [dni:prompt-templates-not-loaded](../conformance/declared_not_implemented.json) | Nothing loads them; they are specification artefacts |
@@ -155,17 +156,19 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 
 `.gnomon/ci.sh` is the command that decides whether a change passes. It prints PASS, FAIL or SKIPPED for each step, with a count of what the step inspected. The numbers it holds are ratchets. Each file records when and against which commit its number was measured:
 
-| Gate | Committed baseline | Measured 2026-09-19 |
+| Gate | Committed baseline | Measured 2026-09-25 (at `4b908bb`) |
 |---|---|---|
-| Backend tests (unit, integration, guardian) | at least 500 tests; every test file reports ([`scripts/gate-scope-floors.json`](../scripts/gate-scope-floors.json)) | 560 passed |
-| Backend line coverage, full suite | floor 80.0%, may only rise ([`scripts/coverage-floor.json`](../scripts/coverage-floor.json)) | 80.01% |
-| ruff (backend/) | at most 451 findings, may only fall ([`scripts/lint-baseline.json`](../scripts/lint-baseline.json)) | 451 |
-| mypy --strict (backend/src) | at most 46 errors, may only fall | 46 |
-| Frontend tsc / vitest | must pass | 46 files, 47 tests |
+| Backend tests (unit, integration, guardian) | at least 500 tests; every test file reports ([`scripts/gate-scope-floors.json`](../scripts/gate-scope-floors.json)) | 637 passed, 45 of 45 files |
+| Backend line coverage, full suite | floor 82.2%, may only rise ([`scripts/coverage-floor.json`](../scripts/coverage-floor.json)) | 82.21% |
+| ruff (backend/) | at most 417 findings, may only fall ([`scripts/lint-baseline.json`](../scripts/lint-baseline.json)) | 417 |
+| ruff (scripts/) | zero | 0 |
+| mypy --strict (backend/src) | at most 39 errors, may only fall | 39 |
+| mypy --strict (each package's src) | zero, per package | 0 for causal-core, causal-decision and causal-mcp |
+| Frontend tsc / vitest | must pass | 50 files typecheck; 62 tests in 8 files |
 | Frontend eslint | none: `frontend/` has no eslint config | SKIPPED |
-| Every Python package under `packages/` | its suite must pass, in the package's environment | causal-core 100 passed (T0 gate and real-data benchmarks included); causal-mcp 10 passed |
-| Skill modules imported by a test | 6 known gaps, may only shrink | 4 of 10 |
-| State-changing routes called by a test | 6 known gaps, may only shrink | 5 of 11 |
-| MCP tools referenced by a test | no gaps allowed | 7 of 7 |
+| Every Python package under `packages/` | its suite must pass in the package's environment, and a skipped test fails it | causal-core 137 passed (T0, T4 and T5 gates included); causal-decision 117 (D0 and A0); causal-mcp 23 |
+| Skill modules imported by a test | 2 known gaps, may only shrink | 9 of 11 |
+| State-changing routes called by a test | 2 known gaps, may only shrink | 15 of 17 |
+| MCP tools referenced by a test (legacy server) | no gaps allowed | 7 of 7 |
 
 `scripts/doc_reconciliation.py` reports which documents in `docs/` are owed a re-read because the code they describe has changed. Only this page and the root README had been read against the code when tracking began.

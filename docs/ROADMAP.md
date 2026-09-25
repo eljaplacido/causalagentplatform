@@ -24,12 +24,12 @@ sustainability investment assurance follow, in that order.
 | Capability the layer needs | Today |
 |---|---|
 | A typed causal question | Partial: `CausalQuery` is typed, but `population` and `horizon` are free text, and nothing translates an agent's action into an estimand |
-| Retrieve the assumptions and evidence that apply | Missing: edges carry origin, status and evidence in the contract, but nothing stores, versions or retrieves them |
+| Retrieve the assumptions and evidence that apply | Done for causal models: `causal_decision.assumptions` and `/api/v1/models` keep each model as immutable, content-addressed versions whose edges carry origin and review status, and a decision names the version it used. Missing: retrieving evidence (documents, metrics) for an edge; nothing links it |
 | Decide identified / partially identified / unsupported | Done, except bounds: complete ID, back-door with the optimal adjustment set, front-door, conditional IV, proximal; 11 typed refusals, each with what is missing |
-| Estimate impact and uncertainty | Done for ATE and ATT with coverage-tested intervals, and for effects within declared segments with family-wise correction and a heterogeneity test (pre-registered T4). and for staggered rollouts by difference-in-differences with unit-clustered intervals and a pre-trends test (pre-registered T5). Missing: policy value, sequential tests, interference-aware designs, DiD with covariates or parallel-trends sensitivity, and subgroup *discovery* |
+| Estimate impact and uncertainty | Done for ATE and ATT with coverage-tested intervals, and for effects within declared segments with family-wise correction and a heterogeneity test (pre-registered T4), and for staggered rollouts by difference-in-differences with unit-clustered intervals and a pre-trends test (pre-registered T5). Missing: policy value, sequential tests, interference-aware designs, DiD with covariates or parallel-trends sensitivity, and subgroup *discovery* |
 | Robustness checks | Done: placebo, negative controls, graph-implied independences with measured power, overlap, balance, E-values, robustness values |
-| Decide: act, ask, experiment, refuse | Done: `packages/causal-decision` turns an outcome, a request and a policy into one verdict, deterministically, gated by the pre-registered D0 suite (15 scenarios, 8 properties, 6 seeded defects). Declared segments now reach the verdict: an action that harms one of them is not automated on a favourable pooled effect |
-| Evidence record | Partial: every result and every decision carries digests of its inputs and itself, and decisions are persisted into a verified hash chain with the observed outcome recorded against them. Missing: assumption/graph versioning and retrieval, and anchoring the chain head outside the writer's control |
+| Decide: act, ask, experiment, refuse | Done: `packages/causal-decision` turns an outcome, a request and a policy into one verdict, deterministically, gated by the pre-registered D0 suite (v2: 17 scenarios, 8 properties, 7 seeded defects). Declared segments now reach the verdict: an action that harms one of them is not automated on a favourable pooled effect |
+| Evidence record | Partial: every result and every decision carries digests of its inputs and itself, decisions are persisted into a verified hash chain with the observed outcome recorded against them, and the model version a decision used is recorded. Checkpoints of the chain head can be taken and verified against (`/api/v1/decisions/checkpoint`, `/verify-anchored`). Missing: publishing a checkpoint somewhere the writer cannot edit |
 | Recommend the next experiment | Done for the case the layer can size: randomized units, with the minimum detectable effect, per-arm size, duration and guardrails. Clustered, switchback and sequential designs are not sized |
 
 ## Order of work
@@ -47,8 +47,9 @@ sustainability investment assurance follow, in that order.
    a revision cannot approve an edge, nobody reviews an edge they introduced, a decision names the
    version it used, and `impact` says which recorded verdicts a revision invalidates —
    pre-registered as A0 against an oracle independent of the kernel. `causal_impact` asks the same
-   question over MCP. Still to do: anchoring the chain's head outside the writer's control
-   (`decision-ledger-not-anchored`).
+   question over MCP. Anchoring is half done: the chain head can be checkpointed and the chain
+   verified against checkpoints kept elsewhere; nothing yet publishes a checkpoint outside the
+   writer's control (`decision-ledger-not-anchored`).
 3. **The estimators operations actually need.** Segment-level effects are **done**
    (`causal_core.segments`, pre-registered T4: declared subgroups, Bonferroni family-wise
    intervals, Holm across the family, one Cochran's Q before anything is compared). Staggered
