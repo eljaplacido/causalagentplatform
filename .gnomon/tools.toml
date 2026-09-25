@@ -116,11 +116,13 @@ enabled = true
 # provenance, not truth: two of these tools (counterfactual_reason,
 # intervention_estimate) return heuristic triage scores, not effects -- see
 # docs/CURRENT_STAGE.md.
-[mcp_servers.causal]
-transport = "stdio"
-command = "sh"
-args = ["-c", 'cd "$(git rev-parse --show-toplevel)/backend" || exit 1; V=.venv; test -x "$V/bin/python" || V="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")/backend/.venv"; exec "$V/bin/python" -m mcp_server.server']
-env = []
+# Commented out 2026-09-25: no role is granted it any more (dni:legacy-mcp-server).
+# Restore these five lines only to reach a legacy tool the kernel does not replace.
+# [mcp_servers.causal]
+# transport = "stdio"
+# command = "sh"
+# args = ["-c", 'cd "$(git rev-parse --show-toplevel)/backend" || exit 1; V=.venv; test -x "$V/bin/python" || V="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")/backend/.venv"; exec "$V/bin/python" -m mcp_server.server']
+# env = []
 
 # The kernel's own MCP server (packages/causal-mcp, MCP SDK v2): identification before
 # estimation, typed refusals, and a narrative verifier that rejects numbers no tool

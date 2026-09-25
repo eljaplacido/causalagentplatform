@@ -1166,6 +1166,24 @@
         "path": "packages/causal-core/tests/t5/test_did_extensions.py",
         "asserts": "each extension ships with its own pre-registered T5 version and seeded defect -- sensitivity first: a Rambachan-Roth style bound whose coverage is gated under planted violations"
       }
+    },
+    {
+      "id": "legacy-mcp-server",
+      "status": "planned",
+      "capability": "One MCP server: the legacy backend server retired in favour of packages/causal-mcp",
+      "claimed_in": [],
+      "reality": "backend/mcp_server (mcp SDK v1, seven backend skills, two of them heuristic triage scores rather than effects) still ships beside packages/causal-mcp (SDK v2, the kernel, the decision layer, causal_impact, a narrative verifier). As of 2026-09-25 no gnomon role is granted it, its gnomon declaration is commented out, and it warns on startup that it is deprecated. It is not deleted because client configurations outside this repository may still launch `causal-platform-mcp`, and scripts/gate_scope.py's mcp-tools identity check still inspects it.",
+      "evidence": [
+        {
+          "at": "backend/mcp_server/server.py:106",
+          "says": "causal-platform MCP server is DEPRECATED"
+        }
+      ],
+      "leaves_by": {
+        "kind": "retraction",
+        "path": "backend/mcp_server",
+        "asserts": "the directory, its console script and its stdio test are removed, and gate_scope's mcp-tools check inspects causal-mcp's TOOLS instead"
+      }
     }
   ],
   "left_the_list": [

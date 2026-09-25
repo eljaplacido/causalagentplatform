@@ -35,10 +35,10 @@ max_steps_total = 160
 # matches your layout is one you keep.
 # MCP scope. `mcp__causal_core` is the kernel's server (packages/causal-mcp, declared
 # in tools.toml as causal_core): the one whose numbers the T0-T4/D0 gates stand
-# behind, and the one system.md points causal numbers at. `mcp__causal` is the
-# LEGACY backend/mcp_server (heuristic skills, being deprecated); it stays listed
-# until the backend is rewired onto causal-core, and nothing new should rely on it.
-tools = ["read", "glob", "grep", "compute", "todo", "note", "task", "write", "skill", "mcp__causal_core", "mcp__causal"]
+# behind, and the one system.md points causal numbers at. The LEGACY backend server
+# (`mcp__causal`, backend/mcp_server: heuristic skills) is granted to no role as of
+# 2026-09-25 -- see dni:legacy-mcp-server; its declaration in tools.toml is commented out.
+tools = ["read", "glob", "grep", "compute", "todo", "note", "task", "write", "skill", "mcp__causal_core"]
 # Which roles this one may hand work to. A sub-turn runs with the TARGET
 # role's tools, so this line -- not the one above -- bounds what delegation
 # can cause. Omit it and any role is reachable. An empty list forbids it.
@@ -65,8 +65,8 @@ temperature = 0.3
 top_p = 0.95
 max_steps = 32
 max_steps_total = 256
-# mcp__causal_core is the kernel; mcp__causal is the legacy server (see coordinator).
-tools = ["read", "glob", "grep", "compute", "todo", "note", "write", "edit", "bash", "mcp__causal_core", "mcp__causal"]
+# mcp__causal_core is the kernel; the legacy server is granted to no role (see coordinator).
+tools = ["read", "glob", "grep", "compute", "todo", "note", "write", "edit", "bash", "mcp__causal_core"]
 # Where this role may write: the source trees, the gate scripts and their
 # baselines, and the docs and register it must keep true alongside the code.
 # Not .github/** (CI workflow changes get a human), not the root compose and
@@ -123,9 +123,9 @@ max_steps_total = 160
 #
 # mcp__causal_core is here so the verifier can re-derive a causal number the
 # implementor reported, from the tool, instead of trusting the transcript. Every
-# causal-mcp tool is annotated read-only, so it adds no write path. mcp__causal
-# is the legacy server (see coordinator).
-tools = ["read", "glob", "grep", "compute", "todo", "note", "bash", "mcp__causal_core", "mcp__causal"]
+# causal-mcp tool is annotated read-only, so it adds no write path. The legacy
+# server is granted to no role (see coordinator).
+tools = ["read", "glob", "grep", "compute", "todo", "note", "bash", "mcp__causal_core"]
 # 'bash' can write anything, so 'tools' alone cannot make this role
 # read-only. This list is what actually constrains it: the gates can be run,
 # nothing else. Remove it and the verifier can alter what it judges.
@@ -196,7 +196,7 @@ temperature = 0.2
 top_p = 0.9
 max_steps = 20
 max_steps_total = 160
-tools = ["read", "glob", "grep", "compute", "todo", "note", "task", "bash", "mcp__causal_core", "mcp__causal"]
+tools = ["read", "glob", "grep", "compute", "todo", "note", "task", "bash", "mcp__causal_core"]
 task_allow = ["implement", "critique"]
 write_allow = [
   "backend/**", "frontend/**", "packages/**", "scripts/**", "conformance/**",
@@ -232,7 +232,7 @@ top_p = 0.95
 max_steps = 28
 # Stated explicitly. An omitted list means every declared tool, which handed
 # this role `skill` as well and made "the coordinator authors skills" untrue.
-tools = ["read", "glob", "grep", "compute", "todo", "note", "write", "edit", "bash", "mcp__causal_core", "mcp__causal"]
+tools = ["read", "glob", "grep", "compute", "todo", "note", "write", "edit", "bash", "mcp__causal_core"]
 max_steps_total = 224
 write_allow = [
   "backend/**", "frontend/**", "packages/**", "scripts/**", "conformance/**",
@@ -268,7 +268,7 @@ temperature = 0.1
 top_p = 0.9
 max_steps = 16
 max_steps_total = 128
-tools = ["read", "glob", "grep", "compute", "todo", "note", "bash", "mcp__causal_core", "mcp__causal"]
+tools = ["read", "glob", "grep", "compute", "todo", "note", "bash", "mcp__causal_core"]
 write_allow = [
   "backend/**", "frontend/**", "packages/**", "scripts/**", "conformance/**",
   "docs/**", "specs/**", "prompts/**", "templates/**", "README.md",
