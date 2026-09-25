@@ -415,7 +415,7 @@
       "capability": "Triangulation flags outcome-model misspecification in causal-core",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:149",
+          "at": "packages/causal-core/README.md:152",
           "says": "Its power was 0.04 at n = 2,000"
         }
       ],
@@ -438,7 +438,7 @@
       "capability": "Estimation of effects identified only by the general ID algorithm (e.g. the napkin graph)",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:171",
+          "at": "packages/causal-core/README.md:174",
           "says": "Estimation for general ID functionals"
         }
       ],
@@ -461,18 +461,18 @@
       "capability": "causal-core methods beyond the current portfolio: nonparametric front-door, discovery, time series, interference-aware designs",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:173",
+          "at": "packages/causal-core/README.md:176",
           "says": "Nonparametric front-door"
         },
         {
-          "at": "packages/causal-core/README.md:175",
+          "at": "packages/causal-core/README.md:178",
           "says": "Discovery"
         }
       ],
       "reality": "Listed as not implemented in the package README; none of these exists in the kernel. (Anytime-valid sequential tests left this entry on 2026-09-25 with causal_core.sequential and the pre-registered T6 gate.)",
       "evidence": [
         {
-          "at": "packages/causal-core/README.md:168",
+          "at": "packages/causal-core/README.md:171",
           "says": "Not implemented yet"
         }
       ],
@@ -1148,9 +1148,9 @@
     {
       "id": "did-extensions",
       "status": "planned",
-      "capability": "Difference-in-differences beyond the v1 design: covariate-conditional parallel trends, not-yet-treated comparisons, anticipation, repeated cross-sections, and sensitivity to parallel-trends violations",
+      "capability": "Difference-in-differences beyond the current design: covariate-conditional parallel trends, not-yet-treated comparisons, anticipation, repeated cross-sections, and the full Rambachan-Roth sensitivity machinery",
       "claimed_in": [],
-      "reality": "causal_core.panel estimates unconditional group-time effects against never-treated units on a balanced panel with an absorbing binary treatment, and refuses everything else with a typed reason. A passing pre-trends test is reported as weak evidence; nothing bounds how wrong the estimate is if parallel trends fails by a given amount.",
+      "reality": "causal_core.panel estimates unconditional group-time effects against never-treated units on a balanced panel with an absorbing binary treatment, and refuses everything else with a typed reason. Parallel-trends sensitivity exists since T5 v3 in a simplified, conservative form (relative magnitudes on event-time levels, union-bound intervals, a breakdown multiple); Rambachan & Roth's restriction on consecutive changes and their sharper confidence sets do not.",
       "evidence": [
         {
           "at": "benchmarks/t5-did/PRE-REGISTRATION.md:4",

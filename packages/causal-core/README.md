@@ -143,7 +143,10 @@ times the width of a fixed-sample interval at its tuning size — the price of l
 unit=, time=, estimand="att")` estimates group-time effects against never-treated units
 (Callaway & Sant'Anna), aggregated to an overall ATT and an event study, with unit-clustered
 influence-function intervals. The certificate is tier C — parallel trends is not in the graph —
-and a failed pre-trends test makes the result `contested`.
+and a failed pre-trends test makes the result `contested`. Every panel result also says how far
+parallel trends may fail before the conclusion changes: intervals valid when the post-adoption
+bias is at most M times the largest pre-adoption deviation, and the breakdown M at which the
+interval first reaches zero (T5 v3).
 
 **Known limit.** Triangulation does *not* reliably detect moderate outcome-model misspecification
 at moderate n. Its power was 0.04 at n = 2,000 against a bias of about 1.2 standard errors. The v1
@@ -176,8 +179,8 @@ Data can be pandas, a dict of columns, pyarrow, polars, or any dataframe-interch
 - Time series
 - Interference-aware designs
 - For difference-in-differences: covariate-conditional parallel trends, not-yet-treated
-  comparisons, anticipation windows, repeated cross-sections, and sensitivity to parallel-trends
-  violations (e.g. Rambachan & Roth bounds)
+  comparisons, anticipation windows, repeated cross-sections, and the full Rambachan & Roth
+  machinery (the kernel's parallel-trends sensitivity is a simplified, conservative form)
 
 Each is listed in the repository's `conformance/declared_not_implemented.json`, and leaves that
 list only by being implemented and tested.
