@@ -259,6 +259,13 @@ class AnalysisPolicy(_Model):
     )
     pt_alpha_pre: float = Field(default=0.025, gt=0, lt=0.5)
     pt_alpha_effect: float = Field(default=0.025, gt=0, lt=0.5)
+    max_cluster_size_cv: float = Field(
+        default=0.6,
+        gt=0,
+        description="Cluster-randomized designs: above this coefficient of variation of cluster "
+        "sizes, a few large clusters dominate the estimate and its interval under-covers "
+        "(T7 v2: 0.879 at CV 0.71); the analysis refuses.",
+    )
     min_clusters_per_arm: int = Field(
         default=5,
         ge=2,

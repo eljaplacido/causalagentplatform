@@ -10,11 +10,16 @@ clusters of fifty at an intra-cluster correlation of 0.3.
 The estimate is the unit-weighted difference in means (the effect on a request,
 averaged over requests). Its standard error sums each unit's influence-function value
 within its cluster, so the clusters -- not the units -- are the independent
-observations; a CR1 correction ``K/(K − 1)`` and a t distribution on ``K − 2`` degrees
-of freedom account for having few of them.
+observations; a CR2 (Bell–McCaffrey) adjustment, which inflates each cluster's residual
+sum by ``1/sqrt(1 − m_j/n_arm)`` so that large, high-leverage clusters are not
+under-counted, and a t distribution on ``K − 2`` degrees of freedom account for having
+few of them.
 
 Refused: treatment that varies within a cluster (then the design is not what this
-assumes), and fewer than ``min_clusters_per_arm`` clusters in either arm.
+assumes), fewer than ``min_clusters_per_arm`` clusters in either arm, and cluster sizes
+so variable (coefficient of variation above ``max_cluster_size_cv``) that a few clusters
+dominate: T7 v2 measured coverage 0.879 at a CV of 0.71, which no variance correction
+repaired.
 """
 
 from __future__ import annotations
@@ -49,7 +54,7 @@ from causal_core.contract import (
 F = NDArray[np.float64]
 
 ESTIMATOR = "difference_in_means_cluster_robust"
-METHOD = "t(K-2); CR1 cluster-robust, influence function summed within clusters"
+METHOD = "t(K-2); CR2 (Bell-McCaffrey) cluster-robust, residuals summed within clusters"
 ASSUMPTIONS = (
     "clusters assigned to treatment independently of potential outcomes (randomization)",
     "no interference between clusters; units within a cluster may be arbitrarily correlated",
@@ -62,22 +67,23 @@ def point_estimate(y: F, t: F, cluster: NDArray[Any]) -> float:
     return float(y[t == 1].mean() - y[t == 0].mean())
 
 
-def influence(y: F, t: F) -> F:
-    n1, n = t.sum(), t.shape[0]
-    p1, p0 = n1 / n, 1 - n1 / n
-    m1, m0 = y[t == 1].mean(), y[t == 0].mean()
-    psi: F = t * (y - m1) / p1 - (1 - t) * (y - m0) / p0
-    return psi
+def cluster_variance(y: F, t: F, cluster: NDArray[Any], k: int) -> float:
+    """CR2 variance of the difference in means, clusters as the independent observations.
 
-
-def cluster_variance(psi: F, cluster: NDArray[Any], k: int) -> float:
-    """CR1 variance of the mean of ψ, clusters as the independent observations.
-
-    A seam: `unit_level_se` treats every unit as independent instead.
+    For y ~ 1 + t the CR2 adjustment has a closed form: within arm a, cluster j's residual
+    sum S_j is scaled by (1 - m_j/n_a)^(-1/2). A seam: `unit_level_se` treats every unit
+    as independent instead.
     """
-    sums = pd.Series(psi).groupby(cluster).sum().to_numpy()
-    n = psi.shape[0]
-    return float((k / (k - 1)) * np.sum(sums**2) / n**2)
+    var = 0.0
+    for arm in (1.0, 0.0):
+        mask = t == arm
+        ya, ca = y[mask], cluster[mask]
+        n_a = ya.shape[0]
+        resid = pd.Series(ya - ya.mean())
+        sums = resid.groupby(ca).sum().to_numpy()
+        sizes = resid.groupby(ca).size().to_numpy()
+        var += float(np.sum(sums**2 / (1 - sizes / n_a))) / n_a**2
+    return var
 
 
 def icc(y: F, t: F, cluster: NDArray[Any]) -> float | None:
@@ -178,12 +184,31 @@ def analyze_cluster(
             q=query,
             cert=cert,
         )
+    sizes = sub.groupby(c_col).size().to_numpy(dtype=float)
+    cv = float(sizes.std() / sizes.mean())
+    checks.append(DesignCheck(
+        name="no few clusters dominate",
+        passed=cv <= policy.max_cluster_size_cv,
+        detail=f"cluster-size coefficient of variation {cv:.2f} (limit "
+        f"{policy.max_cluster_size_cv})",
+    ))
+    if cv > policy.max_cluster_size_cv:
+        return refuse(
+            AbstentionReason.DESIGN_CHECK_FAILED,
+            f"cluster sizes vary too much (coefficient of variation {cv:.2f} > "
+            f"{policy.max_cluster_size_cv}): a few large clusters dominate a difference in means "
+            f"over {k} clusters, and its interval would not cover",
+            ("more clusters, randomization stratified by cluster size, or an analysis of cluster "
+             "totals",),
+            q=query,
+            cert=cert,
+        )
     prov["data_digest"] = data_digest(sub)
     y = sub[y_col].to_numpy(dtype=float)
     t = sub[d_col].to_numpy(dtype=float)
     cl = sub[c_col].to_numpy()
     point = point_estimate(y, t, cl)
-    se = math.sqrt(cluster_variance(influence(y, t), cl, k))
+    se = math.sqrt(cluster_variance(y, t, cl, k))
     df = k - 2
     crit = float(stats.t.ppf(0.5 + policy.ci_level / 2, df))
     rho = icc(y, t, cl)

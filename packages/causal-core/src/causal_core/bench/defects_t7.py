@@ -22,8 +22,9 @@ import causal_core.cluster as cluster_mod
 def unit_level_se() -> Iterator[None]:
     """Every unit counted as an independent observation -- the usual mistake."""
 
-    def fake(psi: np.ndarray, cluster: np.ndarray, k: int) -> float:
-        return float(np.var(psi, ddof=1) / psi.shape[0])
+    def fake(y: np.ndarray, t: np.ndarray, cluster: np.ndarray, k: int) -> float:
+        y1, y0 = y[t == 1], y[t == 0]
+        return float(np.var(y1, ddof=1) / y1.shape[0] + np.var(y0, ddof=1) / y0.shape[0])
 
     with mock.patch.object(cluster_mod, "cluster_variance", fake):
         yield

@@ -49,7 +49,7 @@ class Design:
     k: int
     icc: float
     effect: Callable[[np.ndarray], np.ndarray]  # cluster sizes -> tau_j
-    heavy_sizes: bool = False  # v2: 10 + floor(LogNormal(ln 40, 0.8)) instead of 10 + Poisson(40)
+    heavy_sizes: bool = False  # 10 + floor(LogNormal(ln 40, sigma)) instead of 10 + Poisson(40)
 
 
 DESIGNS = {
@@ -62,10 +62,14 @@ DESIGNS = {
 }
 
 
-def simulate(d: Design, rng: np.random.Generator,
-             heavy: bool | None = None) -> tuple[pd.DataFrame, float]:
+#: The log-normal sigma for `size_dependent`'s cluster sizes, by registered version.
+SIZE_SIGMA = {2: 0.8, 3: 0.5}
+
+
+def simulate(d: Design, rng: np.random.Generator, heavy: bool | None = None,
+             sigma: float = 0.5) -> tuple[pd.DataFrame, float]:
     use_heavy = d.heavy_sizes if heavy is None else heavy
-    sizes = (10 + np.floor(rng.lognormal(np.log(40), 0.8, d.k)).astype(int) if use_heavy
+    sizes = (10 + np.floor(rng.lognormal(np.log(40), sigma, d.k)).astype(int) if use_heavy
              else 10 + rng.poisson(40, d.k))
     treated = np.zeros(d.k)
     treated[rng.permutation(d.k)[: d.k // 2]] = 1.0
@@ -79,7 +83,9 @@ def simulate(d: Design, rng: np.random.Generator,
 
 
 def policy(cfg: Mapping[str, Any]) -> AnalysisPolicy:
-    return AnalysisPolicy(min_clusters_per_arm=cfg["clusters"]["min_clusters_per_arm"])
+    c = cfg["clusters"]
+    extra = {"max_cluster_size_cv": c["max_cluster_size_cv"]} if "max_cluster_size_cv" in c else {}
+    return AnalysisPolicy(min_clusters_per_arm=c["min_clusters_per_arm"], **extra)
 
 
 def analyse(frame: pd.DataFrame, cfg: Mapping[str, Any], design: str = "randomized") -> Any:
@@ -112,9 +118,11 @@ def run_design(d: Design, cfg: Mapping[str, Any], reps: int | None = None) -> De
     covered = 0
     iccs: list[float] = []
     first_failure = ""
-    heavy = d.heavy_sizes and cfg["meta"]["version"] >= 2  # v1 stays reproducible from v1's text
+    version = cfg["meta"]["version"]
+    heavy = d.heavy_sizes and version >= 2  # each version reproducible from its own text
+    sigma = SIZE_SIGMA.get(version, 0.5)
     for _ in range(n_reps):
-        frame, truth = simulate(d, rng, heavy=heavy)
+        frame, truth = simulate(d, rng, heavy=heavy, sigma=sigma)
         out = analyse(frame, cfg)
         if not isinstance(out, CausalResult):
             first_failure = first_failure or f"{out.kind}: {getattr(out, 'detail', '')}"[:200]
@@ -161,6 +169,7 @@ EXPECTED_REFUSAL = {
     "varies_within_cluster": AbstentionReason.DESIGN_CHECK_FAILED,
     "too_few_clusters": AbstentionReason.LOW_N,
     "not_randomized": AbstentionReason.INVALID_INPUT,
+    "extreme_size_variation": AbstentionReason.DESIGN_CHECK_FAILED,
 }
 
 
@@ -176,6 +185,10 @@ def refusal(case: str, cfg: Mapping[str, Any]) -> Any:
         return analyse(frame, cfg)
     if case == "not_randomized":
         return analyse(frame, cfg, design="observational")
+    if case == "extreme_size_variation":
+        heavy, _ = simulate(Design("x", 40, 0.1, lambda m: np.full(m.shape, 0.3),
+                                   heavy_sizes=True), rng, sigma=1.0)
+        return analyse(heavy, cfg)
     raise KeyError(case)
 
 

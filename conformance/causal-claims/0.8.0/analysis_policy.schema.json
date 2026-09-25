@@ -66,6 +66,13 @@
       "default": null,
       "title": "Max Ci Width"
     },
+    "max_cluster_size_cv": {
+      "default": 0.6,
+      "description": "Cluster-randomized designs: above this coefficient of variation of cluster sizes, a few large clusters dominate the estimate and its interval under-covers (T7 v2: 0.879 at CV 0.71); the analysis refuses.",
+      "exclusiveMinimum": 0,
+      "title": "Max Cluster Size Cv",
+      "type": "number"
+    },
     "max_extreme_propensity_share": {
       "default": 0.05,
       "maximum": 1,
