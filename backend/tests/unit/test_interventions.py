@@ -108,20 +108,21 @@ def test_error_severity_boundary() -> None:
 
 def test_feedback_request_valid() -> None:
     """Valid feedback request."""
+    iid = uuid.uuid4()
     req = FeedbackRequest(
-        intervention_id="intv-001",
+        intervention_id=str(iid),
         actual_effect=0.75,
         measurement_method="ab_test",
         notes="Statistically significant",
     )
-    assert req.intervention_id == "intv-001"
+    assert req.intervention_id == iid
     assert req.actual_effect == 0.75
     assert req.measurement_method == "ab_test"
 
 
 def test_feedback_request_defaults() -> None:
     """Feedback request with minimum fields."""
-    req = FeedbackRequest(intervention_id="intv-002", actual_effect=-0.2)
+    req = FeedbackRequest(intervention_id=str(uuid.uuid4()), actual_effect=-0.2)
     assert req.measurement_method == "observed"
     assert req.notes is None
 
@@ -524,3 +525,16 @@ async def test_accuracy_handler_standalone(db_engine: object) -> None:
     result = await get_prediction_accuracy(period_days=30, user=_MOCK_USER)
     assert result["sample_count"] >= 0
     assert "MAE" in result
+
+
+@pytest.mark.asyncio
+async def test_close_feedback_refuses_a_non_uuid_id(intv_client: AsyncClient) -> None:
+    """An executed intervention's id is a uuid (interventions.id). A proposal id like
+    `int-1-<session>` or any other string is a 422 at the API: on PostgreSQL it used to
+    reach the uuid column and fail as a 500 (septa-54)."""
+    for bad in ("int-1-session-abc", "iv-1", "1; DROP TABLE interventions"):
+        resp = await intv_client.post(
+            "/api/v1/interventions/feedback",
+            json={"intervention_id": bad, "actual_effect": 0.5},
+        )
+        assert resp.status_code == 422, (bad, resp.status_code, resp.text)
