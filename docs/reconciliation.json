@@ -316,7 +316,7 @@
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
           ".gnomon/ci.sh": "eff52277bd3b1621e25fe69ed849a59e1381ad6b6ee61aabf208e71d1130a43c",
-          "scripts": "3f41ba74504fc60c7718a4638f30964aaa86e9656ae1dd3e125a74bc1613783f",
+          "scripts": "ed1f7052ef160696de8406bb8c42e969faa20ffd20482f2a2222828e3f96945b",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "3dcea1af4dd3bbdd68778cbb91715e1663c850fb9681fe42096b50d1145550dc",
           "packages/causal-core/tests": "25b07f6046c1a2d7a690aaa44890558a98c42d05990e9d28b28f802a3ab40885",
@@ -325,7 +325,7 @@
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-46: vitest note says page tests mock the API and names the backend contract test)"
+        "by": "Claude (status-claims row: fixed_in must be an ancestor of HEAD)"
       }
     },
     "docs/UIX.md": {
