@@ -30,7 +30,8 @@
     "pass and none of them asserts an estimate against a known ground truth.",
     "Coverage says which lines ran, not whether what they computed is true.",
     "Raised 2026-09-25 to 82.2 after this branch's alignment work and the assumption registry measured the full suite at 634 tests, 4781/5806 statements = 82.35%. 0.15 below the measurement: the 2026-09-20 lesson was that CI can read ~0.1 lower than a laptop on the same commit.",
-    "Raised 2026-09-25 to 83.0 after the role matrix and domain scope (db89e78) measured the full suite at 741 tests, 4956/5956 statements = 83.21%. 0.21 below the measurement, for the same reason."
+    "Raised 2026-09-25 to 83.0 after the role matrix and domain scope (db89e78) measured the full suite at 741 tests, 4956/5956 statements = 83.21%. 0.21 below the measurement, for the same reason.",
+    "Raised 2026-09-26 to 84.0 after septa-52 (2386e15, the suite on PostgreSQL too) measured the full SQLite suite at 836 tests, 5178/6142 statements = 84.30%. 0.30 below the measurement: CI and local runs have differed by up to ~0.2."
   ],
-  "line_percent": 83.0
+  "line_percent": 84.0
 }

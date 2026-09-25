@@ -89,8 +89,7 @@ sustainability investment assurance follow, in that order.
 
 The order of work above is the direction. The next items come from the work ledger,
 `.beads/issues.jsonl`; `septacore ready` in the repository root lists what is ready, highest
-priority first. As of 2026-09-25 all 44 entries are ready, and the priorities put hardening the
-platform before new estimators:
+priority first, and the priorities put hardening the platform before new estimators:
 
 - **p0, the platform's own trust boundary.** Done: the Guardian computes the PR-002 score itself,
   from the prose and the kernel outcome it reports, instead of reading it from the caller
@@ -107,7 +106,9 @@ platform before new estimators:
   (`septa-28`; no secret-manager client). The backend suite runs on PostgreSQL as well as
   SQLite, on the schema the migrations build: it found that the Guardian could not write
   `audit_log` there and that `session_state` and `incidents` had no migration, and both are
-  fixed (`septa-52`, gate step `backend-pytest-postgres`).
+  fixed (`septa-52`, gate step `backend-pytest-postgres`). No SQL in `backend/src` is built
+  from strings, and bandit enforces it (`septa-50`). Open: rejecting a draft needs a Guardian
+  REJECTED verdict, which a classified reject request never gets (`septa-53`).
 - **p1, release and drift.** Protect `main` (`septa-1`); a first PyPI release of the three
   packages (`septa-2`); checks that the skills and agent docs name only things that exist
   (`septa-3`) and that MCP tool parameters are derived from `CausalQuery` (`septa-4`); SeptaCore's

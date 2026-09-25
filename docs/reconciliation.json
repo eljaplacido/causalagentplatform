@@ -32,12 +32,12 @@
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "cf9e16b2f61a43ae8e7693fa650b1ab71251e4a0b90159d8ac43e8b207ffa079"
+          "docs/CURRENT_STAGE.md": "ceec8dc5edee2e61daabc4e182c28a1e163a0b87b11d90d0e1539118cb5562c9"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: re-read; CURRENT_STAGE moved for the PostgreSQL rows, and README's only DB mention is SQLAlchemy; its backend-suite command runs on SQLite as it says)"
+        "by": "Claude (coverage floor and ledger changes; README quotes neither)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -316,7 +316,7 @@
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
           ".gnomon/ci.sh": "742112ef9ad676473bfe889c55f4a54e03f4b149938c8223fb3956ea5aeeddc4",
-          "scripts": "1cba4c411787c48b440ad0fa5c161d7d869318a69c6c100894133d5ea1f4b046",
+          "scripts": "6906ddf12aba77c4cf9dc81819f56fe5d869afd9f45dd398f67738a9e6b00c89",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "3dcea1af4dd3bbdd68778cbb91715e1663c850fb9681fe42096b50d1145550dc",
           "packages/causal-core/tests": "b73dcfd6530b951cdacdaaaac95e7e4068843b27cbd6635fdbe7b9efe306ecb3",
@@ -325,7 +325,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: steps table gains backend-pytest-postgres, 3.1 says how TEST_DATABASE_URL selects the schema and how to run it locally in docker, 5.1 names the CI service container)"
+        "by": "Claude (coverage floor 84.0; the doc names the floor file, not the number)"
       }
     },
     "docs/UIX.md": {
@@ -356,12 +356,12 @@
         "sha256": {
           "packages/causal-core/src/causal_core": "f504a91cfae574117c3accbd936ee039a34cde0bbd0579f77c4571207a366683",
           "conformance/declared_not_implemented.json": "90161f087f2904e24cd576b6a2142f71d90f3a9600b02123db019e2a6c931500",
-          "docs/CURRENT_STAGE.md": "cf9e16b2f61a43ae8e7693fa650b1ab71251e4a0b90159d8ac43e8b207ffa079"
+          "docs/CURRENT_STAGE.md": "ceec8dc5edee2e61daabc4e182c28a1e163a0b87b11d90d0e1539118cb5562c9"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: p0 paragraph records the backend suite on PostgreSQL and the two missing migrations; p3's register list says PostgreSQL row-level security, the Postgres entry that remains)"
+        "by": "Claude (p0 paragraph: septa-50 done, septa-53 open; dropped the stale 'all 44 ready' count)"
       }
     },
     "SECURITY.md": {

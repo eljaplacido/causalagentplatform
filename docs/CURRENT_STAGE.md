@@ -172,7 +172,7 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 | Gate | Committed baseline | Measured 2026-09-25 (at `db89e78`, the role matrix) |
 |---|---|---|
 | Backend tests (unit, integration, guardian) | at least 500 tests; every test file reports ([`scripts/gate-scope-floors.json`](../scripts/gate-scope-floors.json)) | 741 passed, 49 of 49 files |
-| Backend line coverage, full suite | floor 83.0%, may only rise ([`scripts/coverage-floor.json`](../scripts/coverage-floor.json)) | 83.21% here; 82.30% in CI on `main` (run 36159843491) |
+| Backend line coverage, full suite | floor 84.0%, may only rise ([`scripts/coverage-floor.json`](../scripts/coverage-floor.json)) | 84.30% at 2386e15 (the SQLite suite; the PostgreSQL step runs the same tests). Local and CI agree since both build fresh venvs: 84.08% in each on #8 |
 | ruff (backend/) | at most 417 findings, may only fall ([`scripts/lint-baseline.json`](../scripts/lint-baseline.json)) | 417 |
 | ruff (scripts/) | zero | 0 |
 | mypy --strict (backend/src) | at most 39 errors, may only fall | 39 |
