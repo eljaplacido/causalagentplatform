@@ -169,8 +169,11 @@ whenever the backend is on another port.
 | Frontend | open `http://localhost:3000` | Next.js dev server |
 | **The gate** | `bash .gnomon/ci.sh` | a per-step summary table, every step PASS or a named SKIPPED |
 
-`.gnomon/ci.sh` runs every suite (backend, frontend, each package with its pre-registered gates)
-and the claim checks, and is what CI runs. Test counts are read from the tools each run, so none is
+`.gnomon/ci.sh` runs every suite (backend, frontend, each package with its pre-registered gates),
+the security steps and the claim checks, and is what CI runs. Its `pip-audit-*` steps audit the
+virtual environments it runs in, pip included, so a venv built before a dependency floor was
+raised fails them until it is upgraded (`.venv/bin/python -m pip install -U pip`, then the
+install line above again). The audits ask a remote advisory database: offline, they are SKIPPED. Test counts are read from the tools each run, so none is
 written here. Pieces, when iterating:
 
 ```bash

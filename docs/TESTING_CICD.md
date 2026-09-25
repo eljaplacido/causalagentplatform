@@ -36,7 +36,8 @@ counts or coverage figures. `.gnomon/ci.sh` prints them on every run, and the ra
 One script decides "does it pass". Developers run it locally, and CI runs the same script.
 `scripts/verify.sh` only execs it, and `.septacore.json` declares that file as the repository's
 one blocking step, so `septacore check` runs the same gate. Every step runs even after an
-earlier one fails. A step whose toolchain is absent is **SKIPPED** by name with the reason. A
+earlier one fails. A step whose toolchain is absent is **SKIPPED** by name with the reason, and
+so is a dependency audit whose remote advisory database cannot be reached. A
 tool that is present and crashes is a **FAIL**. A step that inspected something and found drift
 it does not block on is **ADVISORY** (today only `doc-reconciliation`).
 
@@ -52,6 +53,10 @@ it does not block on is **ADVISORY** (today only `doc-reconciliation`).
 | `frontend-eslint` | The eslint ratchet over `frontend/src/` with `frontend/eslint.config.mjs` (Next's core-web-vitals and TypeScript rule sets) | Findings ≤ its `eslint` entry in `scripts/lint-baseline.json`, which is 0. Without a config file the step is SKIPPED |
 | one step per `packages/*/pyproject.toml` | That package's own `pytest`, in its own environment | Exit 0, at least one test passed, and **no test skipped**: every skip these suites can produce is a registered gate that did not run, so a skip fails the step. `causal-core` is always named in the summary, RAN or NOT RUN |
 | `<package>-mypy`, one per package | mypy with the package's own strict config, via the ratchet | Findings ≤ its `mypy-<package>` entry in `scripts/lint-baseline.json`, which is 0 for all three; a package with no entry fails |
+| `bandit-backend`, `bandit-packages` | bandit via the ratchet: `backend/src` and `backend/mcp_server` with `backend/pyproject.toml`'s `[tool.bandit]` (which skips B101 and B608), and every `packages/*/src` with bandit's defaults | MEDIUM and HIGH findings ≤ the `bandit-*` entries in `scripts/lint-baseline.json`, which are 0. LOW is reported, not counted |
+| `secret-scan` | `scripts/secret_scan.py` over every file git would commit from the working tree (tracked, plus untracked and not ignored; never the history) | No private key, provider token or high-entropy credential assignment outside `scripts/secret-scan-allowlist.json`, no stale allowlist entry, and at least its floor of files scanned. Findings print a fingerprint, never the value |
+| `pip-audit-backend`, `pip-audit-packages` | `scripts/dep_audit.py pip`: pip-audit over the site-packages of the environments this run tests (the backend toolchain, and each distinct package environment) | No advisory outside `scripts/audit-allowlist.json`, whose entries carry a reason and a `review_by` date; an expired or stale entry fails. SKIPPED when PyPI's advisory service cannot be reached |
+| `npm-audit` | `scripts/dep_audit.py npm`: `npm audit` over `package-lock.json` (every workspace) | As above, for npm. SKIPPED when the registry cannot be reached |
 | `gate-scope` | `scripts/gate_scope.py identity-all` | Every skill module is imported by a test, every tool of both MCP servers (the legacy one live, causal-mcp's from its `TOOLS` table) and every state-changing route is referenced by one, and every route is mounted, apart from the known gaps named in `scripts/gate-scope-floors.json` |
 | `status-claims` | `scripts/status_claims.py` | `docs/CURRENT_STAGE.md` and `conformance/declared_not_implemented.json` agree with each other and with the tree; every citation quotes its line verbatim, and every `fixed_in` commit is in HEAD's history (a squash or rebase that orphaned it fails) |
 | `contract-parity` | `scripts/contract_parity.py` | The shared enumerations agree across `models.py`, `packages/semantic-types` and `frontend/src/lib/types.ts`, apart from the divergences named in `scripts/contract-parity.json` |
@@ -150,7 +155,7 @@ errors". Each number only moves in the safe direction:
 | File | Holds | Rule |
 |---|---|---|
 | `scripts/coverage-floor.json` | Backend line-coverage floor (full suite) | Fails below the floor. Lowering it needs a `Ratchet-Exempt: <why>` commit trailer |
-| `scripts/lint-baseline.json` | Maximum ruff, mypy and eslint findings, with the exact args and tool version: backend ruff and mypy, `scripts/` ruff (0), mypy for each package (0), and eslint over `frontend/src/` (0) | Fails above the maximum. Raising it needs `Ratchet-Exempt`. When a run finds fewer, lower the number in the same change |
+| `scripts/lint-baseline.json` | Maximum ruff, mypy, eslint and bandit findings, with the exact args and tool version: backend ruff and mypy, `scripts/` ruff (0), mypy for each package (0), eslint over `frontend/src/` (0), and bandit MEDIUM+ over the backend and the packages (0 each) | Fails above the maximum. Raising it needs `Ratchet-Exempt`. When a run finds fewer, lower the number in the same change |
 | `scripts/gate-scope-floors.json` | Minimum counts per step, and the named known gaps of `gate-scope` | A new gap fails, and so does a listed gap that has been closed but not struck off |
 | `scripts/contract-parity.json` | Known enumeration divergences | The list only shrinks |
 
@@ -162,18 +167,20 @@ Each file's `_comment` records when, and at which commit, its numbers were measu
 
 ### 5.1 CI (`.github/workflows/ci.yml`)
 
-One job, on every push and on pull requests to `main`:
+One job, on every push, on pull requests to `main`, and weekly on a schedule (so an advisory
+published since the last push fails the dependency audits without waiting for one):
 
 1. Check out with full history. The register cites some claims at the revision where they were
    made (`file@rev:line`), and a shallow clone cannot verify those.
 2. Set up Python 3.12 and Node 20; cache the benchmark data (keyed on the pre-registrations).
 3. Build `backend/.venv` (backend plus `causal-core` and `causal-decision`) and
-   `packages/causal-core/.venv` (the three packages with their test extras); `npm ci`.
+   `packages/causal-core/.venv` (the three packages with their test extras), each after
+   upgrading pip, which the gate's pip-audit audits with the rest; `npm ci`.
 4. **Licence gate**: `check_licenses.py` for `causal-core`, `causal-mcp` and `causal-decision`
    (runtime dependencies must be permissive).
 5. Run `.gnomon/ci.sh`, teeing its log, and act on its exit code (§2): 1 fails the job, and so
    does 2, because in CI a step that could not be measured means the environment above is
-   broken. 3 (docs owed a re-read) is annotated as a warning and does not block a merge.
+   broken, or an advisory database was unreachable and the dependency audit did not happen. 3 (docs owed a re-read) is annotated as a warning and does not block a merge.
 6. Upload the gate log as an artifact.
 
 The job has a 75-minute timeout.
@@ -188,8 +195,9 @@ environment.
 
 ### 5.3 Not in CI
 
-Security scanning (Bandit, pip-audit, container scans: register `security-scanning-not-in-ci`),
-TLC model checking of `specs/guardian_policy.tla` (register `tla-spec-not-checked`), Playwright,
+Container image scans, a release SBOM, DAST and hash-pinned Python installs (register
+`supply-chain-scanning-not-in-ci`; bandit, the secret scan and the dependency audits are in the
+gate, §2), TLC model checking of `specs/guardian_policy.tla` (register `tla-spec-not-checked`), Playwright,
 and any performance or load test.
 
 ---
