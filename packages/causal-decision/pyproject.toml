@@ -57,7 +57,7 @@ strict = true
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["scipy.*", "pandas.*"]
+module = ["scipy.*", "pandas.*", "networkx.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
@@ -65,4 +65,5 @@ testpaths = ["tests"]
 addopts = ["--tb=short", "-q"]
 markers = [
     "d0: the pre-registered decision-table gate (benchmarks/d0-decision-policy/PRE-REGISTRATION.md)",
+    "a0: the pre-registered assumption-impact gate (benchmarks/a0-assumption-impact/PRE-REGISTRATION.md)",
 ]

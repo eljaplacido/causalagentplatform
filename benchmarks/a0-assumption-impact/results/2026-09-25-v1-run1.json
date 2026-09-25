@@ -1,0 +1,38 @@
+{
+  "suite": "A0",
+  "prereg_sha256": "sha256:31f69f3c8492b3240d954b121c17e8f32c3433bf3afae2e6d35faed49636fc6c",
+  "prereg_version": 1,
+  "git": "7528229c8d8ec377e9317d282597862dc2004d70-dirty",
+  "cases": 400,
+  "by_edit": {
+    "remove_directed": 91,
+    "add_directed": 77,
+    "reverse_directed": 71,
+    "add_bidirected": 90,
+    "remove_bidirected": 71
+  },
+  "by_oracle": {
+    "valid": 349,
+    "invalid": 51
+  },
+  "agreement": 1.0,
+  "unverified": 0,
+  "mismatches": [],
+  "non_backdoor_old_graphs_skipped": {
+    "id_general": 56,
+    "not_identified": 29,
+    "iv": 5,
+    "frontdoor": 2
+  },
+  "property_violations": [],
+  "seeded_defects_caught": {
+    "diff_drops_removed": true,
+    "ignore_bidirected": true,
+    "new_set_valid": true,
+    "strategy_only": true
+  },
+  "failures": [
+    "only 51 invalid cases (< min_per_class 60): the gate did not look at both"
+  ],
+  "passed": false
+}
