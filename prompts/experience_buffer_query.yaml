@@ -21,7 +21,7 @@ context: |
   relevance. Never extrapolate causal paths from experience to a new context
   without re-grounding in current evidence.
 
-skill: |
+skill_prompt: |
   Re-rank the following candidate prior incidents by relevance to the current incident:
 
   Current incident:

@@ -19,7 +19,7 @@ context: |
   Drift classification drives downstream actions: CRITICAL and HIGH severity
   trigger human escalation; MEDIUM triggers graph review; LOW is logged only.
 
-skill: |
+skill_prompt: |
   Interpret the following drift detection results:
 
   Feature: {{feature_name}}

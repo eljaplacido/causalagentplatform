@@ -19,7 +19,7 @@ context: |
   Explanations are persona-targeted. The same result gets different
   narrative treatment depending on the audience.
 
-skill: |
+skill_prompt: |
   Generate an explanation for the following result:
 
   Simulation/recommendation result:

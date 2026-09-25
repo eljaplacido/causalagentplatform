@@ -22,7 +22,7 @@ context: |
   - CHAOTIC: No discernible cause-effect. Must act-sense-respond. Human escalation required.
   - DISORDER: Cannot yet determine which domain applies. Gather more signal.
 
-skill: |
+skill_prompt: |
   Classify the following problem description into a Cynefin domain.
 
   Problem: {{description}}

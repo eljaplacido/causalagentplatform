@@ -16,7 +16,7 @@ context: |
   Never extrapolate beyond the graph structure or invent causal paths.
   All estimates must report uncertainty intervals — point estimates alone are rejected.
 
-skill: |
+skill_prompt: |
   Estimate the counterfactual effect of the following intervention:
 
   Intervention: do({{treatment_variable}} = {{treatment_value}})

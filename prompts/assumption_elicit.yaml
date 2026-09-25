@@ -17,7 +17,7 @@ context: |
   pass Guardian approval before influencing the causal graph.
   Never encode assumptions as facts. Assumptions must be falsifiable.
 
-skill: |
+skill_prompt: |
   Elicit domain expert assumptions relevant to this causal analysis:
 
   Analysis context: {{analysis_context}}
