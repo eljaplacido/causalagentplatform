@@ -36,7 +36,10 @@ def twfe_static() -> Iterator[None]:
         )
 
         def within(a: np.ndarray) -> np.ndarray:
-            return a - a.mean(axis=1, keepdims=True) - a.mean(axis=0, keepdims=True) + a.mean()
+            out: np.ndarray = (
+                a - a.mean(axis=1, keepdims=True) - a.mean(axis=0, keepdims=True) + a.mean()
+            )
+            return out
 
         dd, yy = within(d), within(panel.y)
         beta = float((dd * yy).sum() / (dd * dd).sum())
