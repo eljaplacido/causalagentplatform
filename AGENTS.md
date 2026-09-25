@@ -19,7 +19,7 @@ interval and docs marking a phase finished over them.
 | `packages/causal-mcp` | The MCP server for the kernel. The one agents should use. |
 | `backend/` | FastAPI platform (governance, semantic layer, API). Its causal skills delegate to the kernel. `backend/mcp_server` is the **legacy** MCP server, being deprecated. |
 | `frontend/` | Next.js UI. |
-| `benchmarks/` | Pre-registered correctness gates (T0, T2, T3, T4, D0) and every run's result. |
+| `benchmarks/` | Pre-registered correctness gates (T0, T2–T8, D0, A0) and every run's result. |
 | `conformance/` | The claim contract's schemas and the register of known-false claims. |
 | `.gnomon/` | The agent harness surface: roles, tools, skills, and the gate. |
 
@@ -44,11 +44,16 @@ interval and docs marking a phase finished over them.
    `scripts/status_claims.py`. If you move a cited line, re-cite it. An entry leaves only by being
    implemented (move it to `left_the_list` with `fixed_in` and `pinned_by`) or retracted, never by
    being dropped.
-5. **Done is `.gnomon/ci.sh`.** It runs the backend suite and coverage floor, lint and type
-   ratchets, the frontend, every package suite (with the T0/T4/D0 gates, and T2/T3 when their data
-   is cached), gate scope, status claims, contract parity and doc reconciliation, and prints a
-   per-step table. Paste the table. A SKIPPED step checked nothing.
-6. **Tests assert known truth.** A test of a causal number compares against data simulated from a
+5. **Done is `.gnomon/ci.sh`** (or `septacore check`, which runs it). It runs the backend suite
+   and coverage floor, lint and type ratchets, the frontend, every package suite (with the T0,
+   T4–T8, D0 and A0 gates, and T2/T3 when their data is cached), gate scope, status claims,
+   contract parity, doc figures and doc reconciliation, and prints a per-step table. Paste the
+   table. Exit 0 passed, 1 failed, 2 not measured (a SKIPPED step checked nothing), 3 docs owed a
+   re-read. Only 0 is done.
+6. **Work comes from the ledger.** `septacore ready` lists open work from `.beads/issues.jsonl`,
+   each bead citing its provenance (usually a register id). Claim before starting; close only at
+   exit 0.
+7. **Tests assert known truth.** A test of a causal number compares against data simulated from a
    structural model whose effect you set, never against what the code returned last time.
 
 ## Where the details are
@@ -60,7 +65,7 @@ and each one is loaded by gnomon when a task matches it, but any agent can read 
 - `adding-an-estimator.md` — where a new method goes and what it ships with
 - `benchmark-discipline.md` — pre-registration, result files, seeded defects
 - `register-hygiene.md` — adding, re-citing and closing register entries
-- `verifying-changes.md` — what ci.sh runs, the ratchets, running pieces directly
+- `verifying-changes.md` — what ci.sh runs, its exit codes, the ratchets, the ledger
 - `writing-tests.md`, `secrets.md`
 
 Setup and contribution workflow: [`CONTRIBUTING.md`](CONTRIBUTING.md) and
