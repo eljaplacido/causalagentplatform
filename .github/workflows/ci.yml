@@ -77,20 +77,21 @@ jobs:
           packages/causal-core/.venv/bin/python packages/causal-core/scripts/check_licenses.py causal-decision
 
       - name: Run the gate
-        run: bash .gnomon/ci.sh 2>&1 | tee ci-gate.log; exit "${PIPESTATUS[0]}"
-
-      - name: No unexpected skips
-        # ci.sh skips a step when its toolchain is absent. Locally that is honest; in CI
-        # it would mean the environment above is broken, so every skip must be named here.
-        env:
-          ALLOWED_SKIPS: "frontend-eslint"
+        # ci.sh's exit contract: 0 passed, 1 a blocking step failed, 2 could not measure
+        # (a step's toolchain is absent -- in CI that means the environment above is
+        # broken), 3 an advisory regressed (documents drifted from the code). 1 and 2 fail
+        # the build; 3 is annotated, so drift is visible on the PR without blocking a merge
+        # -- the SeptaCore loop (`septacore check`) is where it gets worked down.
         run: |
-          unexpected=$(awk '/═══ ci.sh summary ═══/{s=1} s && $2=="SKIPPED"{print $1}' ci-gate.log \
-                       | grep -vxF -f <(tr ' ' '\n' <<<"$ALLOWED_SKIPS") || true)
-          if [ -n "$unexpected" ]; then
-            echo "::error::steps skipped in CI: $unexpected"
-            exit 1
-          fi
+          set +e
+          bash .gnomon/ci.sh 2>&1 | tee ci-gate.log
+          rc="${PIPESTATUS[0]}"
+          case "$rc" in
+            0) ;;
+            3) echo "::warning::documents drifted from the code they describe (see doc-reconciliation in the summary)" ;;
+            2) echo "::error::the gate could not measure a step -- a toolchain is missing from this environment"; exit 2 ;;
+            *) exit "$rc" ;;
+          esac
 
       - name: Keep the gate log
         if: always()

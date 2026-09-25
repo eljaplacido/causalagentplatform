@@ -41,6 +41,7 @@ record() {  # name status detail seconds
     local colour="$GREEN"
     [ "$2" = "FAIL" ] && colour="$RED"
     [ "$2" = "SKIPPED" ] && colour="$YELLOW"
+    [ "$2" = "ADVISORY" ] && colour="$YELLOW"
     printf '%s%-8s%s %-20s %s\n' "$colour" "$2" "$NC" "$1" "$3"
 }
 show_tail() { echo "   ── last lines of $1 ──"; tail -n "${2:-25}" "$1" | sed 's/^/   | /'; }
@@ -394,7 +395,14 @@ if indented "$PY" scripts/doc_reconciliation.py; then
     tracked="$(grep -oE '[0-9]+ document\(s\) tracked' "$LOG_DIR/.indented" | grep -oE '[0-9]+')"
     moved="$(grep -oE '[0-9]+ owed a re-read' "$LOG_DIR/.indented" | grep -oE '[0-9]+' || true)"
     never="$(grep -oE '[0-9]+ never read against the code' "$LOG_DIR/.indented" | grep -oE '[0-9]+' || true)"
-    record doc-reconciliation PASS "${tracked:-?} docs tracked; owed a re-read: ${moved:-0} (code moved) + ${never:-0} (never read) -- reported, not gated" $((SECONDS - t0))
+    owed=$(( ${moved:-0} + ${never:-0} ))
+    if [ "$owed" -gt 0 ]; then
+        # Drift, not failure: the code a document describes moved since it was last read.
+        # ADVISORY makes the gate exit 3 ("regressed") so it is acted on, not merely listed.
+        record doc-reconciliation ADVISORY "${tracked:-?} docs tracked; owed a re-read: ${moved:-0} (code moved) + ${never:-0} (never read) -- read them, then scripts/doc_reconciliation.py --bless" $((SECONDS - t0))
+    else
+        record doc-reconciliation PASS "${tracked:-?} docs tracked; every one read against the code it describes" $((SECONDS - t0))
+    fi
 else
     record doc-reconciliation FAIL "$(grep -m1 FAIL "$LOG_DIR/.indented" | sed 's/^ *FAIL *//' | cut -c1-150)" $((SECONDS - t0))
 fi
@@ -402,16 +410,30 @@ fi
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""
 echo "═══ ci.sh summary ═══"
-fails=0; skips=0
+fails=0; skips=0; advisories=0
 printf '%-20s %-8s %5s  %s\n' STEP STATUS SECS DETAIL
 for i in "${!STEP_NAMES[@]}"; do
     printf '%-20s %-8s %5s  %s\n' "${STEP_NAMES[$i]}" "${STEP_STATUS[$i]}" "${STEP_SECS[$i]}" "${STEP_DETAIL[$i]}"
     [ "${STEP_STATUS[$i]}" = "FAIL" ] && fails=$((fails + 1))
     [ "${STEP_STATUS[$i]}" = "SKIPPED" ] && skips=$((skips + 1))
+    [ "${STEP_STATUS[$i]}" = "ADVISORY" ] && advisories=$((advisories + 1))
 done
 echo ""
+# The exit contract (SeptaCore SPEC-0012 DG-7, which took it from this operator's own
+# verify.sh): 0 every step ran and passed; 1 a blocking step failed; 2 could not measure
+# -- a step was SKIPPED because its toolchain is absent, and an unmeasured step is not a
+# passed one; 3 an advisory regressed (documents drifted from the code they describe).
+passed=$(( ${#STEP_NAMES[@]} - fails - skips - advisories ))
 if [ "$fails" -gt 0 ]; then
-    echo "${RED}❌ ${fails} step(s) FAILED${NC}, ${skips} skipped, $((${#STEP_NAMES[@]} - fails - skips)) passed"
+    echo "${RED}❌ ${fails} step(s) FAILED${NC}, ${skips} not measured, ${advisories} advisory, ${passed} passed"
     exit 1
 fi
-echo "${GREEN}✅ all steps that ran passed${NC} -- ${skips} skipped (named above), $((${#STEP_NAMES[@]} - skips)) passed"
+if [ "$skips" -gt 0 ]; then
+    echo "${YELLOW}⚠ NOT MEASURED: ${skips} step(s) could not run (named above)${NC} -- ${passed} passed, ${advisories} advisory"
+    exit 2
+fi
+if [ "$advisories" -gt 0 ]; then
+    echo "${YELLOW}△ REGRESSED: ${advisories} advisory step(s) (named above)${NC} -- ${passed} passed"
+    exit 3
+fi
+echo "${GREEN}✅ every step ran and passed${NC} -- ${passed} passed"
