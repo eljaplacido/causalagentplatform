@@ -90,7 +90,7 @@ def _slim_output_schema(server: MCPServer, name: str) -> None:
     conformance/causal-claims already publish in full. Input schemas keep every word,
     because that is what an agent reads to call a tool correctly.
     """
-    tool = server._tool_manager.get_tool(name)  # noqa: SLF001 -- mcp 2.2 exposes no setter
+    tool = server._tool_manager.get_tool(name)  # private: mcp 2.2 exposes no setter
     if tool is not None and tool.output_schema is not None:
         tool.__dict__["output_schema"] = _strip_prose(tool.output_schema)
 

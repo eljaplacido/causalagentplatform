@@ -184,3 +184,21 @@ def test_the_tool_listing_stays_small_enough_for_line_limited_clients() -> None:
     decide = next(t for t in listed if t.name == "causal_decide")
     assert "segment_by" in (decide.description or ""), "the tool's own prose is untouched"
     assert "title" in str(decide.input_schema), "input schemas are not slimmed"
+
+
+def test_a_staggered_rollout_can_be_analysed_and_decided_over_mcp() -> None:
+    from causal_core.bench import t5
+
+    frame = t5.simulate(t5.DESIGNS["staggered_constant"], 8, 0.5, np.random.default_rng(5))
+    data = {c: frame[c].tolist() for c in frame}
+    common = {"graph": t5.GRAPH, "treatment": "rollout", "outcome": "latency", "data": data,
+              "design": "difference_in_differences", "unit": "unit", "time": "period",
+              "estimand": "att"}
+    analysed = tools.causal_analyze(**common)
+    assert analysed.outcome.kind == "result", analysed.report
+    assert analysed.outcome.certificate.tier.value == "C"
+    assert analysed.outcome.event_study
+
+    decided = tools.causal_decide(**common, action="keep the rollout", direction="increase",
+                                  minimum_worthwhile_effect=0.5)
+    assert decided.decision.verdict.value == "act_with_approval", decided.explanation

@@ -41,6 +41,7 @@ from causal_core.refute import implied_independences
 from pydantic import BaseModel, Field
 
 Cell = float | int | str | bool | None
+Design = Literal["observational", "randomized", "difference_in_differences"]
 
 
 class AnalyzeResponse(BaseModel):
@@ -114,7 +115,7 @@ def load_table(data: dict[str, list[Cell]] | None, data_path: str | None) -> pd.
 def _query(
     treatment: str,
     outcome: str,
-    design: Literal["observational", "randomized"],
+    design: Design,
     adjust_for: list[str] | None,
     instruments: list[str] | None,
     treatment_proxies: list[str] | None,
@@ -123,8 +124,15 @@ def _query(
     treatment_levels: list[float] | None,
     expected_treated_share: float | None,
     segment_by: list[str] | None = None,
+    *,
+    unit: str | None = None,
+    time: str | None = None,
+    estimand: Literal["ate", "att"] = "ate",
 ) -> CausalQuery:
     return CausalQuery(
+        unit=unit,
+        time=time,
+        estimand=estimand,
         treatment=treatment,
         outcome=outcome,
         design=design,
@@ -145,7 +153,7 @@ def causal_analyze(
     outcome: str,
     data: dict[str, list[Cell]] | None = None,
     data_path: str | None = None,
-    design: Literal["observational", "randomized"] = "observational",
+    design: Design = "observational",
     adjust_for: list[str] | None = None,
     instruments: list[str] | None = None,
     treatment_proxies: list[str] | None = None,
@@ -154,6 +162,9 @@ def causal_analyze(
     treatment_levels: list[float] | None = None,
     expected_treated_share: float | None = None,
     segment_by: list[str] | None = None,
+    unit: str | None = None,
+    time: str | None = None,
+    estimand: Literal["ate", "att"] = "ate",
     policy: dict[str, Any] | None = None,
 ) -> AnalyzeResponse:
     """Estimate the effect of `treatment` on `outcome`, or return a typed refusal saying why not.
@@ -176,6 +187,11 @@ def causal_analyze(
     you make a claim about a segment, and if `heterogeneity.differs` is false, say the
     segments could not be told apart rather than comparing them.
 
+    **Staggered rollouts** (panel data: the same units observed over periods, some treated
+    from some period on): `design="difference_in_differences"` with `unit`, `time` and
+    `estimand="att"`. Identification rests on parallel trends, which no graph can state, so
+    the certificate is tier C and a failed pre-trends test makes the result `contested`.
+
     `graph` syntax: `Z -> X -> Y; Z -> Y`; `X <-> Y` means an unmeasured common cause;
     `latent U` declares an unmeasured node. Data: either `data` as {column: [values]} or
     `data_path` (CSV / Parquet / JSON under the server's allowed data roots).
@@ -193,6 +209,9 @@ def causal_analyze(
             treatment_levels,
             expected_treated_share,
             segment_by,
+            unit=unit,
+            time=time,
+            estimand=estimand,
         )
         pol = AnalysisPolicy.model_validate(policy or {})
         frame = load_table(data, data_path)
@@ -213,7 +232,7 @@ def causal_identify(
     graph: str,
     treatment: str,
     outcome: str,
-    design: Literal["observational", "randomized"] = "observational",
+    design: Design = "observational",
     adjust_for: list[str] | None = None,
     instruments: list[str] | None = None,
     treatment_proxies: list[str] | None = None,
@@ -350,7 +369,7 @@ if HAS_DECISION:
         units_per_day: float | None = None,
         population: str | None = None,
         horizon: str | None = None,
-        design: Literal["observational", "randomized"] = "observational",
+        design: Design = "observational",
         adjust_for: list[str] | None = None,
         instruments: list[str] | None = None,
         treatment_proxies: list[str] | None = None,
@@ -358,6 +377,9 @@ if HAS_DECISION:
         negative_control_outcomes: list[str] | None = None,
         expected_treated_share: float | None = None,
         segment_by: list[str] | None = None,
+        unit: str | None = None,
+        time: str | None = None,
+        estimand: Literal["ate", "att"] = "ate",
         policy: dict[str, Any] | None = None,
         decision_policy: dict[str, Any] | None = None,
     ) -> DecideResponse:
@@ -400,6 +422,9 @@ if HAS_DECISION:
                 None,
                 expected_treated_share,
                 segment_by,
+                unit=unit,
+                time=time,
+                estimand=estimand,
             )
             request = DecisionRequest(
                 action=action,
