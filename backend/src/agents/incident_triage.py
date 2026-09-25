@@ -24,6 +24,7 @@ Implemented skills:
 
 from __future__ import annotations
 
+import re
 from typing import Any
 from uuid import uuid4
 
@@ -400,8 +401,10 @@ class IncidentTriageAgent(BaseAgent):
         """
         Classify an incident into a Cynefin domain.
 
-        Production: integrates cynepic-router Rust crate.
-        Heuristic stub: uses signal counts to infer complexity.
+        A HEURISTIC STUB, and measured as one: on an external 456-item labelled
+        corpus it scores macro F1 0.07, below always guessing the most common
+        domain (register: cynefin-classifier-keyword-stub). Nothing should rely on
+        its label for safety; see that entry before routing anything on it.
         """
         signals = inputs.get("signals", {})
         assumptions_count = int(signals.get("active_assumptions", 0))
@@ -412,7 +415,14 @@ class IncidentTriageAgent(BaseAgent):
         complex_keywords = {"intermittent", "unclear", "multiple", "correlation", "pattern"}
         complicated_keywords = {"deployment", "config", "latency", "cpu", "memory", "timeout"}
 
-        desc_words = set(description.split())
+        # Match keywords -- single words and phrases alike -- against the text as
+        # space-padded lowercase tokens. `set(description.split())` could never
+        # contain "never seen" or "total outage", and "cascading," missed "cascading".
+        text = f" {' '.join(re.findall(r'[a-z0-9]+', description))} "
+        desc_words = {
+            k for k in chaotic_keywords | complex_keywords | complicated_keywords
+            if f" {k} " in text
+        }
         if desc_words & chaotic_keywords:
             return {"domain": CynefinDomain.CHAOTIC, "confidence": 0.85}
         if desc_words & complex_keywords or assumptions_count == 0:

@@ -339,3 +339,16 @@ async def test_intervention_estimate_is_not_confidence_only(db_engine: object) -
         "Investigate and mitigate the suspected causes path" in action
         for action in ranked_actions
     )
+
+
+@pytest.mark.parametrize(
+    "description",
+    ["never seen this before", "a total outage in eu-west", "cascading, then silence"],
+)
+async def test_each_chaotic_keyword_is_seen_on_its_own(description: str) -> None:
+    """The old check split on whitespace, so the two-word keywords could never match
+    and punctuation hid the single ones; the test above passed only because its
+    sentence also contained a bare "cascading"."""
+    agent = IncidentTriageAgent()
+    out = await agent._skill_cynefin_classify({"description": description, "signals": {}})
+    assert out["domain"] is CynefinDomain.CHAOTIC

@@ -652,7 +652,7 @@
       "leaves_by": {
         "kind": "test",
         "path": "backend/tests/integration/test_calibration_evidence.py",
-        "asserts": "a stored body of follow-ups yields non-null rates, and docs/CURRENT_STAGE.md cites a measured calibration figure with the run that produced it"
+        "asserts": "a pre-registered minimum number of decidable follow-ups exists, each rate is reported with an interval, 'could not resolve' is reported separately from 'no difference' (a paired comparison with too few discordant outcomes cannot reach significance), and docs/CURRENT_STAGE.md cites a measured calibration figure with the run that produced it"
       }
     },
     {
@@ -918,7 +918,7 @@
           "says": "SCM used for effect estimation when approved fragment available"
         }
       ],
-      "reality": "_simulate_single_action calls effect_estimate with data=None, and the kernel refuses without data, so no action ever gets an estimate. Under an APPROVED fragment each action's confidence is halved (action.confidence * 0.5, never a failure). Without a fragment it keeps its own confidence and fails below 0.3. The lookahead is therefore arithmetic on the recommendations' own confidences. Under an APPROVED fragment an action needs confidence >= 0.8 to clear the node's 0.4 commit threshold, while without one it needs 0.4: an approved causal model makes the planner escalate more often, not less. SIMULATED_NOT_EXECUTED outcomes are not surfaced, and planning failure sets requires_human_review, not the CHAOTIC domain.",
+      "reality": "_simulate_single_action calls effect_estimate with data=None, and the kernel refuses without data, so no action ever gets an estimate. Under an APPROVED fragment each action's confidence is halved (action.confidence * 0.5, never a failure). Without a fragment it keeps its own confidence and fails below 0.3. The lookahead is therefore arithmetic on the recommendations' own confidences. Under an APPROVED fragment an action needs confidence >= 0.8 to clear the node's 0.4 commit threshold, while without one it needs 0.4: an approved causal model makes the planner escalate more often, not less. SIMULATED_NOT_EXECUTED outcomes are not surfaced, and planning failure sets requires_human_review, not the CHAOTIC domain. When the kernel refuses, the refusal is returned as not-a-failure and the action proceeds at half its prior confidence: a refusal is silently turned into a smaller number instead of reaching the caller.",
       "evidence": [
         {
           "at": "backend/src/orchestration/planning.py:335",
@@ -1179,6 +1179,41 @@
         "kind": "retraction",
         "path": "backend/mcp_server",
         "asserts": "the directory, its console script and its stdio test are removed, and gate_scope's mcp-tools check inspects causal-mcp's TOOLS instead"
+      }
+    },
+    {
+      "id": "cynefin-classifier-keyword-stub",
+      "status": "declared-not-implemented",
+      "capability": "Cynefin-domain classification that routing, human escalation and Guardian rules can rely on",
+      "claimed_in": [
+        {
+          "at": "docs/AGENTS.md:22",
+          "says": "Agents self-classify the domain complexity of a query before selecting a reasoning strategy."
+        },
+        {
+          "at": "docs/AGENTS.md:209",
+          "says": "Cynefin domain classification with confidence"
+        },
+        {
+          "at": "docs/AGENTS.md:559",
+          "says": "Domain confidence > 0.7"
+        },
+        {
+          "at": "docs/UIX.md:141",
+          "says": "when the Cynefin domain classification is CHAOTIC"
+        }
+      ],
+      "reality": "IncidentTriageAgent._skill_cynefin_classify is a keyword stub. Run on an external labelled corpus of 456 incident-style queries (the CARF Under Test lab's spine/test_set.jsonl, 5 domains), it labels 454 of 456 COMPLEX when no assumptions are active and 449 COMPLICATED when one is: macro F1 0.07, below always guessing the most common domain (0.11), and 0 of 50 CHAOTIC items recalled -- so the CHAOTIC-to-human escalation the docs describe depends on keywords that almost never fire; a TF-IDF naive Bayes baseline reaches 0.92 on the same corpus. It never outputs CLEAR or DISORDER, so the DisorderProtocol branch is unreachable from it. Its confidences are constants (0.60-0.85), so 'domain confidence > 0.7' measures which branch fired, not how likely the label is. (The two-word keywords 'never seen' and 'total outage' could never match until 2026-09-25.)",
+      "evidence": [
+        {
+          "at": "backend/src/agents/incident_triage.py:404",
+          "says": "A HEURISTIC STUB, and measured as one"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/integration/test_cynefin_routing_gate.py",
+        "asserts": "a pre-registered routing gate on a hand-labelled incident-phrasing set reports macro F1 against a most-common-class and a TF-IDF naive-Bayes baseline, per-domain recall with a CHAOTIC floor, calibration with per-bin counts, and the share of inputs it commits to -- and escalation of high-severity or irreversible incidents does not depend on the label at all"
       }
     }
   ],
