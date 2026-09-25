@@ -262,6 +262,9 @@ CREATE TABLE IF NOT EXISTS session_state (
     created_at           TEXT NOT NULL,
     updated_at           TEXT NOT NULL
 );
+-- 008_session_state.sql / 009_incidents.sql are the PostgreSQL versions of these two.
+CREATE INDEX IF NOT EXISTS ix_session_state_agent_updated
+    ON session_state (agent_id, updated_at DESC);
 CREATE TABLE IF NOT EXISTS incidents (
     id                       TEXT PRIMARY KEY,
     title                    TEXT NOT NULL,
@@ -518,18 +521,19 @@ class CloudSqlFactory:
         """
         Create all tables for local dev (SQLite) and run ORM Base.metadata.
 
-        For local SQLite: also runs a raw DDL script that matches the
-        PostgreSQL migration schema (001_initial.sql adapted for SQLite).
+        On a SQLite engine: runs SQLITE_DDL, the SQLite rendering of the
+        PostgreSQL migrations.
 
-        In production, migrations are managed by 001_initial.sql and
-        subsequent migration scripts run by the CI/CD pipeline.
+        On PostgreSQL the schema is src/db/migrations/*.sql, applied in order by
+        whoever provisions the database (docker-compose mounts them as init
+        scripts); SQLITE_DDL is never run there. The choice is by the engine's
+        dialect, not by ENV: SQLite DDL sent to PostgreSQL fails, whatever ENV says.
         """
         from sqlalchemy import text as sa_text
 
         engine = cls.get_engine()
-        env = _get_env()
 
-        if env == "local":
+        if engine.dialect.name == "sqlite":
             async with engine.begin() as conn:
                 for stmt in ddl_statements(SQLITE_DDL):
                     await conn.execute(sa_text(stmt))

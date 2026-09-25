@@ -234,7 +234,7 @@
       "capability": "Review queue ordered by risk tier, showing who submitted each item",
       "claimed_in": [
         {
-          "at": "backend/src/api/governance.py:394",
+          "at": "backend/src/api/governance.py:395",
           "says": "summary=\"List pending drafts ordered by risk tier\""
         },
         {
@@ -245,7 +245,7 @@
       "reality": "ReviewQueueItem carries no risk tier and no submitter, the queue is not ordered by risk, and the UI fills riskTier \"MEDIUM\" and submittedBy \"system\" for every item.",
       "evidence": [
         {
-          "at": "backend/src/api/governance.py:164",
+          "at": "backend/src/api/governance.py:165",
           "says": "class ReviewQueueItem(BaseModel):"
         },
         {
@@ -346,7 +346,7 @@
       "reality": "The semantic layer (fragments, edges) is stored through SQLAlchemy (SQLite/PostgreSQL); Neo4j code exists only for the experience buffer and drift alerts, is exercised only against mocks, and no d-separation or path query runs in Neo4j.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:559",
+          "at": "backend/src/semantic_layer/registry.py:563",
           "says": "FROM graph_fragments"
         }
       ],
@@ -366,7 +366,7 @@
           "says": "Ingestion Bus (Kafka)"
         },
         {
-          "at": "docs/DATA_LAYER.md:378",
+          "at": "docs/DATA_LAYER.md:395",
           "says": "3.3 Kafka (Event Streaming)"
         },
         {
@@ -556,11 +556,11 @@
       "capability": "Agent evaluation endpoints (consistency, calibration, decision quality) measure the running platform",
       "claimed_in": [
         {
-          "at": "backend/src/api/platform.py:723",
+          "at": "backend/src/api/platform.py:752",
           "says": "    summary=\"Agent confidence calibration probe\","
         },
         {
-          "at": "backend/src/api/platform.py:765",
+          "at": "backend/src/api/platform.py:794",
           "says": "    summary=\"Composite decision quality index\","
         },
         {
@@ -579,7 +579,7 @@
       "reality": "None of the three observes an agent. /evaluation/consistency scores num_runs identical EMPTY recommendation lists against each other, so the variance it reports is 0 by construction whatever the platform is doing. /evaluation/calibration scores the confidences in the request body, and CalibrationProbe states it uses their variance as a proxy because there is no ground truth -- calibration needs realized outcomes, and nothing records one. /evaluation/decision-quality combines four numbers taken as query parameters, defaulting to 0.75/0.05/0.80/0.70, so its 'index' is whatever the caller passes. The module docstring claimed 'No static or mock values' until 2026-09-24; it now names these three as excluded.",
       "evidence": [
         {
-          "at": "backend/src/api/platform.py:703",
+          "at": "backend/src/api/platform.py:732",
           "says": "    mock_recommendations: list[list[Any]] = [[] for _ in range(num_runs)]"
         },
         {
@@ -587,7 +587,7 @@
           "says": "        - Variance of confidence scores as a proxy for calibration"
         },
         {
-          "at": "backend/src/api/platform.py:771",
+          "at": "backend/src/api/platform.py:800",
           "says": "    calibration_score: float = Query(default=0.70, ge=0.0, le=1.0),"
         }
       ],
@@ -679,41 +679,6 @@
       }
     },
     {
-      "id": "postgres-schema-missing-session-incidents",
-      "status": "declared-not-implemented",
-      "capability": "Session state and incidents persisted in PostgreSQL",
-      "claimed_in": [
-        {
-          "at": "docs/AGENTS.md:582",
-          "says": "| **Session memory** | PostgreSQL / Cloud SQL + in-process hot cache |"
-        },
-        {
-          "at": "docs/DATA_LAYER.md@13e7d92:288",
-          "says": "- User session history"
-        }
-      ],
-      "reality": "session_state and incidents are created only by the SQLite DDL in backend/src/db/factory.py. The PostgreSQL migrations (001-004) never create them, and CloudSqlFactory.init_db runs the DDL only when ENV=local, so on a PostgreSQL deployment session persistence and the incidents API would fail with a missing table. api/incidents.py also writes with INSERT OR REPLACE, which PostgreSQL does not accept. Neither schema has the evidence, preference or simulation-result tables DATA_LAYER.md used to list. The suite runs only against SQLite, so nothing notices.",
-      "evidence": [
-        {
-          "at": "backend/src/db/factory.py:257",
-          "says": "CREATE TABLE IF NOT EXISTS session_state ("
-        },
-        {
-          "at": "backend/src/db/factory.py:265",
-          "says": "CREATE TABLE IF NOT EXISTS incidents ("
-        },
-        {
-          "at": "backend/src/api/incidents.py:84",
-          "says": "\"INSERT OR REPLACE INTO incidents \""
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/integration/test_postgres_schema_parity.py",
-        "asserts": "the tables and columns created by applying backend/src/db/migrations/*.sql to PostgreSQL equal those of SQLITE_DDL, and a session snapshot and an incident round-trip through PostgreSQL"
-      }
-    },
-    {
       "id": "semantic-objects-mutated-in-place",
       "status": "declared-not-implemented",
       "capability": "Semantic objects are versioned: no in-place mutation, deprecate and replace",
@@ -738,11 +703,11 @@
       "reality": "Approval and rejection UPDATE the object's own row: promote_to_approved rewrites approval_status, approved_at, approved_by, guardian_verdict_ref and lineage, and reject_draft rewrites approval_status (to DEPRECATED) and lineage. The version column keeps its 1.0.0 default, because no code path increments it and no new row is written for a new version. The previous state survives only as lineage entries and audit_log rows. The interventions feedback endpoint likewise UPDATEs interventions in place.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:901",
+          "at": "backend/src/semantic_layer/registry.py:914",
           "says": "\"status\": \"APPROVED\","
         },
         {
-          "at": "backend/src/semantic_layer/registry.py:981",
+          "at": "backend/src/semantic_layer/registry.py:994",
           "says": ".values(approval_status=bindparam(\"status\"), lineage=bindparam(\"lineage\")),"
         }
       ],
@@ -773,7 +738,7 @@
       "reality": "Approval and rejection each append one step (APPROVED or REJECTED: actor, time, verdict id), and an edge keeps whatever lineage list its submitter sent. Nothing records the data source, the transformation steps or the policy rules into lineage, and no platform code constructs a LineageRecord. An entity's submitted lineage is not stored (the INSERT omits the column). Fragments had no lineage column at all until 006_graph_fragment_lineage.sql, so approving or rejecting one failed outright. The Guardian verdict, its cited rules, and the evidence and assumption ids are linked by reference, so the chain can be partly rebuilt by joins. Nothing shows that this satisfies EU AI Act Art. 13.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:869",
+          "at": "backend/src/semantic_layer/registry.py:882",
           "says": "select(t.c.lineage, t.c.approval_status, t.c.domain).where("
         },
         {
@@ -1026,7 +991,7 @@
           "says": "\"fastapi>=0.115,<0.142\","
         },
         {
-          "at": ".github/workflows/ci.yml:65",
+          "at": ".github/workflows/ci.yml:84",
           "says": "backend/.venv/bin/pip install -q -e packages/causal-core \\"
         }
       ],
@@ -1336,6 +1301,13 @@
       "fixed_in": "cd00985",
       "pinned_by": "backend/tests/guardian/test_signing_key_rotation.py",
       "note": "Left by retraction plus the start-up test the leaves_by names. docs/CYBERSECURITY.md 8.2 now states the supported mechanism: every secret is read by src/secret_source.py read_secret from NAME_FILE (a mounted secret file: Docker/Kubernetes secrets, a secret manager's CSI or file-mount driver) or NAME in the environment, never both; there is no built-in secret-manager client. GUARDIAN_SIGNING_KEY, GUARDIAN_SIGNING_KEYS_PREVIOUS, DATABASE_URL, NEO4J_PASSWORD and the three LLM API keys go through it; GOOGLE_APPLICATION_CREDENTIALS stays a path. Outside local development (ENV unset or 'local' is local, the rule factory.py uses to choose SQLite) the FastAPI lifespan refuses to start without a signing key of at least 32 bytes. Rotation: sign with the current key, verify against it and GUARDIAN_SIGNING_KEYS_PREVIOUS. Not built: a secret-manager client, scheduled rotation enforcement, in-platform audit of secret access. docker-compose.yml keeps the local-dev password in plain text, documented as the local-dev exception."
+    },
+    {
+      "id": "postgres-schema-missing-session-incidents",
+      "was": "session_state and incidents are created only by the SQLite DDL in backend/src/db/factory.py. The PostgreSQL migrations (001-004) never create them, and CloudSqlFactory.init_db runs the DDL only when ENV=local, so on a PostgreSQL deployment session persistence and the incidents API would fail with a missing table. api/incidents.py also writes with INSERT OR REPLACE, which PostgreSQL does not accept. Neither schema has the evidence, preference or simulation-result tables DATA_LAYER.md used to list. The suite runs only against SQLite, so nothing notices.",
+      "fixed_in": "2386e15",
+      "pinned_by": "backend/tests/integration/test_postgres_schema_parity.py",
+      "note": "Implemented. Migrations 008_session_state.sql and 009_incidents.sql create the two tables, mirroring SQLITE_DDL column for column (TIMESTAMPTZ times, JSONB payloads, the REVOKE/GRANT convention; neither is append-only, both are upserted). api/incidents.py upserts with INSERT ... ON CONFLICT (id) DO UPDATE, which both dialects accept, keeping the first created_at. The leaves_by test runs on PostgreSQL in the new gate step backend-pytest-postgres (tests/conftest.py builds the database from backend/src/db/migrations/*.sql when TEST_DATABASE_URL is set; CI provides a postgres:16-alpine service) and asserts the migrated schema's (table, column) pairs equal SQLITE_DDL's, and that a session snapshot and an incident round-trip. Not changed: the evidence, preference and simulation-result tables DATA_LAYER.md used to list exist in neither schema, and SQLITE_DDL still carries only three of the migrations' CHECK constraints and none of their RLS policies or grants; the parity test compares tables and columns, not types or constraints."
     }
   ]
 }

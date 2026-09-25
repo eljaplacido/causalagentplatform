@@ -22,6 +22,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
 from src.db.factory import CloudSqlFactory
+from src.db.types import TIMESTAMP, timestamp_text, typed_text
 
 log = structlog.get_logger(__name__)
 
@@ -114,10 +115,11 @@ class ModelStore:
         async with CloudSqlFactory.get_session_factory()() as session:
             try:
                 await session.execute(
-                    text(
+                    typed_text(
                         "INSERT INTO causal_model_versions "
                         "(digest, name, version, parent_digest, author_id, created_at, record) "
-                        "VALUES (:d, :n, :v, :p, :a, :at, :r)"
+                        "VALUES (:d, :n, :v, :p, :a, :at, :r)",
+                        at=TIMESTAMP,
                     ),
                     {
                         "d": version.digest,
@@ -160,10 +162,11 @@ class ModelStore:
     ) -> None:
         async with CloudSqlFactory.get_session_factory()() as session:
             await session.execute(
-                text(
+                typed_text(
                     "INSERT INTO decision_model_refs (entry_digest, model_name, model_version, "
                     " model_digest, verdict, action, query, unmeasured, recorded_at) "
-                    "VALUES (:e, :n, :v, :d, :verdict, :action, :q, :u, :at)"
+                    "VALUES (:e, :n, :v, :d, :verdict, :action, :q, :u, :at)",
+                    at=TIMESTAMP,
                 ),
                 {
                     "e": entry_digest,
@@ -204,7 +207,7 @@ class ModelStore:
                     json.loads(r["unmeasured"]) if isinstance(r["unmeasured"], str)
                     else r["unmeasured"]
                 ),
-                recorded_at=str(r["recorded_at"]),
+                recorded_at=timestamp_text(r["recorded_at"]) or "",
             )
             for r in rows
         ]

@@ -29,8 +29,14 @@ from src.api.interventions import (
 )
 from src.api.main import app
 from src.db.factory import CloudSqlFactory
+from src.db.types import TEXT_ARRAY, TIMESTAMP, typed_text
 
 pytestmark = pytest.mark.asyncio
+
+# Seed rows are bound with the column types (src/db/types.py): initiated_by and
+# approved_by are JSONB UserRefs in 001_initial.sql, the times TIMESTAMPTZ, and
+# feedback_loop_closed a BOOLEAN, so the same seeds insert on SQLite and PostgreSQL.
+_TESTER = json.dumps({"id": "tester", "email": "tester@test.com", "name": "Tester"})
 
 
 _MOCK_USER: dict[str, Any] = {
@@ -194,27 +200,29 @@ async def test_close_feedback_success(intv_client: AsyncClient, db_engine: objec
     async with CloudSqlFactory.get_session_factory()() as session:
         # Seed audit entry first (FOREIGN KEY requirement)
         await session.execute(
-            text(
+            typed_text(
                 "INSERT INTO audit_log (id, agent_id, action_type, payload_hash, "
                 "guardian_verdict, policy_rules_cited, created_at) "
-                "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)"
+                "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)",
+                rules=TEXT_ARRAY, ts=TIMESTAMP
             ),
             {"id": verdict_id, "agent": "tester", "action": "TEST", "hash": "abc",
-             "verdict": "APPROVED", "rules": "[]",
+             "verdict": "APPROVED", "rules": [],
              "ts": datetime.now(UTC).isoformat()},
         )
         # Seed intervention
         await session.execute(
-            text(
+            typed_text(
                 "INSERT INTO interventions (id, name, initiated_by, initiated_at, "
                 "approved_by, approval_timestamp, guardian_verdict_ref, expected_effect, "
                 "feedback_loop_closed, created_at) "
-                "VALUES (:id, :name, :by, :iat, :ab, :at, :gvr, :ee, 0, :ca)"
+                "VALUES (:id, :name, :by, :iat, :ab, :at, :gvr, :ee, FALSE, :ca)",
+                iat=TIMESTAMP, at=TIMESTAMP, ca=TIMESTAMP
             ),
             {
-                "id": intv_id, "name": "Test Rollback", "by": "tester",
+                "id": intv_id, "name": "Test Rollback", "by": _TESTER,
                 "iat": datetime.now(UTC).isoformat(),
-                "ab": "tester", "at": datetime.now(UTC).isoformat(),
+                "ab": _TESTER, "at": datetime.now(UTC).isoformat(),
                 "gvr": verdict_id,
                 "ee": json.dumps({"ate": 0.5, "expected_effect": 0.5}),
                 "ca": datetime.now(UTC).isoformat(),
@@ -241,26 +249,28 @@ async def test_close_feedback_already_closed(intv_client: AsyncClient, db_engine
     verdict_id = str(uuid.uuid4())
     async with CloudSqlFactory.get_session_factory()() as session:
         await session.execute(
-            text(
+            typed_text(
                 "INSERT INTO audit_log (id, agent_id, action_type, payload_hash, "
                 "guardian_verdict, policy_rules_cited, created_at) "
-                "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)"
+                "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)",
+                rules=TEXT_ARRAY, ts=TIMESTAMP
             ),
             {"id": verdict_id, "agent": "tester", "action": "TEST", "hash": "abc",
-             "verdict": "APPROVED", "rules": "[]",
+             "verdict": "APPROVED", "rules": [],
              "ts": datetime.now(UTC).isoformat()},
         )
         await session.execute(
-            text(
+            typed_text(
                 "INSERT INTO interventions (id, name, initiated_by, initiated_at, "
                 "approved_by, approval_timestamp, guardian_verdict_ref, expected_effect, "
                 "feedback_loop_closed, actual_effect, outcome_observed_at, created_at) "
-                "VALUES (:id, :name, :by, :iat, :ab, :at, :gvr, :ee, 1, :ae, :now, :ca)"
+                "VALUES (:id, :name, :by, :iat, :ab, :at, :gvr, :ee, TRUE, :ae, :now, :ca)",
+                iat=TIMESTAMP, at=TIMESTAMP, ca=TIMESTAMP, now=TIMESTAMP
             ),
             {
-                "id": intv_id, "name": "Already Closed", "by": "tester",
+                "id": intv_id, "name": "Already Closed", "by": _TESTER,
                 "iat": datetime.now(UTC).isoformat(),
-                "ab": "tester", "at": datetime.now(UTC).isoformat(),
+                "ab": _TESTER, "at": datetime.now(UTC).isoformat(),
                 "gvr": verdict_id, "ee": json.dumps({"ate": 0.3}),
                 "ae": json.dumps({"observed_value": 0.3}),
                 "now": datetime.now(UTC).isoformat(),
@@ -282,26 +292,28 @@ async def test_close_feedback_critical_deviation(intv_client: AsyncClient, db_en
     verdict_id = str(uuid.uuid4())
     async with CloudSqlFactory.get_session_factory()() as session:
         await session.execute(
-            text(
+            typed_text(
                 "INSERT INTO audit_log (id, agent_id, action_type, payload_hash, "
                 "guardian_verdict, policy_rules_cited, created_at) "
-                "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)"
+                "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)",
+                rules=TEXT_ARRAY, ts=TIMESTAMP
             ),
             {"id": verdict_id, "agent": "tester", "action": "TEST", "hash": "abc",
-             "verdict": "APPROVED", "rules": "[]",
+             "verdict": "APPROVED", "rules": [],
              "ts": datetime.now(UTC).isoformat()},
         )
         await session.execute(
-            text(
+            typed_text(
                 "INSERT INTO interventions (id, name, initiated_by, initiated_at, "
                 "approved_by, approval_timestamp, guardian_verdict_ref, expected_effect, "
                 "feedback_loop_closed, created_at) "
-                "VALUES (:id, :name, :by, :iat, :ab, :at, :gvr, :ee, 0, :ca)"
+                "VALUES (:id, :name, :by, :iat, :ab, :at, :gvr, :ee, FALSE, :ca)",
+                iat=TIMESTAMP, at=TIMESTAMP, ca=TIMESTAMP
             ),
             {
-                "id": intv_id, "name": "Critical Deviation Test", "by": "tester",
+                "id": intv_id, "name": "Critical Deviation Test", "by": _TESTER,
                 "iat": datetime.now(UTC).isoformat(),
-                "ab": "tester", "at": datetime.now(UTC).isoformat(),
+                "ab": _TESTER, "at": datetime.now(UTC).isoformat(),
                 "gvr": verdict_id,
                 "ee": json.dumps({"ate": 0.1, "expected_effect": 0.1}),
                 "ca": datetime.now(UTC).isoformat(),
@@ -346,26 +358,28 @@ async def test_close_feedback_high_deviation(intv_client: AsyncClient, db_engine
     verdict_id = str(uuid.uuid4())
     async with CloudSqlFactory.get_session_factory()() as session:
         await session.execute(
-            text(
+            typed_text(
                 "INSERT INTO audit_log (id, agent_id, action_type, payload_hash, "
                 "guardian_verdict, policy_rules_cited, created_at) "
-                "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)"
+                "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)",
+                rules=TEXT_ARRAY, ts=TIMESTAMP
             ),
             {"id": verdict_id, "agent": "tester", "action": "TEST", "hash": "abc",
-             "verdict": "APPROVED", "rules": "[]",
+             "verdict": "APPROVED", "rules": [],
              "ts": datetime.now(UTC).isoformat()},
         )
         await session.execute(
-            text(
+            typed_text(
                 "INSERT INTO interventions (id, name, initiated_by, initiated_at, "
                 "approved_by, approval_timestamp, guardian_verdict_ref, expected_effect, "
                 "feedback_loop_closed, created_at) "
-                "VALUES (:id, :name, :by, :iat, :ab, :at, :gvr, :ee, 0, :ca)"
+                "VALUES (:id, :name, :by, :iat, :ab, :at, :gvr, :ee, FALSE, :ca)",
+                iat=TIMESTAMP, at=TIMESTAMP, ca=TIMESTAMP
             ),
             {
-                "id": intv_id, "name": "High Deviation Test", "by": "tester",
+                "id": intv_id, "name": "High Deviation Test", "by": _TESTER,
                 "iat": datetime.now(UTC).isoformat(),
-                "ab": "tester", "at": datetime.now(UTC).isoformat(),
+                "ab": _TESTER, "at": datetime.now(UTC).isoformat(),
                 "gvr": verdict_id,
                 "ee": json.dumps({"ate": 1.0}),
                 "ca": datetime.now(UTC).isoformat(),
@@ -390,22 +404,26 @@ async def test_list_pending_with_data(intv_client: AsyncClient, db_engine: objec
     verdict_id = str(uuid.uuid4())
     async with CloudSqlFactory.get_session_factory()() as session:
         await session.execute(
-            text("INSERT INTO audit_log (id, agent_id, action_type, payload_hash, "
+            typed_text("INSERT INTO audit_log (id, agent_id, action_type, payload_hash, "
                  "guardian_verdict, policy_rules_cited, created_at) "
-                 "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)"),
+                 "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)",
+                 rules=TEXT_ARRAY, ts=TIMESTAMP
+            ),
             {"id": verdict_id, "agent": "tester", "action": "TEST", "hash": "abc",
-             "verdict": "APPROVED", "rules": "[]",
+             "verdict": "APPROVED", "rules": [],
              "ts": datetime.now(UTC).isoformat()},
         )
         await session.execute(
-            text("INSERT INTO interventions (id, name, initiated_by, initiated_at, "
+            typed_text("INSERT INTO interventions (id, name, initiated_by, initiated_at, "
                  "approved_by, approval_timestamp, guardian_verdict_ref, expected_effect, "
                  "feedback_loop_closed, created_at) "
-                 "VALUES (:id, :name, :by, :iat, :ab, :at, :gvr, :ee, 0, :ca)"),
+                 "VALUES (:id, :name, :by, :iat, :ab, :at, :gvr, :ee, FALSE, :ca)",
+                 iat=TIMESTAMP, at=TIMESTAMP, ca=TIMESTAMP
+            ),
             {
-                "id": intv_id, "name": "Pending Test", "by": "tester",
+                "id": intv_id, "name": "Pending Test", "by": _TESTER,
                 "iat": datetime.now(UTC).isoformat(),
-                "ab": "tester", "at": datetime.now(UTC).isoformat(),
+                "ab": _TESTER, "at": datetime.now(UTC).isoformat(),
                 "gvr": verdict_id, "ee": json.dumps({"ate": 0.5}),
                 "ca": datetime.now(UTC).isoformat(),
             },
@@ -425,22 +443,26 @@ async def test_accuracy_with_closed_loops(intv_client: AsyncClient, db_engine: o
     verdict_id = str(uuid.uuid4())
     async with CloudSqlFactory.get_session_factory()() as session:
         await session.execute(
-            text("INSERT INTO audit_log (id, agent_id, action_type, payload_hash, "
+            typed_text("INSERT INTO audit_log (id, agent_id, action_type, payload_hash, "
                  "guardian_verdict, policy_rules_cited, created_at) "
-                 "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)"),
+                 "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)",
+                 rules=TEXT_ARRAY, ts=TIMESTAMP
+            ),
             {"id": verdict_id, "agent": "tester", "action": "TEST", "hash": "abc",
-             "verdict": "APPROVED", "rules": "[]",
+             "verdict": "APPROVED", "rules": [],
              "ts": datetime.now(UTC).isoformat()},
         )
         now = datetime.now(UTC).isoformat()
         await session.execute(
-            text("INSERT INTO interventions (id, name, initiated_by, initiated_at, "
+            typed_text("INSERT INTO interventions (id, name, initiated_by, initiated_at, "
                  "approved_by, approval_timestamp, guardian_verdict_ref, expected_effect, "
                  "actual_effect, feedback_loop_closed, outcome_observed_at, created_at) "
-                 "VALUES (:id, :name, :by, :iat, :ab, :at, :gvr, :ee, :ae, 1, :now, :ca)"),
+                 "VALUES (:id, :name, :by, :iat, :ab, :at, :gvr, :ee, :ae, TRUE, :now, :ca)",
+                 iat=TIMESTAMP, at=TIMESTAMP, ca=TIMESTAMP, now=TIMESTAMP
+            ),
             {
-                "id": intv_id, "name": "Accuracy Test", "by": "tester",
-                "iat": now, "ab": "tester", "at": now, "gvr": verdict_id,
+                "id": intv_id, "name": "Accuracy Test", "by": _TESTER,
+                "iat": now, "ab": _TESTER, "at": now, "gvr": verdict_id,
                 "ee": json.dumps({"ate": 0.5}), "ae": json.dumps({"observed_value": 0.45}),
                 "now": now, "ca": now,
             },
@@ -465,21 +487,25 @@ async def test_close_feedback_handler_standalone(db_engine: object) -> None:
     verdict_id = str(uuid.uuid4())
     async with CloudSqlFactory.get_session_factory()() as session:
         await session.execute(
-            text("INSERT INTO audit_log (id, agent_id, action_type, payload_hash, "
+            typed_text("INSERT INTO audit_log (id, agent_id, action_type, payload_hash, "
                  "guardian_verdict, policy_rules_cited, created_at) "
-                 "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)"),
+                 "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)",
+                 rules=TEXT_ARRAY, ts=TIMESTAMP
+            ),
             {"id": verdict_id, "agent": "tester", "action": "TEST", "hash": "abc",
-             "verdict": "APPROVED", "rules": "[]",
+             "verdict": "APPROVED", "rules": [],
              "ts": datetime.now(UTC).isoformat()},
         )
         await session.execute(
-            text("INSERT INTO interventions (id, name, initiated_by, initiated_at, "
+            typed_text("INSERT INTO interventions (id, name, initiated_by, initiated_at, "
                  "approved_by, approval_timestamp, guardian_verdict_ref, expected_effect, "
                  "feedback_loop_closed, created_at) "
-                 "VALUES (:id, :n, :by, :iat, :ab, :at, :gvr, :ee, 0, :ca)"),
-            {"id": intv_id, "n": "Handler Test", "by": "tester",
+                 "VALUES (:id, :n, :by, :iat, :ab, :at, :gvr, :ee, FALSE, :ca)",
+                 iat=TIMESTAMP, at=TIMESTAMP, ca=TIMESTAMP
+            ),
+            {"id": intv_id, "n": "Handler Test", "by": _TESTER,
              "iat": datetime.now(UTC).isoformat(),
-             "ab": "tester", "at": datetime.now(UTC).isoformat(),
+             "ab": _TESTER, "at": datetime.now(UTC).isoformat(),
              "gvr": verdict_id, "ee": json.dumps({"ate": 0.8}),
              "ca": datetime.now(UTC).isoformat()},
         )

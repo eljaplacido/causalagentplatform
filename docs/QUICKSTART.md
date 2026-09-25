@@ -141,7 +141,7 @@ docker compose down
 
 | Service | URL / port | Notes |
 |---|---|---|
-| PostgreSQL | `localhost:5432` | User `causal`, password `causal_local_dev` (plain text in `docker-compose.yml`: a local-dev stack only). Used only when `ENV` is not `local` and `DATABASE_URL` points here. |
+| PostgreSQL | `localhost:5432` | User `causal`, password `causal_local_dev` (plain text in `docker-compose.yml`: a local-dev stack only). Used only when `ENV` is not `local` and `DATABASE_URL` points here, or by the tests through `TEST_DATABASE_URL` (§6). The schema is `backend/src/db/migrations/*.sql`, which the container applies only when its volume is first created: on an older volume, apply the newer files by hand (`psql -f`) or `docker compose down -v` to start over. |
 | Neo4j Browser | `http://localhost:7474` | Bolt `localhost:7687`. Used when `NEO4J_URI` is set. |
 | Kafka, Kafka UI, Redis | `9092`, `8080`, `6379` | `future` profile only. |
 
@@ -185,7 +185,7 @@ whenever the backend is on another port.
 | Backend health | `curl http://localhost:49234/health` | `{"status":"ok", ...}` |
 | API docs | open `http://localhost:49234/docs` | Swagger UI |
 | Frontend | open `http://localhost:3000` | Next.js dev server |
-| **The gate** | `bash .gnomon/ci.sh` | a per-step summary table, every step PASS or a named SKIPPED |
+| **The gate** | `bash .gnomon/ci.sh` | a per-step summary table, every step PASS or a named SKIPPED (`backend-pytest-postgres` is SKIPPED, "no TEST_DATABASE_URL", unless you give it a PostgreSQL server; see below) |
 
 `.gnomon/ci.sh` runs every suite (backend, frontend, each package with its pre-registered gates),
 the security steps and the claim checks, and is what CI runs. Its `pip-audit-*` steps audit the
@@ -195,11 +195,26 @@ install line above again). The audits ask a remote advisory database: offline, t
 written here. Pieces, when iterating:
 
 ```bash
-cd backend && .venv/bin/pytest -q                          # backend suite
+cd backend && .venv/bin/pytest -q                          # backend suite, on SQLite
 cd packages/causal-core && .venv/bin/pytest                # kernel, incl. the T0 and T4-T8 gates
 cd packages/causal-decision && ../causal-core/.venv/bin/pytest   # decision layer, incl. D0 and A0
 cd frontend && npm run type-check && npx vitest run        # frontend
 ```
+
+**The backend suite on PostgreSQL.** Set `TEST_DATABASE_URL` to a `postgresql+asyncpg://` URL and
+the same suite runs on the schema the migrations build instead of SQLite: the test fixtures create
+a fresh database on that server for the run (and drop it afterwards), so the URL's own database is
+left alone, but its role must be allowed to create databases, roles and extensions. The compose
+stack's server (§4) will do:
+
+```bash
+docker compose up -d postgres
+export TEST_DATABASE_URL='postgresql+asyncpg://causal:causal_local_dev@localhost:5432/causalplatform'
+cd backend && .venv/bin/pytest -q --no-cov                 # backend suite, on PostgreSQL
+bash .gnomon/ci.sh                                         # the gate, backend-pytest-postgres included
+```
+
+`docs/TESTING_CICD.md` §3.1 has the details, and a disposable-container variant.
 
 ---
 

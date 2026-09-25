@@ -315,13 +315,21 @@ RETURN f, collect(e) AS edges ORDER BY f.version DESC LIMIT 1
 
 ### 3.2 Relational Store (PostgreSQL, SQLite locally)
 
-There are two schemas, and they do not match:
+There are two schemas. They create the same tables with the same columns, and
+`backend/tests/integration/test_postgres_schema_parity.py` holds them to that. Column types,
+grants, row-level security and most `CHECK` constraints exist only on the PostgreSQL side
+(SQLite keeps three: `audit_log.guardian_verdict`, `decision_followups.kind` and
+`causal_model_versions.version`).
 
-- **PostgreSQL**: `backend/src/db/migrations/001_initial.sql` to `007_causal_models.sql`.
-  The only thing in this repository that applies them is `docker-compose.yml`, which mounts
-  them as the container's init scripts. No deploy step runs them.
+- **PostgreSQL**: `backend/src/db/migrations/001_initial.sql` to `009_incidents.sql`, applied in
+  filename order. Two things in this repository apply them: `docker-compose.yml`, which mounts
+  them as the container's init scripts (so only when its volume is first created), and the test
+  fixtures when `TEST_DATABASE_URL` is set (`backend/tests/conftest.py`, which builds a fresh
+  database from them for the run; the gate's `backend-pytest-postgres` step and CI do this). No
+  deploy step runs them.
 - **SQLite**: the `SQLITE_DDL` string in `backend/src/db/factory.py`, created by
-  `CloudSqlFactory.init_db()` when `ENV=local`. The test suite runs against this schema.
+  `CloudSqlFactory.init_db()` on a SQLite engine (the choice is by the engine's dialect, never
+  run on PostgreSQL). The default test run, and the gate's `backend-pytest` step, use it.
 
 | Table | PostgreSQL | SQLite | Holds |
 |---|---|---|---|
@@ -332,15 +340,24 @@ There are two schemas, and they do not match:
 | `decision_records` | 003 | yes | The decision ledger's hash chain, one sealed record per row. Append-only |
 | `decision_followups` | 004, 005 | yes | The follow-up plan written at decision time, and each later realization. Append-only; 005 allows one row per decision and kind, so a decision is measured once |
 | `causal_model_versions`, `decision_model_refs` | 007 | yes | The assumption registry: immutable model versions (content-addressed, each naming its parent), and which decision used which version. Append-only |
-| `session_state` | **no** | yes | Latest `EpistemicState` snapshot per session (`orchestration/session_store.py`) |
-| `incidents` | **no** | yes | Incident records (`api/incidents.py`, which also uses the SQLite-only `INSERT OR REPLACE`) |
+| `session_state` | 008 | yes | Latest `EpistemicState` snapshot per session (`orchestration/session_store.py`), upserted on `session_id`; also what the incident triage agent's experience buffer reads back |
+| `incidents` | 009 | yes | Incident records (`api/incidents.py`), upserted on `id` with `INSERT ... ON CONFLICT`, keeping the first `created_at`. Decisions on their interventions are `audit_log` rows, joined in on read |
 
-`session_state` and `incidents` exist only in the SQLite schema. On a PostgreSQL deployment
-built from the migrations, session persistence and the incidents API would fail with a
-missing table (register `postgres-schema-missing-session-incidents`). Neither schema has an
-evidence, user-preference or simulation-result table. Evidence is referenced by id from
-`causal_edges.evidence_refs`, and simulation results live on `EpistemicState` (so, in SQLite,
-inside the `session_state` snapshot).
+Until 008 and 009 (septa-52) `session_state` and `incidents` existed only in the SQLite schema,
+and on PostgreSQL session persistence and the incidents API failed with a missing table. Neither
+schema has an evidence, user-preference or simulation-result table. Evidence is referenced by id
+from `causal_edges.evidence_refs`, and simulation results live on `EpistemicState` (so inside the
+`session_state` snapshot).
+
+**Binding values.** SQLite stores whatever it is given; asyncpg refuses a JSON string into a
+`TEXT[]` or `UUID[]` column, an ISO string into a `TIMESTAMPTZ`, and an integer into a
+`BOOLEAN`. The code bound all three shapes, and until the suite also ran on PostgreSQL the
+Guardian could not write `audit_log` there. Statements now declare those parameters with the
+types in `backend/src/db/types.py` (`typed_text(sql, created_at=TIMESTAMP, rules=TEXT_ARRAY)`),
+which bind a `datetime`, a list or a `bool` on PostgreSQL and the same text as before on SQLite,
+and read back through `timestamp_text` (a `TIMESTAMPTZ` and SQLite's ISO text render alike, so a
+signature over the text verifies on either) and `json_value` (`JSONB` arrives decoded). `JSONB`
+and `UUID` columns take a string parameter as is.
 
 **`audit_log`** (PostgreSQL after migration 002):
 
@@ -407,8 +424,9 @@ Examples:
 ### 3.4 The factory switch
 
 Code never opens a database connection directly. It asks `CloudSqlFactory` for a session, and
-the factory picks SQLite or PostgreSQL from `ENV`. The switch is transparent to the calling
-code, but the two schemas behind it differ (§3.2).
+the factory picks SQLite or PostgreSQL from `ENV`. The two schemas behind it have the same
+tables and columns but not the same types, so the switch is transparent only to code that binds
+through `backend/src/db/types.py` (§3.2); the gate runs the backend suite on both.
 
 ---
 
@@ -534,7 +552,7 @@ lineage.
 |---|---|---|---|
 | CausalDiscoveryAgent | Semantic layer (read) | `audit_write` records (PENDING, unsigned) | Proposes; does not persist semantic objects itself |
 | GovernanceAgent | The action payload and `EpistemicState` it is given | `audit_log` (every verdict, signed) | Its verdict is what `propose_draft` / `promote_to_approved` / `reject_draft` require |
-| SimulationAgent | APPROVED graph fragments | `EpistemicState.simulation_results` (in memory; the session snapshot in SQLite) | Read-only on the semantic layer |
+| SimulationAgent | APPROVED graph fragments | `EpistemicState.simulation_results` (in memory; the `session_state` snapshot) | Read-only on the semantic layer |
 | DriftMonitorAgent | Whatever its skills are handed (see §5) | In-process `AlertEmitter` | No semantic-layer writes; no Kafka |
 | `GET /api/semantic/*` | Entities, edges, fragments inside the user's domain scope; APPROVED only for a `viewer` | -- | Outside the scope is 404 (CYBERSECURITY.md §4.2) |
 | `POST /api/semantic/drafts` | -- | `causal_edges` / `graph_fragments` / `causal_entities` / `assumptions` as DRAFT | A drafting role, a domain inside the user's scope, then a GovernanceAgent check; status forced to DRAFT |

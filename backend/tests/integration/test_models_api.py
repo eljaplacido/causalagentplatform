@@ -10,6 +10,7 @@ verdicts no longer stand.
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, patch
 
@@ -20,6 +21,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
 from src.api.main import app
+from src.db.types import json_value
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -300,8 +302,9 @@ async def test_a_node_the_data_lacked_is_judged_as_the_analysis_saw_it(
     stored = (
         await db_session.execute(text("SELECT query, unmeasured FROM decision_model_refs"))
     ).one()
-    assert '"adjust_for":["load"]' in stored[0].replace(" ", "")
-    assert stored[1] == '["backlog"]'
+    # JSON text on SQLite, decoded JSONB on PostgreSQL: compare the values.
+    assert '"adjust_for":["load"]' in json.dumps(json_value(stored[0]), separators=(",", ":"))
+    assert json_value(stored[1]) == ["backlog"]
     await client.post(
         "/api/v1/models/incident-remediation/versions",
         json={"parent_digest": v2["digest"], "graph": V1 + "; backlog -> minutes; "

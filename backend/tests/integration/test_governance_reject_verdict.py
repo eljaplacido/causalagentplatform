@@ -24,6 +24,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
 from src.api.main import app
+from src.db.types import json_value
 from tests.conftest import insert_raw_audit_entry, issue_verdict_for, make_causal_entity
 
 if TYPE_CHECKING:
@@ -160,9 +161,7 @@ async def test_a_real_rejected_verdict_rejects_the_object_once(
     # ApprovalStatus has no REJECTED member and the column's CHECK constraint does
     # not allow one, so a rejected draft is DEPRECATED. The lineage says why.
     assert record["approval_status"] == "DEPRECATED"
-    import json
-
-    lineage = json.loads(record["lineage"])
+    lineage = json_value(record["lineage"])
     assert lineage[-1]["step_type"] == "REJECTED"
     assert "not supported by data" in lineage[-1]["description"]
 

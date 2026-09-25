@@ -2,7 +2,8 @@
 Shared pytest fixtures for the Unified Enterprise Causal Platform test suite.
 
 Fixture hierarchy:
-  - db_engine    — in-memory SQLite async engine (per test)
+  - db_engine    — in-memory SQLite async engine (per test), or PostgreSQL
+                   built from the migrations when TEST_DATABASE_URL is set
   - db_session   — AsyncSession bound to db_engine
   - governance   — GovernanceAgent instance wired to test DB
   - registry     — SemanticLayerRegistry wired to test DB
@@ -12,15 +13,16 @@ Fixture hierarchy:
 from __future__ import annotations
 
 import hashlib
-import json
 import os
-from collections.abc import AsyncGenerator, Awaitable, Callable
+from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
 from datetime import UTC, datetime
+from pathlib import Path
 from uuid import UUID, uuid4
 
 import pytest
 import pytest_asyncio
 from sqlalchemy import event, text
+from sqlalchemy.engine import URL, make_url
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -34,6 +36,7 @@ os.environ.setdefault("ENV", "local")
 # ── Import after ENV is set ────────────────────────────────────────────────────
 from src.agents.governance import GovernanceAgent
 from src.db.factory import SQLITE_DDL, CloudSqlFactory, ddl_statements
+from src.db.types import TEXT_ARRAY, TIMESTAMP, typed_text
 from src.semantic_layer.models import (
     CausalEdge,
     CausalEntity,
@@ -55,20 +58,134 @@ from src.semantic_layer.verdict import sign as verdict_sign
 SQLITE_SCHEMA = SQLITE_DDL
 
 
-# ── Engine fixture (per-test isolated in-memory SQLite) ───────────────────────
+# ── Engine fixture: in-memory SQLite by default, PostgreSQL on request ────────
+#
+# The default is a fresh in-memory SQLite per test, built from SQLITE_DDL.
+#
+# With TEST_DATABASE_URL set (postgresql+asyncpg://user:pass@host:port/db), the
+# same fixtures run against PostgreSQL instead, on a schema built from
+# src/db/migrations/*.sql applied in order -- the schema production runs, not
+# SQLITE_DDL. The suite used to know only SQLite, whose types are loose enough
+# to accept a JSON string into a text[] column and an ISO string into a
+# timestamptz, which asyncpg refuses: POST /api/governance/check could not write
+# audit_log on PostgreSQL, and no test had ever said so.
+#
+# Isolation: one database per test session, created and migrated when the first
+# test asks for it (named ``causal_test_<random>``, dropped at the end; the
+# database named in the URL is used only to create it), then every table is
+# TRUNCATEd before each test. TRUNCATE does not fire the append-only row
+# triggers, which is why it, and not DELETE, is what resets them.
+
+MIGRATIONS_DIR = Path(__file__).resolve().parent.parent / "src" / "db" / "migrations"
 
 
-@pytest_asyncio.fixture
-async def db_engine() -> AsyncGenerator[AsyncEngine, None]:
+def migration_files() -> list[Path]:
+    """The PostgreSQL migrations, in the order they are applied."""
+    return sorted(MIGRATIONS_DIR.glob("[0-9][0-9][0-9]_*.sql"))
+
+
+def _test_database_url() -> URL | None:
+    raw = os.environ.get("TEST_DATABASE_URL", "").strip()
+    if not raw:
+        return None
+    url = make_url(raw)
+    if url.get_backend_name() != "postgresql":
+        raise pytest.UsageError(
+            f"TEST_DATABASE_URL must be a postgresql+asyncpg:// URL, got {url.drivername}"
+        )
+    return url.set(drivername="postgresql+asyncpg")
+
+
+def _asyncpg_dsn(url: URL, database: str) -> str:
+    return url.set(drivername="postgresql", database=database).render_as_string(
+        hide_password=False
+    )
+
+
+#: The backend the db_engine fixture uses in this run: "sqlite" or "postgresql".
+TEST_DB_URL = _test_database_url()
+TEST_DB_BACKEND = "postgresql" if TEST_DB_URL is not None else "sqlite"
+
+#: For a test that needs the PostgreSQL schema (the migrations) to mean anything.
+postgres_only = pytest.mark.skipif(
+    TEST_DB_BACKEND != "postgresql", reason="needs PostgreSQL: set TEST_DATABASE_URL"
+)
+
+
+async def _create_migrated_database(url: URL, name: str) -> None:
+    import asyncpg
+
+    admin = await asyncpg.connect(_asyncpg_dsn(url, url.database or "postgres"))
+    try:
+        await admin.execute(f'CREATE DATABASE "{name}"')
+    finally:
+        await admin.close()
+    conn = await asyncpg.connect(_asyncpg_dsn(url, name))
+    try:
+        for path in migration_files():
+            # No arguments: asyncpg uses the simple query protocol, which runs a
+            # whole script (DO blocks, functions, BEGIN/COMMIT) as psql would.
+            await conn.execute(path.read_text(encoding="utf-8"))
+    finally:
+        await conn.close()
+
+
+async def _drop_database(url: URL, name: str) -> None:
+    import asyncpg
+
+    admin = await asyncpg.connect(_asyncpg_dsn(url, url.database or "postgres"))
+    try:
+        await admin.execute(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)')
+    finally:
+        await admin.close()
+
+
+@pytest.fixture(scope="session")
+def postgres_test_url() -> Generator[URL | None, None, None]:
+    """A freshly migrated PostgreSQL database for this session, or None (SQLite run)."""
+    if TEST_DB_URL is None:
+        yield None
+        return
+    import asyncio
+
+    name = f"causal_test_{uuid4().hex[:12]}"
+    asyncio.run(_create_migrated_database(TEST_DB_URL, name))
+    try:
+        yield TEST_DB_URL.set(database=name)
+    finally:
+        asyncio.run(_drop_database(TEST_DB_URL, name))
+
+
+async def _truncate_all(engine: AsyncEngine) -> None:
+    """Empty every table, and restore any trigger a test disabled.
+
+    A tamper test plays the attacker by disabling an append-only trigger
+    (tests/integration/test_decision_ledger.py). The database outlives the test,
+    so the guard comes back here, before the next one runs.
     """
-    Create a fresh in-memory SQLite async engine for each test.
+    async with engine.begin() as conn:
+        disabled = (
+            await conn.execute(
+                text(
+                    "SELECT c.relname, t.tgname FROM pg_trigger t "
+                    "JOIN pg_class c ON c.oid = t.tgrelid "
+                    "WHERE NOT t.tgisinternal AND t.tgenabled = 'D'"
+                )
+            )
+        ).all()
+        for table_name, trigger in disabled:
+            await conn.execute(text(f'ALTER TABLE "{table_name}" ENABLE TRIGGER "{trigger}"'))
+        tables = (
+            await conn.execute(
+                text("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
+            )
+        ).scalars().all()
+        if tables:
+            names = ", ".join(f'"{t}"' for t in sorted(tables))
+            await conn.execute(text(f"TRUNCATE TABLE {names} RESTART IDENTITY CASCADE"))
 
-    Resets the CloudSqlFactory singleton so each test gets a clean state.
-    """
-    CloudSqlFactory.reset()
-    os.environ["ENV"] = "local"
-    os.environ["SQLITE_PATH"] = ":memory:"
 
+async def _sqlite_engine() -> AsyncEngine:
     engine = create_async_engine(
         "sqlite+aiosqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -82,10 +199,29 @@ async def db_engine() -> AsyncGenerator[AsyncEngine, None]:
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
 
-    # Create schema
     async with engine.begin() as conn:
         for statement in ddl_statements(SQLITE_SCHEMA):
             await conn.execute(text(statement))
+    return engine
+
+
+@pytest_asyncio.fixture
+async def db_engine(postgres_test_url: URL | None) -> AsyncGenerator[AsyncEngine, None]:
+    """
+    A clean database for each test: in-memory SQLite, or PostgreSQL when
+    TEST_DATABASE_URL is set (see above).
+
+    Resets the CloudSqlFactory singleton so each test gets a clean state.
+    """
+    CloudSqlFactory.reset()
+    os.environ["ENV"] = "local"
+    os.environ["SQLITE_PATH"] = ":memory:"
+
+    if postgres_test_url is None:
+        engine = await _sqlite_engine()
+    else:
+        engine = create_async_engine(postgres_test_url, echo=False)
+        await _truncate_all(engine)
 
     # Inject the test engine directly via class-level cache variables
     CloudSqlFactory.reset()
@@ -135,6 +271,19 @@ VerdictFactory = Callable[[UUID], Awaitable[UUID]]
 # into audit_log must be readable as history and refused as authority.
 
 
+#: The one INSERT the fixtures write audit rows with, typed the way the Guardian's
+#: own write is (src/db/types.py), so it runs on SQLite and on PostgreSQL alike.
+_INSERT_AUDIT_ROW = typed_text(
+    "INSERT INTO audit_log "
+    "(id, agent_id, action_type, payload_hash, guardian_verdict, "
+    " policy_rules_cited, session_id, created_at, subject_id, signature) "
+    "VALUES (:id, :agent_id, :action_type, :hash, :verdict, :rules, :sid, :ts, "
+    " :subject_id, :signature)",
+    rules=TEXT_ARRAY,
+    ts=TIMESTAMP,
+)
+
+
 async def insert_raw_audit_entry(
     session: AsyncSession,
     *,
@@ -152,22 +301,16 @@ async def insert_raw_audit_entry(
     """
     entry_id = uuid4()
     await session.execute(
-        text(
-            "INSERT INTO audit_log "
-            "(id, agent_id, action_type, payload_hash, guardian_verdict, "
-            " policy_rules_cited, session_id, created_at, subject_id, signature) "
-            "VALUES (:id, :agent_id, :action_type, :hash, :verdict, :rules, :sid, :ts, "
-            " :subject_id, :signature)"
-        ),
+        _INSERT_AUDIT_ROW,
         {
             "id": str(entry_id),
             "agent_id": agent_id,
             "action_type": action_type,
             "hash": payload_hash or hashlib.sha256(b"fixture").hexdigest(),
             "verdict": verdict,
-            "rules": json.dumps(["PR-FIXTURE"]),
+            "rules": ["PR-FIXTURE"],
             "sid": "test-session-001",
-            "ts": datetime.now(UTC).isoformat(),
+            "ts": datetime.now(UTC),
             "subject_id": str(subject_id) if subject_id else None,
             "signature": signature,
         },
@@ -204,20 +347,14 @@ async def issue_verdict_for(
         )
     )
     await session.execute(
-        text(
-            "INSERT INTO audit_log "
-            "(id, agent_id, action_type, payload_hash, guardian_verdict, "
-            " policy_rules_cited, session_id, created_at, subject_id, signature) "
-            "VALUES (:id, :agent_id, :action_type, :hash, :verdict, :rules, :sid, :ts, "
-            " :subject_id, :signature)"
-        ),
+        _INSERT_AUDIT_ROW,
         {
             "id": str(entry_id),
             "agent_id": agent_id,
             "action_type": action_type,
             "hash": payload_hash,
             "verdict": verdict,
-            "rules": json.dumps(["PR-FIXTURE"]),
+            "rules": ["PR-FIXTURE"],
             "sid": "test-session-001",
             "ts": created_at,
             "subject_id": str(subject_id),

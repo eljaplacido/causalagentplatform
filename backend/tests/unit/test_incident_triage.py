@@ -24,9 +24,9 @@ import json
 from datetime import datetime
 
 import pytest
-from sqlalchemy import text
 
 from src.agents.incident_triage import IncidentTriageAgent
+from src.db.types import TIMESTAMP, typed_text
 from src.exceptions import CircuitBreakerError
 from src.semantic_layer.models import (
     CynefinDomain,
@@ -284,10 +284,12 @@ async def test_experience_buffer_returns_prior_similar_incident(
     )
 
     await db_session.execute(
-        text(
+        typed_text(
             "INSERT INTO session_state "
             "(session_id, user_id, agent_id, state_json, created_at, updated_at) "
-            "VALUES (:sid, :uid, :aid, :state_json, :created_at, :updated_at)"
+            "VALUES (:sid, :uid, :aid, :state_json, :created_at, :updated_at)",
+            created_at=TIMESTAMP,
+            updated_at=TIMESTAMP,
         ),
         {
             "sid": "prior-incident-session",

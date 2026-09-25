@@ -31,6 +31,17 @@ with a guard on it.
 red. A test that passes against both the fixed and the broken version is
 measuring nothing, however good it looks.
 
+**A test that touches the database runs on two of them.** The backend suite
+runs on SQLite and, in the gate's `backend-pytest-postgres` step, on the
+PostgreSQL schema the migrations build. SQLite accepts a JSON string into a
+`TEXT[]` column and an ISO string into a `TIMESTAMPTZ`; PostgreSQL does not, and
+a test that seeds rows that way passes on one and fails on the other. Bind seed
+rows as the app does, with `typed_text` and the types in `src/db/types.py`, and
+read stored JSON and times back with `json_value` and `timestamp_text` rather
+than comparing SQLite's text. A test that only means something on PostgreSQL
+takes `postgres_only` from `tests/conftest.py`; one that is about SQLite itself
+says so. Never skip a PostgreSQL failure to get green -- the step fails on skips.
+
 If this project declares test_must_fail_first under [verify], the harness
 enforces the first paragraph mechanically: it restores the non-test files,
 re-runs the check, and refuses a test that still passes. The instruction above

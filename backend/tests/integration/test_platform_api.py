@@ -5,14 +5,14 @@ Integration tests for Platform Ops API endpoints.
   GET /api/v1/platform/metrics     — computed metrics from audit_log + semantic layer
   GET /api/v1/platform/drift       — drift alerts from recent rejected verdicts
 
-All tests use the shared db_engine fixture (in-memory SQLite) and bypass
-Firebase auth by patching _verify_firebase_token.
+All tests use the shared db_engine fixture (in-memory SQLite, or PostgreSQL when
+TEST_DATABASE_URL is set) and bypass Firebase auth by patching
+_verify_firebase_token.
 """
 
 from __future__ import annotations
 
 import hashlib
-import json
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -21,9 +21,13 @@ from unittest.mock import AsyncMock, patch
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import text
 
 from src.api.main import app
+from src.db.types import TEXT_ARRAY, TIMESTAMP, typed_text
+from tests.conftest import TEST_DB_BACKEND
+
+#: The database connector's id: it reports the database it is connected to.
+DB_CONNECTOR = f"db-{TEST_DB_BACKEND}"
 
 pytestmark = pytest.mark.asyncio
 
@@ -55,7 +59,7 @@ async def client(db_engine: object):
 
 
 def _utc_iso(dt: datetime) -> str:
-    """Return UTC datetime as ISO string WITHOUT timezone suffix (SQLite-compatible)."""
+    """Return UTC datetime as ISO string WITHOUT timezone suffix (a naive UTC time)."""
     return dt.replace(tzinfo=None).isoformat()
 
 
@@ -66,11 +70,13 @@ async def _seed_audit_log(db_engine: object, entries: list[dict[str, Any]]) -> N
     async with factory() as session:
         for e in entries:
             await session.execute(
-                text(
+                typed_text(
                     "INSERT INTO audit_log "
                     "(id, agent_id, action_type, payload_hash, guardian_verdict, "
                     " policy_rules_cited, session_id, created_at) "
-                    "VALUES (:id, :agent_id, :action_type, :hash, :verdict, :rules, :sid, :ts)"
+                    "VALUES (:id, :agent_id, :action_type, :hash, :verdict, :rules, :sid, :ts)",
+                    rules=TEXT_ARRAY,
+                    ts=TIMESTAMP,
                 ),
                 e,
             )
@@ -104,11 +110,11 @@ async def test_connectors_schema(client: AsyncClient, db_engine: object) -> None
 
 
 async def test_connectors_includes_db(client: AsyncClient, db_engine: object) -> None:
-    """SQLite database connector is always included."""
+    """The database connector is always included, named for the database in use."""
     resp = await client.get("/api/v1/platform/connectors")
     assert resp.status_code == 200
     ids = [c["connector_id"] for c in resp.json()]
-    assert "db-sqlite" in ids
+    assert DB_CONNECTOR in ids
 
 
 async def test_connectors_includes_semantic_registry(
@@ -147,7 +153,7 @@ async def test_connectors_db_healthy_with_empty_db(
     """DB connector is healthy even when tables are empty."""
     resp = await client.get("/api/v1/platform/connectors")
     assert resp.status_code == 200
-    db_conn = next(c for c in resp.json() if c["connector_id"] == "db-sqlite")
+    db_conn = next(c for c in resp.json() if c["connector_id"] == DB_CONNECTOR)
     assert db_conn["healthy"] is True
     assert db_conn["error_message"] is None
 
@@ -158,7 +164,7 @@ async def test_connectors_db_reports_row_counts(
     """DB connector raw_output contains actual row counts for all tables."""
     resp = await client.get("/api/v1/platform/connectors")
     assert resp.status_code == 200
-    db_conn = next(c for c in resp.json() if c["connector_id"] == "db-sqlite")
+    db_conn = next(c for c in resp.json() if c["connector_id"] == DB_CONNECTOR)
     raw = db_conn["raw_output"]
     assert "audit_log" in raw
     assert "causal_entities" in raw
@@ -178,7 +184,7 @@ async def test_connectors_db_counts_seeded_data(
                 "action_type": "TEST",
                 "hash": "abc",
                 "verdict": "APPROVED",
-                "rules": "[]",
+                "rules": [],
                 "sid": "sess-1",
                 "ts": datetime.now(UTC).isoformat(),
             }
@@ -186,7 +192,7 @@ async def test_connectors_db_counts_seeded_data(
     )
     resp = await client.get("/api/v1/platform/connectors")
     assert resp.status_code == 200
-    db_conn = next(c for c in resp.json() if c["connector_id"] == "db-sqlite")
+    db_conn = next(c for c in resp.json() if c["connector_id"] == DB_CONNECTOR)
     assert db_conn["raw_output"]["audit_log"] >= 1
 
 
@@ -294,7 +300,7 @@ async def test_metrics_counts_seeded_entries(
                 "action_type": "GUARDIAN_CHECK",
                 "hash": hashlib.sha256(b"entry1").hexdigest(),
                 "verdict": "APPROVED",
-                "rules": json.dumps(["PR-001"]),
+                "rules": ["PR-001"],
                 "sid": "sess-metrics-1",
                 "ts": _utc_iso(now),
             },
@@ -304,7 +310,7 @@ async def test_metrics_counts_seeded_entries(
                 "action_type": "GUARDIAN_CHECK",
                 "hash": hashlib.sha256(b"entry2").hexdigest(),
                 "verdict": "REJECTED",
-                "rules": json.dumps(["PR-002"]),
+                "rules": ["PR-002"],
                 "sid": "sess-metrics-2",
                 "ts": (now - timedelta(minutes=5)).isoformat(),
             },
@@ -332,7 +338,7 @@ async def test_metrics_policy_patterns_from_seeded_data(
                 "action_type": "GUARDIAN_CHECK",
                 "hash": hashlib.sha256(f"e{i}".encode()).hexdigest(),
                 "verdict": "REJECTED",
-                "rules": json.dumps(["PR-001"]),
+                "rules": ["PR-001"],
                 "sid": f"sess-pattern-{i}",
                 "ts": (now - timedelta(minutes=i)).isoformat(),
             }
@@ -360,7 +366,7 @@ async def test_metrics_approval_rate_calculation(
             "action_type": "GUARDIAN_CHECK",
             "hash": hashlib.sha256(f"approved-{i}".encode()).hexdigest(),
             "verdict": "APPROVED",
-            "rules": "[]",
+            "rules": [],
             "sid": f"sess-apr-{i}",
             "ts": (now - timedelta(minutes=i)).isoformat(),
         })
@@ -370,7 +376,7 @@ async def test_metrics_approval_rate_calculation(
         "action_type": "GUARDIAN_CHECK",
         "hash": hashlib.sha256(b"rejected-rate").hexdigest(),
         "verdict": "REJECTED",
-        "rules": "[]",
+        "rules": [],
         "sid": "sess-apr-rej",
         "ts": (now - timedelta(minutes=10)).isoformat(),
     })
@@ -425,7 +431,7 @@ async def test_drift_no_alert_for_single_rejection(
                 "action_type": "GUARDIAN_CHECK",
                 "hash": hashlib.sha256(b"single-reject").hexdigest(),
                 "verdict": "REJECTED",
-                "rules": json.dumps(["PR-001"]),
+                "rules": ["PR-001"],
                 "sid": "sess-single",
                 "ts": _utc_iso(now),
             }
@@ -453,7 +459,7 @@ async def test_drift_alert_for_two_rejections_same_rule(
                 "action_type": "GUARDIAN_CHECK",
                 "hash": hashlib.sha256(f"rej-{i}".encode()).hexdigest(),
                 "verdict": "REJECTED",
-                "rules": json.dumps(["PR-002"]),
+                "rules": ["PR-002"],
                 "sid": f"sess-drift-{i}",
                 "ts": (now - timedelta(minutes=i * 10)).isoformat(),
             }
@@ -482,7 +488,7 @@ async def test_drift_escalation_always_surfaces(
                 "action_type": "GUARDIAN_CHECK",
                 "hash": hashlib.sha256(b"escalation").hexdigest(),
                 "verdict": "REQUIRES_ESCALATION",
-                "rules": json.dumps(["PR-004"]),
+                "rules": ["PR-004"],
                 "sid": "sess-escalation",
                 "ts": _utc_iso(now),
             }
@@ -507,7 +513,7 @@ async def test_drift_alert_schema(client: AsyncClient, db_engine: object) -> Non
                 "action_type": "GUARDIAN_CHECK",
                 "hash": hashlib.sha256(f"schema-{i}".encode()).hexdigest(),
                 "verdict": "REJECTED",
-                "rules": json.dumps(["PR-003"]),
+                "rules": ["PR-003"],
                 "sid": f"sess-schema-{i}",
                 "ts": (now - timedelta(minutes=i)).isoformat(),
             }
@@ -541,7 +547,7 @@ async def test_drift_excludes_approved_verdicts(
                 "action_type": "GUARDIAN_CHECK",
                 "hash": hashlib.sha256(f"approved-drift-{i}".encode()).hexdigest(),
                 "verdict": "APPROVED",
-                "rules": json.dumps(["PR-001"]),
+                "rules": ["PR-001"],
                 "sid": f"sess-approved-{i}",
                 "ts": (now - timedelta(minutes=i)).isoformat(),
             }
@@ -567,7 +573,7 @@ async def test_drift_deduplicates_alerts(
                 "action_type": "GUARDIAN_CHECK",
                 "hash": hashlib.sha256(f"dedup-{i}".encode()).hexdigest(),
                 "verdict": "REJECTED",
-                "rules": json.dumps(["PR-005"]),
+                "rules": ["PR-005"],
                 "sid": f"sess-dedup-{i}",
                 "ts": (now - timedelta(minutes=i)).isoformat(),
             }
@@ -605,7 +611,7 @@ async def test_drift_severity_critical_for_five_rejections(
                 "action_type": "GUARDIAN_CHECK",
                 "hash": hashlib.sha256(f"critical-{i}".encode()).hexdigest(),
                 "verdict": "REJECTED",
-                "rules": json.dumps(["PR-007"]),
+                "rules": ["PR-007"],
                 "sid": f"sess-critical-{i}",
                 "ts": (now - timedelta(minutes=i)).isoformat(),
             }

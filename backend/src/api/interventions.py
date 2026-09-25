@@ -32,6 +32,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 
 from src.db.factory import CloudSqlFactory
+from src.db.types import TEXT_ARRAY, TIMESTAMP, timestamp_text, typed_text
 from src.middleware.auth import get_current_user
 from src.middleware.rbac import DECISION_ROLES, guard
 
@@ -132,11 +133,13 @@ async def _append_unruled_audit_row(
 ) -> None:
     """Append an audit row that records an event without claiming a verdict on it."""
     await session.execute(
-        text(
+        typed_text(
             "INSERT INTO audit_log (id, agent_id, action_type, payload_hash, "
             "guardian_verdict, policy_rules_cited, session_id, created_at, subject_id, notes) "
             "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :session, :ts, :subject, "
-            ":notes)"
+            ":notes)",
+            rules=TEXT_ARRAY,
+            ts=TIMESTAMP,
         ),
         {
             "id": str(uuid4()),
@@ -147,9 +150,9 @@ async def _append_unruled_audit_row(
                 json.dumps(payload, sort_keys=True, default=str).encode()
             ).hexdigest(),
             "verdict": "PENDING",
-            "rules": json.dumps(rules),
+            "rules": list(rules),
             "session": session_id,
-            "ts": at.isoformat(),
+            "ts": at,
             "subject": subject_id,
             "notes": notes,
         },
@@ -226,16 +229,17 @@ async def close_feedback_loop(
 
         # Update the intervention
         await session.execute(
-            text(
+            typed_text(
                 "UPDATE interventions SET "
                 "actual_effect = :actual, "
-                "feedback_loop_closed = 1, "
+                "feedback_loop_closed = TRUE, "
                 "outcome_observed_at = :now "
-                "WHERE id = :id"
+                "WHERE id = :id",
+                now=TIMESTAMP,
             ),
             {
                 "actual": json.dumps(actual_effect_data),
-                "now": now.isoformat(),
+                "now": now,
                 "id": intervention_id,
             },
         )
@@ -325,7 +329,7 @@ async def list_pending(
             text(
                 "SELECT id, name, initiated_at, expected_effect "
                 "FROM interventions "
-                "WHERE feedback_loop_closed = 0 "
+                "WHERE feedback_loop_closed = FALSE "
                 "ORDER BY initiated_at DESC "
                 "LIMIT :limit"
             ),
@@ -340,7 +344,7 @@ async def list_pending(
             else:
                 expected_data = expected_raw or {}
 
-            initiated_str = str(row["initiated_at"])
+            initiated_str = timestamp_text(row["initiated_at"]) or ""
             try:
                 initiated_dt = datetime.fromisoformat(initiated_str.replace("Z", "+00:00"))
                 hours_open = round(
@@ -353,7 +357,7 @@ async def list_pending(
                 PendingIntervention(
                     intervention_id=str(row["id"]),
                     name=str(row["name"]),
-                    initiated_at=str(row["initiated_at"]),
+                    initiated_at=initiated_str,
                     expected_effect=float(
                         expected_data.get("ate", expected_data.get("expected_effect", 0.0) or 0.0)
                     ),
@@ -395,7 +399,7 @@ async def _find_existing_decision(
             intervention_id=intervention_id,
             decision=decision,
             audit_log_id=str(record["id"]),
-            recorded_at=str(record["created_at"]),
+            recorded_at=timestamp_text(record["created_at"]) or "",
             already_decided=True,
         )
 
@@ -438,10 +442,12 @@ async def _record_decision(
 
     async with CloudSqlFactory.get_session_factory()() as session:
         await session.execute(
-            text(
+            typed_text(
                 "INSERT INTO audit_log (id, agent_id, action_type, payload_hash, "
                 "guardian_verdict, policy_rules_cited, session_id, created_at) "
-                "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :session, :ts)"
+                "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :session, :ts)",
+                rules=TEXT_ARRAY,
+                ts=TIMESTAMP,
             ),
             {
                 "id": audit_id,
@@ -449,9 +455,9 @@ async def _record_decision(
                 "action": action,
                 "hash": payload_hash,
                 "verdict": verdict,
-                "rules": '["PR-006"]',
+                "rules": ["PR-006"],
                 "session": body.incident_id or f"intervention-{intervention_id}",
-                "ts": now.isoformat(),
+                "ts": now,
             },
         )
         await session.commit()
@@ -560,7 +566,7 @@ async def list_decisions(
                     intervention_id=str(payload.get("intervention_id") or ""),
                     decision="APPROVED" if r["action_type"] == "INTERVENTION_APPROVED" else "REJECTED",
                     audit_log_id=str(r["id"]),
-                    recorded_at=str(r["created_at"]),
+                    recorded_at=timestamp_text(r["created_at"]) or "",
                     incident_id=(str(r["session_id"]) if r["session_id"] and not str(r["session_id"]).startswith("intervention-") else None),
                     decided_by=str(payload.get("decided_by") or r["agent_id"]),
                 )
@@ -587,14 +593,15 @@ async def get_prediction_accuracy(
 
     async with CloudSqlFactory.get_session_factory()() as session:
         rows = await session.execute(
-            text(
+            typed_text(
                 "SELECT expected_effect, actual_effect, outcome_observed_at "
                 "FROM interventions "
-                "WHERE feedback_loop_closed = 1 "
+                "WHERE feedback_loop_closed = TRUE "
                 "AND outcome_observed_at >= :cutoff "
-                "ORDER BY outcome_observed_at DESC"
+                "ORDER BY outcome_observed_at DESC",
+                cutoff=TIMESTAMP,
             ),
-            {"cutoff": cutoff.isoformat()},
+            {"cutoff": cutoff},
         )
 
         errors: list[float] = []

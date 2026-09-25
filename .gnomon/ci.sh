@@ -55,6 +55,24 @@ indented() { "$@" > "$LOG_DIR/.indented" 2>&1; local rc=$?; sed 's/^/   /' "$LOG
 # A smoke alarm for scope collapse: the count a step inspected must not fall
 # under its floor in scripts/gate-scope-floors.json (scripts/gate_scope.py).
 scope_floor() { indented "$PY" scripts/gate_scope.py floor "$1" "$2"; }
+# Counts from a pytest JUnit report, read back from the tool rather than scraped.
+junit_counts() {  # python junit.xml -> "tests failures errors skipped"
+    "$1" - "$2" <<'PYEOF'
+import sys
+import xml.etree.ElementTree as ET
+try:
+    root = ET.parse(sys.argv[1]).getroot()
+except Exception:
+    print("0 0 0 0")
+    sys.exit(0)
+suites = [root] if root.tag == "testsuite" else list(root.iter("testsuite"))
+tot = [0, 0, 0, 0]
+for s in suites:
+    for i, k in enumerate(("tests", "failures", "errors", "skipped")):
+        tot[i] += int(s.get(k, 0))
+print(*tot)
+PYEOF
+}
 
 # ── Toolchains ───────────────────────────────────────────────────────────────
 # Backend: a bin/ directory holding python, pytest, ruff and mypy. BACKEND_VENV
@@ -94,8 +112,8 @@ echo "frontend toolchain: $(frontend_toolchain && echo "typescript, vitest, esli
 echo "logs: $LOG_DIR"
 
 # ── 1. Backend test suite + coverage floor ───────────────────────────────────
-# The FULL suite (unit + integration + guardian), once, with coverage measured
-# on that run. Coverage is judged on the full suite only -- see
+# The FULL suite (unit + integration + guardian) on SQLite, once, with coverage
+# measured on that run. Coverage is judged on the full suite only -- see
 # scripts/coverage-floor.json for why the old global --cov-fail-under went.
 header "backend: pytest (full suite) + coverage floor"
 COV_JSON="$LOG_DIR/coverage.json"
@@ -104,7 +122,9 @@ if [ -z "$PYBIN" ]; then
     record backend-coverage SKIPPED "no Python toolchain with pytest" 0
 else
     t0=$SECONDS
-    ( cd backend && "$PYBIN/pytest" -q -p no:cacheprovider --cov=src \
+    # SQLite, always: TEST_DATABASE_URL would move this run to PostgreSQL, which is
+    # the next step's job (1b), and then nothing would run the SQLite schema.
+    ( cd backend && env -u TEST_DATABASE_URL "$PYBIN/pytest" -q -p no:cacheprovider --cov=src \
         --cov-report="json:$COV_JSON" --junitxml="$LOG_DIR/pytest-junit.xml" ) \
         > "$LOG_DIR/backend-pytest.log" 2>&1
     rc=$?
@@ -136,6 +156,51 @@ else
         record backend-coverage PASS "line ${detail#coverage }" $((SECONDS - t0))
     else
         record backend-coverage FAIL "$(grep -m1 FAIL "$LOG_DIR/backend-coverage.log" | cut -c1-160)" $((SECONDS - t0))
+    fi
+fi
+
+# ── 1b. Backend test suite on PostgreSQL ─────────────────────────────────────
+# The same full suite with TEST_DATABASE_URL set (postgresql+asyncpg://...):
+# tests/conftest.py then builds a fresh database on that server from
+# backend/src/db/migrations/*.sql, in order, instead of SQLITE_DDL. The step above
+# runs only on SQLite, whose loose typing accepted what PostgreSQL refuses (a JSON
+# string into TEXT[], an ISO string into TIMESTAMPTZ): the Guardian could not
+# write audit_log on the production schema, and session_state and incidents had
+# no migration at all. The full suite rather than integration/ + guardian/ alone:
+# unit/ reaches the database too (interventions, the registry, triage), and the
+# whole run takes about a minute. Coverage is judged once, on the step above.
+#
+# Unset is SKIPPED ("no TEST_DATABASE_URL"): not measured, so the gate exits 2.
+# A skipped test is a FAIL here: in this run a skip is a PostgreSQL test that did
+# not run (tests/integration/test_postgres_schema_parity.py). The URL is never
+# printed -- it carries a password.
+header "backend: pytest on PostgreSQL (TEST_DATABASE_URL)"
+if [ -z "$PYBIN" ]; then
+    record backend-pytest-postgres SKIPPED "no Python toolchain with pytest (set BACKEND_VENV)" 0
+elif [ -z "${TEST_DATABASE_URL:-}" ]; then
+    record backend-pytest-postgres SKIPPED "no TEST_DATABASE_URL" 0
+else
+    t0=$SECONDS
+    ( cd backend && "$PYBIN/pytest" -q -p no:cacheprovider --no-cov -rs \
+        --junitxml="$LOG_DIR/pytest-postgres-junit.xml" ) \
+        > "$LOG_DIR/backend-pytest-postgres.log" 2>&1
+    rc=$?
+    read -r n_tests n_fail n_err n_skip < <(junit_counts "$PY" "$LOG_DIR/pytest-postgres-junit.xml")
+    n_pass=$(( n_tests - n_fail - n_err - n_skip ))
+    if [ "$rc" -eq 0 ] && [ "$n_pass" -gt 0 ] && [ "$n_skip" -eq 0 ]; then
+        if scope_floor backend-tests "$n_pass" \
+           && indented "$PY" scripts/gate_scope.py pytest-files --junit "$LOG_DIR/pytest-postgres-junit.xml"; then
+            files="$(grep -oE 'pytest-files: [0-9]+/[0-9]+' "$LOG_DIR/.indented" | cut -d' ' -f2)"
+            record backend-pytest-postgres PASS "$n_pass passed, 0 skipped, ${files:-?} test files reported -- schema from the migrations" $((SECONDS - t0))
+        else
+            record backend-pytest-postgres FAIL "$n_pass passed, but the run's scope check failed (above)" $((SECONDS - t0))
+        fi
+    elif [ "$rc" -eq 0 ] && [ "$n_pass" -gt 0 ]; then
+        grep -E '^SKIPPED' "$LOG_DIR/backend-pytest-postgres.log" | head -5 | sed 's/^/   | /'
+        record backend-pytest-postgres FAIL "$n_pass passed but $n_skip skipped -- a skip on PostgreSQL is a test that did not run" $((SECONDS - t0))
+    else
+        show_tail "$LOG_DIR/backend-pytest-postgres.log" 40
+        record backend-pytest-postgres FAIL "exit $rc -- $n_pass passed, $n_fail failed, $n_err errors, $n_skip skipped" $((SECONDS - t0))
     fi
 fi
 
@@ -269,24 +334,7 @@ fi
 #
 # Counts come from the JUnit report (tests, failures, errors, skipped), not from
 # scraping the summary line: causal-core's addopts set -q, and pytest's quiet
-# levels drop that line.
-junit_counts() {  # python junit.xml -> "tests failures errors skipped"
-    "$1" - "$2" <<'PYEOF'
-import sys
-import xml.etree.ElementTree as ET
-try:
-    root = ET.parse(sys.argv[1]).getroot()
-except Exception:
-    print("0 0 0 0")
-    sys.exit(0)
-suites = [root] if root.tag == "testsuite" else list(root.iter("testsuite"))
-tot = [0, 0, 0, 0]
-for s in suites:
-    for i, k in enumerate(("tests", "failures", "errors", "skipped")):
-        tot[i] += int(s.get(k, 0))
-print(*tot)
-PYEOF
-}
+# levels drop that line (junit_counts, with the helpers at the top).
 pkg_python() {  # name -> path to a python for that package, or nothing
     local name="$1" var c common
     var="PKG_VENV_$(echo "$name" | tr 'a-z-' 'A-Z_')"

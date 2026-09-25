@@ -35,6 +35,25 @@ jobs:
       # committed (no redistribution licence), cached between runs.
       CAUSAL_FETCH: "1"
       PIP_DISABLE_PIP_VERSION_CHECK: "1"
+    # PostgreSQL for the gate's backend-pytest-postgres step: the backend suite run
+    # on the schema backend/src/db/migrations/*.sql builds, not on SQLite. The test
+    # fixtures create (and drop) a fresh database on it per run. The password is a
+    # CI-only throwaway for a container that lives as long as this job and listens
+    # only on the runner; it guards nothing.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-only-throwaway
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -84,6 +103,10 @@ jobs:
           packages/causal-core/.venv/bin/python packages/causal-core/scripts/check_licenses.py causal-decision
 
       - name: Run the gate
+        env:
+          # The service container above (CI-only credentials). Unset, the
+          # backend-pytest-postgres step is SKIPPED and the gate exits 2.
+          TEST_DATABASE_URL: postgresql+asyncpg://postgres:ci-only-throwaway@localhost:5432/postgres
         # ci.sh's exit contract: 0 passed, 1 a blocking step failed, 2 could not measure
         # (a step's toolchain is absent -- in CI that means the environment above is
         # broken -- or an advisory database could not be reached, so pip-audit or npm

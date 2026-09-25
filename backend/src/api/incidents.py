@@ -25,6 +25,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import bindparam, text
 
 from src.db.factory import CloudSqlFactory
+from src.db.types import TIMESTAMP, json_value, timestamp_text, typed_text
 from src.middleware.auth import get_current_user
 
 log = structlog.get_logger(__name__)
@@ -74,21 +75,35 @@ async def save_incident(
     requires_human_review: bool,
 ) -> None:
     """Upsert an incident row. Idempotent on `id` (latest payload wins)."""
-    now = datetime.now(UTC).isoformat()
+    now = datetime.now(UTC)
     status_value = "ACTIVE" if requires_human_review else "INVESTIGATING"
 
     async with CloudSqlFactory.get_session_factory()() as session:
-        # INSERT OR REPLACE — safe because incident IDs come from upstream (PagerDuty etc.)
+        # An upsert on the id (incident IDs come from upstream: PagerDuty etc.). It
+        # was INSERT OR REPLACE, which is SQLite-only; ON CONFLICT is both dialects'.
+        # created_at is left out of the update, so the first submission's stands.
         await session.execute(
-            text(
-                "INSERT OR REPLACE INTO incidents "
+            typed_text(
+                "INSERT INTO incidents "
                 "(id, title, severity, affected_services, status, session_id, "
                 "cynefin_domain, domain_confidence, overall_confidence, guardian_verdict, "
                 "draft_explanation, causal_hypotheses, proposed_interventions, "
                 "submitted_by, created_at, updated_at) "
                 "VALUES (:id, :title, :sev, :svcs, :status, :session_id, "
                 ":cynefin, :dc, :oc, :verdict, :explain, :hyp, :ints, "
-                ":by, COALESCE((SELECT created_at FROM incidents WHERE id = :id), :now), :now)"
+                ":by, :now, :now) "
+                "ON CONFLICT (id) DO UPDATE SET "
+                "title = excluded.title, severity = excluded.severity, "
+                "affected_services = excluded.affected_services, status = excluded.status, "
+                "session_id = excluded.session_id, cynefin_domain = excluded.cynefin_domain, "
+                "domain_confidence = excluded.domain_confidence, "
+                "overall_confidence = excluded.overall_confidence, "
+                "guardian_verdict = excluded.guardian_verdict, "
+                "draft_explanation = excluded.draft_explanation, "
+                "causal_hypotheses = excluded.causal_hypotheses, "
+                "proposed_interventions = excluded.proposed_interventions, "
+                "submitted_by = excluded.submitted_by, updated_at = excluded.updated_at",
+                now=TIMESTAMP,
             ),
             {
                 "id": incident_id,
@@ -189,7 +204,7 @@ def _row_to_record(row: Any) -> IncidentRecord:
         id=str(row["id"]),
         title=str(row["title"]),
         severity=str(row["severity"]),
-        affected_services=json.loads(row["affected_services"] or "[]"),
+        affected_services=json_value(row["affected_services"], []),
         status=str(row["status"]),
         session_id=row["session_id"],
         cynefin_domain=row["cynefin_domain"],
@@ -197,11 +212,11 @@ def _row_to_record(row: Any) -> IncidentRecord:
         overall_confidence=row["overall_confidence"],
         guardian_verdict=row["guardian_verdict"],
         draft_explanation=row["draft_explanation"] or "",
-        causal_hypotheses=json.loads(row["causal_hypotheses"] or "[]"),
-        proposed_interventions=json.loads(row["proposed_interventions"] or "[]"),
+        causal_hypotheses=json_value(row["causal_hypotheses"], []),
+        proposed_interventions=json_value(row["proposed_interventions"], []),
         submitted_by=str(row["submitted_by"]),
-        created_at=str(row["created_at"]),
-        updated_at=str(row["updated_at"]),
+        created_at=timestamp_text(row["created_at"]) or "",
+        updated_at=timestamp_text(row["updated_at"]) or "",
     )
 
 

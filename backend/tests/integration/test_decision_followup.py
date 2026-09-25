@@ -25,6 +25,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
 from src.api.main import app
+from src.db.types import json_value
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -117,9 +118,7 @@ async def test_deciding_records_what_would_have_to_be_re_measured(
     ).mappings().all()
 
     assert [r["kind"] for r in row] == ["plan"]
-    import json
-
-    plan = json.loads(row[0]["payload"])
+    plan = json_value(row[0]["payload"])
     assert plan["graph"] == GRAPH
     assert plan["query"]["treatment"] == "playbook"
     assert plan["predicted_benefit"] is not None, "a verdict with no prediction cannot be scored"
@@ -250,7 +249,7 @@ async def test_the_followup_table_refuses_to_be_edited(db_session: AsyncSession)
         text(
             "INSERT INTO decision_followups "
             "(entry_digest, decision_digest, kind, decidable, created_at, payload) "
-            "VALUES ('e', 'd', 'realization', 1, 'now', '{}')"
+            "VALUES ('e', 'd', 'realization', TRUE, 'now', '{}')"
         )
     )
     await db_session.commit()
@@ -287,7 +286,7 @@ async def test_the_database_refuses_a_second_measurement_too(db_session: AsyncSe
     insert = text(
         "INSERT INTO decision_followups "
         "(entry_digest, decision_digest, kind, decidable, created_at, payload) "
-        "VALUES ('race', 'd', 'realization', 1, 'now', '{}')"
+        "VALUES ('race', 'd', 'realization', TRUE, 'now', '{}')"
     )
     await db_session.execute(insert)
     await db_session.commit()

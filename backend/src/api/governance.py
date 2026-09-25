@@ -33,6 +33,7 @@ from sqlalchemy import bindparam, column, func, select, table
 from src.agents.governance import GovernanceAgent
 from src.agents.grounding_risk import grounding_risk
 from src.db.factory import CloudSqlFactory
+from src.db.types import TIMESTAMP
 from src.exceptions import GuardianBlockedError, InvalidTransitionError, ObjectNotFoundError
 from src.middleware.rbac import GOVERNANCE_ROLES, domain_scope, guard
 from src.orchestration.session_store import SessionStateStore
@@ -451,17 +452,20 @@ async def get_audit_log(
     # Built with SQLAlchemy Core, so no SQL is assembled from strings (bandit B608).
     # Every value is a named, untyped bindparam() given at execution, as with
     # text(): a literal would take a type from the Python value, and asyncpg would
-    # render a cast PostgreSQL may refuse (see _AUDIT_LOG).
+    # render a cast PostgreSQL may refuse (see _AUDIT_LOG). The time bounds are the
+    # exception, typed as TIMESTAMP (src/db/types.py): a TIMESTAMPTZ on PostgreSQL,
+    # and on SQLite the same ISO text the column holds, so the comparison is between
+    # like things on both.
     filters = []
     params: dict[str, Any] = {
         "limit": page_size,
         "offset": (page - 1) * page_size,
     }
     if from_ts:
-        filters.append(_AUDIT_LOG.c.created_at >= bindparam("from_ts"))
+        filters.append(_AUDIT_LOG.c.created_at >= bindparam("from_ts", type_=TIMESTAMP))
         params["from_ts"] = from_ts
     if to_ts:
-        filters.append(_AUDIT_LOG.c.created_at <= bindparam("to_ts"))
+        filters.append(_AUDIT_LOG.c.created_at <= bindparam("to_ts", type_=TIMESTAMP))
         params["to_ts"] = to_ts
     if agent_id:
         filters.append(_AUDIT_LOG.c.agent_id == bindparam("agent_id"))

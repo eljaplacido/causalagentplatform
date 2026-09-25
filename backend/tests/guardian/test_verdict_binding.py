@@ -23,6 +23,7 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import text
 
+from src.db.types import TEXT_ARRAY, TIMESTAMP, json_value, typed_text
 from src.exceptions import GuardianBlockedError, InvalidTransitionError
 from src.semantic_layer.models import CynefinDomain, EpistemicState, UserRef
 from src.semantic_layer.verdict import claim as verdict_claim
@@ -89,14 +90,16 @@ async def test_verdict_naming_no_subject_authorises_nothing(
         )
     )
     await db_session.execute(
-        text(
+        typed_text(
             "INSERT INTO audit_log (id, agent_id, action_type, payload_hash, "
             " guardian_verdict, policy_rules_cited, session_id, created_at, "
             " subject_id, signature) "
-            "VALUES (:id, 'test-agent', 'TEST', 'deadbeef', 'APPROVED', '[]', NULL, "
-            " :ts, NULL, :sig)"
+            "VALUES (:id, 'test-agent', 'TEST', 'deadbeef', 'APPROVED', :rules, NULL, "
+            " :ts, NULL, :sig)",
+            rules=TEXT_ARRAY,
+            ts=TIMESTAMP,
         ),
-        {"id": str(verdict_id), "ts": created_at, "sig": signature},
+        {"id": str(verdict_id), "rules": [], "ts": created_at, "sig": signature},
     )
     await db_session.commit()
 
@@ -352,7 +355,7 @@ async def test_a_graph_fragment_can_be_approved_and_its_lineage_is_kept(
     )
     status, lineage = row.one()
     assert status == "APPROVED"
-    assert '"step_type": "APPROVED"' in str(lineage)
+    assert [step["step_type"] for step in json_value(lineage)] == ["APPROVED"]
 
 
 async def test_a_graph_fragment_can_be_rejected(

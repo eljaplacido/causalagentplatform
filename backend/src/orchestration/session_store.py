@@ -15,6 +15,7 @@ import structlog
 from sqlalchemy import text
 
 from src.db.factory import CloudSqlFactory
+from src.db.types import TIMESTAMP, typed_text
 from src.semantic_layer.models import EpistemicState
 
 log = structlog.get_logger(__name__)
@@ -42,12 +43,12 @@ class SessionStateStore:
 
     async def save(self, state: EpistemicState, user_id: str | None = None) -> None:
         """Upsert the latest EpistemicState snapshot for the session."""
-        now = datetime.now(UTC).isoformat()
+        now = datetime.now(UTC)
         payload = json.dumps(state.model_dump(mode="json"), sort_keys=True)
 
         async with CloudSqlFactory.get_session_factory()() as session:
             await session.execute(
-                text(
+                typed_text(
                     "INSERT INTO session_state "
                     "(session_id, user_id, agent_id, state_json, created_at, updated_at) "
                     "VALUES (:sid, :uid, :aid, :state_json, :created_at, :updated_at) "
@@ -55,7 +56,9 @@ class SessionStateStore:
                     "user_id = excluded.user_id, "
                     "agent_id = excluded.agent_id, "
                     "state_json = excluded.state_json, "
-                    "updated_at = excluded.updated_at"
+                    "updated_at = excluded.updated_at",
+                    created_at=TIMESTAMP,
+                    updated_at=TIMESTAMP,
                 ),
                 {
                     "sid": state.session_id,

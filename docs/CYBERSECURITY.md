@@ -532,8 +532,10 @@ The ticked ones exist as steps or tests that `.gnomon/ci.sh` runs. The rest are 
 - [x] Guardian bypass test: every registry write path enforces the verdict check
   (`backend/tests/guardian/test_guardian_bypass.py`, `test_verdict_binding.py`,
   `test_draft_cannot_self_approve.py`)
-- [x] Audit trail integrity test: no audit entry can be updated or deleted, on the SQLite
-  schema (`backend/tests/guardian/`). The PostgreSQL triggers are not exercised by any test
+- [x] Audit trail integrity test: no audit entry can be updated or deleted
+  (`backend/tests/guardian/test_guardian_bypass.py`), on the SQLite schema and, in the gate's
+  `backend-pytest-postgres` step, on the PostgreSQL schema the migrations build, where
+  001's triggers are what refuse it (and 003/004/007's for the decision chain and models)
 - [ ] Prompt injection test suite: structured adversarial input set for all LLM-facing endpoints
 - [ ] Causal poisoning simulation: synthetic adversarial edge injection detected and rejected
 

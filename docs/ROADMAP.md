@@ -89,8 +89,7 @@ sustainability investment assurance follow, in that order.
 
 The order of work above is the direction. The next items come from the work ledger,
 `.beads/issues.jsonl`; `septacore ready` in the repository root lists what is ready, highest
-priority first. As of 2026-09-25 all 44 entries are ready, and the priorities put hardening the
-platform before new estimators:
+priority first, and the priorities put hardening the platform before new estimators:
 
 - **p0, the platform's own trust boundary.** Done: the Guardian computes the PR-002 score itself,
   from the prose and the kernel outcome it reports, instead of reading it from the caller
@@ -104,7 +103,12 @@ platform before new estimators:
   open, register `supply-chain-scanning-not-in-ci`). Every secret is
   read from its variable or a mounted `<NAME>_FILE`, the backend refuses to start outside
   `ENV=local` without a signing key, and the key rotates through a previous-keys list
-  (`septa-28`; no secret-manager client).
+  (`septa-28`; no secret-manager client). The backend suite runs on PostgreSQL as well as
+  SQLite, on the schema the migrations build: it found that the Guardian could not write
+  `audit_log` there and that `session_state` and `incidents` had no migration, and both are
+  fixed (`septa-52`, gate step `backend-pytest-postgres`). No SQL in `backend/src` is built
+  from strings, and bandit enforces it (`septa-50`). Open: rejecting a draft needs a Guardian
+  REJECTED verdict, which a classified reject request never gets (`septa-53`).
 - **p1, release and drift.** Protect `main` (`septa-1`); a first PyPI release of the three
   packages (`septa-2`); checks that the skills and agent docs name only things that exist
   (`septa-3`) and that MCP tool parameters are derived from `CausalQuery` (`septa-4`); SeptaCore's
@@ -114,7 +118,7 @@ platform before new estimators:
   `septa-9`), calibration (`septa-10`), anchoring (`septa-11`), Rosenbaum bounds (`septa-12`),
   Guardian PR-007 (`septa-33`), positivity detection and triangulation at moderate n (`septa-34`,
   `septa-35`), and the review queue's risk tier (`septa-36`).
-- **p3 and p4.** The rest of the register (Postgres, versioned semantic objects, lineage,
+- **p3 and p4.** The rest of the register (PostgreSQL row-level security, versioned semantic objects, lineage,
   provenance, the LLM layer, Cynefin routing, frontend views and others), then the longer-range
   methods: discovery, rung-3 counterfactuals, general ID estimation, subgroup discovery. Many of
   these end either in the capability or in its claim being withdrawn from the docs.

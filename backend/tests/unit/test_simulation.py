@@ -24,9 +24,9 @@ from datetime import datetime
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import text
 
 from src.agents.simulation import SimulationAgent
+from src.db.types import TEXT_ARRAY, TIMESTAMP, UUID_ARRAY, typed_text
 from src.semantic_layer.models import (
     CynefinDomain,
     EpistemicState,
@@ -143,12 +143,16 @@ async def test_effect_estimation_uses_resolved_fragment_edges(
     fragment_id = uuid4()
 
     await db_session.execute(
-        text(
+        typed_text(
             "INSERT INTO causal_edges "
             "(id, source_id, source_type, target_id, target_type, edge_type, direction, confidence, "
             " evidence_refs, assumption_refs, approval_status, approved_by, approved_at, guardian_verdict_ref, version, lineage, domain, created_at) "
             "VALUES (:id, :source_id, :source_type, :target_id, :target_type, :edge_type, :direction, :confidence, "
-            " :evidence_refs, :assumption_refs, :approval_status, :approved_by, :approved_at, :guardian_verdict_ref, :version, :lineage, :domain, :created_at)"
+            " :evidence_refs, :assumption_refs, :approval_status, :approved_by, :approved_at, :guardian_verdict_ref, :version, :lineage, :domain, :created_at)",
+            evidence_refs=UUID_ARRAY,
+            assumption_refs=UUID_ARRAY,
+            approved_at=TIMESTAMP,
+            created_at=TIMESTAMP,
         ),
         {
             "id": str(edge_id),
@@ -159,8 +163,8 @@ async def test_effect_estimation_uses_resolved_fragment_edges(
             "edge_type": "CAUSES",
             "direction": "FORWARD",
             "confidence": 0.82,
-            "evidence_refs": json.dumps([]),
-            "assumption_refs": json.dumps([]),
+            "evidence_refs": [],
+            "assumption_refs": [],
             "approval_status": "APPROVED",
             "approved_by": json.dumps({"id": "governance-officer"}),
             "approved_at": datetime.utcnow().isoformat(),
@@ -172,23 +176,27 @@ async def test_effect_estimation_uses_resolved_fragment_edges(
         },
     )
     await db_session.execute(
-        text(
+        typed_text(
             "INSERT INTO graph_fragments "
             "(id, name, domain, description, edge_ids, entry_nodes, exit_nodes, approval_status, version, usage_count, tags, guardian_verdict_ref, created_by, created_at, approved_at, approved_by) "
-            "VALUES (:id, :name, :domain, :description, :edge_ids, :entry_nodes, :exit_nodes, :approval_status, :version, :usage_count, :tags, :guardian_verdict_ref, :created_by, :created_at, :approved_at, :approved_by)"
+            "VALUES (:id, :name, :domain, :description, :edge_ids, :entry_nodes, :exit_nodes, :approval_status, :version, :usage_count, :tags, :guardian_verdict_ref, :created_by, :created_at, :approved_at, :approved_by)",
+            edge_ids=UUID_ARRAY,
+            tags=TEXT_ARRAY,
+            created_at=TIMESTAMP,
+            approved_at=TIMESTAMP,
         ),
         {
             "id": str(fragment_id),
             "name": "approved-simulation-fragment",
             "domain": "devops",
             "description": "Approved fragment for simulation testing",
-            "edge_ids": json.dumps([str(edge_id)]),
+            "edge_ids": [str(edge_id)],
             "entry_nodes": json.dumps([{"id": str(treatment_id), "object_type": "Treatment"}]),
             "exit_nodes": json.dumps([{"id": str(outcome_id), "object_type": "Outcome"}]),
             "approval_status": "APPROVED",
             "version": "1.0.0",
             "usage_count": 0,
-            "tags": json.dumps([]),
+            "tags": [],
             "guardian_verdict_ref": str(approved_audit_entry_id),
             "created_by": json.dumps({"id": "test-user"}),
             "created_at": datetime.utcnow().isoformat(),
