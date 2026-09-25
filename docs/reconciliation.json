@@ -331,12 +331,15 @@
         "frontend/src"
       ],
       "baseline": {
-        "on": "2026-09-19",
+        "on": "2026-09-25",
         "sha256": {
           "frontend/src": "43b4fec5fbddbf1cbeab0cc5dc3aa23933dd6678419738027cbf5fa27d48f428"
         }
       },
-      "last_read": null
+      "last_read": {
+        "on": "2026-09-25",
+        "by": "Claude (principles, persona views and component inventory checked against frontend/src/components and app/)"
+      }
     },
     "docs/ROADMAP.md": {
       "why": "the product direction (causal decision assurance for agentic workflows), what the code covers of it, and the order of work -- it goes stale when the kernel's capabilities or the open register change",

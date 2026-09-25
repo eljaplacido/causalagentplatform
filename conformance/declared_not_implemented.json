@@ -100,6 +100,10 @@
         {
           "at": "docs/CYBERSECURITY.md:308",
           "says": "- Rosenbaum sensitivity bounds"
+        },
+        {
+          "at": "docs/UIX.md:191",
+          "says": "I want to run a one-click Rosenbaum sensitivity analysis on any approved edge"
         }
       ],
       "reality": "E-values are now correct and scale-aware (causal-core's e_value_rr; risk ratio, or difference plus outcome SD; otherwise null with the reason), and the kernel reports E-values and Cinelli-Hazlett robustness values from data. Rosenbaum bounds are not implemented: rosenbaum_gamma is always null (the previous values came from an invented multiplier).",
@@ -232,6 +236,10 @@
         {
           "at": "backend/src/api/governance.py:342",
           "says": "summary=\"List pending drafts ordered by risk tier\""
+        },
+        {
+          "at": "docs/UIX.md:234",
+          "says": "I want a structured review queue of all draft graph changes awaiting approval, ordered by risk tier"
         }
       ],
       "reality": "ReviewQueueItem carries no risk tier and no submitter, the queue is not ordered by risk, and the UI fills riskTier \"MEDIUM\" and submittedBy \"system\" for every item.",
