@@ -1,0 +1,98 @@
+{
+  "suite": "T5",
+  "prereg_sha256": "sha256:f240eb810629d1ef8737d18937b1d8b366f90c534e77448f649df751eed20b3b",
+  "prereg_version": 2,
+  "git": "f5b3e013eeb0260d03eac4182b83b6f5b497caf7",
+  "designs": [
+    {
+      "id": "staggered_dynamic",
+      "truth": 3.125,
+      "reps": 500,
+      "results": 500,
+      "mean": 3.129011294480025,
+      "mcse": 0.005116027158924441,
+      "bias": 0.004011294480025018,
+      "bias_in_mcse": 0.7840643443472896,
+      "coverage": 0.94,
+      "event_coverage": 0.948,
+      "pretrend_rejection_rate": 0.022,
+      "first_failure": "",
+      "extra": {}
+    },
+    {
+      "id": "staggered_constant",
+      "truth": 2.0,
+      "reps": 500,
+      "results": 500,
+      "mean": 2.003961182700296,
+      "mcse": 0.0043226161711154235,
+      "bias": 0.003961182700296106,
+      "bias_in_mcse": 0.9163854812660706,
+      "coverage": 0.938,
+      "event_coverage": 0.9332,
+      "pretrend_rejection_rate": 0.01,
+      "first_failure": "",
+      "extra": {}
+    },
+    {
+      "id": "single_cohort",
+      "truth": 1.5,
+      "reps": 500,
+      "results": 500,
+      "mean": 1.5033516933253976,
+      "mcse": 0.004381440065023539,
+      "bias": 0.003351693325397642,
+      "bias_in_mcse": 0.7649752765429271,
+      "coverage": 0.958,
+      "event_coverage": 0.956,
+      "pretrend_rejection_rate": 0.014,
+      "first_failure": "",
+      "extra": {}
+    },
+    {
+      "id": "null_effect",
+      "truth": 0.0,
+      "reps": 500,
+      "results": 500,
+      "mean": -0.00023712262167073516,
+      "mcse": 0.004171711557777573,
+      "bias": -0.00023712262167073516,
+      "bias_in_mcse": 0.05684060807815276,
+      "coverage": 0.956,
+      "event_coverage": 0.9416,
+      "pretrend_rejection_rate": 0.01,
+      "first_failure": "",
+      "extra": {}
+    },
+    {
+      "id": "trends_violated",
+      "truth": 2.0,
+      "reps": 500,
+      "results": 500,
+      "mean": 2.770168357004944,
+      "mcse": 0.004052210623354171,
+      "bias": 0.7701683570049438,
+      "bias_in_mcse": 190.06128471363755,
+      "coverage": 0.0,
+      "event_coverage": 0.004,
+      "pretrend_rejection_rate": 1.0,
+      "first_failure": "",
+      "extra": {}
+    }
+  ],
+  "refusals": {
+    "unbalanced": "refusal:DESIGN_CHECK_FAILED",
+    "treatment_turns_off": "refusal:DESIGN_CHECK_FAILED",
+    "no_never_treated": "refusal:DESIGN_CHECK_FAILED",
+    "treated_from_the_start": "refusal:DESIGN_CHECK_FAILED",
+    "tiny_cohort": "refusal:LOW_N"
+  },
+  "seeded_defects_caught": {
+    "cells_independent": true,
+    "forbidden_comparisons": true,
+    "pretrend_blind": true,
+    "twfe_static": true
+  },
+  "failures": [],
+  "passed": true
+}
