@@ -1040,6 +1040,58 @@
       "title": "Interval",
       "type": "object"
     },
+    "ParallelTrendsSensitivity": {
+      "additionalProperties": false,
+      "description": "How far parallel trends may fail before the conclusion changes (panel designs).",
+      "properties": {
+        "alpha_effect": {
+          "title": "Alpha Effect",
+          "type": "number"
+        },
+        "alpha_pre": {
+          "title": "Alpha Pre",
+          "type": "number"
+        },
+        "breakdown": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The largest multiple at which the interval still excludes zero. None when it includes zero even with no violation allowed.",
+          "title": "Breakdown"
+        },
+        "method": {
+          "title": "Method",
+          "type": "string"
+        },
+        "pre_bound": {
+          "description": "Upper confidence bound on the largest absolute pre-adoption event-time effect.",
+          "title": "Pre Bound",
+          "type": "number"
+        },
+        "rows": {
+          "items": {
+            "$ref": "#/$defs/TrendSensitivityRow"
+          },
+          "title": "Rows",
+          "type": "array"
+        }
+      },
+      "required": [
+        "method",
+        "alpha_pre",
+        "alpha_effect",
+        "pre_bound",
+        "rows"
+      ],
+      "title": "ParallelTrendsSensitivity",
+      "type": "object"
+    },
     "PropensityDiagnostics": {
       "additionalProperties": false,
       "properties": {
@@ -1363,6 +1415,17 @@
           "default": null,
           "title": "E Value Method"
         },
+        "parallel_trends": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ParallelTrendsSensitivity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "partial_r2_treatment": {
           "anyOf": [
             {
@@ -1526,6 +1589,31 @@
       "title": "Tier",
       "type": "string"
     },
+    "TrendSensitivityRow": {
+      "additionalProperties": false,
+      "properties": {
+        "hi": {
+          "title": "Hi",
+          "type": "number"
+        },
+        "lo": {
+          "title": "Lo",
+          "type": "number"
+        },
+        "m": {
+          "description": "Post-adoption bias allowed, as a multiple of the largest pre-adoption deviation.",
+          "title": "M",
+          "type": "number"
+        }
+      },
+      "required": [
+        "m",
+        "lo",
+        "hi"
+      ],
+      "title": "TrendSensitivityRow",
+      "type": "object"
+    },
     "Triangulation": {
       "additionalProperties": false,
       "properties": {
@@ -1596,7 +1684,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:causalplatform:claims:0.6.0:outcome",
+  "$id": "urn:causalplatform:claims:0.7.0:outcome",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "discriminator": {
     "mapping": {

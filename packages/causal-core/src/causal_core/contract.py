@@ -26,7 +26,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
-CONTRACT_VERSION = "0.6.0"
+CONTRACT_VERSION = "0.7.0"
 
 
 class _Model(BaseModel):
@@ -246,6 +246,13 @@ class AnalysisPolicy(_Model):
     sensitivity: bool = True
     require_approved_graph: bool = False
     max_ci_width: float | None = Field(default=None, gt=0)
+    pt_sensitivity_grid: tuple[float, ...] = Field(
+        default=(0.0, 0.5, 1.0, 1.5, 2.0),
+        description="Panel designs: multiples of the largest pre-adoption deviation at which to "
+        "report parallel-trends-robust intervals.",
+    )
+    pt_alpha_pre: float = Field(default=0.025, gt=0, lt=0.5)
+    pt_alpha_effect: float = Field(default=0.025, gt=0, lt=0.5)
     cs_target_n: int = Field(
         default=2000,
         ge=10,
@@ -364,6 +371,29 @@ class RefutationResult(_Model):
     detail: str = ""
 
 
+class TrendSensitivityRow(_Model):
+    m: float = Field(description="Post-adoption bias allowed, as a multiple of the largest "
+                     "pre-adoption deviation.")
+    lo: float
+    hi: float
+
+
+class ParallelTrendsSensitivity(_Model):
+    """How far parallel trends may fail before the conclusion changes (panel designs)."""
+
+    method: str
+    alpha_pre: float
+    alpha_effect: float
+    pre_bound: float = Field(description="Upper confidence bound on the largest absolute "
+                             "pre-adoption event-time effect.")
+    rows: tuple[TrendSensitivityRow, ...]
+    breakdown: float | None = Field(
+        default=None,
+        description="The largest multiple at which the interval still excludes zero. None when "
+        "it includes zero even with no violation allowed.",
+    )
+
+
 class Sensitivity(_Model):
     e_value: float | None = None
     e_value_ci: float | None = None
@@ -371,6 +401,7 @@ class Sensitivity(_Model):
     partial_r2_treatment: float | None = None
     robustness_value: float | None = None
     robustness_value_alpha: float | None = None
+    parallel_trends: ParallelTrendsSensitivity | None = None
 
 
 class TriangulationPair(_Model):

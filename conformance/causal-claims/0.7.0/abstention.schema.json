@@ -704,7 +704,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:causalplatform:claims:0.6.0:abstention",
+  "$id": "urn:causalplatform:claims:0.7.0:abstention",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {

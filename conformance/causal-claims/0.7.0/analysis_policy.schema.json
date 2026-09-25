@@ -1,5 +1,5 @@
 {
-  "$id": "urn:causalplatform:claims:0.6.0:analysis_policy",
+  "$id": "urn:causalplatform:claims:0.7.0:analysis_policy",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Every threshold that can change an answer. Hashed into provenance.",
@@ -116,6 +116,35 @@
         }
       ],
       "title": "Propensity Bounds",
+      "type": "array"
+    },
+    "pt_alpha_effect": {
+      "default": 0.025,
+      "exclusiveMaximum": 0.5,
+      "exclusiveMinimum": 0,
+      "title": "Pt Alpha Effect",
+      "type": "number"
+    },
+    "pt_alpha_pre": {
+      "default": 0.025,
+      "exclusiveMaximum": 0.5,
+      "exclusiveMinimum": 0,
+      "title": "Pt Alpha Pre",
+      "type": "number"
+    },
+    "pt_sensitivity_grid": {
+      "default": [
+        0.0,
+        0.5,
+        1.0,
+        1.5,
+        2.0
+      ],
+      "description": "Panel designs: multiples of the largest pre-adoption deviation at which to report parallel-trends-robust intervals.",
+      "items": {
+        "type": "number"
+      },
+      "title": "Pt Sensitivity Grid",
       "type": "array"
     },
     "refutation_alpha": {

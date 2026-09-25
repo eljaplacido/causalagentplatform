@@ -91,9 +91,26 @@ def pretrend_blind() -> Iterator[None]:
         yield
 
 
+@contextmanager
+def last_pre_period_only() -> Iterator[None]:
+    """The bound on pre-adoption deviations looks only at the period next to the base.
+
+    That is the period with the smallest deviation under a trend, so the bound on how
+    far trends can diverge afterwards is the least informative one there is.
+    """
+    real = panel_mod.pre_bound
+
+    def fake(panel: panel_mod.Panel, pre: dict[int, panel_mod.Aggregate], alpha: float) -> float:
+        return real(panel, {e: a for e, a in pre.items() if e == -2} or pre, alpha)
+
+    with mock.patch.object(panel_mod, "pre_bound", fake):
+        yield
+
+
 DEFECTS: dict[str, Callable[[], Any]] = {
     "twfe_static": twfe_static,
     "forbidden_comparisons": forbidden_comparisons,
     "cells_independent": cells_independent,
     "pretrend_blind": pretrend_blind,
+    "last_pre_period_only": last_pre_period_only,
 }

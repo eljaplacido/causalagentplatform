@@ -145,7 +145,7 @@
       "evidence": [
         {
           "at": "backend/pyproject.toml:51",
-          "says": "\"causal-core>=0.6.0\","
+          "says": "\"causal-core>=0.7.0\","
         }
       ],
       "leaves_by": {

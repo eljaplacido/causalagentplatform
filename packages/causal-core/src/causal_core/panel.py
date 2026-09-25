@@ -65,11 +65,14 @@ from causal_core.contract import (
     IdentificationCertificate,
     IdentificationStatus,
     Interval,
+    ParallelTrendsSensitivity,
     Provenance,
     RefutationResult,
     ResultStatus,
+    Sensitivity,
     Strategy,
     Tier,
+    TrendSensitivityRow,
 )
 
 F = NDArray[np.float64]
@@ -360,6 +363,46 @@ def pre_trends(panel: Panel, pre: dict[int, Aggregate], alpha: float) -> Refutat
     )
 
 
+# ── sensitivity to parallel-trends violations ─────────────────────────────────
+
+SENSITIVITY_METHOD = (
+    "relative magnitudes on event-time deviations (after Rambachan & Roth 2023): post-adoption "
+    "bias <= M x the largest pre-adoption deviation; union bound over an upper confidence bound "
+    "on the pre-period deviations and the estimate's interval"
+)
+
+
+def pre_bound(panel: Panel, pre: dict[int, Aggregate], alpha: float) -> float:
+    """An upper confidence bound on max_e |pre-adoption effect|, Bonferroni across the periods.
+
+    A seam for the seeded defects: `last_pre_period_only` bounds it from e = -2 alone.
+    """
+    z = float(stats.norm.ppf(1 - alpha / (2 * len(pre))))
+    return max(abs(a.point) + z * a.se() for a in pre.values())
+
+
+def trend_sensitivity(
+    point: float, se: float, panel: Panel, pre: dict[int, Aggregate], policy: AnalysisPolicy
+) -> ParallelTrendsSensitivity | None:
+    if not pre:
+        return None
+    u = pre_bound(panel, pre, policy.pt_alpha_pre)
+    z = float(stats.norm.ppf(1 - policy.pt_alpha_effect / 2))
+    rows = tuple(
+        TrendSensitivityRow(m=m, lo=point - (m * u + z * se), hi=point + (m * u + z * se))
+        for m in policy.pt_sensitivity_grid
+    )
+    margin = abs(point) - z * se
+    return ParallelTrendsSensitivity(
+        method=SENSITIVITY_METHOD,
+        alpha_pre=policy.pt_alpha_pre,
+        alpha_effect=policy.pt_alpha_effect,
+        pre_bound=u,
+        rows=rows,
+        breakdown=margin / u if margin > 0 and u > 0 else None,
+    )
+
+
 # ── the analysis ──────────────────────────────────────────────────────────────
 
 
@@ -465,6 +508,10 @@ def analyze_panel(
     else:
         status = ResultStatus.supported
 
+    trends = trend_sensitivity(overall.point, se, panel, pre, policy)
+    if trends is None:
+        warnings.append("no pre-adoption period beyond the base: sensitivity to parallel-trends "
+                        "violations cannot be bounded")
     treated_units = int((panel.cohort >= 0).sum())
     diagnostics = Diagnostics(
         n_rows=panel.n_rows,
@@ -484,6 +531,7 @@ def analyze_panel(
         diagnostics=diagnostics,
         refutations=tuple(refutations),
         event_study=tuple(events),
+        sensitivity=None if trends is None else Sensitivity(parallel_trends=trends),
         claims=build_claims({
             "effect": (rec.point, "/primary/point", None),
             "effect.se": (rec.se, "/primary/se", None),
@@ -491,6 +539,11 @@ def analyze_panel(
             "effect.ci.hi": (rec.ci.hi if rec.ci else None, "/primary/ci/hi", None),
             "ci.level": (level * 100, "/primary/ci/level", "%"),
             "n": (float(panel.n), "/primary/n_used", None),
+            "pt.breakdown": (
+                trends.breakdown if trends is not None else None,
+                "/sensitivity/parallel_trends/breakdown",
+                None,
+            ),
         }),
         warnings=tuple(warnings),
         provenance=Provenance(**prov),

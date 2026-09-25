@@ -88,3 +88,17 @@ def test_the_decision_layer_reads_a_panel_result_like_any_other(panel: pd.DataFr
 def test_duplicate_unit_periods_are_refused(panel: pd.DataFrame) -> None:
     out = did(pd.concat([panel, panel.head(3)]))
     assert out.kind == "refusal" and "repeat" in out.detail
+
+
+def test_a_panel_result_says_how_far_parallel_trends_may_fail(panel: pd.DataFrame) -> None:
+    out = did(panel)
+    assert isinstance(out, CausalResult) and out.sensitivity is not None
+    pt = out.sensitivity.parallel_trends
+    assert pt is not None and [r.m for r in pt.rows] == [0.0, 0.5, 1.0, 1.5, 2.0]
+    widths = [r.hi - r.lo for r in pt.rows]
+    assert widths == sorted(widths), "allowing more violation can only widen the interval"
+    assert pt.breakdown is not None and pt.breakdown > 0
+    at = next(r for r in pt.rows if r.m >= pt.breakdown) if pt.breakdown <= 2 else None
+    if at is not None:
+        assert at.lo <= 0 <= at.hi, "past the breakdown the interval must reach zero"
+    assert any(c.id == "pt.breakdown" for c in out.claims)

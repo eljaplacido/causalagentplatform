@@ -153,6 +153,9 @@ class DesignReport:
     coverage: float
     event_coverage: float
     pretrend_rejection_rate: float
+    sensitivity_m: float | None = None
+    sensitivity_coverage: float | None = None
+    median_breakdown: float | None = None
     first_failure: str = ""
     extra: dict[str, float] = field(default_factory=dict)
 
@@ -163,6 +166,13 @@ def run_design(design: Design, cfg: Mapping[str, Any], reps: int | None = None) 
     rng = _rng(p["seed"], design.id)
     true_att, true_events = truth(design, p["periods"])
     drawn = p.get("cohort_membership", "fixed") == "drawn"
+    sens = cfg.get("sensitivity")
+    m_at = None
+    if sens is not None:
+        m_true = sens["m_true"][design.id]
+        m_at = min((m for m in sens["grid"] if m >= m_true - 1e-12), default=None)
+    sens_hit = sens_n = 0
+    breakdowns: list[float] = []
     points: list[float] = []
     covered = ev_hit = ev_total = rejected = 0
     first_failure = ""
@@ -181,6 +191,12 @@ def run_design(design: Design, cfg: Mapping[str, Any], reps: int | None = None) 
                 ev_hit += ev.estimate.ci.lo <= true_events[ev.event_time] <= ev.estimate.ci.hi
         if any(r.name == "pre_trends" and not r.passed for r in out.refutations):
             rejected += 1
+        pt = out.sensitivity.parallel_trends if out.sensitivity is not None else None
+        if m_at is not None and pt is not None:
+            row = next(r for r in pt.rows if abs(r.m - m_at) < 1e-12)
+            sens_n += 1
+            sens_hit += row.lo <= true_att <= row.hi
+            breakdowns.append(pt.breakdown if pt.breakdown is not None else 0.0)
     k = len(points)
     mean = float(np.mean(points)) if k else float("nan")
     mcse = float(np.std(points, ddof=1) / np.sqrt(k)) if k > 1 else float("nan")
@@ -196,6 +212,9 @@ def run_design(design: Design, cfg: Mapping[str, Any], reps: int | None = None) 
         coverage=covered / k if k else 0.0,
         event_coverage=ev_hit / ev_total if ev_total else 0.0,
         pretrend_rejection_rate=rejected / k if k else 0.0,
+        sensitivity_m=m_at,
+        sensitivity_coverage=sens_hit / sens_n if sens_n else None,
+        median_breakdown=float(np.median(breakdowns)) if breakdowns else None,
         first_failure=first_failure,
     )
 
@@ -223,6 +242,12 @@ def check_estimation(cfg: Mapping[str, Any], reps: int | None = None,
             if r.pretrend_rejection_rate > pt["false_alarm_max"]:
                 failures.append(f"{r.id}: pre-trends false alarms {r.pretrend_rejection_rate:.3f}"
                                 f" > {pt['false_alarm_max']}")
+        sens = cfg.get("sensitivity")
+        if sens is not None and r.id in sens["m_true"] and (
+            r.sensitivity_coverage is None or r.sensitivity_coverage < sens["coverage_min"]
+        ):
+            failures.append(f"{r.id}: sensitivity coverage {r.sensitivity_coverage} at M="
+                            f"{r.sensitivity_m} < {sens['coverage_min']}")
         if r.id == "trends_violated" and r.pretrend_rejection_rate < pt["power_min"]:
             failures.append(f"trends_violated: pre-trends power {r.pretrend_rejection_rate:.3f}"
                             f" < {pt['power_min']}")
@@ -285,6 +310,7 @@ CATCHER: dict[str, tuple[str, str]] = {
     "forbidden_comparisons": ("staggered_dynamic", "bias"),
     "cells_independent": ("staggered_dynamic", "coverage"),
     "pretrend_blind": ("trends_violated", "power"),
+    "last_pre_period_only": ("trends_violated", "sensitivity"),
 }
 
 
@@ -294,7 +320,8 @@ def defect_caught(name: str, cfg: Mapping[str, Any], reps: int | None = None) ->
     design, bar = CATCHER[name]
     with DEFECTS[name]():
         _, failures = check_estimation(cfg, reps=reps, only=(design,))
-    marker = {"bias": "bias", "coverage": ": coverage", "power": "power"}[bar]
+    marker = {"bias": "bias", "coverage": ": coverage", "power": "power",
+              "sensitivity": "sensitivity coverage"}[bar]
     return any(f.startswith(design) and marker in f for f in failures)
 
 
