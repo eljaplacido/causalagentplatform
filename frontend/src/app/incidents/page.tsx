@@ -169,31 +169,13 @@ export default function IncidentsPage() {
     try {
       setThinkingStage("Analyzing causal paths...");
 
-      interface SessionStateResponse {
-        session_id: string;
-        cynefin_domain: string;
-        domain_confidence: number;
-        guardian_verdict: string;
-        overall_confidence: number;
-        requires_human_review: boolean;
-        draft_explanation: string;
-        recommendation_count: number;
-        recommendations: Array<{
-          rank: number;
-          action: string;
-          rationale: string;
-          confidence: number;
-          risk_tier: string;
-        }>;
-      }
-
       const result = await sessionApi.incident({
         incident_id: incidentId,
         title: data.title,
         severity: severityMap[data.severity] ?? "P2",
         affected_services: affectedServices,
         metrics_snapshot: {},
-      }) as SessionStateResponse;
+      });
 
       setThinkingStage("Consulting Guardian...");
 

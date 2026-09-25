@@ -33,8 +33,9 @@ import { AuditLogPanel } from "@/components/shared/AuditLogPanel";
 import { PersonaSelector } from "@/components/shared/PersonaSelector";
 import { ReviewQueue } from "@/components/governance/ReviewQueue";
 import { ApprovalPanel } from "@/components/governance/ApprovalPanel";
-import { governanceApi } from "@/lib/api";
-import type { ReviewQueueItem, AuditEntry } from "@/lib/types";
+import { governanceApi, type ReviewQueueItemResponse } from "@/lib/api";
+import { toAuditLogRow } from "@/lib/mappers";
+import type { ReviewQueueItem, AuditLogRow } from "@/lib/types";
 
 // ─── Mock fallback data (dev-only, gated by env flag) ───────────────────────
 // NEVER silently shown in production. Must be explicitly opted-in via:
@@ -195,7 +196,7 @@ const MOCK_REVIEW_ITEMS: ReviewQueueItem[] = [
   },
 ];
 
-const MOCK_AUDIT_ENTRIES: AuditEntry[] = [
+const MOCK_AUDIT_ENTRIES: AuditLogRow[] = [
   {
     id: "audit-001",
     timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
@@ -220,16 +221,7 @@ const MOCK_AUDIT_ENTRIES: AuditEntry[] = [
 
 // ─── Backend response → frontend type mapper ──────────────────────────────────
 
-interface BackendQueueItem {
-  id: string;
-  object_type: string;
-  domain: string;
-  name: string;
-  approval_status: string;
-  created_at: string | null;
-}
-
-function mapBackendItem(item: BackendQueueItem): ReviewQueueItem {
+function mapBackendItem(item: ReviewQueueItemResponse): ReviewQueueItem {
   return {
     id: item.id,
     objectName: item.name,
@@ -246,30 +238,6 @@ function mapBackendItem(item: BackendQueueItem): ReviewQueueItem {
     evidenceCitations: [],
     sensitivityResults: [],
     assumptions: [],
-  };
-}
-
-interface BackendAuditEntry {
-  id: string;
-  agent_id: string;
-  action_type: string;
-  payload_hash: string;
-  guardian_verdict: string;
-  policy_rules_cited: string[];
-  session_id: string | null;
-  created_at: string;
-}
-
-function mapBackendAuditEntry(entry: BackendAuditEntry): AuditEntry {
-  return {
-    id: entry.id,
-    timestamp: entry.created_at,
-    agent: entry.agent_id,
-    action: entry.action_type,
-    verdict: entry.guardian_verdict as AuditEntry["verdict"],
-    policyRulesCited: entry.policy_rules_cited ?? [],
-    payloadHash: entry.payload_hash,
-    actorId: entry.session_id ?? "system",
   };
 }
 
@@ -323,7 +291,7 @@ export default function GovernancePage() {
   } = useQuery<ReviewQueueItem[]>({
     queryKey: REVIEW_QUEUE_QUERY_KEY,
     queryFn: async () => {
-      const raw = await governanceApi.reviewQueue() as BackendQueueItem[];
+      const raw = await governanceApi.reviewQueue();
       return raw.map(mapBackendItem);
     },
     retry: 1,
@@ -331,11 +299,11 @@ export default function GovernancePage() {
   });
 
   // ── React Query: audit log ──────────────────────────────────────────────────
-  const { data: backendAuditLog, isError: auditError } = useQuery<AuditEntry[]>({
+  const { data: backendAuditLog, isError: auditError } = useQuery<AuditLogRow[]>({
     queryKey: AUDIT_LOG_QUERY_KEY,
     queryFn: async () => {
-      const raw = await governanceApi.auditLog({ limit: 50 }) as { entries: BackendAuditEntry[] };
-      return raw.entries.map(mapBackendAuditEntry);
+      const page = await governanceApi.auditLog({ page_size: 50 });
+      return page.entries.map(toAuditLogRow);
     },
     retry: 1,
     staleTime: 30_000,
@@ -354,7 +322,7 @@ export default function GovernancePage() {
 
   // Audit rows come only from GET /api/governance/audit-log (or the labelled
   // mock set). Nothing is synthesized client-side.
-  const auditEntries: AuditEntry[] = auditIsMock
+  const auditEntries: AuditLogRow[] = auditIsMock
     ? MOCK_AUDIT_ENTRIES
     : (backendAuditLog ?? []);
   const auditUnavailable = auditError && !auditIsMock && !backendAuditLog;

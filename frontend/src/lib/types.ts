@@ -267,7 +267,12 @@ export interface ReviewQueueItem {
 
 // ─── Audit log ────────────────────────────────────────────────────────────────
 
-export interface AuditEntry {
+/**
+ * One row of AuditLogPanel. A view model: the backend's audit entry is
+ * AuditEntry from @causalplatform/semantic-types, mapped here by
+ * toAuditLogRow in @/lib/mappers.
+ */
+export interface AuditLogRow {
   id: string;
   timestamp: string; // ISO8601
   agent: string;
@@ -276,6 +281,8 @@ export interface AuditEntry {
   policyRulesCited: string[];
   payloadHash?: string;
   actorId?: string;
+  /** The semantic object the entry is about, when it is about one. */
+  subjectId?: string;
 }
 
 // ─── Persona ──────────────────────────────────────────────────────────────────

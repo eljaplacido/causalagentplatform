@@ -32,7 +32,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Play, RefreshCw, GitBranch, Layers, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { api, CausalApiError, semanticApi } from "@/lib/api";
+import { CausalApiError, semanticApi, sessionApi, type SessionStateResponse } from "@/lib/api";
+import { toFragmentCardData } from "@/lib/mappers";
 import { ThinkingIndicator } from "@/components/shared/ThinkingIndicator";
 import { PersonaSelector } from "@/components/shared/PersonaSelector";
 import { CynefinBadge } from "@/components/shared/CynefinBadge";
@@ -62,49 +63,6 @@ const sessionSchema = z.object({
 
 type SessionFormValues = z.infer<typeof sessionSchema>;
 
-// ── Fragment mapper ───────────────────────────────────────────────────────────
-
-function mapFragment(raw: Record<string, unknown>): FragmentCardData {
-  return {
-    id: String(raw["id"] ?? ""),
-    name: String(raw["name"] ?? ""),
-    domain: String(raw["domain"] ?? ""),
-    description: String(raw["description"] ?? ""),
-    edgeCount: Number(raw["edge_count"] ?? 0),
-    usageCount: Number(raw["usage_count"] ?? 0),
-    version: String(raw["version"] ?? "1.0.0"),
-    approvalStatus: String(raw["approval_status"] ?? "DRAFT") as FragmentCardData["approvalStatus"],
-    guardianVerdict: String(raw["guardian_verdict"] ?? "PENDING") as FragmentCardData["guardianVerdict"],
-    tags: Array.isArray(raw["tags"]) ? (raw["tags"] as string[]) : [],
-    createdAt: String(raw["created_at"] ?? new Date().toISOString()),
-    approvedAt: raw["approved_at"] ? String(raw["approved_at"]) : undefined,
-  };
-}
-
-// ── Mock session response type ────────────────────────────────────────────────
-
-interface SessionStateResponse {
-  session_id: string;
-  cynefin_domain: CynefinDomain;
-  domain_confidence: number;
-  guardian_verdict: GuardianVerdict;
-  policy_rules_cited: string[];
-  overall_confidence: number;
-  requires_human_review: boolean;
-  flags: string[];
-  draft_explanation: string;
-  proposed_edge_count: number;
-  recommendation_count: number;
-  recommendations: Array<{
-    rank: number;
-    action: string;
-    rationale: string;
-    confidence: number;
-    risk_tier: string;
-  }>;
-  cycle_count: number;
-}
-
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function AnalystPage() {
@@ -124,8 +82,8 @@ export default function AnalystPage() {
   const fragmentsQuery = useQuery({
     queryKey: ["semantic-fragments"],
     queryFn: async () => {
-      const raw = await semanticApi.fragments() as Record<string, unknown>[];
-      return raw.map(mapFragment);
+      const raw = await semanticApi.fragments();
+      return raw.map(toFragmentCardData);
     },
   });
 
@@ -200,7 +158,7 @@ export default function AnalystPage() {
       try {
         setThinkingStage("Running causal discovery...");
 
-        const data = await api.post<SessionStateResponse>("/api/v1/session/run", {
+        const data = await sessionApi.run({
           description: values.description,
           active_graph_fragment_id: activeFragment,
         });

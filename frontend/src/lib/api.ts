@@ -10,6 +10,15 @@
  *   Health    → /health  (public)
  */
 
+import type {
+  ApprovalStatus,
+  AuditEntry,
+  CynefinDomain,
+  EdgeDirection,
+  EdgeType,
+  GraphFragment,
+  GuardianVerdict,
+} from "@causalplatform/semantic-types";
 import { type ApiError } from "@/lib/types";
 
 // ─── Configuration ────────────────────────────────────────────────────────────
@@ -202,14 +211,136 @@ export const api = {
 
 // ─── Domain-scoped API clients ────────────────────────────────────────────────
 
+// ─── Response shapes ──────────────────────────────────────────────────────────
+// What the backend actually serialises, checked against its pydantic models.
+// Two conventions coexist: models with alias_generator=_camel (AuditEntry,
+// GraphFragment, CausalEdge) arrive camelCase; plain models (the envelopes,
+// SessionStateResponse, ReviewQueueItem) arrive snake_case.
+
+/**
+ * Response of /api/v1/session/{run,incident,{id}/state} — backend
+ * SessionStateResponse (backend/src/api/session.py), snake_case.
+ */
+export interface SessionStateResponse {
+  session_id: string;
+  agent_id: string;
+  cynefin_domain: CynefinDomain;
+  domain_confidence: number;
+  guardian_verdict: GuardianVerdict;
+  policy_rules_cited: string[];
+  overall_confidence: number;
+  requires_human_review: boolean;
+  flags: string[];
+  draft_explanation: string;
+  proposed_edge_count: number;
+  recommendation_count: number;
+  recommendations: Array<{
+    rank: number;
+    action: string;
+    rationale: string;
+    confidence: number;
+    risk_tier: string;
+  }>;
+  cycle_count: number;
+  timestamp: string;
+}
+
+/** One row of GET /api/governance/review-queue (governance.py ReviewQueueItem), snake_case. */
+export interface ReviewQueueItemResponse {
+  id: string;
+  object_type: string;
+  domain: string;
+  name: string;
+  /** DRAFT or UNDER_REVIEW -- the queue lists only objects pending review. */
+  approval_status: ApprovalStatus;
+  created_at: string | null;
+}
+
+/**
+ * GET /api/governance/audit-log — governance.py AuditLogResponse. The envelope
+ * is snake_case; each entry is AuditEntry, which serialises camelCase.
+ */
+export interface AuditLogResponse {
+  entries: AuditEntry[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+/** Query parameters GET /api/governance/audit-log accepts (governance.py get_audit_log). */
+export interface AuditLogParams {
+  from?: string;
+  to?: string;
+  agent_id?: string;
+  verdict?: GuardianVerdict;
+  page?: number;
+  /** 1..500, backend default 100 */
+  page_size?: number;
+}
+
+/**
+ * GET /api/semantic/fragments[/{id}] — backend GraphFragment, camelCase.
+ * Only the fields whose canonical type matches the wire: entryNodes,
+ * exitNodes and createdBy are left out because the canonical CausalObjectRef
+ * and UserRef are shaped differently from the backend's.
+ */
+export type GraphFragmentResponse = Pick<
+  GraphFragment,
+  | "id"
+  | "name"
+  | "domain"
+  | "description"
+  | "edges"
+  | "approvalStatus"
+  | "version"
+  | "usageCount"
+  | "tags"
+  | "guardianVerdictRef"
+  | "createdAt"
+>;
+
+/**
+ * GET /api/semantic/edges/{id} — backend CausalEdge, camelCase. source and
+ * target are the backend's CausalObjectRef ({id, objectType}), not the
+ * canonical one; approvedBy is the backend's UserRef ({id, email, name}).
+ */
+export interface CausalEdgeResponse {
+  id: string;
+  source: { id: string; objectType: string };
+  target: { id: string; objectType: string };
+  edgeType: EdgeType;
+  direction: EdgeDirection;
+  confidence: number;
+  evidenceRefs: string[];
+  assumptionRefs: string[];
+  approvalStatus: ApprovalStatus;
+  approvedBy: { id: string; email?: string | null; name?: string | null } | null;
+  approvedAt: string | null;
+  guardianVerdictRef: string;
+  version: string;
+  domain: string;
+}
+
+/** Build `?a=1&b=2` from the defined entries of `params`; "" when there are none. */
+function toQuery(params?: object): string {
+  if (!params) return "";
+  const defined = Object.entries(params).filter(
+    ([, v]) => v !== undefined && v !== null && v !== ""
+  );
+  if (defined.length === 0) return "";
+  return `?${new URLSearchParams(
+    defined.map(([k, v]) => [k, String(v)])
+  ).toString()}`;
+}
+
 /** Session orchestration — primary AI pipeline entry point */
 export const sessionApi = {
   run: (body: unknown) =>
-    api.post("/api/v1/session/run", body),
+    api.post<SessionStateResponse>("/api/v1/session/run", body),
   incident: (body: unknown) =>
-    api.post("/api/v1/session/incident", body),
+    api.post<SessionStateResponse>("/api/v1/session/incident", body),
   getState: (sessionId: string) =>
-    api.get(`/api/v1/session/${sessionId}/state`),
+    api.get<SessionStateResponse>(`/api/v1/session/${sessionId}/state`),
 };
 
 /** Response of POST /api/governance/check (backend GuardianCheckResponse). */
@@ -226,17 +357,11 @@ export interface GuardianCheckResponse {
 export const governanceApi = {
   // Routes: /api/governance/... (no v1 prefix)
   reviewQueue: (domain?: string) =>
-    api.get(`/api/governance/review-queue${domain ? `?domain=${domain}` : ""}`),
-  auditLog: (params?: { from?: string; to?: string; limit?: number }) =>
-    api.get(
-      `/api/governance/audit-log${
-        params
-          ? `?${new URLSearchParams(
-              params as Record<string, string>
-            ).toString()}`
-          : ""
-      }`
+    api.get<ReviewQueueItemResponse[]>(
+      `/api/governance/review-queue${toQuery({ domain })}`
     ),
+  auditLog: (params?: AuditLogParams) =>
+    api.get<AuditLogResponse>(`/api/governance/audit-log${toQuery(params)}`),
   check: (body: unknown) =>
     api.post<GuardianCheckResponse>("/api/governance/check", body),
   approve: (objectId: string, objectType: string, verdictId: string, notes?: string) =>
@@ -340,26 +465,20 @@ export const interventionApi = {
 /** Semantic layer — entities, fragments, drafts */
 export const semanticApi = {
   // Routes: /api/semantic/... (no v1 prefix)
-  fragments: (domain?: string, status?: string) =>
-    api.get(
-      `/api/semantic/fragments${
-        domain || status
-          ? `?${new URLSearchParams({
-              ...(domain ? { domain } : {}),
-              ...(status ? { status } : {}),
-            }).toString()}`
-          : ""
-      }`
+  fragments: (domain?: string, status?: GraphFragmentResponse["approvalStatus"]) =>
+    api.get<GraphFragmentResponse[]>(
+      `/api/semantic/fragments${toQuery({ domain, status })}`
     ),
-  fragment: (id: string) => api.get(`/api/semantic/fragments/${id}`),
+  fragment: (id: string) =>
+    api.get<GraphFragmentResponse>(`/api/semantic/fragments/${id}`),
   entities: (domain?: string) =>
     api.get(`/api/semantic/entities${domain ? `?domain=${domain}` : ""}`),
   entity: (id: string) => api.get(`/api/semantic/entities/${id}`),
-  edge: (id: string) => api.get(`/api/semantic/edges/${id}`),
+  edge: (id: string) => api.get<CausalEdgeResponse>(`/api/semantic/edges/${id}`),
   submitDraft: (objectType: string, payload: unknown) =>
     api.post("/api/semantic/drafts", { object_type: objectType, payload }),
   edgeAuditTrail: (edgeId: string) =>
-    api.get(`/api/semantic/edges/${edgeId}/audit-trail`),
+    api.get<AuditEntry[]>(`/api/semantic/edges/${edgeId}/audit-trail`),
 };
 
 /** Health check — public, no auth */
