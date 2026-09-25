@@ -28,16 +28,16 @@
       "baseline": {
         "on": "2026-09-25",
         "sha256": {
-          "backend/pyproject.toml": "ce3b260f18a72cb95508b54b0fdfc567c4501c6efd12616ec8379832b943acb5",
+          "backend/pyproject.toml": "31ec12890a7bf5512c8e918e0fed4bafe37f88d8826a7604f0aa1b9b6fa16b2b",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "frontend/package.json": "328e50541f6341ef44bdb0664d818c5de9c95444d15fa3cc19d076f971e4303e",
+          "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "1963237211b8f5b66597213a07ba49cc57513d002f362ba17f7f55992d2c5f1a"
+          "docs/CURRENT_STAGE.md": "e7d4419b51fc61fc262e7f207ed1b928a53e5c79b01c172a7525ea772bea1bc0"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-46: README makes no governance-page or approval-flow claim)"
+        "by": "Claude (septa-27: stack line still Next.js/Python 3.12 after next 15.5.26 and the dependency floors; install lines unchanged)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -54,18 +54,18 @@
       "baseline": {
         "on": "2026-09-25",
         "sha256": {
-          "conformance/declared_not_implemented.json": "4cfb946e9bcb2a1cb029338943a93648b266d3cd27f18efb41cc0af461f7aaec",
-          "backend/src": "702821656c47f0e7081d45b2d48b9569cfb34f76df0d050f2579532a2460eb29",
+          "conformance/declared_not_implemented.json": "9ebcec645fbcf1881ca808abbd6cf114944cc3ef06fb4a702d26b75a7d7bcfac",
+          "backend/src": "8e5dc091d3ded5fe4aebd53e5a5616289d60fe3a883e940500beb6a3db1d1a88",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "9b83a8a160ce3ae99ad4d8044a12a7fd284deaf130cb5bdfdcccd821fcb50661",
+          "backend/tests": "54896a032dabbc1ea6000ee4540221e537921c5ce7b0cf67f9dda611f2b6731e",
           "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
-          "packages": "91f77cd79719455dfa2732448800475a6beaeb538fe71298be4048fb67683ae5",
+          "packages": "1d0130c75356f3dfc99a697584c821cbd9a20f53d95dc79b26fd299c21b61482",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-46: approval-flow row names the page contract test)"
+        "by": "Claude (septa-27: security-scanning row implemented, supply-chain-scanning-not-in-ci row added, Gates bullet names the security steps)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -184,12 +184,12 @@
           "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
           "backend/src/db/migrations": "4ab4b5ad6dcc513cbb149dba3bd9fb4f7a7ff7dd35393cb51ee688baaec3d671",
           "backend/src/semantic_layer/verdict.py": "eda2e3481f24fb45ad19d5e11051fa65cd4ba75f8fba77e17415e5ad9479b9bf",
-          ".github/workflows": "041c8f41439f099603e2603010f35037b9b7c31006bda40713975a42d1b5b201"
+          ".github/workflows": "7f02b9e4121a9913600d30b2fdbec2ab680ccc29f2ba5ae8008ff3c6207f9376"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-26: §4.0 rewritten as the route matrix with the least-privilege choices, §4.1 and §4.2 status, §3.1 bypass, privilege-escalation bullet)"
+        "by": "Claude (septa-27: 8.4 describes the bandit, secret-scan and dependency-audit steps and the B608 skip; 8.3 and 10 point at supply-chain-scanning-not-in-ci)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -208,7 +208,7 @@
         "on": "2026-09-25",
         "sha256": {
           "backend/src/db": "73f4b4486583fb154c328a7348a4bbefd0e7551493e1dd5434116bbaec1fa68a",
-          "backend/src/connectors": "7f2719189ff9ec75f9e7fec44c394f80c4ad9abfbf9c9d0d834c7cbdfab87e44",
+          "backend/src/connectors": "47199e6fd213f90c59af28dda1c6469d256d6595cdd433fbbd1a2957ec723569",
           "backend/src/semantic_layer/models.py": "f3b7a600ac8e8c4ce7beb48145a188b2394f3775b6ad7d094613cbb9798d3b05",
           "backend/src/sensors": "d38f988ccb52659ac4ecc8724e8aa775b2e6e9fca76b73dbba6576c3f3d1dcba",
           "docker-compose.yml": "c2118a27d9bd334c63935f3b82336c693cc97c1ac2114e81ac602a45fc8be38e",
@@ -219,7 +219,7 @@
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-26: access-pattern rows name the drafting role, domain scope and viewer's approved-only reads)"
+        "by": "Claude (septa-27: Prometheus row still true -- validate() now httpx on an http(s)-only base_url, tests still mock HTTP)"
       }
     },
     "docs/HANDOFFS.md": {
@@ -253,13 +253,13 @@
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
-          ".github": "bcbebe13a3a18a53d3e97807c420ad468f4f8dc8e47216e7e5bf73f5b07f7749",
-          ".gnomon": "2cf06bcf1695f53904faaf89f972b821ac1678270ea40bd8949a7950e3416335"
+          ".github": "41fae14689ac86eea113f95a9a9061a67a56b609ce7953530272d48881088720",
+          ".gnomon": "a6a2118ccb7692a0820da2a5064f4adff52bf784cc0d6f8fcc6b6da4348e66e7"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (harness surface against .gnomon config/policy, .septacore.json, scripts/verify.sh, .beads)"
+        "by": "Claude (ci.sh frontend detection changed; the doc makes no claim about it)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -280,16 +280,16 @@
           "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docker-compose.yml": "c2118a27d9bd334c63935f3b82336c693cc97c1ac2114e81ac602a45fc8be38e",
-          "backend/pyproject.toml": "ce3b260f18a72cb95508b54b0fdfc567c4501c6efd12616ec8379832b943acb5",
-          "frontend/package.json": "328e50541f6341ef44bdb0664d818c5de9c95444d15fa3cc19d076f971e4303e",
-          "package.json": "1d6357ca0a5bff2cf56bc7fa16eaf4e54253728875d5e7161f443542bf8ec478",
+          "backend/pyproject.toml": "31ec12890a7bf5512c8e918e0fed4bafe37f88d8826a7604f0aa1b9b6fa16b2b",
+          "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
+          "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
           ".env.example": "48f330ad41a48b5d03d0ba3f2910d171f65587998b67b75c4ad21df8656585ce",
           "backend/scripts": "ccd196982e05a128b6c27d502a3b1a127f803b58b33d60e675f2b556116bdc95"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (backend/pyproject deps and extras; kernel test line now T0 and T4-T8)"
+        "by": "Claude (septa-27: gate paragraph says pip-audit audits the venvs it runs in and is SKIPPED offline)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -310,22 +310,22 @@
       "baseline": {
         "on": "2026-09-25",
         "sha256": {
-          ".github/workflows": "041c8f41439f099603e2603010f35037b9b7c31006bda40713975a42d1b5b201",
-          "backend/tests": "9b83a8a160ce3ae99ad4d8044a12a7fd284deaf130cb5bdfdcccd821fcb50661",
-          "backend/pyproject.toml": "ce3b260f18a72cb95508b54b0fdfc567c4501c6efd12616ec8379832b943acb5",
+          ".github/workflows": "7f02b9e4121a9913600d30b2fdbec2ab680ccc29f2ba5ae8008ff3c6207f9376",
+          "backend/tests": "54896a032dabbc1ea6000ee4540221e537921c5ce7b0cf67f9dda611f2b6731e",
+          "backend/pyproject.toml": "31ec12890a7bf5512c8e918e0fed4bafe37f88d8826a7604f0aa1b9b6fa16b2b",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
-          ".gnomon/ci.sh": "eff52277bd3b1621e25fe69ed849a59e1381ad6b6ee61aabf208e71d1130a43c",
-          "scripts": "ed1f7052ef160696de8406bb8c42e969faa20ffd20482f2a2222828e3f96945b",
+          ".gnomon/ci.sh": "5692f063efab9a80f519d1b5bba5507d9f092e0ed0f2779e180cb4ff0eeff0aa",
+          "scripts": "fa209a334f993a824a580a9de5159c9e4c008fea04d9371e23f6a8d4f9ac65f1",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "3dcea1af4dd3bbdd68778cbb91715e1663c850fb9681fe42096b50d1145550dc",
-          "packages/causal-core/tests": "25b07f6046c1a2d7a690aaa44890558a98c42d05990e9d28b28f802a3ab40885",
+          "packages/causal-core/tests": "b73dcfd6530b951cdacdaaaac95e7e4068843b27cbd6635fdbe7b9efe306ecb3",
           "packages/causal-decision/tests": "61bde7786a6158cc99f269fd057908ce3959e5e812ac5d8b4c82c11c2c7200b4"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (status-claims row: fixed_in must be an ancestor of HEAD)"
+        "by": "Claude (frontend toolchain detected by tool resolution, not a frontend/node_modules directory)"
       }
     },
     "docs/UIX.md": {
@@ -354,14 +354,14 @@
       "baseline": {
         "on": "2026-09-25",
         "sha256": {
-          "packages/causal-core/src/causal_core": "80232957daa4ee016f5c040dec92015c62298b850371a4f142508297e1731b2e",
-          "conformance/declared_not_implemented.json": "4cfb946e9bcb2a1cb029338943a93648b266d3cd27f18efb41cc0af461f7aaec",
-          "docs/CURRENT_STAGE.md": "1963237211b8f5b66597213a07ba49cc57513d002f362ba17f7f55992d2c5f1a"
+          "packages/causal-core/src/causal_core": "f504a91cfae574117c3accbd936ee039a34cde0bbd0579f77c4571207a366683",
+          "conformance/declared_not_implemented.json": "9ebcec645fbcf1881ca808abbd6cf114944cc3ef06fb4a702d26b75a7d7bcfac",
+          "docs/CURRENT_STAGE.md": "e7d4419b51fc61fc262e7f207ed1b928a53e5c79b01c172a7525ea772bea1bc0"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-46: p0 list notes the governance Approve fix)"
+        "by": "Claude (septa-27: p0 list says the security steps are in and what stays open)"
       }
     },
     "SECURITY.md": {

@@ -62,10 +62,13 @@ Out of scope (please do not report):
   environment
 - Denial-of-service through resource exhaustion against `localhost` deployments
 - Third-party library CVEs without a demonstrated exploitation path in this
-  codebase — please report those upstream first. No automated dependency
-  scanning runs in CI yet (see `security-scanning-not-in-ci` in
-  `conformance/declared_not_implemented.json`), so a report that one of our
-  pinned dependencies is affected is welcome
+  codebase — please report those upstream first. The gate audits the
+  Python environments it tests (pip-audit) and `package-lock.json` (npm audit)
+  on every push and weekly, and fails on any advisory not excused in
+  `scripts/audit-allowlist.json`. Python dependencies are ranges, not a
+  hash-pinned lock (`supply-chain-scanning-not-in-ci` in
+  `conformance/declared_not_implemented.json`), so a report that a version our
+  ranges admit is affected is welcome
 - Missing security headers on pages that do not handle authenticated state
 - Issues in the research notes under `docs/research/`, which are background
   reading rather than part of the deployable product surface
@@ -85,8 +88,10 @@ unless 90 days have elapsed without a fix.
 ## What is enforced today
 
 Read against the code 2026-09-25. The target security design (database-layer
-access control, secrets management, privacy controls, scanning) is in
+access control, secrets management, privacy controls, container scanning) is in
 [`docs/CYBERSECURITY.md`](docs/CYBERSECURITY.md), which marks what is not built.
+The gate's security steps (bandit, the secret scan, pip-audit and npm audit) are
+in its §8.4.
 
 **Authentication.** `FirebaseAuthMiddleware` (`backend/src/middleware/auth.py`)
 requires a Firebase ID token (`verify_id_token`, revocation checked) on every

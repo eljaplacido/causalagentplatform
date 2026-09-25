@@ -40,6 +40,10 @@
     "frontend-tsc-files": {
       "floor": 35,
       "why": "Project (non-node_modules) files in the tsc program (46). Under 35 means tsconfig's include stopped reaching src/."
+    },
+    "secret-scan-files": {
+      "floor": 400,
+      "why": "Files scripts/secret_scan.py read from the working tree (483 on 2026-09-25: git ls-files, tracked plus untracked-not-ignored, less binaries). Under 400 means the file listing stopped meaning the whole tree."
     }
   },
   "known_gaps": {

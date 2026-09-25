@@ -14,7 +14,6 @@ import json
 import multiprocessing
 import os
 import sys
-import urllib.request
 from collections import Counter
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
@@ -23,6 +22,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from causal_core.bench._fetch import download
 from causal_core.bench.lalonde import load_prereg as _load_toml_block
 from causal_core.contract import Abstention, AnalysisPolicy, CausalResult, ResultStatus
 from causal_core.pipeline import analyze
@@ -57,8 +57,7 @@ def fetch(cfg: dict[str, Any]) -> dict[str, bytes]:
         path = cache_dir() / name
         want = cfg["data"][split]
         if not path.exists() or hashlib.sha256(path.read_bytes()).hexdigest() != want:
-            with urllib.request.urlopen(cfg["data"]["base_url"] + name, timeout=120) as resp:
-                blob = resp.read()
+            blob = download(cfg["data"]["base_url"] + name, timeout=120)
             got = hashlib.sha256(blob).hexdigest()
             if got != want:
                 raise ValueError(f"{name}: sha256 {got} does not match the pinned {want}")

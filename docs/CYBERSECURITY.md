@@ -408,20 +408,43 @@ Internet → Cloud Load Balancer (TLS 1.3 termination)
 - **In place:** backend and frontend images run as non-root users (`USER causal`,
   `USER nextjs`). The backend image is `python:3.12-slim`.
 - **Target:** read-only root filesystem where possible.
-- **Target (register `security-scanning-not-in-ci`):** an SBOM for every release (Syft / Grype),
-  and a Trivy scan as a CI gate that blocks on HIGH/CRITICAL.
+- **Target (register `supply-chain-scanning-not-in-ci`):** an SBOM for every release (Syft /
+  Grype), and a Trivy scan as a CI gate that blocks on HIGH/CRITICAL. No workflow builds the
+  images today, so none is scanned.
 
 ### 8.4 Dependency Security
 
-> **Status:** target design (register `security-scanning-not-in-ci`). `pip-audit` and `bandit`
-> are declared as backend dev dependencies, and `bandit` has a config in
-> `backend/pyproject.toml`. No CI step runs either. The only supply-chain gate in CI is the
-> licence check on the published packages' runtime dependencies. Requirements are not
-> hash-pinned.
+**In place** (`.gnomon/ci.sh`, on every push and weekly on a schedule, so an advisory
+published since the last push surfaces without one):
 
-**Python stack:**
-- `pip-audit` in CI pipeline
-- `safety` check on every dependency update
+- **Dependency audit.** `pip-audit` over the environments the gate tests (the backend's and
+  the kernel packages'), pip included, and `npm audit` over `package-lock.json` (steps
+  `pip-audit-backend`, `pip-audit-packages`, `npm-audit`, through `scripts/dep_audit.py`).
+  Any advisory fails the step unless `scripts/audit-allowlist.json` excuses it with a reason
+  and a `review_by` date; an expired entry fails, and so does one whose advisory is no longer
+  reported. The list is empty: every advisory found when the step was added was fixed by
+  raising a floor in `backend/pyproject.toml` (transitive dependencies included) or
+  upgrading in `package-lock.json`. The advisory databases are remote; when one cannot be
+  reached the step is SKIPPED (not measured), which fails CI.
+- **SAST.** `bandit` over `backend/src`, `backend/mcp_server` and every `packages/*/src`,
+  blocking on MEDIUM and HIGH findings, held at zero by the ratchet in
+  `scripts/lint-baseline.json` (steps `bandit-backend`, `bandit-packages`). The backend's
+  `[tool.bandit]` skips B608 (SQL built from strings) for the whole tree: with it enabled,
+  `backend/src` has 13 MEDIUM findings, not yet reviewed site by site.
+- **Secret scan.** `scripts/secret_scan.py` (step `secret-scan`) over every file git would
+  commit from the working tree: private-key blocks, AWS, Google, Azure, GitHub, Slack, OpenAI,
+  Anthropic and Stripe token formats, and high-entropy literals assigned to `*KEY`, `*SECRET`,
+  `*TOKEN` and `*PASSWORD` names. It prints a fingerprint, never the value; a test fixture that
+  must look like a key is excused in `scripts/secret-scan-allowlist.json`. It does not scan
+  the git history: a key that was ever committed is handled by revoking it.
+- The licence check on the published packages' runtime dependencies (a CI step before the gate).
+
+> **Status of the rest:** target design (register `supply-chain-scanning-not-in-ci`). Python
+> dependencies are ranges in `pyproject.toml`, resolved at install, with no lockfile or
+> hashes; `package-lock.json` pins npm with integrity hashes. No dependabot configuration
+> opens update PRs. `safety` is not run; `pip-audit` covers the same advisories.
+
+**Python stack (target):**
 - Pinned dependencies with hash verification (`requirements.txt` with `--hash`)
 
 ---
@@ -457,11 +480,14 @@ path and response targets are in [`SECURITY.md`](../SECURITY.md).
 ## 10. Security Testing Requirements
 
 Checks every platform component must pass before promotion to any non-development environment.
-The ticked ones exist as tests that `.gnomon/ci.sh` runs. The rest are not built (register
-`security-scanning-not-in-ci`).
+The ticked ones exist as steps or tests that `.gnomon/ci.sh` runs. The rest are not built
+(register `supply-chain-scanning-not-in-ci`).
 
-- [ ] SAST: Bandit (Python)
-- [ ] Dependency audit: `pip-audit`
+- [x] SAST: Bandit (Python), MEDIUM+ held at zero (`bandit-backend`, `bandit-packages`)
+- [x] Dependency audit: `pip-audit` and `npm audit` against a reviewed allowlist
+  (`pip-audit-backend`, `pip-audit-packages`, `npm-audit`)
+- [x] Secret scan of the working tree (`secret-scan`; controls in
+  `backend/tests/unit/test_secret_scan.py`)
 - [ ] Container scan: Trivy (block on HIGH/CRITICAL)
 - [ ] DAST: OWASP ZAP against staging API (weekly)
 - [x] Guardian bypass test: every registry write path enforces the verdict check

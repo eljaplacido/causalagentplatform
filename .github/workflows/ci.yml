@@ -12,6 +12,10 @@ on:
     branches: ["**"]
   pull_request:
     branches: [main]
+  # Weekly, on main: an advisory published since the last push surfaces here (the
+  # pip-audit and npm-audit steps) without waiting for a PR to touch a dependency.
+  schedule:
+    - cron: "23 5 * * 1"
   workflow_dispatch:
 
 concurrency:
@@ -56,12 +60,15 @@ jobs:
       - name: Backend environment (backend/.venv)
         run: |
           python -m venv backend/.venv
+          # pip first: the gate's pip-audit audits this environment, pip included.
+          backend/.venv/bin/python -m pip install -q --upgrade pip
           backend/.venv/bin/pip install -q -e packages/causal-core \
             -e packages/causal-decision -e "backend[dev]"
 
       - name: Kernel environment (packages/causal-core/.venv)
         run: |
           python -m venv packages/causal-core/.venv
+          packages/causal-core/.venv/bin/python -m pip install -q --upgrade pip
           packages/causal-core/.venv/bin/pip install -q \
             -e "packages/causal-core[dev,crosscheck,ml]" \
             -e "packages/causal-decision[dev]" \
@@ -79,7 +86,8 @@ jobs:
       - name: Run the gate
         # ci.sh's exit contract: 0 passed, 1 a blocking step failed, 2 could not measure
         # (a step's toolchain is absent -- in CI that means the environment above is
-        # broken), 3 an advisory regressed (documents drifted from the code). 1 and 2 fail
+        # broken -- or an advisory database could not be reached, so pip-audit or npm
+        # audit did not happen; an unaudited build is not a passing one), 3 an advisory regressed (documents drifted from the code). 1 and 2 fail
         # the build; 3 is annotated, so drift is visible on the PR without blocking a merge
         # -- the SeptaCore loop (`septacore check`) is where it gets worked down.
         run: |
@@ -89,7 +97,7 @@ jobs:
           case "$rc" in
             0) ;;
             3) echo "::warning::documents drifted from the code they describe (see doc-reconciliation in the summary)" ;;
-            2) echo "::error::the gate could not measure a step -- a toolchain is missing from this environment"; exit 2 ;;
+            2) echo "::error::the gate could not measure a step -- a toolchain is missing, or an advisory database was unreachable (see SKIPPED in the summary)"; exit 2 ;;
             *) exit "$rc" ;;
           esac
 

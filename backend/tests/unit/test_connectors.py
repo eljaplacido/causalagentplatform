@@ -16,19 +16,19 @@ Invariants tested:
   12. map_to_semantic_objects() produces Assumption per anomaly event
   13. map_to_semantic_objects() produces CausalEdge for highly correlated services
   14. map_to_semantic_objects() skips edge when correlation < threshold
-  15. validate() returns healthy=True when urllib responds 200
-  16. validate() returns healthy=False on URLError
+  15. validate() returns healthy=True when /-/healthy answers 200 (httpx, MockTransport)
+  16. validate() returns healthy=False on a transport error; base_url must be http(s)
   17. PrometheusConnector default queries list is non-empty
   18. subscribe() is a no-op by default (does not raise)
 """
 
 from __future__ import annotations
 
-import urllib.error
 from datetime import UTC, datetime
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
+import httpx
 import pytest
 
 from src.connectors.base import (
@@ -469,36 +469,86 @@ def test_map_to_semantic_objects_all_drafts_pii_stripped() -> None:
 # ── 12. validate() ───────────────────────────────────────────────────────────
 
 
+def _patch_httpx_client(handler: Any) -> Any:
+    """Route validate()'s httpx.Client through a MockTransport calling `handler`."""
+    real_client = httpx.Client
+
+    def factory(**kwargs: Any) -> httpx.Client:
+        return real_client(transport=httpx.MockTransport(handler), **kwargs)
+
+    return patch("httpx.Client", side_effect=factory)
+
+
 def test_validate_healthy_when_prometheus_responds_200() -> None:
     """validate() must return healthy=True when Prometheus /-/healthy returns 200."""
-    conn = PrometheusConnector(base_url="http://prometheus:9090")
+    conn = PrometheusConnector(base_url="http://prometheus:9090", auth_token="t0k")
+    seen: list[httpx.Request] = []
 
-    mock_response = MagicMock()
-    mock_response.status = 200
-    mock_response.__enter__ = MagicMock(return_value=mock_response)
-    mock_response.__exit__ = MagicMock(return_value=False)
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, text="Prometheus is Healthy.")
 
-    with patch("urllib.request.urlopen", return_value=mock_response):
+    with _patch_httpx_client(handler):
         result = conn.validate()
 
     assert result.healthy is True
     assert result.connector_id == "prometheus-connector"
     assert result.error_message is None
+    assert [str(r.url) for r in seen] == ["http://prometheus:9090/-/healthy"]
+    assert seen[0].headers["Authorization"] == "Bearer t0k"
+
+
+def test_validate_unhealthy_on_non_200() -> None:
+    """A reachable Prometheus that does not answer 200 is not healthy."""
+    conn = PrometheusConnector(base_url="https://prometheus.example:9090")
+
+    with _patch_httpx_client(lambda request: httpx.Response(503)):
+        result = conn.validate()
+
+    assert result.healthy is False
 
 
 def test_validate_unhealthy_on_url_error() -> None:
     """validate() must return healthy=False when Prometheus is unreachable."""
     conn = PrometheusConnector(base_url="http://unreachable:9090")
 
-    with patch(
-        "urllib.request.urlopen",
-        side_effect=urllib.error.URLError("connection refused"),
-    ):
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("connection refused", request=request)
+
+    with _patch_httpx_client(handler):
         result = conn.validate()
 
     assert result.healthy is False
     assert result.error_message is not None
-    assert "unreachable" in result.error_message.lower() or "connection" in result.error_message.lower()
+    message = result.error_message.lower()
+    assert "unreachable" in message or "connection" in message
+
+
+@pytest.mark.parametrize(
+    "base_url",
+    [
+        "file:///etc/passwd",
+        "ftp://prometheus:21",
+        "gopher://prometheus:70",
+        "prometheus:9090",
+        "http://",
+        "",
+    ],
+)
+def test_prometheus_base_url_must_be_http_or_https(base_url: str) -> None:
+    """A base URL that is not http(s) with a host is refused at construction.
+
+    Before this, validate() handed the URL to urllib.request.urlopen, which also
+    opens file:// and custom schemes (bandit B310): a configured file:// URL made
+    the health ping a local file read.
+    """
+    with pytest.raises(ValueError, match="http:// or https://"):
+        PrometheusConnector(base_url=base_url)
+
+
+def test_prometheus_base_url_accepts_http_and_https() -> None:
+    assert PrometheusConnector(base_url="http://prom:9090/")._base_url == "http://prom:9090"
+    assert PrometheusConnector(base_url="https://prom.example")._base_url == "https://prom.example"
 
 
 # ── 13. PrometheusConnector defaults ─────────────────────────────────────────
