@@ -32,12 +32,12 @@
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "b901d321e117c9049ee22af5c63fa71179bc74b675949ed8756c7e9a788413fc"
+          "docs/CURRENT_STAGE.md": "5b79198aeea1211fa1c8e61f7490860e278e48779fa977251fc491b263665304"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-4: CURRENT_STAGE gained a row; README quotes no row or count from it, and its causal-mcp paragraph names tools, not parameters)"
+        "by": "Claude (septa-4: CURRENT_STAGE's causal-core count 171->180; the README quotes no test counts)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -356,12 +356,12 @@
         "sha256": {
           "packages/causal-core/src/causal_core": "f504a91cfae574117c3accbd936ee039a34cde0bbd0579f77c4571207a366683",
           "conformance/declared_not_implemented.json": "90161f087f2904e24cd576b6a2142f71d90f3a9600b02123db019e2a6c931500",
-          "docs/CURRENT_STAGE.md": "b901d321e117c9049ee22af5c63fa71179bc74b675949ed8756c7e9a788413fc"
+          "docs/CURRENT_STAGE.md": "5b79198aeea1211fa1c8e61f7490860e278e48779fa977251fc491b263665304"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-4: CURRENT_STAGE gained a row; ROADMAP links to it and quotes none of its rows)"
+        "by": "Claude (septa-4: CURRENT_STAGE count change; the roadmap quotes no counts)"
       }
     },
     "SECURITY.md": {

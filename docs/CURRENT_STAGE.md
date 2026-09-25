@@ -180,7 +180,7 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 | mypy --strict (each package's src) | zero, per package | 0 for causal-core, causal-decision and causal-mcp |
 | Frontend tsc / vitest | must pass | 50 files typecheck; 62 tests in 8 files |
 | Frontend eslint (`frontend/src`, Next's core-web-vitals and TypeScript rules) | zero findings, may not rise ([`scripts/lint-baseline.json`](../scripts/lint-baseline.json)) | 0 over 44 files |
-| Every Python package under `packages/` | its suite must pass in the package's environment, and a skipped test fails it | causal-core 171 passed (T0, T4, T5, T6, T7 and T8 gates, and T2/T3 with their data cached); causal-decision 118 (D0 and A0); causal-mcp 38 |
+| Every Python package under `packages/` | its suite must pass in the package's environment, and a skipped test fails it | causal-core 180 passed (T0, T4, T5, T6, T7 and T8 gates, and T2/T3 with their data cached); causal-decision 118 (D0 and A0); causal-mcp 38 |
 | Skill modules imported by a test | 2 known gaps, may only shrink | 9 of 11 |
 | State-changing routes called by a test | no gaps allowed | 17 of 17 |
 | MCP tools referenced by a test (legacy server) | no gaps allowed | 7 of 7 |
