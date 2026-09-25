@@ -1,5 +1,14 @@
 # Orchestration: Multi-Agent Development & Platform Patterns
 
+> **Canonical orchestration is the gnomon chain, not this document.** The stages a unit of work
+> passes through in this repository are declared in `.gnomon/config.toml` `[chain]`:
+> `coordinator` (spec, contract, register entry or pre-registration) → `implementor` (test first,
+> then code) → `verifier` (runs `.gnomon/ci.sh`; cannot edit what it judges), gated `on_check`.
+> Each role's tools and write scope are in `.gnomon/roles.toml`, and the working rules are in the
+> root [`AGENTS.md`](../AGENTS.md) and `.gnomon/skills/`. What follows is the author's personal
+> development tool stack and lane vocabulary: one way of working, not configuration this
+> repository ships or depends on.
+>
 > **Scope:** Maps the external agentic tool stack to the platform's internal patterns. Defines work lanes, tool roles, handoff conventions, and the mirror principle connecting development methodology to platform architecture.
 
 ---
@@ -38,7 +47,7 @@
 | Broad exploration | Gemini (via CLI or Antigravity) | Claude Code |
 | Fast scaffolding | OpenCode Go (MiniMax M2.5/M2.7) | Copilot Pro agent mode |
 | Reasoning tasks | OpenCode Go (GLM-5 / Kimi K2.5) | Claude Code |
-| Local/private inference | Ollama on GX10 (future) | OpenCode Go |
+| Local/private inference | Local Ollama | OpenCode Go |
 | Inline completions | Copilot Pro | Cursor built-in |
 
 ---
@@ -107,7 +116,7 @@ The external orchestration patterns are not arbitrary. They mirror the platform'
 
 When building platform features, use the same lane discipline:
 - **Planning the SimulationAgent?** Use Claude Code in the `plan` lane
-- **Exploring how DoWhy fits?** Use Gemini CLI in the `explore` lane
+- **Exploring how a new estimator fits the kernel?** Use Gemini CLI in the `explore` lane
 - **Implementing the DriftMonitorAgent?** Use Cursor in the `implement` lane with a handoff packet from the planner
 - **Writing an ADR for the storage decision?** Use Hermes in the `govern` lane
 - **Setting up nightly test runs?** Use OpenFang in the `automate` lane
@@ -165,13 +174,15 @@ This creates a feedback loop: the development process teaches you how the platfo
 
 ## 6. Configuration Files
 
+Only files tracked in this repository are listed. Per-tool configuration for the IDE and CLI
+agents above (Cursor rules, OpenCode agents, Hermes skills, OpenFang schedules) is personal and
+kept out of version control; nothing here reads it, and a checkout without it is complete.
+
 | File | Purpose |
 |------|---------|
-| `.cursor/rules/*.mdc` | Platform contract guardrails for Cursor sessions |
-| `.opencode/agents/*.md` | OpenCode agent definitions with model routing |
-| `.opencode/plugins/hermes.ts` | Hermes CLI bridge for OpenCode |
-| `.github/copilot-instructions.md` | Platform contracts for Copilot agent mode |
+| `AGENTS.md` | Entry point for any coding agent: rules, flow, gate |
+| `.gnomon/` | The agent harness surface: `config.toml` `[chain]`, `roles.toml`, `tools.toml`, `skills/`, `ci.sh` |
+| `.github/copilot-instructions.md` | Pointer to `AGENTS.md` plus Copilot-specific essentials |
 | `.github/ISSUE_TEMPLATE/*.yml` | Structured issues for Copilot Coding Agent |
 | `templates/*.md` | Handoff packet templates |
-| `prompts/*.yaml` | Versioned prompt templates for platform skills |
-| `~/.hermes/skills/` (WSL) | Reusable Hermes skills for this project |
+| `prompts/*.yaml` | Prompt specifications for platform skills (not loaded at runtime; see `prompts/README.md`) |

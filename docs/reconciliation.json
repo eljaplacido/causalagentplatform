@@ -188,16 +188,19 @@
         "backend/src/semantic_layer/models.py"
       ],
       "baseline": {
-        "on": "2026-09-19",
+        "on": "2026-09-25",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
-          "backend/src/semantic_layer/models.py": "43f3c67e216b78bcd16a05d0e185b7ecdf4da541fa71b26ef748cb0dc726a987"
+          "backend/src/semantic_layer/models.py": "8b89bc185388d810d635891b4b92dffb9219202f8aa5a02c696909f5eb7da198"
         }
       },
-      "last_read": null
+      "last_read": {
+        "on": "2026-09-25",
+        "by": "Claude Opus 5.5 (agent), against .gnomon/config.toml [chain], templates/, prompts/, .github/"
+      }
     },
     "docs/ORCHESTRATION.md": {
-      "why": "development tool stack and configuration files; several it lists are no longer tracked (82cdd8f)",
+      "why": "development tool stack and the tracked configuration files it lists; defers to .gnomon/config.toml [chain] for orchestration",
       "subjects": [
         "templates",
         "prompts",
@@ -205,15 +208,18 @@
         ".gnomon"
       ],
       "baseline": {
-        "on": "2026-09-19",
+        "on": "2026-09-25",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
-          "prompts": "060fadb860fa1728d2cf0238aa8156d455f609c5ba5ab2d3e20dea9dd45f447d",
-          ".github": "47185533513f8931727a44002a2df6d0785a3370025373389e669555abd1fd20",
-          ".gnomon": "90d4a9ffff0a00667bc9658a1d9f5aeb1b12ddb117504e5dbe6e3fced84cd03d"
+          "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
+          ".github": "baba93f61f8642395ded07ebe162223be8dcc667d1857df0c262795496c363ee",
+          ".gnomon": "c3f4de26eb57e7bd85feaf652fa225dd05fb8a5d77ecf1d3d6d0429e81d7a04c"
         }
       },
-      "last_read": null
+      "last_read": {
+        "on": "2026-09-25",
+        "by": "Claude Opus 5.5 (agent), against .gnomon/config.toml [chain], templates/, prompts/, .github/"
+      }
     },
     "docs/QUICKSTART.md": {
       "why": "setup and launch commands, infrastructure requirements",

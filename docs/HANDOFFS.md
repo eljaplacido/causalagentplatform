@@ -1,5 +1,12 @@
 # Provider-Neutral Handoff & Orchestration Standard
 
+> **Canonical orchestration is the gnomon chain.** In this repository the stages are declared in
+> `.gnomon/config.toml` `[chain]` — `coordinator` → `implementor` → `verifier`, gated `on_check` —
+> and a stage receives the original request plus what the stage before it *reported*, never its
+> transcript. That report is the handoff. The packet format below is a convention for handing
+> work between tools outside that chain; where the two differ, the chain wins, and the
+> verification that decides is always `.gnomon/ci.sh`. See the root [`AGENTS.md`](../AGENTS.md).
+
 > **Scope:** Standard for structured handoff between agentic providers (OpenCode Go, GitHub Copilot Pro, Claude Code, Codex, etc.) across the Unified Enterprise Causal Platform.
 > **Status:** Active — 2026-04-07 (promoted from Proposed 2026-04-30)
 
@@ -31,15 +38,15 @@ Every handoff between providers MUST include these fields:
 
 ```json
 {
-  "goal": "Complete SimulationAgent skill implementations with DoWhy integration",
+  "goal": "SimulationAgent reports the kernel's effect estimate, or its typed refusal",
   "target_files": [
     "backend/src/agents/simulation.py",
     "backend/src/skills/effect_estimate.py"
   ],
   "acceptance_criteria": [
-    "effect_estimate returns real ATE values from DoWhy",
-    "All stub TODO markers removed",
-    "Tests pass for ATE estimation with synthetic data"
+    "effect_estimate returns causal-core's estimate and interval, or its refusal reason",
+    "No number is produced when the kernel refuses",
+    "Tests assert the estimate against a simulated SCM with a known effect"
   ],
   "epistemic_state_constraints": {
     "require_approved_fragment": true,
@@ -47,8 +54,9 @@ Every handoff between providers MUST include these fields:
     "audit_log_required": true
   },
   "verification_commands": [
-    "python -m pytest backend/tests/unit/test_simulation.py -v",
-    "python -m pytest backend/tests/guardian/test_guardian_bypass.py -v"
+    "cd backend && .venv/bin/pytest tests/unit/test_simulation.py -q --no-cov",
+    "cd backend && .venv/bin/pytest tests/guardian/test_guardian_bypass.py -q --no-cov",
+    "bash .gnomon/ci.sh"
   ],
   "lane_classification": "implement",
   "lead_provider": "Cursor/Copilot",
@@ -116,22 +124,20 @@ Providers are mapped by capability, NOT by model name:
 Every handoff packet MUST include verification commands. These are run by the receiving provider to confirm success:
 
 ```bash
-# Example verification commands
+# Example verification commands (from the repository root)
 
 # Run unit tests for modified agent
-python -m pytest backend/tests/unit/test_simulation.py -v
+cd backend && .venv/bin/pytest tests/unit/test_simulation.py -q --no-cov
 
 # Run Guardian bypass tests
-python -m pytest backend/tests/guardian/test_guardian_bypass.py -v
+cd backend && .venv/bin/pytest tests/guardian/test_guardian_bypass.py -q --no-cov
 
-# Run integration tests
-python -m pytest backend/tests/integration/ -v
+# Type check and lint
+cd backend && .venv/bin/mypy src/agents/simulation.py
+cd backend && .venv/bin/ruff check src/agents/simulation.py
 
-# Type check
-cd backend && python -m mypy src/agents/simulation.py
-
-# Lint
-cd backend && python -m ruff check src/agents/simulation.py
+# The gate: every suite, ratchet and claim check. This is the one that decides.
+bash .gnomon/ci.sh
 ```
 
 ---
