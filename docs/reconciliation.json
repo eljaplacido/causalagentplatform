@@ -32,12 +32,12 @@
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "667d95a48ae10b44d972c44d46e29830be14a34bc42d1cff6fb2161cd66e2cb2"
+          "docs/CURRENT_STAGE.md": "9af8eaf690d6d9090ebac9f6af3d32841429eeffb4a7951d244cc3e1ee6ce017"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-47: README quotes no CURRENT_STAGE row and says nothing of RLS, roles or the database connection; unchanged)"
+        "by": "Claude (septa-49: the quick start installs the backend from requirements/backend.txt with --require-hashes, then the local packages --no-deps --no-build-isolation; the container line names both Dockerfiles, each built from the root; the CURRENT_STAGE change it tracks is the supply-chain row, which README does not quote)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -54,10 +54,10 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "dcb39338bddcf03ebf0d9db8afda626dc3d0c10bf208a8427496886fee20e7ed",
+          "conformance/declared_not_implemented.json": "7178ea45663f6d89c855f23a826251be991e9e0bb709a4d3cf526c6c1917ed76",
           "backend/src": "c06af80dee95babb1eed74ffbc5435ffe7f1cb1fdc8bf8f8489d087ad42aabe1",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "c610d5b607429b33c46a9854a647d9c8c0e03d3260714c2d602f103f3d083b3d",
+          "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
           "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
           "packages": "5a9c8d9bba06ef8cf6b6674cc10d367803f7a2cd8739311ba0710ebcd6a4c7b9",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
@@ -65,7 +65,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-47: the RLS row is implemented, pinned by test_rls_domain_isolation.py, fixed in e23adea; the Governance paragraph no longer says RLS binds nothing)"
+        "by": "Claude (septa-49: the supply-chain row is implemented, pinned by test_py_lock.py with test_image_scan.py and test_sbom_check.py, fixed in a6a864d, and says the images job and release.yml have not run on GitHub; new planned row dast-not-built; the backend/tests change is those three tests and test_dep_audit.py's lock mode)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -171,7 +171,11 @@
         "backend/src/api/provenance.py",
         "backend/src/db/migrations",
         "backend/src/semantic_layer/verdict.py",
-        ".github/workflows"
+        ".github/workflows",
+        "requirements",
+        "backend/Dockerfile",
+        "frontend/Dockerfile",
+        ".github/dependabot.yml"
       ],
       "baseline": {
         "on": "2026-09-26",
@@ -184,12 +188,16 @@
           "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
           "backend/src/db/migrations": "6b52679eb2132b16e3bb238da5d6a7bde969f409bba4bd63b431c94456db74f1",
           "backend/src/semantic_layer/verdict.py": "2807535994f0073bd9f58cc2774822d9f7bd1749aa7801d669eb2301bde3ac00",
-          ".github/workflows": "c55226ed754b0be770e6296b1113c0008013eb292ace02539ebf6dfe88ba6369"
+          ".github/workflows": "1ae0fadaa874c419905d5c24ebadf5ccca68705dc7d83057ea81682712fae31b",
+          "requirements": "bd38eddb75e794ad54781b54cc9f111bff4add78851511cd1e9c1294593db934",
+          "backend/Dockerfile": "3b1180c11b97ed0a52470f5990281c822796e2329435085658ee61379c82e735",
+          "frontend/Dockerfile": "903f92a0ae718885f6c8ad0eb77f87913e646d24af04bc10c77f01ca2ff9de59",
+          ".github/dependabot.yml": "e3f006f0b88eff986368a2993d111c8add8b5e399bfd0ecbbfeaedc57d6785f7"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-47: section 2 privilege escalation and 4.2 rewritten for 010_rls_binds.sql, src/db/scope.py, causal_app and the grants; 8.2's local-dev exception names causal_app's compose login)"
+        "by": "Claude (septa-49: 8.3 has both images' bases pinned by digest, the lock-installed backend without pip, the rebuilt frontend Dockerfile and the Trivy job with its allowlist and the 44 unfixed Debian findings listed not gated; 8.4 has the audit over the locks, hash-pinned installs, the release SBOM and dependabot; section 10 ticks the container scan and sends DAST to dast-not-built)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -253,13 +261,13 @@
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
-          ".github": "70e47d77822f0ef8f9f21afde256fb89ea86afdd7c46e64f093714ec830e4bab",
-          ".gnomon": "b06f519dbd3691c37f2e91dc1a4e30143d458ae2391aa679ce8881f47329be1d"
+          ".github": "0a8d8e713831ebec1cc8e44c2f719c44085c453b44baed2d4607ac2fa3df132b",
+          ".gnomon": "7f350ce02013384605ccb9ebb2ef1c440d06a59156478ed67fd32b41f7b501f7"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-47: the .github change is a ci.yml comment on the app role; the page cites only .github/copilot files and issue templates, still true)"
+        "by": "Claude (septa-49: the .github change is dependabot.yml and the two workflows, the .gnomon change is ci.sh's python-lock step and verifying-changes.md; the page's rows for .gnomon, scripts/verify.sh and the .github copilot files and issue templates are still true)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -272,7 +280,8 @@
         "frontend/package.json",
         "package.json",
         ".env.example",
-        "backend/scripts"
+        "backend/scripts",
+        "requirements"
       ],
       "baseline": {
         "on": "2026-09-26",
@@ -284,12 +293,13 @@
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
           ".env.example": "f5dbf40f551d60b4b91d5bbaa9b36a2404f89536421fe51b8bcbf17a6ae1258f",
-          "backend/scripts": "36d9419c9cb543ee85703a4d4008be1c16e383c5d7567d9c7bcb6dce92ad64da"
+          "backend/scripts": "36d9419c9cb543ee85703a4d4008be1c16e383c5d7567d9c7bcb6dce92ad64da",
+          "requirements": "bd38eddb75e794ad54781b54cc9f111bff4add78851511cd1e9c1294593db934"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-47: new 'How the app connects' paragraph: DATABASE_URL as causal_app, refusal as owner; compose table gives causal_app's login and the init script; the PostgreSQL test note says app queries run as causal_app)"
+        "by": "Claude (septa-49: both venvs install from requirements/backend.txt and kernel.txt with --require-hashes, then the local packages --no-deps --no-build-isolation; adding a dependency is edit, relock, commit both; the gate paragraph says python-lock needs a venv equal to its lock and names py_lock.py sync)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -305,27 +315,33 @@
         "specs",
         "benchmarks",
         "packages/causal-core/tests",
-        "packages/causal-decision/tests"
+        "packages/causal-decision/tests",
+        "requirements",
+        "backend/Dockerfile",
+        "frontend/Dockerfile"
       ],
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          ".github/workflows": "c55226ed754b0be770e6296b1113c0008013eb292ace02539ebf6dfe88ba6369",
-          "backend/tests": "c610d5b607429b33c46a9854a647d9c8c0e03d3260714c2d602f103f3d083b3d",
+          ".github/workflows": "1ae0fadaa874c419905d5c24ebadf5ccca68705dc7d83057ea81682712fae31b",
+          "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
           "backend/pyproject.toml": "eb8981b94a831f96ab3e93b9d91d676baab95bb8020aac71fa00f19020de0319",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
-          ".gnomon/ci.sh": "000eefb082364d77c90463d9b2e34a65a1c0bc4934b2d82f579f9ca0aab51eab",
-          "scripts": "c8f4ea6e5affdf2bfba0c1c942aa1a5ccee33dfcf8ff35afa2d3e3f8f0c197e0",
+          ".gnomon/ci.sh": "8379e43234946f44d8e569a68c60d42923500ded3012d88bf2a477f5ebecf8aa",
+          "scripts": "78dd74681709debcb039ced7e97f2a13cdcf6880b54dc4aad6dec6a5b663dd08",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "3dcea1af4dd3bbdd68778cbb91715e1663c850fb9681fe42096b50d1145550dc",
           "packages/causal-core/tests": "b73dcfd6530b951cdacdaaaac95e7e4068843b27cbd6635fdbe7b9efe306ecb3",
-          "packages/causal-decision/tests": "61bde7786a6158cc99f269fd057908ce3959e5e812ac5d8b4c82c11c2c7200b4"
+          "packages/causal-decision/tests": "61bde7786a6158cc99f269fd057908ce3959e5e812ac5d8b4c82c11c2c7200b4",
+          "requirements": "bd38eddb75e794ad54781b54cc9f111bff4add78851511cd1e9c1294593db934",
+          "backend/Dockerfile": "3b1180c11b97ed0a52470f5990281c822796e2329435085658ee61379c82e735",
+          "frontend/Dockerfile": "903f92a0ae718885f6c8ad0eb77f87913e646d24af04bc10c77f01ca2ff9de59"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-47: 3.1 describes the owner vs causal_app engines, the per-run login role, the service scope for direct calls, and test_rls_domain_isolation.py; the integration row names it)"
+        "by": "Claude (septa-49: step table adds python-lock and pip-audit-image and says the audits read the locks; 3.1 names the three new negative-control tests; 5.1 has the lock installs and the images job, not yet run on GitHub; 5.2 the kernel-lock verify and the checked release SBOM; 5.3 DAST and unfixed image findings; 5.4 the locks, relock and sync)"
       }
     },
     "docs/UIX.md": {
@@ -355,13 +371,13 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "f504a91cfae574117c3accbd936ee039a34cde0bbd0579f77c4571207a366683",
-          "conformance/declared_not_implemented.json": "dcb39338bddcf03ebf0d9db8afda626dc3d0c10bf208a8427496886fee20e7ed",
-          "docs/CURRENT_STAGE.md": "667d95a48ae10b44d972c44d46e29830be14a34bc42d1cff6fb2161cd66e2cb2"
+          "conformance/declared_not_implemented.json": "7178ea45663f6d89c855f23a826251be991e9e0bb709a4d3cf526c6c1917ed76",
+          "docs/CURRENT_STAGE.md": "9af8eaf690d6d9090ebac9f6af3d32841429eeffb4a7951d244cc3e1ee6ce017"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-47: p0 says RLS now binds on PostgreSQL; PostgreSQL row-level security dropped from the p3/p4 remainder)"
+        "by": "Claude (septa-49: the p0 paragraph says CI installs from hash-pinned locks the gate holds current, scans both images with Trivy, attaches a CycloneDX SBOM to releases and dependabot opens PRs; DAST is dast-not-built; the register moved supply-chain-scanning-not-in-ci to left_the_list)"
       }
     },
     "SECURITY.md": {
@@ -387,7 +403,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-47: domain isolation now enforced also by PostgreSQL RLS binding causal_app, start-up refusal as owner/superuser/BYPASSRLS; the compose passwords sentence names both logins)"
+        "by": "Claude (septa-49: out-of-scope paragraph says the gate audits the hash-pinned locks, CI scans both images with Trivy and dependabot opens PRs; the published packages still declare ranges)"
       }
     }
   }

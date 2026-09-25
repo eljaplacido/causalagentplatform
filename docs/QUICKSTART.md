@@ -25,13 +25,16 @@ cd /path/to/causalplatform   # your clone
 
 ### Backend virtual environment
 
-The backend depends on the causal kernel and the decision layer, which are local packages:
+The backend depends on the causal kernel and the decision layer, which are local packages.
+Everything else comes from the hash-pinned lock `requirements/backend.txt`; the local packages
+install after it, pulling in nothing (`--no-deps`) and building with the lock's `hatchling`
+(`--no-build-isolation`):
 
 ```bash
-cd backend
-python3 -m venv .venv
-.venv/bin/pip install -e ../packages/causal-core -e ../packages/causal-decision -e ".[dev]"
-cd ..
+python3 -m venv backend/.venv
+backend/.venv/bin/python -m pip install --require-hashes --no-deps -r requirements/backend.txt
+backend/.venv/bin/python -m pip install --no-deps --no-build-isolation \
+  -e packages/causal-core -e packages/causal-decision -e "backend[dev]"
 ```
 
 ### Kernel virtual environment
@@ -41,11 +44,16 @@ of their own (causal-mcp is on MCP SDK v2, the backend's legacy server on v1):
 
 ```bash
 python3 -m venv packages/causal-core/.venv
-packages/causal-core/.venv/bin/pip install \
+packages/causal-core/.venv/bin/python -m pip install --require-hashes --no-deps -r requirements/kernel.txt
+packages/causal-core/.venv/bin/python -m pip install --no-deps --no-build-isolation \
   -e "packages/causal-core[dev,crosscheck,ml]" \
   -e "packages/causal-decision[dev]" \
-  -e "packages/causal-mcp[dev,http,decision]" httpx
+  -e "packages/causal-mcp[dev,http,decision]"
 ```
+
+To add or change a Python dependency: edit the `pyproject.toml`, run
+`python3 scripts/py_lock.py relock` (needs `uv`), and commit both. The gate fails a dependency edit
+that was not re-locked ([`TESTING_CICD.md`](TESTING_CICD.md) §5.4).
 
 ### Frontend dependencies
 
@@ -206,10 +214,12 @@ whenever the backend is on another port.
 | **The gate** | `bash .gnomon/ci.sh` | a per-step summary table, every step PASS or a named SKIPPED (`backend-pytest-postgres` is SKIPPED, "no TEST_DATABASE_URL", unless you give it a PostgreSQL server; see below) |
 
 `.gnomon/ci.sh` runs every suite (backend, frontend, each package with its pre-registered gates),
-the security steps and the claim checks, and is what CI runs. Its `pip-audit-*` steps audit the
-virtual environments it runs in, pip included, so a venv built before a dependency floor was
-raised fails them until it is upgraded (`.venv/bin/python -m pip install -U pip`, then the
-install line above again). The audits ask a remote advisory database: offline, they are SKIPPED. Test counts are read from the tools each run, so none is
+the security steps and the claim checks, and is what CI runs. Its `python-lock` step requires the
+virtual environments it runs in to equal their locks, so a venv built before a re-lock (or by
+hand, with something extra in it) fails it until it is synced:
+`python3 scripts/py_lock.py sync backend --python backend/.venv/bin/python`, and `sync kernel
+--python packages/causal-core/.venv/bin/python`. Its `pip-audit-*` steps audit the locks. The
+audits ask a remote advisory database: offline, they are SKIPPED. Test counts are read from the tools each run, so none is
 written here. Pieces, when iterating:
 
 ```bash

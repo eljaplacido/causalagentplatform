@@ -63,12 +63,12 @@ Out of scope (please do not report):
 - Denial-of-service through resource exhaustion against `localhost` deployments
 - Third-party library CVEs without a demonstrated exploitation path in this
   codebase — please report those upstream first. The gate audits the
-  Python environments it tests (pip-audit) and `package-lock.json` (npm audit)
-  on every push and weekly, and fails on any advisory not excused in
-  `scripts/audit-allowlist.json`. Python dependencies are ranges, not a
-  hash-pinned lock (`supply-chain-scanning-not-in-ci` in
-  `conformance/declared_not_implemented.json`), so a report that a version our
-  ranges admit is affected is welcome
+  hash-pinned Python locks CI installs from (`requirements/*.txt`, pip-audit)
+  and `package-lock.json` (npm audit) on every push and weekly, and fails on
+  any advisory not excused in `scripts/audit-allowlist.json`; CI also scans
+  both container images with Trivy, and Dependabot opens update PRs. The
+  published packages declare ranges, not pins, so a report that a version
+  those ranges admit is affected is welcome
 - Missing security headers on pages that do not handle authenticated state
 - Issues in the research notes under `docs/research/`, which are background
   reading rather than part of the deployable product surface

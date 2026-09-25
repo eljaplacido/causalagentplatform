@@ -54,9 +54,10 @@ it does not block on is **ADVISORY** (today only `doc-reconciliation`).
 | `frontend-eslint` | The eslint ratchet over `frontend/src/` with `frontend/eslint.config.mjs` (Next's core-web-vitals and TypeScript rule sets) | Findings ≤ its `eslint` entry in `scripts/lint-baseline.json`, which is 0. Without a config file the step is SKIPPED |
 | one step per `packages/*/pyproject.toml` | That package's own `pytest`, in its own environment | Exit 0, at least one test passed, and **no test skipped**: every skip these suites can produce is a registered gate that did not run, so a skip fails the step. `causal-core` is always named in the summary, RAN or NOT RUN |
 | `<package>-mypy`, one per package | mypy with the package's own strict config, via the ratchet | Findings ≤ its `mypy-<package>` entry in `scripts/lint-baseline.json`, which is 0 for all three; a package with no entry fails |
+| `python-lock` | `scripts/py_lock.py check` over the hash-pinned locks `requirements/{backend,kernel,image,release}.txt` (§5.4), with the environments this run tests | Every lock pins each distribution `==` with its sha256 hashes; every lock is current (the fingerprint of its inputs, the `.in` file and the dependency tables of each `pyproject.toml` it names, equals the one `relock` recorded in `requirements/lock-inputs.json`, so a dependency edit without a re-lock fails); every lock satisfies its local packages' requirements; and the backend toolchain and each package environment **equal** their lock (`backend.txt`, `kernel.txt`: the same distributions at the same versions, nothing missing or extra) with `pip check` clean. SKIPPED without the backend toolchain or a package environment |
 | `bandit-backend`, `bandit-packages` | bandit via the ratchet: `backend/src` and `backend/mcp_server` with `backend/pyproject.toml`'s `[tool.bandit]` (which skips no rule; B608, SQL built from strings, is enforced), and every `packages/*/src` with bandit's defaults | MEDIUM and HIGH findings ≤ the `bandit-*` entries in `scripts/lint-baseline.json`, which are 0. LOW is reported, not counted |
 | `secret-scan` | `scripts/secret_scan.py` over every file git would commit from the working tree (tracked, plus untracked and not ignored; never the history) | No private key, provider token or high-entropy credential assignment outside `scripts/secret-scan-allowlist.json`, no stale allowlist entry, and at least its floor of files scanned. Findings print a fingerprint, never the value |
-| `pip-audit-backend`, `pip-audit-packages` | `scripts/dep_audit.py pip`: pip-audit over the site-packages of the environments this run tests (the backend toolchain, and each distinct package environment) | No advisory outside `scripts/audit-allowlist.json`, whose entries carry a reason and a `review_by` date; an expired or stale entry fails. SKIPPED when PyPI's advisory service cannot be reached |
+| `pip-audit-backend`, `pip-audit-packages`, `pip-audit-image` | `scripts/dep_audit.py pip --requirement`: pip-audit over the locks `requirements/backend.txt`, `kernel.txt` and `image.txt` as written (`--require-hashes --disable-pip`: nothing resolved), the pins whose markers hold here. `python-lock` holds the tested environments equal to the first two, so this audits what the tests ran on; the third is what `backend/Dockerfile` installs | No advisory outside `scripts/audit-allowlist.json`, whose entries carry a reason and a `review_by` date; an expired or stale entry fails. SKIPPED when PyPI's advisory service cannot be reached |
 | `npm-audit` | `scripts/dep_audit.py npm`: `npm audit` over `package-lock.json` (every workspace) | As above, for npm. SKIPPED when the registry cannot be reached |
 | `gate-scope` | `scripts/gate_scope.py identity-all` | Every skill module is imported by a test, every tool of both MCP servers (the legacy one live, causal-mcp's from its `TOOLS` table) and every state-changing route is referenced by one, and every route is mounted, apart from the known gaps named in `scripts/gate-scope-floors.json` |
 | `status-claims` | `scripts/status_claims.py` | `docs/CURRENT_STAGE.md` and `conformance/declared_not_implemented.json` agree with each other and with the tree; every citation quotes its line verbatim, and every `fixed_in` commit is in HEAD's history (a squash or rebase that orphaned it fails) |
@@ -93,7 +94,7 @@ Only 0 is done. `.septacore.json` maps the same codes to `passed`, `failed`,
 
 | Directory | What it holds |
 |---|---|
-| `unit/` | Skills, agents, the registry, the DB factory, connectors (HTTP mocked), MCP tool wrappers, provenance and contract models, planning, evaluation, and negative controls for the gate's own scripts (`test_contract_parity.py`, `test_secret_scan.py`, `test_dep_audit.py`, `test_skill_refs.py`) |
+| `unit/` | Skills, agents, the registry, the DB factory, connectors (HTTP mocked), MCP tool wrappers, provenance and contract models, planning, evaluation, and negative controls for the gate's own scripts (`test_contract_parity.py`, `test_secret_scan.py`, `test_dep_audit.py`, `test_skill_refs.py`), and for the supply-chain checks outside it (`test_py_lock.py`, `test_image_scan.py`, `test_sbom_check.py`) |
 | `integration/` | FastAPI routes through `httpx`: governance approval flow, rejection verdicts, recorded reasons, intervention roles, the role matrix and domain isolation (`test_rbac_matrix.py`: every state-changing route has a row, and is refused without a granted role), the database's own domain isolation on PostgreSQL (`test_rls_domain_isolation.py`), session API and store, the decision ledger (checkpoints and anchored verification included) and follow-ups, the assumption registry (`/api/v1/models`), and the MCP server over stdio |
 | `guardian/` | Guardian bypass prevention, verdict binding (signed, subject-bound, single-use), drafts that cannot approve themselves, a risk score and cycle count the caller cannot supply, the `audit_write` skill, and `audit_log` refusing UPDATE and DELETE |
 
@@ -210,8 +211,8 @@ Each file's `_comment` records when, and at which commit, its numbers were measu
 
 ### 5.1 CI (`.github/workflows/ci.yml`)
 
-One job, on every push, on pull requests to `main`, and weekly on a schedule (so an advisory
-published since the last push fails the dependency audits without waiting for one):
+Two jobs, on every push, on pull requests to `main`, and weekly on a schedule (so an advisory
+or a fix published since the last push surfaces without waiting for one). The gate job:
 
 1. Check out with full history. The register cites some claims at the revision where they were
    made (`file@rev:line`), and a shallow clone cannot verify those.
@@ -219,8 +220,10 @@ published since the last push fails the dependency audits without waiting for on
    A `postgres:16-alpine` service container (health-checked with `pg_isready`, a CI-only
    throwaway password) runs beside the job for `backend-pytest-postgres`.
 3. Build `backend/.venv` (backend plus `causal-core` and `causal-decision`) and
-   `packages/causal-core/.venv` (the three packages with their test extras), each after
-   upgrading pip, which the gate's pip-audit audits with the rest; `npm ci`.
+   `packages/causal-core/.venv` (the three packages with their test extras) from their
+   hash-pinned locks (§5.4): `pip install --require-hashes --no-deps -r requirements/<lock>.txt`,
+   then this checkout's packages with `--no-deps --no-build-isolation -e ...`, then `pip check`;
+   `npm ci`.
 4. **Licence gate**: `check_licenses.py` for `causal-core`, `causal-mcp` and `causal-decision`
    (runtime dependencies must be permissive).
 5. Run `.gnomon/ci.sh` with `TEST_DATABASE_URL` pointing at that service, teeing its log, and
@@ -231,20 +234,106 @@ published since the last push fails the dependency audits without waiting for on
 
 The job has a 75-minute timeout.
 
+The **images** job (one run per image, `backend` and `frontend`, beside the gate job):
+
+1. Build `backend/Dockerfile` and `frontend/Dockerfile`, both from the repository root. Both
+   base images are pinned by digest. The backend image installs from `requirements/image.txt`
+   with `--require-hashes` and keeps no pip at run time; the frontend image installs
+   `package-lock.json` with `npm ci` and runs Next's standalone server without npm.
+2. Scan each image with Trivy 0.74.0, run as the `aquasec/trivy` container pinned by digest,
+   for HIGH and CRITICAL vulnerabilities, with every package listed.
+3. `scripts/image_scan.py` judges the report. A HIGH or CRITICAL finding with a published fix
+   fails the job unless `scripts/image-scan-allowlist.json` excuses it with a `reason` and a
+   `review_by` date. An expired or stale entry fails, and so does a report that lists no
+   package. A finding with **no fixed version published** is listed in the log and counted
+   in the summary line, but does not fail the job: an upgrade cannot fix it (§5.3).
+4. Upload the report and a CycloneDX SBOM of the image (Trivy's) as the `image-<name>` artifact.
+
+The job was added on 2026-09-26 and its steps were run locally with the same images and scanner;
+it had not yet run on GitHub.
+
+To run it locally (with Docker; the scanner container reads the image through the Docker
+socket, and publishes no port):
+
+```bash
+docker build -f backend/Dockerfile -t causal-platform-backend:ci .
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD/scan:/out" \
+  aquasec/trivy:0.74.0 image --scanners vuln --severity HIGH,CRITICAL --list-all-pkgs \
+  --format json --output /out/trivy-backend.json causal-platform-backend:ci
+python3 scripts/image_scan.py scan/trivy-backend.json --image backend
+```
+
 ### 5.2 Release (`.github/workflows/release.yml`)
 
 On a `v*` tag: re-run the three packages' full suites (with `CAUSAL_FETCH=1`, so T2 and T3 run;
-T0 and D0 as their own steps) and the licence check, then build sdists and wheels, then publish `causal-core`, `causal-decision` and
-`causal-mcp` to PyPI with Trusted Publishing (OIDC, no stored token). The backend and frontend
+T0 and D0 as their own steps) in the environment of `requirements/kernel.txt`, installed as CI
+installs it, and the licence check. Then build sdists and wheels (with `build`, `twine` and
+`cyclonedx-bom` at pinned versions), install the wheels into a fresh environment that holds only
+them and `requirements/release.txt` (their runtime dependencies, hash-pinned), and write a
+**CycloneDX 1.6 SBOM** of that environment. `cyclonedx-py` validates it against the schema as it
+writes, and `scripts/sbom_check.py` then checks it: it parses, and lists every locked pin at its
+version, the three packages, and nothing else. Then publish `causal-core`, `causal-decision` and
+`causal-mcp` to PyPI with Trusted Publishing (OIDC, no stored token), and attach the SBOM to the
+tag's GitHub release (creating the release if the tag has none). A manual run does all of this
+except publishing and attaching; the SBOM is kept as the `sbom` artifact either way. The backend and frontend
 are not published or deployed. The repository has no deployment pipeline and no staging
 environment.
 
 ### 5.3 Not in CI
 
-Container image scans, a release SBOM, DAST and hash-pinned Python installs (register
-`supply-chain-scanning-not-in-ci`; bandit, the secret scan and the dependency audits are in the
-gate, §2), TLC model checking of `specs/guardian_policy.tla` (register `tla-spec-not-checked`), Playwright,
-and any performance or load test.
+- **DAST.** Nothing runs a dynamic scanner such as OWASP ZAP against a running API, and there is
+  no staging environment to point one at (register `dast-not-built`).
+- **Image findings with no fix published** are listed by the images job, not gated. On
+  2026-09-26 the backend image had 44 HIGH ones, all in Debian 13 base packages, and the
+  frontend image none.
+- TLC model checking of `specs/guardian_policy.tla` (register `tla-spec-not-checked`),
+  Playwright, and any performance or load test.
+
+### 5.4 Python locks, and how to add a dependency
+
+Every Python environment CI builds installs from a lock in `requirements/`: `backend.txt`
+(`backend/.venv`), `kernel.txt` (`packages/causal-core/.venv`, and release.yml's verify job),
+`image.txt` (`backend/Dockerfile`) and `release.txt` (the published wheels' runtime dependencies,
+for the SBOM). Each is made from its `.in` file by `uv pip compile --universal --generate-hashes`
+(one lock for every platform, markers where a dependency is platform-specific), and pins every
+distribution `==` with the sha256 of each of its files. This repository's own packages are named
+in the `.in` files and resolved from their `pyproject.toml`, but left out of the lock: they are
+not on an index, so there is nothing to hash, and they install from the checkout in a second step:
+
+```bash
+python -m pip install --require-hashes --no-deps -r requirements/backend.txt
+python -m pip install --no-deps --no-build-isolation \
+    -e packages/causal-core -e packages/causal-decision -e "backend[dev]"
+python -m pip check
+```
+
+The first step is the only one that fetches anything. `--no-deps` on the second keeps pip from
+resolving anything the lock does not pin, and `--no-build-isolation` builds the local packages
+with the `hatchling` (and `editables`) the lock installed, so no unhashed build backend is
+fetched.
+
+**To add or change a dependency:** edit the `pyproject.toml`, re-lock, and commit both:
+
+```bash
+python3 scripts/py_lock.py relock              # needs uv; keeps existing pins where they fit
+python3 scripts/py_lock.py relock --upgrade    # moves every pin to the newest that fits
+```
+
+`relock` writes the four locks and `requirements/lock-inputs.json`, the fingerprint the gate's
+`python-lock` step compares. A dependency edit without a re-lock fails that step, naming the
+file and the command. The step also requires your local environments to equal their locks, so
+after a re-lock (or a pull that brought one), bring them back in line:
+
+```bash
+python3 scripts/py_lock.py sync backend --python backend/.venv/bin/python
+python3 scripts/py_lock.py sync kernel --python packages/causal-core/.venv/bin/python
+```
+
+`sync` installs the lock and the local packages as above, uninstalls whatever the lock does not
+list, and re-runs the check. Dependabot (`.github/dependabot.yml`) opens weekly PRs for the locks
+(pins inside the ranges), the `pyproject.toml` ranges (only when a release falls outside one),
+npm, the GitHub Actions and the two base images. A PR that changes a range is red until someone
+re-locks on its branch.
 
 ---
 
