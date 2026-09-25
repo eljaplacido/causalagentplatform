@@ -1,0 +1,187 @@
+{
+  "_comment": [
+    "Figures the docs quote, bound to the value in the benchmark run they come from.",
+    "Checked by scripts/doc_figures.py against each benchmark's STANDING run (latest passing clean run",
+    "against the current PRE-REGISTRATION.md). Quoting a new benchmark number in a doc? Bind it here."
+  ],
+  "figures": [
+    {
+      "doc": "README.md",
+      "says": "Pooled 95% coverage is 94.9%",
+      "figure": "94.9",
+      "bench": "t0",
+      "path": "/sections/estimation/pooled_coverage",
+      "scale": 100
+    },
+    {
+      "doc": "README.md",
+      "says": "agrees with y0 on 200/200 random graphs",
+      "figure": "200",
+      "bench": "t0",
+      "path": "/sections/identification/y0_crosscheck/graphs"
+    },
+    {
+      "doc": "README.md",
+      "says": "off by up to −$15,205",
+      "figure": "15,205",
+      "bench": "t3-lalonde",
+      "path": "/observational/*/naive/difference_in_means",
+      "agg": "min",
+      "scale": -1
+    },
+    {
+      "doc": "README.md",
+      "says": "every kernel interval covers the experimental $1,794",
+      "figure": "1,794",
+      "bench": "t3-lalonde",
+      "path": "/experiment/point"
+    },
+    {
+      "doc": "README.md",
+      "says": "ATT coverage 0.99 / 0.98",
+      "figure": "0.99",
+      "bench": "t2-ihdp",
+      "path": "/summary/att~1C1/coverage"
+    },
+    {
+      "doc": "README.md",
+      "says": "ATT coverage 0.99 / 0.98",
+      "figure": "0.98",
+      "bench": "t2-ihdp",
+      "path": "/summary/att~1C2/coverage"
+    },
+    {
+      "doc": "README.md",
+      "says": "supported results miss the truth 1.5% of the time",
+      "figure": "1.5",
+      "bench": "t2-ihdp",
+      "path": "/supported_miss_share",
+      "scale": 100
+    },
+    {
+      "doc": "README.md",
+      "says": "Per-segment coverage 0.93–0.97",
+      "figure": "0.93",
+      "bench": "t4-segments",
+      "path": "/cases/*/per_segment/*/coverage",
+      "agg": "min",
+      "round": "outward"
+    },
+    {
+      "doc": "README.md",
+      "says": "Per-segment coverage 0.93–0.97",
+      "figure": "0.97",
+      "bench": "t4-segments",
+      "path": "/cases/*/per_segment/*/coverage",
+      "agg": "max",
+      "round": "outward"
+    },
+    {
+      "doc": "README.md",
+      "says": "family-wise coverage 0.945–0.98",
+      "figure": "0.945",
+      "bench": "t4-segments",
+      "path": "/cases/*/simultaneous_coverage",
+      "agg": "min",
+      "round": "outward"
+    },
+    {
+      "doc": "README.md",
+      "says": "family-wise coverage 0.945–0.98",
+      "figure": "0.98",
+      "bench": "t4-segments",
+      "path": "/cases/*/simultaneous_coverage",
+      "agg": "max",
+      "round": "outward"
+    },
+    {
+      "doc": "README.md",
+      "says": "4% false discovery with every segment null",
+      "figure": "4",
+      "bench": "t4-segments",
+      "path": "/false_discovery_rate",
+      "scale": 100
+    },
+    {
+      "doc": "README.md",
+      "says": "Coverage 0.938–0.958 across four simulated rollouts",
+      "figure": "0.938",
+      "bench": "t5-did",
+      "path": "/designs[id=staggered_dynamic|staggered_constant|single_cohort|null_effect]/coverage",
+      "agg": "min"
+    },
+    {
+      "doc": "README.md",
+      "says": "Coverage 0.938–0.958 across four simulated rollouts",
+      "figure": "0.958",
+      "bench": "t5-did",
+      "path": "/designs[id=staggered_dynamic|staggered_constant|single_cohort|null_effect]/coverage",
+      "agg": "max"
+    },
+    {
+      "doc": "README.md",
+      "says": "pre-trends test power 1.00",
+      "figure": "1.00",
+      "bench": "t5-did",
+      "path": "/designs[id=trends_violated]/pretrend_rejection_rate"
+    },
+    {
+      "doc": "README.md",
+      "says": "false alarms ≤ 2.2%",
+      "figure": "2.2",
+      "bench": "t5-did",
+      "path": "/designs[id=staggered_dynamic|staggered_constant|single_cohort|null_effect]/pretrend_rejection_rate",
+      "agg": "max",
+      "scale": 100
+    },
+    {
+      "doc": "README.md",
+      "says": "at every look in 98.2–99.4% of runs",
+      "figure": "98.2",
+      "bench": "t6-sequential",
+      "path": "/streams/*/uniform_coverage",
+      "agg": "min",
+      "scale": 100
+    },
+    {
+      "doc": "README.md",
+      "says": "at every look in 98.2–99.4% of runs",
+      "figure": "99.4",
+      "bench": "t6-sequential",
+      "path": "/streams/*/uniform_coverage",
+      "agg": "max",
+      "scale": 100
+    },
+    {
+      "doc": "README.md",
+      "says": "the fixed-n interval re-read at every look manages 72.9%",
+      "figure": "72.9",
+      "bench": "t6-sequential",
+      "path": "/seeded_defect_streams/fixed_n_interval/uniform_coverage",
+      "scale": 100
+    },
+    {
+      "doc": "README.md",
+      "says": "19/19 scenarios return the verdict",
+      "figure": "19",
+      "bench": "d0-decision-policy",
+      "path": "/table",
+      "agg": "count"
+    },
+    {
+      "doc": "README.md",
+      "says": "each of 8 seeded defects makes the gate fail",
+      "figure": "8",
+      "bench": "d0-decision-policy",
+      "path": "/seeded_defects_caught",
+      "agg": "count_true"
+    },
+    {
+      "doc": "README.md",
+      "says": "800/800 revisions judged",
+      "figure": "800",
+      "bench": "a0-assumption-impact",
+      "path": "/cases"
+    }
+  ]
+}

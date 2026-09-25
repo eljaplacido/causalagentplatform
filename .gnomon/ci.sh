@@ -379,6 +379,16 @@ else
     record contract-parity FAIL "$(grep -m1 FAIL "$LOG_DIR/.indented" | sed 's/^ *FAIL *//' | cut -c1-150)" $((SECONDS - t0))
 fi
 
+# doc-figures: every benchmark number the docs quote matches the value in that
+# benchmark's STANDING run (scripts/doc-figures.json binds each one). status-claims
+# checks what a doc says a capability's status is; this checks the numbers.
+t0=$SECONDS
+if indented "$PY" scripts/doc_figures.py; then
+    record doc-figures PASS "$(grep -m1 -oE 'doc figures: .*' "$LOG_DIR/.indented" | sed 's/^doc figures: //' | cut -c1-200)" $((SECONDS - t0))
+else
+    record doc-figures FAIL "$(grep -m1 FAIL "$LOG_DIR/.indented" | sed 's/^ *FAIL *//' | cut -c1-150)" $((SECONDS - t0))
+fi
+
 t0=$SECONDS
 if indented "$PY" scripts/doc_reconciliation.py; then
     tracked="$(grep -oE '[0-9]+ document\(s\) tracked' "$LOG_DIR/.indented" | grep -oE '[0-9]+')"
