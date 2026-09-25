@@ -193,6 +193,18 @@
         {
           "at": "docs/AGENTS.md:625",
           "says": "Routing is handled by `src/agents/llm_factory.py`"
+        },
+        {
+          "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md@13e7d92:99",
+          "says": "`src/agents/llm_factory.py` emits LLMInvocation metadata (implemented)"
+        },
+        {
+          "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md@13e7d92:111",
+          "says": "`src/agents/llm_factory.py` capture hook | Implemented"
+        },
+        {
+          "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md@13e7d92:120",
+          "says": "Every LLM call via `get_llm(session_id=..., agent_id=...)` auto-captures invocation metadata"
         }
       ],
       "reality": "get_llm has no call site outside its own docstring: no agent invokes an LLM, and every agent's reasoning is rule or heuristic code.",
@@ -249,7 +261,7 @@
           "says": "Append-only audit trail"
         },
         {
-          "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md:110",
+          "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md:132",
           "says": "`src/api/provenance.py` | Implemented"
         }
       ],
@@ -815,6 +827,45 @@
         "kind": "test",
         "path": "backend/tests/unit/test_contract_fields.py",
         "asserts": "for every interface in packages/semantic-types/src/entities.ts, the camelCased field set equals the field set of the same-named model in models.py (or the TypeScript is generated from the models)"
+      }
+    },
+    {
+      "id": "data-contracts-not-enforced",
+      "status": "declared-not-implemented",
+      "capability": "Runtime data contracts: freshness, schema and semantic checks before agents consume data (Guardian PR-009)",
+      "claimed_in": [
+        {
+          "at": "docs/AGENTS.md:413",
+          "says": "Validates a data contract at runtime before agent data consumption, enforcing freshness SLAs, schema compliance, and semantic alignment."
+        },
+        {
+          "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md@13e7d92:122",
+          "says": "Data contracts enforce freshness SLAs at runtime, not just schema validation"
+        },
+        {
+          "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md@13e7d92:101",
+          "says": "`src/agents/governance.py` enforces PR-009 (implemented)"
+        }
+      ],
+      "reality": "contracts.py defines the contract, SLA and violation models and a ContractRegistry that can register, look up and remove contracts. Nothing evaluates a contract, nothing produces a ContractViolation, and only the tests instantiate the registry. PR-009 fires only when a caller sends action_type DATA_ACCESS_WITH_CONTRACT, which no code path does, and it reads the violation list from that caller's own payload. So a caller that reports no violations is never blocked.",
+      "evidence": [
+        {
+          "at": "backend/src/agents/governance.py:424",
+          "says": "if action_type == \"DATA_ACCESS_WITH_CONTRACT\":"
+        },
+        {
+          "at": "backend/src/agents/governance.py:425",
+          "says": "contract_violations = payload.get(\"contract_violations\", [])"
+        },
+        {
+          "at": "backend/src/semantic_layer/contracts.py:189",
+          "says": "class ContractRegistry:"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/integration/test_data_contract_enforced.py",
+        "asserts": "an agent reading a data product whose registered contract's freshness SLA has lapsed is refused by the Guardian with PR-009 cited, the violation computed by the platform rather than supplied by the caller -- and a fresh product is not refused"
       }
     }
   ],
