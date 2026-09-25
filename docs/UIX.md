@@ -266,6 +266,9 @@ Components under `frontend/src/components/` are marked **built**. The rest are *
 
 The review queue shows no real risk tier or submitter (register `review-queue-risk-tier`), and
 the Evidence group has no backend to read from yet (register `agent-skills-are-stubs`).
+Approving in `ApprovalPanel` asks the approver to classify the situation (Cynefin domain;
+required, nothing pre-selected, DISORDER not offered): Guardian reads it, and without one
+rule PR-006 rejects every approval.
 `AssumptionDisclosure` is built but no page renders it; the analyst page imported it
 without using it, and the import was removed.
 

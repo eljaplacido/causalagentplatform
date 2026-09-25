@@ -130,7 +130,9 @@ because they are not implemented (registers `scm-counterfactuals`, `causal-disco
 
 - **Vitest + React Testing Library** (`src/**/__tests__/*.test.tsx`). Covers the
   `ThinkingIndicator` latency contract, `ApprovalPanel`, `InterventionCard`, and the governance
-  and incidents pages. The page tests pin the fail-closed contract. The governance page shows
+  and incidents pages. The page tests pin the fail-closed contract. They mock the API, so the governance page's
+  request bodies are also pinned against the real endpoints by a backend integration test
+  (`test_the_governance_pages_own_requests_approve_an_object`). The governance page shows
   only backend-confirmed decisions and audit rows, and the incidents page leaves a decision
   unchanged and shows the error when the API call fails.
   There is no coverage threshold.

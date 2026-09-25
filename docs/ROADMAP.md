@@ -97,7 +97,8 @@ platform before new estimators:
   (`septa-25`); every state-changing route is checked against one role matrix, and the token's
   `domains` claim bounds what a user sees of the semantic layer, at the application layer
   (`septa-26`; the database's RLS policies still bind nothing, register
-  `rls-policies-bind-nothing`). Open: security scanning in the gate (`septa-27`); secrets from
+  `rls-policies-bind-nothing`); the governance page's Approve, which could never succeed, now
+  names the object and the approver's classification (`septa-46`). Open: security scanning in the gate (`septa-27`); secrets from
   a secret store, with a rotation path for the Guardian signing key (`septa-28`).
 - **p1, release and drift.** Protect `main` (`septa-1`); a first PyPI release of the three
   packages (`septa-2`); checks that the skills and agent docs name only things that exist
