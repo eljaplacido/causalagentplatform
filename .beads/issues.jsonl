@@ -42,3 +42,4 @@
 {"id": "septa-43", "type": "epic", "priority": 4, "status": "ready", "title": "Neo4j graph store, or the claim withdrawn from docs", "deps": [], "provenance": "register:neo4j-graph-store", "created": "2026-09-25"}
 {"id": "septa-44", "type": "epic", "priority": 4, "status": "ready", "title": "Kafka event streaming, or the claim withdrawn from docs", "deps": [], "provenance": "register:kafka-streaming", "created": "2026-09-25"}
 {"id": "septa-45", "type": "epic", "priority": 4, "status": "ready", "title": "Rust crates backing DAG ops, or the claim withdrawn from docs", "deps": [], "provenance": "register:rust-crates", "created": "2026-09-25"}
+{"id": "septa-46", "type": "bug", "priority": 0, "status": "ready", "title": "Governance UI Approve can never succeed: /check is sent without cynefin_domain or subject_id, so PR-006 rejects and /approve refuses", "deps": [], "provenance": "review:frontend/src/app/governance/page.tsx", "created": "2026-09-25"}
