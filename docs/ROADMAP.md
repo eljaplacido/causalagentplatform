@@ -39,14 +39,15 @@ sustainability investment assurance follow, in that order.
    `act_with_approval`, `experiment`, `refuse`. "Do nothing" is always a candidate. Deterministic,
    with seeded defects. What it does *not* settle: whether the thresholds are the right ones.
    That needs step 5.
-2. **Evidence record and assumption registry.** *In progress.* The Guardian half is done: a verdict
-   is signed, names the object it authorises, and is spent on use, so it cannot be forged by
-   inserting a row, replayed, or pointed at another object; and the `/check` → `/approve` flow
-   completes through the API. Still to do: persist request → certificate → result → verdict →
-   approver as a hash chain, version graphs, and record the provenance of every edge. Two ways to
-   mint a verdict outside the Guardian remain open on the register
-   (`intervention-approval-no-role`, `guardian-audit-write-skill`); neither can authorise a
-   semantic write any more, but both still write to the audit trail.
+2. **Evidence record and assumption registry.** *Evidence record done; assumption registry
+   next.* A Guardian verdict is signed, names the object it authorises, and is spent on use; the
+   `/check` → `/approve` flow completes; both ways to mint a verdict outside the Guardian are
+   closed; and every decision is sealed into a hash chain with the digests of the evidence it
+   rested on (`POST /api/v1/decisions`, `GET /api/v1/decisions/verify`). Still to do: **the
+   assumption registry** — graphs still arrive in each request body, so nothing stores, versions
+   or retrieves the assumptions a verdict rested on, or says which decisions a revised graph
+   affects — and anchoring the chain's head outside the writer's control
+   (`decision-ledger-not-anchored`).
 3. **The estimators operations actually need.** Segment-level effects are **done**
    (`causal_core.segments`, pre-registered T4: declared subgroups, Bonferroni family-wise
    intervals, Holm across the family, one Cochran's Q before anything is compared). Still to

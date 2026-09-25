@@ -410,7 +410,7 @@
       "capability": "Triangulation flags outcome-model misspecification in causal-core",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:123",
+          "at": "packages/causal-core/README.md:124",
           "says": "Its power was 0.04 at n = 2,000"
         }
       ],
@@ -433,7 +433,7 @@
       "capability": "Estimation of effects identified only by the general ID algorithm (e.g. the napkin graph)",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:145",
+          "at": "packages/causal-core/README.md:146",
           "says": "Estimation for general ID functionals"
         }
       ],
@@ -456,22 +456,22 @@
       "capability": "causal-core methods beyond the current portfolio: nonparametric front-door, discovery, time series, anytime-valid sequential tests, interference-aware designs",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:147",
+          "at": "packages/causal-core/README.md:148",
           "says": "Nonparametric front-door"
         },
         {
-          "at": "packages/causal-core/README.md:149",
+          "at": "packages/causal-core/README.md:150",
           "says": "Discovery"
         },
         {
-          "at": "packages/causal-core/README.md:151",
+          "at": "packages/causal-core/README.md:152",
           "says": "Sequential (anytime-valid) tests"
         }
       ],
       "reality": "Listed as not implemented in the package README; none of these exists in the kernel.",
       "evidence": [
         {
-          "at": "packages/causal-core/README.md:142",
+          "at": "packages/causal-core/README.md:143",
           "says": "Not implemented yet"
         }
       ],

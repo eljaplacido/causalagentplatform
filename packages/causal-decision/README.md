@@ -191,9 +191,11 @@ written up in the pre-registration and the failing behaviours are pinned by test
 - **Choose your thresholds.** Whether a 5-minute effect is worth acting on is a judgement for
   whoever owns the operation. The gate holds the procedure to the policy it was given; it cannot
   tell you the policy is right.
-- **Calibrate.** Whether actions taken under `act` produced the predicted effect needs the
-  outcome-capture loop, which is not built. Until it is, treat the verdicts as a discipline, not as
-  a measured success rate.
+- **Claim to be calibrated.** The outcome-capture loop exists (`causal_decision.outcome`: a
+  decision seals what would have to be re-measured, `compare` scores the later window once, and
+  `report` aggregates), but no follow-up has been taken on a real operation, so every rate is
+  null. Until a body of follow-ups exists, treat the verdicts as a discipline, not as a measured
+  success rate.
 - **Cost-benefit arithmetic**, multi-arm choice, or sequential/anytime-valid monitoring. Not yet.
 
 Licence: Apache-2.0.

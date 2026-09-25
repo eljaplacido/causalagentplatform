@@ -103,9 +103,10 @@ before any run. It runs on every change:
 
 - **Identification:** agrees with literature labels on 29 of 29 canonical graphs, and with y0 on
   200 of 200 random ADMGs.
-- **Estimation:** across 12 designs (randomized, back-door, M-bias, butterfly, front-door, IV,
+- **Estimation:** across 14 designs (randomized, back-door, M-bias, butterfly, front-door, IV,
   conditional IV and proximal), bias is within Monte Carlo error. Pooled 95% interval coverage is
-  95.1%, and every design lies inside 92.5–97.5%.
+  94.9%, and every design lies inside 92.5–97.5% (observed 93.6–96.6%; T0 v3,
+  `benchmarks/t0/results/2026-09-19-v3-run3.json`).
 - **Refuters:** false-alarm rates are about 1% at α = 0.01, and power is 100% against the planted
   violations.
 - **Seeded defects:** each of seven defects makes the gate fail. The defects include:

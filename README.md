@@ -4,7 +4,7 @@
 
 A governed platform for causal reasoning, decision simulation, and intervention recommendation. Built around a canonical semantic layer, a Guardian-mediated approval workflow, and a shared library of causal-inference skills that are callable both internally (LangGraph agents) and externally (Model Context Protocol).
 
-> **Status:** Pre-1.0. The causal numbers the platform serves come from the causal-core kernel, which identifies before it estimates, refuses with a typed reason, and passes pre-registered correctness and real-data benchmarks. On top of it, causal-decision rules on whether an agent may act on that evidence. Several platform features are still heuristic (and labelled so) or not built: counterfactuals, discovery, the LLM layer, signed governance verdicts, and calibration of the decisions themselves. [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAGE.md) lists what is implemented, each row with the test that pins it, and what is declared but not implemented. `.gnomon/ci.sh` is the gate; `scripts/status_claims.py` keeps that page in step with the code.
+> **Status:** Pre-1.0. The causal numbers the platform serves come from the causal-core kernel, which identifies before it estimates, refuses with a typed reason, and passes pre-registered correctness and real-data benchmarks. On top of it, causal-decision rules on whether an agent may act on that evidence. Several platform features are still heuristic (and labelled so) or not built: counterfactuals, discovery, the LLM layer, and calibration evidence for the decisions (the follow-up loop exists; no real operation has been measured with it yet). [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAGE.md) lists what is implemented, each row with the test that pins it, and what is declared but not implemented. `.gnomon/ci.sh` is the gate; `scripts/status_claims.py` keeps that page in step with the code.
 
 ## Start here: the causal kernel
 
@@ -64,7 +64,7 @@ Known limits are listed, not hidden: [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAG
 ## What else is in the box
 
 - **Backend** (`backend/`): Python 3.12, FastAPI, SQLAlchemy and LangGraph. `.gnomon/ci.sh` prints the current test count and coverage.
-- **Frontend** (`frontend/`): Next.js, TypeScript and Tailwind. Persona-scoped views: workbench, governance, incidents and engineer.
+- **Frontend** (`frontend/`): Next.js, TypeScript and Tailwind. Persona-scoped views: workbench, governance, incidents, engineer, analyst and executive.
 - **Legacy MCP server** (`backend/mcp_server/`): exposes seven backend skills as MCP tools; console script `causal-platform-mcp`. Which of them return real estimates is listed in `docs/CURRENT_STAGE.md`. Prefer `packages/causal-mcp` for estimates.
 - **Docs** (`docs/`): architecture (AGENTS.md), data layer, ADRs, quickstart and testing standards.
 
@@ -74,7 +74,7 @@ Known limits are listed, not hidden: [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAG
 # 1. Backend
 cd backend
 python -m venv .venv
-.venv/bin/pip install -e ../packages/causal-core -e ".[dev]"   # the kernel is a local package
+.venv/bin/pip install -e ../packages/causal-core -e ../packages/causal-decision -e ".[dev]"   # local packages
 .venv/bin/python -m scripts.seed_data --all
 .venv/bin/python -m pytest        # full backend suite (coverage is judged by .gnomon/ci.sh)
 
