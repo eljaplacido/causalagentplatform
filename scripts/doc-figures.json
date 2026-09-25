@@ -182,6 +182,79 @@
       "figure": "800",
       "bench": "a0-assumption-impact",
       "path": "/cases"
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "Pooled 95% interval coverage is\n  94.9%",
+      "figure": "94.9",
+      "bench": "t0",
+      "path": "/sections/estimation/pooled_coverage",
+      "scale": 100
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "(observed 93.6–96.6%",
+      "figure": "93.6",
+      "bench": "t0",
+      "path": "/sections/estimation/cases/*/coverage",
+      "agg": "min",
+      "scale": 100
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "(observed 93.6–96.6%",
+      "figure": "96.6",
+      "bench": "t0",
+      "path": "/sections/estimation/cases/*/coverage",
+      "agg": "max",
+      "scale": 100
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "the heterogeneity test fires on 4.5% of homogeneous designs",
+      "figure": "4.5",
+      "bench": "t4-segments",
+      "path": "/cases[id=homogeneous]/heterogeneity_rate",
+      "scale": 100
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "event-time coverage 0.933–0.956",
+      "figure": "0.933",
+      "bench": "t5-did",
+      "path": "/designs[id=staggered_dynamic|staggered_constant|single_cohort|null_effect]/event_coverage",
+      "agg": "min"
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "event-time coverage 0.933–0.956",
+      "figure": "0.956",
+      "bench": "t5-did",
+      "path": "/designs[id=staggered_dynamic|staggered_constant|single_cohort|null_effect]/event_coverage",
+      "agg": "max"
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "it sees a benefit of 0.2 in 99.8% of",
+      "figure": "99.8",
+      "bench": "t6-sequential",
+      "path": "/streams[id=benefit]/above_rate",
+      "scale": 100
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "with a median first exclusion at 700 units",
+      "figure": "700",
+      "bench": "t6-sequential",
+      "path": "/streams[id=harm]/median_first_below"
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "fixed-sample interval read at every look covers 72.9%",
+      "figure": "72.9",
+      "bench": "t6-sequential",
+      "path": "/seeded_defect_streams/fixed_n_interval/uniform_coverage",
+      "scale": 100
     }
   ]
 }
