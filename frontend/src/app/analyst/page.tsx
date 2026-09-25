@@ -40,7 +40,6 @@ import { CynefinBadge } from "@/components/shared/CynefinBadge";
 import { GuardianVerdictBadge } from "@/components/shared/GuardianVerdictBadge";
 import { EpistemicConfidenceBadge } from "@/components/shared/EpistemicConfidenceBadge";
 import { EscalationBanner } from "@/components/incident/EscalationBanner";
-import { AssumptionDisclosure } from "@/components/simulation/AssumptionDisclosure";
 import { DAGCanvas } from "@/components/graph/DAGCanvas";
 import { EdgeProposal } from "@/components/graph/EdgeProposal";
 import { NodeDetail } from "@/components/graph/NodeDetail";
@@ -48,8 +47,6 @@ import { FragmentCard } from "@/components/graph/FragmentCard";
 import { GraphDiff } from "@/components/graph/GraphDiff";
 import type { DAGNode, DAGEdge } from "@/components/graph/DAGCanvas";
 import type { EdgeProposalData } from "@/components/graph/EdgeProposal";
-import type { FragmentCardData } from "@/components/graph/FragmentCard";
-import type { CynefinDomain, GuardianVerdict } from "@/lib/types";
 
 // ── Form schema ───────────────────────────────────────────────────────────────
 
@@ -74,7 +71,7 @@ export default function AnalystPage() {
   const [rightTab, setRightTab] = useState<"proposals" | "detail" | "diff">("proposals");
   const [sessionError, setSessionError] = useState<string | null>(null);
 
-  const { register, handleSubmit, formState: { errors }, watch } = useForm<SessionFormValues>({
+  const { register, handleSubmit, formState: { errors } } = useForm<SessionFormValues>({
     resolver: zodResolver(sessionSchema),
     defaultValues: { description: "" },
   });

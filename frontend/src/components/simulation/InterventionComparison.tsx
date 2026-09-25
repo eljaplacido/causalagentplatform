@@ -7,7 +7,7 @@
  * Designed for Business Analyst persona (Priya) — clarity over precision.
  */
 
-import { cn, formatConfidence } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { EpistemicConfidenceBadge } from "@/components/shared/EpistemicConfidenceBadge";
 import type { Intervention } from "@/lib/types";
 

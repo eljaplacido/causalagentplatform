@@ -145,7 +145,7 @@
       "evidence": [
         {
           "at": "backend/pyproject.toml:51",
-          "says": "\"causal-core>=0.8.0\","
+          "says": "\"causal-core>=0.9.0\","
         }
       ],
       "leaves_by": {
@@ -415,7 +415,7 @@
       "capability": "Triangulation flags outcome-model misspecification in causal-core",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:162",
+          "at": "packages/causal-core/README.md:171",
           "says": "Its power was 0.04 at n = 2,000"
         }
       ],
@@ -438,7 +438,7 @@
       "capability": "Estimation of effects identified only by the general ID algorithm (e.g. the napkin graph)",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:184",
+          "at": "packages/causal-core/README.md:193",
           "says": "Estimation for general ID functionals"
         }
       ],
@@ -458,21 +458,21 @@
     {
       "id": "kernel-methods-roadmap",
       "status": "planned",
-      "capability": "causal-core methods beyond the current portfolio: nonparametric front-door, discovery, time series, interference between units and switchback designs",
+      "capability": "causal-core methods beyond the current portfolio: nonparametric front-door, discovery, time series, interference between units",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:186",
+          "at": "packages/causal-core/README.md:195",
           "says": "Nonparametric front-door"
         },
         {
-          "at": "packages/causal-core/README.md:188",
+          "at": "packages/causal-core/README.md:197",
           "says": "Discovery"
         }
       ],
-      "reality": "Listed as not implemented in the package README; none of these exists in the kernel. (Anytime-valid sequential tests left this entry on 2026-09-25 with T6; cluster-randomized designs, which handle dependence within clusters but not spillovers between them, arrived the same day with T7.)",
+      "reality": "Listed as not implemented in the package README; none of these exists in the kernel. (Anytime-valid sequential tests left this entry on 2026-09-25 with T6; cluster-randomized designs, which handle dependence within clusters but not spillovers between them, arrived the same day with T7, and switchback designs with T8.)",
       "evidence": [
         {
-          "at": "packages/causal-core/README.md:181",
+          "at": "packages/causal-core/README.md:190",
           "says": "Not implemented yet"
         }
       ],
@@ -1214,6 +1214,24 @@
         "kind": "test",
         "path": "backend/tests/integration/test_cynefin_routing_gate.py",
         "asserts": "a pre-registered routing gate on a hand-labelled incident-phrasing set reports macro F1 against a most-common-class and a TF-IDF naive-Bayes baseline, per-domain recall with a CHAOTIC floor, calibration with per-bin counts, and the share of inputs it commits to -- and escalation of high-severity or irreversible incidents does not depend on the label at all"
+      }
+    },
+    {
+      "id": "carryover-check-weak",
+      "status": "planned",
+      "capability": "Detecting a switchback washout too short for the system's carryover",
+      "claimed_in": [],
+      "reality": "causal_core.cluster reports a carryover check (early-minus-late effect in switched blocks, Welch test) as a design check that never changes the status. T8 v1 measured it: with a 30-minute carryover and a 20-minute washout the estimate was biased by -0.086 and covered 0.887, and the check flagged it in 2% of runs. It is not a safeguard; the washout must be chosen from knowledge of the system.",
+      "evidence": [
+        {
+          "at": "benchmarks/t8-switchback/PRE-REGISTRATION.md:51",
+          "says": "reported, not gated"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "packages/causal-core/tests/t8/test_carryover_power.py",
+        "asserts": "a pre-registered T8 version gates the carryover check's power at >= 0.8 against a carryover the washout does not cover, with a false-alarm bar where it does"
       }
     }
   ],

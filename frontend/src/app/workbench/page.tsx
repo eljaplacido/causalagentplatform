@@ -177,8 +177,10 @@ export default function WorkbenchPage() {
   });
 
   const useMock = ENABLE_MOCK && fragmentsError;
-  const fragments: GraphFragmentResponse[] =
-    useMock && !backendFragments ? [MOCK_FRAGMENT] : (backendFragments ?? []);
+  const fragments: GraphFragmentResponse[] = useMemo(
+    () => (useMock && !backendFragments ? [MOCK_FRAGMENT] : (backendFragments ?? [])),
+    [useMock, backendFragments]
+  );
 
   const dataSource = useMock ? "mock" : backendFragments ? "live" : fragmentsError ? "error" : "loading";
 

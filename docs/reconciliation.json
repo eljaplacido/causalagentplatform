@@ -28,16 +28,16 @@
       "baseline": {
         "on": "2026-09-25",
         "sha256": {
-          "backend/pyproject.toml": "0d5612eb3b07ad74501e28cfe32a392fd69d228e639b8dcc99f04232618693c4",
+          "backend/pyproject.toml": "ce3b260f18a72cb95508b54b0fdfc567c4501c6efd12616ec8379832b943acb5",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "frontend/package.json": "328e50541f6341ef44bdb0664d818c5de9c95444d15fa3cc19d076f971e4303e",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "eb44c610656469391268893c3c432a94a37377d653bb8522c4885440db7caf2e"
+          "docs/CURRENT_STAGE.md": "7f058213572c0fb2af693b98ad09f9450013d336abc8bcc0e4492671976f1389"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (CURRENT_STAGE changed only a test count; the README quotes none)"
+        "by": "Claude (status paragraph and contributing re-read against verify.sh exit codes and the beads ledger; bound figures match standing runs)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -54,18 +54,18 @@
       "baseline": {
         "on": "2026-09-25",
         "sha256": {
-          "conformance/declared_not_implemented.json": "23f2313e04ebacd13b82f9d5525c7b134bc7b2f06d9421a32a5c3e5f794682d7",
-          "backend/src": "35f68c95fb477f82429739ad86d437f98172df80b6bcc304d18697390bd1d8a4",
+          "conformance/declared_not_implemented.json": "efba99d0a5fb7ecab5ba147394ff3848684f2873f042228cda586b7e1b3cc83b",
+          "backend/src": "5b106e4af0243dbf97bb476beaa4436a65689508fec4b5e93b921fcf7985e9a9",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "8bd18ab1e9aa50f70e3f44b7a3480ff946f19fc93a899793335580a57d4f269a",
-          "frontend/src": "60ea9f202103afd68c160146f94cf5d8514e5d5c5fe8d00ab6dc4a30568e5dff",
-          "packages": "92aebf39973806afb70e2e641533c3470b3a684b4ab8b925ee307971c787f13f",
+          "backend/tests": "a4544fdb69db8322685526e40844dbab0c6fb7dedec0419aef7061c1ed74e255",
+          "frontend/src": "2776c38eeb8a07cc12cf5b57fbe7a54c1315da9d0f2e3184b86065b8c333a294",
+          "packages": "73a9e16cab41c822c240466921caf014344242c44eabf621a1ffd60dc17b8f44",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (re-checked after the kernel-mcp-tools gate check and the RBAC register text; gate-scope row and test counts updated)"
+        "by": "Claude (re-measured gates table at 3756751; T6-T8 summary, carryover-check-weak, eslint row, exit codes)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -107,13 +107,13 @@
           "backend/src/semantic_layer/provenance.py": "02fe831e092fb8bb01d05db9fc9d871ae544e09b2adca565d0df34e3086fa474",
           "backend/src/semantic_layer/contracts.py": "8af9432f179c0d3e8652b3b7d4a48db9edbff3f5acc1fb25c8a6e8d9af3eaaa4",
           "backend/src/api/provenance.py": "48bc9f32a3d847e547364c1e92075c2eec3cb5b4f67f4d6cc08d24427b47d264",
-          "backend/src/agents/llm_factory.py": "ed6865df9dad462e13481a4278bd997a5cdb3b2813ce20f76cacf95b547e1104",
+          "backend/src/agents/llm_factory.py": "86a4c2764217aa29161c9cbc9727db4866efaf89633a4f3b9afb1b7f7406ce85",
           "backend/src/agents/governance.py": "69dc9fc55c24bd453ead3b80f58d40de5f7bdad4689e9c4b3f189494108cfa1b"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (provenance store, capture hook, contracts and PR-009 re-read against provenance.py, llm_factory, contracts.py, governance.py)"
+        "by": "Claude (llm_factory provenance wrapper and get_llm callers; no change needed)"
       }
     },
     "docs/ADR-003-hierarchical-planning-and-evaluation.md": {
@@ -148,7 +148,7 @@
       "baseline": {
         "on": "2026-09-25",
         "sha256": {
-          "backend/src/agents": "6c40044e3d60bdcd45af069db54f370d8c9871358a076c8117df750d9d24ca3c",
+          "backend/src/agents": "f79c4150456f8afb47cbd241aa765a76433b27726648202b9a4693e4182f46c2",
           "backend/src/skills": "7c14f6095d38b78711081427d4f98e3f621a0a72de4b377d6fc374c346c4ecea",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "backend/src/orchestration": "dec89bd24f81da4d46328dd0def76ef4c22e0e3c6370012ce27ea5812037acca",
@@ -157,7 +157,7 @@
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (§3.4 MCP exposure against causal-mcp TOOLS, .gnomon/tools.toml and roles.toml, the legacy server deprecation; §6.3 against prompts/README.md; register-cited claims left as pinned)"
+        "by": "Claude (incident_triage DISORDER path, DisorderProtocol retry, llm_factory provider order and per-capability models)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -184,12 +184,12 @@
           "backend/src/api/provenance.py": "48bc9f32a3d847e547364c1e92075c2eec3cb5b4f67f4d6cc08d24427b47d264",
           "backend/src/db/migrations": "4ab4b5ad6dcc513cbb149dba3bd9fb4f7a7ff7dd35393cb51ee688baaec3d671",
           "backend/src/semantic_layer/verdict.py": "eda2e3481f24fb45ad19d5e11051fa65cd4ba75f8fba77e17415e5ad9479b9bf",
-          ".github/workflows": "e5ea18edea7e9bae1835f357631ab484d9de718fb7dfb779f0172bd6476a6689"
+          ".github/workflows": "041c8f41439f099603e2603010f35037b9b7c31006bda40713975a42d1b5b201"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (role sets and their routes incl. /api/v1/models reviews, auth public paths, dev bypass, verdict signing, migrations 006-007, workflows for scanning, Dockerfile users)"
+        "by": "Claude (workflows re-checked: still no scanning; images non-root; no change needed)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -253,13 +253,13 @@
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
-          ".github": "c973f0f0d03f9f681cfa4a4e97756cf443535f20deb8f89b1619377a5488cc9d",
-          ".gnomon": "eff3051bd3d5888c7355c36309485279e3444f785ae463428f5d74bb1c5ccadb"
+          ".github": "bcbebe13a3a18a53d3e97807c420ad468f4f8dc8e47216e7e5bf73f5b07f7749",
+          ".gnomon": "2cf06bcf1695f53904faaf89f972b821ac1678270ea40bd8949a7950e3416335"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (re-checked after the kernel-mcp-tools gate check and the RBAC register text; gate-scope row and test counts updated)"
+        "by": "Claude (harness surface against .gnomon config/policy, .septacore.json, scripts/verify.sh, .beads)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -280,7 +280,7 @@
           "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docker-compose.yml": "c2118a27d9bd334c63935f3b82336c693cc97c1ac2114e81ac602a45fc8be38e",
-          "backend/pyproject.toml": "0d5612eb3b07ad74501e28cfe32a392fd69d228e639b8dcc99f04232618693c4",
+          "backend/pyproject.toml": "ce3b260f18a72cb95508b54b0fdfc567c4501c6efd12616ec8379832b943acb5",
           "frontend/package.json": "328e50541f6341ef44bdb0664d818c5de9c95444d15fa3cc19d076f971e4303e",
           "package.json": "1d6357ca0a5bff2cf56bc7fa16eaf4e54253728875d5e7161f443542bf8ec478",
           ".env.example": "48f330ad41a48b5d03d0ba3f2910d171f65587998b67b75c4ad21df8656585ce",
@@ -289,7 +289,7 @@
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (every command, env var, port, compose service, seed flag and endpoint against start.sh, launch_backend.sh, docker-compose.yml, db/factory.py, auth.py, pyproject extras; no personal infrastructure found)"
+        "by": "Claude (backend/pyproject deps and extras; kernel test line now T0 and T4-T8)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -310,22 +310,22 @@
       "baseline": {
         "on": "2026-09-25",
         "sha256": {
-          ".github/workflows": "e5ea18edea7e9bae1835f357631ab484d9de718fb7dfb779f0172bd6476a6689",
-          "backend/tests": "8bd18ab1e9aa50f70e3f44b7a3480ff946f19fc93a899793335580a57d4f269a",
-          "backend/pyproject.toml": "0d5612eb3b07ad74501e28cfe32a392fd69d228e639b8dcc99f04232618693c4",
+          ".github/workflows": "041c8f41439f099603e2603010f35037b9b7c31006bda40713975a42d1b5b201",
+          "backend/tests": "a4544fdb69db8322685526e40844dbab0c6fb7dedec0419aef7061c1ed74e255",
+          "backend/pyproject.toml": "ce3b260f18a72cb95508b54b0fdfc567c4501c6efd12616ec8379832b943acb5",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
-          ".gnomon/ci.sh": "39ce6e8f6bd7d1ff7254c34b0b11f80d033120d4ab50ca8557a5da9132165814",
-          "scripts": "1bfe83c102dbdfae6b4332613c42ccd713bfddca5b674241175967390c7577e5",
+          ".gnomon/ci.sh": "eff52277bd3b1621e25fe69ed849a59e1381ad6b6ee61aabf208e71d1130a43c",
+          "scripts": "45e642983ba2d7291229787bbf5138e4c710977a776fca683d179d76c8b1023e",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
-          "benchmarks": "41154a54662a9c2ff48877229971d1074787bdd3023481d8d9d053ac9519a285",
-          "packages/causal-core/tests": "d4b01120aa4b6af9139bfd6aa78df0569599b931e586d352eb2f5371acf48580",
+          "benchmarks": "3dcea1af4dd3bbdd68778cbb91715e1663c850fb9681fe42096b50d1145550dc",
+          "packages/causal-core/tests": "25b07f6046c1a2d7a690aaa44890558a98c42d05990e9d28b28f802a3ab40885",
           "packages/causal-decision/tests": "61bde7786a6158cc99f269fd057908ce3959e5e812ac5d8b4c82c11c2c7200b4"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (re-checked after the kernel-mcp-tools gate check and the RBAC register text; gate-scope row and test counts updated)"
+        "by": "Claude (steps, ADVISORY, exit codes, eslint ratchet, doc-figures row, ci.yml exit mapping and timeout, T8 row)"
       }
     },
     "docs/UIX.md": {
@@ -336,12 +336,12 @@
       "baseline": {
         "on": "2026-09-25",
         "sha256": {
-          "frontend/src": "60ea9f202103afd68c160146f94cf5d8514e5d5c5fe8d00ab6dc4a30568e5dff"
+          "frontend/src": "2776c38eeb8a07cc12cf5b57fbe7a54c1315da9d0f2e3184b86065b8c333a294"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (component inventory against every file in frontend/src/components, persona views against PersonaSelector and app/ pages, ThinkingIndicator test; no committed frontend/src change since last read)"
+        "by": "Claude (component inventory, AssumptionDisclosure unused, aria-current on list selections, jsx-a11y lint)"
       }
     },
     "docs/ROADMAP.md": {
@@ -354,14 +354,14 @@
       "baseline": {
         "on": "2026-09-25",
         "sha256": {
-          "packages/causal-core/src/causal_core": "ec83e24c440e38350a84ea05fe6a82848b5e45ddffab5df00d4e5c1217d71c38",
-          "conformance/declared_not_implemented.json": "23f2313e04ebacd13b82f9d5525c7b134bc7b2f06d9421a32a5c3e5f794682d7",
-          "docs/CURRENT_STAGE.md": "eb44c610656469391268893c3c432a94a37377d653bb8522c4885440db7caf2e"
+          "packages/causal-core/src/causal_core": "80232957daa4ee016f5c040dec92015c62298b850371a4f142508297e1731b2e",
+          "conformance/declared_not_implemented.json": "efba99d0a5fb7ecab5ba147394ff3848684f2873f042228cda586b7e1b3cc83b",
+          "docs/CURRENT_STAGE.md": "7f058213572c0fb2af693b98ad09f9450013d336abc8bcc0e4492671976f1389"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (re-checked after the kernel-mcp-tools gate check and the RBAC register text; gate-scope row and test counts updated)"
+        "by": "Claude (estimate-impact row and step 3 against causal_core.cluster and T8; next steps follow septacore ready)"
       }
     },
     "SECURITY.md": {

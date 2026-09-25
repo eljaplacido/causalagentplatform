@@ -15,6 +15,15 @@ sum by ``1/sqrt(1 − m_j/n_arm)`` so that large, high-leverage clusters are not
 under-counted, and a t distribution on ``K − 2`` degrees of freedom account for having
 few of them.
 
+**Switchback designs** use the time block as the cluster: one system, one arm per block,
+blocks randomized. A declared ``washout`` drops the first minutes of *every* block -- the
+carryover while the system settles after a switch -- and each block then counts once: the
+effect is the difference of the arms' block means, with a Welch variance across blocks on
+t(K − 2). Trimming only the blocks after a switch, weighted by what remains, made each
+block depend on its neighbour's arm and under-covered (T8, development seeds: 0.89–0.91).
+A carryover check compares, in switched blocks, the minutes just after the washout with
+the rest (reported as a design check, never changing the status).
+
 Refused: treatment that varies within a cluster (then the design is not what this
 assumes), fewer than ``min_clusters_per_arm`` clusters in either arm, and cluster sizes
 so variable (coefficient of variation above ``max_cluster_size_cv``) that a few clusters
@@ -86,6 +95,64 @@ def cluster_variance(y: F, t: F, cluster: NDArray[Any], k: int) -> float:
     return var
 
 
+def _switched(sub: pd.DataFrame, block: str, d_col: str, time: str) -> pd.Series:
+    """Per block: whether its arm differs from the previous block's (in time order)."""
+    starts = sub.groupby(block)[time].min().sort_values()
+    arm = sub.groupby(block)[d_col].first().reindex(starts.index)
+    return (arm != arm.shift()).fillna(False).astype(bool) & arm.shift().notna()
+
+
+def apply_washout(sub: pd.DataFrame, block: str, d_col: str, time: str,
+                  washout: float) -> pd.DataFrame:
+    """Drop the first `washout` time units of every block. A seam: `no_washout` skips it.
+
+    Every block, not only those after a switch: otherwise a block's retained window depends
+    on its neighbour's arm, and the blocks are no longer independent observations.
+    """
+    since = sub[time] - sub.groupby(block)[time].transform("min")
+    return sub.loc[since >= washout]
+
+
+def block_means(sub: pd.DataFrame, block: str, d_col: str, y_col: str) -> pd.DataFrame:
+    return sub.groupby(block).agg(y=(y_col, "mean"), t=(d_col, "first"))
+
+
+def block_variance(means: pd.DataFrame) -> float:
+    """Welch variance of the difference of block means. A seam: `minute_level_se`."""
+    a, b = means.loc[means["t"] == 1, "y"], means.loc[means["t"] == 0, "y"]
+    return float(a.var(ddof=1) / len(a) + b.var(ddof=1) / len(b))
+
+
+def carryover_check(sub: pd.DataFrame, block: str, d_col: str, y_col: str, time: str,
+                    washout: float, alpha: float) -> DesignCheck:
+    """Switched blocks: effect just after the washout vs later in the block.
+
+    If the system has settled, the early-minus-late difference is the same in blocks
+    switched into treatment as in blocks switched out of it; residual carryover makes the
+    first negative (the effect still arriving) and the second positive (still leaving).
+    """
+    switched = _switched(sub, block, d_col, time)
+    since = sub[time] - sub.groupby(block)[time].transform("min")
+    frame = sub.assign(_since=since)
+    frame = frame[frame[block].map(switched).astype(bool) & (frame["_since"] >= washout)]
+    early = frame["_since"] < 2 * washout
+    diffs = (frame[early].groupby(block)[y_col].mean()
+             - frame[~early].groupby(block)[y_col].mean()).dropna()
+    arm = frame.groupby(block)[d_col].first().reindex(diffs.index)
+    into, out = diffs[arm == 1], diffs[arm == 0]
+    if len(into) < 2 or len(out) < 2:
+        return DesignCheck(name="no carryover beyond the washout", passed=True,
+                           detail="too few switched blocks to check")
+    test = stats.ttest_ind(into, out, equal_var=False)
+    p = float(test.pvalue)
+    return DesignCheck(
+        name="no carryover beyond the washout",
+        passed=p > alpha,
+        detail=f"early-minus-late difference, switched into vs out of treatment: "
+        f"{float(into.mean() - out.mean()):.4g} (Welch p={p:.2g})",
+    )
+
+
 def icc(y: F, t: F, cluster: NDArray[Any]) -> float | None:
     """One-way ANOVA estimate of the intra-cluster correlation, pooled within arms."""
     frame = pd.DataFrame({"y": y, "t": t, "c": cluster})
@@ -135,19 +202,26 @@ def analyze_cluster(
         "sequence": query.sequence,
         "negative_control_outcomes": query.negative_control_outcomes,
         "treatment_levels": query.treatment_levels,
-        "unit/time": query.unit or query.time,
+        "unit": query.unit,
+        "time (without washout)": query.time if query.washout is None else None,
     }
     given = sorted(k for k, v in unsupported.items() if v)
     if given:
         return refuse(AbstentionReason.INVALID_INPUT,
                       f"not supported with cluster randomization in this version: {given}",
                       q=query, cert=cert)
+    if query.washout is not None and (query.time is None or query.time not in frame.columns):
+        return refuse(AbstentionReason.INVALID_INPUT,
+                      "a washout needs `time`, the column giving time within the stream",
+                      q=query, cert=cert)
     c_col, d_col, y_col = query.cluster, query.treatment, query.outcome
     assert c_col is not None
     if c_col not in frame.columns:
         return refuse(AbstentionReason.INVALID_INPUT, f"cluster {c_col!r} is not a column",
                       q=query, cert=cert)
-    sub = frame[[c_col, d_col, y_col]]
+    cols = [c_col, d_col, y_col] + ([query.time] if query.washout is not None and query.time
+                                     else [])
+    sub = frame[cols]
     if sub.isna().any().any():
         return refuse(AbstentionReason.INVALID_INPUT, "missing values in the analysis columns",
                       q=query, cert=cert)
@@ -184,6 +258,22 @@ def analyze_cluster(
             q=query,
             cert=cert,
         )
+    carryover: DesignCheck | None = None
+    if query.washout is not None:
+        assert query.time is not None
+        kept = apply_washout(sub, c_col, d_col, query.time, query.washout)
+        emptied = sorted(set(sub[c_col]) - set(kept[c_col]))
+        if emptied:
+            return refuse(
+                AbstentionReason.INVALID_INPUT,
+                f"a washout of {query.washout} removes every observation of {len(emptied)} "
+                "switched blocks: blocks must be longer than the washout",
+                q=query,
+                cert=cert,
+            )
+        carryover = carryover_check(sub, c_col, d_col, y_col, query.time, query.washout,
+                                    policy.refutation_alpha)
+        sub = kept
     sizes = sub.groupby(c_col).size().to_numpy(dtype=float)
     cv = float(sizes.std() / sizes.mean())
     checks.append(DesignCheck(
@@ -203,12 +293,23 @@ def analyze_cluster(
             q=query,
             cert=cert,
         )
+    if carryover is not None:
+        checks.append(carryover)
+        if not carryover.passed:
+            warnings = [*warnings, f"carryover beyond the washout: {carryover.detail}"]
     prov["data_digest"] = data_digest(sub)
     y = sub[y_col].to_numpy(dtype=float)
     t = sub[d_col].to_numpy(dtype=float)
     cl = sub[c_col].to_numpy()
-    point = point_estimate(y, t, cl)
-    se = math.sqrt(cluster_variance(y, t, cl, k))
+    if query.washout is not None:
+        means = block_means(sub, c_col, d_col, y_col)
+        treated_means = means.loc[means["t"] == 1, "y"]
+        control_means = means.loc[means["t"] == 0, "y"]
+        point = float(treated_means.mean() - control_means.mean())
+        se = math.sqrt(block_variance(means))
+    else:
+        point = point_estimate(y, t, cl)
+        se = math.sqrt(cluster_variance(y, t, cl, k))
     df = k - 2
     crit = float(stats.t.ppf(0.5 + policy.ci_level / 2, df))
     rho = icc(y, t, cl)

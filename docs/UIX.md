@@ -266,6 +266,8 @@ Components under `frontend/src/components/` are marked **built**. The rest are *
 
 The review queue shows no real risk tier or submitter (register `review-queue-risk-tier`), and
 the Evidence group has no backend to read from yet (register `agent-skills-are-stubs`).
+`AssumptionDisclosure` is built but no page renders it; the analyst page imported it
+without using it, and the import was removed.
 
 ### 4.3 Thinking Indicator (Critical UX Contract)
 
@@ -323,7 +325,11 @@ Each persona has a dedicated first-session walkthrough. Walkthroughs are:
 ## 6. Accessibility Requirements
 
 > **Status:** requirements. No audit has been done, and no automated accessibility test runs.
-> The Radix primitives provide ARIA patterns where they are used.
+> The Radix primitives provide ARIA patterns where they are used. The only automated check is
+> lint: the `jsx-a11y` rules in Next's `core-web-vitals` set (valid ARIA attributes for each
+> role, `alt` text), run over `frontend/src` by the gate's `frontend-eslint` step and held at
+> zero findings. Selection in lists (connector cards, incidents, the review queue, DAG nodes,
+> fragment cards) is marked with `aria-current`; `aria-selected` is kept for tabs.
 
 - WCAG 2.1 AA compliance on all screens
 - Keyboard navigation for all interactive elements

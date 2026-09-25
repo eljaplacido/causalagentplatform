@@ -1,5 +1,5 @@
 {
-  "$id": "urn:causalplatform:claims:0.8.0:analysis_policy",
+  "$id": "urn:causalplatform:claims:0.9.0:analysis_policy",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Every threshold that can change an answer. Hashed into provenance.",

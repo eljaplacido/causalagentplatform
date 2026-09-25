@@ -4,7 +4,7 @@
 
 A governed platform for causal reasoning, decision simulation, and intervention recommendation. Built around a canonical semantic layer, a Guardian-mediated approval workflow, and a shared library of causal-inference skills that are callable both internally (LangGraph agents) and externally (Model Context Protocol).
 
-> **Status:** Pre-1.0. The causal numbers the platform serves come from the causal-core kernel, which identifies before it estimates, refuses with a typed reason, and passes pre-registered correctness and real-data benchmarks. On top of it, causal-decision rules on whether an agent may act on that evidence. Several platform features are still heuristic (and labelled so) or not built: counterfactuals, discovery, the LLM layer, and calibration evidence for the decisions (the follow-up loop exists; no real operation has been measured with it yet). [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAGE.md) lists what is implemented, each row with the test that pins it, and what is declared but not implemented. `.gnomon/ci.sh` is the gate; `scripts/status_claims.py` keeps that page in step with the code.
+> **Status:** Pre-1.0. The causal numbers the platform serves come from the causal-core kernel, which identifies before it estimates, refuses with a typed reason, and passes pre-registered correctness and real-data benchmarks. On top of it, causal-decision rules on whether an agent may act on that evidence. Several platform features are still heuristic (and labelled so) or not built: counterfactuals, discovery, the LLM layer, and calibration evidence for the decisions (the follow-up loop exists; no real operation has been measured with it yet). [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAGE.md) lists what is implemented, each row with the test that pins it, and what is declared but not implemented. `.gnomon/ci.sh` is the gate (`scripts/verify.sh` runs it; exit 0 means every step ran and passed, 1 that a step failed, 2 that one could not be measured, 3 that a document is owed a re-read); `scripts/status_claims.py` keeps that page in step with the code.
 
 ## Start here: the causal kernel
 
@@ -60,6 +60,7 @@ runs, and failing runs are kept.
 | T5: staggered difference-in-differences ([`benchmarks/t5-did`](benchmarks/t5-did)) | Coverage 0.938–0.958 across four simulated rollouts, including one where two-way fixed effects is biased; pre-trends test power 1.00 with false alarms ≤ 2.2%. v1 failed on over-coverage and is kept. |
 | T6: anytime-valid monitoring ([`benchmarks/t6-sequential`](benchmarks/t6-sequential)) | A watched canary's confidence sequence contains the effect at every look in 98.2–99.4% of runs; the fixed-n interval re-read at every look manages 72.9%. v1 failed on two faults of its registration and is kept. |
 | T7: cluster-randomized designs ([`benchmarks/t7-cluster`](benchmarks/t7-cluster)) | Randomize services, measure requests: coverage 0.942–0.952 across five designs; unit-level standard errors would cover 37%. Where a few huge clusters dominate, the kernel refuses rather than under-cover. v1–v3 failed and are kept. |
+| T8: switchback designs ([`benchmarks/t8-switchback`](benchmarks/t8-switchback)) | One system switched hourly between arms: coverage 0.945–0.956 with a washout that covers the carryover. When it does not, the estimate is biased and the built-in carryover check catches it only 2% of the time — choose the washout from knowledge of the system. |
 | D0: the decision procedure ([`benchmarks/d0-decision-policy`](benchmarks/d0-decision-policy)) | 19/19 scenarios return the verdict the registration names (two with declared segments, two staggered rollouts); 8 properties hold over 400 seeded cases; each of 8 seeded defects makes the gate fail. |
 | A0: whether a revised graph breaks a verdict ([`benchmarks/a0-assumption-impact`](benchmarks/a0-assumption-impact)) | 800/800 revisions judged as an independent linear-Gaussian oracle judges them; 4 seeded defects caught. v1 failed its class-balance floor and is kept. |
 
@@ -124,7 +125,7 @@ The legacy server's docs remain at [`backend/mcp_server/README.md`](backend/mcp_
 
 ## Contributing
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md). Security issues: [`SECURITY.md`](SECURITY.md). Behaviour: [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
+See [`CONTRIBUTING.md`](CONTRIBUTING.md). Open work is in the ledger, `.beads/issues.jsonl`; `septacore ready` lists it by priority, and [`docs/ROADMAP.md`](docs/ROADMAP.md) says how it fits the plan. Security issues: [`SECURITY.md`](SECURITY.md). Behaviour: [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 
 ## License
 

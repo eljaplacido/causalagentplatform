@@ -130,10 +130,12 @@ def _query(
     estimand: Literal["ate", "att"] = "ate",
     sequence: str | None = None,
     cluster: str | None = None,
+    washout: float | None = None,
 ) -> CausalQuery:
     return CausalQuery(
         sequence=sequence,
         cluster=cluster,
+        washout=washout,
         unit=unit,
         time=time,
         estimand=estimand,
@@ -171,6 +173,7 @@ def causal_analyze(
     estimand: Literal["ate", "att"] = "ate",
     sequence: str | None = None,
     cluster: str | None = None,
+    washout: float | None = None,
     policy: dict[str, Any] | None = None,
 ) -> AnalyzeResponse:
     """Estimate the effect of `treatment` on `outcome`, or return a typed refusal saying why not.
@@ -207,7 +210,10 @@ def causal_analyze(
 
     **Randomized by service, measured by request?** Pass `cluster` (the column naming the unit
     that was randomized). Requests within a service are not independent; without `cluster`
-    the interval can be several times too narrow.
+    the interval can be several times too narrow. **A switchback** (the whole system switched
+    between arms in time blocks) is the same with `cluster` = the block, `time` = the minute and
+    `washout` = how long the system takes to settle after a switch. Choose the washout from what
+    you know of the system: the built-in carryover check is weak.
 
     `graph` syntax: `Z -> X -> Y; Z -> Y`; `X <-> Y` means an unmeasured common cause;
     `latent U` declares an unmeasured node. Data: either `data` as {column: [values]} or
@@ -231,6 +237,7 @@ def causal_analyze(
             estimand=estimand,
             sequence=sequence,
             cluster=cluster,
+            washout=washout,
         )
         pol = AnalysisPolicy.model_validate(policy or {})
         frame = load_table(data, data_path)
@@ -401,6 +408,7 @@ if HAS_DECISION:
         estimand: Literal["ate", "att"] = "ate",
         sequence: str | None = None,
         cluster: str | None = None,
+        washout: float | None = None,
         policy: dict[str, Any] | None = None,
         decision_policy: dict[str, Any] | None = None,
     ) -> DecideResponse:
@@ -448,6 +456,7 @@ if HAS_DECISION:
                 estimand=estimand,
                 sequence=sequence,
                 cluster=cluster,
+                washout=washout,
             )
             request = DecisionRequest(
                 action=action,

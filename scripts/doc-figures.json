@@ -339,6 +339,46 @@
       "bench": "t7-cluster",
       "path": "/seeded_defect_designs/unit_level_se/coverage",
       "scale": 100
+    },
+    {
+      "doc": "README.md",
+      "says": "coverage 0.945–0.956 with a washout that covers the carryover",
+      "figure": "0.945",
+      "bench": "t8-switchback",
+      "path": "/designs[id=instant|carryover|null_effect|strong_autocorrelation]/coverage",
+      "agg": "min"
+    },
+    {
+      "doc": "README.md",
+      "says": "coverage 0.945–0.956 with a washout that covers the carryover",
+      "figure": "0.956",
+      "bench": "t8-switchback",
+      "path": "/designs[id=instant|carryover|null_effect|strong_autocorrelation]/coverage",
+      "agg": "max"
+    },
+    {
+      "doc": "README.md",
+      "says": "catches it only 2% of the time",
+      "figure": "2",
+      "bench": "t8-switchback",
+      "path": "/designs[id=long_carryover]/carryover_flag_rate",
+      "scale": 100
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "the estimate is biased (−0.086) and covers 88.7%",
+      "figure": "88.7",
+      "bench": "t8-switchback",
+      "path": "/designs[id=long_carryover]/coverage",
+      "scale": 100
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "only 2% of runs: it is reported",
+      "figure": "2",
+      "bench": "t8-switchback",
+      "path": "/designs[id=long_carryover]/carryover_flag_rate",
+      "scale": 100
     }
   ]
 }

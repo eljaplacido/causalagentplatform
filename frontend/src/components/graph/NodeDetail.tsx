@@ -14,7 +14,7 @@
  * Used as a slide-over panel alongside DAGCanvas.
  */
 
-import { X, GitBranch, ArrowRight, ArrowLeft } from "lucide-react";
+import { X, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GuardianVerdictBadge } from "@/components/shared/GuardianVerdictBadge";
 import { EpistemicConfidenceBadge } from "@/components/shared/EpistemicConfidenceBadge";

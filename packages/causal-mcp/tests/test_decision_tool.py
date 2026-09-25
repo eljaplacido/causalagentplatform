@@ -229,3 +229,14 @@ def test_a_cluster_randomized_rollout_is_analysed_over_mcp() -> None:
                                design="randomized", cluster="service")
     assert out.outcome.kind == "result", out.report
     assert out.outcome.diagnostics.n_clusters == 40
+
+
+def test_a_switchback_is_analysed_over_mcp() -> None:
+    from causal_core.bench import t8
+
+    cfg = t8.load_prereg()[0]
+    frame = t8.simulate(t8.DESIGNS["carryover"], cfg, np.random.default_rng(11))
+    out = tools.causal_analyze(graph=t8.GRAPH, treatment="policy", outcome="latency",
+                               data={c: frame[c].tolist() for c in frame}, design="randomized",
+                               cluster="block", time="minute", washout=20)
+    assert out.outcome.kind == "result", out.report

@@ -1,0 +1,21 @@
+{
+  "steps": [
+    {
+      "name": "verify",
+      "argv": [
+        "bash",
+        "scripts/verify.sh"
+      ],
+      "requires": [
+        "scripts/verify.sh"
+      ],
+      "kind": "blocking",
+      "exit_map": {
+        "0": "passed",
+        "1": "failed",
+        "2": "could-not-measure",
+        "3": "regressed"
+      }
+    }
+  ]
+}

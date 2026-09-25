@@ -5,7 +5,12 @@
 > `coordinator` (spec, contract, register entry or pre-registration) → `implementor` (test first,
 > then code) → `verifier` (runs `.gnomon/ci.sh`; cannot edit what it judges), gated `on_check`.
 > Each role's tools and write scope are in `.gnomon/roles.toml`, and the working rules are in the
-> root [`AGENTS.md`](../AGENTS.md) and `.gnomon/skills/`. What follows is the author's personal
+> root [`AGENTS.md`](../AGENTS.md) and `.gnomon/skills/`. The gate is also declared for SeptaCore:
+> `.septacore.json` names `scripts/verify.sh` (which execs `.gnomon/ci.sh`) as the one blocking
+> step and maps its exit codes (0 passed, 1 failed, 2 could not measure, 3 regressed), so
+> `septacore check` runs the same gate. What to work on next comes from the work ledger,
+> `.beads/issues.jsonl`, which `septacore ready` reads; each entry cites its provenance, usually
+> a register id. What follows is the author's personal
 > development tool stack and lane vocabulary: one way of working, not configuration this
 > repository ships or depends on.
 >
@@ -181,7 +186,10 @@ kept out of version control; nothing here reads it, and a checkout without it is
 | File | Purpose |
 |------|---------|
 | `AGENTS.md` | Entry point for any coding agent: rules, flow, gate |
-| `.gnomon/` | The agent harness surface: `config.toml` `[chain]`, `roles.toml`, `tools.toml`, `skills/`, `ci.sh` |
+| `.gnomon/` | The agent harness surface: `config.toml` `[chain]`, `roles.toml`, `tools.toml`, `policy.toml` (whose `[verify]` runs the fast `verify.sh` after a write), `skills/`, `ci.sh` |
+| `.septacore.json` | The declared gate for SeptaCore: `scripts/verify.sh` as a blocking step, with its exit map |
+| `scripts/verify.sh` | Execs `.gnomon/ci.sh` unchanged, so the gate is findable where SeptaCore looks |
+| `.beads/issues.jsonl` | The work ledger `septacore ready` lists open work from |
 | `.github/copilot-instructions.md` | Pointer to `AGENTS.md` plus Copilot-specific essentials |
 | `.github/ISSUE_TEMPLATE/*.yml` | Structured issues for Copilot Coding Agent |
 | `templates/*.md` | Handoff packet templates |

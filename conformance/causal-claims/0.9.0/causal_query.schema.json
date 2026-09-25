@@ -20,7 +20,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:causalplatform:claims:0.8.0:causal_query",
+  "$id": "urn:causalplatform:claims:0.9.0:causal_query",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
@@ -226,6 +226,20 @@
       "default": null,
       "description": "Panel designs only: the column identifying the unit observed repeatedly.",
       "title": "Unit"
+    },
+    "washout": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Switchback designs (cluster = the time block, time = within-block time): drop, from every block, the observations within this many time units of its start -- the settling-in after a switch. Every block, not only switched ones, so a block's retained window never depends on its neighbour's arm.",
+      "title": "Washout"
     }
   },
   "required": [
