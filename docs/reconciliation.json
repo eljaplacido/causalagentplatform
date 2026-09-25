@@ -57,7 +57,7 @@
           "conformance/declared_not_implemented.json": "90161f087f2904e24cd576b6a2142f71d90f3a9600b02123db019e2a6c931500",
           "backend/src": "66bcfbfa132f847c1eee5de54acc996c8bdd13847506ad85cdaa28e1790852df",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "99a14c65477361aad2869907e5d46dde5eb7f784b2ade6374db3b9c7b4dcaa75",
+          "backend/tests": "4147f373dff0ffc372ecb3e1c7b319a4c1d1c062c3433ee523619c572cfd0f88",
           "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
           "packages": "1d0130c75356f3dfc99a697584c821cbd9a20f53d95dc79b26fd299c21b61482",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
@@ -65,7 +65,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: postgres-schema-missing-session-incidents row now implemented; the 16 implemented rows whose tests failed on PostgreSQL say so and name backend-pytest-postgres; register re-cited)"
+        "by": "Claude (septa-3: re-read; the only backend/tests change is test_skill_refs.py, gate tooling the page makes no row or claim about, as for doc_figures and status_claims)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -254,12 +254,12 @@
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
           ".github": "6f9f02d0b5f9ac918f23fb74a20b87f2188eb9ce2ef2df6ef907c1c1714d4c27",
-          ".gnomon": "50062706d8992d889a03425e38568dcba9e56dc59f985a0864be0d721401cf5e"
+          ".gnomon": "214c12a3714905658f51ffb9fa50843d207a281c632a6e1c636b3c7adc1e2435"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: re-read; the ci.sh and workflow changes add a PostgreSQL test step and service, and the doc makes no claim about either)"
+        "by": "Claude (septa-3: re-read; the .gnomon changes are the skill-refs ci.sh step, skill edits and roles/tools comment rewording; the page names the surface files and the gate, all still true)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -311,12 +311,12 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "4181e9975e863cfa2344aa9085a2cd06410ffa12a696037c60c45c66a0b28709",
-          "backend/tests": "99a14c65477361aad2869907e5d46dde5eb7f784b2ade6374db3b9c7b4dcaa75",
+          "backend/tests": "4147f373dff0ffc372ecb3e1c7b319a4c1d1c062c3433ee523619c572cfd0f88",
           "backend/pyproject.toml": "eb8981b94a831f96ab3e93b9d91d676baab95bb8020aac71fa00f19020de0319",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
-          ".gnomon/ci.sh": "742112ef9ad676473bfe889c55f4a54e03f4b149938c8223fb3956ea5aeeddc4",
-          "scripts": "6906ddf12aba77c4cf9dc81819f56fe5d869afd9f45dd398f67738a9e6b00c89",
+          ".gnomon/ci.sh": "000eefb082364d77c90463d9b2e34a65a1c0bc4934b2d82f579f9ca0aab51eab",
+          "scripts": "5c5b913838b8877516d37f2e5baaaf3b9865ee97e815f294c32bc22a13db3e82",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "3dcea1af4dd3bbdd68778cbb91715e1663c850fb9681fe42096b50d1145550dc",
           "packages/causal-core/tests": "b73dcfd6530b951cdacdaaaac95e7e4068843b27cbd6635fdbe7b9efe306ecb3",
@@ -325,7 +325,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (coverage floor 84.0; the doc names the floor file, not the number)"
+        "by": "Claude (septa-3: re-read against a871fa8; added the skill-refs step row and named the gate-script negative controls under unit/; the moved backend/tests, ci.sh and scripts are that change)"
       }
     },
     "docs/UIX.md": {
