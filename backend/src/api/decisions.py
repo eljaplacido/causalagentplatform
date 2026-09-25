@@ -216,9 +216,12 @@ async def make_decision(
     if body.model is not None:
         version = await _model_version(body.model)
         graph = version.graph
-    else:
-        assert body.graph is not None  # the validator guarantees one of the two
+    elif body.graph is not None:
         graph = body.graph
+    else:
+        # DecideRequest._one_graph refuses this before the handler runs. A raise,
+        # not an assert: python -O strips asserts.
+        raise HTTPException(status_code=422, detail="give exactly one of `graph` or `model`")
 
     outcome = cc.analyze(
         frame, graph, query=query, policy=body.analysis_policy or AnalysisPolicy()

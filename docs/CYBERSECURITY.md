@@ -460,8 +460,16 @@ published since the last push surfaces without one):
 - **SAST.** `bandit` over `backend/src`, `backend/mcp_server` and every `packages/*/src`,
   blocking on MEDIUM and HIGH findings, held at zero by the ratchet in
   `scripts/lint-baseline.json` (steps `bandit-backend`, `bandit-packages`). The backend's
-  `[tool.bandit]` skips B608 (SQL built from strings) for the whole tree: with it enabled,
-  `backend/src` has 13 MEDIUM findings, not yet reviewed site by site.
+  `[tool.bandit]` skips no rule. B608 (SQL built from strings) was skipped for the whole
+  tree until its 13 sites in `backend/src` were reviewed one by one: none put a request
+  value into SQL text (each interpolated a fixed fragment, a placeholder list or a table
+  name from a closed mapping), and each was rewritten as a literal statement or as
+  SQLAlchemy Core over a lightweight table, with no `# nosec`. Request values reach SQL
+  only as bound parameters; `backend/tests/integration/test_sql_filters_bound.py` sends
+  SQL-shaped filter, status and domain values through the audit-log, incident, decision
+  and registry queries and checks they match nothing and change nothing. B608 is now
+  enforced, so a new string-built statement fails the gate. B101 (assert) is not skipped
+  either; it is LOW, so bandit reports it without counting it.
 - **Secret scan.** `scripts/secret_scan.py` (step `secret-scan`) over every file git would
   commit from the working tree: private-key blocks, AWS, Google, Azure, GitHub, Slack, OpenAI,
   Anthropic and Stripe token formats, and high-entropy literals assigned to `*KEY`, `*SECRET`,

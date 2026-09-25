@@ -172,10 +172,11 @@ show_missing = true
 # ── Bandit SAST ───────────────────────────────────────────────────────────────
 [tool.bandit]
 exclude_dirs = ["tests", "src/db/migrations"]
-skips = [
-    "B101",   # assert_used — we use assert only in tests (ruff handles library code)
-    "B608",   # hardcoded_sql_expressions — 13 f-strings inside text(); not yet reviewed per
-              # site, so this skip is a debt, not a finding (scripts/lint-baseline.json)
-]
+# No rule is skipped. B608 (SQL built from strings) was skipped for the whole tree
+# until septa-50 reviewed its 13 sites: none carried a request value into SQL text,
+# and all were rewritten as literal statements or SQLAlchemy Core, so B608 now
+# enforces that none is added. B101 (assert) was skipped on the claim that ruff
+# covers library code; ruff's S rules are not selected, and src had one assert,
+# now an explicit check. B101 is LOW, so it is reported, not counted.
 # .gnomon/ci.sh (step bandit-backend) passes --severity-level medium and blocks on any
 # MEDIUM or HIGH finding above the ratchet in scripts/lint-baseline.json (0).

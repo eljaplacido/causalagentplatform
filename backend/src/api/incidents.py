@@ -22,7 +22,7 @@ from typing import Any
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import text
+from sqlalchemy import bindparam, text
 
 from src.db.factory import CloudSqlFactory
 from src.middleware.auth import get_current_user
@@ -120,25 +120,40 @@ async def save_incident(
 
 # ── Read paths ────────────────────────────────────────────────────────────────
 
+# Whole literal statements, one per filter shape, never assembled from strings:
+# a request value only ever reaches them as a bound parameter.
+_DECISIONS_FOR_INCIDENTS = text(
+    "SELECT action_type, payload_hash, session_id "
+    "FROM audit_log "
+    "WHERE action_type IN ('INTERVENTION_APPROVED', 'INTERVENTION_REJECTED') "
+    "AND session_id IN :ids"
+).bindparams(bindparam("ids", expanding=True))
+
+_LIST_INCIDENTS = (
+    "SELECT id, title, severity, affected_services, status, session_id, "
+    "cynefin_domain, domain_confidence, overall_confidence, guardian_verdict, "
+    "draft_explanation, causal_hypotheses, proposed_interventions, "
+    "submitted_by, created_at, updated_at "
+    "FROM incidents "
+    "ORDER BY created_at DESC LIMIT :limit"
+)
+_LIST_INCIDENTS_WITH_STATUS = (
+    "SELECT id, title, severity, affected_services, status, session_id, "
+    "cynefin_domain, domain_confidence, overall_confidence, guardian_verdict, "
+    "draft_explanation, causal_hypotheses, proposed_interventions, "
+    "submitted_by, created_at, updated_at "
+    "FROM incidents "
+    "WHERE status = :status ORDER BY created_at DESC LIMIT :limit"
+)
+
 
 async def _load_decisions_by_incident(incident_ids: list[str]) -> dict[str, dict[str, str]]:
     """Return {incident_id: {intervention_id: verdict}} from audit_log."""
     if not incident_ids:
         return {}
 
-    placeholders = ", ".join(f":id{i}" for i in range(len(incident_ids)))
-    params: dict[str, Any] = {f"id{i}": iid for i, iid in enumerate(incident_ids)}
-
     async with CloudSqlFactory.get_session_factory()() as session:
-        rows = await session.execute(
-            text(
-                f"SELECT action_type, payload_hash, session_id "
-                f"FROM audit_log "
-                f"WHERE action_type IN ('INTERVENTION_APPROVED', 'INTERVENTION_REJECTED') "
-                f"AND session_id IN ({placeholders})"
-            ),
-            params,
-        )
+        rows = await session.execute(_DECISIONS_FOR_INCIDENTS, {"ids": list(incident_ids)})
         out: dict[str, dict[str, str]] = {}
         for r in rows.mappings():
             try:
@@ -201,22 +216,13 @@ async def list_incidents(
     user: dict[str, Any] = Depends(get_current_user),
 ) -> list[IncidentRecord]:
     params: dict[str, Any] = {"limit": limit}
-    where = ""
+    sql = _LIST_INCIDENTS
     if status_filter:
-        where = "WHERE status = :status"
+        sql = _LIST_INCIDENTS_WITH_STATUS
         params["status"] = status_filter
 
     async with CloudSqlFactory.get_session_factory()() as session:
-        rows = await session.execute(
-            text(
-                f"SELECT id, title, severity, affected_services, status, session_id, "
-                f"cynefin_domain, domain_confidence, overall_confidence, guardian_verdict, "
-                f"draft_explanation, causal_hypotheses, proposed_interventions, "
-                f"submitted_by, created_at, updated_at "
-                f"FROM incidents {where} ORDER BY created_at DESC LIMIT :limit"
-            ),
-            params,
-        )
+        rows = await session.execute(text(sql), params)
         records = [_row_to_record(r) for r in rows.mappings()]
 
     decisions_by_incident = await _load_decisions_by_incident([r.id for r in records])
