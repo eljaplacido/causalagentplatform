@@ -35,7 +35,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
 from src.db.factory import CloudSqlFactory
-from src.exceptions import GuardianBlockedError, ObjectNotFoundError
+from src.exceptions import GuardianBlockedError, InvalidTransitionError, ObjectNotFoundError
 from src.semantic_layer.models import (
     ApprovalStatus,
     Assumption,
@@ -199,6 +199,17 @@ async def _assert_verdict_approved(
         session_id=record["session_id"],
         created_at=record["created_at"],
     )
+
+
+#: The statuses a review may move an object out of. APPROVED and DEPRECATED are
+#: terminal for approval and rejection alike.
+_REVIEWABLE = ("DRAFT", "UNDER_REVIEW")
+_REVIEWABLE_SQL = ", ".join(f"'{s}'" for s in _REVIEWABLE)
+
+
+def _assert_reviewable(current: Any, object_id: UUID, object_type: str, attempted: str) -> None:
+    if str(current) not in _REVIEWABLE:
+        raise InvalidTransitionError(str(object_id), object_type, str(current), attempted)
 
 
 def _as_lineage(value: Any) -> list[dict[str, Any]]:
@@ -781,12 +792,17 @@ class SemanticLayerRegistry:
             # Postgres but *strings* on SQLite, where it produced '[][{...}]' --
             # not JSON, and nothing read it closely enough to notice.
             current = await session.execute(
-                text(f"SELECT lineage FROM {table} WHERE id = :oid"),
+                text(f"SELECT lineage, approval_status FROM {table} WHERE id = :oid"),
                 {"oid": str(object_id)},
             )
             found = current.mappings().one_or_none()
             if found is None:
                 raise ObjectNotFoundError(str(object_id), object_type)
+            # Checked here, inside the session that spent the verdict, so raising
+            # rolls the spend back too. The UPDATE below used to match on id alone,
+            # so a rejected (DEPRECATED) object could be re-promoted by any fresh
+            # APPROVED verdict issued for it.
+            _assert_reviewable(found["approval_status"], object_id, object_type, "approved")
             history = _as_lineage(found["lineage"])
             history.append(json.loads(lineage_entry))
 
@@ -798,7 +814,7 @@ class SemanticLayerRegistry:
                     f"    approved_by = :approved_by, "
                     f"    guardian_verdict_ref = :verdict_ref, "
                     f"    lineage = :lineage "
-                    f"WHERE id = :oid"
+                    f"WHERE id = :oid AND approval_status IN ({_REVIEWABLE_SQL})"
                 ),
                 {
                     "oid": str(object_id),
@@ -864,6 +880,9 @@ class SemanticLayerRegistry:
             found = current.mappings().one_or_none()
             if found is None:
                 raise ObjectNotFoundError(str(object_id), object_type)
+            # Without this the guarded UPDATE below matched nothing on an APPROVED
+            # object, yet the verdict was spent and the rejection logged as done.
+            _assert_reviewable(found["approval_status"], object_id, object_type, "rejected")
             history = _as_lineage(found["lineage"])
             history.append(
                 {
@@ -878,7 +897,7 @@ class SemanticLayerRegistry:
                 text(
                     f"UPDATE {table} "
                     f"SET approval_status = 'DEPRECATED', lineage = :lineage "
-                    f"WHERE id = :oid AND approval_status IN ('DRAFT', 'UNDER_REVIEW')"
+                    f"WHERE id = :oid AND approval_status IN ({_REVIEWABLE_SQL})"
                 ),
                 {"oid": str(object_id), "lineage": json.dumps(history)},
             )

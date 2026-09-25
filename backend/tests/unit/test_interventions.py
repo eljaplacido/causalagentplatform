@@ -317,6 +317,26 @@ async def test_close_feedback_critical_deviation(intv_client: AsyncClient, db_en
     assert data["re_validation_triggered"] is True
     assert data["drift_alert_emitted"] is True
 
+    # The route records what it saw; it does not rule on it. It used to write
+    # guardian_verdict=APPROVED rows the Guardian never issued.
+    async with CloudSqlFactory.get_session_factory()() as session:
+        rows = (
+            await session.execute(
+                text(
+                    "SELECT action_type, guardian_verdict, payload_hash, signature "
+                    "FROM audit_log WHERE subject_id = :sid ORDER BY action_type"
+                ),
+                {"sid": intv_id},
+            )
+        ).mappings().all()
+    assert [r["action_type"] for r in rows] == [
+        "DRIFT_ALERT_OUTCOME_DEVIATION",
+        "FEEDBACK_LOOP_CLOSED",
+    ]
+    assert {r["guardian_verdict"] for r in rows} == {"PENDING"}
+    assert all(r["signature"] is None for r in rows)
+    assert all(r["payload_hash"].startswith("sha256:") for r in rows)
+
 
 async def test_close_feedback_high_deviation(intv_client: AsyncClient, db_engine: object) -> None:
     """High prediction error triggers re-validation but not drift alert."""

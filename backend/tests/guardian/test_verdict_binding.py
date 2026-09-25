@@ -23,7 +23,7 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import text
 
-from src.exceptions import GuardianBlockedError
+from src.exceptions import GuardianBlockedError, InvalidTransitionError
 from src.semantic_layer.models import CynefinDomain, EpistemicState, UserRef
 from src.semantic_layer.verdict import claim as verdict_claim
 from src.semantic_layer.verdict import sign as verdict_sign
@@ -266,6 +266,68 @@ async def test_consumption_is_recorded_against_the_object(
     assert str(record["subject_id"]) == str(entity.id)
     assert "propose_draft" in record["context"]
 
+
+
+# ── A valid verdict does not make an invalid transition valid ────────────────
+
+
+async def test_a_rejected_object_cannot_be_promoted_by_a_fresh_verdict(
+    db_engine: object,
+    registry: SemanticLayerRegistry,
+    db_session: AsyncSession,
+    verdict_for: VerdictFactory,
+) -> None:
+    """DEPRECATED is terminal. promote_to_approved used to match on id alone."""
+    entity = make_causal_entity()
+    await registry.propose_draft(entity, await verdict_for(entity.id))
+    await registry.reject_draft(
+        entity.id,
+        "CausalEntity",
+        await verdict_for(entity.id, "REJECTED"),
+        _approver(),
+        "not supported by the evidence",
+    )
+
+    fresh = await verdict_for(entity.id)
+    with pytest.raises(InvalidTransitionError, match="is DEPRECATED"):
+        await registry.promote_to_approved(entity.id, "CausalEntity", fresh, _approver())
+
+    status = await db_session.execute(
+        text("SELECT approval_status FROM causal_entities WHERE id = :i"), {"i": str(entity.id)}
+    )
+    assert status.scalar_one() == "DEPRECATED"
+    # The refusal rolled back the spend: the verdict was never used for anything.
+    spent = await db_session.execute(
+        text("SELECT COUNT(*) FROM verdict_consumption WHERE verdict_id = :v"), {"v": str(fresh)}
+    )
+    assert spent.scalar_one() == 0
+
+
+async def test_an_approved_object_cannot_be_rejected_after_the_fact(
+    db_engine: object,
+    registry: SemanticLayerRegistry,
+    db_session: AsyncSession,
+    verdict_for: VerdictFactory,
+) -> None:
+    """reject_draft's guarded UPDATE matched nothing here, yet reported success."""
+    entity = make_causal_entity()
+    await registry.propose_draft(entity, await verdict_for(entity.id))
+    await registry.promote_to_approved(
+        entity.id, "CausalEntity", await verdict_for(entity.id), _approver()
+    )
+
+    with pytest.raises(InvalidTransitionError, match="is APPROVED"):
+        await registry.reject_draft(
+            entity.id,
+            "CausalEntity",
+            await verdict_for(entity.id, "REJECTED"),
+            _approver(),
+            "changed my mind",
+        )
+    status = await db_session.execute(
+        text("SELECT approval_status FROM causal_entities WHERE id = :i"), {"i": str(entity.id)}
+    )
+    assert status.scalar_one() == "APPROVED"
 
 def _approver() -> UserRef:
     return UserRef(id="governance-officer", email="go@test.com", name="Officer")

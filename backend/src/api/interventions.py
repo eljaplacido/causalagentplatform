@@ -20,6 +20,7 @@ EpistemicState constraints:
 
 from __future__ import annotations
 
+import hashlib
 import json
 from datetime import UTC, datetime
 from typing import Any
@@ -115,6 +116,44 @@ def _compute_error_severity(expected: float, actual: float) -> str:
     return "LOW"
 
 
+async def _append_unruled_audit_row(
+    session: Any,
+    *,
+    agent_id: str,
+    action_type: str,
+    payload: dict[str, Any],
+    rules: list[str],
+    session_id: str,
+    subject_id: str,
+    notes: str,
+    at: datetime,
+) -> None:
+    """Append an audit row that records an event without claiming a verdict on it."""
+    await session.execute(
+        text(
+            "INSERT INTO audit_log (id, agent_id, action_type, payload_hash, "
+            "guardian_verdict, policy_rules_cited, session_id, created_at, subject_id, notes) "
+            "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :session, :ts, :subject, "
+            ":notes)"
+        ),
+        {
+            "id": str(uuid4()),
+            "agent": agent_id,
+            "action": action_type,
+            "hash": "sha256:"
+            + hashlib.sha256(
+                json.dumps(payload, sort_keys=True, default=str).encode()
+            ).hexdigest(),
+            "verdict": "PENDING",
+            "rules": json.dumps(rules),
+            "session": session_id,
+            "ts": at.isoformat(),
+            "subject": subject_id,
+            "notes": notes,
+        },
+    )
+
+
 @router.post(
     "/feedback",
     response_model=FeedbackResponse,
@@ -128,11 +167,11 @@ async def close_feedback_loop(
     Record the actual observed effect of an intervention.
 
     When the actual effect deviates significantly from the predicted effect:
-      - A drift alert is emitted (Kafka topic: platform.intervention.outcome)
-      - The affected graph fragment is flagged for re-validation
-      - The experience buffer is updated with the outcome
+      - an escalation request is appended to the audit log (CRITICAL deviations)
+      - the response reports that re-validation is warranted (HIGH or CRITICAL)
 
-    All feedback closures are auditable via the intervention's audit log.
+    Every closure is appended to the audit log as a PENDING row: a record of what
+    was observed, not a Guardian verdict on it.
     """
     intervention_id = body.intervention_id
     now = datetime.now(UTC)
@@ -199,44 +238,46 @@ async def close_feedback_loop(
             },
         )
 
-        # Write audit entry for the feedback closure
-        audit_id = str(uuid4())
-        await session.execute(
-            text(
-                "INSERT INTO audit_log (id, agent_id, action_type, payload_hash, "
-                "guardian_verdict, policy_rules_cited, session_id, created_at) "
-                "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :session, :ts)"
-            ),
-            {
-                "id": audit_id,
-                "agent": user.get("uid", "feedback-user"),
-                "action": "FEEDBACK_LOOP_CLOSED",
-                "hash": intervention_id,
-                "verdict": "APPROVED",
-                "rules": "[]",
-                "session": f"feedback-{intervention_id}",
-                "ts": now.isoformat(),
-            },
+        # Record the closure in the audit log -- as a record, not a ruling. This
+        # route used to write guardian_verdict=APPROVED (and REQUIRES_ESCALATION for
+        # the drift alert) without the Guardian ever being asked, so the trail showed
+        # approvals nobody issued. PENDING is what "nobody has ruled on this" means
+        # (002_verdict_binding.sql); the row is unsigned and authorises nothing.
+        closure_payload = {
+            "intervention_id": intervention_id,
+            "expected_effect": expected_effect,
+            "actual_effect": actual_effect_data,
+            "prediction_error": prediction_error,
+            "error_severity": error_severity,
+            "closed_by": user.get("uid") or "unknown",
+        }
+        await _append_unruled_audit_row(
+            session,
+            agent_id=user.get("uid", "feedback-user"),
+            action_type="FEEDBACK_LOOP_CLOSED",
+            payload=closure_payload,
+            rules=[],
+            session_id=f"feedback-{intervention_id}",
+            subject_id=intervention_id,
+            notes="Recorded by the feedback route; not a Guardian verdict.",
+            at=now,
         )
 
-        # If re-validation triggered, write a drift alert
         if drift_emitted:
-            await session.execute(
-                text(
-                    "INSERT INTO audit_log (id, agent_id, action_type, payload_hash, "
-                    "guardian_verdict, policy_rules_cited, session_id, created_at) "
-                    "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :session, :ts)"
+            await _append_unruled_audit_row(
+                session,
+                agent_id="FeedbackLoopProcessor",
+                action_type="DRIFT_ALERT_OUTCOME_DEVIATION",
+                payload=closure_payload,
+                rules=["PR-008"],
+                session_id=f"drift-{intervention_id}",
+                subject_id=intervention_id,
+                notes=(
+                    "Escalation requested: the observed effect deviates CRITICALLY from "
+                    "the prediction. Requested by the feedback route, not ruled on by "
+                    "the Guardian."
                 ),
-                {
-                    "id": str(uuid4()),
-                    "agent": "FeedbackLoopProcessor",
-                    "action": "DRIFT_ALERT_OUTCOME_DEVIATION",
-                    "hash": intervention_id,
-                    "verdict": "REQUIRES_ESCALATION",
-                    "rules": '["PR-008"]',
-                    "session": f"drift-{intervention_id}",
-                    "ts": now.isoformat(),
-                },
+                at=now,
             )
 
         await session.commit()
