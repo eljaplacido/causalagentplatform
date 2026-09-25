@@ -102,7 +102,7 @@
           "says": "- Rosenbaum sensitivity bounds"
         },
         {
-          "at": "docs/UIX.md:191",
+          "at": "docs/UIX.md:192",
           "says": "I want to run a one-click Rosenbaum sensitivity analysis on any approved edge"
         }
       ],
@@ -238,7 +238,7 @@
           "says": "summary=\"List pending drafts ordered by risk tier\""
         },
         {
-          "at": "docs/UIX.md:234",
+          "at": "docs/UIX.md:235",
           "says": "I want a structured review queue of all draft graph changes awaiting approval, ordered by risk tier"
         }
       ],

@@ -34,7 +34,8 @@ Each persona sees a **filtered, task-optimized lens** on the same underlying pla
 Today, `PersonaSelector` switches between five views, and there is a page per view:
 `/incidents`, `/analyst`, `/executive`, `/governance` and `/engineer`, plus `/workbench`. How much
 of each view's surface below is built varies (see §4.2). The DAG Workbench is planned (register
-`dag-workbench`).
+`dag-workbench`). The decision ledger and the assumption registry have API routes
+(`/api/v1/decisions`, `/api/v1/models`) and no view: the frontend calls neither.
 
 | Persona View | Primary Surface | Secondary Surfaces |
 |---|---|---|
