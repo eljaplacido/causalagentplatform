@@ -140,6 +140,15 @@ before any run. It runs on every change:
   few clusters dominate (size CV above 0.6) the kernel refuses — v2 of the gate showed coverage
   falling to 0.879 there, and no variance correction repaired it. v1–v3 failed and are kept.
 
+- **T8 (switchback designs):** a week of minutes, hourly blocks, AR(1) noise and a daily cycle:
+  coverage 0.945–0.956 of the steady-state effect when the washout covers the carryover. When it
+  does not, the estimate is biased (−0.086) and covers 88.7%, and the carryover check flags it in
+  only 2% of runs: it is reported, not relied on.
+
+**Switchbacks.** `analyze(..., design="randomized", cluster=<block>, time=<minute>,
+washout=<minutes>)` drops the first `washout` minutes of every block and compares block means
+(Welch, t(K − 2)).
+
 **Randomized by cluster.** `analyze(..., design="randomized", cluster=<column>)` gives the
 unit-weighted effect with CR2 cluster-robust intervals on t(K − 2), and reports the intra-cluster
 correlation.
@@ -187,8 +196,9 @@ Data can be pandas, a dict of columns, pyarrow, polars, or any dataframe-interch
 - Subgroup *discovery* (declared segments are supported; searching for them is not)
 - Discovery
 - Time series
-- Interference between randomized units (spillovers from treated to untreated clusters) and
-  switchback (time-block) designs; cluster randomization handles dependence *within* clusters only
+- Interference between randomized units (spillovers from treated to untreated clusters);
+  cluster and switchback designs handle dependence *within* a cluster or block only
+- A carryover check with real power: the current one is reported, and weak (T8)
 - For difference-in-differences: covariate-conditional parallel trends, not-yet-treated
   comparisons, anticipation windows, repeated cross-sections, and the full Rambachan & Roth
   machinery (the kernel's parallel-trends sensitivity is a simplified, conservative form)
