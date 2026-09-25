@@ -20,7 +20,7 @@ export interface EpistemicConfidenceBadgeProps {
   overallConfidence?: number;
   /** Alias for overallConfidence (convenience prop) */
   score?: number;
-  /** H-Neuron hallucination risk score 0.0 – 1.0 */
+  /** Grounding-risk score 0.0 – 1.0 (Guardian PR-002; computed by the platform) */
   hallucinationRiskScore?: number;
   /** Show the confidence meter bar */
   showMeter?: boolean;

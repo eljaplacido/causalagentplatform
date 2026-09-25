@@ -167,7 +167,7 @@ async def test_guardian_check_requires_auth(db_engine: object) -> None:
 async def test_guardian_check_high_risk_confidence(
     gov_client: AsyncClient, db_engine: object
 ) -> None:
-    """A high hallucination risk must be refused *by the hallucination rule*.
+    """An ungrounded narrative must be refused *by the grounding rule*, PR-002.
 
     This test used to put `hallucination_risk` inside `payload`, where no rule
     reads it, and assert the verdict was one of two values. It passed because
@@ -181,7 +181,7 @@ async def test_guardian_check_high_risk_confidence(
             "action_type": "EDGE_PROPOSAL",
             "payload": {"confidence": 0.3, "source": "unknown", "target": "unknown"},
             "cynefin_domain": "COMPLICATED",
-            "hallucination_risk_score": 0.95,
+            "narrative": "Confidence 0.3 edge from unknown source: will reduce latency.",
         },
     )
     assert resp.status_code == 200

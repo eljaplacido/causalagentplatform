@@ -98,7 +98,7 @@
           "says": "Computes Rosenbaum sensitivity bounds and E-values for unmeasured confounders"
         },
         {
-          "at": "docs/CYBERSECURITY.md:313",
+          "at": "docs/CYBERSECURITY.md:315",
           "says": "- Rosenbaum sensitivity bounds"
         },
         {
@@ -234,7 +234,7 @@
       "capability": "Review queue ordered by risk tier, showing who submitted each item",
       "claimed_in": [
         {
-          "at": "backend/src/api/governance.py:342",
+          "at": "backend/src/api/governance.py:372",
           "says": "summary=\"List pending drafts ordered by risk tier\""
         },
         {
@@ -245,7 +245,7 @@
       "reality": "ReviewQueueItem carries no risk tier and no submitter, the queue is not ordered by risk, and the UI fills riskTier \"MEDIUM\" and submittedBy \"system\" for every item.",
       "evidence": [
         {
-          "at": "backend/src/api/governance.py:120",
+          "at": "backend/src/api/governance.py:144",
           "says": "class ReviewQueueItem(BaseModel):"
         },
         {
@@ -556,11 +556,11 @@
       "capability": "Agent evaluation endpoints (consistency, calibration, decision quality) measure the running platform",
       "claimed_in": [
         {
-          "at": "backend/src/api/platform.py:719",
+          "at": "backend/src/api/platform.py:722",
           "says": "    summary=\"Agent confidence calibration probe\","
         },
         {
-          "at": "backend/src/api/platform.py:761",
+          "at": "backend/src/api/platform.py:764",
           "says": "    summary=\"Composite decision quality index\","
         },
         {
@@ -579,7 +579,7 @@
       "reality": "None of the three observes an agent. /evaluation/consistency scores num_runs identical EMPTY recommendation lists against each other, so the variance it reports is 0 by construction whatever the platform is doing. /evaluation/calibration scores the confidences in the request body, and CalibrationProbe states it uses their variance as a proxy because there is no ground truth -- calibration needs realized outcomes, and nothing records one. /evaluation/decision-quality combines four numbers taken as query parameters, defaulting to 0.75/0.05/0.80/0.70, so its 'index' is whatever the caller passes. The module docstring claimed 'No static or mock values' until 2026-09-24; it now names these three as excluded.",
       "evidence": [
         {
-          "at": "backend/src/api/platform.py:699",
+          "at": "backend/src/api/platform.py:702",
           "says": "    mock_recommendations: list[list[Any]] = [[] for _ in range(num_runs)]"
         },
         {
@@ -587,7 +587,7 @@
           "says": "        - Variance of confidence scores as a proxy for calibration"
         },
         {
-          "at": "backend/src/api/platform.py:767",
+          "at": "backend/src/api/platform.py:770",
           "says": "    calibration_score: float = Query(default=0.70, ge=0.0, le=1.0),"
         }
       ],
@@ -878,11 +878,11 @@
       "reality": "contracts.py defines the contract, SLA and violation models and a ContractRegistry that can register, look up and remove contracts. Nothing evaluates a contract, nothing produces a ContractViolation, and only the tests instantiate the registry. PR-009 fires only when a caller sends action_type DATA_ACCESS_WITH_CONTRACT, which no code path does, and it reads the violation list from that caller's own payload. So a caller that reports no violations is never blocked.",
       "evidence": [
         {
-          "at": "backend/src/agents/governance.py:424",
+          "at": "backend/src/agents/governance.py:428",
           "says": "if action_type == \"DATA_ACCESS_WITH_CONTRACT\":"
         },
         {
-          "at": "backend/src/agents/governance.py:425",
+          "at": "backend/src/agents/governance.py:429",
           "says": "contract_violations = payload.get(\"contract_violations\", [])"
         },
         {
@@ -937,45 +937,6 @@
         "kind": "test",
         "path": "backend/tests/integration/test_planning_uses_estimates.py",
         "asserts": "given an APPROVED fragment and observational data in which one candidate action's effect is known to be harmful, the planner's simulated effect for it comes from causal-core and that action is not committed -- and the committed choice changes when the data does"
-      }
-    },
-    {
-      "id": "guardian-risk-score-caller-supplied",
-      "status": "declared-not-implemented",
-      "capability": "Hallucination-risk (H-Neuron) scoring of agent/LLM output, gating Guardian approval (PR-002)",
-      "claimed_in": [
-        {
-          "at": "backend/src/agents/governance.py:51",
-          "says": "\"PR-002\": \"Hallucination risk threshold: H-Neuron score must be < 0.7 for APPROVED verdict.\","
-        },
-        {
-          "at": "docs/AGENTS.md:511",
-          "says": "hallucinationRiskScore: number;    // H-Neuron output"
-        },
-        {
-          "at": "docs/CYBERSECURITY.md@13e7d92:54",
-          "says": "H-Neuron hallucination risk scoring on every LLM output"
-        },
-        {
-          "at": "docs/CYBERSECURITY.md@13e7d92:287",
-          "says": "H-Neuron hallucination score spike across agent pool"
-        }
-      ],
-      "reality": "Nothing computes a hallucination-risk score. EpistemicState.hallucination_risk_score defaults to 0.0, no agent sets it, and POST /api/governance/check copies it from the request body, beside the caller-declared cynefin_domain and cycle_count. So PR-002, and with it PR-005 and PR-006, evaluates numbers the caller chose, and any authenticated caller can obtain a signed APPROVED verdict for a payload by declaring a classified domain and a zero score. The /approve step still needs a governance role, which limits what that verdict can be spent on.",
-      "evidence": [
-        {
-          "at": "backend/src/semantic_layer/models.py:697",
-          "says": "hallucination_risk_score: float = Field(default=0.0, ge=0.0, le=1.0)"
-        },
-        {
-          "at": "backend/src/api/governance.py:167",
-          "says": "hallucination_risk_score=body.hallucination_risk_score,"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/guardian/test_risk_score_not_caller_supplied.py",
-        "asserts": "the risk score PR-002 reads is computed by the platform from the output being checked, and a request body that declares a low score for a high-risk output is still refused"
       }
     },
     {
@@ -1124,7 +1085,7 @@
       "capability": "Guardian PR-007: edges without a sensitivity result are blocked from APPROVED",
       "claimed_in": [
         {
-          "at": "backend/src/agents/governance.py:56",
+          "at": "backend/src/agents/governance.py:59",
           "says": "\"PR-007\": \"Sensitivity analysis: edges without sensitivity_result blocked from APPROVED.\","
         },
         {
@@ -1135,7 +1096,7 @@
       "reality": "PR-007 is in the Guardian's rule table and nowhere in its evaluation: no check reads a sensitivity result, so an edge is approved whether or not any sensitivity analysis was run, and PR-007 is never cited on a verdict. The rules that are evaluated are PR-001 to PR-006, PR-008, and PR-009 (on one action type).",
       "evidence": [
         {
-          "at": "backend/src/agents/governance.py:372",
+          "at": "backend/src/agents/governance.py:375",
           "says": "rules_fired.append(\"PR-002\")"
         }
       ],
@@ -1359,6 +1320,13 @@
       "fixed_in": "bc44988",
       "pinned_by": "frontend/src/lib/__tests__/types-parity.test.ts",
       "note": "EvidenceType is now imported from @causalplatform/semantic-types. The frontend ReviewStatus was never the backend's (the Assumption review lifecycle) but a review-queue presentation state derived from ApprovalStatus, so it was renamed ReviewQueueStatus rather than imported. scripts/contract-parity.json lists no divergence."
+    },
+    {
+      "id": "guardian-risk-score-caller-supplied",
+      "was": "POST /api/governance/check copied hallucination_risk_score (and cycle_count) from the request body, so PR-002 and PR-005 judged numbers the caller chose, and nothing computed the 'H-Neuron' score the rule text claimed",
+      "fixed_in": "c846096",
+      "pinned_by": "backend/tests/guardian/test_risk_score_not_caller_supplied.py",
+      "note": "Implemented as a grounding score, not an H-Neuron one; that claim is retracted. src/agents/grounding_risk.py scores the narrative against the kernel outcome it reports with causal_core.claims.verify (0.0 grounded, 1.0 not; a narrative with figures and no outcome is ungrounded). /check refuses hallucination_risk_score and cycle_count with 422; a stored session supplies the cycle count and domain. The caller still declares the domain when no session is named: that is cynefin-classifier-keyword-stub's to fix."
     }
   ]
 }

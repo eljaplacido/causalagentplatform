@@ -32,12 +32,12 @@
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "frontend/package.json": "328e50541f6341ef44bdb0664d818c5de9c95444d15fa3cc19d076f971e4303e",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "7f058213572c0fb2af693b98ad09f9450013d336abc8bcc0e4492671976f1389"
+          "docs/CURRENT_STAGE.md": "4cf23319a204ccd47bb85b9c56bb97a81d2667970f2f6b949ab1161ea317b918"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (status paragraph and contributing re-read against verify.sh exit codes and the beads ledger; bound figures match standing runs)"
+        "by": "Claude (septa-25: re-read for PR-002, /check request fields, risk score and cycle count; quotes no register count or Guardian rule)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -54,18 +54,18 @@
       "baseline": {
         "on": "2026-09-25",
         "sha256": {
-          "conformance/declared_not_implemented.json": "efba99d0a5fb7ecab5ba147394ff3848684f2873f042228cda586b7e1b3cc83b",
-          "backend/src": "5b106e4af0243dbf97bb476beaa4436a65689508fec4b5e93b921fcf7985e9a9",
+          "conformance/declared_not_implemented.json": "29ab5a45d60c99c2eb844713c1f1d5a879b7eda40fce00d6b84450c4d187c70b",
+          "backend/src": "b811492684557eefe17895684f2c5260d0c0f1599dc5c8a44e3461c2b6bddd46",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "a4544fdb69db8322685526e40844dbab0c6fb7dedec0419aef7061c1ed74e255",
-          "frontend/src": "2776c38eeb8a07cc12cf5b57fbe7a54c1315da9d0f2e3184b86065b8c333a294",
-          "packages": "73a9e16cab41c822c240466921caf014344242c44eabf621a1ffd60dc17b8f44",
+          "backend/tests": "884b39c3733d1bb1ed0d7d6d5eac860c1095293daaf28895a0e3cd663a5b4ae5",
+          "frontend/src": "c3df3902912a569630231693995f5c926c4cb423d035a970635e86fe2e2b5845",
+          "packages": "91f77cd79719455dfa2732448800475a6beaeb538fe71298be4048fb67683ae5",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (re-measured gates table at 3756751; T6-T8 summary, carryover-check-weak, eslint row, exit codes)"
+        "by": "Claude (septa-25: re-read for PR-002, /check request fields, risk score and cycle count; PR-002 row implemented, governance bullet, CI exit wording)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -80,16 +80,16 @@
       "baseline": {
         "on": "2026-09-25",
         "sha256": {
-          "backend/src/semantic_layer": "b7c7d7cd2505170562b8a1b3dfaecce1d03a7da34c711ac785b9ac25f8e22f53",
-          "backend/src/agents/governance.py": "69dc9fc55c24bd453ead3b80f58d40de5f7bdad4689e9c4b3f189494108cfa1b",
-          "packages/semantic-types/src": "ac003940c3b04f965fad994a9da0610884d5934b69f525b1f12c4de5effd4179",
+          "backend/src/semantic_layer": "48bf11ae9ff2047169218b12f45a2943a28e5323a4a6d4cf191650b1c66f586a",
+          "backend/src/agents/governance.py": "9ec8f7b9cf6fdf7a45570c18cff694c079f3f6211536a05d6a9d0dea0d1ce0c3",
+          "packages/semantic-types/src": "fe7182fc233b307aa02d26a958898db94ead599601fe740dcfe2981bf5a1150d",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
           "backend/src/orchestration/graph.py": "1c42a22eed003aa1e67b1ffc70545347304a0cc5170959464f263439b727eacc"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (lifecycle incl. InvalidTransitionError 409, versioning vs the assumption registry model_store, semantic-types src unchanged)"
+        "by": "Claude (septa-25: re-read for PR-002, /check request fields, risk score and cycle count; PR-005 line still true (MAX_CYCLES); only comments moved in models.py/semantic-types)"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -108,12 +108,12 @@
           "backend/src/semantic_layer/contracts.py": "8af9432f179c0d3e8652b3b7d4a48db9edbff3f5acc1fb25c8a6e8d9af3eaaa4",
           "backend/src/api/provenance.py": "48bc9f32a3d847e547364c1e92075c2eec3cb5b4f67f4d6cc08d24427b47d264",
           "backend/src/agents/llm_factory.py": "86a4c2764217aa29161c9cbc9727db4866efaf89633a4f3b9afb1b7f7406ce85",
-          "backend/src/agents/governance.py": "69dc9fc55c24bd453ead3b80f58d40de5f7bdad4689e9c4b3f189494108cfa1b"
+          "backend/src/agents/governance.py": "9ec8f7b9cf6fdf7a45570c18cff694c079f3f6211536a05d6a9d0dea0d1ce0c3"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (llm_factory provenance wrapper and get_llm callers; no change needed)"
+        "by": "Claude (septa-25: re-read for PR-002, /check request fields, risk score and cycle count; describes PR-009 only, unchanged)"
       }
     },
     "docs/ADR-003-hierarchical-planning-and-evaluation.md": {
@@ -128,12 +128,12 @@
         "sha256": {
           "backend/src/orchestration": "dec89bd24f81da4d46328dd0def76ef4c22e0e3c6370012ce27ea5812037acca",
           "backend/src/evaluation": "9a2708b95f3bae7f8b05075e62815c7f51cb3f6e7939a585c1c2c26e5b500b07",
-          "backend/src/api/platform.py": "bc2cd507fe88c75c6b8f944378939b088ffafe5aad4907367ea288503b33a025"
+          "backend/src/api/platform.py": "1918f5bcdf3932ee10229a7c0462c5fd01f4055e12c04ed52330c37550744f8e"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (planner simulation, constraints and evaluation endpoints re-read against planning.py, graph.py, platform.py)"
+        "by": "Claude (septa-25: re-read for PR-002, /check request fields, risk score and cycle count; PR-005 and plan depth unchanged; platform.py moved only PR-002 text)"
       }
     },
     "docs/AGENTS.md": {
@@ -148,7 +148,7 @@
       "baseline": {
         "on": "2026-09-25",
         "sha256": {
-          "backend/src/agents": "f79c4150456f8afb47cbd241aa765a76433b27726648202b9a4693e4182f46c2",
+          "backend/src/agents": "8f48385d3b8627df312618891728403bc212c3cfe8198129f1b9e6293b42e938",
           "backend/src/skills": "7c14f6095d38b78711081427d4f98e3f621a0a72de4b377d6fc374c346c4ecea",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "backend/src/orchestration": "dec89bd24f81da4d46328dd0def76ef4c22e0e3c6370012ce27ea5812037acca",
@@ -157,7 +157,7 @@
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (incident_triage DISORDER path, DisorderProtocol retry, llm_factory provider order and per-capability models)"
+        "by": "Claude (septa-25: re-read for PR-002, /check request fields, risk score and cycle count; EpistemicState comment, checklist and code map now name grounding_risk)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -177,8 +177,8 @@
         "on": "2026-09-25",
         "sha256": {
           "backend/src/middleware": "d8281470bc1c1fe3195aa55c663968251147d96b6e8bb27bc0b77e35b5394f3c",
-          "backend/src/api/governance.py": "ac1e06c2b17d7331b2d6d427afb97a0ed617cada1936a6974ca717bbffed30bc",
-          "backend/src/agents/governance.py": "69dc9fc55c24bd453ead3b80f58d40de5f7bdad4689e9c4b3f189494108cfa1b",
+          "backend/src/api/governance.py": "f0c15d3e29eeb11b6e9ee715a26b1a20a86db68f03639d74c2473c8f756de8f1",
+          "backend/src/agents/governance.py": "9ec8f7b9cf6fdf7a45570c18cff694c079f3f6211536a05d6a9d0dea0d1ce0c3",
           "backend/src/semantic_layer/registry.py": "ba41f77c384a19b97a590afe55da43e563518554ba48bda6174e404253753005",
           "backend/src/api/interventions.py": "2e5bd0b6114bed3819504398198dbe0a92e1ad46c6f24d61fee515b091ee6f6c",
           "backend/src/api/provenance.py": "48bc9f32a3d847e547364c1e92075c2eec3cb5b4f67f4d6cc08d24427b47d264",
@@ -189,7 +189,7 @@
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (workflows re-checked: still no scanning; images non-root; no change needed)"
+        "by": "Claude (septa-25: re-read for PR-002, /check request fields, risk score and cycle count; §2.2 in place, Art. 9 row, anomaly bullet)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -209,7 +209,7 @@
         "sha256": {
           "backend/src/db": "73f4b4486583fb154c328a7348a4bbefd0e7551493e1dd5434116bbaec1fa68a",
           "backend/src/connectors": "7f2719189ff9ec75f9e7fec44c394f80c4ad9abfbf9c9d0d834c7cbdfab87e44",
-          "backend/src/semantic_layer/models.py": "8b89bc185388d810d635891b4b92dffb9219202f8aa5a02c696909f5eb7da198",
+          "backend/src/semantic_layer/models.py": "f3b7a600ac8e8c4ce7beb48145a188b2394f3775b6ad7d094613cbb9798d3b05",
           "backend/src/sensors": "d38f988ccb52659ac4ecc8724e8aa775b2e6e9fca76b73dbba6576c3f3d1dcba",
           "docker-compose.yml": "c2118a27d9bd334c63935f3b82336c693cc97c1ac2114e81ac602a45fc8be38e",
           "backend/src/semantic_layer/registry.py": "ba41f77c384a19b97a590afe55da43e563518554ba48bda6174e404253753005",
@@ -219,7 +219,7 @@
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (relational tables against migrations 001-007 and the SQLite DDL in db/factory.py, graph_fragments lineage, append-only triggers, compose profiles, data-access table incl. /api/v1/models)"
+        "by": "Claude (septa-25: re-read for PR-002, /check request fields, risk score and cycle count; models.py changed a docstring only)"
       }
     },
     "docs/HANDOFFS.md": {
@@ -232,12 +232,12 @@
         "on": "2026-09-25",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
-          "backend/src/semantic_layer/models.py": "8b89bc185388d810d635891b4b92dffb9219202f8aa5a02c696909f5eb7da198"
+          "backend/src/semantic_layer/models.py": "f3b7a600ac8e8c4ce7beb48145a188b2394f3775b6ad7d094613cbb9798d3b05"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude Opus 5.5 (agent), against .gnomon/config.toml [chain], templates/, prompts/, .github/"
+        "by": "Claude (septa-25: re-read for PR-002, /check request fields, risk score and cycle count; hallucination_risk_checked constraint is spec, satisfied by /check computing it)"
       }
     },
     "docs/ORCHESTRATION.md": {
@@ -311,7 +311,7 @@
         "on": "2026-09-25",
         "sha256": {
           ".github/workflows": "041c8f41439f099603e2603010f35037b9b7c31006bda40713975a42d1b5b201",
-          "backend/tests": "a4544fdb69db8322685526e40844dbab0c6fb7dedec0419aef7061c1ed74e255",
+          "backend/tests": "884b39c3733d1bb1ed0d7d6d5eac860c1095293daaf28895a0e3cd663a5b4ae5",
           "backend/pyproject.toml": "ce3b260f18a72cb95508b54b0fdfc567c4501c6efd12616ec8379832b943acb5",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
@@ -325,7 +325,7 @@
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (steps, ADVISORY, exit codes, eslint ratchet, doc-figures row, ci.yml exit mapping and timeout, T8 row)"
+        "by": "Claude (septa-25: re-read for PR-002, /check request fields, risk score and cycle count; guardian/ row names the new test)"
       }
     },
     "docs/UIX.md": {
@@ -336,12 +336,12 @@
       "baseline": {
         "on": "2026-09-25",
         "sha256": {
-          "frontend/src": "2776c38eeb8a07cc12cf5b57fbe7a54c1315da9d0f2e3184b86065b8c333a294"
+          "frontend/src": "c3df3902912a569630231693995f5c926c4cb423d035a970635e86fe2e2b5845"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (component inventory, AssumptionDisclosure unused, aria-current on list selections, jsx-a11y lint)"
+        "by": "Claude (septa-25: re-read for PR-002, /check request fields, risk score and cycle count; frontend change is a prop comment in EpistemicConfidenceBadge)"
       }
     },
     "docs/ROADMAP.md": {
@@ -355,13 +355,13 @@
         "on": "2026-09-25",
         "sha256": {
           "packages/causal-core/src/causal_core": "80232957daa4ee016f5c040dec92015c62298b850371a4f142508297e1731b2e",
-          "conformance/declared_not_implemented.json": "efba99d0a5fb7ecab5ba147394ff3848684f2873f042228cda586b7e1b3cc83b",
-          "docs/CURRENT_STAGE.md": "7f058213572c0fb2af693b98ad09f9450013d336abc8bcc0e4492671976f1389"
+          "conformance/declared_not_implemented.json": "29ab5a45d60c99c2eb844713c1f1d5a879b7eda40fce00d6b84450c4d187c70b",
+          "docs/CURRENT_STAGE.md": "4cf23319a204ccd47bb85b9c56bb97a81d2667970f2f6b949ab1161ea317b918"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (estimate-impact row and step 3 against causal_core.cluster and T8; next steps follow septacore ready)"
+        "by": "Claude (septa-25: re-read for PR-002, /check request fields, risk score and cycle count; p0 list marks septa-25 done)"
       }
     },
     "SECURITY.md": {
@@ -378,16 +378,16 @@
         "on": "2026-09-25",
         "sha256": {
           "backend/src/middleware": "d8281470bc1c1fe3195aa55c663968251147d96b6e8bb27bc0b77e35b5394f3c",
-          "backend/src/api/governance.py": "ac1e06c2b17d7331b2d6d427afb97a0ed617cada1936a6974ca717bbffed30bc",
+          "backend/src/api/governance.py": "f0c15d3e29eeb11b6e9ee715a26b1a20a86db68f03639d74c2473c8f756de8f1",
           "backend/src/api/interventions.py": "2e5bd0b6114bed3819504398198dbe0a92e1ad46c6f24d61fee515b091ee6f6c",
-          "backend/src/agents/governance.py": "69dc9fc55c24bd453ead3b80f58d40de5f7bdad4689e9c4b3f189494108cfa1b",
+          "backend/src/agents/governance.py": "9ec8f7b9cf6fdf7a45570c18cff694c079f3f6211536a05d6a9d0dea0d1ce0c3",
           "backend/src/semantic_layer/registry.py": "ba41f77c384a19b97a590afe55da43e563518554ba48bda6174e404253753005",
           "backend/src/semantic_layer/verdict.py": "eda2e3481f24fb45ad19d5e11051fa65cd4ba75f8fba77e17415e5ad9479b9bf"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (role sets and their routes incl. /api/v1/models reviews, auth public paths, dev bypass, verdict signing, migrations 006-007, workflows for scanning, Dockerfile users)"
+        "by": "Claude (septa-25: role sets, bypass refusal and verdict signing unchanged; no PR-002 or /check field claims)"
       }
     }
   }

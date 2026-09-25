@@ -164,7 +164,7 @@ export interface EpistemicState {
   // Uncertainty
   overallConfidence: number; // 0.0 – 1.0
   uncertaintySources: UncertaintySource[];
-  hallucinationRiskScore: number; // H-Neuron output, 0.0 – 1.0
+  hallucinationRiskScore: number; // grounding risk, 0.0 – 1.0 (Guardian PR-002)
 
   // Governance
   guardianVerdict: GuardianVerdict;

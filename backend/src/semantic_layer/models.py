@@ -718,7 +718,7 @@ class EpistemicState(BaseModel):
 
     @model_validator(mode="after")
     def validate_hallucination_flag(self) -> EpistemicState:
-        """Auto-flag for human review if H-Neuron score exceeds threshold."""
+        """Auto-flag for human review if the grounding-risk score exceeds threshold."""
         if self.hallucination_risk_score > 0.7:
             object.__setattr__(self, "requires_human_review", True)
             if "hallucination_risk" not in self.flags:

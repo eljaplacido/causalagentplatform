@@ -48,7 +48,10 @@ log = structlog.get_logger(__name__)
 
 _POLICY_RULES = {
     "PR-001": "No cycle detection bypass: DAG acyclicity must hold before any edge is approved.",
-    "PR-002": "Hallucination risk threshold: H-Neuron score must be < 0.7 for APPROVED verdict.",
+    "PR-002": (
+        "Grounding risk: prose whose numbers or causal wording the kernel outcome it "
+        "reports does not back (score > 0.7) cannot be APPROVED."
+    ),
     "PR-003": "Chaotic domain mandatory escalation: CHAOTIC inputs must route to human.",
     "PR-004": "Double-rejection escalation: same payload rejected twice triggers REQUIRES_ESCALATION.",
     "PR-005": "Cycle count limit: cycle_count >= 5 requires REQUIRES_ESCALATION.",
@@ -367,13 +370,14 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
                 rules_fired,
             )
 
-        # PR-002: Hallucination risk
+        # PR-002: Grounding risk (src.agents.grounding_risk computes the score)
         if state.hallucination_risk_score > HALLUCINATION_THRESHOLD:
             rules_fired.append("PR-002")
             return (
                 GuardianVerdict.REJECTED,
-                f"Hallucination risk score {state.hallucination_risk_score:.3f} "
-                f"exceeds threshold {HALLUCINATION_THRESHOLD}. Output flagged for review.",
+                f"Grounding risk {state.hallucination_risk_score:.3f} "
+                f"exceeds threshold {HALLUCINATION_THRESHOLD}: the narrative says more "
+                "than the outcome it reports.",
                 rules_fired,
             )
 
