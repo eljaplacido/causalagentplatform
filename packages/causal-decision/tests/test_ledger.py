@@ -194,3 +194,78 @@ def test_the_record_is_immutable_in_memory_too(outcome: CausalResult) -> None:
     record = append(None, decide(outcome, BASE), outcome, recorded_at=NOW)
     with pytest.raises(ValidationError):
         record.executed = True  # type: ignore[misc]
+
+
+def test_records_sealed_before_the_model_field_existed_still_verify() -> None:
+    """A contract may grow; the records already in a ledger must keep verifying."""
+    import json
+    from pathlib import Path
+
+    raw = json.loads(
+        (Path(__file__).parent / "fixtures" / "ledger_chain_before_model_ref.json").read_text()
+    )
+    records = [DecisionRecord.model_validate(r) for r in raw["records"]]
+    assert all(r.evidence.model is None for r in records)
+    report = verify_chain(records)
+    assert report.ok, report.reason
+
+
+def test_the_model_a_decision_rested_on_is_part_of_what_the_digest_covers(
+    outcome: CausalResult,
+) -> None:
+    from causal_decision.assumptions import ModelRef
+
+    ref = ModelRef(name="incident-remediation", version=3, digest="sha256:" + "a" * 64)
+    with_model = append(None, decide(outcome, BASE), outcome, recorded_at=NOW, model=ref)
+    without = append(None, decide(outcome, BASE), outcome, recorded_at=NOW)
+    assert with_model.evidence.model == ref
+    assert with_model.entry_digest != without.entry_digest
+    forged = with_model.model_copy(
+        update={"evidence": with_model.evidence.model_copy(update={"model": None})}
+    )
+    assert not verify_chain([forged]).ok, "dropping the model reference must break the seal"
+
+
+def test_a_rewrite_that_verifies_is_caught_by_a_published_checkpoint(
+    outcome: CausalResult,
+) -> None:
+    """The limit test_a_chain_rewritten_from_the_edit_onward_verifies names, closed from outside."""
+    from causal_decision.ledger import checkpoint, verify_against
+
+    records = _chain(outcome)
+    published = checkpoint(records)
+    assert verify_against(records, [published]).ok
+
+    # Rewrite entry 1 and re-seal everything after it: the chain verifies on its own.
+    rewritten = [records[0]]
+    forged = records[1].model_copy(
+        update={"executed": True, "prev_digest": records[0].entry_digest}
+    )
+    rewritten.append(forged.sealed())
+    rewritten.append(
+        records[2].model_copy(update={"prev_digest": rewritten[1].entry_digest}).sealed()
+    )
+    assert verify_chain(rewritten).ok, "premise: an internally consistent rewrite"
+
+    report = verify_against(rewritten, [published])
+    assert not report.ok and report.broken_at == 2
+    assert "rewritten after the checkpoint" in report.reason
+
+
+def test_truncating_below_a_checkpoint_is_caught(outcome: CausalResult) -> None:
+    from causal_decision.ledger import checkpoint, verify_against
+
+    records = _chain(outcome)
+    published = checkpoint(records)
+    report = verify_against(records[:2], [published])
+    assert not report.ok and "removed" in report.reason
+
+
+def test_no_checkpoint_for_an_empty_or_broken_chain(outcome: CausalResult) -> None:
+    from causal_decision.ledger import checkpoint
+
+    with pytest.raises(ValueError):
+        checkpoint([])
+    records = _chain(outcome)
+    with pytest.raises(ValueError):
+        checkpoint([records[0], records[2]])

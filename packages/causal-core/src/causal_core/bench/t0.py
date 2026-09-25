@@ -764,14 +764,26 @@ def check_triangulation(
 # ── the gate ──────────────────────────────────────────────────────────────────
 
 
+def _is_result_file(path: str) -> bool:
+    parts = path.strip().strip('"').split("/")
+    return len(parts) >= 3 and parts[0] == "benchmarks" and parts[-2] == "results"
+
+
 def git_sha() -> str:
     try:
         sha = subprocess.run(
             ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True
         ).stdout.strip()
-        dirty = subprocess.run(
+        status = subprocess.run(
             ["git", "status", "--porcelain"], capture_output=True, text=True, check=True
-        ).stdout.strip()
+        ).stdout.splitlines()
+        # Untracked benchmark RESULT files are outputs, not code: runs of different gates
+        # in parallel otherwise mark each other dirty. Anything else -- an edited file, an
+        # uncommitted module -- is a tree the number cannot be traced back to.
+        dirty = [
+            line for line in status
+            if not (line.startswith("?? ") and _is_result_file(line[3:]))
+        ]
         return sha + ("-dirty" if dirty else "")
     except Exception:
         return "unknown"

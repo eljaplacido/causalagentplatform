@@ -7,7 +7,8 @@
  *   - Nodes as labelled rectangles (coloured by approval status)
  *   - Directed edges as SVG paths with arrowhead markers
  *   - Node hover = show tooltip (type, domain, confidence)
- *   - Edge colour = approval status (DRAFT=zinc, APPROVED=green, REJECTED=red)
+ *   - Edge colour = approval status (DRAFT=zinc, APPROVED=green, DEPRECATED=red;
+ *     a rejected draft is stored as DEPRECATED)
  *   - CHAOTIC domain shows a locked overlay (no edits permitted)
  *
  * Layout: simple force-directed via CSS grid columns for MVP; replace with
@@ -19,7 +20,8 @@
 
 import React, { useCallback, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
-import type { CausalEdge, CynefinDomain } from "@/lib/types";
+import type { ApprovalStatus } from "@causalplatform/semantic-types";
+import type { CynefinDomain } from "@/lib/types";
 import { GuardianVerdictBadge } from "@/components/shared/GuardianVerdictBadge";
 import { CynefinBadge } from "@/components/shared/CynefinBadge";
 
@@ -30,7 +32,7 @@ export interface DAGNode {
   label: string;
   nodeType: "CausalEntity" | "Outcome" | "Confounder" | "Mediator" | "Treatment";
   domain: string;
-  approvalStatus: "DRAFT" | "UNDER_REVIEW" | "APPROVED" | "REJECTED";
+  approvalStatus: ApprovalStatus;
   confidence?: number;
   /** Position in the layout (0–1 normalised, set by parent or layout algorithm) */
   x?: number;
@@ -43,7 +45,7 @@ export interface DAGEdge {
   targetId: string;
   edgeType: string;
   confidence: number;
-  approvalStatus: "DRAFT" | "UNDER_REVIEW" | "APPROVED" | "REJECTED";
+  approvalStatus: ApprovalStatus;
 }
 
 export interface DAGCanvasProps {
@@ -65,7 +67,7 @@ const NODE_COLOUR: Record<DAGNode["approvalStatus"], string> = {
   DRAFT: "#a1a1aa",      // zinc-400
   UNDER_REVIEW: "#fbbf24", // amber-400
   APPROVED: "#22c55e",   // green-500
-  REJECTED: "#ef4444",   // red-500
+  DEPRECATED: "#ef4444", // red-500
 };
 
 const NODE_TYPE_COLOUR: Record<DAGNode["nodeType"], string> = {
@@ -80,7 +82,7 @@ const EDGE_COLOUR: Record<DAGEdge["approvalStatus"], string> = {
   DRAFT: "#71717a",         // zinc-500
   UNDER_REVIEW: "#f59e0b",  // amber-500
   APPROVED: "#16a34a",      // green-600
-  REJECTED: "#dc2626",      // red-600
+  DEPRECATED: "#dc2626",    // red-600
 };
 
 // ── Node dimensions ───────────────────────────────────────────────────────────
@@ -227,7 +229,7 @@ export function DAGCanvas({
         >
           {/* Arrowhead marker */}
           <defs>
-            {(["DRAFT", "UNDER_REVIEW", "APPROVED", "REJECTED"] as const).map(
+            {(["DRAFT", "UNDER_REVIEW", "APPROVED", "DEPRECATED"] as const).map(
               (status) => (
                 <marker
                   key={status}

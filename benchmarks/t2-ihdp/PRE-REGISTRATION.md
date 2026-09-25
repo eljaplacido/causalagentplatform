@@ -106,6 +106,18 @@ status_distribution = true
 - The supported-miss bar applies the platform's central promise, *never confidently wrong*, to
   data with known truth.
 
+**Reported, not gated: rival estimators (v1.1).** Beside the kernel, each realization is also
+estimated by (a) the naive difference in means and (b) an OLS regression of `y` on `t` and all 25
+covariates, with a heteroskedasticity-robust (HC1) 95% interval — the estimate a careful analyst
+without the kernel would report. Their mean absolute error against the ATE and the ATT, and OLS's
+interval coverage of the ATE, are reported beside the kernel's. No bar reads them: they position
+the kernel's figures, they do not judge them. IHDP is known to rank estimators inconsistently
+across its realizations, so a ranking here is weak evidence either way.
+
 ## Changelog
 
 - v1 (2026-09-19): initial registration.
+- v1.1 (2026-09-25): rival estimators reported beside the kernel (naive difference in means;
+  OLS with covariates and HC1 intervals). No bar or design changed, and no bar reads them.
+  Prompted by an external review's point that a benchmark result means more positioned against
+  what an analyst would otherwise use.

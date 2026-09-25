@@ -129,7 +129,12 @@ async def test_semantic_layer_write_succeeds_with_approved_verdict(
         },
     )
     await db_session.commit()
-    # No exception = test passes
+
+    written = await db_session.execute(
+        text("SELECT COUNT(*) FROM causal_edges WHERE guardian_verdict_ref = :v"),
+        {"v": str(approved_audit_entry_id)},
+    )
+    assert written.scalar_one() == 1
 
 
 # ── 2. REJECTED verdict blocks registry write ─────────────────────────────────
@@ -241,9 +246,23 @@ async def test_audit_log_no_update(
         # Either outcome is acceptable.
         pass
 
-    # Re-read: if SQLite silently updated, the test verifies that the production
-    # code path (via application layer) never generates UPDATEs.
-    # The crucial guard is: application code never calls UPDATE audit_log.
+    # Re-read and compare. Until 2026-09-24 this test captured `original_action`
+    # above, attempted the UPDATE, and then stopped -- so whether the row had
+    # actually been tampered with was never checked, and the assertion the test
+    # is named for was not made. The static check above is about the application
+    # code; this is about the store.
+    after = (
+        await db_session.execute(
+            text("SELECT action_type FROM audit_log WHERE id = :id"),
+            {"id": str(approved_audit_entry_id)},
+        )
+    ).scalar_one()
+    assert after == original_action, (
+        "the audit row was silently rewritten: the UPDATE neither raised nor was "
+        f"refused, and action_type went from {original_action!r} to {after!r}. "
+        "In the production schema 001_initial.sql's trigger blocks this; under the "
+        "test's SQLite this assertion is what stands in for it."
+    )
 
 
 @pytest.mark.asyncio
@@ -291,48 +310,40 @@ async def test_audit_log_no_delete(
     approved_audit_entry_id: UUID,
 ) -> None:
     """
-    DELETE on audit_log must be rejected.
+    DELETE on audit_log must be rejected -- by the database, and by the code.
 
-    Application-layer invariant: no code in the platform should ever issue
-    DELETE against audit_log.  We verify this via static analysis of the
-    GovernanceAgent source.
-
-    The PostgreSQL trigger (BEFORE DELETE) provides the database-level guard.
+    This test used to be unable to fail: it looked for "DELETE FROM audit_log" in
+    upper-cased source (the lowercase needle can never match), and swallowed any
+    outcome of the DELETE it then attempted. Both halves now assert. The SQLite
+    triggers in db/factory.py stand in for 001_initial.sql's under test.
 
     From TESTING_CICD.md §4.2:
         'DELETE on audit_log table must be rejected.'
     """
-    import inspect
+    import pathlib
+    import re
 
-    from src.agents.governance import GovernanceAgent
+    src = pathlib.Path(__file__).resolve().parents[2] / "src"
+    offenders = [
+        str(path.relative_to(src))
+        for path in src.rglob("*.py")
+        if re.search(r"DELETE\s+FROM\s+audit_log", path.read_text(), re.IGNORECASE)
+    ]
+    assert offenders == [], f"code that deletes audit rows: {offenders}"
 
-    # Static analysis: no DELETE in governance agent source
-    source = inspect.getsource(GovernanceAgent)
-    assert "DELETE FROM audit_log" not in source.upper(), (
-        "GovernanceAgent must never issue DELETE on audit_log"
-    )
-
-    # Static analysis: no DELETE in registry source
-    from src.semantic_layer import registry as registry_module
-    registry_source = inspect.getsource(registry_module)
-    assert "DELETE FROM audit_log" not in registry_source.upper(), (
-        "SemanticLayerRegistry must never issue DELETE on audit_log"
-    )
-
-    # Attempt DELETE and verify the entry still exists
-    try:
+    with pytest.raises(Exception, match=r"(?i)append-only|audit_log"):
         await db_session.execute(
             text("DELETE FROM audit_log WHERE id = :id"),
             {"id": str(approved_audit_entry_id)},
         )
         await db_session.commit()
-    except Exception:
-        # PostgreSQL trigger raises; SQLite may silently succeed.
-        # Either outcome is acceptable — the key guard is application layer.
-        await db_session.rollback()
+    await db_session.rollback()
 
-    # Verify: The production DDL contains the BEFORE DELETE trigger.
-    # (Covered in test_audit_log_update_raises_in_production_schema)
+    still = await db_session.execute(
+        text("SELECT COUNT(*) FROM audit_log WHERE id = :id"),
+        {"id": str(approved_audit_entry_id)},
+    )
+    assert still.scalar_one() == 1, "the audit row was deleted"
 
 
 # ── 5. Every semantic write has an audit entry ────────────────────────────────

@@ -109,6 +109,47 @@ def _one(args: tuple[int, pd.DataFrame, float, str, str]) -> dict[str, Any]:
     return rec
 
 
+def _ols_hc1(frame: pd.DataFrame) -> tuple[float, float]:
+    """Coefficient on t from OLS of y on t and every covariate, with its HC1 standard error."""
+    x = np.column_stack([np.ones(len(frame)), frame["t"].to_numpy(float),
+                         frame[list(COVARIATES)].to_numpy(float)])
+    y = frame["y"].to_numpy(float)
+    xtx_inv = np.linalg.pinv(x.T @ x)
+    beta = xtx_inv @ x.T @ y
+    resid = y - x @ beta
+    n, k = x.shape
+    meat = (x * resid[:, None] ** 2).T @ x
+    cov = xtx_inv @ meat @ xtx_inv * n / (n - k)
+    return float(beta[1]), float(np.sqrt(cov[1, 1]))
+
+
+def rivals(reals: list[tuple[pd.DataFrame, float, float]]) -> dict[str, Any]:
+    """What an analyst without the kernel would report (T2 v1.1): reported, never gated."""
+    naive_ate, naive_att, ols_ate, ols_att, ols_cov = [], [], [], [], []
+    for frame, ate, att in reals:
+        t = frame["t"].to_numpy(float)
+        y = frame["y"].to_numpy(float)
+        dim = float(y[t == 1].mean() - y[t == 0].mean())
+        naive_ate.append(abs(dim - ate))
+        naive_att.append(abs(dim - att))
+        b, se = _ols_hc1(frame)
+        ols_ate.append(abs(b - ate))
+        ols_att.append(abs(b - att))
+        ols_cov.append(b - 1.959964 * se <= ate <= b + 1.959964 * se)
+    return {
+        "naive_difference_in_means": {
+            "ate_mean_abs_error": float(np.mean(naive_ate)),
+            "att_mean_abs_error": float(np.mean(naive_att)),
+        },
+        "ols_with_covariates_hc1": {
+            "ate_mean_abs_error": float(np.mean(ols_ate)),
+            "att_mean_abs_error": float(np.mean(ols_att)),
+            "ate_coverage": float(np.mean(ols_cov)),
+        },
+        "note": "reported, not gated; IHDP ranks estimators inconsistently across realizations",
+    }
+
+
 def run(
     cfg: dict[str, Any], reals: list[tuple[pd.DataFrame, float, float]], parallel: bool = True
 ) -> dict[str, Any]:
@@ -172,6 +213,7 @@ def run(
         "summary": summary,
         "supported_miss_share": miss_share,
         "supported_total": supported_total,
+        "rivals": rivals(reals),
         "failures": failures,
         "passed": not failures,
         "records": recs,

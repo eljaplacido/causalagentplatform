@@ -33,7 +33,12 @@ max_steps_total = 160
 # Widen this the moment it is wrong for your repo. A scope that refuses work
 # you actually wanted is a scope you will delete in frustration; a scope that
 # matches your layout is one you keep.
-tools = ["read", "glob", "grep", "compute", "todo", "note", "task", "write", "skill", "mcp__causal"]
+# MCP scope. `mcp__causal_core` is the kernel's server (packages/causal-mcp, declared
+# in tools.toml as causal_core): the one whose numbers the T0-T4/D0 gates stand
+# behind, and the one system.md points causal numbers at. The LEGACY backend server
+# (`mcp__causal`, backend/mcp_server: heuristic skills) is granted to no role as of
+# 2026-09-25 -- see dni:legacy-mcp-server; its declaration in tools.toml is commented out.
+tools = ["read", "glob", "grep", "compute", "todo", "note", "task", "write", "skill", "mcp__causal_core"]
 # Which roles this one may hand work to. A sub-turn runs with the TARGET
 # role's tools, so this line -- not the one above -- bounds what delegation
 # can cause. Omit it and any role is reachable. An empty list forbids it.
@@ -60,7 +65,8 @@ temperature = 0.3
 top_p = 0.95
 max_steps = 32
 max_steps_total = 256
-tools = ["read", "glob", "grep", "compute", "todo", "note", "write", "edit", "bash", "mcp__causal"]
+# mcp__causal_core is the kernel; the legacy server is granted to no role (see coordinator).
+tools = ["read", "glob", "grep", "compute", "todo", "note", "write", "edit", "bash", "mcp__causal_core"]
 # Where this role may write: the source trees, the gate scripts and their
 # baselines, and the docs and register it must keep true alongside the code.
 # Not .github/** (CI workflow changes get a human), not the root compose and
@@ -71,9 +77,17 @@ tools = ["read", "glob", "grep", "compute", "todo", "note", "write", "edit", "ba
 # caught by the scripts themselves, against the merge base, unless the commit
 # says why with a `Ratchet-Exempt:` line. That is where that control lives; a
 # path scope cannot express "may lower but not raise".
+#
+# benchmarks/: results and code, never a PRE-REGISTRATION.md. Pre-registration is
+# the coordinator's, written before results exist; an implementor that could
+# rewrite the bars it is about to be judged by would make the gate decorative.
+# write_allow has no negation (gnomon's globToRegExp: `*`, `**`, `?` only), so
+# the exclusion is spelled as what IS allowed. The benchmark code itself lives
+# in packages/*/src/*/bench/, which packages/** already covers.
 write_allow = [
   "backend/**", "frontend/**", "packages/**", "scripts/**", "conformance/**",
-  "docs/**", "specs/**", "benchmarks/**", "prompts/**", "templates/**", "README.md",
+  "docs/**", "specs/**", "prompts/**", "templates/**", "README.md",
+  "benchmarks/**/results/**", "benchmarks/**/*.py", "benchmarks/README.md",
 ]
 # Operations whose damage is neither local nor undoable by re-running
 # something. This role has unrestricted bash by necessity — it runs builds,
@@ -107,9 +121,11 @@ max_steps_total = 160
 # No write, no edit. A verifier that can edit can make a failing suite pass
 # by changing the suite, so the capability is simply absent.
 #
-# mcp__causal is here so the verifier can re-derive a causal number the
-# implementor reported, from the tool, instead of trusting the transcript.
-tools = ["read", "glob", "grep", "compute", "todo", "note", "bash", "mcp__causal"]
+# mcp__causal_core is here so the verifier can re-derive a causal number the
+# implementor reported, from the tool, instead of trusting the transcript. Every
+# causal-mcp tool is annotated read-only, so it adds no write path. The legacy
+# server is granted to no role (see coordinator).
+tools = ["read", "glob", "grep", "compute", "todo", "note", "bash", "mcp__causal_core"]
 # 'bash' can write anything, so 'tools' alone cannot make this role
 # read-only. This list is what actually constrains it: the gates can be run,
 # nothing else. Remove it and the verifier can alter what it judges.
@@ -134,13 +150,23 @@ tools = ["read", "glob", "grep", "compute", "todo", "note", "bash", "mcp__causal
 # -- would also deny `.gnomon/ci.sh` itself, since deny wins over allow, so it
 # is not applied; and rewriting the pattern to dodge the auditor's regex would
 # be gaming a check, not satisfying it.
+#
+# The package suites (packages/causal-core, -decision, -mcp) run in the
+# KERNEL's venv -- that is where its dependents are installed -- so the
+# causal-core venv's pytest is admitted by path, from the root or from a
+# sibling package directory. The python-script gates (status_claims.py,
+# gate_scope.py, contract_parity.py, lint_ratchet.py) are NOT admitted one by
+# one: they need a language runtime, which bash_deny below refuses, and
+# .gnomon/ci.sh already runs every one of them. The verifying-changes skill
+# says so, rather than telling this role to run commands it will be refused.
 bash_allow = [
   '^\.gnomon/(ci|verify)\.sh$',
   '^(backend/)?\.venv/bin/(pytest|ruff|mypy)(\s|$)',
+  '^(packages/causal-core/|\.\./causal-core/)\.venv/bin/pytest(\s|$)',
   '^npx (--no-install )?tsc --noEmit(\s|$)',
   '^npx (--no-install )?vitest run(\s|$)',
   '^npx (--no-install )?eslint(\s|$)',
-  '^cd (backend|frontend)$',
+  '^cd (backend|frontend|packages/causal-(core|decision|mcp))$',
 ]
 bash_deny = [
   # The scaffold's list, kept: deny wins over allow, so these hold even if
@@ -156,6 +182,12 @@ bash_deny = [
 description = "Runs .gnomon/ci.sh and reports what it measured. Cannot edit what it judges."
 
 # ── General-purpose roles ──────────────────────────────────────────────────
+#
+# Still in use: config.toml routes to them ([routing] default = "implement", the
+# critique rule) and profiles/local_first.toml names all three. So they are
+# kept, and scoped like the implementor: the same write_allow (plan and
+# critique hold no write/edit, so for them it is the backstop if one is ever
+# added, not a live limit) and the same MCP servers.
 
 [roles.plan]
 model = "qwen3.6:35b"
@@ -164,8 +196,13 @@ temperature = 0.2
 top_p = 0.9
 max_steps = 20
 max_steps_total = 160
-tools = ["read", "glob", "grep", "compute", "todo", "note", "task", "bash", "mcp__causal"]
+tools = ["read", "glob", "grep", "compute", "todo", "note", "task", "bash", "mcp__causal_core"]
 task_allow = ["implement", "critique"]
+write_allow = [
+  "backend/**", "frontend/**", "packages/**", "scripts/**", "conformance/**",
+  "docs/**", "specs/**", "prompts/**", "templates/**", "README.md",
+  "benchmarks/**/results/**", "benchmarks/**/*.py", "benchmarks/README.md",
+]
 # Measured, 2026-09-02: this role holds `bash` and the scaffold gave it no
 # bash_deny, so the guard in tools.ts is skipped outright --
 # `if (ctx.bashDeny && ctx.bashDeny.length > 0)`. Every spelling the
@@ -195,8 +232,13 @@ top_p = 0.95
 max_steps = 28
 # Stated explicitly. An omitted list means every declared tool, which handed
 # this role `skill` as well and made "the coordinator authors skills" untrue.
-tools = ["read", "glob", "grep", "compute", "todo", "note", "write", "edit", "bash", "mcp__causal"]
+tools = ["read", "glob", "grep", "compute", "todo", "note", "write", "edit", "bash", "mcp__causal_core"]
 max_steps_total = 224
+write_allow = [
+  "backend/**", "frontend/**", "packages/**", "scripts/**", "conformance/**",
+  "docs/**", "specs/**", "prompts/**", "templates/**", "README.md",
+  "benchmarks/**/results/**", "benchmarks/**/*.py", "benchmarks/README.md",
+]
 # Operations whose damage is neither local nor undoable by re-running
 # something. This role has unrestricted bash by necessity — it runs builds,
 # installers and suites nobody can enumerate ahead of time — so the guardrail
@@ -226,7 +268,12 @@ temperature = 0.1
 top_p = 0.9
 max_steps = 16
 max_steps_total = 128
-tools = ["read", "glob", "grep", "compute", "todo", "note", "bash", "mcp__causal"]
+tools = ["read", "glob", "grep", "compute", "todo", "note", "bash", "mcp__causal_core"]
+write_allow = [
+  "backend/**", "frontend/**", "packages/**", "scripts/**", "conformance/**",
+  "docs/**", "specs/**", "prompts/**", "templates/**", "README.md",
+  "benchmarks/**/results/**", "benchmarks/**/*.py", "benchmarks/README.md",
+]
 # Measured, 2026-09-02: this role holds `bash` and the scaffold gave it no
 # bash_deny, so the guard in tools.ts is skipped outright --
 # `if (ctx.bashDeny && ctx.bashDeny.length > 0)`. Every spelling the

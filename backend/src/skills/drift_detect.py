@@ -622,7 +622,7 @@ def detect_semantic_drift(
                 })
 
         # Check for new entities
-        for entity_id, curr_def in current_definitions.items():
+        for entity_id in current_definitions:
             if entity_id not in reference_definitions:
                 drifted_entities.append({
                     "entity_id": entity_id,

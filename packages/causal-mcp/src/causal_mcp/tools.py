@@ -41,6 +41,7 @@ from causal_core.refute import implied_independences
 from pydantic import BaseModel, Field
 
 Cell = float | int | str | bool | None
+Design = Literal["observational", "randomized", "difference_in_differences"]
 
 
 class AnalyzeResponse(BaseModel):
@@ -114,7 +115,7 @@ def load_table(data: dict[str, list[Cell]] | None, data_path: str | None) -> pd.
 def _query(
     treatment: str,
     outcome: str,
-    design: Literal["observational", "randomized"],
+    design: Design,
     adjust_for: list[str] | None,
     instruments: list[str] | None,
     treatment_proxies: list[str] | None,
@@ -123,8 +124,19 @@ def _query(
     treatment_levels: list[float] | None,
     expected_treated_share: float | None,
     segment_by: list[str] | None = None,
+    *,
+    unit: str | None = None,
+    time: str | None = None,
+    estimand: Literal["ate", "att"] = "ate",
+    sequence: str | None = None,
+    cluster: str | None = None,
 ) -> CausalQuery:
     return CausalQuery(
+        sequence=sequence,
+        cluster=cluster,
+        unit=unit,
+        time=time,
+        estimand=estimand,
         treatment=treatment,
         outcome=outcome,
         design=design,
@@ -145,7 +157,7 @@ def causal_analyze(
     outcome: str,
     data: dict[str, list[Cell]] | None = None,
     data_path: str | None = None,
-    design: Literal["observational", "randomized"] = "observational",
+    design: Design = "observational",
     adjust_for: list[str] | None = None,
     instruments: list[str] | None = None,
     treatment_proxies: list[str] | None = None,
@@ -154,6 +166,11 @@ def causal_analyze(
     treatment_levels: list[float] | None = None,
     expected_treated_share: float | None = None,
     segment_by: list[str] | None = None,
+    unit: str | None = None,
+    time: str | None = None,
+    estimand: Literal["ate", "att"] = "ate",
+    sequence: str | None = None,
+    cluster: str | None = None,
     policy: dict[str, Any] | None = None,
 ) -> AnalyzeResponse:
     """Estimate the effect of `treatment` on `outcome`, or return a typed refusal saying why not.
@@ -176,6 +193,22 @@ def causal_analyze(
     you make a claim about a segment, and if `heterogeneity.differs` is false, say the
     segments could not be told apart rather than comparing them.
 
+    **Staggered rollouts** (panel data: the same units observed over periods, some treated
+    from some period on): `design="difference_in_differences"` with `unit`, `time` and
+    `estimand="att"`. Identification rests on parallel trends, which no graph can state, so
+    the certificate is tier C and a failed pre-trends test makes the result `contested`.
+
+    **Watched canaries** (a randomized rollout you will look at repeatedly): pass
+    `design="randomized"`, `sequence` (the column giving arrival order) and
+    `expected_treated_share` (the randomizer's probability). The result carries an
+    anytime-valid confidence sequence at every look: you may read it, and stop on it, as
+    often as you like. Do not re-run a fixed-sample analysis after every batch instead --
+    read that way its error rate is far above 5%.
+
+    **Randomized by service, measured by request?** Pass `cluster` (the column naming the unit
+    that was randomized). Requests within a service are not independent; without `cluster`
+    the interval can be several times too narrow.
+
     `graph` syntax: `Z -> X -> Y; Z -> Y`; `X <-> Y` means an unmeasured common cause;
     `latent U` declares an unmeasured node. Data: either `data` as {column: [values]} or
     `data_path` (CSV / Parquet / JSON under the server's allowed data roots).
@@ -193,6 +226,11 @@ def causal_analyze(
             treatment_levels,
             expected_treated_share,
             segment_by,
+            unit=unit,
+            time=time,
+            estimand=estimand,
+            sequence=sequence,
+            cluster=cluster,
         )
         pol = AnalysisPolicy.model_validate(policy or {})
         frame = load_table(data, data_path)
@@ -213,7 +251,7 @@ def causal_identify(
     graph: str,
     treatment: str,
     outcome: str,
-    design: Literal["observational", "randomized"] = "observational",
+    design: Design = "observational",
     adjust_for: list[str] | None = None,
     instruments: list[str] | None = None,
     treatment_proxies: list[str] | None = None,
@@ -317,6 +355,7 @@ try:
         decide,
         explain,
     )
+    from causal_decision.assumptions import Impact, diff, edge_key, impact
 
     HAS_DECISION = True
 except ImportError:  # pragma: no cover - exercised by the packaging test
@@ -349,13 +388,19 @@ if HAS_DECISION:
         units_per_day: float | None = None,
         population: str | None = None,
         horizon: str | None = None,
-        design: Literal["observational", "randomized"] = "observational",
+        design: Design = "observational",
         adjust_for: list[str] | None = None,
         instruments: list[str] | None = None,
         treatment_proxies: list[str] | None = None,
         outcome_proxies: list[str] | None = None,
         negative_control_outcomes: list[str] | None = None,
         expected_treated_share: float | None = None,
+        segment_by: list[str] | None = None,
+        unit: str | None = None,
+        time: str | None = None,
+        estimand: Literal["ate", "att"] = "ate",
+        sequence: str | None = None,
+        cluster: str | None = None,
         policy: dict[str, Any] | None = None,
         decision_policy: dict[str, Any] | None = None,
     ) -> DecideResponse:
@@ -373,6 +418,14 @@ if HAS_DECISION:
         outcome should move (so a benefit is always positive). `risk_class` and `reversible`
         describe the cost of being wrong; high risk always goes to a person.
 
+        `segment_by` names discrete, pre-treatment columns whose subgroups you want judged
+        as well as the whole population -- declare them BEFORE you see any answer. A pooled
+        effect is an average, and an average can describe nobody: an action that helps one
+        group and harms another can pool to something that looks fine. When you declare
+        subgroups, the verdict accounts for them, and it will not automate an action that
+        materially harms one of them. Not declaring any is not evidence that the effect is
+        uniform -- it only means nobody looked.
+
         When the evidence cannot settle it, the response carries the experiment that would,
         sized from the data. Relay `explanation` rather than writing your own: its numbers are
         bound to the analysis.
@@ -389,6 +442,12 @@ if HAS_DECISION:
                 negative_control_outcomes,
                 None,
                 expected_treated_share,
+                segment_by,
+                unit=unit,
+                time=time,
+                estimand=estimand,
+                sequence=sequence,
+                cluster=cluster,
             )
             request = DecisionRequest(
                 action=action,
@@ -421,3 +480,65 @@ if HAS_DECISION:
         out = cc.analyze(frame, graph, query=query, policy=pol)
         d = decide(out, request, dpol)
         return DecideResponse(decision=d, outcome=out, explanation=explain(d, out))
+
+    class GraphChange(BaseModel):
+        """What the revision changed, as edge labels ("a -> b", "a <-> b")."""
+
+        added_edges: list[str]
+        removed_edges: list[str] = Field(
+            description="Each is a new assumption: that the effect it described does not exist."
+        )
+        changed_edges: list[str] = Field(description="Same edge; origin or review status changed.")
+
+    class ImpactResponse(BaseModel):
+        """Whether the estimate made under the old graph survives the revision, and what changed.
+
+        The diff is edge labels rather than full edge objects: the tool's schema stays small
+        enough for clients that cap a tool listing's size.
+        """
+
+        impact: Impact | None = None
+        changes: GraphChange | None = None
+        refusal: str | None = None
+
+    def causal_impact(
+        old_graph: str,
+        new_graph: str,
+        treatment: str,
+        outcome: str,
+        adjust_for: list[str] | None = None,
+        unmeasured: list[str] | None = None,
+    ) -> ImpactResponse:
+        """Ask whether a revised causal graph breaks an estimate made under the old one.
+
+        Call this whenever the graph behind an earlier analysis or decision changes: an
+        edge added, removed or reversed, a hidden confounder declared. The answer is
+        `holds` (the old estimate is still valid if the new graph is true), `invalidated`
+        (re-analyse before relying on anything that used it), `unverified` (a front-door,
+        IV or proximal estimate whose certificate changed: re-analyse), or, when the old
+        graph could not identify the effect, `gained` / `still_unidentified`.
+
+        Pass `adjust_for` as the adjustment set the original analysis USED (its certificate's
+        `adjustment_set`), so that set is judged -- not whatever the new graph would suggest.
+        Pass `unmeasured` for graph nodes the data had no column for. "The kernel still picks
+        back-door" and "the new adjustment set is valid" are NOT the same as "the old estimate
+        stands"; this tool answers the last one, and it is what a verdict depends on.
+        """
+        try:
+            query = CausalQuery(
+                treatment=treatment,
+                outcome=outcome,
+                adjust_for=tuple(adjust_for) if adjust_for else None,
+            )
+            got = impact(old_graph, new_graph, query, unmeasured=unmeasured or ())
+            d = diff(parse_graph(old_graph), parse_graph(new_graph))
+            return ImpactResponse(
+                impact=got,
+                changes=GraphChange(
+                    added_edges=[edge_key(e) for e in d.added_edges],
+                    removed_edges=[edge_key(e) for e in d.removed_edges],
+                    changed_edges=[c.edge for c in d.changed_edges],
+                ),
+            )
+        except (GraphSyntaxError, IdentificationError, InvalidAdjustmentSet, ValueError) as exc:
+            return ImpactResponse(refusal=f"{type(exc).__name__}: {exc}"[:2000])

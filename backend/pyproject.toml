@@ -35,7 +35,7 @@ dependencies = [
     "langgraph>=0.2.50",
     "langchain-anthropic>=0.3.0",
     "langchain-core>=0.3.0",
-    "langchain-ollama>=0.2.0",    # Ollama local inference (gx10 primary)
+    "langchain-ollama>=0.2.0",    # Ollama local inference (preferred when OLLAMA_BASE_URL is set)
     "langchain-openai>=0.2.0",    # OpenAI / DeepSeek compatible API
     # Observability
     "structlog>=24.4.0",
@@ -48,8 +48,8 @@ dependencies = [
     "numpy>=2.0.0",
     "pandas>=2.2.0",
     "scipy>=1.11.0",           # Statistical tests for drift detection
-    "causal-core>=0.4.0",  # identification, estimation, refusals (packages/causal-core)
-    "causal-decision>=0.1.0",  # act / approve / experiment / refuse (packages/causal-decision)
+    "causal-core>=0.8.0",  # identification, estimation, refusals (packages/causal-core)
+    "causal-decision>=0.4.0",  # act / approve / experiment / refuse (packages/causal-decision)
     # Agent integration
     # v1 API: mcp 2.x removed mcp.server.fastmcp (packages/causal-mcp is the v2 server).
     "mcp>=1.2,<2",             # Model Context Protocol server (mcp_server/)

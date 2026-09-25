@@ -1,175 +1,175 @@
 # Contributing to the Causal Platform
 
-Thanks for considering a contribution. The platform makes causal claims that
-operators act on, so the contribution bar leans toward "correct and audited"
-rather than "fast and small." This document explains how to clear that bar.
+Thanks for considering a contribution. The platform makes causal claims that people act on, so the
+bar leans toward "correct, measured and honest about its limits" rather than "fast and small". This
+document explains how to clear it. Coding agents: start at [`AGENTS.md`](AGENTS.md), which states
+the same rules in brief.
 
-## Before opening a PR
+## Layout
 
-1. **Read [`docs/AGENTS.md`](docs/AGENTS.md)** — especially §4 (the
-   `EpistemicState` contract) and §3 (the shared skill library). Almost every
-   PR touches one of these surfaces.
-2. **Read [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAGE.md)** to see what
-   phase we're in and which work streams are open. If your change doesn't fit
-   the open streams, open an issue first to discuss.
-3. **Read [`docs/TESTING_CICD.md`](docs/TESTING_CICD.md)** for the testing
-   philosophy (causal correctness > functional correctness).
+| Directory | What lives there |
+|---|---|
+| `packages/causal-core` | The causal kernel: identification, estimation, refutation, sensitivity, declared segments. No web or LLM dependencies. |
+| `packages/causal-decision` | Evidence → verdict (`act`, `act_with_approval`, `experiment`, `refuse`), the hash-chained decision ledger, outcome follow-up and calibration. |
+| `packages/causal-mcp` | The kernel's MCP server (the canonical one). |
+| `packages/semantic-types` | The published TypeScript contract for the semantic layer. |
+| `backend/` | FastAPI platform: governance (Guardian), semantic layer, API, agents. Its causal skills delegate to the kernel. `backend/mcp_server` is the legacy MCP server, being deprecated. |
+| `frontend/` | Next.js UI. |
+| `benchmarks/` | Pre-registered correctness gates and every run's result (see [`benchmarks/README.md`](benchmarks/README.md)). |
+| `conformance/` | The claim contract's published JSON Schemas, and `declared_not_implemented.json`, the register of what the docs claim and the code does not do. |
+| `.gnomon/` | The agent harness surface: roles, tools, skills, and `ci.sh`, the gate. |
+| `scripts/` | The gate's own checks: ratchets, gate scope, status claims, contract parity, doc reconciliation. |
 
-## How we work
+Before a change, read [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAGE.md): what is implemented (each
+row links the test that pins it) and what is not. [`docs/AGENTS.md`](docs/AGENTS.md) and the other
+docs under `docs/` are specifications; where they describe more than the code does, the register
+says so.
 
-### Branching
+## Setting up
 
-- `main` is the integration branch. CI must be green before merge.
-- Branch from `main` using a descriptive prefix:
-  - `feat/<short-slug>` — new feature or skill
-  - `fix/<short-slug>` — bug fix
-  - `refactor/<short-slug>` — non-behavioural change
-  - `docs/<short-slug>` — documentation only
-  - `test/<short-slug>` — test-only change
-- Rebase, don't merge, when bringing `main` into your branch.
-
-### Pull requests
-
-A PR is review-ready when:
-
-- [ ] **Title** follows `<type>: <imperative summary>` — e.g. `feat: expose
-      sensitivity_analysis as an MCP tool`
-- [ ] **Description** answers: what changed, why, how to verify
-- [ ] **Tests** added or updated for any change in behaviour. Skill-level
-      changes need both unit and integration tests. UI changes that affect
-      causal reasoning surfaces need Playwright coverage.
-- [ ] **Backend test suite passes** — `cd backend && .venv/bin/python -m pytest`
-- [ ] **Frontend type-check passes** — `cd frontend && npx tsc --noEmit`
-- [ ] **Frontend build passes** — `cd frontend && npx next build`
-- [ ] **No regressions** in `docs/CURRENT_STAGE.md` exit criteria (don't
-      mark a deliverable as done without a test that proves it)
-- [ ] **Guardian integration** is exercised for any new write path
-- [ ] **Audit-log entry** is written for any new agent action that mutates
-      semantic state
-- [ ] **DCO sign-off** on every commit (see below)
-
-### Commits
-
-We require [Developer Certificate of Origin](https://developercertificate.org/)
-sign-off on every commit:
+Python 3.12 and Node 20, as CI uses. Two Python environments, because the kernel and the backend
+pin different MCP SDK majors (the backend's legacy server is on v1, causal-mcp on v2):
 
 ```bash
-git commit -s -m "feat: add provenance_trace MCP tool"
-```
-
-This appends a `Signed-off-by:` trailer attesting that you have the right to
-submit the change under the project's license (Apache 2.0).
-
-Commit messages follow the conventional-commits style:
-
-```
-<type>: <short imperative summary>
-
-<body — optional, wrap at 72 cols, explain the *why*>
-
-Refs: #<issue>
-Signed-off-by: Your Name <you@example.com>
-```
-
-`<type>` ∈ `feat | fix | refactor | docs | test | chore | perf | build | ci`.
-
-## Setting up a dev environment
-
-See [`docs/QUICKSTART.md`](docs/QUICKSTART.md) for the full guide. Short
-version:
-
-```bash
-# Backend
+# Backend (backend/.venv) -- the kernel and decision layer are editable installs
 cd backend
 python -m venv .venv
-.venv/bin/pip install -e ".[dev]"
-.venv/bin/pytest        # should be 551 passing
+.venv/bin/pip install -e ../packages/causal-core -e ../packages/causal-decision -e ".[dev]"
+cd ..
 
-# Frontend
-cd ../frontend
-npm install
-npx tsc --noEmit         # type-check
-npx next build           # production build
+# Kernel (packages/causal-core/.venv) -- also runs causal-decision and causal-mcp
+python -m venv packages/causal-core/.venv
+packages/causal-core/.venv/bin/pip install \
+  -e "packages/causal-core[dev,crosscheck,ml]" \
+  -e "packages/causal-decision[dev]" \
+  -e "packages/causal-mcp[dev,http,decision]" httpx
+
+# Frontend (npm workspaces, from the repo root)
+npm ci
 ```
+
+These are the steps `.github/workflows/ci.yml` runs. Running and launching the platform:
+[`docs/QUICKSTART.md`](docs/QUICKSTART.md).
+
+## The gate
+
+```bash
+bash .gnomon/ci.sh
+```
+
+This is the one command that decides whether a change passes, and it is what CI runs. It runs every
+step even after one fails and ends with a per-step table: the backend suite and its coverage floor,
+the ruff and mypy ratchets, the frontend (tsc, vitest), each package's suite including the
+pre-registered gates, gate scope, status claims, contract parity and doc reconciliation. A step that
+inspected nothing fails; a SKIPPED step names what was absent, and CI refuses unexpected skips. Put
+the summary table in your PR description.
+
+The ratchets (`scripts/coverage-floor.json`, `scripts/lint-baseline.json`) only move one way. If
+your change improves a number, move the committed value in the same change; moving one the wrong
+way needs a `Ratchet-Exempt: <why>` line in the commit message and a real reason.
+
+## Rules that are specific to this repository
+
+### Kernel first
+
+A new causal capability goes into `packages/causal-core` (or `packages/causal-decision`), with:
+
+1. a **typed contract** (a contract change bumps `CONTRACT_VERSION` and regenerates the schemas in
+   `conformance/causal-claims/`);
+2. **influence-function standard errors**, not a constant or a convenience bootstrap;
+3. a **pre-registered benchmark** (below);
+4. a **seeded-defect negative control**: a plausible wrong implementation that the gate is shown
+   to fail on.
+
+Do not add modules to `backend/src/skills/`, and do not add tools to `backend/mcp_server`. The
+backend reaches new methods through the kernel; agents reach them through `packages/causal-mcp`.
+The working recipe is [`.gnomon/skills/adding-an-estimator.md`](.gnomon/skills/adding-an-estimator.md).
+
+### Pre-register before you measure
+
+- `benchmarks/<gate>/PRE-REGISTRATION.md`, with its pass bars in a TOML block, is committed
+  **before** the capability produces a result. The gate test reads its bars from that block.
+- Results are committed as `benchmarks/<gate>/results/<date>-v<version>-run<N>.json`,
+  **including failing runs**. A failing run is never deleted or overwritten.
+- A bar changes only with a version bump and a dated changelog entry in the pre-registration.
+- Tests of causal numbers assert against a known truth (a simulated structural model whose effect
+  you set, or an experimental benchmark), never against what the code returned last time.
+
+Details: [`.gnomon/skills/benchmark-discipline.md`](.gnomon/skills/benchmark-discipline.md).
+
+### Keep the claims true
+
+- `conformance/declared_not_implemented.json` lists capabilities the docs claim and the code does
+  not deliver. Each citation is `file:line` plus a verbatim quote, checked by
+  `scripts/status_claims.py` on every run.
+- If you edit a line the register cites, re-cite it in the same change.
+- If you find a new overclaim, add an entry (and its `dni:<id>` row on `docs/CURRENT_STAGE.md`).
+- An entry leaves the list only by being implemented -- move it to `left_the_list` with `fixed_in`
+  (the commit) and `pinned_by` (the test) -- or by the claim being retracted. Never by deletion.
+- Do not mark anything done on `docs/CURRENT_STAGE.md` without a test that proves it.
+
+Details: [`.gnomon/skills/register-hygiene.md`](.gnomon/skills/register-hygiene.md).
+
+### Governance
+
+- Every new write path to the semantic layer goes through the Guardian and writes an audit entry.
+  No UPDATE or DELETE on `audit_log`.
+- An agent must never be able to grant itself an approval; approval is not an MCP tool.
+
+## Branches, commits and pull requests
+
+- Branch from `main` with a descriptive prefix (`feat/`, `fix/`, `docs/`, `chore/`, `refactor/`,
+  `test/`). Rebase, don't merge, when bringing `main` into your branch.
+- Commit subjects follow `<type>(<scope>): <short summary>`, with `<type>` one of `feat`, `fix`,
+  `refactor`, `docs`, `test`, `chore`, `perf`, `build`, `ci`. The body explains *why*.
+- A PR says what changed, why, and how it was verified, and includes the `ci.sh` summary table.
+- A [Developer Certificate of Origin](https://developercertificate.org/) sign-off
+  (`git commit -s`) is welcome but not required; nothing checks for it.
 
 ## What kind of contributions we want
 
-### High-value
+**High value**
 
-- **New skills** in `src/skills/` — anything that extends causal reasoning
-  capability and has unit + integration tests + a Guardian policy entry
-- **MCP wrappers** for existing skills (especially `plan_action_sequence`,
-  `provenance_trace`, `verify_data_contract`)
-- **Connectors** in `src/connectors/` — Alertmanager, PagerDuty, GitHub
-  webhooks, Datadog, Kubernetes (in roughly that order of priority)
-- **Domain ontology templates** for Phase 4 (DevOps incident/change/alert)
-- **Frontend type coverage** completing the last open Phase 1 item
-- **DAG Workbench authoring UI** — propose-edge form, edge mutation, agent
-  suggestion accept/reject
-- **Documentation** clarifying how a specific skill or agent contract is
-  meant to be used
+- Kernel capabilities that close a register entry, with the four things listed under *Kernel first*.
+- Stronger gates: a seeded defect the current suite cannot see, or a case that tests a documented
+  limit.
+- Backend code moved off heuristic skills and onto the kernel.
+- Connectors in `backend/src/connectors/`.
+- Documentation that brings a claim in line with the code, or retracts it.
 
-### Lower-priority unless discussed first
+**Discuss first**
 
-- Major refactors of the orchestration graph or `EpistemicState` shape
-- Replacing established dependencies (FastAPI, LangGraph, DoWhy, MCP SDK,
-  Next.js)
-- Performance optimisations without a benchmark showing a real bottleneck
-- New persona pages — the existing personas are not yet feature-complete
+- Changes to the claim contract, the `EpistemicState` shape or the orchestration graph.
+- Replacing established dependencies (FastAPI, LangGraph, the MCP SDK, Next.js).
+- Performance work without a benchmark showing a real bottleneck.
 
-### Out of scope
+**Out of scope**
 
-- Code that bypasses Guardian to "make tests faster"
-- Adding mock data into production code paths (mock fallback must be
-  env-gated; see `frontend/src/app/workbench/page.tsx` for the pattern)
-- Vendor-locked integrations (e.g. hardcoding a specific LLM provider)
+- Code that bypasses the Guardian, or a refusal, to make something pass.
+- Mock data in production code paths (mock fallback must be env-gated).
+- Vendor-locked integrations, such as a hard-coded LLM provider.
 
 ## Style
 
-### Python
+**Python.** `ruff` and `mypy --strict` (config in each `pyproject.toml`; the backend is held by the
+ratchets, the packages are strict). Type hints on every public function. `structlog.get_logger`
+for new backend modules, and never structlog-style keyword arguments on a stdlib logger. Short
+docstrings; say what a function refuses to do as well as what it does.
 
-- `ruff` for linting (config in `backend/pyproject.toml`)
-- Type hints on every public function; `mypy --strict` should be clean for
-  any new module under `src/`
-- Use `structlog.get_logger(__name__)` for new modules. Existing
-  `logging.getLogger(__name__)` callers are being migrated; do not introduce
-  `logger.info("event", arbitrary=kwarg)` syntax against a stdlib logger
-  (it raises at runtime once handlers are attached — see
-  `src/skills/effect_estimate.py:152` history)
-- Docstrings: short summary, then args/returns. Skip on private helpers
-  unless behaviour is non-obvious
-
-### TypeScript
-
-- Strict mode is non-negotiable
-- Prefer named exports
-- Components live in `frontend/src/components/<area>/`; pages live in
-  `frontend/src/app/<route>/page.tsx`
-- Canonical types come from `@causalplatform/semantic-types` —
-  UI-specific extensions go in `frontend/src/lib/types.ts`. Don't redefine
-  canonical types locally
-- All network calls go through `frontend/src/lib/api.ts` clients so auth and
-  request IDs are consistent
+**TypeScript.** Strict mode. Named exports. Canonical types come from
+`@causalplatform/semantic-types`; UI-only extensions go in `frontend/src/lib/types.ts`, and
+`scripts/contract_parity.py` fails when a shared name diverges. Network calls go through
+`frontend/src/lib/api.ts`.
 
 ## Reporting bugs
 
-Open a GitHub issue with:
+Open a GitHub issue with what you expected, what happened, a minimal reproduction, and your Python,
+Node and OS versions. A wrong causal number is a bug even when nothing crashes: include the data (or
+a generator for it) and the graph.
 
-1. What you expected to happen
-2. What actually happened
-3. Minimal reproduction (a curl command, a test case, or a screenshot)
-4. Platform: Python version, Node version, OS
+For a **security** issue, use the process in [`SECURITY.md`](SECURITY.md) instead.
 
-If the bug is a **security** issue, use the process in
-[`SECURITY.md`](SECURITY.md) instead.
+## Code of conduct and licence
 
-## Code of conduct
-
-Participation is governed by [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
-Be excellent to each other.
-
-## License
-
-By contributing, you agree that your contributions will be licensed under
-the [Apache License, Version 2.0](LICENSE), as covered by the DCO sign-off
-on each of your commits.
+Participation is governed by [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). By contributing, you agree
+that your contributions are licensed under the [Apache License, Version 2.0](LICENSE).

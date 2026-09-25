@@ -14,6 +14,7 @@ import type {
   MeasuredStatus,
   MediationType,
   ApprovalStatus,
+  FragmentApprovalStatus,
   EdgeType,
   EdgeDirection,
   BusinessValue,
@@ -221,16 +222,19 @@ export interface GraphFragment {
   edges: CausalEdge["id"][];
   entryNodes: CausalObjectRef[];
   exitNodes: CausalObjectRef[];
-  approvalStatus: ApprovalStatus;
+  approvalStatus: FragmentApprovalStatus;
   version: string;
   usageCount: number;
   tags: string[];
   createdBy: UserRef;
   createdAt: ISO8601;
-  approvedBy: UserRef | null;
-  approvedAt: ISO8601 | null;
-  guardianVerdictRef: string | null;
-  lineage: LineageRecord[];
+  guardianVerdictRef: string | null;  // AuditEntry.id of the approving verdict
+  // graph_fragments stores approved_at / approved_by, but the backend
+  // GraphFragment model does not serialise them, so no endpoint sends them.
+  // Optional here so a reader must handle their absence.
+  approvedBy?: UserRef | null;
+  approvedAt?: ISO8601 | null;
+  lineage?: LineageRecord[];
 }
 
 // ─── Intervention ────────────────────────────────────────────────────────────
@@ -273,13 +277,16 @@ import type { GuardianVerdict } from "./primitives.js";
 export interface AuditEntry {
   readonly id: UUID;
   readonly agentId: string;
-  readonly userId: UUID | null;
   readonly actionType: string;
   readonly payloadHash: string;
   readonly guardianVerdict: GuardianVerdict;
   readonly policyRulesCited: string[];
-  readonly sessionId: string;
+  readonly sessionId: string | null;
   readonly createdAt: ISO8601;
+  /** The object this entry is about, when it is about one. */
+  readonly subjectId: UUID | null;
+  /** What a person said when they decided: notes, or a reason. */
+  readonly notes: string | null;
 }
 
 // ─── Draft types ─────────────────────────────────────────────────────────────

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "causal-decision"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Decide whether an agent's proposed action is causally justified: act, ask, experiment, or refuse."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -35,6 +35,11 @@ dev = [
     "mypy>=1.20,<1.21",
 ]
 
+[tool.hatch.version]
+# One source: the code reports the version it was built as, even from an editable
+# install whose metadata was written before the last bump.
+path = "src/causal_decision/_version.py"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/causal_decision"]
 
@@ -52,7 +57,7 @@ strict = true
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["scipy.*", "pandas.*"]
+module = ["scipy.*", "pandas.*", "networkx.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
@@ -60,4 +65,5 @@ testpaths = ["tests"]
 addopts = ["--tb=short", "-q"]
 markers = [
     "d0: the pre-registered decision-table gate (benchmarks/d0-decision-policy/PRE-REGISTRATION.md)",
+    "a0: the pre-registered assumption-impact gate (benchmarks/a0-assumption-impact/PRE-REGISTRATION.md)",
 ]

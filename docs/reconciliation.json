@@ -26,18 +26,18 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-09-19",
+        "on": "2026-09-25",
         "sha256": {
-          "backend/pyproject.toml": "f882373b919703041b8a24cbb028909309c6ec51d9e915985a008eaf9e6616c8",
-          "backend/mcp_server": "906126ac2e95942d33fa44c6abe372051ab452e3022a978c6d5ad78c28a2f6d5",
+          "backend/pyproject.toml": "0d5612eb3b07ad74501e28cfe32a392fd69d228e639b8dcc99f04232618693c4",
+          "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "frontend/package.json": "328e50541f6341ef44bdb0664d818c5de9c95444d15fa3cc19d076f971e4303e",
-          "launch_backend.sh": "3fd5bf0bc3060014f319befd6966d4b33f851a1bce01b15d3dc6facc35f5ec00",
-          "docs/CURRENT_STAGE.md": "78ecc8e54da0d60f3390077abd93aa9ea5bb59f5e30e86e6c8ef8ef677f5d13d"
+          "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
+          "docs/CURRENT_STAGE.md": "eb44c610656469391268893c3c432a94a37377d653bb8522c4885440db7caf2e"
         }
       },
       "last_read": {
-        "on": "2026-09-19",
-        "by": "Claude (status line, install and container instructions re-verified)"
+        "on": "2026-09-25",
+        "by": "Claude (CURRENT_STAGE changed only a test count; the README quotes none)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -52,53 +52,69 @@
         "specs"
       ],
       "baseline": {
-        "on": "2026-09-21",
+        "on": "2026-09-25",
         "sha256": {
-          "conformance/declared_not_implemented.json": "38be7eafe900ea48bfa53cc4ee1863954774df22ecead8c9cbb16f40478b7463",
-          "backend/src": "c88bf379b4366a17267bf9edf76ab9cf790b44f55e656bc4c7d66252c8a9276c",
-          "backend/mcp_server": "906126ac2e95942d33fa44c6abe372051ab452e3022a978c6d5ad78c28a2f6d5",
-          "backend/tests": "eac24496b5c7eb7a72970c80b2910e4fe86d4ba45b920cdfe188265cc81afdd6",
-          "frontend/src": "43b4fec5fbddbf1cbeab0cc5dc3aa23933dd6678419738027cbf5fa27d48f428",
-          "packages": "dad9fcec8c1fd6b365a2f0c1f1e29cdccf5215d54391fa34c732b591d921fb32",
+          "conformance/declared_not_implemented.json": "23f2313e04ebacd13b82f9d5525c7b134bc7b2f06d9421a32a5c3e5f794682d7",
+          "backend/src": "35f68c95fb477f82429739ad86d437f98172df80b6bcc304d18697390bd1d8a4",
+          "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
+          "backend/tests": "8bd18ab1e9aa50f70e3f44b7a3480ff946f19fc93a899793335580a57d4f269a",
+          "frontend/src": "60ea9f202103afd68c160146f94cf5d8514e5d5c5fe8d00ab6dc4a30568e5dff",
+          "packages": "92aebf39973806afb70e2e641533c3470b3a684b4ab8b925ee307971c787f13f",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
-        "on": "2026-09-21",
-        "by": "Claude (segment rows)"
+        "on": "2026-09-25",
+        "by": "Claude (re-checked after the kernel-mcp-tools gate check and the RBAC register text; gate-scope row and test counts updated)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
       "why": "object model, lifecycle and Guardian requirements for the semantic layer",
       "subjects": [
         "backend/src/semantic_layer",
-        "backend/src/agents/governance.py"
+        "backend/src/agents/governance.py",
+        "packages/semantic-types/src",
+        "backend/src/agents/base.py",
+        "backend/src/orchestration/graph.py"
       ],
       "baseline": {
-        "on": "2026-09-19",
+        "on": "2026-09-25",
         "sha256": {
-          "backend/src/semantic_layer": "6d82a30950291bffa2cf81e4a07b377f56531cf460ff3676de14b71fe3bba85c",
-          "backend/src/agents/governance.py": "e6336c749099617dfe599545e5372df2cf2b35cc55ddd445e88cf50c154c1ab4"
+          "backend/src/semantic_layer": "b7c7d7cd2505170562b8a1b3dfaecce1d03a7da34c711ac785b9ac25f8e22f53",
+          "backend/src/agents/governance.py": "69dc9fc55c24bd453ead3b80f58d40de5f7bdad4689e9c4b3f189494108cfa1b",
+          "packages/semantic-types/src": "ac003940c3b04f965fad994a9da0610884d5934b69f525b1f12c4de5effd4179",
+          "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
+          "backend/src/orchestration/graph.py": "1c42a22eed003aa1e67b1ffc70545347304a0cc5170959464f263439b727eacc"
         }
       },
-      "last_read": null
+      "last_read": {
+        "on": "2026-09-25",
+        "by": "Claude (lifecycle incl. InvalidTransitionError 409, versioning vs the assumption registry model_store, semantic-types src unchanged)"
+      }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
       "why": "provenance layer and runtime data contracts, with an 'Implementation Status' section",
       "subjects": [
         "backend/src/semantic_layer/provenance.py",
         "backend/src/semantic_layer/contracts.py",
-        "backend/src/api/provenance.py"
+        "backend/src/api/provenance.py",
+        "backend/src/agents/llm_factory.py",
+        "backend/src/agents/governance.py"
       ],
       "baseline": {
-        "on": "2026-09-19",
+        "on": "2026-09-25",
         "sha256": {
           "backend/src/semantic_layer/provenance.py": "02fe831e092fb8bb01d05db9fc9d871ae544e09b2adca565d0df34e3086fa474",
           "backend/src/semantic_layer/contracts.py": "8af9432f179c0d3e8652b3b7d4a48db9edbff3f5acc1fb25c8a6e8d9af3eaaa4",
-          "backend/src/api/provenance.py": "48bc9f32a3d847e547364c1e92075c2eec3cb5b4f67f4d6cc08d24427b47d264"
+          "backend/src/api/provenance.py": "48bc9f32a3d847e547364c1e92075c2eec3cb5b4f67f4d6cc08d24427b47d264",
+          "backend/src/agents/llm_factory.py": "ed6865df9dad462e13481a4278bd997a5cdb3b2813ce20f76cacf95b547e1104",
+          "backend/src/agents/governance.py": "69dc9fc55c24bd453ead3b80f58d40de5f7bdad4689e9c4b3f189494108cfa1b"
         }
       },
-      "last_read": null
+      "last_read": {
+        "on": "2026-09-25",
+        "by": "Claude (provenance store, capture hook, contracts and PR-009 re-read against provenance.py, llm_factory, contracts.py, governance.py)"
+      }
     },
     "docs/ADR-003-hierarchical-planning-and-evaluation.md": {
       "why": "planning and evaluation pipeline, with an 'Implementation Status' section and endpoint list",
@@ -108,14 +124,17 @@
         "backend/src/api/platform.py"
       ],
       "baseline": {
-        "on": "2026-09-19",
+        "on": "2026-09-25",
         "sha256": {
-          "backend/src/orchestration": "d655abcaa426874b6198abc2cfb8dc45c2d06e0144c20983634f7a9b34ebe06f",
+          "backend/src/orchestration": "dec89bd24f81da4d46328dd0def76ef4c22e0e3c6370012ce27ea5812037acca",
           "backend/src/evaluation": "9a2708b95f3bae7f8b05075e62815c7f51cb3f6e7939a585c1c2c26e5b500b07",
-          "backend/src/api/platform.py": "a0dd49f95f78ab4c3d9e1328d93f853c7cdff32755f4d1928cbff72ff24937ab"
+          "backend/src/api/platform.py": "bc2cd507fe88c75c6b8f944378939b088ffafe5aad4907367ea288503b33a025"
         }
       },
-      "last_read": null
+      "last_read": {
+        "on": "2026-09-25",
+        "by": "Claude (planner simulation, constraints and evaluation endpoints re-read against planning.py, graph.py, platform.py)"
+      }
     },
     "docs/AGENTS.md": {
       "why": "agent registry, skill library, MCP exposure and LLM routing -- the densest set of capability claims in the repo",
@@ -127,16 +146,19 @@
         "prompts"
       ],
       "baseline": {
-        "on": "2026-09-19",
+        "on": "2026-09-25",
         "sha256": {
-          "backend/src/agents": "4251aca7572707b262a6849f2d130b755614b0d86ca096c929a32b668d03ae70",
-          "backend/src/skills": "a9c5472072bddf92b896ace0eeef2dea5db76578e703a1bd26431b9894aeea9a",
-          "backend/mcp_server": "659e6b5ff37886fb61ed4277fba5e128337f634e8612531d442ed3f0cdde68b3",
-          "backend/src/orchestration": "d655abcaa426874b6198abc2cfb8dc45c2d06e0144c20983634f7a9b34ebe06f",
-          "prompts": "060fadb860fa1728d2cf0238aa8156d455f609c5ba5ab2d3e20dea9dd45f447d"
+          "backend/src/agents": "6c40044e3d60bdcd45af069db54f370d8c9871358a076c8117df750d9d24ca3c",
+          "backend/src/skills": "7c14f6095d38b78711081427d4f98e3f621a0a72de4b377d6fc374c346c4ecea",
+          "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
+          "backend/src/orchestration": "dec89bd24f81da4d46328dd0def76ef4c22e0e3c6370012ce27ea5812037acca",
+          "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957"
         }
       },
-      "last_read": null
+      "last_read": {
+        "on": "2026-09-25",
+        "by": "Claude (§3.4 MCP exposure against causal-mcp TOOLS, .gnomon/tools.toml and roles.toml, the legacy server deprecation; §6.3 against prompts/README.md; register-cited claims left as pinned)"
+      }
     },
     "docs/CYBERSECURITY.md": {
       "why": "auth, RBAC, Guardian circumvention mitigations, audit immutability",
@@ -144,18 +166,31 @@
         "backend/src/middleware",
         "backend/src/api/governance.py",
         "backend/src/agents/governance.py",
-        "backend/src/semantic_layer/registry.py"
+        "backend/src/semantic_layer/registry.py",
+        "backend/src/api/interventions.py",
+        "backend/src/api/provenance.py",
+        "backend/src/db/migrations",
+        "backend/src/semantic_layer/verdict.py",
+        ".github/workflows"
       ],
       "baseline": {
-        "on": "2026-09-19",
+        "on": "2026-09-25",
         "sha256": {
           "backend/src/middleware": "d8281470bc1c1fe3195aa55c663968251147d96b6e8bb27bc0b77e35b5394f3c",
-          "backend/src/api/governance.py": "f898d3a60c93955b3993e1e1c1397384ffab18062df7a84d074159cc9ee82928",
-          "backend/src/agents/governance.py": "e6336c749099617dfe599545e5372df2cf2b35cc55ddd445e88cf50c154c1ab4",
-          "backend/src/semantic_layer/registry.py": "2e42990c59da8870118592886a584d57eef02b10d1d2d0d1d92e09ae86a96be9"
+          "backend/src/api/governance.py": "ac1e06c2b17d7331b2d6d427afb97a0ed617cada1936a6974ca717bbffed30bc",
+          "backend/src/agents/governance.py": "69dc9fc55c24bd453ead3b80f58d40de5f7bdad4689e9c4b3f189494108cfa1b",
+          "backend/src/semantic_layer/registry.py": "ba41f77c384a19b97a590afe55da43e563518554ba48bda6174e404253753005",
+          "backend/src/api/interventions.py": "2e5bd0b6114bed3819504398198dbe0a92e1ad46c6f24d61fee515b091ee6f6c",
+          "backend/src/api/provenance.py": "48bc9f32a3d847e547364c1e92075c2eec3cb5b4f67f4d6cc08d24427b47d264",
+          "backend/src/db/migrations": "4ab4b5ad6dcc513cbb149dba3bd9fb4f7a7ff7dd35393cb51ee688baaec3d671",
+          "backend/src/semantic_layer/verdict.py": "eda2e3481f24fb45ad19d5e11051fa65cd4ba75f8fba77e17415e5ad9479b9bf",
+          ".github/workflows": "e5ea18edea7e9bae1835f357631ab484d9de718fb7dfb779f0172bd6476a6689"
         }
       },
-      "last_read": null
+      "last_read": {
+        "on": "2026-09-25",
+        "by": "Claude (role sets and their routes incl. /api/v1/models reviews, auth public paths, dev bypass, verdict signing, migrations 006-007, workflows for scanning, Dockerfile users)"
+      }
     },
     "docs/DATA_LAYER.md": {
       "why": "object model, storage (Neo4j, PostgreSQL, Kafka), connectors, drift",
@@ -164,19 +199,28 @@
         "backend/src/connectors",
         "backend/src/semantic_layer/models.py",
         "backend/src/sensors",
-        "docker-compose.yml"
+        "docker-compose.yml",
+        "backend/src/semantic_layer/registry.py",
+        "backend/src/agents/drift_monitor.py",
+        "backend/src/skills/drift_detect.py"
       ],
       "baseline": {
-        "on": "2026-09-19",
+        "on": "2026-09-25",
         "sha256": {
-          "backend/src/db": "2837e689c4580df727176f89a6f666825efaedc2bf3779789d6b37a43a073d8b",
+          "backend/src/db": "73f4b4486583fb154c328a7348a4bbefd0e7551493e1dd5434116bbaec1fa68a",
           "backend/src/connectors": "7f2719189ff9ec75f9e7fec44c394f80c4ad9abfbf9c9d0d834c7cbdfab87e44",
-          "backend/src/semantic_layer/models.py": "43f3c67e216b78bcd16a05d0e185b7ecdf4da541fa71b26ef748cb0dc726a987",
+          "backend/src/semantic_layer/models.py": "8b89bc185388d810d635891b4b92dffb9219202f8aa5a02c696909f5eb7da198",
           "backend/src/sensors": "d38f988ccb52659ac4ecc8724e8aa775b2e6e9fca76b73dbba6576c3f3d1dcba",
-          "docker-compose.yml": "02c9683c93234b2e4c6c6a6c0ff9408fa983708e7fbfd162975af301dd131362"
+          "docker-compose.yml": "c2118a27d9bd334c63935f3b82336c693cc97c1ac2114e81ac602a45fc8be38e",
+          "backend/src/semantic_layer/registry.py": "ba41f77c384a19b97a590afe55da43e563518554ba48bda6174e404253753005",
+          "backend/src/agents/drift_monitor.py": "9279c31636b3b663007f21e7aa671ffe738a535432f610ecb5b6de00ae6bd815",
+          "backend/src/skills/drift_detect.py": "9432982258b155287a90701d76dc9bf331dd8c65fbc692ad37fcd124fcab7111"
         }
       },
-      "last_read": null
+      "last_read": {
+        "on": "2026-09-25",
+        "by": "Claude (relational tables against migrations 001-007 and the SQLite DDL in db/factory.py, graph_fragments lineage, append-only triggers, compose profiles, data-access table incl. /api/v1/models)"
+      }
     },
     "docs/HANDOFFS.md": {
       "why": "handoff packet format and its verification commands",
@@ -185,16 +229,19 @@
         "backend/src/semantic_layer/models.py"
       ],
       "baseline": {
-        "on": "2026-09-19",
+        "on": "2026-09-25",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
-          "backend/src/semantic_layer/models.py": "43f3c67e216b78bcd16a05d0e185b7ecdf4da541fa71b26ef748cb0dc726a987"
+          "backend/src/semantic_layer/models.py": "8b89bc185388d810d635891b4b92dffb9219202f8aa5a02c696909f5eb7da198"
         }
       },
-      "last_read": null
+      "last_read": {
+        "on": "2026-09-25",
+        "by": "Claude Opus 5.5 (agent), against .gnomon/config.toml [chain], templates/, prompts/, .github/"
+      }
     },
     "docs/ORCHESTRATION.md": {
-      "why": "development tool stack and configuration files; several it lists are no longer tracked (82cdd8f)",
+      "why": "development tool stack and the tracked configuration files it lists; defers to .gnomon/config.toml [chain] for orchestration",
       "subjects": [
         "templates",
         "prompts",
@@ -202,15 +249,18 @@
         ".gnomon"
       ],
       "baseline": {
-        "on": "2026-09-19",
+        "on": "2026-09-25",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
-          "prompts": "060fadb860fa1728d2cf0238aa8156d455f609c5ba5ab2d3e20dea9dd45f447d",
-          ".github": "47185533513f8931727a44002a2df6d0785a3370025373389e669555abd1fd20",
-          ".gnomon": "90d4a9ffff0a00667bc9658a1d9f5aeb1b12ddb117504e5dbe6e3fced84cd03d"
+          "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
+          ".github": "c973f0f0d03f9f681cfa4a4e97756cf443535f20deb8f89b1619377a5488cc9d",
+          ".gnomon": "eff3051bd3d5888c7355c36309485279e3444f785ae463428f5d74bb1c5ccadb"
         }
       },
-      "last_read": null
+      "last_read": {
+        "on": "2026-09-25",
+        "by": "Claude (re-checked after the kernel-mcp-tools gate check and the RBAC register text; gate-scope row and test counts updated)"
+      }
     },
     "docs/QUICKSTART.md": {
       "why": "setup and launch commands, infrastructure requirements",
@@ -225,19 +275,22 @@
         "backend/scripts"
       ],
       "baseline": {
-        "on": "2026-09-19",
+        "on": "2026-09-25",
         "sha256": {
-          "start.sh": "4f0ef07d1fcf8e772b21b9e1125d621fdb40cb5691046c84f975da5d925aefc3",
-          "launch_backend.sh": "3fd5bf0bc3060014f319befd6966d4b33f851a1bce01b15d3dc6facc35f5ec00",
-          "docker-compose.yml": "02c9683c93234b2e4c6c6a6c0ff9408fa983708e7fbfd162975af301dd131362",
-          "backend/pyproject.toml": "669f2ad657d35c2fde9ed8bebdbb128cefa1f546a866bf2ccf8bb10381995ff1",
+          "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
+          "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
+          "docker-compose.yml": "c2118a27d9bd334c63935f3b82336c693cc97c1ac2114e81ac602a45fc8be38e",
+          "backend/pyproject.toml": "0d5612eb3b07ad74501e28cfe32a392fd69d228e639b8dcc99f04232618693c4",
           "frontend/package.json": "328e50541f6341ef44bdb0664d818c5de9c95444d15fa3cc19d076f971e4303e",
           "package.json": "1d6357ca0a5bff2cf56bc7fa16eaf4e54253728875d5e7161f443542bf8ec478",
-          ".env.example": "47d136b5abe9d6dd32a06aa1efc8d73a9508e836afff9b01c29ef91a71817cf3",
-          "backend/scripts": "f97a5f431db23e4a8a279c5f5bb1ba5fba1b3cc0d8978ccf8a6b284eec0aa858"
+          ".env.example": "48f330ad41a48b5d03d0ba3f2910d171f65587998b67b75c4ad21df8656585ce",
+          "backend/scripts": "ccd196982e05a128b6c27d502a3b1a127f803b58b33d60e675f2b556116bdc95"
         }
       },
-      "last_read": null
+      "last_read": {
+        "on": "2026-09-25",
+        "by": "Claude (every command, env var, port, compose service, seed flag and endpoint against start.sh, launch_backend.sh, docker-compose.yml, db/factory.py, auth.py, pyproject extras; no personal infrastructure found)"
+      }
     },
     "docs/TESTING_CICD.md": {
       "why": "test pyramid, quality gates and CI pipeline -- what blocks a merge",
@@ -249,22 +302,31 @@
         "frontend/playwright.config.ts",
         ".gnomon/ci.sh",
         "scripts",
-        "specs"
+        "specs",
+        "benchmarks",
+        "packages/causal-core/tests",
+        "packages/causal-decision/tests"
       ],
       "baseline": {
-        "on": "2026-09-19",
+        "on": "2026-09-25",
         "sha256": {
-          ".github/workflows": "0c4bc072227bfe37cc11a0b7b80a7ff0a6819a8555af8619dc0f6e0193273a1b",
-          "backend/tests": "151660b847befe31db0b6099dc223578a1bdbde70b83d1d8b52be30d3b53f83d",
-          "backend/pyproject.toml": "669f2ad657d35c2fde9ed8bebdbb128cefa1f546a866bf2ccf8bb10381995ff1",
+          ".github/workflows": "e5ea18edea7e9bae1835f357631ab484d9de718fb7dfb779f0172bd6476a6689",
+          "backend/tests": "8bd18ab1e9aa50f70e3f44b7a3480ff946f19fc93a899793335580a57d4f269a",
+          "backend/pyproject.toml": "0d5612eb3b07ad74501e28cfe32a392fd69d228e639b8dcc99f04232618693c4",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
-          ".gnomon/ci.sh": "37bdb28e1afac2b7e7abf457a537ccf4f2db8186544c05ae7adf729ea5c17689",
-          "scripts": "244d769305352e094253d0bebc213821d1581b83aa73fe85c3f48e09612c5577",
-          "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
+          ".gnomon/ci.sh": "39ce6e8f6bd7d1ff7254c34b0b11f80d033120d4ab50ca8557a5da9132165814",
+          "scripts": "1bfe83c102dbdfae6b4332613c42ccd713bfddca5b674241175967390c7577e5",
+          "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
+          "benchmarks": "41154a54662a9c2ff48877229971d1074787bdd3023481d8d9d053ac9519a285",
+          "packages/causal-core/tests": "d4b01120aa4b6af9139bfd6aa78df0569599b931e586d352eb2f5371acf48580",
+          "packages/causal-decision/tests": "61bde7786a6158cc99f269fd057908ce3959e5e812ac5d8b4c82c11c2c7200b4"
         }
       },
-      "last_read": null
+      "last_read": {
+        "on": "2026-09-25",
+        "by": "Claude (re-checked after the kernel-mcp-tools gate check and the RBAC register text; gate-scope row and test counts updated)"
+      }
     },
     "docs/UIX.md": {
       "why": "personas, user stories and component contracts for the frontend",
@@ -272,12 +334,15 @@
         "frontend/src"
       ],
       "baseline": {
-        "on": "2026-09-19",
+        "on": "2026-09-25",
         "sha256": {
-          "frontend/src": "43b4fec5fbddbf1cbeab0cc5dc3aa23933dd6678419738027cbf5fa27d48f428"
+          "frontend/src": "60ea9f202103afd68c160146f94cf5d8514e5d5c5fe8d00ab6dc4a30568e5dff"
         }
       },
-      "last_read": null
+      "last_read": {
+        "on": "2026-09-25",
+        "by": "Claude (component inventory against every file in frontend/src/components, persona views against PersonaSelector and app/ pages, ThinkingIndicator test; no committed frontend/src change since last read)"
+      }
     },
     "docs/ROADMAP.md": {
       "why": "the product direction (causal decision assurance for agentic workflows), what the code covers of it, and the order of work -- it goes stale when the kernel's capabilities or the open register change",
@@ -287,16 +352,42 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-09-21",
+        "on": "2026-09-25",
         "sha256": {
-          "packages/causal-core/src/causal_core": "33054d63f00443a2419b10f1b83b7b6c5fcc29d970062777c6653718036943f6",
-          "conformance/declared_not_implemented.json": "38be7eafe900ea48bfa53cc4ee1863954774df22ecead8c9cbb16f40478b7463",
-          "docs/CURRENT_STAGE.md": "d22f0bc2c50d52852aa1e5e0e6ba9c0fcee5afea36c5591b193bb754a90ef7c5"
+          "packages/causal-core/src/causal_core": "ec83e24c440e38350a84ea05fe6a82848b5e45ddffab5df00d4e5c1217d71c38",
+          "conformance/declared_not_implemented.json": "23f2313e04ebacd13b82f9d5525c7b134bc7b2f06d9421a32a5c3e5f794682d7",
+          "docs/CURRENT_STAGE.md": "eb44c610656469391268893c3c432a94a37377d653bb8522c4885440db7caf2e"
         }
       },
       "last_read": {
-        "on": "2026-09-21",
-        "by": "Claude (step 3 partly done: segments)"
+        "on": "2026-09-25",
+        "by": "Claude (re-checked after the kernel-mcp-tools gate check and the RBAC register text; gate-scope row and test counts updated)"
+      }
+    },
+    "SECURITY.md": {
+      "why": "reporting path, scope, and what authentication, roles and Guardian verdicts enforce today",
+      "subjects": [
+        "backend/src/middleware",
+        "backend/src/api/governance.py",
+        "backend/src/api/interventions.py",
+        "backend/src/agents/governance.py",
+        "backend/src/semantic_layer/registry.py",
+        "backend/src/semantic_layer/verdict.py"
+      ],
+      "baseline": {
+        "on": "2026-09-25",
+        "sha256": {
+          "backend/src/middleware": "d8281470bc1c1fe3195aa55c663968251147d96b6e8bb27bc0b77e35b5394f3c",
+          "backend/src/api/governance.py": "ac1e06c2b17d7331b2d6d427afb97a0ed617cada1936a6974ca717bbffed30bc",
+          "backend/src/api/interventions.py": "2e5bd0b6114bed3819504398198dbe0a92e1ad46c6f24d61fee515b091ee6f6c",
+          "backend/src/agents/governance.py": "69dc9fc55c24bd453ead3b80f58d40de5f7bdad4689e9c4b3f189494108cfa1b",
+          "backend/src/semantic_layer/registry.py": "ba41f77c384a19b97a590afe55da43e563518554ba48bda6174e404253753005",
+          "backend/src/semantic_layer/verdict.py": "eda2e3481f24fb45ad19d5e11051fa65cd4ba75f8fba77e17415e5ad9479b9bf"
+        }
+      },
+      "last_read": {
+        "on": "2026-09-25",
+        "by": "Claude (role sets and their routes incl. /api/v1/models reviews, auth public paths, dev bypass, verdict signing, migrations 006-007, workflows for scanning, Dockerfile users)"
       }
     }
   }

@@ -92,6 +92,11 @@ MYPY_OK = re.compile(r"Success: no issues found in (\d+) source files?")
 MYPY_CODE = re.compile(r"\[([a-z0-9-]+)\]\s*$")
 
 
+#: The finding lines of the last measurement, printed when a ratchet fails: a gate that
+#: says "1 finding" in CI but none on a laptop has to say which, or it cannot be chased.
+LAST_FINDINGS: list[str] = []
+
+
 def measure_mypy(binary: str, spec: dict) -> tuple[int, int, collections.Counter[str], str]:
     cwd = ROOT / spec["cwd"]
     version = run([binary, "--version"], cwd).stdout.strip()
@@ -109,6 +114,7 @@ def measure_mypy(binary: str, spec: dict) -> tuple[int, int, collections.Counter
     by_code = collections.Counter(
         m.group(1) for line in out.splitlines() if ": error:" in line and (m := MYPY_CODE.search(line))
     )
+    LAST_FINDINGS[:] = [line for line in out.splitlines() if ": error:" in line]
     return inspected, errors, by_code, version
 
 
@@ -166,6 +172,10 @@ def main() -> int:
     if findings > limit:
         bad(f"{args.entry}: {findings} findings over {inspected} files, above the committed "
             f"maximum of {limit} ({BASELINE_FILE}). Top rules: {top}")
+        if findings - limit <= 20:
+            for line in LAST_FINDINGS[:20]:
+                print(f"       {line}")
+        print(f"       measured with {version}")
         failed = True
     else:
         ok(f"{args.entry}: {findings} findings over {inspected} files (max {limit})"

@@ -141,10 +141,6 @@ async def test_complex_domain_flags_expert_review() -> None:
     assert result.requires_human_review is True, (
         "COMPLEX domain must require human review"
     )
-    has_complex_flag = any(
-        "complex" in flag.lower() or "expert" in flag.lower()
-        for flag in result.flags
-    )
     # Check draft explanation mentions uncertainty
     assert (
         "COMPLEX" in result.draft_explanation.upper()

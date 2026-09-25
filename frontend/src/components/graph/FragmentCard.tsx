@@ -20,15 +20,14 @@
 import { GitBranch, BarChart3, Tag, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GuardianVerdictBadge } from "@/components/shared/GuardianVerdictBadge";
+import type { FragmentApprovalStatus } from "@causalplatform/semantic-types";
 import type { GuardianVerdict } from "@/lib/types";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type FragmentApprovalStatus =
-  | "DRAFT"
-  | "UNDER_REVIEW"
-  | "APPROVED"
-  | "DEPRECATED";
+// A fragment's lifecycle is DRAFT → APPROVED → DEPRECATED; there is no
+// UNDER_REVIEW for fragments (backend FragmentApprovalStatus).
+export type { FragmentApprovalStatus };
 
 export interface FragmentCardData {
   id: string;
@@ -64,10 +63,6 @@ const STATUS_COLOURS: Record<
   DRAFT: {
     badge: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
     dot: "bg-zinc-400",
-  },
-  UNDER_REVIEW: {
-    badge: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
-    dot: "bg-amber-400",
   },
   APPROVED: {
     badge: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",

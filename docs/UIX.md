@@ -1,6 +1,10 @@
 # UIX: Design System, Personas & User Stories
 
 > **Scope:** User experience architecture, design principles, user personas, user stories, and component strategy for the Unified Enterprise Causal Platform. Every new feature must be anchored to an identified persona need before design begins.
+>
+> **Read against `frontend/src` 2026-09-25.** The personas and user stories (§3) are needs, not
+> features, and many are unbuilt. The principles (§1) and the component inventory (§4.2) now
+> say which parts exist. Onboarding walkthroughs (§5) are roadmap.
 
 ---
 
@@ -16,16 +20,22 @@ The platform serves people who are trying to make better decisions under uncerta
 | **AI-native interaction** | AI suggestions, confidence indicators, and causal evidence are first-class UI elements, not tooltips or footnotes. |
 | **Causal transparency** | Every recommendation surface shows which assumptions it rests on and what the confidence bounds are. Users can drill into the reasoning chain. |
 | **Human agency is always visible** | Approve/reject actions are always one click away. The AI proposes; the human decides. This is never obscured. |
-| **Mobile-first responsive** | All surfaces are usable on mobile. Operational personas (SRE, Incident Commander) are on-call and need mobile-grade UX. |
-| **Onboarding via walkthrough** | New users experience a structured guided walkthrough for their persona, not a blank canvas. |
-| **Voice input for operational contexts** | Incident-response and operational surfaces support voice input (STT) for hands-free use. Not TTS by default. |
-| **Immediate thinking indicator** | Any AI processing shows a prominent, animated "thinking" indicator within 150ms of user submission. Never leave users staring at a static screen. |
+| **Mobile-first responsive** | All surfaces are usable on mobile. Operational personas (SRE, Incident Commander) are on-call and need mobile-grade UX. *Not verified: no test or audit checks mobile layouts.* |
+| **Onboarding via walkthrough** | New users experience a structured guided walkthrough for their persona, not a blank canvas. *Roadmap: no walkthrough is built (§5).* |
+| **Voice input for operational contexts** | Incident-response and operational surfaces support voice input (STT) for hands-free use. Not TTS by default. *Roadmap: no voice input is built.* |
+| **Immediate thinking indicator** | Any AI processing shows a prominent, animated "thinking" indicator within 150ms of user submission. Never leave users staring at a static screen. *Built: `ThinkingIndicator`, with the 150ms contract pinned by its test.* |
 
 ---
 
 ## 2. Adaptive Persona Views
 
 Each persona sees a **filtered, task-optimized lens** on the same underlying platform data. The platform does not build separate UIs per persona—it applies a view configuration over a shared component library.
+
+Today, `PersonaSelector` switches between five views, and there is a page per view:
+`/incidents`, `/analyst`, `/executive`, `/governance` and `/engineer`, plus `/workbench`. How much
+of each view's surface below is built varies (see §4.2). The DAG Workbench is planned (register
+`dag-workbench`). The decision ledger and the assumption registry have API routes
+(`/api/v1/decisions`, `/api/v1/models`) and no view: the frontend calls neither.
 
 | Persona View | Primary Surface | Secondary Surfaces |
 |---|---|---|
@@ -236,25 +246,30 @@ Each persona sees a **filtered, task-optimized lens** on the same underlying pla
 
 ### 4.1 Design System Foundation
 
-**Benchmark standard:** Radix UI primitives + shadcn/ui component library + Tailwind CSS
-- Radix UI: accessibility-first, unstyled primitives (Dialog, Dropdown, Toast, Tooltip)
-- shadcn/ui: opinionated, composable components built on Radix (established in LJERP project)
+**Benchmark standard:** Radix UI primitives + shadcn/ui-style components + Tailwind CSS
+- Radix UI: accessibility-first, unstyled primitives (Dialog, Dropdown, Toast, Tooltip). These are dependencies of `frontend/`
+- shadcn/ui pattern: composable components built on Radix with `class-variance-authority`, `clsx` and `tailwind-merge`. The utilities are dependencies; the components are written in this repository
 - Tailwind: utility-first styling with consistent design tokens
 
 ### 4.2 Core Component Groups
 
-| Group | Components | Used by |
-|---|---|---|
-| **Causal Graph** | `DAGCanvas`, `EdgeProposal`, `NodeDetail`, `GraphDiff`, `FragmentCard` | Analyst, Platform Engineer |
-| **Incident Response** | `IncidentBrief`, `CynefinBadge`, `CausalHypothesisList`, `InterventionCard`, `EscalationBanner` | SRE, Incident Commander |
-| **Simulation** | `InterventionComparison`, `EffectEstimateBar`, `AssumptionDisclosure`, `ScenarioRange` | Business Analyst, SRE |
-| **Governance** | `ReviewQueue`, `ApprovalPanel`, `AuditTrailEntry`, `SensitivityResult`, `AssumptionCard` | Governance Officer, Analyst |
-| **Evidence** | `EvidenceCitation`, `DocumentSnippet`, `StatisticalTestResult`, `ConfidenceMeter` | Analyst, Governance Officer |
-| **Shared** | `EpistemicConfidenceBadge`, `ThinkingIndicator`, `PersonaSelector`, `AuditLogPanel` | All |
+Components under `frontend/src/components/` are marked **built**. The rest are **not built**.
+
+| Group | Built | Not built | Used by |
+|---|---|---|---|
+| **Causal Graph** | `DAGCanvas`, `EdgeProposal`, `NodeDetail`, `GraphDiff`, `FragmentCard` | -- | Analyst, Platform Engineer |
+| **Incident Response** | `IncidentBrief`, `CynefinBadge` (in `shared/`), `CausalHypothesisList`, `InterventionCard`, `EscalationBanner` | -- | SRE, Incident Commander |
+| **Simulation** | `InterventionComparison` (with `EffectEstimateBar` inside it), `AssumptionDisclosure` | `ScenarioRange` | Business Analyst, SRE |
+| **Governance** | `ReviewQueue`, `ApprovalPanel` | `AuditTrailEntry`, `SensitivityResult`, `AssumptionCard` | Governance Officer, Analyst |
+| **Evidence** | -- | `EvidenceCitation`, `DocumentSnippet`, `StatisticalTestResult`, `ConfidenceMeter` | Analyst, Governance Officer |
+| **Shared** | `EpistemicConfidenceBadge`, `ThinkingIndicator`, `PersonaSelector`, `AuditLogPanel`, `GuardianVerdictBadge` | -- | All |
+
+The review queue shows no real risk tier or submitter (register `review-queue-risk-tier`), and
+the Evidence group has no backend to read from yet (register `agent-skills-are-stubs`).
 
 ### 4.3 Thinking Indicator (Critical UX Contract)
 
-Any agent action longer than 150ms must show the `ThinkingIndicator` component immediately after user submission. This is a non-negotiable UX contract (from established feedback memory).
+Any agent action longer than 150ms must show the `ThinkingIndicator` component immediately after user submission. This is a non-negotiable UX contract, pinned by `frontend/src/components/shared/__tests__/ThinkingIndicator.test.tsx`.
 
 ```tsx
 // ThinkingIndicator: appears within 150ms of any agent action
@@ -266,6 +281,8 @@ Any agent action longer than 150ms must show the `ThinkingIndicator` component i
 ```
 
 ### 4.4 Progressive Disclosure Pattern
+
+> **Status:** design pattern. It is not applied consistently across pages, and no test checks it.
 
 ```
 Level 0 (default):    Recommendation + confidence level + approve/reject actions
@@ -279,6 +296,8 @@ Users progress through levels by interaction, not by role. Role determines which
 ---
 
 ## 5. Onboarding Walkthrough
+
+> **Status:** roadmap. No walkthrough is built.
 
 Each persona has a dedicated first-session walkthrough. Walkthroughs are:
 - Contextual (triggered by first login, not by a banner)
@@ -302,6 +321,9 @@ Each persona has a dedicated first-session walkthrough. Walkthroughs are:
 ---
 
 ## 6. Accessibility Requirements
+
+> **Status:** requirements. No audit has been done, and no automated accessibility test runs.
+> The Radix primitives provide ARIA patterns where they are used.
 
 - WCAG 2.1 AA compliance on all screens
 - Keyboard navigation for all interactive elements

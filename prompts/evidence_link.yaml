@@ -17,7 +17,7 @@ context: |
   If no grounding evidence exists, you must flag the edge as INSUFFICIENT_EVIDENCE
   rather than fabricating citations.
 
-skill: |
+skill_prompt: |
   Ground the following proposed causal edge in available evidence:
 
   Proposed edge:

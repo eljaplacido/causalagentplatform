@@ -307,11 +307,28 @@ for name in $PKG_ORDER; do
     read -r n_tests n_fail n_err n_skip < <(junit_counts "$PKG_PY" "$LOG_DIR/$name-junit.xml")
     n_pass=$(( n_tests - n_fail - n_err - n_skip ))
     extra=""; [ "$name" = "causal-core" ] && extra=", incl. the T0 gate"
-    if [ "$rc" -eq 0 ] && [ "$n_pass" -gt 0 ]; then
-        record "$name" PASS "RAN: ${n_pass} passed, ${n_skip} skipped${extra} (env: ${PKG_PY%/bin/python})" $((SECONDS - t0))
+    if [ "$rc" -eq 0 ] && [ "$n_pass" -gt 0 ] && [ "$n_skip" -gt 0 ]; then
+        # Every skip these suites can produce is an absent input to a registered
+        # gate -- y0 for T0's cross-check, the T2/T3 data, the decision extra --
+        # so a skipped test here is a gate that did not run, and green would say
+        # it had. (Step-level SKIPPED stays for a whole toolchain being absent.)
+        grep -E '^SKIPPED|SKIPPED \[' "$LOG_DIR/$name.log" | head -5 | sed 's/^/   | /'
+        record "$name" FAIL "RAN: ${n_pass} passed but ${n_skip} skipped -- a skipped test here is a gate that did not run (pytest -rs for reasons)" $((SECONDS - t0))
+    elif [ "$rc" -eq 0 ] && [ "$n_pass" -gt 0 ]; then
+        record "$name" PASS "RAN: ${n_pass} passed, 0 skipped${extra} (env: ${PKG_PY%/bin/python})" $((SECONDS - t0))
     else
         show_tail "$LOG_DIR/$name.log" 30
         record "$name" FAIL "RAN: exit $rc -- ${n_pass} passed, ${n_fail} failed, ${n_err} errors, ${n_skip} skipped" $((SECONDS - t0))
+    fi
+    # Strict typing, per package, held at the count in scripts/lint-baseline.json.
+    if grep -q "\"mypy-$name\"" scripts/lint-baseline.json; then
+        if [ -x "$(dirname "$PKG_PY")/mypy" ]; then
+            ratchet_step "$name-mypy" "mypy-$name" "$(dirname "$PKG_PY")/mypy"
+        else
+            record "$name-mypy" SKIPPED "mypy not installed in ${PKG_PY%/bin/python}" 0
+        fi
+    else
+        record "$name-mypy" FAIL "no mypy-$name entry in scripts/lint-baseline.json -- an untyped package is not a pass" 0
     fi
 done
 
@@ -324,6 +341,13 @@ done
 #                listed gap that has been closed but not struck off.
 # status-claims  docs/CURRENT_STAGE.md and conformance/declared_not_implemented.json
 #                agree with each other and with the tree (scripts/status_claims.py).
+# contract-parity  the shared enumerations mean the same thing in the backend,
+#                the published TypeScript contract and the frontend. tsc cannot
+#                see this: a union redeclared in a second file is a second type,
+#                so a frontend narrowing on a value the backend never sends
+#                typechecks and matches nothing. Today's divergences are named in
+#                scripts/contract-parity.json; a NEW one fails, and so does a
+#                listed one that has been fixed but not struck off.
 # doc-reconciliation  which documents are owed a re-read because the code they
 #                describe changed. REPORTED, not failed -- a hard gate on every
 #                code change would be switched off within a month (gnomon's
@@ -334,7 +358,7 @@ t0=$SECONDS
 if [ -z "$PYBIN" ]; then
     record gate-scope SKIPPED "needs the backend toolchain (it loads the live MCP server and FastAPI app)" 0
 elif indented "$PY" scripts/gate_scope.py identity-all; then
-    detail="$(grep -oE '(skills-imported|mcp-tools|routes-tested|routes-mounted): [0-9]+/[0-9]+ covered(, [0-9]+ known gap\(s\) listed)?' "$LOG_DIR/.indented" \
+    detail="$(grep -oE '(skills-imported|mcp-tools|kernel-mcp-tools|routes-tested|routes-mounted): [0-9]+/[0-9]+ covered(, [0-9]+ known gap\(s\) listed)?' "$LOG_DIR/.indented" \
         | sed -E 's/ covered//; s/, ([0-9]+) known gap\(s\) listed/ (\1 known gaps)/' | paste -sd ';' - | sed 's/;/; /g')"
     record gate-scope PASS "$detail" $((SECONDS - t0))
 else
@@ -346,6 +370,23 @@ if indented "$PY" scripts/status_claims.py; then
     record status-claims PASS "$(grep -m1 -oE 'register: .*' "$LOG_DIR/.indented" | cut -c1-230)" $((SECONDS - t0))
 else
     record status-claims FAIL "$(grep -m1 FAIL "$LOG_DIR/.indented" | sed 's/^ *FAIL *//' | cut -c1-150)" $((SECONDS - t0))
+fi
+
+t0=$SECONDS
+if indented "$PY" scripts/contract_parity.py; then
+    record contract-parity PASS "$(grep -m1 -oE 'contract-parity: .*' "$LOG_DIR/.indented" | sed 's/^contract-parity: //' | cut -c1-200)" $((SECONDS - t0))
+else
+    record contract-parity FAIL "$(grep -m1 FAIL "$LOG_DIR/.indented" | sed 's/^ *FAIL *//' | cut -c1-150)" $((SECONDS - t0))
+fi
+
+# doc-figures: every benchmark number the docs quote matches the value in that
+# benchmark's STANDING run (scripts/doc-figures.json binds each one). status-claims
+# checks what a doc says a capability's status is; this checks the numbers.
+t0=$SECONDS
+if indented "$PY" scripts/doc_figures.py; then
+    record doc-figures PASS "$(grep -m1 -oE 'doc figures: .*' "$LOG_DIR/.indented" | sed 's/^doc figures: //' | cut -c1-200)" $((SECONDS - t0))
+else
+    record doc-figures FAIL "$(grep -m1 FAIL "$LOG_DIR/.indented" | sed 's/^ *FAIL *//' | cut -c1-150)" $((SECONDS - t0))
 fi
 
 t0=$SECONDS

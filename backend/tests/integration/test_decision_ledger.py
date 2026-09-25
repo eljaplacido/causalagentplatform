@@ -152,6 +152,23 @@ async def test_the_chain_survives_a_new_store_and_a_new_connection(
     assert report.head_digest == records[-1].entry_digest
 
 
+async def _lift_append_only_guard(session: AsyncSession) -> None:
+    """Simulate a writer with direct database access.
+
+    `decision_records` is append-only, and since 2026-09-24 that is enforced in the
+    test schema as well as in production. The triggers make tampering awkward; they
+    have never made it impossible, and the hash chain exists precisely because they
+    cannot -- anyone who can write these rows can also drop a trigger. So the tests
+    that prove tampering is *detected* have to become that attacker first, and they
+    do it explicitly here rather than by quietly relying on an unguarded table.
+
+    No restore: each test builds a fresh in-memory database.
+    """
+    for trigger in ("tg_decision_records_no_update", "tg_decision_records_no_delete"):
+        await session.execute(text(f"DROP TRIGGER IF EXISTS {trigger}"))
+    await session.commit()
+
+
 async def test_editing_a_stored_record_is_caught_by_verification(
     client: AsyncClient, db_session: AsyncSession, db_engine: object
 ) -> None:
@@ -176,6 +193,7 @@ async def test_editing_a_stored_record_is_caught_by_verification(
     tampered = json.dumps(parsed)
     assert tampered != raw, "the edit must actually change the stored bytes"
 
+    await _lift_append_only_guard(db_session)
     await db_session.execute(
         text("UPDATE decision_records SET record = :r WHERE sequence = 0"), {"r": tampered}
     )
@@ -194,6 +212,7 @@ async def test_the_index_columns_are_not_trusted_over_the_record(
     """Editing the cheap column is easier than editing the JSON, so try that too."""
     assert (await client.post("/api/v1/decisions", json=body())).status_code == 200
 
+    await _lift_append_only_guard(db_session)
     await db_session.execute(
         text("UPDATE decision_records SET verdict = 'refuse' WHERE sequence = 0")
     )
@@ -234,3 +253,81 @@ async def test_the_endpoint_requires_authentication(db_engine: object) -> None:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         resp = await ac.post("/api/v1/decisions", json=body())
     assert resp.status_code == 401
+
+
+async def test_the_chain_table_refuses_to_be_edited_in_place(
+    client: AsyncClient, db_session: AsyncSession, db_engine: object
+) -> None:
+    """Before the tamper tests above drop it, prove the guard is really there.
+
+    Those tests lift the append-only trigger to play the attacker; if it had
+    never been created they would pass just the same, and would be asserting
+    nothing about the schema. 003 declares it for PostgreSQL and the SQLite
+    schema declares it too since 2026-09-24 -- this is what pins the second.
+    """
+    assert (await client.post("/api/v1/decisions", json=body())).status_code == 200
+
+    with pytest.raises(Exception, match="append-only"):
+        await db_session.execute(
+            text("UPDATE decision_records SET verdict = 'refuse' WHERE sequence = 0")
+        )
+        await db_session.commit()
+    await db_session.rollback()
+
+    with pytest.raises(Exception, match="append-only"):
+        await db_session.execute(text("DELETE FROM decision_records WHERE sequence = 0"))
+        await db_session.commit()
+
+
+async def test_a_resealed_rewrite_passes_verify_but_not_a_published_checkpoint(
+    client: AsyncClient, db_session: AsyncSession, db_engine: object
+) -> None:
+    """The attacker the chain's docstring describes: rewrite an entry, re-seal the rest.
+
+    `/verify` passes such a chain -- it can only check internal consistency. A
+    checkpoint published before the rewrite is what catches it.
+    """
+    import json
+
+    from causal_decision.ledger import DecisionRecord
+
+    for _ in range(2):
+        assert (await client.post("/api/v1/decisions", json=body())).status_code == 200
+    published = (await client.get("/api/v1/decisions/checkpoint")).json()
+    assert published["sequence"] == 1 and published["length"] == 2
+
+    rows = (
+        await db_session.execute(text("SELECT record FROM decision_records ORDER BY sequence"))
+    ).scalars().all()
+    first, second = (DecisionRecord.model_validate(json.loads(r)) for r in rows)
+    first = first.model_copy(update={"executed": True}).sealed()
+    second = second.model_copy(update={"prev_digest": first.entry_digest}).sealed()
+
+    await _lift_append_only_guard(db_session)
+    for rec in (first, second):
+        await db_session.execute(
+            text(
+                "UPDATE decision_records SET record = :r, entry_digest = :e, prev_digest = :p "
+                "WHERE sequence = :s"
+            ),
+            {"r": json.dumps(rec.model_dump(mode="json")), "e": rec.entry_digest,
+             "p": rec.prev_digest, "s": rec.sequence},
+        )
+    await db_session.commit()
+
+    assert (await client.get("/api/v1/decisions/verify")).json()["ok"] is True, (
+        "premise: the rewrite is internally consistent"
+    )
+    anchored = await client.post(
+        "/api/v1/decisions/verify-anchored", json={"checkpoints": [published]}
+    )
+    assert anchored.status_code == 200
+    report = anchored.json()
+    assert report["ok"] is False and report["broken_at"] == 1
+    assert "rewritten after the checkpoint" in report["reason"]
+
+
+async def test_there_is_no_checkpoint_of_an_empty_chain(
+    client: AsyncClient, db_engine: object
+) -> None:
+    assert (await client.get("/api/v1/decisions/checkpoint")).status_code == 409

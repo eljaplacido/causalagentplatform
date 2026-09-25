@@ -14,10 +14,16 @@ produce the same verdict, and a recorded decision can be replayed and disputed.
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Literal
+from typing import Any, Literal
 
 from causal_core.contract import Abstention, ApparatusFailure, CausalResult
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SerializerFunctionWrapHandler,
+    model_serializer,
+)
 
 
 class _Model(BaseModel):
@@ -140,6 +146,10 @@ def _default_rules() -> dict[RiskClass, RiskRule]:
     }
 
 
+#: Evidence fields introduced after the first decisions were recorded.
+_LATE_FIELDS = ("trend_breakdown",)
+
+
 class DecisionPolicy(_Model):
     """The thresholds. Hashed into every decision, so a verdict names the policy it followed."""
 
@@ -150,6 +160,13 @@ class DecisionPolicy(_Model):
         description="How strong unmeasured confounding is thought to be in this domain, as a risk "
         "ratio. An E-value below it means confounding of an ordinary size could explain the "
         "effect away. A domain assumption: state it, do not infer it from the data.",
+    )
+    min_trend_breakdown: float = Field(
+        default=1.0,
+        ge=0.0,
+        description="Panel designs: the parallel-trends violation, as a multiple of the largest "
+        "pre-adoption deviation, that the conclusion must survive. 1 means: at least as large "
+        "a divergence as the data already showed before adoption.",
     )
     experiments_available: bool = True
     power: float = Field(default=0.8, gt=0.5, lt=1)
@@ -165,8 +182,37 @@ class Check(_Model):
     detail: str = ""
 
 
+class SegmentEvidence(_Model):
+    """One declared subgroup, read in the requested direction.
+
+    `benefit_ci` is the kernel's **family-wise** interval, not the segment's own.
+    Having looked at k subgroups, the unadjusted interval no longer means what it
+    says, and a verdict is a claim -- so it uses the figure claims are allowed to
+    use. A segment the kernel refused carries `refusal` and no numbers, and is
+    never silently treated as unharmed.
+    """
+
+    level: str
+    variable: str
+    n_used: int
+    benefit: float | None = None
+    benefit_ci: tuple[float, float] | None = None
+    refusal: str | None = None
+
+
 class Evidence(_Model):
     """The part of the causal outcome the verdict rested on, copied so a record stands alone."""
+
+    @model_serializer(mode="wrap")
+    def _omit_absent(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
+        # Fields added after decisions were first recorded are left out when unset, so a
+        # decision re-made from the same inputs, and every ledger entry sealed earlier,
+        # digests exactly as before (pinned by tests/test_ledger.py's fixture chain).
+        data: dict[str, Any] = handler(self)
+        for late in _LATE_FIELDS:
+            if data.get(late) is None:
+                data.pop(late, None)
+        return data
 
     kind: Literal["result", "refusal", "apparatus_failure"]
     status: str | None = None
@@ -186,6 +232,24 @@ class Evidence(_Model):
     n_used: int | None = None
     outcome_sd: float | None = None
     result_digest: str | None = None
+    segments: tuple[SegmentEvidence, ...] = Field(
+        default=(),
+        description="The declared subgroups, when the analysis examined any. Empty means none "
+        "were declared -- which is not evidence that the effect is uniform, only that nobody "
+        "asked.",
+    )
+    trend_breakdown: float | None = Field(
+        default=None,
+        description="Panel designs: the multiple of the largest pre-adoption deviation at which "
+        "the interval reaches zero (0 when it includes zero already). Absent -- not merely null "
+        "-- for every other design, so decisions recorded before the field existed digest as "
+        "they did.",
+    )
+    heterogeneity_differs: bool | None = Field(
+        default=None,
+        description="Cochran's Q across the segments: True when they can be told apart, False "
+        "when they cannot, None when no segments were examined.",
+    )
 
 
 class ExperimentSpec(_Model):

@@ -18,7 +18,7 @@ context: |
   The edge will be created as DRAFT status and must pass Guardian approval
   before being promoted to APPROVED.
 
-skill: |
+skill_prompt: |
   Evaluate whether a causal edge should exist between these variables:
 
   Source variable: {{source_variable}}

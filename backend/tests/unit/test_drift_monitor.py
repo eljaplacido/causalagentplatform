@@ -23,6 +23,7 @@ From AGENTS.md §2.1 DriftMonitorAgent:
 
 from __future__ import annotations
 
+import inspect
 from datetime import UTC, datetime
 from uuid import uuid4
 
@@ -295,9 +296,28 @@ async def test_no_semantic_layer_write(db_engine: object) -> None:
 
     result = await agent.process(state)
 
-    # Agent should not modify any semantic layer objects
-    # (the test verifies by absence of write operations in the agent code)
-    assert True  # Agent design guarantees this — no write skill implemented
+    # Until 2026-09-24 this test ran the agent, discarded the result and
+    # asserted `True`, on the reasoning that "agent design guarantees this".
+    # Design is not a control: the assertion has to be able to fail.
+    #
+    # Two things are checked. First, that the agent's own code contains no call
+    # to a registry write -- the same static approach test_guardian_bypass.py
+    # uses on GovernanceAgent._write_audit_entry, and the one that would catch
+    # someone adding a write later.
+    source = inspect.getsource(DriftMonitorAgent)
+    forbidden = [
+        name
+        for name in ("propose_draft", "promote_to_approved", "semantic_layer_write")
+        if name in source
+    ]
+    assert not forbidden, (
+        f"DriftMonitorAgent now references semantic-layer writes: {forbidden}. "
+        "It is specified to emit alerts only."
+    )
+
+    # Second, that it produced the state it is supposed to produce, so a run
+    # that silently returned early cannot pass this test either.
+    assert result.recommendations, "the agent returned no recommendations at all"
 
 
 # ── 9. Immutable state ───────────────────────────────────────────────────────
@@ -640,10 +660,6 @@ async def test_alert_emit_failure_not_hidden(db_engine: object) -> None:
     agent._alert_emitter.emit = mock_emit
     agent._skill_causal_structure_compare = mock_structure_compare
     agent._skill_semantic_drift_detect = mock_semantic_drift
-
-    # Patch store_drift_alert to avoid DB side effects in unit test
-    from src.skills import drift_detect as dd
-    original_store = dd.store_drift_alert if hasattr(dd, 'store_drift_alert') else None
 
     result = await agent.process(state)
 

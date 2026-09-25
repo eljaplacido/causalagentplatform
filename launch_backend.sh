@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Linux launcher for the causal-platform backend on gx10.
-# Mirrors launch_backend.bat but uses bash + Linux paths.
+# Linux/macOS launcher for the causal-platform backend.
+# Mirrors scripts/windows/launch_backend.bat but uses bash + POSIX paths.
 # Port 49234 is chosen to avoid Windows Hyper-V reserved ranges; safe on Linux too.
 
 set -euo pipefail
@@ -11,8 +11,6 @@ BACKEND_DIR="$REPO_ROOT/backend"
 export PYTHONPATH="$BACKEND_DIR"
 export ENV="local"
 export DEV_AUTH_BYPASS="true"
-export HALLUCINATION_RISK_THRESHOLD="0.7"
-export MAX_AGENT_CYCLES="5"
 export CORS_ALLOWED_ORIGINS="http://localhost:3000,http://localhost:5173"
 
 cd "$BACKEND_DIR"

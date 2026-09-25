@@ -1,0 +1,36 @@
+{
+  "suite": "A0",
+  "prereg_sha256": "sha256:a87da6ed880ec99cfe143af438b8c85304e5fc9f5853b662540044f574dc297f",
+  "prereg_version": 2,
+  "git": "a11635f4b5b971b442badc7afbe0c317d651df9a",
+  "cases": 800,
+  "by_edit": {
+    "remove_directed": 196,
+    "add_directed": 129,
+    "reverse_directed": 153,
+    "add_bidirected": 187,
+    "remove_bidirected": 135
+  },
+  "by_oracle": {
+    "valid": 698,
+    "invalid": 102
+  },
+  "agreement": 1.0,
+  "unverified": 0,
+  "mismatches": [],
+  "non_backdoor_old_graphs_skipped": {
+    "id_general": 104,
+    "not_identified": 45,
+    "iv": 13,
+    "frontdoor": 8
+  },
+  "property_violations": [],
+  "seeded_defects_caught": {
+    "diff_drops_removed": true,
+    "ignore_bidirected": true,
+    "new_set_valid": true,
+    "strategy_only": true
+  },
+  "failures": [],
+  "passed": true
+}

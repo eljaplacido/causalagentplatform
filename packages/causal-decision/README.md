@@ -103,6 +103,35 @@ Two rules worth stating plainly, because both are easy to get wrong:
   "not worth doing" is no better supported than "worth doing". The evidence cannot settle it, so
   the answer is the experiment that would. The gate caught this one; see the pre-registration.
 
+## For whom, not just whether
+
+An average can describe nobody. A remediation playbook that takes twelve minutes off P1 incidents
+and adds six to P3 pools to roughly nothing, and "roughly nothing" is wrong about both groups. So
+when the analysis declared subgroups, the verdict reads them:
+
+```python
+out = cc.analyze(df, graph, treatment="playbook", outcome="minutes",
+                 segment_by=("severity",))      # declared BEFORE any answer is seen
+d = decide(out, request)
+```
+
+- **A segment the action materially harms blocks `act`.** If a segment's interval lies wholly
+  beyond the harm threshold, the ceiling is `refuse` — `experiment` when the estimate is contested,
+  because a contested estimate cannot establish harm any more than benefit. If harm merely cannot
+  be excluded, the ceiling is `experiment`. This holds whatever the pooled effect says: a large,
+  precise, worthwhile pooled saving does not buy the right to hurt an identified group.
+- **The interval used is the family-wise one.** Having examined k subgroups, the unadjusted
+  interval no longer means what it says, and a verdict is a claim.
+- **A segment that could not be estimated is not a segment that was cleared.** It caps at
+  `act_with_approval` and is named.
+- **Heterogeneity alone caps at `act_with_approval`.** If Cochran's Q separates the segments, the
+  pooled effect is an average over groups the action treats differently, so a person sees the
+  breakdown before it is automated.
+
+**Declaring no subgroups adds no checks, and means nothing either way.** An empty segment list is
+not evidence that the effect is uniform — only that nobody asked. The decision layer will not
+invent a reassurance the analysis never produced.
+
 ## When the evidence cannot settle it
 
 The decision carries the experiment that would: the randomization unit, arms, a size from the
@@ -135,6 +164,41 @@ when the head digest is anchored somewhere the writer does not control — an ap
 countersignature, another party's copy — which is a deployment decision, so the chain reports its
 head and leaves the anchoring to you.
 
+What the code does provide is both ends of that: `checkpoint(records)` says exactly what to
+publish (`GET /api/v1/decisions/checkpoint`), and `verify_against(records, checkpoints)` checks a
+chain against checkpoints kept elsewhere (`POST /api/v1/decisions/verify-anchored`). A rewrite that
+re-seals every later entry passes `verify_chain`; it fails here, at the first checkpoint it
+contradicts, and a truncation below a checkpoint fails too.
+
+## Keeping the assumptions
+
+A verdict is only as good as its graph, so the graph is kept too. `causal_decision.assumptions`
+stores a causal model as a chain of immutable, content-addressed versions — the kernel's
+`CausalGraph`, each edge with its origin and review status, plus the assumptions a graph cannot
+state (no interference, consistency, positivity, measurement, timing).
+
+```python
+from causal_decision.assumptions import EdgeReview, create, impact, review, revise
+
+v1 = create("incident-remediation", "load -> playbook; load -> minutes; playbook -> minutes",
+            author_id="alice", created_at=now, why="from the incident review")
+v2 = revise(v1, graph=v1_text + "; backlog -> playbook; backlog -> minutes [origin=llm_prior]",
+            author_id="agent-7", created_at=now, why="proposed confounder")
+v3 = review(v2, [EdgeReview(edge="backlog -> minutes", status="approved", reason="in the RCA")],
+            reviewer_id="carol", created_at=now)      # agent-7 could not have done this
+impact(v1, v3, query).status                            # invalidated: {load} no longer suffices
+```
+
+- **A revision cannot approve an edge**, and **nobody reviews an edge they introduced** — each
+  version carries who added every edge, so the rule holds however many versions later.
+- **`impact(old, new, query)`** asks the question a revision raises: if the new graph is true,
+  is the estimate a verdict used still an estimate of the effect it claimed? For back-door, the
+  *old* adjustment set must be valid under the *new* graph. Other strategies hold only on an
+  identical certificate and are otherwise `unverified`.
+- The A0 gate (`benchmarks/a0-assumption-impact`) checks `impact` on 800 revised graphs against an
+  oracle that shares no code with the kernel: exact linear-Gaussian population algebra on the new
+  graph. The first run failed its class-balance floor and is kept beside the passing one.
+
 ## Evidence
 
 The D0 gate is pre-registered in `benchmarks/d0-decision-policy/PRE-REGISTRATION.md`, with bars
@@ -162,9 +226,11 @@ written up in the pre-registration and the failing behaviours are pinned by test
 - **Choose your thresholds.** Whether a 5-minute effect is worth acting on is a judgement for
   whoever owns the operation. The gate holds the procedure to the policy it was given; it cannot
   tell you the policy is right.
-- **Calibrate.** Whether actions taken under `act` produced the predicted effect needs the
-  outcome-capture loop, which is not built. Until it is, treat the verdicts as a discipline, not as
-  a measured success rate.
+- **Claim to be calibrated.** The outcome-capture loop exists (`causal_decision.outcome`: a
+  decision seals what would have to be re-measured, `compare` scores the later window once, and
+  `report` aggregates), but no follow-up has been taken on a real operation, so every rate is
+  null. Until a body of follow-ups exists, treat the verdicts as a discipline, not as a measured
+  success rate.
 - **Cost-benefit arithmetic**, multi-arm choice, or sequential/anytime-valid monitoring. Not yet.
 
 Licence: Apache-2.0.

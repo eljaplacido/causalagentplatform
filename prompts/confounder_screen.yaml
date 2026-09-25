@@ -16,7 +16,7 @@ context: |
   surfaced before any edge is approved. If confounders are unmeasured, this must
   be explicitly stated — never assume they are absent.
 
-skill: |
+skill_prompt: |
   Screen for potential confounders in this causal relationship:
 
   Treatment variable: {{treatment}}

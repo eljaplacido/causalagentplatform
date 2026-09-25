@@ -423,14 +423,15 @@ async def node_plan_ahead(state: dict[str, Any]) -> dict[str, Any]:
 
     if result.committed_action:
         flags.append("plan_ahead_committed")
-        # Replace the recommendations list with just the committed action
-        updated_recommendations = [result.committed_action]
-
-        # Add lookahead outcomes as additional recommendations marked SIMULATED
-        for outcome in result.lookahead_outcomes:
-            if outcome.step_index == 0:
-                continue  # Skip the committed one
-
+        # The recommendations list is set to [committed_action] at the end of
+        # this function, on the shared path.
+        #
+        # Surfacing the remaining lookahead outcomes as additional
+        # SIMULATED_NOT_EXECUTED recommendations was drafted here and never
+        # written: what stood here was a loop whose only statement was
+        # `continue`. Removed rather than left to read as implemented. The
+        # outcomes are still on `result.lookahead_outcomes` for whoever builds
+        # it, and the trace below reports how many were simulated.
     else:
         flags.append("plan_ahead_escalation")
         # No action could be committed — escalate to human

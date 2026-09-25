@@ -140,7 +140,33 @@ def check_register(reg: dict) -> tuple[dict[str, dict], int, int]:
         pin = gone.get("pinned_by", "")
         if not pin or not (ROOT / pin).exists():
             fail(f"{gid}: left the list but its pinned_by test {pin!r} does not exist")
+        check_fixed_in(gid, str(gone.get("fixed_in", "")))
     return by_id, citations, drifted
+
+
+HEX = re.compile(r"^[0-9a-f]{7,40}\b")
+
+
+def check_fixed_in(gid: str, fixed_in: str) -> None:
+    """Where an entry left the list must be findable: a commit that exists, or a pointer.
+
+    Nine entries once sat at "PENDING" for days after their fixes were committed, which
+    made "left the list" a claim nothing could check.
+    """
+    if not fixed_in.strip() or fixed_in.strip().upper() == "PENDING":
+        fail(f"{gid}: fixed_in is {fixed_in!r} -- name the commit that fixed it")
+        return
+    hit = HEX.match(fixed_in)
+    if hit is None:
+        return  # a described pointer, e.g. "the backend rewire (git log -- <path>)"
+    probe = subprocess.run(
+        ["git", "cat-file", "-e", f"{hit.group(0)}^{{commit}}"],
+        cwd=ROOT,
+        capture_output=True,
+        check=False,
+    )
+    if probe.returncode != 0:
+        fail(f"{gid}: fixed_in names commit {hit.group(0)}, which this repository does not have")
 
 
 ROW = re.compile(r"^\|(.+)\|\s*$")

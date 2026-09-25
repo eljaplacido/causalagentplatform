@@ -30,12 +30,8 @@ import { PersonaSelector } from "@/components/shared/PersonaSelector";
 import { AuditLogPanel } from "@/components/shared/AuditLogPanel";
 import { FragmentCard } from "@/components/graph/FragmentCard";
 import { platformApi, semanticApi, governanceApi } from "@/lib/api";
-import type {
-  ConnectorHealthResult,
-  DriftAlert,
-  AuditEntry,
-} from "@/lib/types";
-import type { FragmentCardData } from "@/components/graph/FragmentCard";
+import { toAuditLogRow, toFragmentCardData } from "@/lib/mappers";
+import type { ConnectorHealthResult, DriftAlert } from "@/lib/types";
 
 // ─── Mappers (snake_case backend → camelCase frontend types) ──────────────────
 
@@ -82,43 +78,6 @@ function mapDriftAlert(raw: {
     message: raw.message,
     detectedAt: raw.detected_at,
     affectedFragmentIds: raw.affected_fragment_ids,
-  };
-}
-
-function mapFragment(raw: Record<string, unknown>): FragmentCardData {
-  return {
-    id: String(raw["id"] ?? ""),
-    name: String(raw["name"] ?? ""),
-    domain: String(raw["domain"] ?? ""),
-    description: String(raw["description"] ?? ""),
-    edgeCount: Number(raw["edge_count"] ?? 0),
-    usageCount: Number(raw["usage_count"] ?? 0),
-    version: String(raw["version"] ?? "1.0.0"),
-    approvalStatus: String(raw["approval_status"] ?? "DRAFT") as FragmentCardData["approvalStatus"],
-    guardianVerdict: String(raw["guardian_verdict"] ?? "PENDING") as FragmentCardData["guardianVerdict"],
-    tags: Array.isArray(raw["tags"]) ? (raw["tags"] as string[]) : [],
-    createdAt: String(raw["created_at"] ?? new Date().toISOString()),
-    approvedAt: raw["approved_at"] ? String(raw["approved_at"]) : undefined,
-    policyRulesCited: Array.isArray(raw["policy_rules_cited"])
-      ? (raw["policy_rules_cited"] as string[])
-      : undefined,
-  };
-}
-
-function mapAuditEntry(raw: Record<string, unknown>): AuditEntry {
-  return {
-    id: String(raw["id"] ?? ""),
-    timestamp: String(raw["created_at"] ?? raw["timestamp"] ?? new Date().toISOString()),
-    agent: String(raw["agent_id"] ?? raw["agent"] ?? "GuardianAgent"),
-    action: String(raw["payload_hash"]
-      ? `Verdict: ${raw["guardian_verdict"]} — session ${raw["session_id"] ?? "unknown"}`
-      : raw["action"] ?? "Audit entry"),
-    verdict: String(raw["guardian_verdict"] ?? raw["verdict"] ?? "PENDING") as AuditEntry["verdict"],
-    policyRulesCited: Array.isArray(raw["policy_rules_cited"])
-      ? (raw["policy_rules_cited"] as string[])
-      : [],
-    payloadHash: raw["payload_hash"] ? String(raw["payload_hash"]) : undefined,
-    actorId: raw["actor_id"] ? String(raw["actor_id"]) : undefined,
   };
 }
 
@@ -350,8 +309,8 @@ export default function EngineerPage() {
   const fragmentsQuery = useQuery({
     queryKey: ["semantic-fragments"],
     queryFn: async () => {
-      const raw = await semanticApi.fragments() as Record<string, unknown>[];
-      return raw.map(mapFragment);
+      const raw = await semanticApi.fragments();
+      return raw.map(toFragmentCardData);
     },
   });
 
@@ -367,8 +326,8 @@ export default function EngineerPage() {
   const auditQuery = useQuery({
     queryKey: ["governance-audit-log"],
     queryFn: async () => {
-      const raw = await governanceApi.auditLog({ limit: 100 }) as Record<string, unknown>[];
-      return raw.map(mapAuditEntry);
+      const page = await governanceApi.auditLog({ page_size: 100 });
+      return page.entries.map(toAuditLogRow);
     },
   });
 
@@ -393,12 +352,10 @@ export default function EngineerPage() {
     });
   }
 
-  // Filter audit entries by selected fragment (match fragment id in session context)
+  // Filter audit entries by selected fragment: the entries whose subject it is
+  // (audit_log.subject_id, written when a verdict or decision is about it).
   const auditEntries = selectedFragmentId
-    ? allAuditEntries.filter((e) =>
-        e.action.toLowerCase().includes(selectedFragmentId.toLowerCase()) ||
-        e.id.includes(selectedFragmentId)
-      )
+    ? allAuditEntries.filter((e) => e.subjectId === selectedFragmentId)
     : allAuditEntries.slice(0, 20);
 
   const tabs: { id: ActiveTab; label: string; icon: React.ReactNode; badge?: number }[] = [
@@ -698,8 +655,6 @@ export default function EngineerPage() {
                               ? "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300"
                               : frag.approvalStatus === "DEPRECATED"
                               ? "bg-zinc-100 text-zinc-500 dark:bg-zinc-900 dark:text-zinc-500"
-                              : frag.approvalStatus === "UNDER_REVIEW"
-                              ? "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300"
                               : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                           )}
                         >

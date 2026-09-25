@@ -1,0 +1,101 @@
+{
+  "suite": "T7",
+  "prereg_sha256": "sha256:584e537ab3c0a9989bfa46914ec6a8a2f77f7c05829cea830510b8bd3b5dde05",
+  "prereg_version": 2,
+  "git": "797eb9083dc386e75d262c0571088a2e4d12bbae",
+  "designs": [
+    {
+      "id": "many_clusters",
+      "reps": 3000,
+      "results": 3000,
+      "mean_error": 0.0008511670757182264,
+      "mcse": 0.0014482172707460958,
+      "bias_in_mcse": 0.5877343772317535,
+      "coverage": 0.9406666666666667,
+      "mean_icc": 0.09975559585787006,
+      "first_failure": ""
+    },
+    {
+      "id": "moderate",
+      "reps": 3000,
+      "results": 3000,
+      "mean_error": -0.004754564449624955,
+      "mcse": 0.003272382890311096,
+      "bias_in_mcse": 1.4529364713714634,
+      "coverage": 0.9443333333333334,
+      "mean_icc": 0.29587944012310685,
+      "first_failure": ""
+    },
+    {
+      "id": "few_clusters",
+      "reps": 3000,
+      "results": 3000,
+      "mean_error": -0.0018526250307714094,
+      "mcse": 0.004604833539648386,
+      "bias_in_mcse": 0.40232182440906894,
+      "coverage": 0.945,
+      "mean_icc": 0.2945387107388905,
+      "first_failure": ""
+    },
+    {
+      "id": "null_effect",
+      "reps": 3000,
+      "results": 3000,
+      "mean_error": 0.0010202307455004203,
+      "mcse": 0.0032338364787339057,
+      "bias_in_mcse": 0.31548618868318773,
+      "coverage": 0.9503333333333334,
+      "mean_icc": 0.2971535081092166,
+      "first_failure": ""
+    },
+    {
+      "id": "size_dependent",
+      "reps": 3000,
+      "results": 3000,
+      "mean_error": -0.03141998511114129,
+      "mcse": 0.0059724803408555144,
+      "bias_in_mcse": 5.260793392019873,
+      "coverage": 0.8793333333333333,
+      "mean_icc": 0.2529864331320337,
+      "first_failure": ""
+    }
+  ],
+  "refusals": {
+    "varies_within_cluster": "refusal:DESIGN_CHECK_FAILED",
+    "too_few_clusters": "refusal:LOW_N",
+    "not_randomized": "refusal:INVALID_INPUT"
+  },
+  "seeded_defects_caught": {
+    "cluster_weighted_estimate": true,
+    "unit_level_se": true
+  },
+  "seeded_defect_designs": {
+    "cluster_weighted_estimate": {
+      "id": "size_dependent",
+      "reps": 3000,
+      "results": 3000,
+      "mean_error": -0.3897297720235398,
+      "mcse": 0.005873360532591688,
+      "bias_in_mcse": 66.3554995238079,
+      "coverage": 0.7063333333333334,
+      "mean_icc": 0.2529864331320337,
+      "first_failure": ""
+    },
+    "unit_level_se": {
+      "id": "moderate",
+      "reps": 3000,
+      "results": 3000,
+      "mean_error": -0.004754564449624955,
+      "mcse": 0.003272382890311096,
+      "bias_in_mcse": 1.4529364713714634,
+      "coverage": 0.37133333333333335,
+      "mean_icc": 0.29587944012310685,
+      "first_failure": ""
+    }
+  },
+  "failures": [
+    "size_dependent: bias -0.0314 is 5.3 MCSE",
+    "size_dependent: coverage 0.879 outside [0.93, 0.97]"
+  ],
+  "passed": false
+}

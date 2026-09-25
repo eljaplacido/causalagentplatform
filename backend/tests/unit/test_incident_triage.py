@@ -339,3 +339,35 @@ async def test_intervention_estimate_is_not_confidence_only(db_engine: object) -
         "Investigate and mitigate the suspected causes path" in action
         for action in ranked_actions
     )
+
+
+@pytest.mark.parametrize(
+    "description",
+    ["never seen this before", "a total outage in eu-west", "cascading, then silence"],
+)
+async def test_each_chaotic_keyword_is_seen_on_its_own(description: str) -> None:
+    """The old check split on whitespace, so the two-word keywords could never match
+    and punctuation hid the single ones; the test above passed only because its
+    sentence also contained a bare "cascading"."""
+    agent = IncidentTriageAgent()
+    out = await agent._skill_cynefin_classify({"description": description, "signals": {}})
+    assert out["domain"] is CynefinDomain.CHAOTIC
+
+
+async def test_an_incident_no_keyword_describes_is_disorder_not_a_guess() -> None:
+    """It used to be COMPLEX with no active assumptions and COMPLICATED otherwise -- a
+    confident label for 'nothing matched', on an external corpus nearly always wrong."""
+    agent = IncidentTriageAgent()
+    for signals in ({}, {"active_assumptions": 3}):
+        out = await agent._skill_cynefin_classify(
+            {"description": "checkout feels slow for some users", "signals": signals}
+        )
+        assert out["domain"] is CynefinDomain.DISORDER
+        assert out["confidence"] == 0.0
+
+
+async def test_a_disorder_incident_goes_to_a_person_without_analysis() -> None:
+    agent = IncidentTriageAgent()
+    result = await agent.process(make_incident_state(description="checkout feels slow"))
+    assert result.requires_human_review is True
+    assert "disorder_domain" in result.flags

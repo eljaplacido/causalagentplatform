@@ -16,7 +16,7 @@ context: |
   Escalation must route to a human reviewer, never to another agent.
   All verdicts are immutable once written to the audit trail.
 
-skill: |
+skill_prompt: |
   Evaluate the following action against platform governance policies:
 
   Action payload:

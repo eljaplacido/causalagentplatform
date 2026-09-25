@@ -63,11 +63,49 @@ def ddl_statements(ddl: str) -> list[str]:
     how a schema change can fail with "near 'the': syntax error" and take a while to
     place. Comments are stripped first, and the split is on the statement terminator
     at the end of a line.
+
+    A trigger body is the other place a ``;`` is not a terminator: SQLite's
+    ``CREATE TRIGGER ... BEGIN SELECT RAISE(...); END;`` carries one inside the
+    block. Splitting naively yields two fragments, neither of which parses, so
+    a schema that declares triggers would fail to build -- or, worse, be
+    dropped quietly by a caller that tolerates errors. Inside a trigger, only a
+    line ending in ``END;`` terminates the statement.
     """
-    stripped = "\n".join(
+    stripped = [
         line for line in ddl.splitlines() if not line.lstrip().startswith("--")
-    )
-    return [stmt.strip() for stmt in stripped.split(";") if stmt.strip()]
+    ]
+
+    statements: list[str] = []
+    buffer: list[str] = []
+    in_trigger = False
+
+    for line in stripped:
+        buffer.append(line)
+        text = line.strip()
+        upper = text.upper()
+
+        if not in_trigger and upper.startswith("CREATE TRIGGER"):
+            in_trigger = True
+
+        if in_trigger:
+            if upper.endswith("END;"):
+                statements.append("\n".join(buffer).strip().rstrip(";").strip())
+                buffer = []
+                in_trigger = False
+            continue
+
+        while ";" in text:
+            head, _, text = text.partition(";")
+            buffer[-1] = head
+            candidate = "\n".join(buffer).strip()
+            if candidate:
+                statements.append(candidate)
+            buffer = [text]
+
+    tail = "\n".join(buffer).strip().rstrip(";").strip()
+    if tail:
+        statements.append(tail)
+    return statements
 
 
 SQLITE_DDL = """
@@ -103,6 +141,20 @@ CREATE TABLE IF NOT EXISTS decision_records (
     recorded_at         TEXT NOT NULL,
     record              TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS decision_followups (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    entry_digest        TEXT NOT NULL,
+    decision_digest     TEXT NOT NULL,
+    kind                TEXT NOT NULL CHECK (kind IN ('plan', 'realization')),
+    decidable           INTEGER,
+    created_at          TEXT NOT NULL,
+    payload             TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_decision_followups_entry
+    ON decision_followups (entry_digest, id);
+-- One plan and one realization per decision (005_one_followup_per_decision.sql).
+CREATE UNIQUE INDEX IF NOT EXISTS ux_decision_followups_one_per_kind
+    ON decision_followups (entry_digest, kind);
 CREATE TABLE IF NOT EXISTS verdict_consumption (
     verdict_id          TEXT PRIMARY KEY
         REFERENCES audit_log(id),
@@ -179,7 +231,9 @@ CREATE TABLE IF NOT EXISTS graph_fragments (
     created_by          TEXT NOT NULL,
     created_at          TEXT NOT NULL,
     approved_at         TEXT,
-    approved_by         TEXT
+    approved_by         TEXT,
+    -- 006_graph_fragment_lineage.sql: approval and rejection append to it.
+    lineage             TEXT NOT NULL DEFAULT '[]'
 );
 CREATE TABLE IF NOT EXISTS interventions (
     id                      TEXT PRIMARY KEY,
@@ -225,6 +279,90 @@ CREATE TABLE IF NOT EXISTS incidents (
 );
 CREATE INDEX IF NOT EXISTS ix_incidents_created_at ON incidents (created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_incidents_status ON incidents (status);
+
+-- audit_log is append-only. 001_initial.sql enforces this in PostgreSQL with
+-- fn_audit_log_no_mutation; these are the SQLite equivalents, added 2026-09-24.
+-- Without them the invariant held in production and not in any test: the
+-- guardian suite's UPDATE and DELETE cases ran against a store that allowed
+-- both, and passed because neither re-read the row afterwards.
+-- decision_records and decision_followups are append-only too, and were
+-- enforced only by 003/004's PostgreSQL triggers before 2026-09-24. A record of
+-- what was decided is worth nothing if the decider can revise it afterwards, and
+-- a calibration row is worth nothing if a disappointing one can be deleted.
+CREATE TRIGGER IF NOT EXISTS tg_decision_records_no_update
+BEFORE UPDATE ON decision_records
+BEGIN
+    SELECT RAISE(ABORT, 'decision_records is append-only: UPDATE is not permitted');
+END;
+CREATE TRIGGER IF NOT EXISTS tg_decision_records_no_delete
+BEFORE DELETE ON decision_records
+BEGIN
+    SELECT RAISE(ABORT, 'decision_records is append-only: DELETE is not permitted');
+END;
+CREATE TRIGGER IF NOT EXISTS tg_decision_followups_no_update
+BEFORE UPDATE ON decision_followups
+BEGIN
+    SELECT RAISE(ABORT, 'decision_followups is append-only: UPDATE is not permitted');
+END;
+CREATE TRIGGER IF NOT EXISTS tg_decision_followups_no_delete
+BEFORE DELETE ON decision_followups
+BEGIN
+    SELECT RAISE(ABORT, 'decision_followups is append-only: DELETE is not permitted');
+END;
+-- The assumption registry (007_causal_models.sql), append-only like the chain.
+CREATE TABLE IF NOT EXISTS causal_model_versions (
+    digest              TEXT PRIMARY KEY,
+    name                TEXT NOT NULL,
+    version             INTEGER NOT NULL CHECK (version >= 1),
+    parent_digest       TEXT REFERENCES causal_model_versions(digest),
+    author_id           TEXT NOT NULL,
+    created_at          TEXT NOT NULL,
+    record              TEXT NOT NULL,
+    UNIQUE (name, version)
+);
+CREATE TABLE IF NOT EXISTS decision_model_refs (
+    entry_digest        TEXT PRIMARY KEY,
+    model_name          TEXT NOT NULL,
+    model_version       INTEGER NOT NULL,
+    model_digest        TEXT NOT NULL REFERENCES causal_model_versions(digest),
+    verdict             TEXT NOT NULL,
+    action              TEXT NOT NULL,
+    query               TEXT NOT NULL,
+    unmeasured          TEXT NOT NULL DEFAULT '[]',
+    recorded_at         TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_decision_model_refs_model
+    ON decision_model_refs (model_name, model_version);
+CREATE TRIGGER IF NOT EXISTS tg_causal_model_versions_no_update
+BEFORE UPDATE ON causal_model_versions
+BEGIN
+    SELECT RAISE(ABORT, 'causal_model_versions is append-only: UPDATE is not permitted');
+END;
+CREATE TRIGGER IF NOT EXISTS tg_causal_model_versions_no_delete
+BEFORE DELETE ON causal_model_versions
+BEGIN
+    SELECT RAISE(ABORT, 'causal_model_versions is append-only: DELETE is not permitted');
+END;
+CREATE TRIGGER IF NOT EXISTS tg_decision_model_refs_no_update
+BEFORE UPDATE ON decision_model_refs
+BEGIN
+    SELECT RAISE(ABORT, 'decision_model_refs is append-only: UPDATE is not permitted');
+END;
+CREATE TRIGGER IF NOT EXISTS tg_decision_model_refs_no_delete
+BEFORE DELETE ON decision_model_refs
+BEGIN
+    SELECT RAISE(ABORT, 'decision_model_refs is append-only: DELETE is not permitted');
+END;
+CREATE TRIGGER IF NOT EXISTS tg_audit_log_no_update
+BEFORE UPDATE ON audit_log
+BEGIN
+    SELECT RAISE(ABORT, 'audit_log is append-only: UPDATE operations are forbidden');
+END;
+CREATE TRIGGER IF NOT EXISTS tg_audit_log_no_delete
+BEFORE DELETE ON audit_log
+BEGIN
+    SELECT RAISE(ABORT, 'audit_log is append-only: DELETE operations are forbidden');
+END;
 """
 
 

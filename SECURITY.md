@@ -49,10 +49,12 @@ These are best-effort targets, not contractual commitments:
 In scope:
 - The backend service (`backend/src/`) and its REST + MCP surfaces
 - The Guardian policy engine and audit trail integrity
-- The MCP server (`backend/mcp_server/`) and its tool wrappers
-- The frontend service worker and any code that handles auth tokens
-- Build / packaging configuration (`pyproject.toml`, `package.json`, `Dockerfile`)
-- Documented deployment paths (Docker Compose dev stack, Cloud Run prod stack)
+- The legacy MCP server (`backend/mcp_server/`, deprecated but still shipped) and its tool wrappers
+- The frontend (`frontend/`) and any code that handles auth tokens
+- The published packages under `packages/` (`causal-core`, `causal-decision`, `causal-mcp`)
+- Build / packaging configuration (`pyproject.toml`, `package.json`, the `Dockerfile`s)
+- The Docker Compose dev stack (`docker-compose.yml`). The repository contains no production
+  deployment
 
 Out of scope (please do not report):
 - Issues that only affect the local-dev auth bypass (`DEV_AUTH_BYPASS=true`)
@@ -60,12 +62,13 @@ Out of scope (please do not report):
   environment
 - Denial-of-service through resource exhaustion against `localhost` deployments
 - Third-party library CVEs without a demonstrated exploitation path in this
-  codebase — please report those upstream first; we will pick them up via
-  dependabot or equivalent
+  codebase — please report those upstream first. No automated dependency
+  scanning runs in CI yet (see `security-scanning-not-in-ci` in
+  `conformance/declared_not_implemented.json`), so a report that one of our
+  pinned dependencies is affected is welcome
 - Missing security headers on pages that do not handle authenticated state
-- Issues in research / scratch notes at the repo root (e.g.
-  `World Models for Agents...md`) that are not part of the deployable
-  product surface
+- Issues in the research notes under `docs/research/`, which are background
+  reading rather than part of the deployable product surface
 
 ## Coordinated disclosure
 
@@ -79,13 +82,61 @@ We follow standard coordinated disclosure: once a fix is available, we will:
 Public disclosure should not occur before a patched release is available,
 unless 90 days have elapsed without a fix.
 
+## What is enforced today
+
+Read against the code 2026-09-25. The target security design (RBAC matrix,
+secrets management, privacy controls, scanning) is in
+[`docs/CYBERSECURITY.md`](docs/CYBERSECURITY.md), which marks what is not built.
+
+**Authentication.** `FirebaseAuthMiddleware` (`backend/src/middleware/auth.py`)
+requires a Firebase ID token (`verify_id_token`, revocation checked) on every
+route except `/health`, `/docs`, `/redoc`, `/openapi.json` and CORS preflight. A
+missing or invalid token gets 401.
+
+**Local-dev bypass.** When `ENV=local` *and* `DEV_AUTH_BYPASS=true`, the fixed
+token `dev-local-token` is accepted as a mock user holding every role
+(`governance_officer`, `platform_engineer`, `analyst`, `sre`). Any other
+combination falls through to Firebase verification.
+
+**Roles.** Roles are read from the token's `roles` (list) or `role` (string)
+custom claim. Two role sets are checked:
+
+- `GOVERNANCE_ROLES` = `governance_officer`, `platform_engineer`
+  (`backend/src/api/governance.py`). Needed for `/api/governance/approve/{id}`,
+  `/reject/{id}`, `/review-queue` and `/audit-log`, and for reviewing a causal
+  model's edges, `POST /api/v1/models/{name}/reviews` (`backend/src/api/models.py`),
+  where a reviewer is also refused on edges they introduced.
+- `DECISION_ROLES` = `governance_officer`, `platform_engineer`, `sre`
+  (`backend/src/api/interventions.py`). Needed for
+  `/api/v1/interventions/{id}/approve` and `/reject`.
+
+Every other route, including several that write (registering or revising a
+model, `POST /api/v1/decisions`, follow-ups), needs only a valid token.
+That gap is registered as `rbac-matrix-and-domain-isolation`.
+
+**Guardian verdicts.** `GovernanceAgent` (`backend/src/agents/governance.py`)
+refuses to start if `GUARDIAN_BYPASS_MODE` is set. The verdicts it issues are
+HMAC-signed with `GUARDIAN_SIGNING_KEY`; without that variable, a per-process key
+is generated and the event is logged at CRITICAL. Each verdict names the object
+it was issued for and can be spent once (`verdict_consumption`).
+
 ## Security model snapshot
 
 This platform makes governance and audit a first-class concern. Some things to
 keep in mind when evaluating issues:
 
-- **Every semantic-layer write goes through Guardian** (`src/agents/governance.py`).
-  Bypasses of `guardian_check` are critical-severity by default.
+- **Every write to the semantic-layer tables goes through a Guardian verdict.**
+  In the backend (`backend/src`), `causal_entities`, `causal_edges`,
+  `graph_fragments` and `assumptions` are written only by `SemanticLayerRegistry`
+  (`backend/src/semantic_layer/registry.py`), which refuses a verdict that is
+  missing, not APPROVED (REJECTED for a rejection), unsigned, issued for another
+  object, or already spent. The dev seeding script `backend/scripts/seed_data.py`
+  inserts directly; it is run by hand against a local database, and no request
+  path reaches it. A path that
+  writes those tables without that check, or that obtains a verdict it should
+  not, is critical-severity by default. The claim covers those tables only:
+  other tables, such as `audit_log` itself or `interventions`, are written by
+  their own endpoints.
 - **Audit log is append-only**. Any path that allows deletion or rewriting of
   `audit_log` entries is critical-severity.
 - **`EpistemicState`** is the single in-flight contract. Code that mutates it

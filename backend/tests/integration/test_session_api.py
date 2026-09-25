@@ -144,8 +144,8 @@ async def test_p2_incident_runs_triage_pipeline(auth_client: AsyncClient) -> Non
     Expected: response 200, at least one recommendation, draft_explanation
               populated, session_id set.
 
-    The domain will be COMPLEX (fresh state has 0 assumptions, which triggers
-    the COMPLEX branch of the Cynefin heuristic).
+    The title's keywords (deployment, cpu, memory, timeout, latency) classify it
+    COMPLICATED. A title with no keyword at all would be DISORDER and go to a person.
     """
     response = await auth_client.post(
         "/api/v1/session/incident",

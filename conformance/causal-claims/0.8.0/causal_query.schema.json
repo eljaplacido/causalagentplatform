@@ -1,0 +1,237 @@
+{
+  "$defs": {
+    "Design": {
+      "enum": [
+        "observational",
+        "randomized",
+        "difference_in_differences"
+      ],
+      "title": "Design",
+      "type": "string"
+    },
+    "Rung": {
+      "description": "Pearl's ladder. A query must declare which rung it asks about.",
+      "enum": [
+        "association",
+        "intervention",
+        "counterfactual"
+      ],
+      "title": "Rung",
+      "type": "string"
+    }
+  },
+  "$id": "urn:causalplatform:claims:0.8.0:causal_query",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "adjust_for": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "A user-chosen adjustment set. It is validated against the graph and refused if it is not a valid adjustment set.",
+      "title": "Adjust For"
+    },
+    "cluster": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Randomized designs only: the column identifying the unit of randomization (service, region, tenant) when outcomes are measured on finer units (requests, users). Standard errors are then cluster-robust; treatment must be constant within a cluster.",
+      "title": "Cluster"
+    },
+    "design": {
+      "$ref": "#/$defs/Design",
+      "default": "observational"
+    },
+    "estimand": {
+      "default": "ate",
+      "description": "ate: average effect over the population. att: average effect on the treated units (binary treatment only; needs overlap in one direction only).",
+      "enum": [
+        "ate",
+        "att"
+      ],
+      "title": "Estimand",
+      "type": "string"
+    },
+    "expected_treated_share": {
+      "anyOf": [
+        {
+          "exclusiveMaximum": 1,
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Expected Treated Share"
+    },
+    "horizon": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Horizon"
+    },
+    "instruments": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Instruments"
+    },
+    "negative_control_outcomes": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Negative Control Outcomes",
+      "type": "array"
+    },
+    "outcome": {
+      "title": "Outcome",
+      "type": "string"
+    },
+    "outcome_proxies": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Outcome Proxies",
+      "type": "array"
+    },
+    "population": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Population"
+    },
+    "rung": {
+      "$ref": "#/$defs/Rung",
+      "default": "intervention"
+    },
+    "segment_by": {
+      "default": [],
+      "description": "Discrete, pre-treatment columns to estimate the effect within, declared before the answer is seen. The kernel does not search for subgroups: finding the subgroup with the largest effect is a different activity with different statistics, and reporting it as if it had been declared is how a team fools itself.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Segment By",
+      "type": "array"
+    },
+    "sequence": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Randomized designs only: the column giving each unit's arrival order. When set, the effect is reported as an anytime-valid confidence sequence at every look, so the analysis may be read -- and stopped -- as often as wanted without inflating its error rate. Needs `expected_treated_share`, the known allocation probability.",
+      "title": "Sequence"
+    },
+    "time": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Panel designs only: the column holding the period, as an integer or an ordered value. Periods are the distinct values in sorted order.",
+      "title": "Time"
+    },
+    "treatment": {
+      "title": "Treatment",
+      "type": "string"
+    },
+    "treatment_levels": {
+      "anyOf": [
+        {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "(control, treated). Defaults to (0, 1) for a binary treatment; for a continuous treatment the effect is reported per unit unless levels are given.",
+      "title": "Treatment Levels"
+    },
+    "treatment_proxies": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Treatment Proxies",
+      "type": "array"
+    },
+    "unit": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Panel designs only: the column identifying the unit observed repeatedly.",
+      "title": "Unit"
+    }
+  },
+  "required": [
+    "treatment",
+    "outcome"
+  ],
+  "title": "CausalQuery",
+  "type": "object"
+}

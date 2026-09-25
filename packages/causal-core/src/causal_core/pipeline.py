@@ -13,7 +13,6 @@ unexpected exception is an apparatus failure that names the stage it happened in
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
-from importlib.metadata import PackageNotFoundError, version
 from typing import Any, TypeVar
 
 import numpy as np
@@ -22,8 +21,10 @@ from pydantic import ValidationError
 
 from causal_core import estimators as est_registry
 from causal_core import refute as refuters
+from causal_core._version import __version__
 from causal_core.canonical import data_digest, digest
 from causal_core.claims import build_claims
+from causal_core.cluster import analyze_cluster
 from causal_core.contract import (
     CONTRACT_VERSION,
     Abstention,
@@ -33,6 +34,7 @@ from causal_core.contract import (
     CausalGraph,
     CausalQuery,
     CausalResult,
+    Design,
     Diagnostics,
     EdgeStatus,
     IdentificationCertificate,
@@ -48,20 +50,21 @@ from causal_core.design import prepare
 from causal_core.estimators import Fit
 from causal_core.graph import Graph, GraphSyntaxError, as_causal_graph
 from causal_core.identification import (
+    ENGINE,
     IdentificationError,
     IdentificationInconsistency,
     InvalidAdjustmentSet,
     identify,
     missing_information,
 )
+from causal_core.panel import analyze_panel
+from causal_core.panel import certificate as panel_certificate
 from causal_core.refute import RefutationContext, holm
 from causal_core.segments import estimate_segments
 from causal_core.sensitivity import analyze_sensitivity
+from causal_core.sequential import analyze_sequential
 
-try:
-    CORE_VERSION = version("causal-core")
-except PackageNotFoundError:  # running from a source checkout
-    CORE_VERSION = "0.2.0.dev0+src"
+CORE_VERSION = __version__
 
 Outcome = CausalResult | Abstention | ApparatusFailure
 T = TypeVar("T")
@@ -326,6 +329,22 @@ def _analyze(
     refuted: list[str] = [g.edge_label(e) for e in spec.edges if e.status is EdgeStatus.refuted]
     if refuted:
         warnings.append(f"refuted edges were removed before analysis: {refuted}")
+
+    # Panel designs leave the graph-based path here: what identifies them (parallel
+    # trends, no anticipation) is not in the graph, so the certificate is tier C and
+    # the estimator is causal_core.panel's. The review checks above still applied.
+    if query.design is Design.difference_in_differences:
+        stage.name = "panel"
+        return analyze_panel(
+            frame,
+            query,
+            policy,
+            cert=panel_certificate(prov["graph_digest"], ENGINE),
+            unreviewed=unreviewed,
+            warnings=warnings,
+            prov=prov,
+            refuse=refuse,
+        )
     de_x = g.descendants({query.treatment})
     for nco in query.negative_control_outcomes:
         if nco in de_x:
@@ -366,6 +385,34 @@ def _analyze(
             q=query,
             cert=cert,
             diag=_frame_diagnostics(frame, query),
+        )
+
+    # A watched randomized stream: an anytime-valid confidence sequence at every
+    # look, from causal_core.sequential. Identification above still had to certify
+    # randomization; the sequential path refuses anything else.
+    if query.cluster is not None:
+        stage.name = "cluster"
+        return analyze_cluster(
+            frame,
+            query,
+            policy,
+            cert=cert,
+            unreviewed=unreviewed,
+            warnings=warnings,
+            prov=prov,
+            refuse=refuse,
+        )
+    if query.sequence is not None:
+        stage.name = "sequential"
+        return analyze_sequential(
+            frame,
+            query,
+            policy,
+            cert=cert,
+            unreviewed=unreviewed,
+            warnings=warnings,
+            prov=prov,
+            refuse=refuse,
         )
 
     # ── design ───────────────────────────────────────────────────────────────

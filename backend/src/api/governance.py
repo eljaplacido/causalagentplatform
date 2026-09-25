@@ -29,7 +29,7 @@ from sqlalchemy import text
 
 from src.agents.governance import GovernanceAgent
 from src.db.factory import CloudSqlFactory
-from src.exceptions import GuardianBlockedError, ObjectNotFoundError
+from src.exceptions import GuardianBlockedError, InvalidTransitionError, ObjectNotFoundError
 from src.middleware.auth import get_current_user, require_role
 from src.semantic_layer.models import (
     AuditEntry,
@@ -237,6 +237,8 @@ async def approve_object(
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except ObjectNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except InvalidTransitionError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -307,6 +309,8 @@ async def reject_object(
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except ObjectNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except InvalidTransitionError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 

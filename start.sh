@@ -12,9 +12,10 @@
 # Prerequisites:
 #   - Python 3.12+ with pip
 #   - Node.js 20+ with npm
-#   - ANTHROPIC_API_KEY set in backend/.env
 #
-# The backend uses SQLite for local dev (no Docker required).
+# The backend uses SQLite for local dev (ENV=local; no Docker required) and
+# listens on the same port as launch_backend.sh and the README (49234). No LLM
+# API key is needed: no code path calls an LLM today.
 # ─────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
@@ -23,6 +24,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$SCRIPT_DIR/backend"
 FRONTEND_DIR="$SCRIPT_DIR/frontend"
 BACKEND_ENV="$BACKEND_DIR/.env"
+BACKEND_PORT="${BACKEND_PORT:-49234}"
+# The frontend's built-in default is :8000; point it at the port used here.
+export NEXT_PUBLIC_API_BASE_URL="${NEXT_PUBLIC_API_BASE_URL:-http://localhost:$BACKEND_PORT}"
+export NEXT_PUBLIC_ENVIRONMENT="${NEXT_PUBLIC_ENVIRONMENT:-local}"
 
 # ── Colours ───────────────────────────────────────────────────────────────────
 
@@ -47,35 +52,28 @@ load_env() {
     info "Loaded env from $BACKEND_ENV"
   else
     warn "No backend/.env found — using shell environment"
-    warn "Copy backend/.env.example → backend/.env and set ANTHROPIC_API_KEY"
-  fi
-}
-
-# ── Check ANTHROPIC_API_KEY ───────────────────────────────────────────────────
-
-check_api_key() {
-  if [[ -z "${ANTHROPIC_API_KEY:-}" ]] || [[ "$ANTHROPIC_API_KEY" == "your-anthropic-api-key-here" ]]; then
-    warn "ANTHROPIC_API_KEY is not set or is placeholder."
-    warn "The AI pipeline will fail without a real key."
-    warn "Edit backend/.env and set ANTHROPIC_API_KEY=sk-ant-..."
+    warn "Copy backend/.env.example → backend/.env (ENV=local, DEV_AUTH_BYPASS=true)"
   fi
 }
 
 # ── Backend ───────────────────────────────────────────────────────────────────
 
 start_backend() {
-  info "Starting backend (FastAPI + LangGraph) on http://localhost:8000"
-  info "  ENV=local | DEV_AUTH_BYPASS=true | SQLite"
+  info "Starting backend (FastAPI + LangGraph) on http://localhost:$BACKEND_PORT"
+  info "  ENV=${ENV:-local} | DEV_AUTH_BYPASS=${DEV_AUTH_BYPASS:-true} | SQLite"
 
   cd "$BACKEND_DIR"
+  export ENV="${ENV:-local}" DEV_AUTH_BYPASS="${DEV_AUTH_BYPASS:-true}"
 
-  # Install if node_modules equivalent (site-packages) missing
-  if ! python -c "import fastapi" 2>/dev/null; then
-    info "Installing Python dependencies..."
-    pip install -e ".[dev]" --quiet
+  # Install into the backend venv if it is missing. The kernel and the
+  # decision layer are local packages the backend depends on.
+  if [[ ! -x .venv/bin/python ]] || ! .venv/bin/python -c "import fastapi, causal_core, causal_decision" 2>/dev/null; then
+    info "Installing Python dependencies into backend/.venv..."
+    [[ -x .venv/bin/python ]] || python3 -m venv .venv
+    .venv/bin/pip install --quiet -e ../packages/causal-core -e ../packages/causal-decision -e ".[dev]"
   fi
 
-  exec uvicorn src.api.main:app --reload --port 8000 --host 0.0.0.0
+  exec .venv/bin/uvicorn src.api.main:app --reload --port "$BACKEND_PORT" --host 127.0.0.1
 }
 
 # ── Frontend ──────────────────────────────────────────────────────────────────
@@ -86,8 +84,8 @@ start_frontend() {
   cd "$FRONTEND_DIR"
 
   if [[ ! -d "node_modules" ]]; then
-    info "Installing Node dependencies..."
-    npm install
+    info "Installing Node dependencies (npm workspaces, from the repo root)..."
+    (cd "$SCRIPT_DIR" && npm ci)
   fi
 
   exec npm run dev
@@ -98,12 +96,13 @@ start_frontend() {
 run_backend_tests() {
   info "Running backend unit + integration tests..."
   cd "$BACKEND_DIR"
-  python -m pytest tests/ -v --tb=short
+  .venv/bin/python -m pytest tests/ -q --tb=short
+  info "The full gate (every suite, ratchets, claim checks): bash .gnomon/ci.sh"
 }
 
 run_e2e_tests() {
   info "Running Playwright E2E tests..."
-  info "Ensure the backend is running on :8000 first."
+  info "Ensure the backend is running on :$BACKEND_PORT first."
   cd "$FRONTEND_DIR"
   npx playwright test
 }
@@ -111,7 +110,6 @@ run_e2e_tests() {
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 load_env
-check_api_key
 
 MODE="${1:-both}"
 
@@ -130,15 +128,15 @@ case "$MODE" in
     ;;
   both)
     info "Starting full stack in background processes..."
-    info "Backend  → http://localhost:8000"
+    info "Backend  → http://localhost:$BACKEND_PORT"
     info "Frontend → http://localhost:3000"
-    info "API docs → http://localhost:8000/docs"
+    info "API docs → http://localhost:$BACKEND_PORT/docs"
     info ""
     info "Press Ctrl+C to stop both."
     echo ""
 
     # Start backend in background
-    (cd "$BACKEND_DIR" && uvicorn src.api.main:app --reload --port 8000 --host 0.0.0.0 2>&1 | sed 's/^/[backend] /') &
+    (start_backend 2>&1 | sed 's/^/[backend] /') &
     BACKEND_PID=$!
 
     # Give backend 3s to start

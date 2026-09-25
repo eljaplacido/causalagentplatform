@@ -32,7 +32,8 @@ vi.mock("@/lib/api", async (importOriginal) => {
 });
 
 import GovernancePage from "../page";
-import { CausalApiError } from "@/lib/api";
+import { CausalApiError, type AuditLogResponse } from "@/lib/api";
+import type { AuditEntry, GuardianVerdict } from "@causalplatform/semantic-types";
 
 // ─── Backend-shaped fixtures ────────────────────────────────────────────────────
 
@@ -49,20 +50,28 @@ const backendQueueItem = {
   created_at: "2026-09-18T10:00:00Z",
 };
 
-function auditRow(id: string, actionType: string, verdict = "APPROVED") {
+// AuditEntry serialises camelCase (alias_generator=_camel); the AuditLogResponse
+// envelope around it is snake_case. Both exactly as the backend sends them.
+function auditRow(
+  id: string,
+  actionType: string,
+  verdict: GuardianVerdict = "APPROVED"
+): AuditEntry {
   return {
     id,
-    agent_id: "governance-agent-api",
-    action_type: actionType,
-    payload_hash: `sha256-${id}`,
-    guardian_verdict: verdict,
-    policy_rules_cited: [],
-    session_id: "api-check-dev-user-001",
-    created_at: "2026-09-18T10:05:00Z",
+    agentId: "governance-agent-api",
+    actionType,
+    payloadHash: `sha256-${id}`,
+    guardianVerdict: verdict,
+    policyRulesCited: [],
+    sessionId: "api-check-dev-user-001",
+    createdAt: "2026-09-18T10:05:00Z",
+    subjectId: null,
+    notes: null,
   };
 }
 
-function auditResponse(entries: ReturnType<typeof auditRow>[]) {
+function auditResponse(entries: AuditEntry[]): AuditLogResponse {
   return { entries, total: entries.length, page: 1, page_size: 100 };
 }
 

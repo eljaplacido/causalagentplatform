@@ -55,7 +55,7 @@ const STATUS_COLOURS: Record<DAGNode["approvalStatus"], string> = {
   DRAFT: "text-zinc-500",
   UNDER_REVIEW: "text-amber-600",
   APPROVED: "text-green-600",
-  REJECTED: "text-red-600",
+  DEPRECATED: "text-red-600",
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────

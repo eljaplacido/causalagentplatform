@@ -13,12 +13,19 @@ Decisions can be kept: ``causal_decision.ledger`` seals each one into a hash cha
 with the digests of the evidence it rested on and the approval that let it happen,
 so a past decision can be replayed and an edited one is detectable.
 
+And they can be scored: ``causal_decision.outcome`` records what would have to be
+re-run to find out whether a verdict held, and compares the prediction with the
+answer -- or records, with the kernel's own reason, that the later data can no
+longer say. An action applied to everybody leaves nothing to compare against, and
+that case is counted rather than quietly dropped.
+
 The verdict is a pure function of (outcome, request, policy), so a recorded decision
 can be replayed and disputed.
 """
 
 from __future__ import annotations
 
+from causal_decision._version import __version__
 from causal_decision.contract import (
     Check,
     Decision,
@@ -38,11 +45,20 @@ from causal_decision.ledger import (
     append,
     verify_chain,
 )
+from causal_decision.outcome import (
+    CalibrationReport,
+    FollowUp,
+    Realization,
+    compare,
+    plan,
+    report,
+)
 from causal_decision.policy import decide
 from causal_decision.render import explain
 
 __all__ = [
     "Approval",
+    "CalibrationReport",
     "ChainReport",
     "Check",
     "Decision",
@@ -52,11 +68,17 @@ __all__ = [
     "Evidence",
     "EvidenceRef",
     "ExperimentSpec",
+    "FollowUp",
+    "Realization",
     "RiskClass",
     "RiskRule",
     "Verdict",
+    "__version__",
     "append",
+    "compare",
     "decide",
     "explain",
+    "plan",
+    "report",
     "verify_chain",
 ]

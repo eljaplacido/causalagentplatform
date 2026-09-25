@@ -26,7 +26,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
-CONTRACT_VERSION = "0.4.0"
+CONTRACT_VERSION = "0.8.0"
 
 
 class _Model(BaseModel):
@@ -47,6 +47,10 @@ class Rung(StrEnum):
 class Design(StrEnum):
     observational = "observational"
     randomized = "randomized"
+    #: Panel data, staggered adoption of an absorbing binary treatment; needs
+    #: ``CausalQuery.unit`` and ``CausalQuery.time``. Identified by parallel trends and no
+    #: anticipation -- assumptions outside the graph, so tier C (see causal_core.panel).
+    difference_in_differences = "difference_in_differences"
 
 
 class EdgeOrigin(StrEnum):
@@ -85,6 +89,7 @@ class Strategy(StrEnum):
     iv = "iv"
     proximal = "proximal"
     id_general = "id_general"
+    difference_in_differences = "difference_in_differences"
 
 
 class Tier(StrEnum):
@@ -192,6 +197,28 @@ class CausalQuery(_Model):
         "subgroup with the largest effect is a different activity with different statistics, "
         "and reporting it as if it had been declared is how a team fools itself.",
     )
+    cluster: str | None = Field(
+        default=None,
+        description="Randomized designs only: the column identifying the unit of randomization "
+        "(service, region, tenant) when outcomes are measured on finer units (requests, users). "
+        "Standard errors are then cluster-robust; treatment must be constant within a cluster.",
+    )
+    sequence: str | None = Field(
+        default=None,
+        description="Randomized designs only: the column giving each unit's arrival order. When "
+        "set, the effect is reported as an anytime-valid confidence sequence at every look, so "
+        "the analysis may be read -- and stopped -- as often as wanted without inflating its "
+        "error rate. Needs `expected_treated_share`, the known allocation probability.",
+    )
+    unit: str | None = Field(
+        default=None,
+        description="Panel designs only: the column identifying the unit observed repeatedly.",
+    )
+    time: str | None = Field(
+        default=None,
+        description="Panel designs only: the column holding the period, as an integer or an "
+        "ordered value. Periods are the distinct values in sorted order.",
+    )
     population: str | None = None
     horizon: str | None = None
 
@@ -225,6 +252,38 @@ class AnalysisPolicy(_Model):
     sensitivity: bool = True
     require_approved_graph: bool = False
     max_ci_width: float | None = Field(default=None, gt=0)
+    pt_sensitivity_grid: tuple[float, ...] = Field(
+        default=(0.0, 0.5, 1.0, 1.5, 2.0),
+        description="Panel designs: multiples of the largest pre-adoption deviation at which to "
+        "report parallel-trends-robust intervals.",
+    )
+    pt_alpha_pre: float = Field(default=0.025, gt=0, lt=0.5)
+    pt_alpha_effect: float = Field(default=0.025, gt=0, lt=0.5)
+    max_cluster_size_cv: float = Field(
+        default=0.6,
+        gt=0,
+        description="Cluster-randomized designs: above this coefficient of variation of cluster "
+        "sizes, a few large clusters dominate the estimate and its interval under-covers "
+        "(T7 v2: 0.879 at CV 0.71); the analysis refuses.",
+    )
+    min_clusters_per_arm: int = Field(
+        default=5,
+        ge=2,
+        description="Cluster-randomized designs: fewer clusters than this in either arm and the "
+        "cluster-level variance cannot be estimated; the analysis refuses.",
+    )
+    cs_target_n: int = Field(
+        default=2000,
+        ge=10,
+        description="Sequential designs: the sample size the confidence sequence is tightest at.",
+    )
+    cs_look_every: int = Field(default=100, ge=1, description="Sequential designs: units per look.")
+    cs_burn_in: int = Field(
+        default=200,
+        ge=20,
+        description="Sequential designs: units before the first look. The sequence is asymptotic; "
+        "below this it is not reported.",
+    )
     seed: int = 0
 
 
@@ -318,6 +377,13 @@ class Diagnostics(_Model):
     propensity: PropensityDiagnostics | None = None
     balance: tuple[BalanceRow, ...] = ()
     srm_p_value: float | None = None
+    n_clusters: int | None = None
+    icc: float | None = Field(
+        default=None,
+        description="Cluster-randomized designs: estimated intra-cluster correlation of the "
+        "outcome within arms. With clusters of size m, units carry about 1/(1 + (m-1)·ICC) of "
+        "the information independent units would.",
+    )
     first_stage_f: float | None = None
     checks: tuple[DesignCheck, ...] = ()
 
@@ -331,6 +397,29 @@ class RefutationResult(_Model):
     detail: str = ""
 
 
+class TrendSensitivityRow(_Model):
+    m: float = Field(description="Post-adoption bias allowed, as a multiple of the largest "
+                     "pre-adoption deviation.")
+    lo: float
+    hi: float
+
+
+class ParallelTrendsSensitivity(_Model):
+    """How far parallel trends may fail before the conclusion changes (panel designs)."""
+
+    method: str
+    alpha_pre: float
+    alpha_effect: float
+    pre_bound: float = Field(description="Upper confidence bound on the largest absolute "
+                             "pre-adoption event-time effect.")
+    rows: tuple[TrendSensitivityRow, ...]
+    breakdown: float | None = Field(
+        default=None,
+        description="The largest multiple at which the interval still excludes zero. None when "
+        "it includes zero even with no violation allowed.",
+    )
+
+
 class Sensitivity(_Model):
     e_value: float | None = None
     e_value_ci: float | None = None
@@ -338,6 +427,7 @@ class Sensitivity(_Model):
     partial_r2_treatment: float | None = None
     robustness_value: float | None = None
     robustness_value_alpha: float | None = None
+    parallel_trends: ParallelTrendsSensitivity | None = None
 
 
 class TriangulationPair(_Model):
@@ -424,6 +514,42 @@ class Heterogeneity(_Model):
     segments_compared: int
 
 
+class EventTimeEffect(_Model):
+    """The effect ``event_time`` periods after adoption (negative: before it).
+
+    Pre-adoption event times are placebo estimates -- zero in expectation under parallel
+    trends -- and period ``-1`` is the base, zero by construction, so it is not reported.
+    """
+
+    event_time: int
+    estimate: EstimateRecord
+    cohorts: int = Field(description="How many adoption cohorts contribute to this event time.")
+
+
+class SequentialLook(_Model):
+    n: int
+    n_treated: int
+    estimate: float
+    lo: float
+    hi: float
+
+
+class SequentialSummary(_Model):
+    """An anytime-valid reading of a randomized stream: valid at every look, jointly."""
+
+    method: str
+    alpha: float
+    rho: float = Field(description="Mixture tuning, set from `cs_target_n`.")
+    target_n: int
+    looks: tuple[SequentialLook, ...]
+    first_above_zero: int | None = Field(
+        default=None, description="Units at the first look whose sequence lies wholly above zero."
+    )
+    first_below_zero: int | None = Field(
+        default=None, description="Units at the first look whose sequence lies wholly below zero."
+    )
+
+
 class CausalResult(_Model):
     kind: Literal["result"] = "result"
     status: ResultStatus
@@ -437,6 +563,16 @@ class CausalResult(_Model):
     triangulation: Triangulation | None = None
     segments: tuple[SegmentEffect, ...] = ()
     heterogeneity: Heterogeneity | None = None
+    sequential: SequentialSummary | None = Field(
+        default=None,
+        description="Sequential designs only: the confidence sequence at every look. `primary` "
+        "carries the last look, with the sequence as its interval.",
+    )
+    event_study: tuple[EventTimeEffect, ...] = Field(
+        default=(),
+        description="Panel designs only: the effect by periods since adoption, pre-periods "
+        "included as placebos.",
+    )
     claims: tuple[Claim, ...] = ()
     warnings: tuple[str, ...] = ()
     provenance: Provenance

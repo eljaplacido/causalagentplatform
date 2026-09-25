@@ -1,0 +1,28 @@
+{
+  "version": "0.1.0",
+  "_comment": [
+    "Names that two or more of the three vocabulary sources both claim to know,",
+    "and disagree about -- read by scripts/contract_parity.py.",
+    "",
+    "  py    backend/src/semantic_layer/models.py     StrEnum, the wire format",
+    "  pkg   packages/semantic-types/src/*.ts         the published TS contract",
+    "  fe    frontend/src/lib/types.ts                the frontend's declarations",
+    "",
+    "Every entry here is a REAL divergence today, kept so the gate passes now and",
+    "fails on any NEW one. The list only shrinks: an entry that no longer diverges",
+    "fails the gate until it is removed, and an entry added since the merge base",
+    "fails unless the commit says `Ratchet-Exempt: <why>`.",
+    "",
+    "Measured 2026-09-24 at f8f7d0f. Three divergences existed; CausalEntityType",
+    "was closed in the same change by adding OTHER to the TypeScript union, which",
+    "was a plain omission. The other two were closed 2026-09-25:",
+    "",
+    "  ReviewStatus  the frontend union was never the backend's ReviewStatus (the",
+    "                Assumption review lifecycle) but a review-queue presentation",
+    "                state derived from ApprovalStatus; renamed ReviewQueueStatus.",
+    "  EvidenceType  the local union is gone; frontend/src/lib/types.ts imports",
+    "                the canonical one and the one mock value that used",
+    "                DOCUMENT_CITATION now says DOCUMENT."
+  ],
+  "known_divergences": {}
+}

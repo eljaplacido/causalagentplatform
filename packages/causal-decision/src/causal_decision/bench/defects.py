@@ -138,6 +138,20 @@ def ignore_contested() -> Iterator[None]:
         yield
 
 
+@contextmanager
+def ignore_segments() -> Iterator[None]:
+    """Only the pooled effect is read -- "the average is good, ship it"."""
+    with mock.patch.object(policy_mod, "_segment_checks", lambda ev, request, trustworthy: []):
+        yield
+
+
+@contextmanager
+def ignore_trend_breakdown() -> Iterator[None]:
+    """A DiD verdict ignores how far parallel trends may fail before its conclusion flips."""
+    with mock.patch.object(policy_mod, "_trend_check", lambda ev, policy: None):
+        yield
+
+
 DEFECTS: dict[str, Callable[[], Any]] = {
     "ignore_reversibility": ignore_reversibility,
     "ignore_risk_class": ignore_risk_class,
@@ -145,4 +159,6 @@ DEFECTS: dict[str, Callable[[], Any]] = {
     "ignore_worthwhile_effect": ignore_worthwhile_effect,
     "refusal_becomes_approval": refusal_becomes_approval,
     "ignore_contested": ignore_contested,
+    "ignore_segments": ignore_segments,
+    "ignore_trend_breakdown": ignore_trend_breakdown,
 }

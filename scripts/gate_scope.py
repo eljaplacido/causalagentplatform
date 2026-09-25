@@ -25,6 +25,11 @@ The identity checks here:
                       server object, not from a list someone keeps -- is
                       referenced by a test: its wrapper is called, or its
                       registered name appears as a string
+  kernel-mcp-tools    every tool packages/causal-mcp registers -- read from the
+                      TOOLS table in its server.py (ast: the dict literal and
+                      every `TOOLS["name"] = ...`), since that server needs MCP
+                      SDK v2 and this runs in the backend's environment -- is
+                      referenced by a test under packages/causal-mcp/tests
   routes-tested       every state-changing route (POST/PUT/PATCH/DELETE) of the
                       live FastAPI app whose handler lives in backend/src/api/ is
                       referenced by a test: an HTTP call whose URL matches the
@@ -210,6 +215,68 @@ def check_mcp_tools() -> tuple[set[str], set[str], dict[str, str]]:
             if how:
                 actual.add(tool)
                 where.setdefault(tool, f"{f.relative_to(ROOT)} ({how})")
+    return expected, actual, where
+
+
+# ── kernel-mcp-tools ─────────────────────────────────────────────────────────
+
+KERNEL_MCP = ROOT / "packages" / "causal-mcp"
+
+
+def _tool_entry(key: ast.expr, value: ast.expr, out: dict[str, str]) -> None:
+    if not (isinstance(key, ast.Constant) and isinstance(key.value, str)):
+        return
+    fn = ""
+    if isinstance(value, ast.Tuple) and value.elts:
+        first = value.elts[0]
+        fn = first.attr if isinstance(first, ast.Attribute) else getattr(first, "id", "")
+    out[key.value] = fn
+
+
+def kernel_mcp_tools() -> dict[str, str]:
+    """{tool name: implementing function name}, from causal-mcp's server.py TOOLS table."""
+    tree = parse(KERNEL_MCP / "src" / "causal_mcp" / "server.py")
+    if tree is None:
+        raise ScopeError("packages/causal-mcp/src/causal_mcp/server.py does not parse")
+    out: dict[str, str] = {}
+    for node in ast.walk(tree):
+        target = value = None
+        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            target, value = node.target, node.value
+        elif isinstance(node, ast.Assign) and len(node.targets) == 1:
+            target, value = node.targets[0], node.value
+        if isinstance(target, ast.Name) and target.id == "TOOLS" and isinstance(value, ast.Dict):
+            for k, v in zip(value.keys, value.values, strict=True):
+                if k is not None:
+                    _tool_entry(k, v, out)
+        if (
+            isinstance(target, ast.Subscript)
+            and isinstance(target.value, ast.Name)
+            and target.value.id == "TOOLS"
+            and value is not None
+        ):
+            _tool_entry(target.slice, value, out)
+    return out
+
+
+def check_kernel_mcp_tools() -> tuple[set[str], set[str], dict[str, str]]:
+    tools = kernel_mcp_tools()
+    if not tools:
+        raise ScopeError("found no TOOLS table in causal-mcp's server.py")
+    expected = set(tools)
+    actual: set[str] = set()
+    where: dict[str, str] = {}
+    for f in sorted((KERNEL_MCP / "tests").rglob("test_*.py")):
+        tree = parse(f)
+        if tree is None:
+            continue
+        calls, strings = called_names(tree), string_constants(tree)
+        for tool, fn in tools.items():
+            how = "names it" if tool in strings else (f"calls {fn}()" if fn in calls else "")
+            if how:
+                actual.add(tool)
+                label = f.relative_to(ROOT) if f.is_relative_to(ROOT) else f
+                where.setdefault(tool, f"{label} ({how})")
     return expected, actual, where
 
 
@@ -550,7 +617,11 @@ def main() -> int:
     base = base_floors()
     checks: list[tuple[str, object]] = []
     if args.mode == "identity-all":
-        checks = [("skills-imported", check_skills), ("mcp-tools", check_mcp_tools)]
+        checks = [
+            ("skills-imported", check_skills),
+            ("mcp-tools", check_mcp_tools),
+            ("kernel-mcp-tools", check_kernel_mcp_tools),
+        ]
     elif args.mode == "pytest-files":
         checks = [("pytest-files", lambda: check_pytest_files(args.junit))]
     elif args.mode == "vitest-files":

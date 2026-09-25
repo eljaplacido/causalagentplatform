@@ -103,9 +103,10 @@ before any run. It runs on every change:
 
 - **Identification:** agrees with literature labels on 29 of 29 canonical graphs, and with y0 on
   200 of 200 random ADMGs.
-- **Estimation:** across 12 designs (randomized, back-door, M-bias, butterfly, front-door, IV,
+- **Estimation:** across 14 designs (randomized, back-door, M-bias, butterfly, front-door, IV,
   conditional IV and proximal), bias is within Monte Carlo error. Pooled 95% interval coverage is
-  95.1%, and every design lies inside 92.5–97.5%.
+  94.9%, and every design lies inside 92.5–97.5% (observed 93.6–96.6%; T0 v3,
+  `benchmarks/t0/results/2026-09-19-v3-run3.json`).
 - **Refuters:** false-alarm rates are about 1% at α = 0.01, and power is 100% against the planted
   violations.
 - **Seeded defects:** each of seven defects makes the gate fail. The defects include:
@@ -118,6 +119,44 @@ before any run. It runs on every change:
   segments of one analysis 0.945–0.98; the heterogeneity test fires on 4.5% of homogeneous designs
   (α = 0.05) and 100% of planted differences; with every segment null, Holm rejects something in
   4% of runs. Each of four seeded defects fails the specific bar it was registered against.
+
+- **T5 (difference-in-differences):** on simulated staggered rollouts with AR(1) errors, overall
+  ATT coverage 0.938–0.958 and event-time coverage 0.933–0.956 across four designs — one of them
+  built so that two-way fixed effects is biased — with bias within one Monte Carlo SE; the
+  pre-trends test fires on at most 2.2% of panels with parallel trends and on all panels without.
+  v1 failed on over-coverage (the simulation fixed cohort sizes, the intervals assume sampled
+  units) and is kept beside v2.
+
+- **T6 (anytime-valid monitoring):** on six streamed randomized designs, the confidence sequence
+  contains the effect at *every one* of 39 looks in 98.2–99.4% of runs (nominal 95%), including a
+  level drifting during the run and a heavy-tailed outcome; it sees a benefit of 0.2 in 99.8% of
+  runs and a harm of 0.25 in 100%, with a median first exclusion at 700 units. The ordinary
+  fixed-sample interval read at every look covers 72.9%. v1 failed on two faults of its own
+  registration and is kept beside v2.
+
+- **T7 (cluster-randomized designs):** services randomized, requests measured, intra-cluster
+  correlation up to 0.3: interval coverage 0.942–0.952 across five designs of 20–80 clusters; the
+  same data analysed as independent requests covers 37%. When cluster sizes vary so much that a
+  few clusters dominate (size CV above 0.6) the kernel refuses — v2 of the gate showed coverage
+  falling to 0.879 there, and no variance correction repaired it. v1–v3 failed and are kept.
+
+**Randomized by cluster.** `analyze(..., design="randomized", cluster=<column>)` gives the
+unit-weighted effect with CR2 cluster-robust intervals on t(K − 2), and reports the intra-cluster
+correlation.
+
+**Watched canaries.** `analyze(df, graph, treatment=, outcome=, design="randomized",
+sequence=<arrival column>, expected_treated_share=p)` reports an asymptotic confidence sequence
+(Waudby-Smith et al. 2023) at every look: read it and stop on it as often as you like. About 1.55
+times the width of a fixed-sample interval at its tuning size — the price of looking.
+
+**Panel designs.** `analyze(df, graph, treatment=, outcome=, design="difference_in_differences",
+unit=, time=, estimand="att")` estimates group-time effects against never-treated units
+(Callaway & Sant'Anna), aggregated to an overall ATT and an event study, with unit-clustered
+influence-function intervals. The certificate is tier C — parallel trends is not in the graph —
+and a failed pre-trends test makes the result `contested`. Every panel result also says how far
+parallel trends may fail before the conclusion changes: intervals valid when the post-adoption
+bias is at most M times the largest pre-adoption deviation, and the breakdown M at which the
+interval first reaches zero (T5 v3).
 
 **Known limit.** Triangulation does *not* reliably detect moderate outcome-model misspecification
 at moderate n. Its power was 0.04 at n = 2,000 against a bias of about 1.2 standard errors. The v1
@@ -148,8 +187,11 @@ Data can be pandas, a dict of columns, pyarrow, polars, or any dataframe-interch
 - Subgroup *discovery* (declared segments are supported; searching for them is not)
 - Discovery
 - Time series
-- Sequential (anytime-valid) tests
-- Interference-aware designs
+- Interference between randomized units (spillovers from treated to untreated clusters) and
+  switchback (time-block) designs; cluster randomization handles dependence *within* clusters only
+- For difference-in-differences: covariate-conditional parallel trends, not-yet-treated
+  comparisons, anticipation windows, repeated cross-sections, and the full Rambachan & Roth
+  machinery (the kernel's parallel-trends sensitivity is a simplified, conservative form)
 
 Each is listed in the repository's `conformance/declared_not_implemented.json`, and leaves that
 list only by being implemented and tested.

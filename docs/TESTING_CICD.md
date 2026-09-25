@@ -1,6 +1,12 @@
 # Testing, CI/CD & Engineering Best Practices
 
-> **Scope:** End-to-end testing strategy, CI/CD pipeline design, quality gates, and engineering standards for the Unified Enterprise Causal Platform. These standards apply to the Python backend services and the React frontend.
+> **Scope:** What is tested, what blocks a merge, and how CI and releases run, for the Python backend, the Python packages under `packages/`, and the React frontend.
+>
+> **Read against the code 2026-09-25.** This page describes the gate that runs. The earlier
+> version of this page described a ten-job pipeline, performance suites and zero-error gates,
+> none of which were built. It is kept in
+> [`history/TESTING_CICD-target-2026-09-25.md`](history/TESTING_CICD-target-2026-09-25.md)
+> for its design intent.
 
 ---
 
@@ -15,620 +21,192 @@ The platform makes causal claims. A bug in a recommendation engine is not just a
 3. **Audit trail immutability** — Append-only contracts must never be broken.
 4. **Agent behavior contracts** — EpistemicState in/out types, skill output schemas.
 5. **UX contract** — Critical UX invariants (thinking indicator latency, approval flow).
-6. **Integration correctness** — Connector data flows, semantic layer writes, Kafka topics.
-7. **Performance** — Benchmark targets from DATA_LAYER.md must be validated continuously.
+6. **Integration correctness** — Connector data flows, semantic layer writes.
+7. **Performance** — no performance suite exists yet (§6).
+
+Two rules the gate holds itself to: **a check that inspected nothing may not pass**, and
+**counts are read back from the tools, never written down**. So this page gives no test
+counts or coverage figures. `.gnomon/ci.sh` prints them on every run, and the ratchet files in
+§4 record each measurement with its date and commit.
 
 ---
 
-## 2. Test Pyramid
+## 2. The gate: `.gnomon/ci.sh`
 
-```
-                    ┌───────────────────┐
-                    │     E2E Tests      │  ~5% of tests
-                    │  (Playwright/k6)   │  Slow, high coverage
-                    ├───────────────────┤
-                    │  Integration Tests │  ~20% of tests
-                    │  (pytest + Neo4j,  │  Real services, isolated
-                    │   real Kafka)      │
-                    ├───────────────────┤
-                    │    Unit Tests      │  ~75% of tests
-                    │  (pytest, Jest,    │  Fast, isolated, mocked deps
-                    │   cargo test)      │
-                    └───────────────────┘
-```
+One script decides "does it pass". Developers run it locally, and CI runs the same script.
+Every step runs even after an earlier one fails. A step whose toolchain is absent is
+**SKIPPED** by name with the reason. A tool that is present and crashes is a **FAIL**.
 
-**Current baseline (this repo, measured 2026-09-19):**
-- Backend: **560 passing tests** (count printed by `.gnomon/ci.sh` on every run), 80.01% line coverage on the full suite (75.03% unit-only). The gate is a ratchet in `scripts/coverage-floor.json`, run by `.gnomon/ci.sh`; the global `--cov-fail-under` was removed from `pyproject.toml` because it failed every partial run. None of these tests asserts a causal estimate against a known ground truth.
-- Frontend: Playwright e2e suite at `frontend/e2e/platform.spec.ts` (22 specs)
-
-**Target:** ≥ 80% line coverage across Python backend, ≥ 85% branch coverage on Guardian/semantic layer paths, 100% coverage on `audit_write` and `guardian_check`.
-
----
-
-## 3. Causal Correctness Tests
-
-These are unique to this platform. They validate that the platform reasons correctly about causality, not just that the code runs.
-
-### 3.1 DAG Structural Validity
-
-```python
-# Every approved graph fragment must pass structural tests before promotion
-def test_dag_is_acyclic(graph_fragment):
-    """GraphFragment must be a DAG: no cycles allowed."""
-    assert not has_cycle(graph_fragment.edges)
-
-def test_dag_backdoor_criterion(graph_fragment, treatment, outcome):
-    """Backdoor criterion must be satisfiable given observed confounders."""
-    adjustment_set = find_adjustment_set(graph_fragment, treatment, outcome)
-    assert adjustment_set is not None, "No valid adjustment set found"
-
-def test_dag_positivity(dataset, treatment, adjustment_set):
-    """Every stratum of the adjustment set must have both treated and untreated units."""
-    for stratum in enumerate_strata(dataset, adjustment_set):
-        assert stratum.n_treated > 0 and stratum.n_control > 0
-```
-
-### 3.2 Counterfactual Consistency
-
-```python
-def test_counterfactual_consistency(scm, observation, intervention):
-    """
-    Counterfactual must be consistent: if the factual world matches
-    the intervention, counterfactual outcome equals factual outcome.
-    """
-    factual_outcome = scm.predict(observation)
-    counterfactual_outcome = scm.counterfactual(observation, intervention)
-    if observation[intervention.variable] == intervention.value:
-        assert abs(factual_outcome - counterfactual_outcome) < 1e-6
-```
-
-### 3.3 Sensitivity Analysis Coverage
-
-```python
-def test_sensitivity_analysis_run_before_approval(edge_id):
-    """No edge transitions from DRAFT to APPROVED without a sensitivity result."""
-    edge = semantic_layer.get_edge(edge_id)
-    for assumption in edge.assumption_refs:
-        assert assumption.sensitivity_result is not None, \
-            f"Assumption {assumption.id} missing sensitivity result"
-```
-
-### 3.4 Identification Test Suite
-
-For each estimator used in production, maintain a test dataset with known ground-truth causal effects (synthetic data with known DGP):
-
-```python
-@pytest.mark.parametrize("estimator,expected_ate,tolerance", [
-    (LinearATEEstimator, 2.5, 0.1),
-    (DoWhyIPW, 2.5, 0.2),
-    (CausalForestEstimator, 2.5, 0.3),
-])
-def test_estimator_recovers_true_ate(estimator, expected_ate, tolerance, synthetic_dataset):
-    """Estimator must recover the known true ATE within tolerance on synthetic data."""
-    ate = estimator.fit(synthetic_dataset).estimate()
-    assert abs(ate - expected_ate) < tolerance
-```
-
----
-
-## 4. Guardian and Governance Tests
-
-The Guardian cannot be bypassed. These tests are mandatory and block any merge.
-
-### 4.1 Bypass Prevention Tests
-
-```python
-def test_semantic_layer_write_blocked_without_verdict():
-    """Direct write to semantic layer without Guardian verdict must be rejected at DB level."""
-    with pytest.raises(IntegrityError):
-        db.execute(
-            "INSERT INTO causal_edges (id, source, target) VALUES ($1, $2, $3)",
-            [uuid4(), "A", "B"]  # Missing guardian_verdict_ref
-        )
-
-def test_guardian_rejected_blocks_semantic_write():
-    """A REJECTED Guardian verdict must prevent the action from completing."""
-    verdict = guardian.check(action=propose_edge("A", "B"), policy="strict")
-    assert verdict.status == "REJECTED"
-    with pytest.raises(GuardianBlockedError):
-        semantic_layer.write_edge(edge, verdict=verdict)
-```
-
-### 4.2 Audit Trail Immutability
-
-```python
-def test_audit_log_no_update():
-    """UPDATE on audit_log table must be rejected by database role."""
-    with pytest.raises(PermissionError):
-        db.execute("UPDATE audit_log SET action_type = 'tampered' WHERE id = $1", [entry_id])
-
-def test_audit_log_no_delete():
-    """DELETE on audit_log table must be rejected."""
-    with pytest.raises(PermissionError):
-        db.execute("DELETE FROM audit_log WHERE id = $1", [entry_id])
-
-def test_every_semantic_write_has_audit_entry(approved_edge_id):
-    """Every approved semantic layer write must have a corresponding audit entry."""
-    audit_entries = db.query(
-        "SELECT * FROM audit_log WHERE payload_hash = $1",
-        [hash_of_edge(approved_edge_id)]
-    )
-    assert len(audit_entries) >= 1
-    assert all(e.guardian_verdict == "APPROVED" for e in audit_entries)
-```
-
-### 4.2a Drift-Triggered Action Policy (PR-008)
-
-Added in Sprint 1 (2026-04-27): Actions initiated by drift detection must not be
-allowed to modify the semantic layer without re-validation workflow.
-
-```python
-def test_drift_action_blocked_from_semantic_write():
-    """Drift-triggered actions with proposed_edges must be REJECTED under PR-008."""
-    drift_payload = {
-        "action_type": "DRIFT_REVALIDATION",
-        "proposed_edges": [{"source": {"id": "a"}, "target": {"id": "b"}}],
-    }
-    result = governance.check(drift_payload, state)
-    assert result.verdict == "REJECTED"
-    assert "PR-008" in result.policy_rules_cited
-```
-
-### 4.2b Alert Emission Contract
-
-Added in Sprint 1 (2026-04-27): Drift alerts must carry full statistical evidence
-and emit through production AlertEmitter (no log-only terminal behavior).
-
-```python
-def test_alert_includes_evidence_payload():
-    """Drift alerts must include KL divergence, feature scores, severity."""
-    alert = captured_alert["context"]["evidence"]
-    assert "kl_divergence" in alert
-    assert "feature_scores" in alert
-    assert "severity_score" in alert
-
-def test_alert_emit_failure_not_hidden():
-    """When alert emission fails, the failure must be surfaced in result metadata."""
-    result = await agent.process(state)
-    assert result.recommendations[0].risk_tier == "CRITICAL"
-    # emit_error should be present in alert metadata (logged, not swallowed)
-```
-
-### 4.3 Circuit Breaker Tests (Rust / Python)
-
-```rust
-// In cynepic-guardian tests
-#[test]
-fn circuit_breaker_opens_after_threshold() {
-    let mut breaker = CircuitBreaker::new(threshold: 3);
-    for _ in 0..3 {
-        breaker.record_failure();
-    }
-    assert_eq!(breaker.state(), CircuitState::Open);
-    assert!(breaker.allow_request().is_err());
-}
-
-#[test]
-fn loop_detector_stops_runaway_cycle() {
-    let mut detector = LoopDetector::new(max_iterations: 5);
-    for _ in 0..5 {
-        assert!(detector.check_and_increment().is_ok());
-    }
-    assert!(detector.check_and_increment().is_err());
-}
-```
-
----
-
-## 5. Agent Behavior Tests
-
-### 5.1 EpistemicState Contract Tests
-
-```python
-def test_agent_returns_valid_epistemic_state(agent, sample_input):
-    """Every agent must return a well-formed EpistemicState."""
-    result = agent.process(sample_input)
-    assert isinstance(result, EpistemicState)
-    assert result.cynefin_domain in VALID_CYNEFIN_DOMAINS
-    assert 0.0 <= result.overall_confidence <= 1.0
-    assert result.guardian_verdict is not None
-    assert len(result.reasoning_steps) > 0
-
-def test_agent_does_not_write_without_approved_verdict(agent, sample_input, mock_semantic_layer):
-    """Agent must not call any write method before receiving APPROVED verdict."""
-    mock_semantic_layer.write = MagicMock()
-    result = agent.process(sample_input)
-    if result.guardian_verdict != "APPROVED":
-        mock_semantic_layer.write.assert_not_called()
-
-def test_session_state_recovers_after_cache_loss(client):
-    """Session API must recover the latest EpistemicState from durable session storage after hot-cache loss."""
-    session_id = client.post("/api/v1/session/run", json={"description": "latency spike"}).json()["session_id"]
-    clear_process_cache()
-    recovered = client.get(f"/api/v1/session/{session_id}/state")
-    assert recovered.status_code == 200
-
-def test_approved_fragment_edges_are_resolved_for_simulation(simulation_agent, approved_fragment):
-    """SimulationAgent must resolve fragment edge IDs into full edge payloads before identification/estimation."""
-    result = simulation_agent.process(approved_fragment)
-    assert len(result.simulation_results) >= 1
-```
-
-### 5.2 H-Neuron Hallucination Risk Tests
-
-```python
-def test_high_hallucination_risk_triggers_review_flag(agent):
-    """When H-Neuron score > 0.7, output must be flagged for human review."""
-    with patch("h_neuron.score", return_value=0.85):
-        result = agent.process(ambiguous_input)
-    assert result.requires_human_review is True
-    assert "hallucination_risk" in result.flags
-```
-
----
-
-## 6. Performance Tests
-
-Performance contracts from DATA_LAYER.md are validated continuously in CI.
-
-```python
-# Performance regression tests (run in CI, fail if > threshold)
-@pytest.mark.performance
-def test_dag_dsepar_query_latency(neo4j_client, approved_graph):
-    """d-separation query must complete in < 50ms p95 on 500-node graph."""
-    latencies = []
-    for _ in range(100):
-        start = time.perf_counter()
-        neo4j_client.find_adjustment_set(approved_graph, treatment, outcome)
-        latencies.append(time.perf_counter() - start)
-    p95 = sorted(latencies)[94]
-    assert p95 < 0.050, f"d-separation p95={p95:.3f}s exceeds 50ms threshold"
-
-@pytest.mark.performance
-def test_audit_log_insert_latency(db):
-    """Audit log insert must be < 5ms p99."""
-    latencies = [measure(lambda: db.insert_audit_entry(sample_entry)) for _ in range(200)]
-    assert sorted(latencies)[198] < 0.005
-```
-
-**Benchmark scripts:** Maintain a benchmark suite under `backend/scripts/` for regression-testing causal estimators and the Guardian audit path. Run on every PR that touches agent, semantic layer, or data layer code.
-
----
-
-## 7. Frontend Testing
-
-**Framework:** Vitest + React Testing Library + Playwright
-
-### 7.1 Component Tests (Vitest + RTL)
-
-```tsx
-// Critical UX contract: ThinkingIndicator appears within 150ms
-test("ThinkingIndicator appears within 150ms of agent submission", async () => {
-  const { getByTestId } = render(<IncidentBriefPanel />);
-  const submitButton = getByTestId("submit-incident");
-  
-  const startTime = performance.now();
-  fireEvent.click(submitButton);
-  
-  await waitFor(() => {
-    expect(getByTestId("thinking-indicator")).toBeInTheDocument();
-  }, { timeout: 200 });
-  
-  const elapsed = performance.now() - startTime;
-  expect(elapsed).toBeLessThan(150);
-});
-
-// Guardian approval flow: approve/reject always visible
-test("Approve and reject actions are visible on every intervention card", () => {
-  const { getByRole } = render(<InterventionCard intervention={mockIntervention} />);
-  expect(getByRole("button", { name: /approve/i })).toBeInTheDocument();
-  expect(getByRole("button", { name: /reject/i })).toBeInTheDocument();
-});
-```
-
-### 7.1a Frontend Fail-Closed Contract (Sprint 2, 2026-04-27)
-
-When the backend is unavailable, the frontend must show an explicit degraded-state
-message. Mock data must NEVER be silently substituted in production mode.
-
-```tsx
-// Governance page: backend unreachable → explicit degraded state
-test("Governance page shows degraded state when backend is unreachable", async () => {
-  // Mock backend failure
-  server.use(
-    rest.get("/api/governance/review-queue", (req, res, ctx) =>
-      res(ctx.status(503))
-    )
-  );
-  const { getByText } = render(<GovernancePage />);
-  await waitFor(() => {
-    expect(getByText(/backend unavailable/i)).toBeInTheDocument();
-  });
-  // Mock data must NOT appear unless explicitly opted-in
-  expect(queryByText(/payment_latency → checkout_conversion/i)).not.toBeInTheDocument();
-});
-
-// Incidents page: backend error on submit → explicit error, no fake incident
-test("Incident submission failure shows explicit error, no fake record", async () => {
-  server.use(
-    rest.post("/api/v1/session/incident", (req, res, ctx) =>
-      res(ctx.status(503))
-    )
-  );
-  const { getByText, queryByText } = render(<IncidentsPage />);
-  fireEvent.click(getByText("Submit Incident"));
-  await waitFor(() => {
-    expect(getByText(/incident submission failed/i)).toBeInTheDocument();
-  });
-  // No fake incident should be created in the list
-  expect(queryByText(/INC-/i)).not.toBeInTheDocument();
-});
-```
-```
-
-### 7.2 E2E Tests (Playwright)
-
-```typescript
-// E2E: SRE incident triage flow
-test("SRE can receive causal hypothesis within 60 seconds of incident", async ({ page }) => {
-  await page.goto("/incidents/new");
-  await page.fill("[data-testid=incident-title]", "Service latency spike");
-  await page.click("[data-testid=submit-incident]");
-  
-  // ThinkingIndicator must appear immediately
-  await expect(page.getByTestId("thinking-indicator")).toBeVisible({ timeout: 200 });
-  
-  // Causal hypothesis list must appear within 60 seconds
-  await expect(page.getByTestId("causal-hypothesis-list")).toBeVisible({ timeout: 60000 });
-  
-  // At least one hypothesis with confidence score
-  const hypotheses = page.getByTestId("hypothesis-item");
-  await expect(hypotheses).toHaveCountGreaterThan(0);
-  
-  const firstHypothesis = hypotheses.first();
-  await expect(firstHypothesis.getByTestId("confidence-score")).toBeVisible();
-});
-
-// E2E: Governance Officer approval flow
-test("Governance Officer can approve a graph edge with full evidence chain", async ({ page }) => {
-  await page.goto("/governance/review-queue");
-  await page.click("[data-testid=first-review-item]");
-  
-  // Evidence chain visible
-  await expect(page.getByTestId("evidence-citations")).toBeVisible();
-  await expect(page.getByTestId("sensitivity-result")).toBeVisible();
-  
-  // Approve action
-  await page.click("[data-testid=approve-button]");
-  await page.fill("[data-testid=approval-reason]", "Evidence supports causal claim");
-  await page.click("[data-testid=confirm-approval]");
-  
-  // Audit entry created
-  await expect(page.getByTestId("approval-success")).toBeVisible();
-});
-```
-
----
-
-## 8. CI/CD Pipeline
-
-### 8.1 Pipeline Architecture
-
-```yaml
-# .github/workflows/ci.yml (outline)
-
-on: [push, pull_request]
-
-jobs:
-  # ── Fast lane (< 5 min, runs on every commit) ──────────────────────────
-  lint-and-type-check:
-    runs-on: ubuntu-latest
-    steps:
-      - ruff check --select ALL         # Python: linting + isort
-      - mypy --strict                   # Python: strict type checking
-      - cargo clippy -- -D warnings     # Rust: lint as errors
-      - npx tsc --noEmit                # TypeScript: type check
-
-  unit-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - pytest tests/unit -x --tb=short  # Fast fail on first error
-      - cargo test                        # Rust unit tests
-      - vitest run --reporter=verbose     # Frontend unit tests
-
-  security-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - pip-audit                         # Python dependency audit
-      - cargo audit                       # Rust dependency audit
-      - bandit -r src/                    # Python SAST
-
-  # ── Integration lane (< 15 min, runs on PR) ────────────────────────────
-  integration-tests:
-    runs-on: ubuntu-latest
-    services:
-      neo4j: neo4j:5-community
-      postgres: postgres:16
-      kafka: confluentinc/cp-kafka:7
-    steps:
-      - pytest tests/integration --timeout=120
-      - pytest tests/causal_correctness  # DAG validity, sensitivity, identification
-
-  guardian-integrity-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - pytest tests/guardian -v         # All Guardian bypass tests: must be 100% pass
-
-  performance-regression:
-    runs-on: ubuntu-latest
-    steps:
-      - pytest tests/performance -m performance --benchmark-json=results.json
-      - python scripts/compare_benchmarks.py results.json baseline.json  # Fail if regression
-
-  # ── Container lane (< 20 min, runs on PR to main) ──────────────────────
-  container-build:
-    runs-on: ubuntu-latest
-    steps:
-      - docker build --target production
-      - trivy image --exit-code 1 --severity HIGH,CRITICAL <image>  # Block on HIGH/CRITICAL
-
-  # ── Full E2E (< 30 min, runs on merge to main) ─────────────────────────
-  e2e-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - docker-compose up -d            # Full stack
-      - playwright test                 # E2E test suite
-      - k6 run tests/performance/load.js  # Load test
-
-  # ── Deploy (runs on tag push) ──────────────────────────────────────────
-  deploy-staging:
-    needs: [e2e-tests, container-build]
-    steps:
-      - gcloud run deploy --platform managed --region europe-west1
-      - firebase deploy --only hosting
-      - python scripts/smoke_test.py staging
-```
-
-### 8.2 Quality Gates (Block Merge)
-
-| Gate | Condition | Rationale |
+| Step | What it runs | Passes when |
 |---|---|---|
-| All unit tests pass | 100% | Non-negotiable |
-| All Guardian tests pass | 100% | Safety-critical |
-| All causal correctness tests pass | 100% | Model integrity |
-| Lint: zero errors | 0 errors | Code quality |
-| Type check: zero errors | 0 errors | Type safety |
-| Security scan: no HIGH/CRITICAL | 0 | Security |
-| Coverage: backend | ≥ 80% lines | Regression prevention |
-| Coverage: Guardian paths | ≥ 100% branch | Safety-critical |
-| Performance: no regression | < 10% degradation | Reliability |
+| `backend-pytest` | The full backend suite (`backend/tests`: unit, integration, guardian) once, with coverage | Exit 0, a non-zero pass count above its floor (`scripts/gate-scope-floors.json`), and every `backend/tests/**/test_*.py` reported a test in the JUnit report |
+| `backend-coverage` | `scripts/coverage_gate.py` on that run's coverage | Line coverage ≥ the floor in `scripts/coverage-floor.json` |
+| `backend-ruff`, `scripts-ruff` | `scripts/lint_ratchet.py` (ruff over `backend/`, and over `scripts/`) | Findings ≤ `max_findings` in `scripts/lint-baseline.json` (`scripts/` is held at 0) |
+| `backend-mypy` | `mypy src/ --strict` via the ratchet | Findings ≤ its `max_findings` |
+| `semantic-types-build` | Builds `packages/semantic-types/dist` from source | `dist/index.d.ts` exists (the frontend typecheck reads it) |
+| `frontend-tsc` | `tsc --noEmit` in `frontend/` | Exit 0 over at least its floor of project files |
+| `frontend-vitest` | `vitest run` in `frontend/` | Exit 0, pass count above its floor, every test file reported |
+| `frontend-eslint` | The eslint ratchet, once a config exists | **SKIPPED today**: `frontend/` has no `eslint.config.*`, and eslint 9 refuses to run without one |
+| one step per `packages/*/pyproject.toml` | That package's own `pytest`, in its own environment | Exit 0, at least one test passed, and **no test skipped**: every skip these suites can produce is a registered gate that did not run, so a skip fails the step. `causal-core` is always named in the summary, RAN or NOT RUN |
+| `<package>-mypy`, one per package | mypy with the package's own strict config, via the ratchet | Findings ≤ its `mypy-<package>` entry in `scripts/lint-baseline.json`, which is 0 for all three; a package with no entry fails |
+| `gate-scope` | `scripts/gate_scope.py identity-all` | Every skill module is imported by a test, every tool of both MCP servers (the legacy one live, causal-mcp's from its `TOOLS` table) and every state-changing route is referenced by one, and every route is mounted, apart from the known gaps named in `scripts/gate-scope-floors.json` |
+| `status-claims` | `scripts/status_claims.py` | `docs/CURRENT_STAGE.md` and `conformance/declared_not_implemented.json` agree with each other and with the tree |
+| `contract-parity` | `scripts/contract_parity.py` | The shared enumerations agree across `models.py`, `packages/semantic-types` and `frontend/src/lib/types.ts`, apart from the divergences named in `scripts/contract-parity.json` |
+| `doc-reconciliation` | `scripts/doc_reconciliation.py` | Its manifest is sound. Which docs are owed a re-read is **reported, not gated** |
 
-### 8.3 Deployment Strategy
-
-**Environments:**
-
-| Environment | Trigger | Purpose |
-|---|---|---|
-| `local` | Developer machine | Development, SQLite |
-| `preview` | PR opened | Feature review, real integrations |
-| `staging` | Merge to `main` | Pre-production validation |
-| `production` | Git tag `v*.*.*` | Live |
-
-**Deployment method:** Blue-green on Cloud Run. New revision receives 0% traffic initially. Automated smoke test runs. If smoke test passes, traffic shifts to 100% new revision. Previous revision retained for 24h instant rollback.
-
-**Rollback:** `gcloud run services update-traffic --to-revisions=PREVIOUS=100` — one command, under 30 seconds.
+The frontend steps need `frontend/node_modules` (`npm ci` at the repository root). In a git
+worktree, the script falls back to the main checkout's backend and package virtualenvs. It
+does not fall back for `node_modules`, so the frontend steps are SKIPPED there unless you install
+them.
 
 ---
 
-## 9. Code Quality Standards
+## 3. What the tests are
 
-### 9.1 Python
+### 3.1 Backend (`backend/tests`)
 
-| Tool | Configuration | Enforced |
-|---|---|---|
-| Ruff | `select = ["ALL"]`, targeted ignores | CI lint gate |
-| MyPy | `--strict` | CI type gate |
-| pytest | `asyncio_mode = "auto"`, `--cov` | CI test gate |
-| DeepEval | LLM output quality metrics | Per-agent quality gate |
+| Directory | What it holds |
+|---|---|
+| `unit/` | Skills, agents, the registry, the DB factory, connectors (HTTP mocked), MCP tool wrappers, provenance and contract models, planning, evaluation |
+| `integration/` | FastAPI routes through `httpx`: governance approval flow, rejection verdicts, recorded reasons, intervention roles, session API and store, the decision ledger (checkpoints and anchored verification included) and follow-ups, the assumption registry (`/api/v1/models`), and the MCP server over stdio |
+| `guardian/` | Guardian bypass prevention, verdict binding (signed, subject-bound, single-use), drafts that cannot approve themselves, the `audit_write` skill, and `audit_log` refusing UPDATE and DELETE |
 
-```toml
-# pyproject.toml
-[tool.ruff]
-select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM", "TCH", "ANN"]
-line-length = 100
+The backend suite runs against the **SQLite** schema (`SQLITE_DDL` in
+`backend/src/db/factory.py`). No test applies the PostgreSQL migrations (register
+`postgres-schema-missing-session-incidents`). Neo4j code paths are tested only with mocks
+(register `neo4j-graph-store`). No backend test asserts a causal estimate against ground truth:
+the backend delegates estimation to `packages/causal-core`, and that is where estimates are
+gated (§3.2).
 
-[tool.mypy]
-strict = true
-ignore_missing_imports = false
+### 3.2 Causal correctness: the pre-registered benchmarks
 
-[tool.pytest.ini_options]
-asyncio_mode = "auto"
-addopts = "--cov=src --cov-report=term-missing --cov-fail-under=80"
-```
+Each benchmark has a pre-registration committed *before* the run it governs: the question, the
+data, the metric, the pass threshold and the seeded defects the suite must catch.
 
-### 9.2 Rust
+| Suite | Pre-registration | System under test | Runs |
+|---|---|---|---|
+| T0: analytic SCMs with closed-form truth | [`benchmarks/t0/PRE-REGISTRATION.md`](../benchmarks/t0/PRE-REGISTRATION.md) | `causal_core.analyze` | Every PR (`pytest -m t0` in `packages/causal-core`, inside its package step) |
+| T2: IHDP, semi-synthetic | [`benchmarks/t2-ihdp/PRE-REGISTRATION.md`](../benchmarks/t2-ihdp/PRE-REGISTRATION.md) | `causal_core.analyze` | When the data is cached or `CAUSAL_FETCH=1` (CI sets it); also on demand via `python -m causal_core.bench.ihdp` |
+| T3: LaLonde, real data with an experimental benchmark | [`benchmarks/t3-lalonde/PRE-REGISTRATION.md`](../benchmarks/t3-lalonde/PRE-REGISTRATION.md) | `causal_core.analyze` | As T2; `python -m causal_core.bench.lalonde` |
+| T4: effects within declared segments | [`benchmarks/t4-segments/PRE-REGISTRATION.md`](../benchmarks/t4-segments/PRE-REGISTRATION.md) | `causal_core.segments` | Every PR (`pytest -m t4`) |
+| T5: staggered difference-in-differences | [`benchmarks/t5-did/PRE-REGISTRATION.md`](../benchmarks/t5-did/PRE-REGISTRATION.md) | `causal_core.panel` | Every PR (`pytest -m t5`) |
+| T7: cluster-randomized designs | [`benchmarks/t7-cluster/PRE-REGISTRATION.md`](../benchmarks/t7-cluster/PRE-REGISTRATION.md) | `causal_core.cluster` | Every PR (`pytest -m t7`) |
+| T6: anytime-valid monitoring of watched rollouts | [`benchmarks/t6-sequential/PRE-REGISTRATION.md`](../benchmarks/t6-sequential/PRE-REGISTRATION.md) | `causal_core.sequential` | Every PR (`pytest -m t6`) |
+| D0: the decision procedure | [`benchmarks/d0-decision-policy/PRE-REGISTRATION.md`](../benchmarks/d0-decision-policy/PRE-REGISTRATION.md) | `causal_decision.decide` | Every PR (`pytest -m d0` in `packages/causal-decision`) |
+| A0: whether a graph revision invalidates an estimate | [`benchmarks/a0-assumption-impact/PRE-REGISTRATION.md`](../benchmarks/a0-assumption-impact/PRE-REGISTRATION.md) | `causal_decision.assumptions.impact` | Every PR (`pytest -m a0` in `packages/causal-decision`) |
 
-| Tool | Configuration | Enforced |
-|---|---|---|
-| `cargo clippy` | `-- -D warnings` (warnings are errors) | CI lint gate |
-| `cargo fmt` | Default rustfmt config | CI format gate |
-| `cargo test` | All tests including doc tests | CI test gate |
-| `cargo audit` | All advisories, deny severity ≥ medium | CI security gate |
-| `cargo deny` | License policy, ban list | CI security gate |
+`packages/causal-core/tests/test_benchmark_results.py` holds the registrations to their runs:
+for every `benchmarks/*/PRE-REGISTRATION.md`, a committed result must record a passing run
+against that file's exact bytes (`prereg_sha256`), so a bar cannot move after the last run
+without a new one. Failing runs stay on file beside it.
 
-```toml
-# .cargo/config.toml
-[build]
-rustflags = ["-D", "warnings"]
-```
+The seeded-defect tests (`tests/t0/test_seeded_defects.py`, `tests/t4/…`, `tests/t5/…`, `tests/t6/…`, `tests/t7/…`,
+`tests/d0/…`, `tests/a0/…`) break the system under test on purpose and assert that the gate fails. A gate that cannot see a
+known defect does not count as a gate. The benchmark results, and the limits they found, are on
+the register (for example `kernel-triangulation-moderate-n`).
 
-**Standard for `assert!` macros:** No `assert!` in library code (only in tests). Use `Result<T, E>` and propagate errors. (The Rust standards section is retained as a reference for any future native components — this repo is currently all-Python.)
+Counterfactuals over an SCM, causal discovery and Rosenbaum bounds have no correctness tests
+because they are not implemented (registers `scm-counterfactuals`, `causal-discovery`,
+`sensitivity-analysis`).
 
-### 9.3 TypeScript / React
+### 3.3 Frontend (`frontend/`)
 
-| Tool | Configuration | Enforced |
-|---|---|---|
-| TypeScript | `strict: true`, `noUncheckedIndexedAccess: true` | CI type gate |
-| ESLint | `@typescript-eslint/recommended-type-checked` | CI lint gate |
-| Vitest | Coverage threshold 80% | CI test gate |
-| Playwright | E2E suite | CI e2e gate |
-
----
-
-## 10. Formal Methods and Specification
-
-Following the formal methods tradition in all three repos:
-
-- **TLA+** specifications for critical state machine behaviors: Guardian policy enforcement, circuit breaker state transitions, audit trail append operations
-- **Z3 Solver** for verifying constraint satisfaction in GovernanceAgent policies
-- TLA+ specs live in `specs/` directory, verified in CI via TLC model checker
-
-```tla
-(* EXAMPLE: Guardian cannot transition from APPROVED to anything else *)
-TypeInvariant ==
-  /\ \A verdict \in verdicts:
-       verdict.status \in {"PENDING", "APPROVED", "REJECTED", "REQUIRES_ESCALATION"}
-
-GuardianSafety ==
-  (* Once APPROVED, a verdict's status is immutable *)
-  \A verdict \in verdicts:
-    verdict.status = "APPROVED" => 
-      verdict.status' = "APPROVED"
-```
+- **Vitest + React Testing Library** (`src/**/__tests__/*.test.tsx`). Covers the
+  `ThinkingIndicator` latency contract, `ApprovalPanel`, `InterventionCard`, and the governance
+  and incidents pages. The page tests pin the fail-closed contract. The governance page shows
+  only backend-confirmed decisions and audit rows, and the incidents page leaves a decision
+  unchanged and shows the error when the API call fails.
+  There is no coverage threshold.
+- **Playwright** (`frontend/e2e/platform.spec.ts`, config `frontend/playwright.config.ts`). It
+  runs against a dev server on `localhost:3000` and is **not part of the gate or of CI**. Run it
+  by hand with `npx playwright test` in `frontend/`.
 
 ---
 
-## 11. Observability and Monitoring
+## 4. The ratchets
 
-All services emit structured logs and traces. Monitoring is not an afterthought.
+The gate compares against committed numbers instead of absolute targets such as "zero lint
+errors". Each number only moves in the safe direction:
 
-### 11.1 Instrumentation Standards
-
-```python
-# Structured logging: every agent action is a structured log event
-import structlog
-
-log = structlog.get_logger()
-
-log.info(
-    "agent.skill_called",
-    agent_id=agent_id,
-    skill="guardian_check",
-    cynefin_domain=state.cynefin_domain,
-    confidence=state.overall_confidence,
-    guardian_verdict=verdict.status,
-    duration_ms=elapsed_ms,
-    session_id=state.session_id,
-)
-```
-
-### 11.2 Key Metrics to Monitor
-
-| Metric | Alert Threshold | What it indicates |
+| File | Holds | Rule |
 |---|---|---|
-| `guardian.rejection_rate` | > 20% over 5m | Policy misconfiguration or adversarial input |
-| `agent.hallucination_risk_avg` | > 0.5 over 10m | LLM reliability degradation |
-| `semantic_layer.write_latency_p99` | > 100ms | Database performance issue |
-| `causal_drift.detected_count` | > 3 per hour | Data distribution shift |
-| `circuit_breaker.open_count` | > 0 | Agent loop or escalation spike |
-| `audit_log.insert_failure_rate` | > 0% | Critical: audit trail at risk |
+| `scripts/coverage-floor.json` | Backend line-coverage floor (full suite) | Fails below the floor. Lowering it needs a `Ratchet-Exempt: <why>` commit trailer |
+| `scripts/lint-baseline.json` | Maximum ruff and mypy findings, with the exact args and tool version: backend ruff and mypy, `scripts/` ruff (0), and mypy for each package (0) | Fails above the maximum. Raising it needs `Ratchet-Exempt`. When a run finds fewer, lower the number in the same change |
+| `scripts/gate-scope-floors.json` | Minimum counts per step, and the named known gaps of `gate-scope` | A new gap fails, and so does a listed gap that has been closed but not struck off |
+| `scripts/contract-parity.json` | Known enumeration divergences | The list only shrinks |
+
+Each file's `_comment` records when, and at which commit, its numbers were measured.
+
+---
+
+## 5. CI and release
+
+### 5.1 CI (`.github/workflows/ci.yml`)
+
+One job, on every push and on pull requests to `main`:
+
+1. Check out with full history. The register cites some claims at the revision where they were
+   made (`file@rev:line`), and a shallow clone cannot verify those.
+2. Set up Python 3.12 and Node 20; cache the benchmark data (keyed on the pre-registrations).
+3. Build `backend/.venv` (backend plus `causal-core` and `causal-decision`) and
+   `packages/causal-core/.venv` (the three packages with their test extras); `npm ci`.
+4. **Licence gate**: `check_licenses.py` for `causal-core`, `causal-mcp` and `causal-decision`
+   (runtime dependencies must be permissive).
+5. Run `.gnomon/ci.sh`, teeing its log.
+6. **No unexpected skips**: fail if the summary shows any SKIPPED step other than
+   `frontend-eslint`. In CI a skip would mean the environment is broken.
+7. Upload the gate log as an artifact.
+
+### 5.2 Release (`.github/workflows/release.yml`)
+
+On a `v*` tag: re-run the three packages' full suites (with `CAUSAL_FETCH=1`, so T2 and T3 run;
+T0 and D0 as their own steps) and the licence check, then build sdists and wheels, then publish `causal-core`, `causal-decision` and
+`causal-mcp` to PyPI with Trusted Publishing (OIDC, no stored token). The backend and frontend
+are not published or deployed. The repository has no deployment pipeline and no staging
+environment.
+
+### 5.3 Not in CI
+
+Security scanning (Bandit, pip-audit, container scans: register `security-scanning-not-in-ci`),
+TLC model checking of `specs/guardian_policy.tla` (register `tla-spec-not-checked`), Playwright,
+eslint, and any performance or load test.
+
+---
+
+## 6. Performance
+
+There is no performance suite. The backend declares a `performance` pytest marker that no test
+uses. The latency targets that DATA_LAYER.md used to list were never measured, and are in
+[`history/DATA_LAYER-targets-2026-09-25.md`](history/DATA_LAYER-targets-2026-09-25.md).
+
+---
+
+## 7. Code quality configuration
+
+- **Python:** ruff and mypy (`--strict`) are configured in `backend/pyproject.toml` and in each
+  package's own `pyproject.toml`, pinned to one minor version each (a ratchet's count is only
+  comparable within a version), and run as ratchets (§4). pytest runs with `asyncio_mode = "auto"`. There is no `--cov-fail-under`: it
+  applied to every invocation, so partial runs always failed, and the coverage floor replaced
+  it.
+- **TypeScript:** `tsc --noEmit` is the frontend's type gate. ESLint is not configured, so it
+  does not run.
+- **Rust:** none. The repository contains no Rust code.
+
+---
+
+## 8. Formal methods
+
+`specs/guardian_policy.tla` (with `guardian_policy.cfg`) is a TLA+ model of the Guardian's
+safety properties: verdict immutability, no write without an APPROVED verdict, an append-only
+audit log, and the circuit breaker. **It is not model-checked.** TLC does not run in CI, and the
+spec is not runnable as written (register `tla-spec-not-checked`). No Z3 or other solver is
+used anywhere.
+
+---
+
+## 9. Observability
+
+The backend logs structured events with `structlog`: `auth.*`, `governance.*`, `registry.*`,
+`plan_ahead.*`, `drift_sensor.*`, and so on. Every Guardian verdict is a row in `audit_log`.
+There is no metrics pipeline, dashboard or alerting on these. The verdict signing key's
+absence is logged at CRITICAL (`guardian.signing_key.ephemeral`).

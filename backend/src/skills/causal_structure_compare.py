@@ -96,9 +96,6 @@ async def causal_structure_compare(
         source = edge.get("source", {})
         target = edge.get("target", {})
 
-        source_id = source.get("id", "")
-        target_id = target.get("id", "")
-
         # Get variable names/indices
         source_var = _get_variable_name(source)
         target_var = _get_variable_name(target)

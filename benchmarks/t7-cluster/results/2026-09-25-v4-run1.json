@@ -1,0 +1,106 @@
+{
+  "suite": "T7",
+  "prereg_sha256": "sha256:2c146d0c9052a277903ac08c314bc0b4acee230c83a5b1ea07c9477575f5579a",
+  "prereg_version": 4,
+  "git": "3a220fdc3cf711a71e18a9d10d803a72e95406a8",
+  "designs": [
+    {
+      "id": "many_clusters",
+      "reps": 3000,
+      "results": 3000,
+      "mean_error": 0.0008511670757182264,
+      "mcse": 0.0014482172707460958,
+      "bias_in_mcse": 0.5877343772317535,
+      "coverage": 0.942,
+      "mean_icc": 0.09975559585787006,
+      "size_guard_refusals": 0,
+      "first_failure": ""
+    },
+    {
+      "id": "moderate",
+      "reps": 3000,
+      "results": 3000,
+      "mean_error": -0.004754564449624955,
+      "mcse": 0.003272382890311096,
+      "bias_in_mcse": 1.4529364713714634,
+      "coverage": 0.95,
+      "mean_icc": 0.29587944012310685,
+      "size_guard_refusals": 0,
+      "first_failure": ""
+    },
+    {
+      "id": "few_clusters",
+      "reps": 3000,
+      "results": 3000,
+      "mean_error": -0.0018526250307714094,
+      "mcse": 0.004604833539648386,
+      "bias_in_mcse": 0.40232182440906894,
+      "coverage": 0.95,
+      "mean_icc": 0.2945387107388905,
+      "size_guard_refusals": 0,
+      "first_failure": ""
+    },
+    {
+      "id": "null_effect",
+      "reps": 3000,
+      "results": 3000,
+      "mean_error": 0.0010202307455004203,
+      "mcse": 0.0032338364787339057,
+      "bias_in_mcse": 0.31548618868318773,
+      "coverage": 0.9523333333333334,
+      "mean_icc": 0.2971535081092166,
+      "size_guard_refusals": 0,
+      "first_failure": ""
+    },
+    {
+      "id": "size_dependent",
+      "reps": 3000,
+      "results": 2938,
+      "mean_error": -0.004495512189479914,
+      "mcse": 0.002458866791515984,
+      "bias_in_mcse": 1.8282861865437863,
+      "coverage": 0.9475833900612661,
+      "mean_icc": 0.13235291777610145,
+      "size_guard_refusals": 62,
+      "first_failure": ""
+    }
+  ],
+  "refusals": {
+    "varies_within_cluster": "refusal:DESIGN_CHECK_FAILED",
+    "too_few_clusters": "refusal:LOW_N",
+    "not_randomized": "refusal:INVALID_INPUT",
+    "extreme_size_variation": "refusal:DESIGN_CHECK_FAILED"
+  },
+  "seeded_defects_caught": {
+    "cluster_weighted_estimate": true,
+    "unit_level_se": true
+  },
+  "seeded_defect_designs": {
+    "cluster_weighted_estimate": {
+      "id": "size_dependent",
+      "reps": 3000,
+      "results": 2938,
+      "mean_error": -0.10076886103574458,
+      "mcse": 0.002214129298710516,
+      "bias_in_mcse": 45.51173280369454,
+      "coverage": 0.9132062627637849,
+      "mean_icc": 0.13235291777610145,
+      "size_guard_refusals": 62,
+      "first_failure": ""
+    },
+    "unit_level_se": {
+      "id": "moderate",
+      "reps": 3000,
+      "results": 3000,
+      "mean_error": -0.004754564449624955,
+      "mcse": 0.003272382890311096,
+      "bias_in_mcse": 1.4529364713714634,
+      "coverage": 0.37133333333333335,
+      "mean_icc": 0.29587944012310685,
+      "size_guard_refusals": 0,
+      "first_failure": ""
+    }
+  },
+  "failures": [],
+  "passed": true
+}

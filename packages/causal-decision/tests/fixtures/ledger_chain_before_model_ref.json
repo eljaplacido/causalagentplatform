@@ -1,0 +1,331 @@
+{
+ "_comment": [
+  "A decision chain as causal-decision 0.4.0 serialised it, before EvidenceRef gained `model`.",
+  "Records already in a ledger must keep verifying after the contract grows: tests/test_ledger.py loads these and runs verify_chain."
+ ],
+ "records": [
+  {
+   "sequence": 0,
+   "recorded_at": "2026-09-21T09:00:00+00:00",
+   "decision": {
+    "verdict": "act",
+    "request": {
+     "action": "apply remediation playbook X",
+     "outcome": "minutes",
+     "direction": "decrease",
+     "risk_class": "medium",
+     "reversible": true,
+     "minimum_worthwhile_effect": 5.0,
+     "harm_threshold": 0.0,
+     "population": null,
+     "horizon": null,
+     "can_randomize": true,
+     "randomization_unit": "incident",
+     "units_per_day": 40.0
+    },
+    "evidence": {
+     "kind": "result",
+     "status": "supported",
+     "refusal_reason": null,
+     "estimator": "aipw",
+     "estimand": "ATT: E[Y(T=1) - Y(T=0) | T=1]",
+     "identification_strategy": "backdoor",
+     "identification_tier": "A",
+     "benefit": 8.899180537109606,
+     "benefit_ci": [
+      8.3034004939148,
+      9.494960580304411
+     ],
+     "ci_level": 0.95,
+     "e_value_ci": 2.884737619789693,
+     "refuters_failed": [],
+     "triangulation_agree": true,
+     "n_used": 4000,
+     "outcome_sd": 13.574677176194877,
+     "result_digest": "sha256:a21fa9fe979f7f5adabffe6f910f4fa5a1be3a74c85dccd33a3b2591714d7182",
+     "segments": [],
+     "heterogeneity_differs": null
+    },
+    "checks": [
+     {
+      "name": "the whole interval clears the minimum worthwhile effect",
+      "passed": true,
+      "allows": "act",
+      "detail": "interval [8.303, 9.495] against 5"
+     },
+     {
+      "name": "the interval excludes material harm",
+      "passed": true,
+      "allows": "act",
+      "detail": "lower bound 8.303 against a harm threshold of 0"
+     },
+     {
+      "name": "the result is supported",
+      "passed": true,
+      "allows": "act",
+      "detail": "status supported"
+     },
+     {
+      "name": "identification is nonparametric",
+      "passed": true,
+      "allows": "act",
+      "detail": "tier A"
+     },
+     {
+      "name": "falsification tests passed",
+      "passed": true,
+      "allows": "act",
+      "detail": "all passed"
+     },
+     {
+      "name": "estimators with different assumptions agree",
+      "passed": true,
+      "allows": "act",
+      "detail": "agree"
+     },
+     {
+      "name": "robust to unmeasured confounding",
+      "passed": true,
+      "allows": "act",
+      "detail": "E-value for the interval bound 2.88 against a bar of 1.5"
+     },
+     {
+      "name": "the estimate is precise enough to act on",
+      "passed": true,
+      "allows": "act",
+      "detail": "interval width is 0.13x the effect (limit 1.00x)"
+     }
+    ],
+    "rationale": "Act: apply remediation playbook X. The estimate is \u27e6claim:effect\u27e7 on minutes (\u27e6claim:ci.level\u27e7 CI \u27e6claim:effect.ci.lo\u27e7 to \u27e6claim:effect.ci.hi\u27e7, n = \u27e6claim:n\u27e7, estimator aipw), read as a benefit of 8.303 to 9.495 in the requested direction (decrease).",
+    "experiment": null,
+    "what_would_change_it": [],
+    "policy_digest": "sha256:5250c054a0e650572636d5b1a8dfee42b0088c0389d9ffa5a6b3e74ef35b05cc",
+    "request_digest": "sha256:dc5aa91431885a3e509f62187c95005f6cc461924b7e85a45e97bc2654fda208",
+    "decision_digest": "sha256:f2cff1d0dbcc5a973cf05e339cacbad6149aa9af613891d3bb74288ac2d9b067"
+   },
+   "evidence": {
+    "outcome_kind": "result",
+    "result_digest": "sha256:a21fa9fe979f7f5adabffe6f910f4fa5a1be3a74c85dccd33a3b2591714d7182",
+    "graph_digest": "sha256:6f4ff00f87a192dfbe3c1f756e1dc008062e9c0e5d8c9697dde019c2614f0518",
+    "data_digest": "sha256:d1021da11fb91c153696113ba971fe0352ec149963189f01d84bd733728d0a65",
+    "query_digest": "sha256:d565be1580d9ce78b2f1988d49b41b97c1a0e4227c8968d435763fb8999db425",
+    "contract_version": "0.4.0",
+    "core_version": "0.4.0"
+   },
+   "approval": null,
+   "executed": false,
+   "prev_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "entry_digest": "sha256:34fa737f5be4558bf9a3dd6b3bd8f0863c878e0c3763b1d13c2edbf89d8f0095"
+  },
+  {
+   "sequence": 1,
+   "recorded_at": "2026-09-21T09:00:00+00:00",
+   "decision": {
+    "verdict": "act_with_approval",
+    "request": {
+     "action": "apply remediation playbook X",
+     "outcome": "minutes",
+     "direction": "decrease",
+     "risk_class": "medium",
+     "reversible": false,
+     "minimum_worthwhile_effect": 5.0,
+     "harm_threshold": 0.0,
+     "population": null,
+     "horizon": null,
+     "can_randomize": true,
+     "randomization_unit": "incident",
+     "units_per_day": 40.0
+    },
+    "evidence": {
+     "kind": "result",
+     "status": "supported",
+     "refusal_reason": null,
+     "estimator": "aipw",
+     "estimand": "ATT: E[Y(T=1) - Y(T=0) | T=1]",
+     "identification_strategy": "backdoor",
+     "identification_tier": "A",
+     "benefit": 8.899180537109606,
+     "benefit_ci": [
+      8.3034004939148,
+      9.494960580304411
+     ],
+     "ci_level": 0.95,
+     "e_value_ci": 2.884737619789693,
+     "refuters_failed": [],
+     "triangulation_agree": true,
+     "n_used": 4000,
+     "outcome_sd": 13.574677176194877,
+     "result_digest": "sha256:a21fa9fe979f7f5adabffe6f910f4fa5a1be3a74c85dccd33a3b2591714d7182",
+     "segments": [],
+     "heterogeneity_differs": null
+    },
+    "checks": [
+     {
+      "name": "the whole interval clears the minimum worthwhile effect",
+      "passed": true,
+      "allows": "act",
+      "detail": "interval [8.303, 9.495] against 5"
+     },
+     {
+      "name": "the interval excludes material harm",
+      "passed": true,
+      "allows": "act",
+      "detail": "lower bound 8.303 against a harm threshold of 0"
+     },
+     {
+      "name": "the result is supported",
+      "passed": true,
+      "allows": "act",
+      "detail": "status supported"
+     },
+     {
+      "name": "identification is nonparametric",
+      "passed": true,
+      "allows": "act",
+      "detail": "tier A"
+     },
+     {
+      "name": "falsification tests passed",
+      "passed": true,
+      "allows": "act",
+      "detail": "all passed"
+     },
+     {
+      "name": "estimators with different assumptions agree",
+      "passed": true,
+      "allows": "act",
+      "detail": "agree"
+     },
+     {
+      "name": "robust to unmeasured confounding",
+      "passed": true,
+      "allows": "act",
+      "detail": "E-value for the interval bound 2.88 against a bar of 1.5"
+     },
+     {
+      "name": "the estimate is precise enough to act on",
+      "passed": true,
+      "allows": "act",
+      "detail": "interval width is 0.13x the effect (limit 1.00x)"
+     },
+     {
+      "name": "the action is reversible",
+      "passed": false,
+      "allows": "act_with_approval",
+      "detail": "an irreversible action is never automated, whatever the evidence says"
+     }
+    ],
+    "rationale": "Ask a person to approve: apply remediation playbook X. The estimate is \u27e6claim:effect\u27e7 on minutes (\u27e6claim:ci.level\u27e7 CI \u27e6claim:effect.ci.lo\u27e7 to \u27e6claim:effect.ci.hi\u27e7, n = \u27e6claim:n\u27e7, estimator aipw), read as a benefit of 8.303 to 9.495 in the requested direction (decrease).",
+    "experiment": null,
+    "what_would_change_it": [
+     "the action is reversible: an irreversible action is never automated, whatever the evidence says"
+    ],
+    "policy_digest": "sha256:5250c054a0e650572636d5b1a8dfee42b0088c0389d9ffa5a6b3e74ef35b05cc",
+    "request_digest": "sha256:f1e6830299c6aaedff7080d0f3f7f85343e6acc4b7e582bab8b042df1c5a7f98",
+    "decision_digest": "sha256:728fe66f947503a4df773c31289222927a294748806a623662d74a6d09f18d50"
+   },
+   "evidence": {
+    "outcome_kind": "result",
+    "result_digest": "sha256:a21fa9fe979f7f5adabffe6f910f4fa5a1be3a74c85dccd33a3b2591714d7182",
+    "graph_digest": "sha256:6f4ff00f87a192dfbe3c1f756e1dc008062e9c0e5d8c9697dde019c2614f0518",
+    "data_digest": "sha256:d1021da11fb91c153696113ba971fe0352ec149963189f01d84bd733728d0a65",
+    "query_digest": "sha256:d565be1580d9ce78b2f1988d49b41b97c1a0e4227c8968d435763fb8999db425",
+    "contract_version": "0.4.0",
+    "core_version": "0.4.0"
+   },
+   "approval": null,
+   "executed": false,
+   "prev_digest": "sha256:34fa737f5be4558bf9a3dd6b3bd8f0863c878e0c3763b1d13c2edbf89d8f0095",
+   "entry_digest": "sha256:150ebb4757c7be79b2fa52f4f13516defeda65b02935620479d8926b8114d28f"
+  },
+  {
+   "sequence": 2,
+   "recorded_at": "2026-09-21T09:00:00+00:00",
+   "decision": {
+    "verdict": "experiment",
+    "request": {
+     "action": "apply remediation playbook X",
+     "outcome": "minutes",
+     "direction": "decrease",
+     "risk_class": "medium",
+     "reversible": true,
+     "minimum_worthwhile_effect": 5.0,
+     "harm_threshold": 0.0,
+     "population": null,
+     "horizon": null,
+     "can_randomize": true,
+     "randomization_unit": "incident",
+     "units_per_day": 40.0
+    },
+    "evidence": {
+     "kind": "refusal",
+     "status": null,
+     "refusal_reason": "NON_IDENTIFIABLE",
+     "estimator": null,
+     "estimand": null,
+     "identification_strategy": null,
+     "identification_tier": null,
+     "benefit": null,
+     "benefit_ci": null,
+     "ci_level": null,
+     "e_value_ci": null,
+     "refuters_failed": [],
+     "triangulation_agree": null,
+     "n_used": 0,
+     "outcome_sd": 13.574677176194877,
+     "result_digest": null,
+     "segments": [],
+     "heterogeneity_differs": null
+    },
+    "checks": [
+     {
+      "name": "the effect could be estimated from the data",
+      "passed": false,
+      "allows": "experiment",
+      "detail": "NON_IDENTIFIABLE: the effect of playbook on minutes is not identified from the measured variables under this graph (FAIL: hedge F=['minutes', 'playbook'] F'=['minutes'])"
+     }
+    ],
+    "rationale": "Run an experiment before acting: apply remediation playbook X. No effect could be estimated: NON_IDENTIFIABLE.",
+    "experiment": {
+     "question": "Does 'apply remediation playbook X' change minutes by at least 5 (decrease)?",
+     "design": "randomized_units",
+     "unit": "incident",
+     "arms": [
+      "control",
+      "treated"
+     ],
+     "allocation": 0.5,
+     "minimum_detectable_effect": 5.0,
+     "outcome_sd": 13.574677176194877,
+     "units_per_arm": 116,
+     "estimated_days": 5.8,
+     "guardrails": [
+      "stop if minutes moves against the desired direction by more than 0",
+      "randomize the assignment; do not let the agent choose who is treated",
+      "fix the analysis before the data arrive: this is the estimand above"
+     ],
+     "note": "Sized for 80% power at alpha 0.05, two-sided, equal allocation."
+    },
+    "what_would_change_it": [
+     "the effect could be estimated from the data: NON_IDENTIFIABLE: the effect of playbook on minutes is not identified from the measured variables under this graph (FAIL: hedge F=['minutes', 'playbook'] F'=['minutes'])"
+    ],
+    "policy_digest": "sha256:5250c054a0e650572636d5b1a8dfee42b0088c0389d9ffa5a6b3e74ef35b05cc",
+    "request_digest": "sha256:dc5aa91431885a3e509f62187c95005f6cc461924b7e85a45e97bc2654fda208",
+    "decision_digest": "sha256:d7330c416042c6794f4473ac6ad7c9747b71bac66e38621c1a4e7a5cb40fed67"
+   },
+   "evidence": {
+    "outcome_kind": "refusal",
+    "result_digest": null,
+    "graph_digest": "sha256:0f53197f961483b7fdd91d7d33f7c6e433b01493585c6ee68b4ece797dda3fa8",
+    "data_digest": null,
+    "query_digest": "sha256:2bd9dcb3b4293f00e2c0ed7d3a5a6fb4fb76d4036743628e83d2029800d2afe1",
+    "contract_version": "0.4.0",
+    "core_version": "0.4.0"
+   },
+   "approval": null,
+   "executed": false,
+   "prev_digest": "sha256:150ebb4757c7be79b2fa52f4f13516defeda65b02935620479d8926b8114d28f",
+   "entry_digest": "sha256:f07fd0b8e1a8645b2deee46bb7ca3335446c7758b4d196230989b15c38ab5c63"
+  }
+ ]
+}

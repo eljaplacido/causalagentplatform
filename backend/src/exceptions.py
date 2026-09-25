@@ -92,6 +92,25 @@ class VersionConflictError(SemanticLayerError):
     """Optimistic concurrency conflict on semantic object version."""
 
 
+class InvalidTransitionError(SemanticLayerError):
+    """A lifecycle move the object's current status does not allow.
+
+    Only DRAFT and UNDER_REVIEW objects may be approved or rejected; APPROVED and
+    DEPRECATED are terminal for this path (ADR-001). A valid verdict does not make
+    an invalid transition valid.
+    """
+
+    def __init__(self, object_id: str, object_type: str, current: str, attempted: str) -> None:
+        self.object_id = object_id
+        self.object_type = object_type
+        self.current = current
+        self.attempted = attempted
+        super().__init__(
+            f"{object_type} '{object_id}' is {current}; it cannot be {attempted} "
+            "(only DRAFT or UNDER_REVIEW objects can)"
+        )
+
+
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
 

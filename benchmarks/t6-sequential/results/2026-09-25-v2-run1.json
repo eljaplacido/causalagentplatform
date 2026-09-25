@@ -1,0 +1,100 @@
+{
+  "suite": "T6",
+  "prereg_sha256": "sha256:7a986598af8e4373d63cb81952dad8c37785c43ba392cc7058606f4d910c36f8",
+  "prereg_version": 2,
+  "git": "a977ead49ffc671ea968d674d92e6b7a82ec434b",
+  "streams": [
+    {
+      "id": "null",
+      "tau": 0.0,
+      "reps": 500,
+      "results": 499,
+      "uniform_coverage": 0.9879759519038076,
+      "above_rate": 0.004008016032064128,
+      "below_rate": 0.008016032064128256,
+      "median_first_above": 3450.0,
+      "median_first_below": 1800.0,
+      "srm_refusals": 1,
+      "first_failure": ""
+    },
+    {
+      "id": "benefit",
+      "tau": 0.2,
+      "reps": 500,
+      "results": 500,
+      "uniform_coverage": 0.982,
+      "above_rate": 0.998,
+      "below_rate": 0.0,
+      "median_first_above": 1000.0,
+      "median_first_below": null,
+      "srm_refusals": 0,
+      "first_failure": ""
+    },
+    {
+      "id": "harm",
+      "tau": -0.25,
+      "reps": 500,
+      "results": 498,
+      "uniform_coverage": 0.9859437751004017,
+      "above_rate": 0.0,
+      "below_rate": 1.0,
+      "median_first_above": null,
+      "median_first_below": 700.0,
+      "srm_refusals": 2,
+      "first_failure": ""
+    },
+    {
+      "id": "skewed_null",
+      "tau": 0.0,
+      "reps": 500,
+      "results": 500,
+      "uniform_coverage": 0.99,
+      "above_rate": 0.006,
+      "below_rate": 0.004,
+      "median_first_above": 2700.0,
+      "median_first_below": 2750.0,
+      "srm_refusals": 0,
+      "first_failure": ""
+    },
+    {
+      "id": "drifting_null",
+      "tau": 0.0,
+      "reps": 500,
+      "results": 500,
+      "uniform_coverage": 0.982,
+      "above_rate": 0.01,
+      "below_rate": 0.008,
+      "median_first_above": 800.0,
+      "median_first_below": 1500.0,
+      "srm_refusals": 0,
+      "first_failure": ""
+    },
+    {
+      "id": "unequal_allocation",
+      "tau": 0.2,
+      "reps": 500,
+      "results": 499,
+      "uniform_coverage": 0.9939879759519038,
+      "above_rate": 0.9759519038076152,
+      "below_rate": 0.0,
+      "median_first_above": 1500.0,
+      "median_first_below": null,
+      "srm_refusals": 1,
+      "first_failure": ""
+    }
+  ],
+  "refusals": {
+    "not_randomized": "refusal:INVALID_INPUT",
+    "allocation_unknown": "refusal:INVALID_INPUT",
+    "repeated_order": "refusal:INVALID_INPUT",
+    "non_binary_treatment": "refusal:INVALID_INPUT",
+    "too_short": "refusal:LOW_N"
+  },
+  "seeded_defects_caught": {
+    "fixed_n_interval": true,
+    "ignore_allocation": true,
+    "log10_boundary": true
+  },
+  "failures": [],
+  "passed": true
+}

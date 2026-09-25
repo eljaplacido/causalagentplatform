@@ -167,7 +167,7 @@ class ChangeImpactAgent(BaseAgent):
                 )
             )
 
-        for i, impact in enumerate(impact_estimates):
+        for impact in impact_estimates:
             score = abs(impact["heuristic_score"])
             risk = "HIGH" if score > 0.5 else "MEDIUM" if score > 0.1 else "LOW"
             recommendations.append(

@@ -1,13 +1,22 @@
 """
-Platform operational API — real health and metrics derived from live backend state.
+Platform operational API.
 
-Endpoints:
+Computed at request time from the live SQLite database, with no static values:
   GET /api/v1/platform/connectors  — health of each backend component (DB, registry, pipeline)
   GET /api/v1/platform/metrics     — computed operational metrics from audit_log + sessions
   GET /api/v1/platform/drift       — drift alerts derived from recent rejected verdicts
 
-All data is computed at request time from the live SQLite database.
-No static or mock values.
+NOT measured from platform state, and on the register as
+`evaluation-endpoints-not-measured` — each computes its answer from inputs the
+caller supplied or from a constant, so none of them observes an agent:
+  GET  /api/v1/platform/evaluation/consistency       — scores N empty lists against each other
+  POST /api/v1/platform/evaluation/calibration       — scores the confidences in the request body
+  GET  /api/v1/platform/evaluation/decision-quality  — combines four query parameters
+
+`calibration` here is confidence *spread*, not calibration: calibration needs
+realized outcomes to compare predictions against, and nothing in this repository
+records one. The decision layer's real calibration gap is a separate register
+entry, `decision-calibration`.
 """
 
 from __future__ import annotations

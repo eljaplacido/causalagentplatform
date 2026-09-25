@@ -11,10 +11,10 @@ import { useState } from "react";
 import { ChevronDown, ChevronRight, Shield } from "lucide-react";
 import { cn, formatTimestamp } from "@/lib/utils";
 import { GuardianVerdictBadge } from "./GuardianVerdictBadge";
-import type { AuditEntry } from "@/lib/types";
+import type { AuditLogRow } from "@/lib/types";
 
 export interface AuditLogPanelProps {
-  entries: AuditEntry[];
+  entries: AuditLogRow[];
   /** Initially expanded */
   defaultOpen?: boolean;
   className?: string;

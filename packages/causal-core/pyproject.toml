@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "causal-core"
-version = "0.4.0"
+dynamic = ["version"]
 description = "Causal inference kernel that identifies before it estimates, abstains when it cannot, and proves every number it returns."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -53,6 +53,11 @@ causal-core = "causal_core.cli:main"
 [project.entry-points."causal_core.estimators"]
 # Third-party packages register estimators under this group; see causal_core.estimators.
 
+[tool.hatch.version]
+# One source: the code reports the version it was built as, even from an editable
+# install whose metadata was written before the last bump.
+path = "src/causal_core/_version.py"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/causal_core"]
 
@@ -83,6 +88,9 @@ addopts = ["--tb=short", "-q"]
 markers = [
     "t0: T0 analytic-SCM correctness gate (pre-registered; see benchmarks/t0/PRE-REGISTRATION.md)",
     "t4: T4 segment-effect gate (pre-registered; see benchmarks/t4-segments/PRE-REGISTRATION.md)",
+    "t7: T7 cluster-randomized designs gate (pre-registered; see benchmarks/t7-cluster/PRE-REGISTRATION.md)",
+    "t6: T6 anytime-valid monitoring gate (pre-registered; see benchmarks/t6-sequential/PRE-REGISTRATION.md)",
+    "t5: T5 difference-in-differences gate (pre-registered; see benchmarks/t5-did/PRE-REGISTRATION.md)",
     "slow: long-running (nightly) configuration",
     "crosscheck: compares against an independent engine (y0 / DoWhy); skipped if not installed",
     "real_data: pre-registered real-data benchmarks (T2 IHDP, T3 LaLonde); skipped unless cached or CAUSAL_FETCH=1",

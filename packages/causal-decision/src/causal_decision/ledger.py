@@ -25,6 +25,7 @@ from typing import Literal
 from causal_core.canonical import digest
 from pydantic import BaseModel, ConfigDict, Field
 
+from causal_decision.assumptions import ModelRef
 from causal_decision.contract import Decision
 
 #: What the first entry points back at. A fixed, recognisable value: an empty
@@ -60,6 +61,12 @@ class EvidenceRef(_Model):
     query_digest: str | None = None
     contract_version: str | None = None
     core_version: str | None = None
+    model: ModelRef | None = Field(
+        default=None,
+        description="The registered causal model version the analysis used, when it used one "
+        "(causal_decision.assumptions). None means the graph arrived inline and nothing but "
+        "graph_digest records which one it was.",
+    )
 
 
 class DecisionRecord(_Model):
@@ -80,8 +87,18 @@ class DecisionRecord(_Model):
     entry_digest: str = ""
 
     def content(self) -> dict[str, object]:
-        """The bytes the digest covers: everything except the digest itself."""
-        return self.model_dump(mode="json", exclude={"entry_digest"})
+        """The bytes the digest covers: everything except the digest itself.
+
+        ``evidence.model`` is left out when it is None, so every record sealed before
+        the field existed digests exactly as it did then (pinned by
+        tests/fixtures/ledger_chain_before_model_ref.json). A contract may grow; the
+        records already in a ledger must keep verifying.
+        """
+        out = self.model_dump(mode="json", exclude={"entry_digest"})
+        evidence = out["evidence"]
+        if isinstance(evidence, dict) and evidence.get("model") is None:
+            evidence.pop("model", None)
+        return out
 
     def sealed(self) -> DecisionRecord:
         return self.model_copy(update={"entry_digest": digest(self.content())})
@@ -97,7 +114,7 @@ class ChainReport(_Model):
     reason: str = ""
 
 
-def _evidence_of(outcome: object) -> EvidenceRef:
+def _evidence_of(outcome: object, model: ModelRef | None = None) -> EvidenceRef:
     prov = getattr(outcome, "provenance", None)
     kind = getattr(outcome, "kind", None)
     if kind not in ("result", "refusal", "apparatus_failure"):
@@ -110,6 +127,7 @@ def _evidence_of(outcome: object) -> EvidenceRef:
         query_digest=getattr(prov, "query_digest", None),
         contract_version=getattr(prov, "contract_version", None),
         core_version=getattr(prov, "core_version", None),
+        model=model,
     )
 
 
@@ -120,13 +138,21 @@ def append(
     recorded_at: str,
     approval: Approval | None = None,
     executed: bool = False,
+    model: ModelRef | None = None,
 ) -> DecisionRecord:
-    """Seal a new entry onto the chain whose last entry is ``tail``."""
+    """Seal a new entry onto the chain whose last entry is ``tail``.
+
+    ``model`` names the registered model version the analysis ran on. It sits beside
+    ``graph_digest``, which covers the graph the kernel actually analysed (a model
+    node with no data column becomes latent there, and refuted edges are dropped), so
+    the two digests differ by design; the caller is trusted to pass the version it
+    analysed with, and the backend does so from the same object.
+    """
     return DecisionRecord(
         sequence=0 if tail is None else tail.sequence + 1,
         recorded_at=recorded_at,
         decision=decision,
-        evidence=_evidence_of(outcome),
+        evidence=_evidence_of(outcome, model),
         approval=approval,
         executed=executed,
         prev_digest=GENESIS if tail is None else tail.entry_digest,
@@ -167,6 +193,69 @@ def verify_chain(records: list[DecisionRecord]) -> ChainReport:
         expected_prev = rec.entry_digest
 
     return ChainReport(ok=True, length=len(records), head_digest=records[-1].entry_digest)
+
+
+class Checkpoint(_Model):
+    """A chain's head at one moment, to be published somewhere its writer cannot rewrite.
+
+    Publishing is the deployment's job -- a transparency log, a countersigning party, a
+    signed commit in another repository, an email to an auditor. What this module can
+    do is say exactly what to publish, and check a chain against what was published.
+    """
+
+    sequence: int = Field(ge=0)
+    entry_digest: str
+    length: int = Field(ge=1)
+
+
+class AnchorReport(_Model):
+    ok: bool
+    checked: int
+    chain: ChainReport
+    broken_at: int | None = Field(
+        default=None, description="The sequence of the first checkpoint the chain contradicts."
+    )
+    reason: str = ""
+
+
+def checkpoint(records: list[DecisionRecord]) -> Checkpoint:
+    """The head to publish. Refuses an empty or internally broken chain."""
+    report = verify_chain(records)
+    if not records or not report.ok:
+        raise ValueError(f"no checkpoint for this chain: {report.reason or 'it is empty'}")
+    head = records[-1]
+    return Checkpoint(sequence=head.sequence, entry_digest=head.entry_digest,
+                      length=len(records))
+
+
+def verify_against(records: list[DecisionRecord], checkpoints: list[Checkpoint]) -> AnchorReport:
+    """Whether the chain still contains every published checkpoint.
+
+    ``verify_chain`` alone passes a chain rewritten from an altered entry onward,
+    because every digest after the edit is recomputed. A checkpoint published before
+    the rewrite names a digest the rewritten chain no longer has at that sequence --
+    that is the difference between detecting tampering and evidencing it.
+    """
+    report = verify_chain(records)
+    if not report.ok:
+        return AnchorReport(ok=False, checked=0, chain=report, reason=report.reason)
+    by_seq = {r.sequence: r for r in records}
+    for i, cp in enumerate(sorted(checkpoints, key=lambda c: c.sequence)):
+        rec = by_seq.get(cp.sequence)
+        if rec is None:
+            return AnchorReport(
+                ok=False, checked=i, chain=report, broken_at=cp.sequence,
+                reason=f"a checkpoint names entry {cp.sequence}, which the chain no longer has: "
+                "entries were removed after it was published",
+            )
+        if rec.entry_digest != cp.entry_digest:
+            return AnchorReport(
+                ok=False, checked=i, chain=report, broken_at=cp.sequence,
+                reason=f"entry {cp.sequence} digests to {rec.entry_digest[:23]}..., but the "
+                f"checkpoint published for it says {cp.entry_digest[:23]}...: the chain was "
+                "rewritten after the checkpoint was published",
+            )
+    return AnchorReport(ok=True, checked=len(checkpoints), chain=report)
 
 
 def replays(record: DecisionRecord, decision: Decision) -> bool:

@@ -102,6 +102,12 @@ def main() -> None:
     protocol_out = _claim_stdout_for_protocol()
     _configure_logging()
     server = build_server()
+    log.warning(
+        "causal-platform MCP server is DEPRECATED: use packages/causal-mcp (console script "
+        "`causal-mcp`), which serves the causal-core kernel with typed outputs, the decision "
+        "layer and a narrative verifier. See conformance/declared_not_implemented.json "
+        "entry legacy-mcp-server."
+    )
     log.info("causal-platform MCP server starting (stdio transport)")
     anyio.run(_serve_stdio, server, protocol_out)
 

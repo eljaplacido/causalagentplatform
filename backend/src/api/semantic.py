@@ -243,6 +243,13 @@ async def submit_draft(
             detail=f"Invalid {body.object_type} payload: {exc}",
         ) from exc
 
+    # Attribution comes from the token, not from the body. `created_by` is a
+    # required field on CausalEntity and GraphFragment, so the submitter has to
+    # put *something* there -- and left to itself that something can be anyone.
+    # CausalEdge and Assumption have no such field and are left alone.
+    if "created_by" in type(draft_obj).model_fields:
+        draft_obj = draft_obj.model_copy(update={"created_by": user_ref})
+
     # Build an EpistemicState for the governance check
     state = EpistemicState(
         session_id=session_id,

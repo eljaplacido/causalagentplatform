@@ -4,14 +4,14 @@ build-backend = "hatchling.build"
 
 [project]
 name = "causal-mcp"
-version = "0.4.0"
+dynamic = ["version"]
 description = "MCP server exposing causal-core: identify, estimate, refute and verify causal claims from any agent."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
 authors = [{ name = "Eljas Suhonen" }]
 dependencies = [
-    "causal-core>=0.4.0",
+    "causal-core>=0.8.0",
     "mcp>=2.2,<3",
 ]
 
@@ -22,11 +22,16 @@ Issues = "https://github.com/eljaplacido/causalagentplatform/issues"
 
 [project.optional-dependencies]
 http = ["uvicorn>=0.30"]
-decision = ["causal-decision>=0.1.0"]
-dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.11"]
+decision = ["causal-decision>=0.4.0"]
+dev = ["pytest>=8", "ruff>=0.15,<0.16", "mypy>=1.20,<1.21"]  # pinned like the other packages: ratchets count per version
 
 [project.scripts]
 causal-mcp = "causal_mcp.server:main"
+
+[tool.hatch.version]
+# One source: the code reports the version it was built as, even from an editable
+# install whose metadata was written before the last bump.
+path = "src/causal_mcp/_version.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/causal_mcp"]

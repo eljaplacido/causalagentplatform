@@ -1,10 +1,22 @@
 # Data Layer, Semantic Layer & Integrations
 
 > **Scope:** Canonical specification for all data storage, causal semantic objects, integration patterns, and event streaming in the Unified Enterprise Causal Platform. All platform components must read and write data through the interfaces defined here.
+>
+> **Status (read against the code 2026-09-25):** §2 (the object model) matches
+> `backend/src/semantic_layer/models.py`. Every other section says what exists, or is marked as a
+> target design with its register id in
+> [`conformance/declared_not_implemented.json`](../conformance/declared_not_implemented.json).
+> The targets that were never built or measured (business-intelligence connectors, the benchmark
+> table) are in [`history/DATA_LAYER-targets-2026-09-25.md`](history/DATA_LAYER-targets-2026-09-25.md).
 
 ---
 
 ## 1. Architecture Overview
+
+> **Status:** target design. Kafka and Neo4j are not in use (registers `kafka-streaming`,
+> `neo4j-graph-store`), and no connector is called by the running platform. Today, data enters
+> through the REST API and MCP tools. The semantic layer is the SQL store of §3.2, and
+> estimation runs in `packages/causal-core`.
 
 ```
 External Sources ──► Connectors ──► Ingestion Bus (Kafka)
@@ -238,17 +250,40 @@ interface Evidence {
 
 ### 2.2 Semantic Layer Registry Rules
 
-1. **All writes require a Guardian `APPROVED` verdict.** No object is persisted without policy clearance.
-2. **All objects are versioned.** No in-place mutation. Deprecate and replace.
-3. **All approved objects have lineage.** Creator, approver, evidence chain, and Guardian verdict reference are mandatory fields.
-4. **Draft objects do not participate in simulations.** Only `APPROVED` graph fragments are accessible to SimulationAgent.
-5. **Deprecated objects are retained.** They are filtered from active surfaces but preserved in audit trail.
+These rules are what `backend/src/semantic_layer/registry.py` is meant to hold. Each carries
+its state today.
+
+1. **All writes require a Guardian `APPROVED` verdict.** Holds for the registry's write methods.
+   `propose_draft` and `promote_to_approved` refuse a verdict that does not exist, is not
+   APPROVED, is unsigned, names a different object, or has already been spent. `reject_draft`
+   applies the same checks to a REJECTED verdict. See
+   `backend/tests/guardian/test_verdict_binding.py`.
+2. **All objects are versioned.** Does not hold. Objects carry a `version` field (default
+   `1.0.0`), but approval and rejection `UPDATE` the row in place, changing its status, approver
+   and lineage, and no code path ever increments `version`. Register:
+   `semantic-objects-mutated-in-place`.
+3. **All approved objects have lineage.** Partial. Approval appends one lineage step, and the
+   verdict reference is set. See §6 and register `lineage-partial`.
+4. **Draft objects do not participate in simulations.** Holds: SimulationAgent refuses a fragment
+   that is not APPROVED.
+5. **Deprecated objects are retained.** Holds: nothing deletes a semantic object. Rejection is
+   stored as `DEPRECATED`, because `ApprovalStatus` has no `REJECTED` member.
 
 ---
 
 ## 3. Storage Architecture
 
+**What runs today:** one relational database, reached through `CloudSqlFactory`
+(`backend/src/db/factory.py`). It is SQLite when `ENV=local` and PostgreSQL otherwise. The causal
+graph lives in its tables (`causal_edges`, `graph_fragments`). §3.1 (Neo4j) and §3.3 (Kafka)
+are target designs.
+
 ### 3.1 Neo4j (Graph Store)
+
+> **Status:** target design, not implemented. See register `neo4j-graph-store`. The causal graph
+> is stored in SQL. The one Neo4j code path is an optional experience-buffer backend
+> (`skills/experience_buffer_neo4j.py`, used when `NEO4J_URI` is set), and the tests exercise it
+> only with mocks.
 
 **Used for:**
 - Causal graph storage: nodes (CausalEntity, Treatment, Outcome, Confounder) and edges (CausalEdge)
@@ -274,58 +309,76 @@ MATCH (f)-[:CONTAINS_EDGE]->(e:CausalEdge)
 RETURN f, collect(e) AS edges ORDER BY f.version DESC LIMIT 1
 ```
 
-**Benchmark target:** Neo4j 5.x, 3-node cluster for production. d-separation query p95 < 50ms on graphs with ≤ 500 nodes.
+**Benchmark target (never measured):** Neo4j 5.x, 3-node cluster for production. d-separation query p95 < 50ms on graphs with ≤ 500 nodes.
 
 ---
 
-### 3.2 PostgreSQL / Cloud SQL (Relational Store)
+### 3.2 Relational Store (PostgreSQL, SQLite locally)
 
-**Used for:**
-- Assumption registry (structured metadata)
-- Intervention log (actions + outcomes)
-- Evidence registry
-- Audit trail (append-only partition)
-- User session history
-- Per-user preferences
-- Simulation results
+There are two schemas, and they do not match:
 
-**Key tables:**
+- **PostgreSQL**: `backend/src/db/migrations/001_initial.sql` to `007_causal_models.sql`.
+  The only thing in this repository that applies them is `docker-compose.yml`, which mounts
+  them as the container's init scripts. No deploy step runs them.
+- **SQLite**: the `SQLITE_DDL` string in `backend/src/db/factory.py`, created by
+  `CloudSqlFactory.init_db()` when `ENV=local`. The test suite runs against this schema.
+
+| Table | PostgreSQL | SQLite | Holds |
+|---|---|---|---|
+| `audit_log` | 001, 002 | yes | Every Guardian verdict and agent action record. Append-only |
+| `verdict_consumption` | 002 | yes | One row per spent verdict. Its primary key is what makes a verdict single-use |
+| `causal_entities`, `causal_edges`, `graph_fragments`, `assumptions` | 001 (+002 for `causal_entities.guardian_verdict_ref`, +006 for `graph_fragments.lineage`) | yes | The semantic layer objects of §2 |
+| `interventions` | 001 | yes | Intervention log: expected vs actual effect, feedback closure |
+| `decision_records` | 003 | yes | The decision ledger's hash chain, one sealed record per row. Append-only |
+| `decision_followups` | 004, 005 | yes | The follow-up plan written at decision time, and each later realization. Append-only; 005 allows one row per decision and kind, so a decision is measured once |
+| `causal_model_versions`, `decision_model_refs` | 007 | yes | The assumption registry: immutable model versions (content-addressed, each naming its parent), and which decision used which version. Append-only |
+| `session_state` | **no** | yes | Latest `EpistemicState` snapshot per session (`orchestration/session_store.py`) |
+| `incidents` | **no** | yes | Incident records (`api/incidents.py`, which also uses the SQLite-only `INSERT OR REPLACE`) |
+
+`session_state` and `incidents` exist only in the SQLite schema. On a PostgreSQL deployment
+built from the migrations, session persistence and the incidents API would fail with a
+missing table (register `postgres-schema-missing-session-incidents`). Neither schema has an
+evidence, user-preference or simulation-result table. Evidence is referenced by id from
+`causal_edges.evidence_refs`, and simulation results live on `EpistemicState` (so, in SQLite,
+inside the `session_state` snapshot).
+
+**`audit_log`** (PostgreSQL after migration 002):
 
 ```sql
--- Audit trail: append-only, never updated
 CREATE TABLE audit_log (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  agent_id    TEXT NOT NULL,
-  action_type TEXT NOT NULL,
-  payload_hash TEXT NOT NULL,
-  guardian_verdict TEXT NOT NULL CHECK (guardian_verdict IN ('APPROVED','REJECTED','REQUIRES_ESCALATION')),
-  policy_rules_cited TEXT[],
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
-);
--- No UPDATE or DELETE permission on this table. Ever.
-
--- Intervention log with feedback loop
-CREATE TABLE interventions (
-  id                  UUID PRIMARY KEY,
-  treatment_ref       UUID REFERENCES treatments(id),
-  initiated_by        UUID REFERENCES users(id),
-  approved_by         UUID REFERENCES users(id),
-  guardian_verdict_ref UUID REFERENCES audit_log(id),
-  expected_effect     JSONB,
-  actual_effect       JSONB,
-  feedback_loop_closed BOOLEAN DEFAULT false,
-  created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
-  outcome_observed_at TIMESTAMPTZ
+    id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    agent_id            TEXT        NOT NULL,
+    action_type         TEXT        NOT NULL,
+    payload_hash        TEXT        NOT NULL,
+    guardian_verdict    TEXT        NOT NULL
+        CHECK (guardian_verdict IN ('APPROVED', 'REJECTED', 'REQUIRES_ESCALATION', 'PENDING')),
+    policy_rules_cited  TEXT[]      NOT NULL DEFAULT '{}',
+    session_id          TEXT,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    subject_id          UUID,   -- 002: the object this verdict authorises; NULL authorises none
+    signature           TEXT,   -- 002: HMAC-SHA256 by the Guardian; NULL = history, not authority
+    notes               TEXT    -- 002: approval notes / rejection reason, unsigned
 );
 ```
 
-**Cloud deployment:** Google Cloud SQL (PostgreSQL 16), IAM-authenticated from Cloud Run. Local dev: SQLite with transparent factory switch.
+On PostgreSQL, `audit_log`, `decision_records`, `decision_followups` and the 007 tables are append-only in two
+ways: `UPDATE` and `DELETE` are revoked from the application roles, and `BEFORE UPDATE/DELETE`
+triggers raise. The SQLite schema declares the same triggers.
 
-**Benchmark target:** p99 audit_log insert < 5ms, intervention query < 20ms.
+**`interventions`** (001) has no foreign keys to treatment or user tables, because none exist.
+`treatment_ref` and `target_entity_ref` are loose `UUID`s, `initiated_by` and `approved_by` are
+`UserRef` JSON (`JSONB`), and `guardian_verdict_ref` is `NOT NULL REFERENCES audit_log(id)`.
+
+**Cloud deployment:** `CloudSqlFactory` can connect to Cloud SQL through the Unix socket named by
+`CLOUD_SQL_INSTANCE_CONNECTION_NAME`, or to any PostgreSQL through `DATABASE_URL`. This
+repository contains no Cloud Run deployment of it.
 
 ---
 
 ### 3.3 Kafka (Event Streaming)
+
+> **Status:** target design, not implemented. See register `kafka-streaming`. No Kafka client is a
+> dependency. `docker-compose.yml` has a broker (and a Kafka UI) behind its `future` profile, and no platform code connects to it.
 
 **Used for:**
 - Real-time operational data ingestion (metrics, alerts, change events)
@@ -347,23 +400,25 @@ Examples:
 - `drift-monitor-consumer` → feeds DriftMonitorAgent with live distribution data
 - `audit-consumer` → appends all governance events to audit trail
 
-**Benchmark target:** p95 event latency < 100ms end-to-end from source connector to consumer.
+**Benchmark target (never measured):** p95 event latency < 100ms end-to-end from source connector to consumer.
 
 ---
 
-### 3.4 SQLite (Local Development)
+### 3.4 The factory switch
 
-Transparent factory switch: the `CloudSqlFactory` pattern is the standard. Code never directly instantiates a database connection; it calls the factory which selects SQLite locally and Cloud SQL on Cloud Run (via ADC).
+Code never opens a database connection directly. It asks `CloudSqlFactory` for a session, and
+the factory picks SQLite or PostgreSQL from `ENV`. The switch is transparent to the calling
+code, but the two schemas behind it differ (§3.2).
 
 ---
 
 ## 4. Connector Library
 
-### 4.1 DevOps Connectors (Phase 1 Priority)
+### 4.1 DevOps Connectors
 
 | System | Integration Type | Data Pulled | Status |
 |---|---|---|---|
-| Prometheus | Pull (HTTP scrape) | Metrics time series, alert states | ✅ implemented (`src/connectors/prometheus.py`) |
+| Prometheus | Pull (HTTP API) | Metrics time series, alert states | Class implemented and unit-tested with mocked HTTP (`src/connectors/prometheus.py`, `tests/unit/test_connectors.py`). Nothing in the running platform instantiates it |
 | Alertmanager | Push webhook | Alert payloads, severity, labels | planned |
 | PagerDuty | REST API + webhook | Incidents, escalation events | planned |
 | OpsGenie | REST API | On-call schedules, incident data | planned |
@@ -371,20 +426,14 @@ Transparent factory switch: the `CloudSqlFactory` pattern is the standard. Code 
 | Datadog | REST API | APM traces, dashboards | planned |
 | Kubernetes | Kubernetes API | Pod events, resource state changes | planned |
 
-### 4.2 Business Intelligence Connectors (Phase 2-3)
+Business-intelligence connectors (Salesforce, Snowflake, dbt, ...) were listed here as a Phase 2-3
+target; none was built, and the list is in
+[`history/DATA_LAYER-targets-2026-09-25.md`](history/DATA_LAYER-targets-2026-09-25.md).
 
-| System | Integration Type | Data Pulled |
-|---|---|---|
-| Salesforce | REST / Bulk API | Customer events, pipeline stages |
-| HubSpot | REST API | Campaign events, contact activity |
-| Snowflake | Snowpipe / SQL | Aggregated metrics, feature tables |
-| BigQuery | REST + Streaming | Event tables, attribution data |
-| Looker | Semantic layer embed | Derived metrics, business dimensions |
-| dbt | REST / manifest.json | Column lineage, metric definitions |
+### 4.2 Connector Interface Contract
 
-### 4.3 Connector Interface Contract
-
-All connectors implement the `CausalConnector` interface:
+All connectors subclass `BaseCausalConnector` (`backend/src/connectors/base.py`), which is the
+Python form of this interface:
 
 ```typescript
 interface CausalConnector {
@@ -395,7 +444,7 @@ interface CausalConnector {
   // Fetch latest events since cursor
   fetchEvents(cursor: Cursor): Promise<DomainEvent[]>;
 
-  // Subscribe to real-time events via Kafka producer
+  // Publish to a Kafka topic -- a no-op stub in BaseCausalConnector (no Kafka client exists)
   subscribe(topic: KafkaTopic): void;
 
   // Map raw events to semantic layer objects
@@ -406,47 +455,76 @@ interface CausalConnector {
 }
 ```
 
-All `mapToSemanticObjects` outputs are `DRAFT` status. They go through the CausalDiscoveryAgent and GuardianCheck before promotion to `APPROVED`.
+`map_to_semantic_objects` produces `DRAFT` objects. The intended route is CausalDiscoveryAgent,
+then the Guardian, then human approval. No code path calls a connector today, so nothing takes
+that route yet.
 
 ---
 
 ## 5. Semantic Drift and Data Quality
 
+> **Status:** the drift functions exist; the monitoring pipeline gives them no data. See register
+> `drift-monitor-no-data`.
+
 ### 5.1 Drift Detection Pipeline
 
+This is what `DriftMonitorAgent.process` does (`backend/src/agents/drift_monitor.py`):
+
 ```
-Live Data Stream → DriftMonitorAgent → KL Divergence Test
-                                             │
-                         ┌───────────────────┼───────────────────┐
-                    < threshold          threshold breach      > severe threshold
-                         │                   │                   │
-                    No action          Alert emitted         Governance
-                                       (Kafka topic)         escalation
-                                                           (human review)
+fragment id → drift_detect (KL) → causal_structure_compare → semantic_drift_detect
+                                                                   │
+                                   calculate_drift_severity (concept_drift=False)
+                                                                   │
+      KL > 0.1: alert via the in-process AlertEmitter; KL > 0.5 (severe): alert + human review
 ```
+
+The thresholds are `_DEFAULT_KL_THRESHOLD = 0.1` and `_DEFAULT_SEVERE_KL_THRESHOLD = 0.5`.
+The agent calls each skill with the fragment id only, and each skill returns "no drift" when
+it gets no data: `drift_detect` answers `kl_divergence 0.0` with `note: no_data_for_comparison`,
+and the other two answer `no_fragment_edges` and `no_definitions_for_comparison`. So the periodic
+sensor (`backend/src/sensors/periodic_drift.py`), which runs this agent, cannot raise a drift
+alert today. Alerts go to `AlertEmitter` (logging, callbacks, deduplication). The
+`platform.drift.alert.v1` topic name in the agent's return value is only a label: no Kafka
+producer exists (register `kafka-streaming`).
 
 ### 5.2 Drift Types
 
-| Type | Detection Method | Response |
+The functions below are in `backend/src/skills/drift_detect.py`. They compute their result when
+called directly with data, and the unit tests call them that way.
+
+| Type | What the function computes | Wired into the agent? |
 |---|---|---|
-| **Causal drift** | Graph structure diverges from live data patterns | Flag graph fragment for re-review |
-| **Distribution drift** | KL divergence on feature distributions | Sensitivity re-test on affected simulations |
-| **Semantic drift** | Entity definition inconsistency across domains | Semantic layer governance review |
-| **Concept drift** | Model performance degradation over time | Re-estimation trigger |
+| **Distribution drift** | KL divergence (and Jensen-Shannon) between per-feature histograms | Called, with no data |
+| **Causal drift** (`detect_causal_drift`) | Flags an edge when a supplied *correlation* for it falls below 0.5. That is correlation, not a causal test | Called, with no edges |
+| **Semantic drift** (`detect_semantic_drift`) | Jaccard word overlap between two entity definitions, drift below 0.7 | Called, with no definitions |
+| **Concept drift** (`detect_concept_drift`) | Chi-squared test on two label distributions | Not called; the agent passes `concept_drift=False` |
+
+None of the drift types triggers re-estimation, a sensitivity re-test or a fragment re-review.
 
 ---
 
 ## 6. Lineage and Provenance
 
-Every causal asset carries a `lineage` field that traces:
-1. Original data source (connector + timestamp)
-2. Transformation steps (agent ID, skill used, version)
-3. Evidence citations
-4. Assumption statements in scope
-5. Guardian verdict and policy rules applied
-6. Human approver identity and timestamp
+> **Status:** partial -- see register `lineage-partial`.
 
-This satisfies EU AI Act Article 13 transparency requirements and enables full audit reproduction.
+The `causal_edges` and `causal_entities` tables carry a `lineage` column (a JSON list), and the
+models declare it as `list[LineageRecord]`. `graph_fragments` gained the same column in
+`006_graph_fragment_lineage.sql` (and in the SQLite DDL). This is what actually gets written:
+
+- for an edge, the `lineage` list the submitter sent with the draft (`propose_draft` stores it
+  as given); an entity's draft lineage is not stored, and the column keeps its `[]` default;
+- one entry per human decision: `promote_to_approved` appends `{step_type: "APPROVED", actor_id,
+  timestamp, description}` naming the verdict id, and `reject_draft` appends a `REJECTED` step.
+  Both read `lineage` from the object's table first; before 006 that read failed for a
+  `GraphFragment`, so no fragment could be approved or rejected.
+
+Nothing records the original data source, the transformation steps (agent, skill, version), or
+the policy rules applied into `lineage`. The Guardian verdict and the rules it cited are in
+`audit_log`, linked from the row by `guardian_verdict_ref`, and the evidence and assumptions are
+linked by id (`evidence_refs`, `assumption_refs`). So the chain can be partly rebuilt by joining
+those, but no single field holds it. That is a step towards the transparency the EU AI Act asks
+for (Art. 13). It is not evidence of meeting it, and nothing here reproduces an analysis from its
+lineage.
 
 ---
 
@@ -454,24 +532,13 @@ This satisfies EU AI Act Article 13 transparency requirements and enables full a
 
 | Component | Read | Write | Notes |
 |---|---|---|---|
-| CausalDiscoveryAgent | Semantic layer (read), raw events | Draft edges (via audit_write) | Writes only DRAFT objects |
-| GovernanceAgent | All semantic layer | Audit trail | Approves/rejects draft objects |
-| SimulationAgent | Approved graph fragments | Simulation results | Read-only on semantic layer |
-| DriftMonitorAgent | Live data + approved assets | Drift alerts (Kafka) | No semantic layer writes |
-| DAG Workbench UI | All semantic objects | Draft edges, assumptions | Through agent intermediaries |
-| Decision Cockpit | Approved assets, simulation results | User session state | Read-only on causal layer |
-| Vertical Agents | Domain-specific semantic objects | Interventions (governed) | Through Intervention contract |
+| CausalDiscoveryAgent | Semantic layer (read) | `audit_write` records (PENDING, unsigned) | Proposes; does not persist semantic objects itself |
+| GovernanceAgent | The action payload and `EpistemicState` it is given | `audit_log` (every verdict, signed) | Its verdict is what `propose_draft` / `promote_to_approved` / `reject_draft` require |
+| SimulationAgent | APPROVED graph fragments | `EpistemicState.simulation_results` (in memory; the session snapshot in SQLite) | Read-only on the semantic layer |
+| DriftMonitorAgent | Whatever its skills are handed (see §5) | In-process `AlertEmitter` | No semantic-layer writes; no Kafka |
+| `POST /api/semantic/drafts` | -- | `causal_edges` / `graph_fragments` / `causal_entities` / `assumptions` as DRAFT | After a GovernanceAgent check; status forced to DRAFT |
+| `POST /api/governance/approve/{id}`, `/reject/{id}` | -- | Status, approver and lineage on the same row | See §2.2 rule 2 |
+| `POST /api/v1/decisions` | A registered model version, when the request names one | `decision_records`, `decision_followups`, and `decision_model_refs` when a model is named | Append-only hash chain |
+| `POST /api/v1/models`, `/{name}/versions`, `/{name}/reviews` | The model's head | `causal_model_versions` | Append-only; a version is appended only to the head it was built on; reviews need a governance role |
 
----
-
-## 8. Reference Benchmarks
-
-| Component | Target | Standard |
-|---|---|---|
-| Neo4j d-separation query | p95 < 50ms | 500-node graphs |
-| Kafka event latency | p95 < 100ms | End-to-end source → consumer |
-| PostgreSQL audit insert | p99 < 5ms | Append-only table |
-| Simulation estimate (simple) | p95 < 2s | DoWhy linear estimator |
-| Simulation estimate (complex) | p95 < 15s | PyMC MCMC 1000 samples |
-| Semantic layer object read | p99 < 30ms | PostgreSQL + Neo4j combined |
-| cynepic-causal Rust DAG ops | p95 < 1ms | 100-node graph, backdoor criterion |
+The DAG Workbench is planned, not built (register `dag-workbench`).
