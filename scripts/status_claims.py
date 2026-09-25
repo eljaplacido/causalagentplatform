@@ -148,7 +148,7 @@ HEX = re.compile(r"^[0-9a-f]{7,40}\b")
 
 
 def check_fixed_in(gid: str, fixed_in: str) -> None:
-    """Where an entry left the list must be findable: a commit that exists, or a pointer.
+    """Where an entry left the list must be findable: a commit in HEAD's history, or a pointer.
 
     Nine entries once sat at "PENDING" for days after their fixes were committed, which
     made "left the list" a claim nothing could check.
@@ -167,6 +167,20 @@ def check_fixed_in(gid: str, fixed_in: str) -> None:
     )
     if probe.returncode != 0:
         fail(f"{gid}: fixed_in names commit {hit.group(0)}, which this repository does not have")
+        return
+    # Existing is not enough: a squash or rebase leaves the old commit in a reflog, where
+    # it resolves locally and nowhere else. The fix must be in this history.
+    reach = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", hit.group(0), "HEAD"],
+        cwd=ROOT,
+        capture_output=True,
+        check=False,
+    )
+    if reach.returncode != 0:
+        fail(
+            f"{gid}: fixed_in names commit {hit.group(0)}, which is not in HEAD's history "
+            "(rewritten by a squash or rebase?) -- cite the commit that landed"
+        )
 
 
 ROW = re.compile(r"^\|(.+)\|\s*$")
