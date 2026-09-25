@@ -317,7 +317,7 @@ RETURN f, collect(e) AS edges ORDER BY f.version DESC LIMIT 1
 
 There are two schemas, and they do not match:
 
-- **PostgreSQL**: `backend/src/db/migrations/001_initial.sql` to `004_decision_followups.sql`.
+- **PostgreSQL**: `backend/src/db/migrations/001_initial.sql` to `007_causal_models.sql`.
   The only thing in this repository that applies them is `docker-compose.yml`, which mounts
   them as the container's init scripts. No deploy step runs them.
 - **SQLite**: the `SQLITE_DDL` string in `backend/src/db/factory.py`, created by
@@ -327,10 +327,11 @@ There are two schemas, and they do not match:
 |---|---|---|---|
 | `audit_log` | 001, 002 | yes | Every Guardian verdict and agent action record. Append-only |
 | `verdict_consumption` | 002 | yes | One row per spent verdict. Its primary key is what makes a verdict single-use |
-| `causal_entities`, `causal_edges`, `graph_fragments`, `assumptions` | 001 (+002 for `causal_entities.guardian_verdict_ref`) | yes | The semantic layer objects of §2 |
+| `causal_entities`, `causal_edges`, `graph_fragments`, `assumptions` | 001 (+002 for `causal_entities.guardian_verdict_ref`, +006 for `graph_fragments.lineage`) | yes | The semantic layer objects of §2 |
 | `interventions` | 001 | yes | Intervention log: expected vs actual effect, feedback closure |
 | `decision_records` | 003 | yes | The decision ledger's hash chain, one sealed record per row. Append-only |
-| `decision_followups` | 004 | yes | The follow-up plan written at decision time, and each later realization. Append-only |
+| `decision_followups` | 004, 005 | yes | The follow-up plan written at decision time, and each later realization. Append-only; 005 allows one row per decision and kind, so a decision is measured once |
+| `causal_model_versions`, `decision_model_refs` | 007 | yes | The assumption registry: immutable model versions (content-addressed, each naming its parent), and which decision used which version. Append-only |
 | `session_state` | **no** | yes | Latest `EpistemicState` snapshot per session (`orchestration/session_store.py`) |
 | `incidents` | **no** | yes | Incident records (`api/incidents.py`, which also uses the SQLite-only `INSERT OR REPLACE`) |
 
@@ -360,7 +361,7 @@ CREATE TABLE audit_log (
 );
 ```
 
-On PostgreSQL, `audit_log`, `decision_records` and `decision_followups` are append-only in two
+On PostgreSQL, `audit_log`, `decision_records`, `decision_followups` and the 007 tables are append-only in two
 ways: `UPDATE` and `DELETE` are revoked from the application roles, and `BEFORE UPDATE/DELETE`
 triggers raise. The SQLite schema declares the same triggers.
 
@@ -377,7 +378,7 @@ repository contains no Cloud Run deployment of it.
 ### 3.3 Kafka (Event Streaming)
 
 > **Status:** target design, not implemented. See register `kafka-streaming`. No Kafka client is a
-> dependency. `docker-compose.yml` starts a broker (and a Kafka UI), and no platform code connects to it.
+> dependency. `docker-compose.yml` has a broker (and a Kafka UI) behind its `future` profile, and no platform code connects to it.
 
 **Used for:**
 - Real-time operational data ingestion (metrics, alerts, change events)
@@ -507,15 +508,15 @@ None of the drift types triggers re-estimation, a sensitivity re-test or a fragm
 > **Status:** partial -- see register `lineage-partial`.
 
 The `causal_edges` and `causal_entities` tables carry a `lineage` column (a JSON list), and the
-models declare it as `list[LineageRecord]`. `graph_fragments` has no such column in either schema.
-This is what actually gets written:
+models declare it as `list[LineageRecord]`. `graph_fragments` gained the same column in
+`006_graph_fragment_lineage.sql` (and in the SQLite DDL). This is what actually gets written:
 
 - for an edge, the `lineage` list the submitter sent with the draft (`propose_draft` stores it
   as given); an entity's draft lineage is not stored, and the column keeps its `[]` default;
 - one entry per human decision: `promote_to_approved` appends `{step_type: "APPROVED", actor_id,
   timestamp, description}` naming the verdict id, and `reject_draft` appends a `REJECTED` step.
-  Both read `lineage` from the object's table first, so for a `GraphFragment` that read hits a
-  column that does not exist.
+  Both read `lineage` from the object's table first; before 006 that read failed for a
+  `GraphFragment`, so no fragment could be approved or rejected.
 
 Nothing records the original data source, the transformation steps (agent, skill, version), or
 the policy rules applied into `lineage`. The Guardian verdict and the rules it cited are in
@@ -537,6 +538,7 @@ lineage.
 | DriftMonitorAgent | Whatever its skills are handed (see §5) | In-process `AlertEmitter` | No semantic-layer writes; no Kafka |
 | `POST /api/semantic/drafts` | -- | `causal_edges` / `graph_fragments` / `causal_entities` / `assumptions` as DRAFT | After a GovernanceAgent check; status forced to DRAFT |
 | `POST /api/governance/approve/{id}`, `/reject/{id}` | -- | Status, approver and lineage on the same row | See §2.2 rule 2 |
-| `POST /api/v1/decisions` | -- | `decision_records`, `decision_followups` | Append-only hash chain |
+| `POST /api/v1/decisions` | A registered model version, when the request names one | `decision_records`, `decision_followups`, and `decision_model_refs` when a model is named | Append-only hash chain |
+| `POST /api/v1/models`, `/{name}/versions`, `/{name}/reviews` | The model's head | `causal_model_versions` | Append-only; a version is appended only to the head it was built on; reviews need a governance role |
 
 The DAG Workbench is planned, not built (register `dag-workbench`).
