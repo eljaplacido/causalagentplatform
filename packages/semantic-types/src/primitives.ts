@@ -8,6 +8,8 @@ export type ISO8601 = string;
 export type Duration = string; // ISO 8601 duration, e.g. "P30D"
 
 export type ApprovalStatus = "DRAFT" | "UNDER_REVIEW" | "APPROVED" | "DEPRECATED";
+/** A GraphFragment's lifecycle has no UNDER_REVIEW (graph_fragments CHECK constraint). */
+export type FragmentApprovalStatus = "DRAFT" | "APPROVED" | "DEPRECATED";
 export type ReviewStatus = "PENDING" | "ACCEPTED" | "CONTESTED" | "REJECTED";
 export type GuardianVerdict = "APPROVED" | "REJECTED" | "REQUIRES_ESCALATION" | "PENDING";
 

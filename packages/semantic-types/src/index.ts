@@ -15,6 +15,7 @@ export type {
   ISO8601,
   Duration,
   ApprovalStatus,
+  FragmentApprovalStatus,
   ReviewStatus,
   GuardianVerdict,
   CynefinDomain,
