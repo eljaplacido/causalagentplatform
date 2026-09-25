@@ -3,7 +3,7 @@
 **Suite:** T6, confidence sequences for randomized rollouts that are watched while they run
 **System under test:** `packages/causal-core` (`causal_core.sequential`, reached through
 `analyze(..., design="randomized", sequence=<arrival-order column>, expected_treated_share=p)`)
-**Registered:** 2026-09-25, version 1
+**Registered:** 2026-09-25, version 1; version 2 the same day (see Changelog)
 **Runs:** every PR, via `pytest -m t6` in `packages/causal-core`
 
 ## Status of this document
@@ -47,6 +47,12 @@ confidence sequence is tuned for 2,000 units, at `α = 0.05` (the kernel's `ci_l
 
 **Truth** is `τ`. **Replications:** 500 per design, seeded from `seed`.
 
+**Sample-ratio refusals.** The kernel refuses a stream whose treated share is implausible under the
+declared allocation (chi-square, α = 0.001), because then the assignment is not what the analysis
+assumes. A correctly randomized stream is refused that way about 0.1% of the time, by design.
+Coverage and power are computed over the replications that produced a sequence; the share refused
+is reported, and bounded by `srm_refusals_max` per design.
+
 **Refusals** (one constructed stream each):
 
 | case | stream | reason |
@@ -62,7 +68,7 @@ confidence sequence is tuned for 2,000 units, at `α = 0.05` (the kernel's `ci_l
 | id | defect | must be caught by |
 |---|---|---|
 | `fixed_n_interval` | each look reports the ordinary fixed-sample 95% interval | uniform coverage, `null` |
-| `boundary_without_mixture_term` | the boundary drops the `sqrt(tρ² + 1)` factor inside its logarithm | uniform coverage, `null` |
+| `log10_boundary` | the boundary's logarithm is base 10 instead of natural (v1 registered `boundary_without_mixture_term` here; see the Changelog) | uniform coverage, `null` |
 | `ignore_allocation` | the score uses `p = 0.5` whatever the allocation | uniform coverage, `unequal_allocation` |
 
 ## Pass bars
@@ -70,7 +76,7 @@ confidence sequence is tuned for 2,000 units, at `α = 0.05` (the kernel's `ci_l
 ```toml
 [meta]
 suite = "T6"
-version = 1
+version = 2
 registered = "2026-09-25"
 
 [streams]
@@ -85,6 +91,8 @@ seed = 20260926
 designs = ["null", "benefit", "harm", "skewed_null", "drifting_null", "unequal_allocation"]
 uniform_min = 0.93        # share of runs whose sequence contains τ at EVERY look
 
+srm_refusals_max = 0.01   # share of correctly randomized streams refused as mismatched
+
 [power]
 benefit_min = 0.80        # share of runs excluding zero from above at some look
 harm_min = 0.90           # share of runs excluding zero from below at some look
@@ -94,7 +102,7 @@ must_refuse = ["not_randomized", "allocation_unknown", "repeated_order",
                "non_binary_treatment", "too_short"]
 
 [seeded_defects]
-required = ["fixed_n_interval", "boundary_without_mixture_term", "ignore_allocation"]
+required = ["fixed_n_interval", "log10_boundary", "ignore_allocation"]
 ```
 
 **Why these bars.** Nominal simultaneous coverage is 0.95; the sequence is asymptotic, so a
@@ -121,3 +129,21 @@ so an effect of 0.2 is about two half-widths from zero, and a harm of 0.25 about
   "roughly 2.5–3"; it is about 1.55 at the tuning size (a unit test of the boundary found it). No
   bar depends on it — the power bars were derived from the final half-width, 0.097, which is
   right — and no T6 run existed when the sentence was corrected.
+- **v2 (2026-09-25): one seeded defect replaced, sample-ratio refusals counted. No bar changed.**
+  v1 run 1 (`results/2026-09-25-v1-run1.json`) failed on two faults of this registration, not of
+  the method: simultaneous coverage was 0.982–0.994 in every design, power 0.998 and 1.00, every
+  refusal as registered, and two of the three defects caught.
+  1. `boundary_without_mixture_term` covered 0.956 on `null`. The confidence sequence over-covers
+     at this setting (as asymptotic sequences with a running intersection do), so a boundary
+     narrowed that much is still valid, and a coverage bar is right not to fail it: it was not a
+     defect. It is replaced by `log10_boundary` — `math.log10` for `math.log`, an easy slip that
+     shrinks the boundary by a factor of about 0.66 and does break validity. Chosen after seeing
+     v1, and disclosed as such; what a defect must do is fail the bar, and v1's could not.
+  2. Four of 3,000 streams were refused for sample ratio mismatch, the check's designed 0.1%
+     false-refusal rate on correctly randomized streams; v1 did not say how to count them and the
+     harness failed on any refusal. They are now counted and bounded (`srm_refusals_max = 0.01`),
+     and coverage and power are computed over the streams that produced a sequence.
+
+  Not added, and stated rather than hidden: an *upper* bound on coverage. The sequence's
+  conservatism (≈0.98–0.99 against 0.95) costs width, and a bar on it would be a width bar; that
+  is an efficiency question for a later version, not a validity one.
