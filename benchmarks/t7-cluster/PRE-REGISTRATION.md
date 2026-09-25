@@ -4,7 +4,7 @@
 per unit (request, user, incident)
 **System under test:** `packages/causal-core` (`causal_core.cluster`, reached through
 `analyze(..., design="randomized", cluster=<cluster column>)`)
-**Registered:** 2026-09-25, version 1; version 2 the same day (see Changelog)
+**Registered:** 2026-09-25, version 1; versions 2 and 3 the same day (see Changelog)
 **Runs:** every PR, via `pytest -m t7` in `packages/causal-core`
 
 ## Status of this document
@@ -23,16 +23,19 @@ across four million requests" can be forty services' worth of evidence.
 
 The kernel estimates the unit-weighted average effect (the effect on a request, averaged over
 requests) by the difference in means, with standard errors from the influence function summed
-within clusters — cluster-robust by construction — a CR1 small-sample correction `K/(K−1)`, and
-critical values from a t distribution on `K − 2` degrees of freedom, `K` the number of clusters.
+within clusters — cluster-robust by construction — a CR2 (Bell–McCaffrey) small-sample
+adjustment that inflates each cluster's residual sum by `1/sqrt(1 − m_j/n_arm)` (v3; v1–v2 used
+CR1), and critical values from a t distribution on `K − 2` degrees of freedom, `K` the number of
+clusters. It refuses when cluster sizes vary so much (coefficient of variation above
+`max_cluster_size_cv`) that a few clusters dominate the estimate (v3).
 It refuses when treatment varies within a cluster (the design is not what the analysis assumes)
 and when there are too few clusters per arm to estimate a cluster-level variance.
 
 ## Design
 
 **Clusters.** `K` clusters; cluster sizes `m_j = 10 + Poisson(40)`, except in `size_dependent`
-where `m_j = 10 + ⌊LogNormal(ln 40, 0.8)⌋` (v2: sizes that vary enough for the two estimands to
-differ); treatment assigned to whole
+where `m_j = 10 + ⌊LogNormal(ln 40, 0.5)⌋` (size CV about 0.4: v3; v2 used 0.8, see the
+Changelog); treatment assigned to whole
 clusters, exactly half of them, completely at random. Unit outcomes
 
 `Y_ij = 10 + τ_j·T_j + u_j + e_ij`, `u_j ~ N(0, σ_u²)`, `e_ij ~ N(0, σ_e²)`, `σ_u² + σ_e² = 1`,
@@ -60,6 +63,7 @@ v1's, except in `size_dependent`, whose sizes changed).
 | `varies_within_cluster` | a quarter of units in treated clusters are untreated | `DESIGN_CHECK_FAILED` |
 | `too_few_clusters` | 6 clusters (3 per arm) | `LOW_N` |
 | `not_randomized` | `cluster` set with `design="observational"` | `INVALID_INPUT` |
+| `extreme_size_variation` | 40 clusters, sizes `10 + ⌊LogNormal(ln 40, 1.0)⌋` (CV well above 0.6) (v3) | `DESIGN_CHECK_FAILED` |
 
 **Seeded defects.**
 
@@ -73,13 +77,14 @@ v1's, except in `size_dependent`, whose sizes changed).
 ```toml
 [meta]
 suite = "T7"
-version = 2
+version = 3
 registered = "2026-09-25"
 
 [clusters]
 reps = 3000
 seed = 20260927
 min_clusters_per_arm = 5     # the kernel's refusal threshold under test
+max_cluster_size_cv = 0.6    # v3: the kernel refuses above this coefficient of variation
 
 [estimation]
 designs = ["many_clusters", "moderate", "few_clusters", "null_effect", "size_dependent"]
@@ -88,7 +93,8 @@ coverage_band = [0.93, 0.97]         # nominal 0.95, per design; 3,000 reps give
 few_clusters_coverage_min = 0.925    # K = 20: a small-sample correction is approximate
 
 [refusals]
-must_refuse = ["varies_within_cluster", "too_few_clusters", "not_randomized"]
+must_refuse = ["varies_within_cluster", "too_few_clusters", "not_randomized",
+               "extreme_size_variation"]
 
 [seeded_defects]
 required = ["unit_level_se", "cluster_weighted_estimate"]
@@ -130,3 +136,23 @@ is not). Under `unit_level_se` with ICC 0.3 and clusters of ~50 the design effec
 
   Disclosed: both changes were chosen after seeing v1. Neither loosens a bar; the first can only
   expose a real coverage failure more surely, the second only makes the defect easier to catch.
+- **v3 (2026-09-25): CR2, a guard against dominant clusters, and a size design inside the
+  method's range. No bar changed.** v2 run 1 (`results/2026-09-25-v2-run1.json`) failed where v2
+  aimed: with log-normal sizes (σ = 0.8, size CV ≈ 0.71) the estimator was biased (−0.031, 5.3
+  MCSE) and covered 0.879 in `size_dependent`. Development seeds (not this document's), 1,000
+  replications each, 40 clusters:
+
+  | size CV | CR1 size-dependent / constant | CR2 size-dependent / constant |
+  |---|---|---|
+  | 0.24 | 0.954 / 0.945 | 0.956 / 0.949 |
+  | 0.41 | 0.941 / 0.927 | 0.945 / 0.932 |
+  | 0.71 | 0.872 / 0.925 | 0.881 / 0.934 |
+
+  CR2 is better throughout and is adopted: it is the standard correction for high-leverage
+  clusters. It does not rescue CV 0.71 with effects that grow with size — there, which few large
+  clusters land in treatment dominates, and no variance correction repairs that. So the kernel now
+  refuses above a size CV of 0.6 (a margin below the 0.71 that failed, above the 0.41 that held),
+  `size_dependent` moves to σ = 0.5 (CV ≈ 0.41, still an estimand gap of about 0.1 for its
+  defect), and the refusal is registered as `extreme_size_variation`. Every threshold here was
+  chosen from development-seed evidence after v2's failure, and is disclosed as such; the bars are
+  v1's.
