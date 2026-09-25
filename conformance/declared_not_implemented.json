@@ -225,11 +225,11 @@
           "says": "class ReviewQueueItem(BaseModel):"
         },
         {
-          "at": "frontend/src/app/governance/page.tsx:238",
+          "at": "frontend/src/app/governance/page.tsx:230",
           "says": "riskTier: \"MEDIUM\","
         },
         {
-          "at": "frontend/src/app/governance/page.tsx:239",
+          "at": "frontend/src/app/governance/page.tsx:231",
           "says": "submittedBy: \"system\","
         }
       ],
@@ -237,29 +237,6 @@
         "kind": "test",
         "path": "backend/tests/integration/test_review_queue_risk.py",
         "asserts": "/review-queue returns risk_tier and submitted_by derived from each object and orders by risk tier"
-      }
-    },
-    {
-      "id": "audit-log-limit-ignored",
-      "status": "declared-not-implemented",
-      "capability": "Audit-log requests bounded by the client's `limit`",
-      "claimed_in": [
-        {
-          "at": "frontend/src/lib/api.ts:230",
-          "says": "auditLog: (params?: { from?: string; to?: string; limit?: number })"
-        }
-      ],
-      "reality": "GET /api/governance/audit-log reads page and page_size; the client's `limit` query parameter is silently ignored and page_size defaults to 100.",
-      "evidence": [
-        {
-          "at": "backend/src/api/governance.py:390",
-          "says": "page_size: Annotated[int, Query(ge=1, le=500)] = 100,"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/integration/test_audit_log_paging.py",
-        "asserts": "the number of rows returned honours the limit the client sends (either the endpoint accepts `limit` or the client sends `page_size`)"
       }
     },
     {
@@ -369,7 +346,7 @@
           "says": "Alert emission via Kafka ready for integration"
         },
         {
-          "at": "docs/QUICKSTART.md:93",
+          "at": "docs/QUICKSTART.md@13e7d92:93",
           "says": "The platform requires PostgreSQL 16, Neo4j 5, Kafka (KRaft), and Redis."
         }
       ],
@@ -546,41 +523,6 @@
       }
     },
     {
-      "id": "frontend-vocabulary-divergence",
-      "status": "declared-not-implemented",
-      "capability": "The frontend narrows on the canonical semantic-layer vocabulary",
-      "claimed_in": [
-        {
-          "at": "frontend/src/lib/types.ts:4",
-          "says": " * Canonical semantic layer types are imported from @causalplatform/semantic-types."
-        },
-        {
-          "at": "frontend/src/lib/types.ts:5",
-          "says": " * This file contains ONLY frontend-specific extensions and UI-facing types that"
-        }
-      ],
-      "reality": "types.ts imports two names and redeclares seventeen that the canonical package already defines. Two of those carry a different vocabulary: ReviewStatus is PENDING/UNDER_REVIEW/APPROVED/REJECTED/ESCALATED in the frontend against PENDING/ACCEPTED/CONTESTED/REJECTED in the backend enum and the package, and EvidenceType is STATISTICAL_TEST/DOCUMENT_CITATION/EXPERT_KNOWLEDGE/METRIC_OBSERVATION against STATISTICAL_TEST/DOCUMENT/EXPERT_KNOWLEDGE/EXPERIMENT/SIMULATION. tsc cannot see this, because a union redeclared in a second file is a second type and not a conflict: the frontend narrows on values no endpoint sends, and has no branch for values that are sent. Both are listed in scripts/contract-parity.json and the contract-parity gate fails on any new one.",
-      "evidence": [
-        {
-          "at": "frontend/src/lib/types.ts:248",
-          "says": "  | \"UNDER_REVIEW\""
-        },
-        {
-          "at": "frontend/src/lib/types.ts:74",
-          "says": "  | \"DOCUMENT_CITATION\""
-        },
-        {
-          "at": "backend/src/semantic_layer/models.py:137",
-          "says": "class ReviewStatus(StrEnum):"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "frontend/src/lib/__tests__/types-parity.test.ts",
-        "asserts": "the frontend imports ReviewStatus and EvidenceType from @causalplatform/semantic-types rather than redeclaring them, and scripts/contract-parity.json lists no divergence"
-      }
-    },
-    {
       "id": "evaluation-endpoints-not-measured",
       "status": "declared-not-implemented",
       "capability": "Agent evaluation endpoints (consistency, calibration, decision quality) measure the running platform",
@@ -671,6 +613,29 @@
         "kind": "test",
         "path": "backend/tests/integration/test_calibration_evidence.py",
         "asserts": "a stored body of follow-ups yields non-null rates, and docs/CURRENT_STAGE.md cites a measured calibration figure with the run that produced it"
+      }
+    },
+    {
+      "id": "prompt-templates-not-loaded",
+      "status": "declared-not-implemented",
+      "capability": "Agents render their prompts from the versioned templates in prompts/",
+      "claimed_in": [
+        {
+          "at": "docs/AGENTS.md:609",
+          "says": "Prompt templates are versioned in `prompts/` alongside their schema contracts. No agent uses ad-hoc prompts at runtime."
+        }
+      ],
+      "reality": "Nothing in backend/src, packages or frontend/src reads prompts/*.yaml, and no runtime path calls an LLM at all (llm-routing-no-callers). The templates are specification artefacts; prompts/README.md now says so. Ten of the fourteen also carried a duplicate top-level `skill:` key, which no loader had ever complained about because none had ever run.",
+      "evidence": [
+        {
+          "at": "prompts/README.md:3",
+          "says": "**Specification artefacts, not runtime inputs.**"
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "backend/tests/unit/test_prompt_templates_loaded.py",
+        "asserts": "a runtime agent renders its prompt from the matching prompts/*.yaml template and fails when the template is missing or malformed -- or AGENTS.md:609 is retracted"
       }
     }
   ],
@@ -784,6 +749,20 @@
       "fixed_in": "13e7d92",
       "pinned_by": "backend/tests/integration/test_decision_followup.py",
       "note": "The loop exists and produces numbers: a plan is sealed with each decision, /followup re-runs that plan's own analysis over a later window, and /calibration aggregates. What it does NOT yet establish is that the thresholds are right -- that needs enough follow-ups to have been taken, which is operational history rather than code. The report reads null for every rate with nothing behind it, so an empty platform cannot read as a calibrated one."
+    },
+    {
+      "id": "audit-log-limit-ignored",
+      "was": "the client sent `limit` to GET /api/governance/audit-log, which reads page and page_size, so every request got the default page_size of 100",
+      "fixed_in": "1f9faa6",
+      "pinned_by": "frontend/src/lib/__tests__/api.test.ts",
+      "note": "Closed from the client side, which leaves_by allowed: governanceApi.auditLog takes the parameters the endpoint reads (from, to, agent_id, verdict, page, page_size). The backend paging test it named was not written."
+    },
+    {
+      "id": "frontend-vocabulary-divergence",
+      "was": "types.ts redeclared ReviewStatus (PENDING/UNDER_REVIEW/APPROVED/REJECTED/ESCALATED against the backend's PENDING/ACCEPTED/CONTESTED/REJECTED) and EvidenceType (DOCUMENT_CITATION/METRIC_OBSERVATION, which no backend enum has), and tsc could not see it",
+      "fixed_in": "bc44988",
+      "pinned_by": "frontend/src/lib/__tests__/types-parity.test.ts",
+      "note": "EvidenceType is now imported from @causalplatform/semantic-types. The frontend ReviewStatus was never the backend's (the Assumption review lifecycle) but a review-queue presentation state derived from ApprovalStatus, so it was renamed ReviewQueueStatus rather than imported. scripts/contract-parity.json lists no divergence."
     }
   ]
 }

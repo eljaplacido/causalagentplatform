@@ -77,7 +77,7 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 | Approval notes and rejection reasons stored as text | `implemented` | [backend/tests/integration/test_governance_reasons_recorded.py](../backend/tests/integration/test_governance_reasons_recorded.py) | `audit_log.notes`, readable from `/audit-log`; the record is unsigned so it cannot be spent |
 | `/reject` validates the verdict it is given | `implemented` | [backend/tests/integration/test_governance_reject_verdict.py](../backend/tests/integration/test_governance_reject_verdict.py) | Same four checks as approval, against a REJECTED verdict |
 | Review queue risk tier and submitter | `declared-not-implemented` | [dni:review-queue-risk-tier](../conformance/declared_not_implemented.json) | UI shows MEDIUM / "system" |
-| Audit log bounded by the client's `limit` | `declared-not-implemented` | [dni:audit-log-limit-ignored](../conformance/declared_not_implemented.json) | Endpoint reads `page_size` |
+| Audit-log requests bounded by the client's page size | `implemented` | [frontend/src/lib/\_\_tests\_\_/api.test.ts](../frontend/src/lib/__tests__/api.test.ts) | The client sends `page_size`, the parameter the endpoint reads |
 | Governance UI shows only backend-confirmed decisions and audit rows | `implemented` | [frontend/src/app/governance/\_\_tests\_\_/page.test.tsx](../frontend/src/app/governance/__tests__/page.test.tsx) | Fixed in `85fe619` |
 | Provenance records written by real flows | `declared-not-implemented` | [dni:provenance-store-no-callers](../conformance/declared_not_implemented.json) | Writer has no callers |
 | TLA+ model of the Guardian policy, checked by TLC | `declared-not-implemented` | [dni:tla-spec-not-checked](../conformance/declared_not_implemented.json) | Not runnable as written |
@@ -89,6 +89,7 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 | Backend MCP server (`backend/mcp_server`): 7 causal tools over stdio, stdout reserved for protocol frames | `implemented` | [backend/tests/integration/test_mcp_stdio.py](../backend/tests/integration/test_mcp_stdio.py) | Outputs are only as real as the causal rows above |
 | `packages/causal-mcp`: causal-core over MCP (check graph, identify, analyze, verify narrative, and `causal_decide` with the decision extra) | `implemented` | [packages/causal-mcp/tests/test_stdio_flow.py](../packages/causal-mcp/tests/test_stdio_flow.py) | Separate server; wired into `.gnomon/tools.toml` as `causal_core` |
 | LLM capability routing used by the agents | `declared-not-implemented` | [dni:llm-routing-no-callers](../conformance/declared_not_implemented.json) | `get_llm` has no callers |
+| Agents render prompts from the versioned templates in `prompts/` | `declared-not-implemented` | [dni:prompt-templates-not-loaded](../conformance/declared_not_implemented.json) | Nothing loads them; they are specification artefacts |
 | `EvidenceGroundingAgent` and `DomainExpertElicitationAgent` produce the outputs AGENTS.md specifies | `declared-not-implemented` | [dni:agent-skills-are-stubs](../conformance/declared_not_implemented.json) | Every skill under them returns a constant; the docstrings say so, AGENTS.md does not |
 | Session orchestration API (`/api/v1/session/run`, `/incident`) | `implemented` | [backend/tests/integration/test_session_api.py](../backend/tests/integration/test_session_api.py) | Agents are rule-based code |
 | Intervention feedback endpoint | `implemented` | [backend/tests/unit/test_interventions.py](../backend/tests/unit/test_interventions.py) | |
@@ -108,8 +109,8 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 | Capability | Status | Evidence | Note |
 |---|---|---|---|
 | DAG Workbench (unified graph authoring) | `planned` | [dni:dag-workbench](../conformance/declared_not_implemented.json) | Not built |
-| The frontend narrows on the canonical vocabulary | `declared-not-implemented` | [dni:frontend-vocabulary-divergence](../conformance/declared_not_implemented.json) | `ReviewStatus` and `EvidenceType` are redeclared with values no endpoint sends |
-| Shared enumerations mean the same thing in backend, contract package and frontend | `implemented` | [backend/tests/unit/test_contract_parity.py](../backend/tests/unit/test_contract_parity.py) | 15 of 17 shared names agree; the 2 that do not are named in `scripts/contract-parity.json` and may only shrink |
+| The frontend narrows on the canonical vocabulary | `implemented` | [frontend/src/lib/\_\_tests\_\_/types-parity.test.ts](../frontend/src/lib/__tests__/types-parity.test.ts) | `EvidenceType` imported from the contract package; the queue's status renamed `ReviewQueueStatus`, a view model |
+| Shared enumerations mean the same thing in backend, contract package and frontend | `implemented` | [backend/tests/unit/test_contract_parity.py](../backend/tests/unit/test_contract_parity.py) | 18 of 18 shared names agree; `scripts/contract-parity.json` lists no divergence, and a new one fails the gate |
 
 ## Fixed items (moved off the register)
 

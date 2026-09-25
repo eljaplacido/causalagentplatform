@@ -113,7 +113,7 @@ EOF
 ## 4. Optional infrastructure (Docker)
 
 Nothing is required: with `ENV=local` the backend runs on SQLite with no services.
-Earlier versions of this page said: "The platform requires PostgreSQL 16, Neo4j 5, Kafka (KRaft), and Redis." That was not true. No code talks to Kafka or Redis (`kafka-streaming` in the register), so `docker-compose.yml` puts them behind a `future` profile.
+Earlier versions of this page listed Kafka and Redis as requirements. No code talks to either (`kafka-streaming` in the register), so `docker-compose.yml` puts them behind a `future` profile.
 
 ```bash
 docker compose up -d                        # PostgreSQL and Neo4j
