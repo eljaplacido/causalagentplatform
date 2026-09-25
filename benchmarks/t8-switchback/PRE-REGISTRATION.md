@@ -23,11 +23,12 @@ settle (caches warm, queues drain, autoscalers catch up), so the first minutes o
 carry the previous arm. **Dependence**: minutes within a block share a shock, and a day has a cycle
 that both arms ride; minutes are not independent observations.
 
-The kernel treats each block as a cluster — the unit that was randomized — and reuses T7's
-cluster-robust analysis (CR2 intervals on `t(K − 2)`, `K` the number of blocks). A declared
-**washout** drops, from every block whose arm differs from the block before it, the minutes within
-`washout` of its start. The estimand is the steady-state effect: what the system would do running
-one arm permanently.
+The kernel treats each block — the unit that was randomized — as one observation: a declared
+**washout** drops the first `washout` minutes of *every* block, each block is summarised by its
+mean, and the effect is the difference of the arms' block means (time-weighted, every block
+counting equally), with a Welch variance across blocks and a `t(K − 2)` critical value, `K` the
+number of blocks. The estimand is the steady-state effect: what the system would do running one
+arm permanently. (See the Changelog for why the washout is uniform and the weighting by block.)
 
 ## Design
 
@@ -71,7 +72,7 @@ before registration.
 | id | defect | must be caught by |
 |---|---|---|
 | `no_washout` | the washout is ignored | bias, `carryover` |
-| `minute_level_se` | minutes are treated as independent observations | coverage, `instant` |
+| `minute_level_se` | minutes are treated as independent observations (the variance of minute-level means) | coverage, `instant` |
 
 ## Pass bars
 
@@ -117,3 +118,14 @@ AR(1) at 0.8 and a daily cycle, understates the block-level variance several-fol
 ## Changelog
 
 - v1 (2026-09-25): initial registration.
+- v1, method correction before any run (2026-09-25). The registration first described the washout
+  as applying only to blocks after a switch, with T7's unit-weighted estimate and CR2 variance.
+  Development seeds (4040, 5050, 55 — not this document's), with no T8 run yet made, showed that
+  design under-covering: 0.893–0.906 in `instant`, `carryover` and `strong_autocorrelation`, the
+  standard error about 16% below the spread of estimates, and the cause isolated to the washout —
+  without it coverage was 0.957–0.967. Trimming only switched blocks makes a block's retained
+  minutes, and so its weight and the part of the daily cycle it covers, depend on its
+  *neighbour's* arm; the blocks stop being independent observations. Dropping the first `washout`
+  minutes of every block and weighting blocks equally removes that dependence: the same seeds then
+  gave 0.938–0.950, with the standard error within Monte Carlo error of the spread. The method text
+  above is corrected accordingly; the designs, bars, refusals and defect ids are unchanged.
