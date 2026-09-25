@@ -27,7 +27,8 @@
     "2026-09-21: 442 -> 441 after the verdict-binding change. The new code is clean; the net gain is two import-order findings fixed in files it touched.",
     "2026-09-21: ruff 441 -> 424 after the .env loader moved out of src/api/main.py's import block into src/env_bootstrap.py (19 E402 findings describing one deliberate ordering constraint, now stated as an import). mypy 40 -> 39: pandas joined the stubless-module list beside firebase_admin and neo4j.",
     "2026-09-24: ruff 424 -> 417. Ten F841 unused locals and two B007 unused loop variables removed; three of them were the tell for something real -- a discarded `user_ref` where the submitter's identity should have been recorded, a discarded `original_action` in a guardian test that therefore never compared the row it was named for, and a `for` loop in planning.py whose only statement was `continue`. mypy unchanged at 39.",
-    "2026-09-25: the three kernel packages join at zero (mypy --strict via each pyproject's [tool.mypy]). They were clean and nothing kept them so; causal-core 26 files, causal-decision 10, causal-mcp 4. Run with the kernel environment's mypy, not the backend's."
+    "2026-09-25: the three kernel packages join at zero (mypy --strict via each pyproject's [tool.mypy]). They were clean and nothing kept them so; causal-core 26 files, causal-decision 10, causal-mcp 4. Run with the kernel environment's mypy, not the backend's.",
+    "2026-09-25: eslint joins at zero. frontend/eslint.config.mjs (Next's core-web-vitals + typescript) was added and the 20 findings it surfaced were fixed, so frontend-eslint runs instead of being SKIPPED as it had been since it was declared."
   ],
   "ruff": {
     "max_findings": 417,
@@ -82,6 +83,16 @@
     "max_findings": 0,
     "measured_with": "mypy 1.20.2 (compiled: yes)",
     "cwd": "packages/causal-mcp",
+    "args": [
+      "src/"
+    ]
+  },
+  "eslint": {
+    "_why": "frontend/src under Next.js core-web-vitals + typescript. Zero, and it stays zero.",
+    "tool": "eslint",
+    "max_findings": 0,
+    "measured_with": "eslint 9",
+    "cwd": "frontend",
     "args": [
       "src/"
     ]
