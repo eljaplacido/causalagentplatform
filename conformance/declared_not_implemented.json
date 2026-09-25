@@ -695,11 +695,11 @@
       "reality": "session_state and incidents are created only by the SQLite DDL in backend/src/db/factory.py. The PostgreSQL migrations (001-004) never create them, and CloudSqlFactory.init_db runs the DDL only when ENV=local, so on a PostgreSQL deployment session persistence and the incidents API would fail with a missing table. api/incidents.py also writes with INSERT OR REPLACE, which PostgreSQL does not accept. Neither schema has the evidence, preference or simulation-result tables DATA_LAYER.md used to list. The suite runs only against SQLite, so nothing notices.",
       "evidence": [
         {
-          "at": "backend/src/db/factory.py:249",
+          "at": "backend/src/db/factory.py:254",
           "says": "CREATE TABLE IF NOT EXISTS session_state ("
         },
         {
-          "at": "backend/src/db/factory.py:257",
+          "at": "backend/src/db/factory.py:262",
           "says": "CREATE TABLE IF NOT EXISTS incidents ("
         },
         {
@@ -738,11 +738,11 @@
       "reality": "Approval and rejection UPDATE the object's own row: promote_to_approved rewrites approval_status, approved_at, approved_by, guardian_verdict_ref and lineage, and reject_draft rewrites approval_status (to DEPRECATED) and lineage. The version column keeps its 1.0.0 default, because no code path increments it and no new row is written for a new version. The previous state survives only as lineage entries and audit_log rows. The interventions feedback endpoint likewise UPDATEs interventions in place.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:796",
+          "at": "backend/src/semantic_layer/registry.py:812",
           "says": "f\"SET approval_status = 'APPROVED', \""
         },
         {
-          "at": "backend/src/semantic_layer/registry.py:880",
+          "at": "backend/src/semantic_layer/registry.py:899",
           "says": "f\"SET approval_status = 'DEPRECATED', lineage = :lineage \""
         }
       ],
@@ -770,11 +770,11 @@
           "says": "This satisfies EU AI Act Article 13 transparency requirements"
         }
       ],
-      "reality": "Approval and rejection each append one step (APPROVED or REJECTED: actor, time, verdict id), and an edge keeps whatever lineage list its submitter sent. Nothing records the data source, the transformation steps or the policy rules into lineage, and no platform code constructs a LineageRecord. An entity's submitted lineage is not stored (the INSERT omits the column). graph_fragments has no lineage column in either schema, so promote_to_approved and reject_draft on a GraphFragment read a column that does not exist. The Guardian verdict, its cited rules, and the evidence and assumption ids are linked by reference, so the chain can be partly rebuilt by joins. Nothing shows that this satisfies EU AI Act Art. 13.",
+      "reality": "Approval and rejection each append one step (APPROVED or REJECTED: actor, time, verdict id), and an edge keeps whatever lineage list its submitter sent. Nothing records the data source, the transformation steps or the policy rules into lineage, and no platform code constructs a LineageRecord. An entity's submitted lineage is not stored (the INSERT omits the column). Fragments had no lineage column at all until 006_graph_fragment_lineage.sql, so approving or rejecting one failed outright. The Guardian verdict, its cited rules, and the evidence and assumption ids are linked by reference, so the chain can be partly rebuilt by joins. Nothing shows that this satisfies EU AI Act Art. 13.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:784",
-          "says": "text(f\"SELECT lineage FROM {table} WHERE id = :oid\"),"
+          "at": "backend/src/semantic_layer/registry.py:795",
+          "says": "text(f\"SELECT lineage, approval_status FROM {table} WHERE id = :oid\"),"
         },
         {
           "at": "backend/src/semantic_layer/models.py:200",
@@ -843,7 +843,7 @@
       "reality": "packages/semantic-types/src/entities.ts is written by hand, not generated, and seven of its interfaces declare fields models.py does not have. Treatment, Confounder and Mediator add description, domain, approvalStatus, createdBy, createdAt and lineage; Outcome adds the same plus units; CausalEdge adds createdBy and createdAt; GraphFragment adds approvedBy, approvedAt and lineage; Intervention adds description, domain, graphFragmentRef and approvalReason. A client typed against the package expects fields the API never sends. scripts/contract_parity.py checks only the shared enumerations, not interface fields.",
       "evidence": [
         {
-          "at": "packages/semantic-types/src/entities.ts:205",
+          "at": "packages/semantic-types/src/entities.ts:45",
           "says": "  createdBy: UserRef;"
         },
         {
@@ -1077,7 +1077,7 @@
           "says": "configured = os.getenv(KEY_ENV, \"\").strip()"
         },
         {
-          "at": "backend/src/db/factory.py:353",
+          "at": "backend/src/db/factory.py:358",
           "says": "url = os.getenv(\"DATABASE_URL\")"
         }
       ],

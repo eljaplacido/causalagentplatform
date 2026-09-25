@@ -231,7 +231,9 @@ CREATE TABLE IF NOT EXISTS graph_fragments (
     created_by          TEXT NOT NULL,
     created_at          TEXT NOT NULL,
     approved_at         TEXT,
-    approved_by         TEXT
+    approved_by         TEXT,
+    -- 006_graph_fragment_lineage.sql: approval and rejection append to it.
+    lineage             TEXT NOT NULL DEFAULT '[]'
 );
 CREATE TABLE IF NOT EXISTS interventions (
     id                      TEXT PRIMARY KEY,

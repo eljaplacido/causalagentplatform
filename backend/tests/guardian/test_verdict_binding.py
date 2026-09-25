@@ -37,6 +37,7 @@ from tests.conftest import (
     VerdictFactory,
     insert_raw_audit_entry,
     make_causal_entity,
+    make_graph_fragment,
 )
 
 pytestmark = [pytest.mark.asyncio, pytest.mark.guardian]
@@ -331,3 +332,42 @@ async def test_an_approved_object_cannot_be_rejected_after_the_fact(
 
 def _approver() -> UserRef:
     return UserRef(id="governance-officer", email="go@test.com", name="Officer")
+
+
+async def test_a_graph_fragment_can_be_approved_and_its_lineage_is_kept(
+    db_engine: object,
+    registry: SemanticLayerRegistry,
+    db_session: AsyncSession,
+    verdict_for: VerdictFactory,
+) -> None:
+    """graph_fragments had no lineage column, so this path raised on its first SELECT."""
+    fragment = make_graph_fragment()
+    await registry.propose_draft(fragment, await verdict_for(fragment.id))
+    await registry.promote_to_approved(
+        fragment.id, "GraphFragment", await verdict_for(fragment.id), _approver()
+    )
+    row = await db_session.execute(
+        text("SELECT approval_status, lineage FROM graph_fragments WHERE id = :i"),
+        {"i": str(fragment.id)},
+    )
+    status, lineage = row.one()
+    assert status == "APPROVED"
+    assert '"step_type": "APPROVED"' in str(lineage)
+
+
+async def test_a_graph_fragment_can_be_rejected(
+    db_engine: object,
+    registry: SemanticLayerRegistry,
+    db_session: AsyncSession,
+    verdict_for: VerdictFactory,
+) -> None:
+    fragment = make_graph_fragment()
+    await registry.propose_draft(fragment, await verdict_for(fragment.id))
+    await registry.reject_draft(
+        fragment.id, "GraphFragment", await verdict_for(fragment.id, "REJECTED"), _approver(),
+        "the fragment omits the load confounder",
+    )
+    row = await db_session.execute(
+        text("SELECT approval_status FROM graph_fragments WHERE id = :i"), {"i": str(fragment.id)}
+    )
+    assert row.scalar_one() == "DEPRECATED"
