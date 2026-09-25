@@ -88,6 +88,7 @@ addopts = ["--tb=short", "-q"]
 markers = [
     "t0: T0 analytic-SCM correctness gate (pre-registered; see benchmarks/t0/PRE-REGISTRATION.md)",
     "t4: T4 segment-effect gate (pre-registered; see benchmarks/t4-segments/PRE-REGISTRATION.md)",
+    "t5: T5 difference-in-differences gate (pre-registered; see benchmarks/t5-did/PRE-REGISTRATION.md)",
     "slow: long-running (nightly) configuration",
     "crosscheck: compares against an independent engine (y0 / DoWhy); skipped if not installed",
     "real_data: pre-registered real-data benchmarks (T2 IHDP, T3 LaLonde); skipped unless cached or CAUSAL_FETCH=1",

@@ -26,7 +26,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
-CONTRACT_VERSION = "0.4.0"
+CONTRACT_VERSION = "0.5.0"
 
 
 class _Model(BaseModel):
@@ -47,6 +47,10 @@ class Rung(StrEnum):
 class Design(StrEnum):
     observational = "observational"
     randomized = "randomized"
+    #: Panel data, staggered adoption of an absorbing binary treatment; needs
+    #: ``CausalQuery.unit`` and ``CausalQuery.time``. Identified by parallel trends and no
+    #: anticipation -- assumptions outside the graph, so tier C (see causal_core.panel).
+    difference_in_differences = "difference_in_differences"
 
 
 class EdgeOrigin(StrEnum):
@@ -85,6 +89,7 @@ class Strategy(StrEnum):
     iv = "iv"
     proximal = "proximal"
     id_general = "id_general"
+    difference_in_differences = "difference_in_differences"
 
 
 class Tier(StrEnum):
@@ -191,6 +196,15 @@ class CausalQuery(_Model):
         "before the answer is seen. The kernel does not search for subgroups: finding the "
         "subgroup with the largest effect is a different activity with different statistics, "
         "and reporting it as if it had been declared is how a team fools itself.",
+    )
+    unit: str | None = Field(
+        default=None,
+        description="Panel designs only: the column identifying the unit observed repeatedly.",
+    )
+    time: str | None = Field(
+        default=None,
+        description="Panel designs only: the column holding the period, as an integer or an "
+        "ordered value. Periods are the distinct values in sorted order.",
     )
     population: str | None = None
     horizon: str | None = None
@@ -424,6 +438,18 @@ class Heterogeneity(_Model):
     segments_compared: int
 
 
+class EventTimeEffect(_Model):
+    """The effect ``event_time`` periods after adoption (negative: before it).
+
+    Pre-adoption event times are placebo estimates -- zero in expectation under parallel
+    trends -- and period ``-1`` is the base, zero by construction, so it is not reported.
+    """
+
+    event_time: int
+    estimate: EstimateRecord
+    cohorts: int = Field(description="How many adoption cohorts contribute to this event time.")
+
+
 class CausalResult(_Model):
     kind: Literal["result"] = "result"
     status: ResultStatus
@@ -437,6 +463,11 @@ class CausalResult(_Model):
     triangulation: Triangulation | None = None
     segments: tuple[SegmentEffect, ...] = ()
     heterogeneity: Heterogeneity | None = None
+    event_study: tuple[EventTimeEffect, ...] = Field(
+        default=(),
+        description="Panel designs only: the effect by periods since adoption, pre-periods "
+        "included as placebos.",
+    )
     claims: tuple[Claim, ...] = ()
     warnings: tuple[str, ...] = ()
     provenance: Provenance

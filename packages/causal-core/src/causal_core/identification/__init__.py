@@ -303,6 +303,14 @@ def identify(g: Graph, query: CausalQuery) -> IdentificationCertificate:
             )
         return cert
 
+    # A panel design is identified by assumptions outside the graph (parallel trends,
+    # no anticipation): tier C, and the graph's back-door structure is not what the
+    # estimate rests on. Imported here to keep panel -> identification one-way.
+    if query.design is Design.difference_in_differences:
+        from causal_core.panel import certificate as panel_certificate
+
+        return panel_certificate(gdig, ENGINE)
+
     # A user-chosen adjustment set is validated, not replaced.
     if query.adjust_for is not None:
         z = set(query.adjust_for)

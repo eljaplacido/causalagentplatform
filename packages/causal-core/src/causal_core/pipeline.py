@@ -33,6 +33,7 @@ from causal_core.contract import (
     CausalGraph,
     CausalQuery,
     CausalResult,
+    Design,
     Diagnostics,
     EdgeStatus,
     IdentificationCertificate,
@@ -48,12 +49,15 @@ from causal_core.design import prepare
 from causal_core.estimators import Fit
 from causal_core.graph import Graph, GraphSyntaxError, as_causal_graph
 from causal_core.identification import (
+    ENGINE,
     IdentificationError,
     IdentificationInconsistency,
     InvalidAdjustmentSet,
     identify,
     missing_information,
 )
+from causal_core.panel import analyze_panel
+from causal_core.panel import certificate as panel_certificate
 from causal_core.refute import RefutationContext, holm
 from causal_core.segments import estimate_segments
 from causal_core.sensitivity import analyze_sensitivity
@@ -323,6 +327,22 @@ def _analyze(
     refuted: list[str] = [g.edge_label(e) for e in spec.edges if e.status is EdgeStatus.refuted]
     if refuted:
         warnings.append(f"refuted edges were removed before analysis: {refuted}")
+
+    # Panel designs leave the graph-based path here: what identifies them (parallel
+    # trends, no anticipation) is not in the graph, so the certificate is tier C and
+    # the estimator is causal_core.panel's. The review checks above still applied.
+    if query.design is Design.difference_in_differences:
+        stage.name = "panel"
+        return analyze_panel(
+            frame,
+            query,
+            policy,
+            cert=panel_certificate(prov["graph_digest"], ENGINE),
+            unreviewed=unreviewed,
+            warnings=warnings,
+            prov=prov,
+            refuse=refuse,
+        )
     de_x = g.descendants({query.treatment})
     for nco in query.negative_control_outcomes:
         if nco in de_x:

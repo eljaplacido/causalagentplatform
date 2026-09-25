@@ -270,6 +270,19 @@
           "title": "Segment By",
           "type": "array"
         },
+        "time": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Panel designs only: the column holding the period, as an integer or an ordered value. Periods are the distinct values in sorted order.",
+          "title": "Time"
+        },
         "treatment": {
           "title": "Treatment",
           "type": "string"
@@ -304,6 +317,19 @@
           },
           "title": "Treatment Proxies",
           "type": "array"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Panel designs only: the column identifying the unit observed repeatedly.",
+          "title": "Unit"
         }
       },
       "required": [
@@ -335,6 +361,15 @@
             "$ref": "#/$defs/EstimateRecord"
           },
           "title": "Estimates",
+          "type": "array"
+        },
+        "event_study": {
+          "default": [],
+          "description": "Panel designs only: the effect by periods since adoption, pre-periods included as placebos.",
+          "items": {
+            "$ref": "#/$defs/EventTimeEffect"
+          },
+          "title": "Event Study",
           "type": "array"
         },
         "heterogeneity": {
@@ -508,7 +543,8 @@
     "Design": {
       "enum": [
         "observational",
-        "randomized"
+        "randomized",
+        "difference_in_differences"
       ],
       "title": "Design",
       "type": "string"
@@ -747,6 +783,31 @@
         "n_used"
       ],
       "title": "EstimateRecord",
+      "type": "object"
+    },
+    "EventTimeEffect": {
+      "additionalProperties": false,
+      "description": "The effect ``event_time`` periods after adoption (negative: before it).\n\nPre-adoption event times are placebo estimates -- zero in expectation under parallel\ntrends -- and period ``-1`` is the base, zero by construction, so it is not reported.",
+      "properties": {
+        "cohorts": {
+          "description": "How many adoption cohorts contribute to this event time.",
+          "title": "Cohorts",
+          "type": "integer"
+        },
+        "estimate": {
+          "$ref": "#/$defs/EstimateRecord"
+        },
+        "event_time": {
+          "title": "Event Time",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "event_time",
+        "estimate",
+        "cohorts"
+      ],
+      "title": "EventTimeEffect",
       "type": "object"
     },
     "Heterogeneity": {
@@ -1324,7 +1385,8 @@
         "frontdoor",
         "iv",
         "proximal",
-        "id_general"
+        "id_general",
+        "difference_in_differences"
       ],
       "title": "Strategy",
       "type": "string"
@@ -1410,7 +1472,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:causalplatform:claims:0.4.0:outcome",
+  "$id": "urn:causalplatform:claims:0.5.0:outcome",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "discriminator": {
     "mapping": {

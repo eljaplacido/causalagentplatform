@@ -3,7 +3,8 @@
     "Design": {
       "enum": [
         "observational",
-        "randomized"
+        "randomized",
+        "difference_in_differences"
       ],
       "title": "Design",
       "type": "string"
@@ -19,7 +20,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:causalplatform:claims:0.4.0:causal_query",
+  "$id": "urn:causalplatform:claims:0.5.0:causal_query",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
@@ -139,6 +140,19 @@
       "title": "Segment By",
       "type": "array"
     },
+    "time": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Panel designs only: the column holding the period, as an integer or an ordered value. Periods are the distinct values in sorted order.",
+      "title": "Time"
+    },
     "treatment": {
       "title": "Treatment",
       "type": "string"
@@ -173,6 +187,19 @@
       },
       "title": "Treatment Proxies",
       "type": "array"
+    },
+    "unit": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Panel designs only: the column identifying the unit observed repeatedly.",
+      "title": "Unit"
     }
   },
   "required": [
