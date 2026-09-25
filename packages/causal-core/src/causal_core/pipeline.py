@@ -61,6 +61,7 @@ from causal_core.panel import certificate as panel_certificate
 from causal_core.refute import RefutationContext, holm
 from causal_core.segments import estimate_segments
 from causal_core.sensitivity import analyze_sensitivity
+from causal_core.sequential import analyze_sequential
 
 CORE_VERSION = __version__
 
@@ -383,6 +384,22 @@ def _analyze(
             q=query,
             cert=cert,
             diag=_frame_diagnostics(frame, query),
+        )
+
+    # A watched randomized stream: an anytime-valid confidence sequence at every
+    # look, from causal_core.sequential. Identification above still had to certify
+    # randomization; the sequential path refuses anything else.
+    if query.sequence is not None:
+        stage.name = "sequential"
+        return analyze_sequential(
+            frame,
+            query,
+            policy,
+            cert=cert,
+            unreviewed=unreviewed,
+            warnings=warnings,
+            prov=prov,
+            refuse=refuse,
         )
 
     # ── design ───────────────────────────────────────────────────────────────

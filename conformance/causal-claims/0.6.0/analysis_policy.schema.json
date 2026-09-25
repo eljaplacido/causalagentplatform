@@ -1,5 +1,5 @@
 {
-  "$id": "urn:causalplatform:claims:0.5.0:analysis_policy",
+  "$id": "urn:causalplatform:claims:0.6.0:analysis_policy",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Every threshold that can change an answer. Hashed into provenance.",
@@ -15,6 +15,27 @@
       "default": 5,
       "minimum": 2,
       "title": "Cross Fit Folds",
+      "type": "integer"
+    },
+    "cs_burn_in": {
+      "default": 200,
+      "description": "Sequential designs: units before the first look. The sequence is asymptotic; below this it is not reported.",
+      "minimum": 20,
+      "title": "Cs Burn In",
+      "type": "integer"
+    },
+    "cs_look_every": {
+      "default": 100,
+      "description": "Sequential designs: units per look.",
+      "minimum": 1,
+      "title": "Cs Look Every",
+      "type": "integer"
+    },
+    "cs_target_n": {
+      "default": 2000,
+      "description": "Sequential designs: the sample size the confidence sequence is tightest at.",
+      "minimum": 10,
+      "title": "Cs Target N",
       "type": "integer"
     },
     "implied_independence_tests": {

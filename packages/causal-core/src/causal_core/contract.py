@@ -26,7 +26,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
-CONTRACT_VERSION = "0.5.0"
+CONTRACT_VERSION = "0.6.0"
 
 
 class _Model(BaseModel):
@@ -197,6 +197,13 @@ class CausalQuery(_Model):
         "subgroup with the largest effect is a different activity with different statistics, "
         "and reporting it as if it had been declared is how a team fools itself.",
     )
+    sequence: str | None = Field(
+        default=None,
+        description="Randomized designs only: the column giving each unit's arrival order. When "
+        "set, the effect is reported as an anytime-valid confidence sequence at every look, so "
+        "the analysis may be read -- and stopped -- as often as wanted without inflating its "
+        "error rate. Needs `expected_treated_share`, the known allocation probability.",
+    )
     unit: str | None = Field(
         default=None,
         description="Panel designs only: the column identifying the unit observed repeatedly.",
@@ -239,6 +246,18 @@ class AnalysisPolicy(_Model):
     sensitivity: bool = True
     require_approved_graph: bool = False
     max_ci_width: float | None = Field(default=None, gt=0)
+    cs_target_n: int = Field(
+        default=2000,
+        ge=10,
+        description="Sequential designs: the sample size the confidence sequence is tightest at.",
+    )
+    cs_look_every: int = Field(default=100, ge=1, description="Sequential designs: units per look.")
+    cs_burn_in: int = Field(
+        default=200,
+        ge=20,
+        description="Sequential designs: units before the first look. The sequence is asymptotic; "
+        "below this it is not reported.",
+    )
     seed: int = 0
 
 
@@ -450,6 +469,30 @@ class EventTimeEffect(_Model):
     cohorts: int = Field(description="How many adoption cohorts contribute to this event time.")
 
 
+class SequentialLook(_Model):
+    n: int
+    n_treated: int
+    estimate: float
+    lo: float
+    hi: float
+
+
+class SequentialSummary(_Model):
+    """An anytime-valid reading of a randomized stream: valid at every look, jointly."""
+
+    method: str
+    alpha: float
+    rho: float = Field(description="Mixture tuning, set from `cs_target_n`.")
+    target_n: int
+    looks: tuple[SequentialLook, ...]
+    first_above_zero: int | None = Field(
+        default=None, description="Units at the first look whose sequence lies wholly above zero."
+    )
+    first_below_zero: int | None = Field(
+        default=None, description="Units at the first look whose sequence lies wholly below zero."
+    )
+
+
 class CausalResult(_Model):
     kind: Literal["result"] = "result"
     status: ResultStatus
@@ -463,6 +506,11 @@ class CausalResult(_Model):
     triangulation: Triangulation | None = None
     segments: tuple[SegmentEffect, ...] = ()
     heterogeneity: Heterogeneity | None = None
+    sequential: SequentialSummary | None = Field(
+        default=None,
+        description="Sequential designs only: the confidence sequence at every look. `primary` "
+        "carries the last look, with the sequence as its interval.",
+    )
     event_study: tuple[EventTimeEffect, ...] = Field(
         default=(),
         description="Panel designs only: the effect by periods since adoption, pre-periods "

@@ -20,7 +20,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:causalplatform:claims:0.5.0:causal_query",
+  "$id": "urn:causalplatform:claims:0.6.0:causal_query",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
@@ -139,6 +139,19 @@
       },
       "title": "Segment By",
       "type": "array"
+    },
+    "sequence": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Randomized designs only: the column giving each unit's arrival order. When set, the effect is reported as an anytime-valid confidence sequence at every look, so the analysis may be read -- and stopped -- as often as wanted without inflating its error rate. Needs `expected_treated_share`, the known allocation probability.",
+      "title": "Sequence"
     },
     "time": {
       "anyOf": [

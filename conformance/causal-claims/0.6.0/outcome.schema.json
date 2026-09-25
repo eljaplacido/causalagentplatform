@@ -270,6 +270,19 @@
           "title": "Segment By",
           "type": "array"
         },
+        "sequence": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Randomized designs only: the column giving each unit's arrival order. When set, the effect is reported as an anytime-valid confidence sequence at every look, so the analysis may be read -- and stopped -- as often as wanted without inflating its error rate. Needs `expected_treated_share`, the known allocation probability.",
+          "title": "Sequence"
+        },
         "time": {
           "anyOf": [
             {
@@ -437,6 +450,18 @@
             }
           ],
           "default": null
+        },
+        "sequential": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SequentialSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Sequential designs only: the confidence sequence at every look. `primary` carries the last look, with the sequence as its interval."
         },
         "status": {
           "$ref": "#/$defs/ResultStatus"
@@ -1378,6 +1403,105 @@
       "title": "Sensitivity",
       "type": "object"
     },
+    "SequentialLook": {
+      "additionalProperties": false,
+      "properties": {
+        "estimate": {
+          "title": "Estimate",
+          "type": "number"
+        },
+        "hi": {
+          "title": "Hi",
+          "type": "number"
+        },
+        "lo": {
+          "title": "Lo",
+          "type": "number"
+        },
+        "n": {
+          "title": "N",
+          "type": "integer"
+        },
+        "n_treated": {
+          "title": "N Treated",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "n",
+        "n_treated",
+        "estimate",
+        "lo",
+        "hi"
+      ],
+      "title": "SequentialLook",
+      "type": "object"
+    },
+    "SequentialSummary": {
+      "additionalProperties": false,
+      "description": "An anytime-valid reading of a randomized stream: valid at every look, jointly.",
+      "properties": {
+        "alpha": {
+          "title": "Alpha",
+          "type": "number"
+        },
+        "first_above_zero": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Units at the first look whose sequence lies wholly above zero.",
+          "title": "First Above Zero"
+        },
+        "first_below_zero": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Units at the first look whose sequence lies wholly below zero.",
+          "title": "First Below Zero"
+        },
+        "looks": {
+          "items": {
+            "$ref": "#/$defs/SequentialLook"
+          },
+          "title": "Looks",
+          "type": "array"
+        },
+        "method": {
+          "title": "Method",
+          "type": "string"
+        },
+        "rho": {
+          "description": "Mixture tuning, set from `cs_target_n`.",
+          "title": "Rho",
+          "type": "number"
+        },
+        "target_n": {
+          "title": "Target N",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "method",
+        "alpha",
+        "rho",
+        "target_n",
+        "looks"
+      ],
+      "title": "SequentialSummary",
+      "type": "object"
+    },
     "Strategy": {
       "enum": [
         "randomized",
@@ -1472,7 +1596,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:causalplatform:claims:0.5.0:outcome",
+  "$id": "urn:causalplatform:claims:0.6.0:outcome",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "discriminator": {
     "mapping": {
