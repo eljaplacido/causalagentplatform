@@ -37,6 +37,7 @@ from src.api import decisions as decisions_router_module
 from src.api import governance as governance_router_module
 from src.api import incidents as incidents_router_module
 from src.api import interventions as interventions_router_module
+from src.api import models as models_router_module
 from src.api import platform as platform_router_module
 from src.api import provenance as provenance_router_module
 from src.api import semantic as semantic_router_module
@@ -187,6 +188,10 @@ def create_app() -> FastAPI:
     app.include_router(
         decisions_router_module.router,
         tags=["Decision Assurance"],
+    )
+    app.include_router(
+        models_router_module.router,
+        tags=["Assumption Registry"],
     )
 
     # ── Health endpoint ───────────────────────────────────────────────────────

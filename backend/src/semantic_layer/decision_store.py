@@ -33,6 +33,7 @@ from sqlalchemy.exc import IntegrityError
 from src.db.factory import CloudSqlFactory
 
 if TYPE_CHECKING:
+    from causal_decision.assumptions import ModelRef
     from causal_decision.contract import Decision
     from causal_decision.ledger import Approval
 
@@ -74,6 +75,7 @@ class DecisionStore:
         recorded_at: str,
         approval: Approval | None = None,
         executed: bool = False,
+        model: ModelRef | None = None,
     ) -> DecisionRecord:
         """Seal this decision onto the end of the chain and store it."""
         tail = await self.head()
@@ -84,6 +86,7 @@ class DecisionStore:
             recorded_at=recorded_at,
             approval=approval,
             executed=executed,
+            model=model,
         )
         async with CloudSqlFactory.get_session_factory()() as session:
             try:

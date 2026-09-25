@@ -522,7 +522,7 @@
       "reality": "The chain is built, persisted, served and verified, and decision_records is append-only in the production schema. All of that is still inside one trust boundary: whoever can write the rows can rewrite the chain from the altered entry onward and it verifies again. Nothing publishes or countersigns the head digest, so the ledger evidences internal consistency and not much more.",
       "evidence": [
         {
-          "at": "backend/src/api/decisions.py:221",
+          "at": "backend/src/api/decisions.py:305",
           "says": "A pass means the chain is *internally* consistent. It cannot mean more than"
         }
       ],
@@ -1077,7 +1077,7 @@
           "says": "configured = os.getenv(KEY_ENV, \"\").strip()"
         },
         {
-          "at": "backend/src/db/factory.py:358",
+          "at": "backend/src/db/factory.py:402",
           "says": "url = os.getenv(\"DATABASE_URL\")"
         }
       ],

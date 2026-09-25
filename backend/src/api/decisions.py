@@ -15,12 +15,12 @@ supports doing this", never "this was done".
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Annotated, Any, Literal
+from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 import causal_core as cc
 import pandas as pd
 import structlog
-from causal_core.contract import AnalysisPolicy, CausalQuery
+from causal_core.contract import AnalysisPolicy, CausalGraph, CausalQuery
 from causal_decision import (
     Decision,
     DecisionPolicy,
@@ -34,7 +34,7 @@ from causal_decision.contract import CausalOutcome  # noqa: TC002 -- pydantic re
 from causal_decision.ledger import ChainReport, DecisionRecord
 from causal_decision.outcome import CalibrationReport, Realization, compare, plan, report
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, ConfigDict, Field, create_model
+from pydantic import BaseModel, ConfigDict, Field, create_model, model_validator
 
 from src.middleware.auth import get_current_user
 from src.semantic_layer.decision_store import (
@@ -42,11 +42,34 @@ from src.semantic_layer.decision_store import (
     FollowUpConflictError,
     LedgerConflictError,
 )
+from src.semantic_layer.model_store import ModelStore
+
+if TYPE_CHECKING:
+    from causal_decision.assumptions import ModelVersion
 
 log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/api/v1/decisions", tags=["Decision Assurance"])
 
 _store = DecisionStore()
+_models = ModelStore()
+
+
+async def _model_version(selector: ModelSelector) -> ModelVersion:
+    got = await (
+        _models.head(selector.name)
+        if selector.version is None
+        else _models.get(selector.name, selector.version)
+    )
+    if got is None:
+        which = "" if selector.version is None else f" v{selector.version}"
+        raise HTTPException(status_code=404, detail=f"no model {selector.name}{which}")
+    if selector.digest is not None and selector.digest != got.digest:
+        raise HTTPException(
+            status_code=409,
+            detail=f"{selector.name} v{got.version} has digest {got.digest[:19]}..., not the "
+            f"{selector.digest[:19]}... the request insisted on",
+        )
+    return got
 
 Cell = float | int | str | bool | None
 
@@ -69,13 +92,37 @@ QueryOptions = create_model(  # type: ignore[call-overload]
 )
 
 
+class ModelSelector(BaseModel):
+    """Which registered model version to analyse with; the head when `version` is omitted."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    version: int | None = Field(default=None, ge=1)
+    digest: str | None = Field(
+        default=None,
+        description="If given, the version must have this digest: a caller that reviewed a "
+        "version can insist on exactly that one.",
+    )
+
+
 class DecideRequest(BaseModel):
     """What the agent proposes, and the data to judge it on."""
 
     model_config = ConfigDict(extra="forbid")
 
     action: str = Field(..., min_length=1, description="The action, as it would be executed.")
-    graph: str = Field(..., min_length=1, description="Causal graph, e.g. 'Z -> X -> Y; Z -> Y'.")
+    graph: str | None = Field(
+        default=None,
+        min_length=1,
+        description="Causal graph inline, e.g. 'Z -> X -> Y; Z -> Y'. Give this or `model`.",
+    )
+    model: ModelSelector | None = Field(
+        default=None,
+        description="A registered model version (the assumption registry) instead of an inline "
+        "graph. The ledger records which version the verdict rested on, and a later revision "
+        "can say whether it still stands.",
+    )
     treatment: str
     outcome: str
     direction: Literal["increase", "decrease"] = Field(
@@ -97,6 +144,12 @@ class DecideRequest(BaseModel):
     units_per_day: float | None = Field(default=None, gt=0)
     analysis_policy: AnalysisPolicy | None = None
     decision_policy: DecisionPolicy | None = None
+
+    @model_validator(mode="after")
+    def _one_graph(self) -> DecideRequest:
+        if (self.graph is None) == (self.model is None):
+            raise ValueError("give exactly one of `graph` (inline) or `model` (registered)")
+        return self
 
 
 class DecideResponse(BaseModel):
@@ -150,14 +203,26 @@ async def make_decision(
         raise HTTPException(status_code=422, detail=f"{type(exc).__name__}: {exc}") from exc
     policy = body.decision_policy or DecisionPolicy()
 
+    version: ModelVersion | None = None
+    graph: str | CausalGraph
+    if body.model is not None:
+        version = await _model_version(body.model)
+        graph = version.graph
+    else:
+        assert body.graph is not None  # the validator guarantees one of the two
+        graph = body.graph
+
     outcome = cc.analyze(
-        frame, body.graph, query=query, policy=body.analysis_policy or AnalysisPolicy()
+        frame, graph, query=query, policy=body.analysis_policy or AnalysisPolicy()
     )
     decision = decide(outcome, request, policy)
 
     try:
         record = await _store.record(
-            decision, outcome, recorded_at=datetime.now(UTC).isoformat()
+            decision,
+            outcome,
+            recorded_at=datetime.now(UTC).isoformat(),
+            model=None if version is None else version.ref(),
         )
     except LedgerConflictError as exc:
         # The decision stands; only its place in the line is contested. Saying so is
@@ -174,9 +239,28 @@ async def make_decision(
             plan(
                 decision,
                 outcome,
-                graph=body.graph,
+                graph=graph,
                 observe_from=record.recorded_at,
             ),
+        )
+
+    # Which version this verdict rested on, and what it asked -- with adjust_for
+    # pinned to the set the analysis actually used and the nodes the data lacked,
+    # so a later revision is judged against what was done, not what would be done.
+    if version is not None:
+        used = query
+        if isinstance(outcome, cc.contract.CausalResult) and outcome.certificate.adjustment_set:
+            used = query.model_copy(
+                update={"adjust_for": outcome.certificate.adjustment_set}
+            )
+        await _models.record_decision(
+            record.entry_digest,
+            version.ref(),
+            verdict=str(decision.verdict),
+            action=body.action,
+            query=used,
+            unmeasured=tuple(sorted(set(version.graph.nodes) - set(frame.columns))),
+            recorded_at=record.recorded_at,
         )
 
     log.info(

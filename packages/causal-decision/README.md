@@ -164,6 +164,35 @@ when the head digest is anchored somewhere the writer does not control — an ap
 countersignature, another party's copy — which is a deployment decision, so the chain reports its
 head and leaves the anchoring to you.
 
+## Keeping the assumptions
+
+A verdict is only as good as its graph, so the graph is kept too. `causal_decision.assumptions`
+stores a causal model as a chain of immutable, content-addressed versions — the kernel's
+`CausalGraph`, each edge with its origin and review status, plus the assumptions a graph cannot
+state (no interference, consistency, positivity, measurement, timing).
+
+```python
+from causal_decision.assumptions import EdgeReview, create, impact, review, revise
+
+v1 = create("incident-remediation", "load -> playbook; load -> minutes; playbook -> minutes",
+            author_id="alice", created_at=now, why="from the incident review")
+v2 = revise(v1, graph=v1_text + "; backlog -> playbook; backlog -> minutes [origin=llm_prior]",
+            author_id="agent-7", created_at=now, why="proposed confounder")
+v3 = review(v2, [EdgeReview(edge="backlog -> minutes", status="approved", reason="in the RCA")],
+            reviewer_id="carol", created_at=now)      # agent-7 could not have done this
+impact(v1, v3, query).status                            # invalidated: {load} no longer suffices
+```
+
+- **A revision cannot approve an edge**, and **nobody reviews an edge they introduced** — each
+  version carries who added every edge, so the rule holds however many versions later.
+- **`impact(old, new, query)`** asks the question a revision raises: if the new graph is true,
+  is the estimate a verdict used still an estimate of the effect it claimed? For back-door, the
+  *old* adjustment set must be valid under the *new* graph. Other strategies hold only on an
+  identical certificate and are otherwise `unverified`.
+- The A0 gate (`benchmarks/a0-assumption-impact`) checks `impact` on 800 revised graphs against an
+  oracle that shares no code with the kernel: exact linear-Gaussian population algebra on the new
+  graph. The first run failed its class-balance floor and is kept beside the passing one.
+
 ## Evidence
 
 The D0 gate is pre-registered in `benchmarks/d0-decision-policy/PRE-REGISTRATION.md`, with bars

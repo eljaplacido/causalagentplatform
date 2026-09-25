@@ -39,15 +39,16 @@ sustainability investment assurance follow, in that order.
    `act_with_approval`, `experiment`, `refuse`. "Do nothing" is always a candidate. Deterministic,
    with seeded defects. What it does *not* settle: whether the thresholds are the right ones.
    That needs step 5.
-2. **Evidence record and assumption registry.** *Evidence record done; assumption registry
-   next.* A Guardian verdict is signed, names the object it authorises, and is spent on use; the
-   `/check` → `/approve` flow completes; both ways to mint a verdict outside the Guardian are
-   closed; and every decision is sealed into a hash chain with the digests of the evidence it
-   rested on (`POST /api/v1/decisions`, `GET /api/v1/decisions/verify`). Still to do: **the
-   assumption registry** — graphs still arrive in each request body, so nothing stores, versions
-   or retrieves the assumptions a verdict rested on, or says which decisions a revised graph
-   affects — and anchoring the chain's head outside the writer's control
-   (`decision-ledger-not-anchored`).
+2. **Evidence record and assumption registry.** *Done, except anchoring.* A Guardian verdict is
+   signed, names the object it authorises, and is spent on use; both ways to mint one outside the
+   Guardian are closed; every decision is sealed into a hash chain with the digests of the
+   evidence it rested on. The assumption registry keeps causal models as immutable versions
+   (`causal_decision.assumptions`, `/api/v1/models`): edges carry their origin and review status,
+   a revision cannot approve an edge, nobody reviews an edge they introduced, a decision names the
+   version it used, and `impact` says which recorded verdicts a revision invalidates —
+   pre-registered as A0 against an oracle independent of the kernel. Still to do: anchoring the
+   chain's head outside the writer's control (`decision-ledger-not-anchored`), and a
+   `causal_impact` MCP tool so agents can ask the revision question without the backend.
 3. **The estimators operations actually need.** Segment-level effects are **done**
    (`causal_core.segments`, pre-registered T4: declared subgroups, Bonferroni family-wise
    intervals, Holm across the family, one Cochran's Q before anything is compared). Still to

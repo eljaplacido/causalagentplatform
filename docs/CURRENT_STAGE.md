@@ -1,6 +1,6 @@
 # Platform Current Stage
 
-> **Last reconciled:** 2026-09-21, against the code at `f4889f2` plus the change that added `packages/causal-decision`.
+> **Last reconciled:** 2026-09-25, on branch `chore/alignment-and-cleanup`, after the change that added the assumption registry.
 > **How to read it:** every row has one of four statuses. `implemented` rows link to the test that pins the behaviour. Every other row names its entry in [`conformance/declared_not_implemented.json`](../conformance/declared_not_implemented.json), which cites where the claim was made, says in one line what the code does instead, and names what must exist for the entry to leave the list.
 > **Checked, not asserted:** `scripts/status_claims.py` (run by `.gnomon/ci.sh`) fails if a row's status disagrees with the register, an `implemented` row's test is missing, an open register entry is missing from this page, or a cited claim or piece of code has changed under the register.
 
@@ -12,6 +12,7 @@ This page replaces an earlier version that marked "Phase 1" finished. A Septembe
 - **Causal numbers the platform serves.** They come from `packages/causal-core`. The backend's `effect_estimate` and `identification_check` skills delegate to it, and so do the API and the legacy MCP server. Without observational data they return no estimate and say why; the old graph-heuristic numbers and the constant interval are gone. Ground truth is gated by the pre-registered T0, LaLonde and IHDP benchmarks.
 - **Whether an agent may act on those numbers.** `packages/causal-decision` turns an outcome into one of four verdicts (`act`, `act_with_approval`, `experiment`, `refuse`) from a policy the caller sets, and returns the experiment that would settle an unsettled question. It is deterministic and gated by the pre-registered D0 suite. It decides; it does not execute, and nothing yet checks whether the decisions were *right* — that is the calibration row below.
 - **What was decided is kept.** `POST /api/v1/decisions` analyses and rules in one call — nothing can change the evidence in between — and seals the result into an append-only hash chain with the digests it rested on. `/api/v1/decisions/verify` recomputes the chain from the stored rows and names the first entry that fails. That detects tampering inside this platform's trust boundary; anchoring the head digest outside it is on the register, not done.
+- **The assumptions a verdict rested on are kept, and a revision says what it breaks.** A causal model is registered once (`/api/v1/models`) and revised into immutable, content-addressed versions: the kernel's graph, each edge with its origin and review status, plus the assumptions a graph cannot state. A revision may propose edges but not approve them; approving is a review, role-gated, and nobody reviews an edge they introduced. A decision can name a version instead of sending a graph, the ledger records which, and `GET /api/v1/models/{name}/impact` answers, for every decision made on an older version, whether its estimate still stands if the new graph is true — gated by the pre-registered A0 suite against an oracle that shares no code with the kernel.
 - **What is still heuristic, and labelled so.** `counterfactual_reason` and `intervention_estimate` return triage scores with `heuristic: true` and a caveat. No counterfactual is computed. Rosenbaum bounds and discovery are not implemented.
 - **The kernel's own limits** are on the register too: triangulation at moderate n, overlap detection and general-ID estimation.
 - **LLMs.** No LLM is called anywhere. The agents are rule-based code.
@@ -53,8 +54,8 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 
 | Capability | Status | Evidence | Note |
 |---|---|---|---|
-| `causal-decision`: one verdict (`act`, `act_with_approval`, `experiment`, `refuse`) from an outcome, a request and a policy, per its pre-registered D0 gate | `implemented` | [packages/causal-decision/tests/d0/test_d0_gate.py](../packages/causal-decision/tests/d0/test_d0_gate.py) | 15 scenarios, 8 properties over a 400-case sweep; bars in `benchmarks/d0-decision-policy/PRE-REGISTRATION.md` |
-| `causal-decision`: the gate catches every seeded defect, including reading a contested result as supported | `implemented` | [packages/causal-decision/tests/d0/test_seeded_defects.py](../packages/causal-decision/tests/d0/test_seeded_defects.py) | 6 defects, each named in the pre-registration with the check that must catch it |
+| `causal-decision`: one verdict (`act`, `act_with_approval`, `experiment`, `refuse`) from an outcome, a request and a policy, per its pre-registered D0 gate | `implemented` | [packages/causal-decision/tests/d0/test_d0_gate.py](../packages/causal-decision/tests/d0/test_d0_gate.py) | 17 scenarios (two with declared segments), 8 properties over a 400-case sweep; the expected verdicts are registered in `benchmarks/d0-decision-policy/PRE-REGISTRATION.md` (v2), not in the code |
+| `causal-decision`: the gate catches every seeded defect, including reading a contested result as supported | `implemented` | [packages/causal-decision/tests/d0/test_seeded_defects.py](../packages/causal-decision/tests/d0/test_seeded_defects.py) | 7 defects, each named in the pre-registration with the check that must catch it |
 | `causal-decision`: a decision is a pure function of its inputs and carries digests of all three | `implemented` | [packages/causal-decision/tests/test_policy.py](../packages/causal-decision/tests/test_policy.py) | Replayable; a verdict names the policy it followed |
 | `causal-decision`: an unsettled question returns the experiment that would settle it (randomized units, size, duration, guardrails) | `implemented` | [packages/causal-decision/tests/test_policy.py](../packages/causal-decision/tests/test_policy.py) | Sized from the outcome's spread and the minimum worthwhile effect |
 | `causal-decision`: every verdict's prose verifies against the analysis that produced it | `implemented` | [packages/causal-decision/tests/test_render.py](../packages/causal-decision/tests/test_render.py) | Unverifiable prose raises rather than prints |
@@ -64,6 +65,16 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 | The chain's head digest anchored outside the writer's control | `planned` | [dni:decision-ledger-not-anchored](../conformance/declared_not_implemented.json) | Detection is inside one trust boundary until the head is published |
 | Outcome capture: a decision records what would have to be re-measured, and the platform measures it | `implemented` | [backend/tests/integration/test_decision_followup.py](../backend/tests/integration/test_decision_followup.py) | `POST /api/v1/decisions/{entry_digest}/followup` re-runs the sealed plan's own analysis; `GET /api/v1/decisions/calibration` aggregates |
 | Calibration: were the actions taken under `act` right? | `partial` | [dni:decision-thresholds-uncalibrated](../conformance/declared_not_implemented.json) | The loop produces the numbers; no follow-up has been taken on a real operation, so every rate is null |
+| A decision is measured once: a second follow-up cannot outvote the first | `implemented` | [backend/tests/integration/test_decision_followup.py](../backend/tests/integration/test_decision_followup.py) | 409 from the API, a unique index beneath it, and `report()` refuses duplicates |
+
+### Assumption registry
+
+| Capability | Status | Evidence | Notes |
+|---|---|---|---|
+| `causal-decision`: causal models as immutable, content-addressed versions; no revision approves an edge, and nobody reviews an edge they introduced | `implemented` | [packages/causal-decision/tests/test_assumptions.py](../packages/causal-decision/tests/test_assumptions.py) | The rule holds across versions: each version carries who introduced each edge |
+| `causal-decision`: whether a revision invalidates a verdict's estimate, per its pre-registered A0 gate | `implemented` | [packages/causal-decision/tests/a0/test_a0_gate.py](../packages/causal-decision/tests/a0/test_a0_gate.py) | 800 back-door cases, 800 agree with an independent linear-Gaussian oracle; front-door/IV/proximal hold only on an identical certificate, else `unverified` |
+| `causal-decision`: the A0 gate catches every seeded defect, including "still back-door" and "the new set is valid" | `implemented` | [packages/causal-decision/tests/a0/test_seeded_defects.py](../packages/causal-decision/tests/a0/test_seeded_defects.py) | 4 defects; the v1 run failed its class-balance floor and is kept |
+| Models registered, revised, reviewed and served (`/api/v1/models`), decisions naming a version, and `impact` over the recorded decisions | `implemented` | [backend/tests/integration/test_models_api.py](../backend/tests/integration/test_models_api.py) | Reviews need a governance role; versions and decision references are append-only |
 
 ### Governance
 
@@ -89,7 +100,7 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 | PII pseudonymization, erasure and export | `declared-not-implemented` | [dni:gdpr-controls](../conformance/declared_not_implemented.json) | None exists |
 | TLA+ model of the Guardian policy, checked by TLC | `declared-not-implemented` | [dni:tla-spec-not-checked](../conformance/declared_not_implemented.json) | Not runnable as written |
 | Semantic objects versioned, never mutated in place | `declared-not-implemented` | [dni:semantic-objects-mutated-in-place](../conformance/declared_not_implemented.json) | Approve/reject UPDATE the row; `version` never changes |
-| Lineage from source data to approver on every approved object | `partial` | [dni:lineage-partial](../conformance/declared_not_implemented.json) | One step per human decision; fragments have no lineage column |
+| Lineage from source data to approver on every approved object | `partial` | [dni:lineage-partial](../conformance/declared_not_implemented.json) | One step per human decision; fragments had no lineage column until `006` |
 
 ### Agents, MCP and API
 

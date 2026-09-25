@@ -309,6 +309,50 @@ BEFORE DELETE ON decision_followups
 BEGIN
     SELECT RAISE(ABORT, 'decision_followups is append-only: DELETE is not permitted');
 END;
+-- The assumption registry (007_causal_models.sql), append-only like the chain.
+CREATE TABLE IF NOT EXISTS causal_model_versions (
+    digest              TEXT PRIMARY KEY,
+    name                TEXT NOT NULL,
+    version             INTEGER NOT NULL CHECK (version >= 1),
+    parent_digest       TEXT REFERENCES causal_model_versions(digest),
+    author_id           TEXT NOT NULL,
+    created_at          TEXT NOT NULL,
+    record              TEXT NOT NULL,
+    UNIQUE (name, version)
+);
+CREATE TABLE IF NOT EXISTS decision_model_refs (
+    entry_digest        TEXT PRIMARY KEY,
+    model_name          TEXT NOT NULL,
+    model_version       INTEGER NOT NULL,
+    model_digest        TEXT NOT NULL REFERENCES causal_model_versions(digest),
+    verdict             TEXT NOT NULL,
+    action              TEXT NOT NULL,
+    query               TEXT NOT NULL,
+    unmeasured          TEXT NOT NULL DEFAULT '[]',
+    recorded_at         TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_decision_model_refs_model
+    ON decision_model_refs (model_name, model_version);
+CREATE TRIGGER IF NOT EXISTS tg_causal_model_versions_no_update
+BEFORE UPDATE ON causal_model_versions
+BEGIN
+    SELECT RAISE(ABORT, 'causal_model_versions is append-only: UPDATE is not permitted');
+END;
+CREATE TRIGGER IF NOT EXISTS tg_causal_model_versions_no_delete
+BEFORE DELETE ON causal_model_versions
+BEGIN
+    SELECT RAISE(ABORT, 'causal_model_versions is append-only: DELETE is not permitted');
+END;
+CREATE TRIGGER IF NOT EXISTS tg_decision_model_refs_no_update
+BEFORE UPDATE ON decision_model_refs
+BEGIN
+    SELECT RAISE(ABORT, 'decision_model_refs is append-only: UPDATE is not permitted');
+END;
+CREATE TRIGGER IF NOT EXISTS tg_decision_model_refs_no_delete
+BEFORE DELETE ON decision_model_refs
+BEGIN
+    SELECT RAISE(ABORT, 'decision_model_refs is append-only: DELETE is not permitted');
+END;
 CREATE TRIGGER IF NOT EXISTS tg_audit_log_no_update
 BEFORE UPDATE ON audit_log
 BEGIN
