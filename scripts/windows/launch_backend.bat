@@ -1,9 +1,13 @@
 @echo off
-set PYTHONPATH=C:\Users\35845\Desktop\DIGICISU\causalplatform\backend
+rem Windows launcher for the causal-platform backend (cmd).
+rem Paths are resolved from this script's location; the interpreter is the
+rem backend venv's if present, else python on PATH.
+set "BACKEND=%~dp0..\..\backend"
+set "PYTHONPATH=%BACKEND%"
 set ENV=local
 set DEV_AUTH_BYPASS=true
-set HALLUCINATION_RISK_THRESHOLD=0.7
-set MAX_AGENT_CYCLES=5
 set CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
-cd /d C:\Users\35845\Desktop\DIGICISU\causalplatform\backend
-start /b "" "C:\Users\35845\AppData\Local\Programs\Python\Python312\python.exe" -m uvicorn src.api.main:app --host 127.0.0.1 --port 49234
+cd /d "%BACKEND%"
+set "PY=%BACKEND%\.venv\Scripts\python.exe"
+if not exist "%PY%" set "PY=python"
+start /b "" "%PY%" -m uvicorn src.api.main:app --host 127.0.0.1 --port 49234

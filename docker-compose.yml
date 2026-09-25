@@ -1,8 +1,14 @@
-version: "3.9"
-
-# Local development stack for the Unified Enterprise Causal Platform.
-# Mirrors the production architecture: PostgreSQL + Neo4j + Kafka
+# Optional local services for the Causal Platform. Nothing here is required:
+# with ENV=local the backend runs on SQLite (backend/src/db/factory.py).
 # Backend and frontend run natively (not in Docker) for hot-reload.
+#
+#   docker compose up -d                     PostgreSQL + Neo4j
+#   docker compose --profile future up -d    also Kafka, Kafka UI, Redis
+#
+# The `future` profile holds services no code talks to yet: there is no Kafka
+# or Redis client anywhere in the tree (`kafka-streaming` in
+# conformance/declared_not_implemented.json). They are kept for the work that
+# will need them, and off by default so a plain `up` starts nothing idle.
 
 services:
 
@@ -51,6 +57,7 @@ services:
   kafka:
     image: confluentinc/cp-kafka:7.6.0
     container_name: causalplatform-kafka
+    profiles: ["future"]
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
@@ -76,8 +83,9 @@ services:
 
   # ── Kafka UI (dev convenience) ────────────────────────────────────────────
   kafka-ui:
-    image: provectuslabs/kafka-ui:latest
+    image: provectuslabs/kafka-ui:v0.7.2
     container_name: causalplatform-kafka-ui
+    profiles: ["future"]
     depends_on:
       kafka:
         condition: service_healthy
@@ -91,6 +99,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: causalplatform-redis
+    profiles: ["future"]
     ports:
       - "6379:6379"
     healthcheck:
