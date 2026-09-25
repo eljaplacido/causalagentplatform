@@ -133,7 +133,7 @@
           "says": "(DoWhy, PyMC)"
         },
         {
-          "at": "docs/AGENTS.md:665",
+          "at": "docs/AGENTS.md:666",
           "says": "DoWhy, EconML, statsmodels"
         },
         {
@@ -195,11 +195,11 @@
           "says": "Provider-agnostic LLM"
         },
         {
-          "at": "docs/AGENTS.md:615",
+          "at": "docs/AGENTS.md:616",
           "says": "the LLM factory resolves capability \u2192 provider at runtime"
         },
         {
-          "at": "docs/AGENTS.md:625",
+          "at": "docs/AGENTS.md:626",
           "says": "Routing is handled by `src/agents/llm_factory.py`"
         },
         {
@@ -665,7 +665,7 @@
       "capability": "Agents render their prompts from the versioned templates in prompts/",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:609",
+          "at": "docs/AGENTS.md:610",
           "says": "Prompt templates are versioned in `prompts/` alongside their schema contracts. No agent uses ad-hoc prompts at runtime."
         }
       ],
@@ -688,7 +688,7 @@
       "capability": "Session state and incidents persisted in PostgreSQL",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:581",
+          "at": "docs/AGENTS.md:582",
           "says": "| **Session memory** | PostgreSQL / Cloud SQL + in-process hot cache |"
         },
         {
@@ -910,7 +910,7 @@
           "says": "1. SimulateAhead   \u2014 Forward-simulate action consequences using the approved SCM"
         },
         {
-          "at": "docs/AGENTS.md:542",
+          "at": "docs/AGENTS.md:543",
           "says": "SimulateAhead (SCM lookahead)"
         },
         {
@@ -953,7 +953,7 @@
           "says": "\"PR-002\": \"Hallucination risk threshold: H-Neuron score must be < 0.7 for APPROVED verdict.\","
         },
         {
-          "at": "docs/AGENTS.md:510",
+          "at": "docs/AGENTS.md:511",
           "says": "hallucinationRiskScore: number;    // H-Neuron output"
         },
         {

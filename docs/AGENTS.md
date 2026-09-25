@@ -450,15 +450,16 @@ External agents (Claude Desktop, custom MCP clients, IDE plugins, gnomon) reach 
 | `causal_identify` | Identifiable from the graph alone, before data? Returns the certificate or the reason not |
 | `causal_analyze` | Estimate, or return a typed refusal with the missing information (a result, not an error) |
 | `causal_decide` | Only with the `[decision]` extra: analyse and rule in one call — `act`, `act_with_approval`, `experiment` or `refuse` |
+| `causal_impact` | Only with the `[decision]` extra: does a revised graph break an earlier estimate? `holds`, `invalidated` or `unverified` (or `gained` / `still_unidentified`), with the edge-level changes |
 | `causal_verify_narrative` | Fail-closed check of prose: every number bound to a claim, causal wording only for `supported` |
 
-**Recommended call order:** `causal_check_graph` → `causal_identify` → `causal_analyze` (or `causal_decide` when the question is whether to act) → `causal_verify_narrative`. A refusal is relayed with its `missing_information`; the verdict is the tool's, not the calling agent's. Governance actions (approving an edge, acting on a result) are deliberately not tools: an agent must never be able to grant itself an approval.
+**Recommended call order:** `causal_check_graph` → `causal_identify` → `causal_analyze` (or `causal_decide` when the question is whether to act) → `causal_verify_narrative`, and `causal_impact` when the graph behind an earlier answer is revised. A refusal is relayed with its `missing_information`; the verdict is the tool's, not the calling agent's. Governance actions (approving an edge, acting on a result) are deliberately not tools: an agent must never be able to grant itself an approval.
 
 #### Legacy server: `backend/mcp_server` (deprecated)
 
 **Entry point:** `backend/mcp_server/server.py` (console script `causal-platform-mcp`; MCP SDK v1). **Wrappers:** `backend/mcp_server/tools.py`. **Tests:** `backend/tests/unit/test_mcp_tools.py`, `backend/tests/integration/test_mcp_stdio.py`. **Demo client:** `backend/mcp_server/examples/client_demo.py`.
 
-It predates the kernel and is kept only until the backend is fully rewired onto causal-core. Do not add tools to it. Its seven tools, for existing callers:
+It predates the kernel and is deprecated: it warns on startup, no gnomon role is granted it, and it is kept only for client configurations outside this repository that still launch `causal-platform-mcp` (register `legacy-mcp-server`). Do not add tools to it. Its seven tools, for existing callers:
 
 | MCP tool name | Status |
 |---|---|
@@ -477,9 +478,9 @@ Not here, and not in `src/skills/`. A new method goes into the kernel with a typ
 
 **Data.** Inline as `{"column": [values]}`, or as `data_path` (CSV, Parquet, JSON). A `data_path` must lie under a directory in `CAUSAL_MCP_DATA_ROOTS` (`os.pathsep`-separated; default: the server's working directory); a path outside is refused as `INVALID_INPUT`.
 
-**Wiring.** `.gnomon/tools.toml` declares both servers — `causal_core` (the kernel; a role reaches it by listing `mcp__causal_core`) and `causal` (legacy, `mcp__causal`) — and `.gnomon/system.md` requires every causal number an agent states to come from an `mcp__causal_core__*` call, a test run or a script.
+**Wiring.** `.gnomon/tools.toml` declares `causal_core` (the kernel; a role reaches it by listing `mcp__causal_core`); the legacy `causal` declaration is commented out and no role lists `mcp__causal`. `.gnomon/system.md` requires every causal number an agent states to come from an `mcp__causal_core__*` call, a test run or a script.
 
-**Evidence.** `packages/causal-mcp/tests/test_stdio_flow.py` runs the recommended flow over the real stdio transport and validates each outcome against the published schema; `test_http.py` runs the tools over stateless HTTP; `test_decision_tool.py` covers `causal_decide`.
+**Evidence.** `packages/causal-mcp/tests/test_stdio_flow.py` runs the recommended flow over the real stdio transport and validates each outcome against the published schema; `test_http.py` runs the tools over stateless HTTP; `test_decision_tool.py` covers `causal_decide` and `causal_impact`.
 
 ---
 

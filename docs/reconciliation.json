@@ -146,18 +146,18 @@
         "prompts"
       ],
       "baseline": {
-        "on": "2026-09-24",
+        "on": "2026-09-25",
         "sha256": {
           "backend/src/agents": "6c40044e3d60bdcd45af069db54f370d8c9871358a076c8117df750d9d24ca3c",
           "backend/src/skills": "7c14f6095d38b78711081427d4f98e3f621a0a72de4b377d6fc374c346c4ecea",
-          "backend/mcp_server": "906126ac2e95942d33fa44c6abe372051ab452e3022a978c6d5ad78c28a2f6d5",
+          "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "backend/src/orchestration": "dec89bd24f81da4d46328dd0def76ef4c22e0e3c6370012ce27ea5812037acca",
-          "prompts": "060fadb860fa1728d2cf0238aa8156d455f609c5ba5ab2d3e20dea9dd45f447d"
+          "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957"
         }
       },
       "last_read": {
-        "on": "2026-09-24",
-        "by": "Claude (agent registry, skill stubs and LLM/Rust claims checked against backend/src/agents)"
+        "on": "2026-09-25",
+        "by": "Claude (§3.4 MCP exposure against causal-mcp TOOLS, .gnomon/tools.toml and roles.toml, the legacy server deprecation; §6.3 against prompts/README.md; register-cited claims left as pinned)"
       }
     },
     "docs/CYBERSECURITY.md": {
