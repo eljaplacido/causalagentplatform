@@ -31,7 +31,14 @@ from causal_decision import (
     explain,
 )
 from causal_decision.contract import CausalOutcome  # noqa: TC002 -- pydantic resolves it at runtime
-from causal_decision.ledger import ChainReport, DecisionRecord
+from causal_decision.ledger import (
+    AnchorReport,
+    ChainReport,
+    Checkpoint,
+    DecisionRecord,
+    checkpoint,
+    verify_against,
+)
 from causal_decision.outcome import CalibrationReport, Realization, compare, plan, report
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field, create_model, model_validator
@@ -308,6 +315,48 @@ async def verify_ledger(user: dict[str, Any] = Depends(get_current_user)) -> Cha
     this database's owner does not control is what turns detection into evidence.
     """
     return await _store.verify()
+
+
+class AnchorRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    checkpoints: list[Checkpoint] = Field(
+        ..., min_length=1, description="Checkpoints published earlier, from wherever you keep them."
+    )
+
+
+@router.get(
+    "/checkpoint",
+    response_model=Checkpoint,
+    summary="The chain's head, to publish outside this database",
+)
+async def get_checkpoint(user: dict[str, Any] = Depends(get_current_user)) -> Checkpoint:
+    """What to publish so that a later rewrite of this chain can be shown, not just suspected.
+
+    Put it somewhere this database's owner cannot edit -- a transparency log, another
+    party's records, a signed commit elsewhere. Publishing is the deployment's job; the
+    platform does not do it for you, and does not claim to.
+    """
+    try:
+        return checkpoint(await _store.all_records())
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@router.post(
+    "/verify-anchored",
+    response_model=AnchorReport,
+    summary="Verify the chain against checkpoints published earlier",
+)
+async def verify_anchored(
+    body: AnchorRequest, user: dict[str, Any] = Depends(get_current_user)
+) -> AnchorReport:
+    """Recompute the chain, then check it still holds every checkpoint you kept.
+
+    `/verify` alone passes a chain rewritten from an edited entry onward. A checkpoint
+    published before the rewrite names a digest the rewritten chain no longer has.
+    """
+    return verify_against(await _store.all_records(), body.checkpoints)
 
 
 # ── What happened next ────────────────────────────────────────────────────────

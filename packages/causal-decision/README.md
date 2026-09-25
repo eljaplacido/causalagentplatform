@@ -164,6 +164,12 @@ when the head digest is anchored somewhere the writer does not control — an ap
 countersignature, another party's copy — which is a deployment decision, so the chain reports its
 head and leaves the anchoring to you.
 
+What the code does provide is both ends of that: `checkpoint(records)` says exactly what to
+publish (`GET /api/v1/decisions/checkpoint`), and `verify_against(records, checkpoints)` checks a
+chain against checkpoints kept elsewhere (`POST /api/v1/decisions/verify-anchored`). A rewrite that
+re-seals every later entry passes `verify_chain`; it fails here, at the first checkpoint it
+contradicts, and a truncation below a checkpoint fails too.
+
 ## Keeping the assumptions
 
 A verdict is only as good as its graph, so the graph is kept too. `causal_decision.assumptions`

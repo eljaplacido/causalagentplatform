@@ -195,6 +195,69 @@ def verify_chain(records: list[DecisionRecord]) -> ChainReport:
     return ChainReport(ok=True, length=len(records), head_digest=records[-1].entry_digest)
 
 
+class Checkpoint(_Model):
+    """A chain's head at one moment, to be published somewhere its writer cannot rewrite.
+
+    Publishing is the deployment's job -- a transparency log, a countersigning party, a
+    signed commit in another repository, an email to an auditor. What this module can
+    do is say exactly what to publish, and check a chain against what was published.
+    """
+
+    sequence: int = Field(ge=0)
+    entry_digest: str
+    length: int = Field(ge=1)
+
+
+class AnchorReport(_Model):
+    ok: bool
+    checked: int
+    chain: ChainReport
+    broken_at: int | None = Field(
+        default=None, description="The sequence of the first checkpoint the chain contradicts."
+    )
+    reason: str = ""
+
+
+def checkpoint(records: list[DecisionRecord]) -> Checkpoint:
+    """The head to publish. Refuses an empty or internally broken chain."""
+    report = verify_chain(records)
+    if not records or not report.ok:
+        raise ValueError(f"no checkpoint for this chain: {report.reason or 'it is empty'}")
+    head = records[-1]
+    return Checkpoint(sequence=head.sequence, entry_digest=head.entry_digest,
+                      length=len(records))
+
+
+def verify_against(records: list[DecisionRecord], checkpoints: list[Checkpoint]) -> AnchorReport:
+    """Whether the chain still contains every published checkpoint.
+
+    ``verify_chain`` alone passes a chain rewritten from an altered entry onward,
+    because every digest after the edit is recomputed. A checkpoint published before
+    the rewrite names a digest the rewritten chain no longer has at that sequence --
+    that is the difference between detecting tampering and evidencing it.
+    """
+    report = verify_chain(records)
+    if not report.ok:
+        return AnchorReport(ok=False, checked=0, chain=report, reason=report.reason)
+    by_seq = {r.sequence: r for r in records}
+    for i, cp in enumerate(sorted(checkpoints, key=lambda c: c.sequence)):
+        rec = by_seq.get(cp.sequence)
+        if rec is None:
+            return AnchorReport(
+                ok=False, checked=i, chain=report, broken_at=cp.sequence,
+                reason=f"a checkpoint names entry {cp.sequence}, which the chain no longer has: "
+                "entries were removed after it was published",
+            )
+        if rec.entry_digest != cp.entry_digest:
+            return AnchorReport(
+                ok=False, checked=i, chain=report, broken_at=cp.sequence,
+                reason=f"entry {cp.sequence} digests to {rec.entry_digest[:23]}..., but the "
+                f"checkpoint published for it says {cp.entry_digest[:23]}...: the chain was "
+                "rewritten after the checkpoint was published",
+            )
+    return AnchorReport(ok=True, checked=len(checkpoints), chain=report)
+
+
 def replays(record: DecisionRecord, decision: Decision) -> bool:
     """Whether re-deciding produced the same verdict, byte for byte.
 

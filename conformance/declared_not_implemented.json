@@ -511,7 +511,7 @@
     },
     {
       "id": "decision-ledger-not-anchored",
-      "status": "planned",
+      "status": "partial",
       "capability": "The decision chain's head digest anchored outside the writer's control",
       "claimed_in": [
         {
@@ -519,11 +519,15 @@
           "says": "**What the chain does not do.** It makes tampering *detectable*, not impossible"
         }
       ],
-      "reality": "The chain is built, persisted, served and verified, and decision_records is append-only in the production schema. All of that is still inside one trust boundary: whoever can write the rows can rewrite the chain from the altered entry onward and it verifies again. Nothing publishes or countersigns the head digest, so the ledger evidences internal consistency and not much more.",
+      "reality": "The chain is built, persisted, served and verified, and decision_records is append-only in the production schema. Both ends of anchoring now exist in code: GET /api/v1/decisions/checkpoint returns the head to publish, and POST /api/v1/decisions/verify-anchored checks the chain against checkpoints kept elsewhere, catching a rewrite that re-seals every later entry (which /verify passes) and a truncation below a checkpoint. What does not exist is the publishing: nothing sends a checkpoint to a store the platform cannot rewrite, so until a deployment does, the ledger still evidences internal consistency only.",
       "evidence": [
         {
-          "at": "backend/src/api/decisions.py:305",
+          "at": "backend/src/api/decisions.py:312",
           "says": "A pass means the chain is *internally* consistent. It cannot mean more than"
+        },
+        {
+          "at": "packages/causal-decision/src/causal_decision/ledger.py:2",
+          "says": "A tamper-evident record of what was decided, on what evidence, by whom."
         }
       ],
       "leaves_by": {

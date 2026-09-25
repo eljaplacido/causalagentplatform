@@ -277,3 +277,57 @@ async def test_the_chain_table_refuses_to_be_edited_in_place(
     with pytest.raises(Exception, match="append-only"):
         await db_session.execute(text("DELETE FROM decision_records WHERE sequence = 0"))
         await db_session.commit()
+
+
+async def test_a_resealed_rewrite_passes_verify_but_not_a_published_checkpoint(
+    client: AsyncClient, db_session: AsyncSession, db_engine: object
+) -> None:
+    """The attacker the chain's docstring describes: rewrite an entry, re-seal the rest.
+
+    `/verify` passes such a chain -- it can only check internal consistency. A
+    checkpoint published before the rewrite is what catches it.
+    """
+    import json
+
+    from causal_decision.ledger import DecisionRecord
+
+    for _ in range(2):
+        assert (await client.post("/api/v1/decisions", json=body())).status_code == 200
+    published = (await client.get("/api/v1/decisions/checkpoint")).json()
+    assert published["sequence"] == 1 and published["length"] == 2
+
+    rows = (
+        await db_session.execute(text("SELECT record FROM decision_records ORDER BY sequence"))
+    ).scalars().all()
+    first, second = (DecisionRecord.model_validate(json.loads(r)) for r in rows)
+    first = first.model_copy(update={"executed": True}).sealed()
+    second = second.model_copy(update={"prev_digest": first.entry_digest}).sealed()
+
+    await _lift_append_only_guard(db_session)
+    for rec in (first, second):
+        await db_session.execute(
+            text(
+                "UPDATE decision_records SET record = :r, entry_digest = :e, prev_digest = :p "
+                "WHERE sequence = :s"
+            ),
+            {"r": json.dumps(rec.model_dump(mode="json")), "e": rec.entry_digest,
+             "p": rec.prev_digest, "s": rec.sequence},
+        )
+    await db_session.commit()
+
+    assert (await client.get("/api/v1/decisions/verify")).json()["ok"] is True, (
+        "premise: the rewrite is internally consistent"
+    )
+    anchored = await client.post(
+        "/api/v1/decisions/verify-anchored", json={"checkpoints": [published]}
+    )
+    assert anchored.status_code == 200
+    report = anchored.json()
+    assert report["ok"] is False and report["broken_at"] == 1
+    assert "rewritten after the checkpoint" in report["reason"]
+
+
+async def test_there_is_no_checkpoint_of_an_empty_chain(
+    client: AsyncClient, db_engine: object
+) -> None:
+    assert (await client.get("/api/v1/decisions/checkpoint")).status_code == 409
