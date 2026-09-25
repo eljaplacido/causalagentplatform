@@ -1,0 +1,233 @@
+{
+  "suite": "T4",
+  "prereg_sha256": "sha256:6b13a93dab14e233d7bdb8d1279ff6087ea47dab4c0cb743fd28e096deb8bf96",
+  "prereg_version": 2,
+  "git": "18e18e5d321f1fb69014c1b8019422aa3192ee34",
+  "cases": [
+    {
+      "id": "homogeneous",
+      "reps": 400,
+      "per_segment": {
+        "a": {
+          "bias": 0.025929467993076827,
+          "bias_in_mcse": 1.1201475924604913,
+          "coverage": 0.9625,
+          "fw_coverage": 0.99,
+          "n": 400.0
+        },
+        "b": {
+          "bias": 0.010384986042472732,
+          "bias_in_mcse": 0.4220961626925953,
+          "coverage": 0.9475,
+          "fw_coverage": 0.9725,
+          "n": 400.0
+        },
+        "c": {
+          "bias": -0.017074784806927923,
+          "bias_in_mcse": 0.7292311293917997,
+          "coverage": 0.9575,
+          "fw_coverage": 0.9825,
+          "n": 400.0
+        }
+      },
+      "simultaneous_coverage": 0.945,
+      "refusal_rate": {
+        "a": 0.0,
+        "b": 0.0,
+        "c": 0.0
+      },
+      "heterogeneity_rate": 0.045,
+      "any_rejected_rate": 1.0,
+      "failures": []
+    },
+    {
+      "id": "sign_flip",
+      "reps": 400,
+      "per_segment": {
+        "p1": {
+          "bias": 0.01915871348361442,
+          "bias_in_mcse": 0.9570829074108375,
+          "coverage": 0.955,
+          "fw_coverage": 0.9725,
+          "n": 400.0
+        },
+        "p3": {
+          "bias": -0.012859381707413853,
+          "bias_in_mcse": 0.6275743297196337,
+          "coverage": 0.935,
+          "fw_coverage": 0.9725,
+          "n": 400.0
+        }
+      },
+      "simultaneous_coverage": 0.945,
+      "refusal_rate": {
+        "p1": 0.0,
+        "p3": 0.0
+      },
+      "heterogeneity_rate": 1.0,
+      "any_rejected_rate": 1.0,
+      "failures": []
+    },
+    {
+      "id": "one_responder",
+      "reps": 400,
+      "per_segment": {
+        "w": {
+          "bias": 0.019356152620389366,
+          "bias_in_mcse": 0.7043431082694219,
+          "coverage": 0.9575,
+          "fw_coverage": 0.9925,
+          "n": 400.0
+        },
+        "x": {
+          "bias": -0.025828187419879817,
+          "bias_in_mcse": 0.9174827043584264,
+          "coverage": 0.94,
+          "fw_coverage": 0.985,
+          "n": 400.0
+        },
+        "y": {
+          "bias": 0.028737883701844512,
+          "bias_in_mcse": 1.0478259255701103,
+          "coverage": 0.95,
+          "fw_coverage": 0.9925,
+          "n": 400.0
+        },
+        "z": {
+          "bias": 0.0011445481697712977,
+          "bias_in_mcse": 0.041950102460717086,
+          "coverage": 0.9575,
+          "fw_coverage": 0.9875,
+          "n": 400.0
+        }
+      },
+      "simultaneous_coverage": 0.9575,
+      "refusal_rate": {
+        "w": 0.0,
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "heterogeneity_rate": 1.0,
+      "any_rejected_rate": 1.0,
+      "failures": []
+    },
+    {
+      "id": "graded",
+      "reps": 400,
+      "per_segment": {
+        "s1": {
+          "bias": 0.021061695613109315,
+          "bias_in_mcse": 0.8859334870115678,
+          "coverage": 0.9425,
+          "fw_coverage": 0.9775,
+          "n": 400.0
+        },
+        "s2": {
+          "bias": -0.0010647456385974863,
+          "bias_in_mcse": 0.04806675805527358,
+          "coverage": 0.9525,
+          "fw_coverage": 0.9975,
+          "n": 400.0
+        },
+        "s3": {
+          "bias": 0.004986681682591865,
+          "bias_in_mcse": 0.22386597032328528,
+          "coverage": 0.9425,
+          "fw_coverage": 0.9775,
+          "n": 400.0
+        },
+        "s4": {
+          "bias": 0.013549848119032148,
+          "bias_in_mcse": 0.6143325000666964,
+          "coverage": 0.965,
+          "fw_coverage": 0.9925,
+          "n": 400.0
+        }
+      },
+      "simultaneous_coverage": 0.945,
+      "refusal_rate": {
+        "s1": 0.0,
+        "s2": 0.0,
+        "s3": 0.0,
+        "s4": 0.0
+      },
+      "heterogeneity_rate": 1.0,
+      "any_rejected_rate": 1.0,
+      "failures": []
+    },
+    {
+      "id": "confounded_segments",
+      "reps": 400,
+      "per_segment": {
+        "a": {
+          "bias": -0.0019567744552979605,
+          "bias_in_mcse": 0.0714106902700835,
+          "coverage": 0.9525,
+          "fw_coverage": 0.98,
+          "n": 400.0
+        },
+        "b": {
+          "bias": -0.011144491054949413,
+          "bias_in_mcse": 0.40307699357672505,
+          "coverage": 0.945,
+          "fw_coverage": 0.9825,
+          "n": 400.0
+        }
+      },
+      "simultaneous_coverage": 0.9625,
+      "refusal_rate": {
+        "a": 0.0,
+        "b": 0.0
+      },
+      "heterogeneity_rate": 0.035,
+      "any_rejected_rate": 1.0,
+      "failures": []
+    },
+    {
+      "id": "sparse_segment",
+      "reps": 400,
+      "per_segment": {
+        "big": {
+          "bias": 0.01248291717457306,
+          "bias_in_mcse": 0.8415274927915053,
+          "coverage": 0.94,
+          "fw_coverage": 0.9675,
+          "n": 400.0
+        }
+      },
+      "simultaneous_coverage": 0.9675,
+      "refusal_rate": {
+        "tiny": 1.0,
+        "big": 0.0
+      },
+      "heterogeneity_rate": 0.0,
+      "any_rejected_rate": 1.0,
+      "failures": []
+    },
+    {
+      "id": "no_overlap_segment",
+      "reps": 400,
+      "per_segment": {
+        "mixed": {
+          "bias": 0.004836711439953234,
+          "bias_in_mcse": 0.24476951398426072,
+          "coverage": 0.955,
+          "fw_coverage": 0.98,
+          "n": 400.0
+        }
+      },
+      "simultaneous_coverage": 0.98,
+      "refusal_rate": {
+        "mixed": 0.0,
+        "untreated": 1.0
+      },
+      "heterogeneity_rate": 0.0,
+      "any_rejected_rate": 1.0,
+      "failures": []
+    }
+  ],
+  "false_discovery_rate": 0.04,
+  "failures": [],
+  "passed": true
+}

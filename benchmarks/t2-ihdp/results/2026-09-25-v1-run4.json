@@ -1,0 +1,4060 @@
+{
+  "suite": "T2-IHDP",
+  "prereg_sha256": "sha256:7aae51257409e568d002efee1a852d6f3f7c265d8fb9928b658ded90e3f8e87e",
+  "prereg_version": 1,
+  "git": "18e18e5d321f1fb69014c1b8019422aa3192ee34",
+  "summary": {
+    "ate/C1": {
+      "results": 100,
+      "refusals": {},
+      "apparatus_failures": 0,
+      "status": {
+        "supported": 100
+      },
+      "coverage": 1.0,
+      "mean_abs_error": 0.878744206488047,
+      "example_refusal": null
+    },
+    "ate/C2": {
+      "results": 100,
+      "refusals": {},
+      "apparatus_failures": 0,
+      "status": {
+        "supported": 100
+      },
+      "coverage": 0.97,
+      "mean_abs_error": 0.5221305711103668,
+      "example_refusal": null
+    },
+    "att/C1": {
+      "results": 100,
+      "refusals": {},
+      "apparatus_failures": 0,
+      "status": {
+        "supported": 99,
+        "contested": 1
+      },
+      "coverage": 0.99,
+      "mean_abs_error": 0.25199100573256183,
+      "example_refusal": null
+    },
+    "att/C2": {
+      "results": 100,
+      "refusals": {},
+      "apparatus_failures": 0,
+      "status": {
+        "supported": 97,
+        "contested": 3
+      },
+      "coverage": 0.98,
+      "mean_abs_error": 0.4611205253198189,
+      "example_refusal": null
+    }
+  },
+  "supported_miss_share": 0.015151515151515152,
+  "supported_total": 396,
+  "failures": [],
+  "passed": true,
+  "records": [
+    {
+      "r": 0,
+      "truth": 4.016066896118337,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.4351416762126075,
+      "se": 0.38056929165277625,
+      "covered": true,
+      "abs_error": 0.41907478009427024
+    },
+    {
+      "r": 1,
+      "truth": 4.050838760043126,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.406174269101825,
+      "se": 0.3969181276428652,
+      "covered": true,
+      "abs_error": 0.3553355090586994
+    },
+    {
+      "r": 2,
+      "truth": 4.099163647971287,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.314107421282206,
+      "se": 0.4077601969899797,
+      "covered": true,
+      "abs_error": 0.21494377331091918
+    },
+    {
+      "r": 3,
+      "truth": 4.27367845743849,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.7076539259453565,
+      "se": 0.7710873289240766,
+      "covered": true,
+      "abs_error": 0.4339754685068664
+    },
+    {
+      "r": 4,
+      "truth": 4.162439707706217,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.488521722213457,
+      "se": 0.42628193358932337,
+      "covered": true,
+      "abs_error": 0.3260820145072394
+    },
+    {
+      "r": 5,
+      "truth": 4.003967594300538,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.283442147753158,
+      "se": 0.68210805646651,
+      "covered": true,
+      "abs_error": 0.2794745534526202
+    },
+    {
+      "r": 6,
+      "truth": 3.9905494932203087,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.339096263328088,
+      "se": 0.49577348010877104,
+      "covered": true,
+      "abs_error": 0.3485467701077791
+    },
+    {
+      "r": 7,
+      "truth": 3.85365335563423,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.201496910799466,
+      "se": 0.5470634864054783,
+      "covered": true,
+      "abs_error": 0.3478435551652357
+    },
+    {
+      "r": 8,
+      "truth": 10.466037316008876,
+      "kind": "result",
+      "status": "supported",
+      "point": 12.944257902795798,
+      "se": 3.3618699700436143,
+      "covered": true,
+      "abs_error": 2.4782205867869216
+    },
+    {
+      "r": 9,
+      "truth": 4.586000545961048,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.8759465592346665,
+      "se": 1.5426150186257592,
+      "covered": true,
+      "abs_error": 1.2899460132736182
+    },
+    {
+      "r": 10,
+      "truth": 3.947785028700431,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.665533068999257,
+      "se": 0.5360293455152663,
+      "covered": true,
+      "abs_error": 0.7177480402988259
+    },
+    {
+      "r": 11,
+      "truth": 4.161348296974814,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.523839433489961,
+      "se": 0.7425824446703644,
+      "covered": true,
+      "abs_error": 0.3624911365151471
+    },
+    {
+      "r": 12,
+      "truth": 12.648842155861459,
+      "kind": "result",
+      "status": "supported",
+      "point": 16.945580426364444,
+      "se": 4.856811799223928,
+      "covered": true,
+      "abs_error": 4.296738270502985
+    },
+    {
+      "r": 13,
+      "truth": 3.8613000999517473,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.170306996322751,
+      "se": 0.2485366649571181,
+      "covered": true,
+      "abs_error": 0.3090068963710033
+    },
+    {
+      "r": 14,
+      "truth": 3.9075819401380167,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.444385745983054,
+      "se": 0.48073398811055823,
+      "covered": true,
+      "abs_error": 0.5368038058450368
+    },
+    {
+      "r": 15,
+      "truth": 4.532751840913458,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.998231669956376,
+      "se": 0.6401009294289243,
+      "covered": true,
+      "abs_error": 0.46547982904291807
+    },
+    {
+      "r": 16,
+      "truth": 3.636982271621631,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.407667025892314,
+      "se": 0.9136811143459276,
+      "covered": true,
+      "abs_error": 0.770684754270683
+    },
+    {
+      "r": 17,
+      "truth": 3.768761963512303,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.284951786753741,
+      "se": 0.7349724593783254,
+      "covered": true,
+      "abs_error": 0.5161898232414379
+    },
+    {
+      "r": 18,
+      "truth": 3.941148144899862,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.650206670536631,
+      "se": 0.5340513710123026,
+      "covered": true,
+      "abs_error": 0.7090585256367694
+    },
+    {
+      "r": 19,
+      "truth": 4.235950932402467,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.524122204288093,
+      "se": 0.5037567096659962,
+      "covered": true,
+      "abs_error": 0.2881712718856262
+    },
+    {
+      "r": 20,
+      "truth": 3.1551581079386106,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.8763327691397755,
+      "se": 1.3007440258521072,
+      "covered": true,
+      "abs_error": 0.7211746612011649
+    },
+    {
+      "r": 21,
+      "truth": 4.087269892661509,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.408176332925708,
+      "se": 0.5585422865196931,
+      "covered": true,
+      "abs_error": 0.32090644026419923
+    },
+    {
+      "r": 22,
+      "truth": 4.312510237773102,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.494110624375015,
+      "se": 0.9005013786627117,
+      "covered": true,
+      "abs_error": 1.1816003866019127
+    },
+    {
+      "r": 23,
+      "truth": 3.835491586016133,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.162791069818761,
+      "se": 0.6625198954978881,
+      "covered": true,
+      "abs_error": 0.32729948380262774
+    },
+    {
+      "r": 24,
+      "truth": 4.5956437463472986,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.388377763356496,
+      "se": 0.6305497566138402,
+      "covered": true,
+      "abs_error": 0.7927340170091979
+    },
+    {
+      "r": 25,
+      "truth": 4.412825048799887,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.75685217540633,
+      "se": 1.9688916900736297,
+      "covered": true,
+      "abs_error": 1.3440271266064432
+    },
+    {
+      "r": 26,
+      "truth": 3.755508955119729,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.824369263090876,
+      "se": 0.817283400519497,
+      "covered": true,
+      "abs_error": 1.0688603079711472
+    },
+    {
+      "r": 27,
+      "truth": 10.469988754885424,
+      "kind": "result",
+      "status": "supported",
+      "point": 13.325351553119937,
+      "se": 4.4301157757429745,
+      "covered": true,
+      "abs_error": 2.8553627982345127
+    },
+    {
+      "r": 28,
+      "truth": 3.745058916856946,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.61054382901269,
+      "se": 0.7429964587586768,
+      "covered": true,
+      "abs_error": 0.8654849121557442
+    },
+    {
+      "r": 29,
+      "truth": 4.384592984021068,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.845810855771869,
+      "se": 0.473107652423747,
+      "covered": true,
+      "abs_error": 0.46121787175080087
+    },
+    {
+      "r": 30,
+      "truth": 4.335573262579987,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.737249138444129,
+      "se": 0.6105675605250545,
+      "covered": true,
+      "abs_error": 0.4016758758641421
+    },
+    {
+      "r": 31,
+      "truth": 4.022886876823159,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.795918773820315,
+      "se": 0.5860026251123037,
+      "covered": true,
+      "abs_error": 0.7730318969971561
+    },
+    {
+      "r": 32,
+      "truth": 4.156628607016041,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.10308938814342,
+      "se": 0.6465533117157009,
+      "covered": true,
+      "abs_error": 0.9464607811273789
+    },
+    {
+      "r": 33,
+      "truth": 6.789415798636192,
+      "kind": "result",
+      "status": "supported",
+      "point": 10.522894317207353,
+      "se": 3.9561860792888686,
+      "covered": true,
+      "abs_error": 3.733478518571161
+    },
+    {
+      "r": 34,
+      "truth": 3.7555015022435967,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.677460975347721,
+      "se": 1.1490712705450485,
+      "covered": true,
+      "abs_error": 0.9219594731041241
+    },
+    {
+      "r": 35,
+      "truth": 4.8817267296214775,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.958281568539686,
+      "se": 1.32026754035385,
+      "covered": true,
+      "abs_error": 1.0765548389182085
+    },
+    {
+      "r": 36,
+      "truth": 3.3433854162560754,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.814807456710241,
+      "se": 1.951096833283908,
+      "covered": true,
+      "abs_error": 1.4714220404541658
+    },
+    {
+      "r": 37,
+      "truth": 4.042727872343036,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.310381694498108,
+      "se": 0.3191146564993171,
+      "covered": true,
+      "abs_error": 0.26765382215507216
+    },
+    {
+      "r": 38,
+      "truth": 6.221156720269622,
+      "kind": "result",
+      "status": "supported",
+      "point": 8.063990107149813,
+      "se": 2.1697832482894097,
+      "covered": true,
+      "abs_error": 1.8428333868801907
+    },
+    {
+      "r": 39,
+      "truth": 4.390372672331478,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.893547942569467,
+      "se": 0.6244746879342266,
+      "covered": true,
+      "abs_error": 0.503175270237989
+    },
+    {
+      "r": 40,
+      "truth": 4.229770549232353,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.782776328916279,
+      "se": 0.5077874163028371,
+      "covered": true,
+      "abs_error": 0.5530057796839261
+    },
+    {
+      "r": 41,
+      "truth": 3.9937598542963784,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.193301674127311,
+      "se": 0.2386373828116708,
+      "covered": true,
+      "abs_error": 0.1995418198309329
+    },
+    {
+      "r": 42,
+      "truth": 4.499260465369045,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.1224470349340505,
+      "se": 0.6918267422141698,
+      "covered": true,
+      "abs_error": 0.6231865695650054
+    },
+    {
+      "r": 43,
+      "truth": 3.7814384422613867,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.966505492064703,
+      "se": 0.8361014647758473,
+      "covered": true,
+      "abs_error": 1.1850670498033167
+    },
+    {
+      "r": 44,
+      "truth": 3.298716986633464,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.386893458212006,
+      "se": 1.1444018663852102,
+      "covered": true,
+      "abs_error": 1.0881764715785418
+    },
+    {
+      "r": 45,
+      "truth": 4.82676006353201,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.591022414274546,
+      "se": 0.9360775557234411,
+      "covered": true,
+      "abs_error": 0.7642623507425359
+    },
+    {
+      "r": 46,
+      "truth": 5.066412748634097,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.984752238125839,
+      "se": 1.2039535681970053,
+      "covered": true,
+      "abs_error": 0.9183394894917427
+    },
+    {
+      "r": 47,
+      "truth": 3.8417786783706953,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9421686001588165,
+      "se": 0.32652037145909907,
+      "covered": true,
+      "abs_error": 0.10038992178812123
+    },
+    {
+      "r": 48,
+      "truth": 4.395375174921111,
+      "kind": "result",
+      "status": "supported",
+      "point": 6.29369433997034,
+      "se": 1.8080970057940082,
+      "covered": true,
+      "abs_error": 1.8983191650492293
+    },
+    {
+      "r": 49,
+      "truth": 3.9047495521547364,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.027666768528409,
+      "se": 0.30321443549764476,
+      "covered": true,
+      "abs_error": 0.12291721637367248
+    },
+    {
+      "r": 50,
+      "truth": 4.306119855808186,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.0848295569989705,
+      "se": 0.6698762307552029,
+      "covered": true,
+      "abs_error": 0.7787097011907846
+    },
+    {
+      "r": 51,
+      "truth": 4.350611327015192,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.870932350806418,
+      "se": 0.8218216416407271,
+      "covered": true,
+      "abs_error": 0.5203210237912268
+    },
+    {
+      "r": 52,
+      "truth": 5.791393763456441,
+      "kind": "result",
+      "status": "supported",
+      "point": 7.858099710912427,
+      "se": 2.1659149018027084,
+      "covered": true,
+      "abs_error": 2.0667059474559855
+    },
+    {
+      "r": 53,
+      "truth": 4.431847880718595,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.043287756241044,
+      "se": 0.7963433857371418,
+      "covered": true,
+      "abs_error": 0.611439875522449
+    },
+    {
+      "r": 54,
+      "truth": 3.740272426595206,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.289403125145437,
+      "se": 0.5750917661142753,
+      "covered": true,
+      "abs_error": 0.5491306985502313
+    },
+    {
+      "r": 55,
+      "truth": 4.0314305832552,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.905859475373838,
+      "se": 0.21565721676949787,
+      "covered": true,
+      "abs_error": 0.12557110788136194
+    },
+    {
+      "r": 56,
+      "truth": 4.085420080337005,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.574777079706264,
+      "se": 0.3784549969249507,
+      "covered": true,
+      "abs_error": 0.48935699936925925
+    },
+    {
+      "r": 57,
+      "truth": 4.524155548241751,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.953681210457143,
+      "se": 0.9878838357247137,
+      "covered": true,
+      "abs_error": 0.4295256622153918
+    },
+    {
+      "r": 58,
+      "truth": 4.24202853606306,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.444340337454554,
+      "se": 0.4971455678545995,
+      "covered": true,
+      "abs_error": 0.20231180139149352
+    },
+    {
+      "r": 59,
+      "truth": 4.014540343534374,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.640309367538244,
+      "se": 1.9878716083898753,
+      "covered": true,
+      "abs_error": 1.62576902400387
+    },
+    {
+      "r": 60,
+      "truth": 4.08243720368081,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.597606235856005,
+      "se": 0.40872117686884496,
+      "covered": true,
+      "abs_error": 0.5151690321751952
+    },
+    {
+      "r": 61,
+      "truth": 3.9006449932025453,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.392447718810016,
+      "se": 0.6131837452837993,
+      "covered": true,
+      "abs_error": 0.4918027256074704
+    },
+    {
+      "r": 62,
+      "truth": 4.48018189574822,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.06157328141248,
+      "se": 0.7099389772271387,
+      "covered": true,
+      "abs_error": 0.5813913856642605
+    },
+    {
+      "r": 63,
+      "truth": 3.262089878888228,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.7430836191134578,
+      "se": 0.5633502238324483,
+      "covered": true,
+      "abs_error": 0.4809937402252298
+    },
+    {
+      "r": 64,
+      "truth": 4.17656544734077,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.752562950423897,
+      "se": 0.7413025216123482,
+      "covered": true,
+      "abs_error": 0.5759975030831272
+    },
+    {
+      "r": 65,
+      "truth": 4.198097862705767,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.607377433873073,
+      "se": 0.6002577847285926,
+      "covered": true,
+      "abs_error": 0.40927957116730607
+    },
+    {
+      "r": 66,
+      "truth": 4.050867461243081,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.6926972780102805,
+      "se": 0.5931186645645912,
+      "covered": true,
+      "abs_error": 0.6418298167671992
+    },
+    {
+      "r": 67,
+      "truth": 9.5125142687073,
+      "kind": "result",
+      "status": "supported",
+      "point": 12.816623647125503,
+      "se": 4.087773638429494,
+      "covered": true,
+      "abs_error": 3.304109378418204
+    },
+    {
+      "r": 68,
+      "truth": 3.8139057791826274,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9894761338304487,
+      "se": 0.27895306399425124,
+      "covered": true,
+      "abs_error": 0.17557035464782134
+    },
+    {
+      "r": 69,
+      "truth": 4.018697768979311,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.380416185348653,
+      "se": 0.485690348717953,
+      "covered": true,
+      "abs_error": 0.3617184163693423
+    },
+    {
+      "r": 70,
+      "truth": 5.856798244403865,
+      "kind": "result",
+      "status": "supported",
+      "point": 7.399414959841058,
+      "se": 1.3707536428113927,
+      "covered": true,
+      "abs_error": 1.5426167154371937
+    },
+    {
+      "r": 71,
+      "truth": 3.998421657625684,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.354878495643846,
+      "se": 0.2833692285798674,
+      "covered": true,
+      "abs_error": 0.3564568380181621
+    },
+    {
+      "r": 72,
+      "truth": 3.8378264419578922,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.141929959736895,
+      "se": 0.541926679797478,
+      "covered": true,
+      "abs_error": 0.30410351777900235
+    },
+    {
+      "r": 73,
+      "truth": 3.996880573011931,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.826322448899304,
+      "se": 0.48718920361802914,
+      "covered": true,
+      "abs_error": 0.829441875887373
+    },
+    {
+      "r": 74,
+      "truth": 3.9964145573400858,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.653279726555124,
+      "se": 0.6368998337209872,
+      "covered": true,
+      "abs_error": 0.6568651692150382
+    },
+    {
+      "r": 75,
+      "truth": 5.1594784480776985,
+      "kind": "result",
+      "status": "supported",
+      "point": 6.490384248368297,
+      "se": 1.590434818621471,
+      "covered": true,
+      "abs_error": 1.3309058002905987
+    },
+    {
+      "r": 76,
+      "truth": 4.1465314318655135,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.543467131420275,
+      "se": 0.644779156262944,
+      "covered": true,
+      "abs_error": 0.3969356995547617
+    },
+    {
+      "r": 77,
+      "truth": 4.017841284670284,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.873316918083499,
+      "se": 0.5500704228643998,
+      "covered": true,
+      "abs_error": 0.8554756334132154
+    },
+    {
+      "r": 78,
+      "truth": 4.1956725107693185,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.857113597693575,
+      "se": 0.6483688452782208,
+      "covered": true,
+      "abs_error": 0.6614410869242562
+    },
+    {
+      "r": 79,
+      "truth": 3.9706062317804918,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.615679982802618,
+      "se": 0.5319202824374749,
+      "covered": true,
+      "abs_error": 0.6450737510221263
+    },
+    {
+      "r": 80,
+      "truth": 9.524010300427975,
+      "kind": "result",
+      "status": "supported",
+      "point": 11.850692656930313,
+      "se": 3.2201985986186035,
+      "covered": true,
+      "abs_error": 2.3266823565023387
+    },
+    {
+      "r": 81,
+      "truth": 2.9724112016304387,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.27701438866179,
+      "se": 1.5404865329491617,
+      "covered": true,
+      "abs_error": 1.3046031870313515
+    },
+    {
+      "r": 82,
+      "truth": 4.152459087082568,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.7791582894234175,
+      "se": 0.9807316694836083,
+      "covered": true,
+      "abs_error": 0.6266992023408493
+    },
+    {
+      "r": 83,
+      "truth": 2.5540892986092945,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9186467976653034,
+      "se": 1.6683138357273675,
+      "covered": true,
+      "abs_error": 1.364557499056009
+    },
+    {
+      "r": 84,
+      "truth": -0.6039526212002669,
+      "kind": "result",
+      "status": "supported",
+      "point": 0.7775610673601996,
+      "se": 1.869250840394224,
+      "covered": true,
+      "abs_error": 1.3815136885604664
+    },
+    {
+      "r": 85,
+      "truth": 5.888223131258083,
+      "kind": "result",
+      "status": "supported",
+      "point": 8.773040077171416,
+      "se": 3.042873702884257,
+      "covered": true,
+      "abs_error": 2.8848169459133333
+    },
+    {
+      "r": 86,
+      "truth": 4.912480072903534,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.137223490971736,
+      "se": 0.6658116817638705,
+      "covered": true,
+      "abs_error": 0.22474341806820153
+    },
+    {
+      "r": 87,
+      "truth": 3.9825111839946032,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.197829316599108,
+      "se": 0.4584450218713363,
+      "covered": true,
+      "abs_error": 0.21531813260450505
+    },
+    {
+      "r": 88,
+      "truth": 3.9460677176876224,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.378256812569826,
+      "se": 0.5859677170081699,
+      "covered": true,
+      "abs_error": 0.4321890948822036
+    },
+    {
+      "r": 89,
+      "truth": 3.9450052296417697,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.843563076727335,
+      "se": 0.7140034397846291,
+      "covered": true,
+      "abs_error": 0.8985578470855655
+    },
+    {
+      "r": 90,
+      "truth": 3.917155812660826,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9887766478954054,
+      "se": 0.3799769823509601,
+      "covered": true,
+      "abs_error": 0.07162083523457952
+    },
+    {
+      "r": 91,
+      "truth": 3.569846238752745,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.643854552157583,
+      "se": 1.111904134581118,
+      "covered": true,
+      "abs_error": 1.0740083134048377
+    },
+    {
+      "r": 92,
+      "truth": 8.45612969116157,
+      "kind": "result",
+      "status": "supported",
+      "point": 10.391014369320953,
+      "se": 2.2018460498714356,
+      "covered": true,
+      "abs_error": 1.9348846781593831
+    },
+    {
+      "r": 93,
+      "truth": 4.238669465976929,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.948664157212391,
+      "se": 0.5625725388780844,
+      "covered": true,
+      "abs_error": 0.7099946912354618
+    },
+    {
+      "r": 94,
+      "truth": 3.8501647584311964,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.366336746790315,
+      "se": 0.5415446967441462,
+      "covered": true,
+      "abs_error": 0.5161719883591189
+    },
+    {
+      "r": 95,
+      "truth": 4.08661671370297,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.13062335573318,
+      "se": 1.0028825240867112,
+      "covered": true,
+      "abs_error": 1.0440066420302099
+    },
+    {
+      "r": 96,
+      "truth": 4.354538230802672,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.224731485971202,
+      "se": 0.9892450144059736,
+      "covered": true,
+      "abs_error": 0.8701932551685303
+    },
+    {
+      "r": 97,
+      "truth": 6.805806844351621,
+      "kind": "result",
+      "status": "supported",
+      "point": 8.392640195298213,
+      "se": 1.8422343198498663,
+      "covered": true,
+      "abs_error": 1.5868333509465922
+    },
+    {
+      "r": 98,
+      "truth": 4.133590257327505,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.606194422602577,
+      "se": 0.7411003846620171,
+      "covered": true,
+      "abs_error": 0.4726041652750723
+    },
+    {
+      "r": 99,
+      "truth": 4.0316550586521345,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.6541214408703215,
+      "se": 0.8574200858031492,
+      "covered": true,
+      "abs_error": 0.6224663822181871
+    },
+    {
+      "r": 0,
+      "truth": 4.016066896118337,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.412205409556278,
+      "se": 0.6624839506363838,
+      "covered": true,
+      "abs_error": 0.3961385134379407
+    },
+    {
+      "r": 1,
+      "truth": 4.050838760043126,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.8266646302023464,
+      "se": 0.7689077817082042,
+      "covered": true,
+      "abs_error": 0.22417412984077956
+    },
+    {
+      "r": 2,
+      "truth": 4.099163647971287,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.327000939740735,
+      "se": 0.6653707766320127,
+      "covered": true,
+      "abs_error": 0.22783729176944778
+    },
+    {
+      "r": 3,
+      "truth": 4.27367845743849,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.37253682552981,
+      "se": 0.8147140012134554,
+      "covered": true,
+      "abs_error": 0.09885836809131998
+    },
+    {
+      "r": 4,
+      "truth": 4.162439707706217,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.359778602794088,
+      "se": 0.9628224803111816,
+      "covered": true,
+      "abs_error": 0.19733889508787072
+    },
+    {
+      "r": 5,
+      "truth": 4.003967594300538,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.56656192559892,
+      "se": 0.7516415718025814,
+      "covered": true,
+      "abs_error": 0.4374056687016181
+    },
+    {
+      "r": 6,
+      "truth": 3.9905494932203087,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.6830859937312956,
+      "se": 0.7675532713238901,
+      "covered": true,
+      "abs_error": 0.3074634994890131
+    },
+    {
+      "r": 7,
+      "truth": 3.85365335563423,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.701897021593222,
+      "se": 0.8134510759141372,
+      "covered": true,
+      "abs_error": 0.848243665958992
+    },
+    {
+      "r": 8,
+      "truth": 10.466037316008876,
+      "kind": "result",
+      "status": "supported",
+      "point": 9.552706347171004,
+      "se": 1.494849797488067,
+      "covered": true,
+      "abs_error": 0.9133309688378723
+    },
+    {
+      "r": 9,
+      "truth": 4.586000545961048,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.568635593398753,
+      "se": 0.8646502701735347,
+      "covered": true,
+      "abs_error": 0.01736495256229542
+    },
+    {
+      "r": 10,
+      "truth": 3.947785028700431,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.773580792807567,
+      "se": 0.6303232349863825,
+      "covered": true,
+      "abs_error": 0.8257957641071361
+    },
+    {
+      "r": 11,
+      "truth": 4.161348296974814,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.0322895820438855,
+      "se": 0.9849881300263443,
+      "covered": true,
+      "abs_error": 0.12905871493092835
+    },
+    {
+      "r": 12,
+      "truth": 12.648842155861459,
+      "kind": "result",
+      "status": "supported",
+      "point": 14.618231871625902,
+      "se": 1.816471142327245,
+      "covered": true,
+      "abs_error": 1.9693897157644429
+    },
+    {
+      "r": 13,
+      "truth": 3.8613000999517473,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.547440220599817,
+      "se": 0.8904502687607064,
+      "covered": true,
+      "abs_error": 0.6861401206480693
+    },
+    {
+      "r": 14,
+      "truth": 3.9075819401380167,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.133243394249023,
+      "se": 0.8548793389916544,
+      "covered": true,
+      "abs_error": 0.22566145411100624
+    },
+    {
+      "r": 15,
+      "truth": 4.532751840913458,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.445113436228141,
+      "se": 0.5998459802613033,
+      "covered": true,
+      "abs_error": 0.08763840468531736
+    },
+    {
+      "r": 16,
+      "truth": 3.636982271621631,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.736447024628932,
+      "se": 0.6864965720904892,
+      "covered": true,
+      "abs_error": 0.09946475300730073
+    },
+    {
+      "r": 17,
+      "truth": 3.768761963512303,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.156753545455521,
+      "se": 0.7617665236335455,
+      "covered": true,
+      "abs_error": 0.38799158194321803
+    },
+    {
+      "r": 18,
+      "truth": 3.941148144899862,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.8586086126450967,
+      "se": 0.7234125835121764,
+      "covered": true,
+      "abs_error": 0.08253953225476529
+    },
+    {
+      "r": 19,
+      "truth": 4.235950932402467,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.062785369057217,
+      "se": 0.672966158198897,
+      "covered": true,
+      "abs_error": 0.17316556334525046
+    },
+    {
+      "r": 20,
+      "truth": 3.1551581079386106,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.196119211683804,
+      "se": 0.8170957135277905,
+      "covered": true,
+      "abs_error": 0.04096110374519357
+    },
+    {
+      "r": 21,
+      "truth": 4.087269892661509,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.5729931665130485,
+      "se": 0.6628883340607061,
+      "covered": true,
+      "abs_error": 0.5142767261484607
+    },
+    {
+      "r": 22,
+      "truth": 4.312510237773102,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.687238703968253,
+      "se": 0.8916384109284524,
+      "covered": true,
+      "abs_error": 0.3747284661951511
+    },
+    {
+      "r": 23,
+      "truth": 3.835491586016133,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.347428547691859,
+      "se": 1.033288469248352,
+      "covered": true,
+      "abs_error": 0.5119369616757257
+    },
+    {
+      "r": 24,
+      "truth": 4.5956437463472986,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.060833492158194,
+      "se": 0.9305498042819086,
+      "covered": true,
+      "abs_error": 0.5348102541891047
+    },
+    {
+      "r": 25,
+      "truth": 4.412825048799887,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.7647828525104963,
+      "se": 1.1638748858590997,
+      "covered": true,
+      "abs_error": 0.6480421962893903
+    },
+    {
+      "r": 26,
+      "truth": 3.755508955119729,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.650980869730085,
+      "se": 0.7245507423038863,
+      "covered": true,
+      "abs_error": 0.10452808538964398
+    },
+    {
+      "r": 27,
+      "truth": 10.469988754885424,
+      "kind": "result",
+      "status": "supported",
+      "point": 9.338752747849632,
+      "se": 1.9438520297097475,
+      "covered": true,
+      "abs_error": 1.1312360070357919
+    },
+    {
+      "r": 28,
+      "truth": 3.745058916856946,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.236374241904751,
+      "se": 0.6812649283425662,
+      "covered": true,
+      "abs_error": 0.49131532504780484
+    },
+    {
+      "r": 29,
+      "truth": 4.384592984021068,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.178445786244738,
+      "se": 0.8354867490957782,
+      "covered": true,
+      "abs_error": 0.20614719777633006
+    },
+    {
+      "r": 30,
+      "truth": 4.335573262579987,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.046122521004595,
+      "se": 0.6471951832967174,
+      "covered": true,
+      "abs_error": 0.28945074157539263
+    },
+    {
+      "r": 31,
+      "truth": 4.022886876823159,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.7114163702531977,
+      "se": 0.8539068138394573,
+      "covered": true,
+      "abs_error": 0.311470506569961
+    },
+    {
+      "r": 32,
+      "truth": 4.156628607016041,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.20574337271323,
+      "se": 0.9575817535371409,
+      "covered": true,
+      "abs_error": 1.0491147656971886
+    },
+    {
+      "r": 33,
+      "truth": 6.789415798636192,
+      "kind": "result",
+      "status": "supported",
+      "point": 7.986820339746373,
+      "se": 1.6095702949791728,
+      "covered": true,
+      "abs_error": 1.1974045411101812
+    },
+    {
+      "r": 34,
+      "truth": 3.7555015022435967,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.646660706148687,
+      "se": 0.762963553656398,
+      "covered": true,
+      "abs_error": 0.8911592039050902
+    },
+    {
+      "r": 35,
+      "truth": 4.8817267296214775,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.195309890930556,
+      "se": 0.6694736638646809,
+      "covered": true,
+      "abs_error": 0.6864168386909215
+    },
+    {
+      "r": 36,
+      "truth": 3.3433854162560754,
+      "kind": "result",
+      "status": "supported",
+      "point": 2.811113725999121,
+      "se": 1.029321349417318,
+      "covered": true,
+      "abs_error": 0.5322716902569544
+    },
+    {
+      "r": 37,
+      "truth": 4.042727872343036,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.131490676829495,
+      "se": 0.7929671306629452,
+      "covered": true,
+      "abs_error": 0.08876280448645879
+    },
+    {
+      "r": 38,
+      "truth": 6.221156720269622,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.613901951913874,
+      "se": 0.8574432328304444,
+      "covered": true,
+      "abs_error": 0.6072547683557481
+    },
+    {
+      "r": 39,
+      "truth": 4.390372672331478,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.56456475238217,
+      "se": 0.6197751008711742,
+      "covered": true,
+      "abs_error": 0.17419208005069198
+    },
+    {
+      "r": 40,
+      "truth": 4.229770549232353,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.1069910410818995,
+      "se": 0.8741522471617342,
+      "covered": true,
+      "abs_error": 0.8772204918495463
+    },
+    {
+      "r": 41,
+      "truth": 3.9937598542963784,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.840617188511861,
+      "se": 0.7963898117835155,
+      "covered": true,
+      "abs_error": 0.8468573342154828
+    },
+    {
+      "r": 42,
+      "truth": 4.499260465369045,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.651669512055779,
+      "se": 0.8018146404009079,
+      "covered": true,
+      "abs_error": 0.15240904668673405
+    },
+    {
+      "r": 43,
+      "truth": 3.7814384422613867,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.24537863699541,
+      "se": 0.729856280693668,
+      "covered": true,
+      "abs_error": 0.46394019473402315
+    },
+    {
+      "r": 44,
+      "truth": 3.298716986633464,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.852931657682266,
+      "se": 0.756785779676757,
+      "covered": false,
+      "abs_error": 1.5542146710488018
+    },
+    {
+      "r": 45,
+      "truth": 4.82676006353201,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.245170786733308,
+      "se": 0.5154069341834081,
+      "covered": true,
+      "abs_error": 0.4184107232012977
+    },
+    {
+      "r": 46,
+      "truth": 5.066412748634097,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.056417126499992,
+      "se": 0.7689142833347685,
+      "covered": true,
+      "abs_error": 0.00999562213410421
+    },
+    {
+      "r": 47,
+      "truth": 3.8417786783706953,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.454222152533392,
+      "se": 0.6910518758111824,
+      "covered": true,
+      "abs_error": 0.6124434741626965
+    },
+    {
+      "r": 48,
+      "truth": 4.395375174921111,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.231410898647592,
+      "se": 0.8660688550694624,
+      "covered": true,
+      "abs_error": 0.8360357237264813
+    },
+    {
+      "r": 49,
+      "truth": 3.9047495521547364,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.729246247185741,
+      "se": 0.8172553970149058,
+      "covered": true,
+      "abs_error": 0.17550330496899536
+    },
+    {
+      "r": 50,
+      "truth": 4.306119855808186,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.394378343096133,
+      "se": 0.6903237067924352,
+      "covered": true,
+      "abs_error": 0.0882584872879475
+    },
+    {
+      "r": 51,
+      "truth": 4.350611327015192,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.174255214294375,
+      "se": 0.845105575209245,
+      "covered": true,
+      "abs_error": 0.17635611272081686
+    },
+    {
+      "r": 52,
+      "truth": 5.791393763456441,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.815223871176197,
+      "se": 0.8784142788697792,
+      "covered": true,
+      "abs_error": 0.023830107719756022
+    },
+    {
+      "r": 53,
+      "truth": 4.431847880718595,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.804801985954377,
+      "se": 0.6292637569987733,
+      "covered": true,
+      "abs_error": 0.3729541052357819
+    },
+    {
+      "r": 54,
+      "truth": 3.740272426595206,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.980097458941688,
+      "se": 0.8299898298823795,
+      "covered": true,
+      "abs_error": 0.23982503234648211
+    },
+    {
+      "r": 55,
+      "truth": 4.0314305832552,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.2618426399969387,
+      "se": 0.622556824300643,
+      "covered": true,
+      "abs_error": 0.7695879432582613
+    },
+    {
+      "r": 56,
+      "truth": 4.085420080337005,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.26389190902679,
+      "se": 0.7696974892325189,
+      "covered": true,
+      "abs_error": 0.17847182868978528
+    },
+    {
+      "r": 57,
+      "truth": 4.524155548241751,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.6989923456720835,
+      "se": 0.593566746129424,
+      "covered": true,
+      "abs_error": 0.8251632025696676
+    },
+    {
+      "r": 58,
+      "truth": 4.24202853606306,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.604433213243365,
+      "se": 0.8170388706922155,
+      "covered": true,
+      "abs_error": 0.6375953228196951
+    },
+    {
+      "r": 59,
+      "truth": 4.014540343534374,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.682071066128941,
+      "se": 1.0453234973734962,
+      "covered": true,
+      "abs_error": 0.6675307225945675
+    },
+    {
+      "r": 60,
+      "truth": 4.08243720368081,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.7248496923737395,
+      "se": 0.5602178000616013,
+      "covered": true,
+      "abs_error": 0.6424124886929299
+    },
+    {
+      "r": 61,
+      "truth": 3.9006449932025453,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.568487005721127,
+      "se": 0.9184304315595173,
+      "covered": true,
+      "abs_error": 0.6678420125185816
+    },
+    {
+      "r": 62,
+      "truth": 4.48018189574822,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.191628445652025,
+      "se": 0.6253748948737345,
+      "covered": true,
+      "abs_error": 0.7114465499038056
+    },
+    {
+      "r": 63,
+      "truth": 3.262089878888228,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9385249628055563,
+      "se": 0.6835408386496407,
+      "covered": true,
+      "abs_error": 0.6764350839173283
+    },
+    {
+      "r": 64,
+      "truth": 4.17656544734077,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.5746883585006515,
+      "se": 0.8728962914381261,
+      "covered": true,
+      "abs_error": 0.6018770888401184
+    },
+    {
+      "r": 65,
+      "truth": 4.198097862705767,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.514718381827096,
+      "se": 0.7210740016638674,
+      "covered": true,
+      "abs_error": 0.3166205191213294
+    },
+    {
+      "r": 66,
+      "truth": 4.050867461243081,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.814422802945544,
+      "se": 0.7803022467843685,
+      "covered": true,
+      "abs_error": 0.763555341702463
+    },
+    {
+      "r": 67,
+      "truth": 9.5125142687073,
+      "kind": "result",
+      "status": "supported",
+      "point": 9.200940426015798,
+      "se": 1.1185658561330827,
+      "covered": true,
+      "abs_error": 0.31157384269150157
+    },
+    {
+      "r": 68,
+      "truth": 3.8139057791826274,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.2700426212208495,
+      "se": 0.716122906864924,
+      "covered": true,
+      "abs_error": 0.5438631579617779
+    },
+    {
+      "r": 69,
+      "truth": 4.018697768979311,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.141163207563475,
+      "se": 0.6327421746037705,
+      "covered": true,
+      "abs_error": 0.1224654385841637
+    },
+    {
+      "r": 70,
+      "truth": 5.856798244403865,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.918629127045268,
+      "se": 0.7577469573991854,
+      "covered": true,
+      "abs_error": 0.06183088264140313
+    },
+    {
+      "r": 71,
+      "truth": 3.998421657625684,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.818655609638586,
+      "se": 0.8211999928545659,
+      "covered": false,
+      "abs_error": 1.8202339520129023
+    },
+    {
+      "r": 72,
+      "truth": 3.8378264419578922,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.862963640101645,
+      "se": 0.7414849491978102,
+      "covered": true,
+      "abs_error": 0.025137198143752926
+    },
+    {
+      "r": 73,
+      "truth": 3.996880573011931,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.013908713506872,
+      "se": 0.8042103815919985,
+      "covered": true,
+      "abs_error": 1.0170281404949413
+    },
+    {
+      "r": 74,
+      "truth": 3.9964145573400858,
+      "kind": "result",
+      "status": "supported",
+      "point": 2.8071207694300635,
+      "se": 0.7396151729413482,
+      "covered": true,
+      "abs_error": 1.1892937879100223
+    },
+    {
+      "r": 75,
+      "truth": 5.1594784480776985,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.20345825022779,
+      "se": 0.7070233489049649,
+      "covered": true,
+      "abs_error": 0.04397980215009145
+    },
+    {
+      "r": 76,
+      "truth": 4.1465314318655135,
+      "kind": "result",
+      "status": "supported",
+      "point": 2.8000500675178426,
+      "se": 0.6464998743903602,
+      "covered": false,
+      "abs_error": 1.346481364347671
+    },
+    {
+      "r": 77,
+      "truth": 4.017841284670284,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.596448285687794,
+      "se": 0.7125250325038249,
+      "covered": true,
+      "abs_error": 0.5786070010175104
+    },
+    {
+      "r": 78,
+      "truth": 4.1956725107693185,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.169567738650111,
+      "se": 0.6386594912895747,
+      "covered": true,
+      "abs_error": 0.02610477211920781
+    },
+    {
+      "r": 79,
+      "truth": 3.9706062317804918,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.992710793964396,
+      "se": 0.6581686234263932,
+      "covered": true,
+      "abs_error": 1.0221045621839044
+    },
+    {
+      "r": 80,
+      "truth": 9.524010300427975,
+      "kind": "result",
+      "status": "supported",
+      "point": 9.393335075125975,
+      "se": 1.2531253959678679,
+      "covered": true,
+      "abs_error": 0.13067522530199938
+    },
+    {
+      "r": 81,
+      "truth": 2.9724112016304387,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9184443724300486,
+      "se": 1.0705909754930327,
+      "covered": true,
+      "abs_error": 0.9460331707996099
+    },
+    {
+      "r": 82,
+      "truth": 4.152459087082568,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.343618385784266,
+      "se": 0.7459129814959041,
+      "covered": true,
+      "abs_error": 0.8088407012983021
+    },
+    {
+      "r": 83,
+      "truth": 2.5540892986092945,
+      "kind": "result",
+      "status": "supported",
+      "point": 2.997718590323764,
+      "se": 0.7624708792713943,
+      "covered": true,
+      "abs_error": 0.4436292917144695
+    },
+    {
+      "r": 84,
+      "truth": -0.6039526212002669,
+      "kind": "result",
+      "status": "supported",
+      "point": 0.5631561656355082,
+      "se": 1.24015362510508,
+      "covered": true,
+      "abs_error": 1.167108786835775
+    },
+    {
+      "r": 85,
+      "truth": 5.888223131258083,
+      "kind": "result",
+      "status": "supported",
+      "point": 6.880386718966648,
+      "se": 1.0209346157457095,
+      "covered": true,
+      "abs_error": 0.992163587708565
+    },
+    {
+      "r": 86,
+      "truth": 4.912480072903534,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.009554277114183,
+      "se": 0.73026419595813,
+      "covered": true,
+      "abs_error": 0.9029257957893515
+    },
+    {
+      "r": 87,
+      "truth": 3.9825111839946032,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.335021088277602,
+      "se": 0.6711144619757154,
+      "covered": true,
+      "abs_error": 0.3525099042829991
+    },
+    {
+      "r": 88,
+      "truth": 3.9460677176876224,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.489579530718623,
+      "se": 0.5562300711543979,
+      "covered": true,
+      "abs_error": 0.5435118130310004
+    },
+    {
+      "r": 89,
+      "truth": 3.9450052296417697,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.644877805574856,
+      "se": 0.6388343015780124,
+      "covered": true,
+      "abs_error": 0.30012742406691384
+    },
+    {
+      "r": 90,
+      "truth": 3.917155812660826,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.042011313239839,
+      "se": 0.8092727016758542,
+      "covered": true,
+      "abs_error": 0.12485550057901307
+    },
+    {
+      "r": 91,
+      "truth": 3.569846238752745,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.678926930346062,
+      "se": 0.7718034445085699,
+      "covered": true,
+      "abs_error": 0.1090806915933169
+    },
+    {
+      "r": 92,
+      "truth": 8.45612969116157,
+      "kind": "result",
+      "status": "supported",
+      "point": 9.139917308329846,
+      "se": 0.8721571571353713,
+      "covered": true,
+      "abs_error": 0.6837876171682762
+    },
+    {
+      "r": 93,
+      "truth": 4.238669465976929,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.241411407980429,
+      "se": 0.7128213367757796,
+      "covered": true,
+      "abs_error": 0.0027419420035004194
+    },
+    {
+      "r": 94,
+      "truth": 3.8501647584311964,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.804274344502196,
+      "se": 0.847058267665484,
+      "covered": true,
+      "abs_error": 0.9541095860709996
+    },
+    {
+      "r": 95,
+      "truth": 4.08661671370297,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.4515425286652315,
+      "se": 0.8911405071342225,
+      "covered": true,
+      "abs_error": 0.6350741850377384
+    },
+    {
+      "r": 96,
+      "truth": 4.354538230802672,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.807375699128082,
+      "se": 0.8093252341474237,
+      "covered": true,
+      "abs_error": 0.5471625316745898
+    },
+    {
+      "r": 97,
+      "truth": 6.805806844351621,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.742644879028209,
+      "se": 1.0477126620991934,
+      "covered": true,
+      "abs_error": 1.0631619653234123
+    },
+    {
+      "r": 98,
+      "truth": 4.133590257327505,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.142853142136497,
+      "se": 0.8549893385992201,
+      "covered": true,
+      "abs_error": 0.009262884808991956
+    },
+    {
+      "r": 99,
+      "truth": 4.0316550586521345,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.391971302907896,
+      "se": 0.7688844507510846,
+      "covered": true,
+      "abs_error": 0.3603162442557615
+    },
+    {
+      "r": 0,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.958125479730548,
+      "se": 0.13849649316113405,
+      "covered": true,
+      "abs_error": 0.04187452026945193
+    },
+    {
+      "r": 1,
+      "truth": 4.000000000000002,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9072022678860137,
+      "se": 0.14194000988876368,
+      "covered": true,
+      "abs_error": 0.09279773211398812
+    },
+    {
+      "r": 2,
+      "truth": 4.000000000000001,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.860323198253159,
+      "se": 0.13277899449102076,
+      "covered": true,
+      "abs_error": 0.13967680174684194
+    },
+    {
+      "r": 3,
+      "truth": 3.9999999999999982,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.849436259231679,
+      "se": 0.1738511084945504,
+      "covered": true,
+      "abs_error": 0.15056374076831913
+    },
+    {
+      "r": 4,
+      "truth": 4.000000000000005,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.062810676362631,
+      "se": 0.2503434746840057,
+      "covered": true,
+      "abs_error": 0.06281067636262527
+    },
+    {
+      "r": 5,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.8441618820180383,
+      "se": 0.1452763830247926,
+      "covered": true,
+      "abs_error": 0.15583811798196168
+    },
+    {
+      "r": 6,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.841184568039203,
+      "se": 0.11578124865354396,
+      "covered": true,
+      "abs_error": 0.15881543196079706
+    },
+    {
+      "r": 7,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.030158476478608,
+      "se": 0.17386989355070562,
+      "covered": true,
+      "abs_error": 0.03015847647860781
+    },
+    {
+      "r": 8,
+      "truth": 3.9999999999999902,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.3802824641655342,
+      "se": 2.4230027415195505,
+      "covered": true,
+      "abs_error": 0.619717535834456
+    },
+    {
+      "r": 9,
+      "truth": 4.000000000000002,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.103036666146615,
+      "se": 0.7321330289514257,
+      "covered": true,
+      "abs_error": 0.10303666614661289
+    },
+    {
+      "r": 10,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.000667606763238,
+      "se": 0.19883630859571594,
+      "covered": true,
+      "abs_error": 0.0006676067632378491
+    },
+    {
+      "r": 11,
+      "truth": 4.000000000000003,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.750019380808921,
+      "se": 0.34844759739191233,
+      "covered": true,
+      "abs_error": 0.24998061919108183
+    },
+    {
+      "r": 12,
+      "truth": 4.000000000000016,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.820197037771353,
+      "se": 2.820054414358006,
+      "covered": true,
+      "abs_error": 0.8201970377713375
+    },
+    {
+      "r": 13,
+      "truth": 4.000000000000001,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.1168179452685125,
+      "se": 0.13035748869667307,
+      "covered": true,
+      "abs_error": 0.11681794526851164
+    },
+    {
+      "r": 14,
+      "truth": 4.0000000000000036,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.18785356644399,
+      "se": 0.22105917741488887,
+      "covered": true,
+      "abs_error": 0.18785356644398643
+    },
+    {
+      "r": 15,
+      "truth": 3.999999999999999,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.979438619387139,
+      "se": 0.15322251198369122,
+      "covered": true,
+      "abs_error": 0.02056138061286017
+    },
+    {
+      "r": 16,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.1888454063800085,
+      "se": 0.40072402878235575,
+      "covered": true,
+      "abs_error": 0.18884540638000846
+    },
+    {
+      "r": 17,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.79001619929586,
+      "se": 0.3072147137883505,
+      "covered": true,
+      "abs_error": 0.20998380070414013
+    },
+    {
+      "r": 18,
+      "truth": 4.0000000000000036,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.886384517054344,
+      "se": 0.3144061735442581,
+      "covered": true,
+      "abs_error": 0.11361548294565971
+    },
+    {
+      "r": 19,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.7883601143479666,
+      "se": 0.1344291885917243,
+      "covered": true,
+      "abs_error": 0.2116398856520334
+    },
+    {
+      "r": 20,
+      "truth": 3.9999999999999982,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.7671791356909505,
+      "se": 0.7410656712506409,
+      "covered": true,
+      "abs_error": 0.2328208643090477
+    },
+    {
+      "r": 21,
+      "truth": 4.000000000000001,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9452104157681287,
+      "se": 0.1626141689896931,
+      "covered": true,
+      "abs_error": 0.05478958423187219
+    },
+    {
+      "r": 22,
+      "truth": 4.000000000000002,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.895643593085765,
+      "se": 0.24074268451426994,
+      "covered": true,
+      "abs_error": 0.10435640691423664
+    },
+    {
+      "r": 23,
+      "truth": 3.999999999999997,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9605585510379857,
+      "se": 0.5839489084400886,
+      "covered": true,
+      "abs_error": 0.03944144896201118
+    },
+    {
+      "r": 24,
+      "truth": 3.999999999999999,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9885010070049245,
+      "se": 0.25487992786542474,
+      "covered": true,
+      "abs_error": 0.01149899299507462
+    },
+    {
+      "r": 25,
+      "truth": 3.9999999999999982,
+      "kind": "result",
+      "status": "supported",
+      "point": 2.1841347412913485,
+      "se": 1.2230927697132674,
+      "covered": true,
+      "abs_error": 1.8158652587086497
+    },
+    {
+      "r": 26,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.180832322508223,
+      "se": 0.17292952390848895,
+      "covered": true,
+      "abs_error": 0.18083232250822334
+    },
+    {
+      "r": 27,
+      "truth": 3.9999999999999876,
+      "kind": "result",
+      "status": "supported",
+      "point": 0.56119170354784,
+      "se": 3.7188853728957625,
+      "covered": true,
+      "abs_error": 3.4388082964521476
+    },
+    {
+      "r": 28,
+      "truth": 3.9999999999999933,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9437391552078855,
+      "se": 0.2632751941769596,
+      "covered": true,
+      "abs_error": 0.0562608447921078
+    },
+    {
+      "r": 29,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.036593163380388,
+      "se": 0.2686780000279655,
+      "covered": true,
+      "abs_error": 0.036593163380388205
+    },
+    {
+      "r": 30,
+      "truth": 3.9999999999999982,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.007361364817396,
+      "se": 0.2663006334842655,
+      "covered": true,
+      "abs_error": 0.0073613648173980195
+    },
+    {
+      "r": 31,
+      "truth": 3.999999999999997,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.080234813440819,
+      "se": 0.12629164821125213,
+      "covered": true,
+      "abs_error": 0.08023481344082173
+    },
+    {
+      "r": 32,
+      "truth": 4.0000000000000036,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.031724575611478,
+      "se": 0.28094681526962856,
+      "covered": true,
+      "abs_error": 0.03172457561147457
+    },
+    {
+      "r": 33,
+      "truth": 3.999999999999997,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.871444307803397,
+      "se": 3.4494043955446188,
+      "covered": true,
+      "abs_error": 0.8714443078034004
+    },
+    {
+      "r": 34,
+      "truth": 4.0000000000000036,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.781245802775236,
+      "se": 0.4967353463601448,
+      "covered": true,
+      "abs_error": 0.21875419722476774
+    },
+    {
+      "r": 35,
+      "truth": 3.9999999999999982,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9830536270831907,
+      "se": 0.45444246038532343,
+      "covered": true,
+      "abs_error": 0.01694637291680756
+    },
+    {
+      "r": 36,
+      "truth": 3.9999999999999942,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.4736535374468422,
+      "se": 0.7661400944902628,
+      "covered": true,
+      "abs_error": 0.526346462553152
+    },
+    {
+      "r": 37,
+      "truth": 4.000000000000001,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.002472635914651,
+      "se": 0.21479518736271258,
+      "covered": true,
+      "abs_error": 0.0024726359146498567
+    },
+    {
+      "r": 38,
+      "truth": 4.000000000000007,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.611677107517312,
+      "se": 0.7883564458304826,
+      "covered": true,
+      "abs_error": 0.3883228924826949
+    },
+    {
+      "r": 39,
+      "truth": 4.000000000000001,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.536534705663402,
+      "se": 0.3131219871855676,
+      "covered": true,
+      "abs_error": 0.4634652943365989
+    },
+    {
+      "r": 40,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.030354655513371,
+      "se": 0.13682360383952963,
+      "covered": true,
+      "abs_error": 0.030354655513370687
+    },
+    {
+      "r": 41,
+      "truth": 4.000000000000001,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9494120825500163,
+      "se": 0.12809916451523864,
+      "covered": true,
+      "abs_error": 0.05058791744998459
+    },
+    {
+      "r": 42,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.077718585920763,
+      "se": 0.1717856360354127,
+      "covered": true,
+      "abs_error": 0.07771858592076342
+    },
+    {
+      "r": 43,
+      "truth": 4.00000000000001,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.104551027809366,
+      "se": 0.22656960138617294,
+      "covered": true,
+      "abs_error": 0.10455102780935643
+    },
+    {
+      "r": 44,
+      "truth": 3.999999999999991,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.095595629899478,
+      "se": 0.37075234169928034,
+      "covered": true,
+      "abs_error": 0.09559562989948667
+    },
+    {
+      "r": 45,
+      "truth": 3.9999999999999902,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9686749874900507,
+      "se": 0.31878388880616476,
+      "covered": true,
+      "abs_error": 0.031325012509939576
+    },
+    {
+      "r": 46,
+      "truth": 3.999999999999999,
+      "kind": "result",
+      "status": "contested",
+      "point": 3.6433955347245037,
+      "se": 0.4820973575055961,
+      "covered": true,
+      "abs_error": 0.3566044652754954
+    },
+    {
+      "r": 47,
+      "truth": 4.000000000000002,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.985928734315626,
+      "se": 0.17553105478691708,
+      "covered": true,
+      "abs_error": 0.014071265684375778
+    },
+    {
+      "r": 48,
+      "truth": 4.0000000000000275,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9898324472678346,
+      "se": 0.34430445363202056,
+      "covered": true,
+      "abs_error": 0.010167552732192942
+    },
+    {
+      "r": 49,
+      "truth": 3.999999999999999,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.821881382876422,
+      "se": 0.20058735548490195,
+      "covered": true,
+      "abs_error": 0.17811861712357713
+    },
+    {
+      "r": 50,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.016529928603441,
+      "se": 0.18238659095329382,
+      "covered": true,
+      "abs_error": 0.016529928603440602
+    },
+    {
+      "r": 51,
+      "truth": 4.000000000000001,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.8561742524024716,
+      "se": 0.29357690857404795,
+      "covered": true,
+      "abs_error": 0.1438257475975293
+    },
+    {
+      "r": 52,
+      "truth": 4.000000000000002,
+      "kind": "result",
+      "status": "supported",
+      "point": 2.9312590054648267,
+      "se": 1.2595583078218417,
+      "covered": true,
+      "abs_error": 1.0687409945351751
+    },
+    {
+      "r": 53,
+      "truth": 4.000000000000002,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.4346998170915417,
+      "se": 0.6317743920626216,
+      "covered": true,
+      "abs_error": 0.5653001829084601
+    },
+    {
+      "r": 54,
+      "truth": 4.000000000000001,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9054476033366625,
+      "se": 0.14674386437241685,
+      "covered": true,
+      "abs_error": 0.09455239666333837
+    },
+    {
+      "r": 55,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.8526458532175782,
+      "se": 0.10683842048922126,
+      "covered": true,
+      "abs_error": 0.14735414678242176
+    },
+    {
+      "r": 56,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.163361830814042,
+      "se": 0.12656552081212316,
+      "covered": true,
+      "abs_error": 0.16336183081404165
+    },
+    {
+      "r": 57,
+      "truth": 4.000000000000002,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.7512574593363444,
+      "se": 0.25280497099737326,
+      "covered": true,
+      "abs_error": 0.24874254066365742
+    },
+    {
+      "r": 58,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9108041108657594,
+      "se": 0.13918051605420834,
+      "covered": true,
+      "abs_error": 0.08919588913424059
+    },
+    {
+      "r": 59,
+      "truth": 3.9999999999999787,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.6526342726631094,
+      "se": 0.899556365935929,
+      "covered": true,
+      "abs_error": 0.3473657273368693
+    },
+    {
+      "r": 60,
+      "truth": 4.000000000000002,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9947107290365014,
+      "se": 0.13395292838086953,
+      "covered": true,
+      "abs_error": 0.005289270963500403
+    },
+    {
+      "r": 61,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.914149351938012,
+      "se": 0.18202916956001655,
+      "covered": true,
+      "abs_error": 0.08585064806198783
+    },
+    {
+      "r": 62,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.933609511770462,
+      "se": 0.24931037703686118,
+      "covered": true,
+      "abs_error": 0.06639048822953786
+    },
+    {
+      "r": 63,
+      "truth": 4.000000000000002,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.053657402394279,
+      "se": 0.22135374391772789,
+      "covered": true,
+      "abs_error": 0.0536574023942773
+    },
+    {
+      "r": 64,
+      "truth": 3.9999999999999982,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9013382316691345,
+      "se": 0.35079621141380196,
+      "covered": true,
+      "abs_error": 0.09866176833086371
+    },
+    {
+      "r": 65,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9223862496534783,
+      "se": 0.1638546385845629,
+      "covered": true,
+      "abs_error": 0.07761375034652174
+    },
+    {
+      "r": 66,
+      "truth": 4.000000000000001,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.038440624865305,
+      "se": 0.1294205549420143,
+      "covered": true,
+      "abs_error": 0.038440624865303974
+    },
+    {
+      "r": 67,
+      "truth": 4.000000000000004,
+      "kind": "result",
+      "status": "supported",
+      "point": 2.461057800944878,
+      "se": 1.940308244598526,
+      "covered": true,
+      "abs_error": 1.5389421990551266
+    },
+    {
+      "r": 68,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.885434923480787,
+      "se": 0.14239564768446042,
+      "covered": true,
+      "abs_error": 0.114565076519213
+    },
+    {
+      "r": 69,
+      "truth": 4.000000000000003,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.92630740939051,
+      "se": 0.11027390659829199,
+      "covered": true,
+      "abs_error": 0.07369259060949274
+    },
+    {
+      "r": 70,
+      "truth": 4.000000000000002,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.5689944738158195,
+      "se": 0.6338884062765232,
+      "covered": true,
+      "abs_error": 0.4310055261841823
+    },
+    {
+      "r": 71,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.958924139843319,
+      "se": 0.10370007359030539,
+      "covered": true,
+      "abs_error": 0.04107586015668119
+    },
+    {
+      "r": 72,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9780576762856397,
+      "se": 0.14488063991621145,
+      "covered": true,
+      "abs_error": 0.021942323714360334
+    },
+    {
+      "r": 73,
+      "truth": 3.9999999999999982,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.019960337883154,
+      "se": 0.13050931976498217,
+      "covered": true,
+      "abs_error": 0.019960337883155432
+    },
+    {
+      "r": 74,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.017425462370657,
+      "se": 0.11107313424619804,
+      "covered": true,
+      "abs_error": 0.017425462370656675
+    },
+    {
+      "r": 75,
+      "truth": 4.000000000000001,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9944988177595984,
+      "se": 0.5457642461472797,
+      "covered": true,
+      "abs_error": 0.005501182240402525
+    },
+    {
+      "r": 76,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.8828525693380516,
+      "se": 0.13224849982506534,
+      "covered": true,
+      "abs_error": 0.11714743066194844
+    },
+    {
+      "r": 77,
+      "truth": 3.9999999999999982,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.160952397981583,
+      "se": 0.11456502816938888,
+      "covered": true,
+      "abs_error": 0.16095239798158456
+    },
+    {
+      "r": 78,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.935496566746914,
+      "se": 0.1329093434936042,
+      "covered": true,
+      "abs_error": 0.06450343325308605
+    },
+    {
+      "r": 79,
+      "truth": 3.999999999999999,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.156217370119821,
+      "se": 0.11621799182393722,
+      "covered": true,
+      "abs_error": 0.15621737011982173
+    },
+    {
+      "r": 80,
+      "truth": 4.000000000000005,
+      "kind": "result",
+      "status": "supported",
+      "point": 2.7951713155412437,
+      "se": 2.100497650350494,
+      "covered": true,
+      "abs_error": 1.2048286844587617
+    },
+    {
+      "r": 81,
+      "truth": 4.000000000000016,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.5147325368332525,
+      "se": 0.8783844253822234,
+      "covered": true,
+      "abs_error": 0.4852674631667635
+    },
+    {
+      "r": 82,
+      "truth": 3.9999999999999933,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.863119360939082,
+      "se": 0.37278152723713925,
+      "covered": true,
+      "abs_error": 0.1368806390609114
+    },
+    {
+      "r": 83,
+      "truth": 3.999999999999997,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.618073176175124,
+      "se": 0.9945675102100152,
+      "covered": true,
+      "abs_error": 0.38192682382487275
+    },
+    {
+      "r": 84,
+      "truth": 3.9999999999999982,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.314168082557103,
+      "se": 1.697636423311099,
+      "covered": true,
+      "abs_error": 0.6858319174428953
+    },
+    {
+      "r": 85,
+      "truth": 4.000000000000011,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.960190532425443,
+      "se": 1.5265517600208882,
+      "covered": true,
+      "abs_error": 0.03980946757456749
+    },
+    {
+      "r": 86,
+      "truth": 3.999999999999997,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.6318133359414446,
+      "se": 0.23141328219732013,
+      "covered": true,
+      "abs_error": 0.36818666405855227
+    },
+    {
+      "r": 87,
+      "truth": 3.999999999999999,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9576425504609074,
+      "se": 0.11335496582757114,
+      "covered": true,
+      "abs_error": 0.04235744953909171
+    },
+    {
+      "r": 88,
+      "truth": 4.000000000000001,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.0696153495679885,
+      "se": 0.27037584001434023,
+      "covered": true,
+      "abs_error": 0.06961534956798765
+    },
+    {
+      "r": 89,
+      "truth": 4.000000000000047,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.994530990631201,
+      "se": 0.20821654522403202,
+      "covered": true,
+      "abs_error": 0.005469009368845867
+    },
+    {
+      "r": 90,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.6842207555244175,
+      "se": 0.11887300390330469,
+      "covered": false,
+      "abs_error": 0.3157792444755825
+    },
+    {
+      "r": 91,
+      "truth": 3.999999999999997,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.7847779667321193,
+      "se": 0.29984198299435494,
+      "covered": true,
+      "abs_error": 0.2152220332678776
+    },
+    {
+      "r": 92,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 2.6314109771774814,
+      "se": 1.3545491945324686,
+      "covered": true,
+      "abs_error": 1.3685890228225186
+    },
+    {
+      "r": 93,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.020408389660529,
+      "se": 0.14334632239507125,
+      "covered": true,
+      "abs_error": 0.02040838966052938
+    },
+    {
+      "r": 94,
+      "truth": 4.000000000000002,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.051482385024712,
+      "se": 0.20782221380032578,
+      "covered": true,
+      "abs_error": 0.05148238502470992
+    },
+    {
+      "r": 95,
+      "truth": 3.999999999999997,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.874189287273697,
+      "se": 0.20264966807865586,
+      "covered": true,
+      "abs_error": 0.12581071272629973
+    },
+    {
+      "r": 96,
+      "truth": 4.000000000000004,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.0281648534105905,
+      "se": 0.2172120139272121,
+      "covered": true,
+      "abs_error": 0.028164853410586055
+    },
+    {
+      "r": 97,
+      "truth": 4.000000000000004,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9486276663142155,
+      "se": 1.0619415752539054,
+      "covered": true,
+      "abs_error": 0.05137233368578897
+    },
+    {
+      "r": 98,
+      "truth": 3.999999999999995,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.877265895708384,
+      "se": 0.345896200361314,
+      "covered": true,
+      "abs_error": 0.12273410429161125
+    },
+    {
+      "r": 99,
+      "truth": 3.999999999999992,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.7973277648240287,
+      "se": 0.2491417189920154,
+      "covered": true,
+      "abs_error": 0.20267223517596333
+    },
+    {
+      "r": 0,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.488634684081897,
+      "se": 0.39607302871774136,
+      "covered": true,
+      "abs_error": 0.48863468408189714
+    },
+    {
+      "r": 1,
+      "truth": 4.000000000000002,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.568959527072885,
+      "se": 0.21922330108558247,
+      "covered": false,
+      "abs_error": 0.4310404729271169
+    },
+    {
+      "r": 2,
+      "truth": 4.000000000000001,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.0880152710766176,
+      "se": 0.22100504924230757,
+      "covered": true,
+      "abs_error": 0.08801527107661666
+    },
+    {
+      "r": 3,
+      "truth": 3.9999999999999982,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.042963082409097,
+      "se": 0.26926947095825643,
+      "covered": true,
+      "abs_error": 0.04296308240909852
+    },
+    {
+      "r": 4,
+      "truth": 4.000000000000005,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.185740133184623,
+      "se": 0.32883214416471385,
+      "covered": true,
+      "abs_error": 0.18574013318461802
+    },
+    {
+      "r": 5,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.6637477264764335,
+      "se": 0.3592579707782233,
+      "covered": true,
+      "abs_error": 0.33625227352356646
+    },
+    {
+      "r": 6,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.726199706962129,
+      "se": 0.24193160965556393,
+      "covered": true,
+      "abs_error": 0.2738002930378709
+    },
+    {
+      "r": 7,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.824945466884499,
+      "se": 0.2653670064260883,
+      "covered": true,
+      "abs_error": 0.1750545331155009
+    },
+    {
+      "r": 8,
+      "truth": 3.9999999999999902,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.327206786796651,
+      "se": 4.3659970758251925,
+      "covered": true,
+      "abs_error": 0.32720678679666104
+    },
+    {
+      "r": 9,
+      "truth": 4.000000000000002,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.905462874679328,
+      "se": 1.1496292025612873,
+      "covered": true,
+      "abs_error": 0.9054628746793263
+    },
+    {
+      "r": 10,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.874816921416859,
+      "se": 0.30428378035033865,
+      "covered": true,
+      "abs_error": 0.12518307858314115
+    },
+    {
+      "r": 11,
+      "truth": 4.000000000000003,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.438358387621129,
+      "se": 0.4948673821851251,
+      "covered": true,
+      "abs_error": 0.43835838762112633
+    },
+    {
+      "r": 12,
+      "truth": 4.000000000000016,
+      "kind": "result",
+      "status": "supported",
+      "point": 13.248362060528017,
+      "se": 6.09636498037348,
+      "covered": true,
+      "abs_error": 9.248362060528
+    },
+    {
+      "r": 13,
+      "truth": 4.000000000000001,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.7130490374448364,
+      "se": 0.20298449242857472,
+      "covered": true,
+      "abs_error": 0.2869509625551645
+    },
+    {
+      "r": 14,
+      "truth": 4.0000000000000036,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9943823086551045,
+      "se": 0.32314561200561454,
+      "covered": true,
+      "abs_error": 0.0056176913448990895
+    },
+    {
+      "r": 15,
+      "truth": 3.999999999999999,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.0859403079645435,
+      "se": 0.26778658694252,
+      "covered": true,
+      "abs_error": 0.08594030796454444
+    },
+    {
+      "r": 16,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9707112192675615,
+      "se": 0.48260648756764496,
+      "covered": true,
+      "abs_error": 0.029288780732438457
+    },
+    {
+      "r": 17,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.1987326722264,
+      "se": 0.4193896703194676,
+      "covered": true,
+      "abs_error": 0.19873267222639956
+    },
+    {
+      "r": 18,
+      "truth": 4.0000000000000036,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.111582777149448,
+      "se": 0.4891146257032377,
+      "covered": true,
+      "abs_error": 0.11158277714944465
+    },
+    {
+      "r": 19,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.703652715695876,
+      "se": 0.3113145266488303,
+      "covered": true,
+      "abs_error": 0.29634728430412416
+    },
+    {
+      "r": 20,
+      "truth": 3.9999999999999982,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.4742023143059897,
+      "se": 0.7173278784505451,
+      "covered": true,
+      "abs_error": 0.5257976856940085
+    },
+    {
+      "r": 21,
+      "truth": 4.000000000000001,
+      "kind": "result",
+      "status": "contested",
+      "point": 3.7826517625277494,
+      "se": 0.43591136866559504,
+      "covered": true,
+      "abs_error": 0.21734823747225152
+    },
+    {
+      "r": 22,
+      "truth": 4.000000000000002,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.277373802007523,
+      "se": 0.3453034259580669,
+      "covered": true,
+      "abs_error": 0.2773738020075216
+    },
+    {
+      "r": 23,
+      "truth": 3.999999999999997,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.062956898743145,
+      "se": 0.5897839031002182,
+      "covered": true,
+      "abs_error": 0.0629568987431477
+    },
+    {
+      "r": 24,
+      "truth": 3.999999999999999,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9617059665965613,
+      "se": 0.65235108191626,
+      "covered": true,
+      "abs_error": 0.038294033403437844
+    },
+    {
+      "r": 25,
+      "truth": 3.9999999999999982,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.668837986157368,
+      "se": 2.0514938014904534,
+      "covered": true,
+      "abs_error": 0.6688379861573699
+    },
+    {
+      "r": 26,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.092388563618088,
+      "se": 0.3144635736008817,
+      "covered": true,
+      "abs_error": 0.0923885636180879
+    },
+    {
+      "r": 27,
+      "truth": 3.9999999999999876,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.347084211326208,
+      "se": 4.170636092977251,
+      "covered": true,
+      "abs_error": 0.6529157886737798
+    },
+    {
+      "r": 28,
+      "truth": 3.9999999999999933,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.357164351224154,
+      "se": 0.39482598817008174,
+      "covered": true,
+      "abs_error": 0.35716435122416046
+    },
+    {
+      "r": 29,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.172286718266083,
+      "se": 0.3576115617387299,
+      "covered": true,
+      "abs_error": 0.17228671826608277
+    },
+    {
+      "r": 30,
+      "truth": 3.9999999999999982,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.289972677018647,
+      "se": 0.42771804906512517,
+      "covered": true,
+      "abs_error": 0.2899726770186488
+    },
+    {
+      "r": 31,
+      "truth": 3.999999999999997,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.071456363923784,
+      "se": 0.206063552847646,
+      "covered": true,
+      "abs_error": 0.07145636392378707
+    },
+    {
+      "r": 32,
+      "truth": 4.0000000000000036,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.214150630180899,
+      "se": 0.4091263144888844,
+      "covered": true,
+      "abs_error": 0.21415063018089509
+    },
+    {
+      "r": 33,
+      "truth": 3.999999999999997,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.896040462581539,
+      "se": 3.6438076613228767,
+      "covered": true,
+      "abs_error": 1.8960404625815417
+    },
+    {
+      "r": 34,
+      "truth": 4.0000000000000036,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.511736375730443,
+      "se": 0.7756136992510959,
+      "covered": true,
+      "abs_error": 0.5117363757304396
+    },
+    {
+      "r": 35,
+      "truth": 3.9999999999999982,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.067993303967617,
+      "se": 0.5118766289888258,
+      "covered": true,
+      "abs_error": 0.0679933039676186
+    },
+    {
+      "r": 36,
+      "truth": 3.9999999999999942,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.543226561889041,
+      "se": 0.7824811496642475,
+      "covered": true,
+      "abs_error": 0.4567734381109534
+    },
+    {
+      "r": 37,
+      "truth": 4.000000000000001,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.017911446327501,
+      "se": 0.275726413427482,
+      "covered": true,
+      "abs_error": 0.01791144632750008
+    },
+    {
+      "r": 38,
+      "truth": 4.000000000000007,
+      "kind": "result",
+      "status": "supported",
+      "point": 2.8940419518201264,
+      "se": 1.5088481570838375,
+      "covered": true,
+      "abs_error": 1.1059580481798807
+    },
+    {
+      "r": 39,
+      "truth": 4.000000000000001,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.507524339443399,
+      "se": 0.4284947214524863,
+      "covered": true,
+      "abs_error": 0.4924756605566021
+    },
+    {
+      "r": 40,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.0278251233336535,
+      "se": 0.204287884548599,
+      "covered": true,
+      "abs_error": 0.0278251233336535
+    },
+    {
+      "r": 41,
+      "truth": 4.000000000000001,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.230387219726538,
+      "se": 0.3562679374177533,
+      "covered": true,
+      "abs_error": 0.23038721972653686
+    },
+    {
+      "r": 42,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.165072802176384,
+      "se": 0.24273207793763515,
+      "covered": true,
+      "abs_error": 0.16507280217638431
+    },
+    {
+      "r": 43,
+      "truth": 4.00000000000001,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.0269152058745865,
+      "se": 0.3250848070582823,
+      "covered": true,
+      "abs_error": 0.026915205874576742
+    },
+    {
+      "r": 44,
+      "truth": 3.999999999999991,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.023948618975006,
+      "se": 0.37478917764344577,
+      "covered": true,
+      "abs_error": 0.0239486189750151
+    },
+    {
+      "r": 45,
+      "truth": 3.9999999999999902,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.709622361976368,
+      "se": 0.45511335599002445,
+      "covered": true,
+      "abs_error": 0.7096223619763782
+    },
+    {
+      "r": 46,
+      "truth": 3.999999999999999,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.075094121732641,
+      "se": 0.6001703657260664,
+      "covered": true,
+      "abs_error": 0.07509412173264174
+    },
+    {
+      "r": 47,
+      "truth": 4.000000000000002,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.759611187359175,
+      "se": 0.24469115726036036,
+      "covered": true,
+      "abs_error": 0.2403888126408269
+    },
+    {
+      "r": 48,
+      "truth": 4.0000000000000275,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.320223770988057,
+      "se": 0.5328662576884455,
+      "covered": true,
+      "abs_error": 0.32022377098802934
+    },
+    {
+      "r": 49,
+      "truth": 3.999999999999999,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.252660063908138,
+      "se": 0.32146703190091336,
+      "covered": true,
+      "abs_error": 0.2526600639081389
+    },
+    {
+      "r": 50,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.166250957847726,
+      "se": 0.28267761561366594,
+      "covered": true,
+      "abs_error": 0.16625095784772626
+    },
+    {
+      "r": 51,
+      "truth": 4.000000000000001,
+      "kind": "result",
+      "status": "supported",
+      "point": 2.4396695176156036,
+      "se": 1.605133354907462,
+      "covered": true,
+      "abs_error": 1.5603304823843973
+    },
+    {
+      "r": 52,
+      "truth": 4.000000000000002,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.6670263509062586,
+      "se": 1.2963379304282836,
+      "covered": true,
+      "abs_error": 0.33297364909374316
+    },
+    {
+      "r": 53,
+      "truth": 4.000000000000002,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.5494442554472343,
+      "se": 0.6065187467768987,
+      "covered": true,
+      "abs_error": 0.4505557445527675
+    },
+    {
+      "r": 54,
+      "truth": 4.000000000000001,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.428352029744266,
+      "se": 0.27010663024331244,
+      "covered": true,
+      "abs_error": 0.4283520297442651
+    },
+    {
+      "r": 55,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.6067656958758847,
+      "se": 0.297220256590697,
+      "covered": true,
+      "abs_error": 0.3932343041241153
+    },
+    {
+      "r": 56,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.047258632231521,
+      "se": 0.2696779264870163,
+      "covered": true,
+      "abs_error": 0.047258632231520714
+    },
+    {
+      "r": 57,
+      "truth": 4.000000000000002,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.4261343234124904,
+      "se": 0.39210278752192,
+      "covered": true,
+      "abs_error": 0.5738656765875114
+    },
+    {
+      "r": 58,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.61562655284077,
+      "se": 0.21655088703417066,
+      "covered": true,
+      "abs_error": 0.38437344715923016
+    },
+    {
+      "r": 59,
+      "truth": 3.9999999999999787,
+      "kind": "result",
+      "status": "supported",
+      "point": 6.538798781187325,
+      "se": 1.757961353543012,
+      "covered": true,
+      "abs_error": 2.5387987811873467
+    },
+    {
+      "r": 60,
+      "truth": 4.000000000000002,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9358583272794756,
+      "se": 0.23439792580144603,
+      "covered": true,
+      "abs_error": 0.06414167272052618
+    },
+    {
+      "r": 61,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.730216911958603,
+      "se": 0.2667203339023179,
+      "covered": true,
+      "abs_error": 0.26978308804139717
+    },
+    {
+      "r": 62,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.092140054780168,
+      "se": 0.331348645271175,
+      "covered": true,
+      "abs_error": 0.09214005478016762
+    },
+    {
+      "r": 63,
+      "truth": 4.000000000000002,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.043815126962711,
+      "se": 0.3742674802460008,
+      "covered": true,
+      "abs_error": 0.04381512696270917
+    },
+    {
+      "r": 64,
+      "truth": 3.9999999999999982,
+      "kind": "result",
+      "status": "supported",
+      "point": 2.4139340986580353,
+      "se": 1.8827384556031412,
+      "covered": true,
+      "abs_error": 1.586065901341963
+    },
+    {
+      "r": 65,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.282822170221306,
+      "se": 0.4039991788670972,
+      "covered": true,
+      "abs_error": 0.28282217022130585
+    },
+    {
+      "r": 66,
+      "truth": 4.000000000000001,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.1559293645963855,
+      "se": 0.212840077273261,
+      "covered": true,
+      "abs_error": 0.15592936459638462
+    },
+    {
+      "r": 67,
+      "truth": 4.000000000000004,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.455244544721931,
+      "se": 2.2371748933173676,
+      "covered": true,
+      "abs_error": 0.45524454472192666
+    },
+    {
+      "r": 68,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.124035599457431,
+      "se": 0.2603709723557187,
+      "covered": true,
+      "abs_error": 0.12403559945743137
+    },
+    {
+      "r": 69,
+      "truth": 4.000000000000003,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9738508309770237,
+      "se": 0.1519534529899103,
+      "covered": true,
+      "abs_error": 0.026149169022978924
+    },
+    {
+      "r": 70,
+      "truth": 4.000000000000002,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.15259252371868,
+      "se": 0.7789804065037278,
+      "covered": true,
+      "abs_error": 0.15259252371867849
+    },
+    {
+      "r": 71,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.834586790630731,
+      "se": 0.16422245517987274,
+      "covered": true,
+      "abs_error": 0.16541320936926907
+    },
+    {
+      "r": 72,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "contested",
+      "point": 4.154058726256086,
+      "se": 0.379262254747523,
+      "covered": true,
+      "abs_error": 0.1540587262560864
+    },
+    {
+      "r": 73,
+      "truth": 3.9999999999999982,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.401924061504179,
+      "se": 0.2694104982356242,
+      "covered": true,
+      "abs_error": 0.4019240615041806
+    },
+    {
+      "r": 74,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.804194454826024,
+      "se": 0.3409293490637659,
+      "covered": true,
+      "abs_error": 0.1958055451739762
+    },
+    {
+      "r": 75,
+      "truth": 4.000000000000001,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.407654028142975,
+      "se": 0.6673923874703465,
+      "covered": true,
+      "abs_error": 0.40765402814297413
+    },
+    {
+      "r": 76,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9547835969586953,
+      "se": 0.21248128635706054,
+      "covered": true,
+      "abs_error": 0.0452164030413047
+    },
+    {
+      "r": 77,
+      "truth": 3.9999999999999982,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.256745156338992,
+      "se": 0.26502722266803636,
+      "covered": true,
+      "abs_error": 0.25674515633899375
+    },
+    {
+      "r": 78,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9740010009444493,
+      "se": 0.2605099279063699,
+      "covered": true,
+      "abs_error": 0.025998999055550698
+    },
+    {
+      "r": 79,
+      "truth": 3.999999999999999,
+      "kind": "result",
+      "status": "contested",
+      "point": 4.066904946769894,
+      "se": 0.31985807681074035,
+      "covered": true,
+      "abs_error": 0.06690494676989456
+    },
+    {
+      "r": 80,
+      "truth": 4.000000000000005,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.838118523463296,
+      "se": 1.8229596333984477,
+      "covered": true,
+      "abs_error": 0.16188147653670937
+    },
+    {
+      "r": 81,
+      "truth": 4.000000000000016,
+      "kind": "result",
+      "status": "supported",
+      "point": 6.59924276411131,
+      "se": 2.155800920942025,
+      "covered": true,
+      "abs_error": 2.5992427641112936
+    },
+    {
+      "r": 82,
+      "truth": 3.9999999999999933,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.4903122937130644,
+      "se": 0.4032823334353482,
+      "covered": true,
+      "abs_error": 0.5096877062869289
+    },
+    {
+      "r": 83,
+      "truth": 3.999999999999997,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.9293734638981093,
+      "se": 1.169769829187619,
+      "covered": true,
+      "abs_error": 0.07062653610188763
+    },
+    {
+      "r": 84,
+      "truth": 3.9999999999999982,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.3656673700382744,
+      "se": 1.5124307720522348,
+      "covered": true,
+      "abs_error": 0.6343326299617238
+    },
+    {
+      "r": 85,
+      "truth": 4.000000000000011,
+      "kind": "result",
+      "status": "supported",
+      "point": 5.167102720833476,
+      "se": 1.846072225447437,
+      "covered": true,
+      "abs_error": 1.1671027208334657
+    },
+    {
+      "r": 86,
+      "truth": 3.999999999999997,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.5566300516038796,
+      "se": 0.40525087837850743,
+      "covered": true,
+      "abs_error": 0.4433699483961173
+    },
+    {
+      "r": 87,
+      "truth": 3.999999999999999,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.726306621635601,
+      "se": 0.2119045213204199,
+      "covered": true,
+      "abs_error": 0.2736933783643982
+    },
+    {
+      "r": 88,
+      "truth": 4.000000000000001,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.287602026421699,
+      "se": 0.36071554586139865,
+      "covered": true,
+      "abs_error": 0.2876020264216983
+    },
+    {
+      "r": 89,
+      "truth": 4.000000000000047,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.865470606694398,
+      "se": 0.26308108423377397,
+      "covered": true,
+      "abs_error": 0.13452939330564906
+    },
+    {
+      "r": 90,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.5682659674588812,
+      "se": 0.1824368568780944,
+      "covered": false,
+      "abs_error": 0.43173403254111875
+    },
+    {
+      "r": 91,
+      "truth": 3.999999999999997,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.4271917858605954,
+      "se": 0.31842884498771457,
+      "covered": true,
+      "abs_error": 0.5728082141394015
+    },
+    {
+      "r": 92,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.322117552649599,
+      "se": 1.47215390790506,
+      "covered": true,
+      "abs_error": 0.3221175526495994
+    },
+    {
+      "r": 93,
+      "truth": 4.0,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.395264526578543,
+      "se": 0.4440587149261213,
+      "covered": true,
+      "abs_error": 0.3952645265785426
+    },
+    {
+      "r": 94,
+      "truth": 4.000000000000002,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.065079302575384,
+      "se": 0.2298566430627514,
+      "covered": true,
+      "abs_error": 0.06507930257538241
+    },
+    {
+      "r": 95,
+      "truth": 3.999999999999997,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.70659159626021,
+      "se": 0.26777218007004844,
+      "covered": true,
+      "abs_error": 0.2934084037397868
+    },
+    {
+      "r": 96,
+      "truth": 4.000000000000004,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.3508577610758286,
+      "se": 0.2838239221306245,
+      "covered": true,
+      "abs_error": 0.3508577610758241
+    },
+    {
+      "r": 97,
+      "truth": 4.000000000000004,
+      "kind": "result",
+      "status": "supported",
+      "point": 4.835026628921579,
+      "se": 2.2526192860525587,
+      "covered": true,
+      "abs_error": 0.8350266289215744
+    },
+    {
+      "r": 98,
+      "truth": 3.999999999999995,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.88765309073403,
+      "se": 0.5095287181364407,
+      "covered": true,
+      "abs_error": 0.11234690926596524
+    },
+    {
+      "r": 99,
+      "truth": 3.999999999999992,
+      "kind": "result",
+      "status": "supported",
+      "point": 3.7395983569869546,
+      "se": 0.2917399202015975,
+      "covered": true,
+      "abs_error": 0.26040164301303736
+    }
+  ]
+}

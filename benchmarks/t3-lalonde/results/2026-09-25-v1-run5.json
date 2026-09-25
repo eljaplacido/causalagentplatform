@@ -1,0 +1,331 @@
+{
+  "suite": "T3-LaLonde",
+  "prereg_sha256": "sha256:9a9e2b16abd2d5c44716e760101b8ae4cb01822a29b9470d5580283ae8589a3e",
+  "prereg_version": 1,
+  "git": "18e18e5d321f1fb69014c1b8019422aa3192ee34",
+  "experiment": {
+    "kind": "result",
+    "status": "contested",
+    "estimator": "difference_in_means",
+    "point": 1794.3423818501024,
+    "se": 670.9965444673315,
+    "ci": [
+      479.21332094330364,
+      3109.471442756901
+    ],
+    "estimates": {
+      "difference_in_means": [
+        1794.3423818501024,
+        670.9965444673315
+      ],
+      "aipw": [
+        1794.3423818501017,
+        671.0895660488816
+      ],
+      "regression_adjustment": [
+        1794.3423818501008,
+        669.3153223968061
+      ]
+    },
+    "refutations": {
+      "placebo_treatment": true,
+      "implied_independences": false
+    },
+    "triangulation_agree": true,
+    "propensity": null,
+    "e_value": 1.8767989327904777,
+    "warnings": [
+      "falsification tests failed: ['implied_independences']"
+    ],
+    "naive": {
+      "difference_in_means": 1794.3423818501024,
+      "ols_with_covariates": 1670.708830754349
+    }
+  },
+  "observational": {
+    "O-PSID": {
+      "n_treated": 185,
+      "n_control": 2490,
+      "naive": {
+        "difference_in_means": -15204.777421490988,
+        "ols_with_covariates": 19.343317903609204
+      },
+      "C1": {
+        "kind": "result",
+        "status": "supported",
+        "estimator": "aipw",
+        "point": 3733.2478879413607,
+        "se": 1461.668395895337,
+        "ci": [
+          868.4304746460666,
+          6598.065301236655
+        ],
+        "estimates": {
+          "aipw": [
+            3733.2478879413607,
+            1461.668395895337
+          ],
+          "regression_adjustment": [
+            687.82045300465,
+            925.9823316398492
+          ],
+          "ipw_hajek": [
+            1399.3292831289846,
+            1302.8733756718248
+          ]
+        },
+        "refutations": {
+          "placebo_treatment": true
+        },
+        "triangulation_agree": true,
+        "propensity": {
+          "min": 6.305116760146985e-16,
+          "max": 0.9902271164197859,
+          "share_outside_bounds": 0.010810810810810811,
+          "ess_treated": 185.0,
+          "ess_control": 11.024412322712303
+        },
+        "e_value": 1.7919816611276556,
+        "warnings": [
+          "after weighting, the control arm's effective sample size is 11 of 2490 units: the estimate rests on few comparable units, and its interval is wide for that reason",
+          "weighted |SMD| > 0.1 for ['age', 'black', 'hispanic', 'married', 're74', 're75', 'u74', 'u75']",
+          "the graph omits dependencies among adjustment covariates (age \u22a5 black (r=-0.104, p=7e-08); age \u22a5 education (r=-0.188, p=6.8e-23); age \u22a5 married (r=0.272, p=5e-47); ...). This does not affect this estimate, because all of them are adjusted for, but the graph should be corrected."
+        ],
+        "gap_to_experiment": 1938.9055060912583,
+        "gap_in_combined_se": 1.205542985837725,
+        "bias_in_rct_se": 2.889590895926971,
+        "covers_experimental_point": true
+      },
+      "C2": {
+        "kind": "result",
+        "status": "supported",
+        "estimator": "aipw",
+        "point": 2800.2770719163873,
+        "se": 1413.0237059741771,
+        "ci": [
+          30.80149890568555,
+          5569.752644927089
+        ],
+        "estimates": {
+          "aipw": [
+            2800.2770719163873,
+            1413.0237059741771
+          ],
+          "regression_adjustment": [
+            687.82045300465,
+            925.9823316398492
+          ],
+          "ipw_hajek": [
+            1399.3292831289846,
+            1302.8733756718248
+          ]
+        },
+        "refutations": {
+          "placebo_treatment": true
+        },
+        "triangulation_agree": true,
+        "propensity": {
+          "min": 6.305116760146985e-16,
+          "max": 0.9902271164197859,
+          "share_outside_bounds": 0.010810810810810811,
+          "ess_treated": 185.0,
+          "ess_control": 11.024412322712303
+        },
+        "e_value": 1.633550137520385,
+        "warnings": [
+          "after weighting, the control arm's effective sample size is 11 of 2490 units: the estimate rests on few comparable units, and its interval is wide for that reason",
+          "weighted |SMD| > 0.1 for ['age', 'black', 'hispanic', 'married', 're74', 're75', 'u74', 'u75']",
+          "the graph omits dependencies among adjustment covariates (age \u22a5 black (r=-0.104, p=7e-08); age \u22a5 education (r=-0.188, p=6.8e-23); age \u22a5 married (r=0.272, p=5e-47); ...). This does not affect this estimate, because all of them are adjusted for, but the graph should be corrected."
+        ],
+        "gap_to_experiment": 1005.9346900662849,
+        "gap_in_combined_se": 0.6430787041701168,
+        "bias_in_rct_se": 1.4991652317149307,
+        "covers_experimental_point": true
+      },
+      "placebo_re75": {
+        "kind": "result",
+        "status": "supported",
+        "estimator": "aipw",
+        "point": -2133.1424341831616,
+        "se": 1482.3126798336332,
+        "ci": [
+          -5038.421900484134,
+          772.1370321178115
+        ],
+        "estimates": {
+          "aipw": [
+            -2133.1424341831616,
+            1482.3126798336332
+          ],
+          "regression_adjustment": [
+            -2640.7602043492834,
+            625.8648796729572
+          ],
+          "ipw_hajek": [
+            -3030.8882368733675,
+            1340.7586139480702
+          ]
+        },
+        "refutations": {
+          "placebo_treatment": true
+        },
+        "triangulation_agree": true,
+        "propensity": {
+          "min": 4.108316821431252e-09,
+          "max": 0.9796091285467412,
+          "share_outside_bounds": 0.0,
+          "ess_treated": 185.0,
+          "ess_control": 18.878866396881964
+        },
+        "e_value": 1.5656658499601264,
+        "warnings": [
+          "after weighting, the control arm's effective sample size is 19 of 2490 units: the estimate rests on few comparable units, and its interval is wide for that reason",
+          "weighted |SMD| > 0.1 for ['age', 'education', 're74']",
+          "the graph omits dependencies among adjustment covariates (age \u22a5 black (r=-0.104, p=7e-08); age \u22a5 education (r=-0.188, p=6.8e-23); age \u22a5 married (r=0.272, p=5e-47); ...). This does not affect this estimate, because all of them are adjusted for, but the graph should be corrected."
+        ]
+      }
+    },
+    "O-CPS": {
+      "n_treated": 185,
+      "n_control": 15992,
+      "naive": {
+        "difference_in_means": -8497.516148132978,
+        "ols_with_covariates": -62.23312951972525
+      },
+      "C1": {
+        "kind": "result",
+        "status": "contested",
+        "estimator": "aipw",
+        "point": 1332.758530960191,
+        "se": 683.8662065865435,
+        "ci": [
+          -7.594604193462601,
+          2673.1116661138444
+        ],
+        "estimates": {
+          "aipw": [
+            1332.758530960191,
+            683.8662065865435
+          ],
+          "regression_adjustment": [
+            1133.275395127394,
+            630.8748332066483
+          ],
+          "ipw_hajek": [
+            -3295.5243232888397,
+            768.8568865905984
+          ]
+        },
+        "refutations": {
+          "placebo_treatment": true
+        },
+        "triangulation_agree": false,
+        "propensity": {
+          "min": 4.704221696313925e-06,
+          "max": 0.6375110279285834,
+          "share_outside_bounds": 0.0,
+          "ess_treated": 185.0,
+          "ess_control": 749.0342647992311
+        },
+        "e_value": 1.522789939058328,
+        "warnings": [
+          "weighted |SMD| > 0.1 for ['age', 'black', 'education', 'married', 'nodegree', 're74', 're75', 'u74', 'u75']",
+          "the graph omits dependencies among adjustment covariates (age \u22a5 black (r=-0.034, p=1.4e-05); age \u22a5 education (r=-0.123, p=1.5e-55); age \u22a5 married (r=0.443, p=0); ...). This does not affect this estimate, because all of them are adjusted for, but the graph should be corrected."
+        ],
+        "gap_to_experiment": -461.58385088991145,
+        "gap_in_combined_se": -0.48178215394381385,
+        "bias_in_rct_se": -0.6879079403551002,
+        "covers_experimental_point": true
+      },
+      "C2": {
+        "kind": "result",
+        "status": "supported",
+        "estimator": "aipw",
+        "point": 2082.4712872734103,
+        "se": 3103.0087351722664,
+        "ci": [
+          -3999.314077377418,
+          8164.256651924239
+        ],
+        "estimates": {
+          "aipw": [
+            2082.4712872734103,
+            3103.0087351722664
+          ],
+          "regression_adjustment": [
+            1133.275395127394,
+            630.8748332066483
+          ],
+          "ipw_hajek": [
+            -3295.5243232888397,
+            768.8568865905984
+          ]
+        },
+        "refutations": {
+          "placebo_treatment": true
+        },
+        "triangulation_agree": true,
+        "propensity": {
+          "min": 4.704221696313925e-06,
+          "max": 0.6375110279285834,
+          "share_outside_bounds": 0.0,
+          "ess_treated": 185.0,
+          "ess_control": 749.0342647992311
+        },
+        "e_value": 1.7296219850079169,
+        "warnings": [
+          "weighted |SMD| > 0.1 for ['age', 'black', 'education', 'married', 'nodegree', 're74', 're75', 'u74', 'u75']",
+          "the graph omits dependencies among adjustment covariates (age \u22a5 black (r=-0.034, p=1.4e-05); age \u22a5 education (r=-0.123, p=1.5e-55); age \u22a5 married (r=0.443, p=0); ...). This does not affect this estimate, because all of them are adjusted for, but the graph should be corrected."
+        ],
+        "gap_to_experiment": 288.12890542330797,
+        "gap_in_combined_se": 0.09075702899104075,
+        "bias_in_rct_se": 0.42940445490973156,
+        "covers_experimental_point": true
+      },
+      "placebo_re75": {
+        "kind": "result",
+        "status": "contested",
+        "estimator": "aipw",
+        "point": -1248.2543206193934,
+        "se": 284.0515977366474,
+        "ci": [
+          -1804.9852219342815,
+          -691.5234193045054
+        ],
+        "estimates": {
+          "aipw": [
+            -1248.2543206193934,
+            284.0515977366474
+          ],
+          "regression_adjustment": [
+            -1096.6984110737121,
+            266.7824932307165
+          ],
+          "ipw_hajek": [
+            -6297.132202929026,
+            489.3155948994778
+          ]
+        },
+        "refutations": {
+          "placebo_treatment": true
+        },
+        "triangulation_agree": false,
+        "propensity": {
+          "min": 5.210970956063037e-05,
+          "max": 0.5975552888373057,
+          "share_outside_bounds": 0.0,
+          "ess_treated": 185.0,
+          "ess_control": 781.7960255394788
+        },
+        "e_value": 1.512528948739432,
+        "warnings": [
+          "weighted |SMD| > 0.1 for ['age', 'black', 'education', 'married', 'nodegree', 're74', 'u74']",
+          "the graph omits dependencies among adjustment covariates (age \u22a5 black (r=-0.034, p=1.4e-05); age \u22a5 education (r=-0.123, p=1.5e-55); age \u22a5 married (r=0.443, p=0); ...). This does not affect this estimate, because all of them are adjusted for, but the graph should be corrected."
+        ]
+      }
+    }
+  },
+  "confident_wrong": [],
+  "failures": [],
+  "passed": true
+}
