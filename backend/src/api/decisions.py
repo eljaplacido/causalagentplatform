@@ -140,8 +140,8 @@ class DecideRequest(BaseModel):
     estimand: Literal["ate", "att"] = "ate"
     query: QueryOptions = Field(
         default_factory=QueryOptions,
-        description="Further CausalQuery fields: segment_by, design, adjust_for, instruments, "
-        "proxies, negative controls, treatment_levels, population, horizon.",
+        # Listed from the model, not by hand: the hand list had fallen six fields behind.
+        description=f"Further CausalQuery fields: {', '.join(QueryOptions.model_fields)}.",
     )
     risk_class: RiskClass = RiskClass.medium
     reversible: bool = True

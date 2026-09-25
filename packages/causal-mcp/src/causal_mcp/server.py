@@ -12,6 +12,7 @@ resources under ``causal://schemas/<name>``.
 from __future__ import annotations
 
 import argparse
+import inspect
 import json
 import logging
 import sys
@@ -71,24 +72,41 @@ if tools.HAS_DECISION:
     )
 
 
+#: JSON Schema annotation keywords: they document a value and constrain nothing.
+_ANNOTATIONS = frozenset({"description", "title", "default", "examples"})
+
+
 def _strip_prose(node: Any) -> Any:
+    """The schema without its annotation keywords. A property that happens to be *named*
+    like one (a model field called ``title``) is structure, and stays."""
     if isinstance(node, dict):
-        return {k: _strip_prose(v) for k, v in node.items() if k not in ("description", "title")}
+        return {
+            k: (
+                {name: _strip_prose(sub) for name, sub in v.items()}
+                if k in ("properties", "$defs") and isinstance(v, dict)
+                else _strip_prose(v)
+            )
+            for k, v in node.items()
+            if k not in _ANNOTATIONS
+        }
     if isinstance(node, list):
         return [_strip_prose(v) for v in node]
     return node
 
 
 def _slim_output_schema(server: MCPServer, name: str) -> None:
-    """Drop descriptions and titles from a tool's OUTPUT schema; keep them on its input.
+    """Drop annotations (descriptions, titles, defaults) from a tool's OUTPUT schema; keep
+    them on its input.
 
     The Python SDK's stdio client reads each message as one line with a 64 KiB limit, and
     the tool listing is one message. The output schemas embed the whole outcome contract --
     causal_decide's alone was 34 KB -- so the listing reached 62.9 KB with five tools and
     the sixth pushed it over, failing every call from such a client. The structure stays
-    (clients validate against it); the prose is what the causal://schemas resources and
-    conformance/causal-claims already publish in full. Input schemas keep every word,
-    because that is what an agent reads to call a tool correctly.
+    (clients validate against it); the annotations are what the causal://schemas resources
+    and conformance/causal-claims already publish in full. Defaults went too when the input
+    schemas began carrying the contract's parameter descriptions (septa-4): a default in an
+    output schema validates nothing. Input schemas keep every word, because that is what an
+    agent reads to call a tool correctly.
     """
     tool = server._tool_manager.get_tool(name)  # private: mcp 2.2 exposes no setter
     if tool is not None and tool.output_schema is not None:
@@ -103,7 +121,15 @@ def build_server() -> MCPServer:
         version=__version__,
     )
     for name, (fn, title) in TOOLS.items():
-        server.add_tool(fn, name=name, title=title, annotations=READ_ONLY, structured_output=True)
+        server.add_tool(
+            fn,
+            name=name,
+            title=title,
+            # Without its source indentation: prose to an agent, and bytes in a size-capped listing.
+            description=inspect.cleandoc(fn.__doc__ or ""),
+            annotations=READ_ONLY,
+            structured_output=True,
+        )
         _slim_output_schema(server, name)
 
     schemas = json_schemas()
