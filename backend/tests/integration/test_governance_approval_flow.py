@@ -63,8 +63,7 @@ async def _check(
     client: AsyncClient,
     subject_id: UUID,
     cynefin_domain: str = "COMPLICATED",
-    hallucination_risk_score: float = 0.0,
-    cycle_count: int = 0,
+    **fields: Any,
 ) -> dict[str, Any]:
     resp = await client.post(
         "/api/governance/check",
@@ -73,8 +72,7 @@ async def _check(
             "payload": {"object_type": "CausalEntity"},
             "subject_id": str(subject_id),
             "cynefin_domain": cynefin_domain,
-            "hallucination_risk_score": hallucination_risk_score,
-            "cycle_count": cycle_count,
+            **fields,
         },
     )
     assert resp.status_code == 200, resp.text
@@ -128,18 +126,16 @@ async def test_an_unclassified_situation_is_still_refused(
 async def test_the_rules_now_see_what_the_caller_reports(
     gov_client: AsyncClient, db_engine: object
 ) -> None:
-    """A classified situation with a high self-reported hallucination risk hits PR-002.
+    """A classified situation reaches the rule its payload trips, not PR-006.
 
     Previously every one of these was rejected by PR-006 before any other rule was
-    consulted, so no test could tell whether PR-002 worked at all.
+    consulted, so no test could tell whether PR-002 worked at all. The risk score
+    PR-002 reads, and the cycle count PR-005 reads, are the platform's now:
+    tests/guardian/test_risk_score_not_caller_supplied.py covers both.
     """
-    body = await _check(gov_client, uuid4(), hallucination_risk_score=0.95)
+    body = await _check(gov_client, uuid4(), narrative="The fix will reduce errors by 40%.")
     assert body["verdict"] == "REJECTED"
     assert body["policy_rules_cited"] == ["PR-002"]
-
-    escalated = await _check(gov_client, uuid4(), cycle_count=5)
-    assert escalated["verdict"] == "REQUIRES_ESCALATION"
-    assert escalated["policy_rules_cited"] == ["PR-005"]
 
     chaotic = await _check(gov_client, uuid4(), cynefin_domain="CHAOTIC")
     assert chaotic["verdict"] == "REQUIRES_ESCALATION"

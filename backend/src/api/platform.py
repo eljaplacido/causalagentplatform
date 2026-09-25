@@ -105,7 +105,10 @@ class PlatformMetricsResponse(BaseModel):
 
 _POLICY_DESCRIPTIONS = {
     "PR-001": "No cycle detection bypass: DAG acyclicity must hold before any edge is approved.",
-    "PR-002": "Hallucination risk threshold: H-Neuron score must be < 0.7 for APPROVED verdict.",
+    "PR-002": (
+        "Grounding risk: prose whose numbers or causal wording the kernel outcome it "
+        "reports does not back (score > 0.7) cannot be APPROVED."
+    ),
     "PR-003": "Chaotic domain mandatory escalation: CHAOTIC inputs route to human.",
     "PR-004": "Double-rejection escalation: same payload rejected twice triggers REQUIRES_ESCALATION.",
     "PR-005": "Cycle count limit: cycle_count >= 5 requires REQUIRES_ESCALATION.",

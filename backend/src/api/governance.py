@@ -24,13 +24,15 @@ from uuid import UUID
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import text
 
 from src.agents.governance import GovernanceAgent
+from src.agents.grounding_risk import grounding_risk
 from src.db.factory import CloudSqlFactory
 from src.exceptions import GuardianBlockedError, InvalidTransitionError, ObjectNotFoundError
 from src.middleware.auth import get_current_user, require_role
+from src.orchestration.session_store import SessionStateStore
 from src.semantic_layer.models import (
     AuditEntry,
     CynefinDomain,
@@ -45,6 +47,7 @@ router = APIRouter()
 
 _registry = SemanticLayerRegistry()
 _governance = GovernanceAgent(agent_id="governance-agent-api")
+_sessions = SessionStateStore()
 
 GOVERNANCE_ROLES = ("governance_officer", "platform_engineer")
 
@@ -69,19 +72,40 @@ class GuardianCheckRequest(BaseModel):
         None,
         description="The situation's Cynefin domain, as classified by the caller. "
         "Omitting it means DISORDER, which rule PR-006 rejects: the platform does not "
-        "approve actions in a situation nobody has classified.",
+        "approve actions in a situation nobody has classified. Ignored when `session_id` "
+        "names a session: the session's own classification is used.",
     )
-    cycle_count: int = Field(
-        0, ge=0, description="Reasoning cycles so far; PR-005 escalates at 5."
+    narrative: str | None = Field(
+        None,
+        description="Generated prose this action would publish or act on. Guardian rule "
+        "PR-002 scores it: every number must be a claim of `outcome`, and causal wording "
+        "needs a supported causal result.",
     )
-    hallucination_risk_score: float = Field(
-        0.0,
-        ge=0.0,
-        le=1.0,
-        description="The caller's own hallucination-risk estimate for this output. "
-        "PR-002 rejects above its threshold.",
+    outcome: dict[str, Any] | None = Field(
+        None,
+        description="The kernel outcome (as causal_core.analyze returns it) the narrative "
+        "reports. A narrative with numbers or causal wording and no outcome is ungrounded.",
     )
-    session_id: str | None = Field(None, description="Current reasoning session ID")
+    session_id: str | None = Field(
+        None,
+        description="A reasoning session (POST /api/v1/session). When it names one, PR-005 "
+        "reads that session's cycle count and PR-003/PR-006 its classified domain.",
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _no_self_assessment(cls, data: Any) -> Any:
+        # These two were read straight into the policy state, so a caller chose the
+        # numbers PR-002 and PR-005 judged. Refusing them loudly beats ignoring them:
+        # a client still sending a score should learn that it no longer counts.
+        if isinstance(data, dict):
+            retired = sorted(k for k in ("hallucination_risk_score", "cycle_count") if k in data)
+            if retired:
+                raise ValueError(
+                    f"{retired} are computed by the platform, not supplied by the caller: "
+                    "send `narrative` and `outcome` for PR-002, and a `session_id` for PR-005"
+                )
+        return data
 
 
 class GuardianCheckResponse(BaseModel):
@@ -154,18 +178,21 @@ async def guardian_check(
     uid = user.get("uid", "unknown")
     session_id = body.session_id or f"api-check-{uid}"
 
-    # The state is what the policy rules read. Building it bare was the whole of
-    # the defect this endpoint carried: `cynefin_domain` then defaulted to DISORDER,
-    # PR-006 fired before any other rule, and every call returned REJECTED --
-    # including calls whose payload was meant to trip a different rule entirely.
-    # Unclassified still means DISORDER and still gets rejected; the difference is
-    # that a caller who has classified the situation can now say so.
+    # The state is what the policy rules read, and none of its judged numbers come
+    # from this request. The risk score PR-002 reads is computed from the narrative
+    # and the outcome it reports. The cycle count PR-005 reads, and a domain the
+    # platform classified, come from the named session when there is one. Without a
+    # session there are no reasoning cycles to count, and the domain is the
+    # caller's declaration -- omitted, it is DISORDER, which PR-006 rejects.
+    risk = grounding_risk(body.narrative, body.outcome)
+    stored = await _sessions.load(body.session_id) if body.session_id else None
+    domain = stored.cynefin_domain if stored is not None else body.cynefin_domain
     state = EpistemicState(
         session_id=session_id,
         agent_id=f"api-user-{uid}",
-        cycle_count=body.cycle_count,
-        hallucination_risk_score=body.hallucination_risk_score,
-        **({"cynefin_domain": body.cynefin_domain} if body.cynefin_domain else {}),
+        cycle_count=stored.cycle_count if stored is not None else 0,
+        hallucination_risk_score=risk.score,
+        **({"cynefin_domain": domain} if domain else {}),
     )
 
     action_payload: dict[str, Any] = {
@@ -183,10 +210,13 @@ async def guardian_check(
     )
 
     result = await _governance.check(action_payload, state)
+    reason = result.reason
+    if "PR-002" in result.policy_rules_cited and risk.reasons:
+        reason = f"{reason} {'; '.join(risk.reasons)}"
 
     return GuardianCheckResponse(
         verdict=str(result.verdict),
-        reason=result.reason,
+        reason=reason,
         policy_rules_cited=result.policy_rules_cited,
         audit_entry_id=str(result.audit_entry_id),
         session_id=result.session_id,
