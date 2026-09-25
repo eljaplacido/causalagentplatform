@@ -254,12 +254,12 @@
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
           ".github": "41fae14689ac86eea113f95a9a9061a67a56b609ce7953530272d48881088720",
-          ".gnomon": "6e5dc49a988fd6087d0453f41342e21d5765dacbb4e1b93f4def8e67d10beaa1"
+          ".gnomon": "a6a2118ccb7692a0820da2a5064f4adff52bf784cc0d6f8fcc6b6da4348e66e7"
         }
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-27: harness and exit-code paragraph unchanged by the security steps and the weekly CI schedule)"
+        "by": "Claude (ci.sh frontend detection changed; the doc makes no claim about it)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -315,7 +315,7 @@
           "backend/pyproject.toml": "31ec12890a7bf5512c8e918e0fed4bafe37f88d8826a7604f0aa1b9b6fa16b2b",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
-          ".gnomon/ci.sh": "085c4db273b06cb4815acf62e1108052d346268e78f320a9a3280d3557a1531a",
+          ".gnomon/ci.sh": "5692f063efab9a80f519d1b5bba5507d9f092e0ed0f2779e180cb4ff0eeff0aa",
           "scripts": "fa209a334f993a824a580a9de5159c9e4c008fea04d9371e23f6a8d4f9ac65f1",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "3dcea1af4dd3bbdd68778cbb91715e1663c850fb9681fe42096b50d1145550dc",
@@ -325,7 +325,7 @@
       },
       "last_read": {
         "on": "2026-09-25",
-        "by": "Claude (septa-27: steps table gains bandit, secret-scan, pip-audit and npm-audit; 5.1 schedule and pip upgrade; 5.3 narrowed)"
+        "by": "Claude (frontend toolchain detected by tool resolution, not a frontend/node_modules directory)"
       }
     },
     "docs/UIX.md": {
