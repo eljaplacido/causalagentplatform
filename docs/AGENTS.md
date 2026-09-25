@@ -480,7 +480,7 @@ Not here, and not in `src/skills/`. A new method goes into the kernel with a typ
 
 **Wiring.** `.gnomon/tools.toml` declares `causal_core` (the kernel; a role reaches it by listing `mcp__causal_core`); the legacy `causal` declaration is commented out and no role lists `mcp__causal`. `.gnomon/system.md` requires every causal number an agent states to come from an `mcp__causal_core__*` call, a test run or a script.
 
-**Evidence.** `packages/causal-mcp/tests/test_stdio_flow.py` runs the recommended flow over the real stdio transport and validates each outcome against the published schema; `test_http.py` runs the tools over stateless HTTP; `test_decision_tool.py` covers `causal_decide` and `causal_impact`.
+**Evidence.** `packages/causal-mcp/tests/test_stdio_flow.py` runs the recommended flow over the real stdio transport and validates each outcome against the published schema; `test_http.py` runs the tools over stateless HTTP; `test_decision_tool.py` covers `causal_decide` and `causal_impact`; `test_query_parity.py` holds every tool's analysis parameters to the kernel's `CausalQuery`, from which they are derived.
 
 ---
 
