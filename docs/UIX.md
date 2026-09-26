@@ -310,6 +310,11 @@ interval. The Guardian's verdict and a person's recorded decision are shown side
 incidents API returns the decision as `humanDecision` and leaves `guardianVerdict` as the
 Guardian issued it. A new incident's id is `INC-` and eight random hex digits.
 
+A `FragmentCard`'s footer badge follows the fragment's `approvalStatus`: only an APPROVED fragment
+shows the Guardian's verdict; a draft reads "Draft · awaiting review" and a deprecated one
+"Deprecated", whatever verdict reference it carries (pinned by
+`frontend/src/components/graph/__tests__/FragmentCard.test.tsx`).
+
 The analyst page draws no causal graph: the session API returns how many edges a run proposed
 (`proposed_edge_count`) but not the edges, so the page shows that count and the run's
 recommendations as sent. `EdgeProposal`, `NodeDetail` and `GraphDiff` are built, and no page
