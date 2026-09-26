@@ -501,6 +501,17 @@
           "description": "Standard deviation of the outcome on the analysed rows. Reported because sizing a follow-up experiment needs it, and because an effect is only interpretable against the outcome's spread.",
           "title": "Outcome Sd"
         },
+        "overlap": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OverlapDiagnostics"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "propensity": {
           "anyOf": [
             {
@@ -860,6 +871,85 @@
         "method"
       ],
       "title": "Interval",
+      "type": "object"
+    },
+    "OverlapDiagnostics": {
+      "additionalProperties": false,
+      "description": "Where positivity fails or is thin beyond what one propensity model can express. The\nthresholds are the policy's (overlap_region_*, limited_overlap_bounds); the region check\nran when ``diagnostics.checks`` has its row.",
+      "properties": {
+        "limited_overlap": {
+          "description": "The share exceeds max_extreme_propensity_share: there the estimate rests on few comparable units or on the outcome model.",
+          "title": "Limited Overlap",
+          "type": "boolean"
+        },
+        "limited_share": {
+          "description": "Share of units (ATT: treated units) whose propensity is outside limited_overlap_bounds (ATT: above the upper one).",
+          "title": "Limited Share",
+          "type": "number"
+        },
+        "regions": {
+          "default": [],
+          "description": "The violation regions, largest first (at most ten).",
+          "items": {
+            "$ref": "#/$defs/OverlapRegion"
+          },
+          "title": "Regions",
+          "type": "array"
+        },
+        "violation_share": {
+          "description": "ATE: share of units in a violation region. ATT: share of treated units in a region without controls.",
+          "title": "Violation Share",
+          "type": "number"
+        }
+      },
+      "required": [
+        "violation_share",
+        "limited_share",
+        "limited_overlap"
+      ],
+      "title": "OverlapDiagnostics",
+      "type": "object"
+    },
+    "OverlapRegion": {
+      "additionalProperties": false,
+      "description": "A region of the adjustment covariates in which one arm (almost) never occurs.",
+      "properties": {
+        "missing_arm": {
+          "enum": [
+            "treated",
+            "control"
+          ],
+          "title": "Missing Arm",
+          "type": "string"
+        },
+        "n_treated": {
+          "title": "N Treated",
+          "type": "integer"
+        },
+        "n_units": {
+          "description": "Held-out units in the region: the ones that judged it.",
+          "title": "N Units",
+          "type": "integer"
+        },
+        "rule": {
+          "description": "The region, as a conjunction of conditions on the adjustment covariates as encoded (categorical ones as dummy columns).",
+          "title": "Rule",
+          "type": "string"
+        },
+        "upper_bound": {
+          "description": "One-sided upper confidence bound on the probability of the missing arm in this region, from the held-out units.",
+          "title": "Upper Bound",
+          "type": "number"
+        }
+      },
+      "required": [
+        "rule",
+        "n_units",
+        "n_treated",
+        "missing_arm",
+        "upper_bound"
+      ],
+      "title": "OverlapRegion",
       "type": "object"
     },
     "ParallelTrendsSensitivity": {
@@ -1596,7 +1686,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:causalplatform:claims:0.12.0:causal_result",
+  "$id": "urn:causalplatform:claims:0.13.0:causal_result",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {

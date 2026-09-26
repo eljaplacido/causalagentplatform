@@ -243,7 +243,7 @@ written here. Pieces, when iterating:
 
 ```bash
 cd backend && .venv/bin/pytest -q                          # backend suite, on SQLite
-cd packages/causal-core && .venv/bin/pytest                # kernel, incl. the T0 and T4-T9 gates
+cd packages/causal-core && .venv/bin/pytest                # kernel, incl. the T0 and T4-T10 gates
 cd packages/causal-decision && ../causal-core/.venv/bin/pytest   # decision layer, incl. D0 and A0
 cd frontend && npm run type-check && npx vitest run        # frontend
 ```

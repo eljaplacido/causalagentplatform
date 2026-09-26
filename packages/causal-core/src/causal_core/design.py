@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
+from causal_core import overlap as overlap_mod
 from causal_core.contract import (
     AbstentionReason,
     AnalysisPolicy,
@@ -23,6 +24,7 @@ from causal_core.contract import (
     DesignCheck,
     Diagnostics,
     IdentificationCertificate,
+    OverlapDiagnostics,
     PropensityDiagnostics,
     Strategy,
 )
@@ -41,6 +43,9 @@ class DesignResult:
     frame: pd.DataFrame
     abstention: tuple[AbstentionReason, str, tuple[str, ...]] | None = None
     warnings: list[str] = field(default_factory=list)
+    #: Row positions (in ``frame``) of units in an overlap-violation region; reported, never
+    #: dropped -- trimming them would change the estimand from the one asked about.
+    overlap_flagged: np.ndarray | None = None
 
 
 def _refuse(
@@ -238,6 +243,8 @@ def prepare(
     )
 
     propensity: PropensityDiagnostics | None = None
+    overlap: OverlapDiagnostics | None = None
+    overlap_flagged: np.ndarray | None = None
     balance: list[BalanceRow] = []
     srm_p: float | None = None
     first_stage_f: float | None = None
@@ -252,6 +259,7 @@ def prepare(
             n_control=n_control,
             outcome_sd=float(np.std(yv, ddof=1)) if n > 1 else None,
             propensity=propensity,
+            overlap=overlap,
             balance=tuple(balance),
             srm_p_value=srm_p,
             first_stage_f=first_stage_f,
@@ -261,7 +269,9 @@ def prepare(
     def refuse_with_diag(
         reason: AbstentionReason, detail: str, fix: tuple[str, ...] = ()
     ) -> DesignResult:
-        return _refuse(frame, reason, detail, fix, diagnostics(), warnings)
+        out = _refuse(frame, reason, detail, fix, diagnostics(), warnings)
+        out.overlap_flagged = overlap_flagged
+        return out
 
     adjusting = cert.strategy in (Strategy.backdoor, Strategy.randomized) and X.shape[1] > 0
 
@@ -296,6 +306,20 @@ def prepare(
         # matter -- a never-treated profile just gets zero weight -- and those already
         # show up in `outside` as treated propensities near 1.
         separated = lg.separated and not att
+        # Honest overlap regions (T10): strata the logistic model cannot express -- several
+        # covariates jointly, a threshold on a continuous one -- in which an arm never occurs.
+        reg = overlap_mod.overlap_regions(X, t, list(Xdf.columns), policy, query.estimand)
+        overlap_flagged = reg.flagged
+        lim_share = overlap_mod.limited_overlap_share(
+            e, t, policy.limited_overlap_bounds, query.estimand
+        )
+        limited = lim_share > policy.max_extreme_propensity_share
+        overlap = OverlapDiagnostics(
+            violation_share=reg.share,
+            regions=tuple(reg.regions),
+            limited_share=lim_share,
+            limited_overlap=limited,
+        )
         ok = not separated and outside <= policy.max_extreme_propensity_share
         region = f"above {hi} (treated units)" if att else f"outside [{lo}, {hi}]"
         checks.append(
@@ -316,6 +340,46 @@ def prepare(
                     "restrict the population to the region where both arms occur",
                     "or drop covariates that (nearly) determine treatment, if the graph allows",
                 ),
+            )
+        of = "treated units" if att else "units"
+        rules = overlap_mod.describe(reg.regions)
+        region_ok = not overlap_mod.region_refuses(reg.share, policy)
+        if reg.ran:
+            checks.append(
+                DesignCheck(
+                    name="overlap regions (positivity)",
+                    passed=region_ok,
+                    detail=f"{reg.share:.1%} of {of} lie in covariate regions where "
+                    + ("no control occurs" if att else "one arm never occurs")
+                    + (f": {rules}" if rules else ""),
+                )
+            )
+        if not region_ok:
+            return refuse_with_diag(
+                AbstentionReason.POSITIVITY,
+                f"{reg.share:.1%} of {of} lie in covariate regions where "
+                + ("no control occurs" if att else "one arm (almost) never occurs")
+                + f" (policy allows {policy.max_extreme_propensity_share:.1%}): {rules}. The "
+                "effect there could only be extrapolated from a model",
+                (
+                    f"exclude the region(s) {rules} and ask again, stating the narrower population "
+                    "(query.population): the effect there is a different estimand, and the kernel "
+                    "will not trim silently",
+                    "or measure units of the missing arm in those regions",
+                ),
+            )
+        if reg.share > 0:
+            warnings.append(
+                f"{reg.share:.1%} of {of} lie in covariate regions where "
+                + ("no control occurs" if att else "one arm never occurs")
+                + f" ({rules}); the estimate extrapolates over them from the outcome model"
+            )
+        if limited:
+            lo_b, hi_b = policy.limited_overlap_bounds
+            warnings.append(
+                f"limited overlap: {lim_share:.1%} of {of} have an estimated propensity "
+                + (f"above {hi_b}" if att else f"outside [{lo_b}, {hi_b}]")
+                + "; for them the estimate rests on few comparable units or on the outcome model"
             )
         for arm, label, size in ((1.0, "treated", n_treated), (0.0, "control", n_control)):
             if ess[arm] < MIN_EFFECTIVE_SAMPLE and ess[arm] < (size or 0):
@@ -390,4 +454,4 @@ def prepare(
                 "instrument biases 2SLS toward OLS and its intervals under-cover",
             )
 
-    return DesignResult(prepared, diagnostics(), frame, None, warnings)
+    return DesignResult(prepared, diagnostics(), frame, None, warnings, overlap_flagged)

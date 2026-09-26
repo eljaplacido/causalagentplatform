@@ -12,7 +12,7 @@
         "requirements/backend.in": "f5a611a8f6c34de16b3617de4c55135a94cf5dcfab7a968df680c29eb6b34177",
         "packages/causal-core/pyproject.toml": "d43a9ef58656f9e87bf0498873f75440c1effbc113c3bbae046201e411dcf221",
         "packages/causal-decision/pyproject.toml": "fd2829e39c7632268d5637025c15da6cf6ebb0a082d257f7d2dc7b443ed0df79",
-        "backend/pyproject.toml": "34ef31fe1222f6c43231db1c5236bcae7905f2c52b84132f7fb66686f3843308"
+        "backend/pyproject.toml": "74dc6e9d738cb4f8fd04287d38791f59c939403257da4de5ed4dfaca54e7b097"
       }
     },
     "kernel": {
@@ -22,7 +22,7 @@
         "requirements/kernel.in": "39f2079d503d34efff7abee4854268f01f9ab549f12fc9b47655494aea2edc7a",
         "packages/causal-core/pyproject.toml": "d43a9ef58656f9e87bf0498873f75440c1effbc113c3bbae046201e411dcf221",
         "packages/causal-decision/pyproject.toml": "fd2829e39c7632268d5637025c15da6cf6ebb0a082d257f7d2dc7b443ed0df79",
-        "packages/causal-mcp/pyproject.toml": "f9f8faba302b69476698036a2260ebd37fc1cdac849be74e092017d8ac7c69ee"
+        "packages/causal-mcp/pyproject.toml": "5b9797901dccf5a4d56261ed1424c3714ac5243df4d96bd511de4b7bd3874854"
       }
     },
     "image": {
@@ -32,7 +32,7 @@
         "requirements/image.in": "380000090974c09d6f56e8413e06ac4e75844d6fc82d16a0cdc158933b381370",
         "packages/causal-core/pyproject.toml": "d43a9ef58656f9e87bf0498873f75440c1effbc113c3bbae046201e411dcf221",
         "packages/causal-decision/pyproject.toml": "fd2829e39c7632268d5637025c15da6cf6ebb0a082d257f7d2dc7b443ed0df79",
-        "backend/pyproject.toml": "34ef31fe1222f6c43231db1c5236bcae7905f2c52b84132f7fb66686f3843308"
+        "backend/pyproject.toml": "74dc6e9d738cb4f8fd04287d38791f59c939403257da4de5ed4dfaca54e7b097"
       }
     },
     "release": {
@@ -42,7 +42,7 @@
         "requirements/release.in": "f54edf6adc7e5b617759cada81b84a3b92d745ee1304d08376fd564d2bf6cd2f",
         "packages/causal-core/pyproject.toml": "d43a9ef58656f9e87bf0498873f75440c1effbc113c3bbae046201e411dcf221",
         "packages/causal-decision/pyproject.toml": "fd2829e39c7632268d5637025c15da6cf6ebb0a082d257f7d2dc7b443ed0df79",
-        "packages/causal-mcp/pyproject.toml": "f9f8faba302b69476698036a2260ebd37fc1cdac849be74e092017d8ac7c69ee"
+        "packages/causal-mcp/pyproject.toml": "5b9797901dccf5a4d56261ed1424c3714ac5243df4d96bd511de4b7bd3874854"
       }
     }
   }

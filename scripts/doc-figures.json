@@ -670,6 +670,140 @@
       "figure": "0.095",
       "bench": "t8-switchback",
       "path": "/designs[id=long_carryover]/carryover_flag_rate"
+    },
+    {
+      "doc": "README.md",
+      "says": "refused in 99.2–100% of runs",
+      "figure": "99.2",
+      "bench": "t10-positivity",
+      "path": "/designs[id=structural_stratum|joint_violation_highdim|continuous_violation|att_no_controls]/positivity_rate",
+      "agg": "min",
+      "scale": 100
+    },
+    {
+      "doc": "README.md",
+      "says": "refused in 99.2–100% of runs",
+      "figure": "100",
+      "bench": "t10-positivity",
+      "path": "/designs[id=structural_stratum|joint_violation_highdim|continuous_violation|att_no_controls]/positivity_rate",
+      "agg": "max",
+      "scale": 100
+    },
+    {
+      "doc": "README.md",
+      "says": "false refusals at most 0.2%",
+      "figure": "0.2",
+      "bench": "t10-positivity",
+      "path": "/designs[id=clean|clean_highdim|limited_overlap|small_violation|att_never_treated]/refusal_rate",
+      "agg": "max",
+      "scale": 100
+    },
+    {
+      "doc": "README.md",
+      "says": "coverage 0.946–0.958 where the kernel answers",
+      "figure": "0.946",
+      "bench": "t10-positivity",
+      "path": "/designs[id=clean|clean_highdim|limited_overlap|att_never_treated]/coverage",
+      "agg": "min"
+    },
+    {
+      "doc": "README.md",
+      "says": "coverage 0.946–0.958 where the kernel answers",
+      "figure": "0.958",
+      "bench": "t10-positivity",
+      "path": "/designs[id=clean|clean_highdim|limited_overlap|att_never_treated]/coverage",
+      "agg": "max"
+    },
+    {
+      "doc": "README.md",
+      "says": "flagged for limited overlap in 100/100 realizations",
+      "figure": "100",
+      "bench": "t2-ihdp",
+      "path": "/summary/ate~1C1/overlap_flagged_share",
+      "scale": 100
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "are refused for `POSITIVITY` in 99.2–100% of runs",
+      "figure": "99.2",
+      "bench": "t10-positivity",
+      "path": "/designs[id=structural_stratum|joint_violation_highdim|continuous_violation|att_no_controls]/positivity_rate",
+      "agg": "min",
+      "scale": 100
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "are refused for `POSITIVITY` in 99.2–100% of runs",
+      "figure": "100",
+      "bench": "t10-positivity",
+      "path": "/designs[id=structural_stratum|joint_violation_highdim|continuous_violation|att_no_controls]/positivity_rate",
+      "agg": "max",
+      "scale": 100
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "False refusals are at most 0.2%",
+      "figure": "0.2",
+      "bench": "t10-positivity",
+      "path": "/designs[id=clean|clean_highdim|limited_overlap|small_violation|att_never_treated]/refusal_rate",
+      "agg": "max",
+      "scale": 100
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "Coverage 0.946–0.958 where it answers",
+      "figure": "0.946",
+      "bench": "t10-positivity",
+      "path": "/designs[id=clean|clean_highdim|limited_overlap|att_never_treated]/coverage",
+      "agg": "min"
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "Coverage 0.946–0.958 where it answers",
+      "figure": "0.958",
+      "bench": "t10-positivity",
+      "path": "/designs[id=clean|clean_highdim|limited_overlap|att_never_treated]/coverage",
+      "agg": "max"
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "warning in 88% of runs",
+      "figure": "88",
+      "bench": "t10-positivity",
+      "path": "/designs[id=small_violation]/warned_rate",
+      "scale": 100
+    },
+    {
+      "doc": "docs/CURRENT_STAGE.md",
+      "says": "IHDP's ATE flagged for limited overlap in 100/100 realizations",
+      "figure": "100",
+      "bench": "t2-ihdp",
+      "path": "/summary/ate~1C1/overlap_flagged_share",
+      "scale": 100
+    },
+    {
+      "doc": "docs/CURRENT_STAGE.md",
+      "says": "Refused in 0.992–1.000 of replications",
+      "figure": "0.992",
+      "bench": "t10-positivity",
+      "path": "/designs[id=structural_stratum|joint_violation_highdim|continuous_violation|att_no_controls]/positivity_rate",
+      "agg": "min"
+    },
+    {
+      "doc": "docs/CURRENT_STAGE.md",
+      "says": "Refused in 0.992–1.000 of replications",
+      "figure": "1.000",
+      "bench": "t10-positivity",
+      "path": "/designs[id=structural_stratum|joint_violation_highdim|continuous_violation|att_no_controls]/positivity_rate",
+      "agg": "max"
+    },
+    {
+      "doc": "docs/CURRENT_STAGE.md",
+      "says": "false refusals at most 0.002",
+      "figure": "0.002",
+      "bench": "t10-positivity",
+      "path": "/designs[id=clean|clean_highdim|limited_overlap|small_violation|att_never_treated]/refusal_rate",
+      "agg": "max"
     }
   ]
 }

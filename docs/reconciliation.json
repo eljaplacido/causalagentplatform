@@ -28,11 +28,11 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/pyproject.toml": "b41be40dc62c7cca30d87191f93cfd33251def033ab012bf41e72e5e40973395",
+          "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "887ba2e29a43260dcee98a05fe3d5268de5cfdef7e8fa7a5d48be9a6f20efe54",
-          "packages/causal-mcp": "f86dd08d8fef8f9b09adab83770f37de1234101a5c84ff11ef0427bdab2507d1"
+          "docs/CURRENT_STAGE.md": "ee73b5ab71d3a0d1e2415e7264430452d41966ebafa264f8250a2e7244bb4803",
+          "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d"
         }
       },
       "last_read": {
@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "74de4d5ffb39f8cd7f7ea29e708401550e81aa9656d996252e6dfde79d3f97c5",
+          "conformance/declared_not_implemented.json": "e00e9c8f10fca1adf76cca22e12d217cac60f403c4351063066984286ec92837",
           "backend/src": "0e22c0cb440a22fdd11420432e3d2529fc4b378fac66315c8b50671cc2721648",
           "backend/tests": "6d900b40ae73a4d2cdcd5fbf0a947a8b10a9533cac22cfa8e080a7b8f0cfc481",
           "frontend/src": "cfe44a11e817c5d272f7125694a5cba46c438299c632f63315a8f836a9278d80",
-          "packages": "d2f937f66efee78148564d82fbe376b1b72ca9e6c6e60068c8e8afb85bb4fcfa",
+          "packages": "a6c7988ee90609bed73f420354454bd96e2d1af5422828e769849bb7d77a777a",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #50 into #48: LLM layer has callers (this branch) and invocations go to the durable store (#30): ADR-002 status, criteria and component rows, CURRENT_STAGE LLM bullet and provenance-flow row, ADR-003 planner note all say so; grepped for 'no callers', 'in-memory' and 'No LLM is called', none stale; ORCHESTRATION merged cleanly on LF; TESTING_CICD keeps main's Neo4j text and this branch's LLM-calls paragraph)"
+        "by": "Claude (merge #48 into #49, contract 0.13.0: gate lists name T9, T10 and C0 together (README, benchmarks README, AGENTS, skills, QUICKSTART, TESTING_CICD); ROADMAP robustness row has overlap (T10) and Rosenbaum (T9), positivity moved to done; CURRENT_STAGE gates list adds T10, the kernel-limits bullet keeps this branch's overlap text, package row restored from collected counts 256/146/43)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -150,12 +150,12 @@
           "backend/src/skills": "b0bcef79c64f6b8d2f35f87f92095d54c52cec7d972a4cf1520b95fcc0d68347",
           "backend/src/orchestration": "7776a0a563af5bda75451c4ff4bb546683ae9947207f6da8b0545c1781976c8f",
           "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9",
-          "packages/causal-mcp": "f86dd08d8fef8f9b09adab83770f37de1234101a5c84ff11ef0427bdab2507d1"
+          "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #50 into #48: LLM layer has callers (this branch) and invocations go to the durable store (#30): ADR-002 status, criteria and component rows, CURRENT_STAGE LLM bullet and provenance-flow row, ADR-003 planner note all say so; grepped for 'no callers', 'in-memory' and 'No LLM is called', none stale; ORCHESTRATION merged cleanly on LF; TESTING_CICD keeps main's Neo4j text and this branch's LLM-calls paragraph)"
+        "by": "Claude (merge #48 into #49, contract 0.13.0: gate lists name T9, T10 and C0 together (README, benchmarks README, AGENTS, skills, QUICKSTART, TESTING_CICD); ROADMAP robustness row has overlap (T10) and Rosenbaum (T9), positivity moved to done; CURRENT_STAGE gates list adds T10, the kernel-limits bullet keeps this branch's overlap text, package row restored from collected counts 256/146/43)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -252,12 +252,12 @@
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9",
           ".github": "db12d364ec234ff9774297f81b08649ec310d368304c47fbfcfa04138f630ac4",
-          ".gnomon": "bb564221cb7a0339004787d342172182a5662510dfb4a6c2eded2c6a82567ac9"
+          ".gnomon": "ed5129d3368fde1d6486d5bc6540b1a09ab020e8f0166e8115b267b6f26be1d3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #50 into #48: LLM layer has callers (this branch) and invocations go to the durable store (#30): ADR-002 status, criteria and component rows, CURRENT_STAGE LLM bullet and provenance-flow row, ADR-003 planner note all say so; grepped for 'no callers', 'in-memory' and 'No LLM is called', none stale; ORCHESTRATION merged cleanly on LF; TESTING_CICD keeps main's Neo4j text and this branch's LLM-calls paragraph)"
+        "by": "Claude (merge #48 into #49, contract 0.13.0: gate lists name T9, T10 and C0 together (README, benchmarks README, AGENTS, skills, QUICKSTART, TESTING_CICD); ROADMAP robustness row has overlap (T10) and Rosenbaum (T9), positivity moved to done; CURRENT_STAGE gates list adds T10, the kernel-limits bullet keeps this branch's overlap text, package row restored from collected counts 256/146/43)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -278,7 +278,7 @@
           "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
-          "backend/pyproject.toml": "b41be40dc62c7cca30d87191f93cfd33251def033ab012bf41e72e5e40973395",
+          "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
           ".env.example": "c1b1272a098696c6c0e72ba533fca78db4060da7c549715d14fb1167656e906a",
@@ -287,7 +287,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #50 into #48: LLM layer has callers (this branch) and invocations go to the durable store (#30): ADR-002 status, criteria and component rows, CURRENT_STAGE LLM bullet and provenance-flow row, ADR-003 planner note all say so; grepped for 'no callers', 'in-memory' and 'No LLM is called', none stale; ORCHESTRATION merged cleanly on LF; TESTING_CICD keeps main's Neo4j text and this branch's LLM-calls paragraph)"
+        "by": "Claude (merge #48 into #49, contract 0.13.0: gate lists name T9, T10 and C0 together (README, benchmarks README, AGENTS, skills, QUICKSTART, TESTING_CICD); ROADMAP robustness row has overlap (T10) and Rosenbaum (T9), positivity moved to done; CURRENT_STAGE gates list adds T10, the kernel-limits bullet keeps this branch's overlap text, package row restored from collected counts 256/146/43)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -310,20 +310,20 @@
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
           "backend/tests": "6d900b40ae73a4d2cdcd5fbf0a947a8b10a9533cac22cfa8e080a7b8f0cfc481",
-          "backend/pyproject.toml": "b41be40dc62c7cca30d87191f93cfd33251def033ab012bf41e72e5e40973395",
+          "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
           ".gnomon/ci.sh": "a05e016e87f09e27989ffc185d06ad2b55c6d31f4e9b9cc2954b8cfdf7a40e45",
-          "scripts": "f5a1a71d34b802455f2bfb1b90ec608c2242df7c46a15f913072b5c24d0d1bea",
+          "scripts": "df7404bc8ba506966c750b8d65843addca0ef732ad218e9f94a9d451643e86e3",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
-          "benchmarks": "58eaf5af920accec421ce7392b3d999aa35199d6f471c989b7fab25b3865acd0",
-          "packages/causal-core/tests": "25d7a9bf81d3202afcd2359570774f2ea059d0e74d2b949146e44c6f3070042c",
+          "benchmarks": "d2948f22857509b065db2c8c8fd958ef053a3b3e1ec254ebc316edc905eed5ae",
+          "packages/causal-core/tests": "4ff62e3d56d616ead73e56d797ad7ff81e66e8bc4911eb0f6eb5fcf47098484b",
           "packages/causal-decision/tests": "811166b3dd05cfc3cbd62c7e71fcf1d62666fb738c97dcb65e34725fede4d034"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #50 into #48: LLM layer has callers (this branch) and invocations go to the durable store (#30): ADR-002 status, criteria and component rows, CURRENT_STAGE LLM bullet and provenance-flow row, ADR-003 planner note all say so; grepped for 'no callers', 'in-memory' and 'No LLM is called', none stale; ORCHESTRATION merged cleanly on LF; TESTING_CICD keeps main's Neo4j text and this branch's LLM-calls paragraph)"
+        "by": "Claude (merge #48 into #49, contract 0.13.0: gate lists name T9, T10 and C0 together (README, benchmarks README, AGENTS, skills, QUICKSTART, TESTING_CICD); ROADMAP robustness row has overlap (T10) and Rosenbaum (T9), positivity moved to done; CURRENT_STAGE gates list adds T10, the kernel-limits bullet keeps this branch's overlap text, package row restored from collected counts 256/146/43)"
       }
     },
     "docs/UIX.md": {
@@ -352,9 +352,9 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "packages/causal-core/src/causal_core": "65b5b9fe4d2bc339a536717c0fdd0f252483ac9e136b0600914ff3590a977c45",
-          "conformance/declared_not_implemented.json": "74de4d5ffb39f8cd7f7ea29e708401550e81aa9656d996252e6dfde79d3f97c5",
-          "docs/CURRENT_STAGE.md": "887ba2e29a43260dcee98a05fe3d5268de5cfdef7e8fa7a5d48be9a6f20efe54"
+          "packages/causal-core/src/causal_core": "010a35ba7875e9d49cae1993f18530b7fedfab7da24aac0b12b170258f52ebd8",
+          "conformance/declared_not_implemented.json": "e00e9c8f10fca1adf76cca22e12d217cac60f403c4351063066984286ec92837",
+          "docs/CURRENT_STAGE.md": "ee73b5ab71d3a0d1e2415e7264430452d41966ebafa264f8250a2e7244bb4803"
         }
       },
       "last_read": {

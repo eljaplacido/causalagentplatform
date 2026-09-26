@@ -57,7 +57,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:causalplatform:claims:0.12.0:identification_certificate",
+  "$id": "urn:causalplatform:claims:0.13.0:identification_certificate",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {

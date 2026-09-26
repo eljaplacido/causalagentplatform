@@ -161,6 +161,24 @@ before any run. It runs on every change:
   estimate; Wilcoxon's statistic understates design sensitivity, and residual imbalance after
   inexact matching is bias the bound does not cover (the result reports the largest standardized
   difference).
+- **T10 (positivity and overlap):** nine observational designs of 4,000 units whose positivity is
+  set by construction. Strata where one arm never occurs — two binary covariates jointly, three
+  jointly (every single covariate still has both arms), a continuous threshold, and for the ATT a
+  stratum with no controls — are refused for `POSITIVITY` in 99.2–100% of runs; the main-effects
+  logistic check alone refused none. False refusals are at most 0.2% where the kernel should
+  answer, including a never-treated stratum under the ATT, which needs overlap one way only.
+  Coverage 0.946–0.958 where it answers; a violation below the 5% tolerance is answered with a
+  warning in 88% of runs. Nothing is trimmed silently.
+
+**Overlap.** For a binary treatment with an adjustment set, after the logistic check, a
+classification tree for the treatment (depth `overlap_region_depth` = 4) is grown on one half of
+the units and its leaves judged on the other half, then swapped: a leaf where the one-sided 95%
+upper bound on an arm's probability is below `overlap_region_bound` = 0.05 is a violation region.
+More than `max_extreme_propensity_share` (5%) of units in such regions (ATT: of treated units in
+regions without controls) is a `POSITIVITY` refusal that names the regions as rules; less is a
+warning. A limited-overlap flag warns when more than 5% of units have a propensity outside
+`limited_overlap_bounds` = [0.1, 0.9]. Both are in `diagnostics.overlap`. The kernel never trims:
+ask again with the narrower population stated.
 
 **Switchbacks.** `analyze(..., design="randomized", cluster=<block>, time=<minute>,
 washout=<minutes>)` drops the first `washout` minutes of every block and compares block means
@@ -221,6 +239,8 @@ Data can be pandas, a dict of columns, pyarrow, polars, or any dataframe-interch
 - Time series
 - Interference between randomized units (spillovers from treated to untreated clusters);
   cluster and switchback designs handle dependence *within* a cluster or block only
+- Overlap violations the region tree cannot isolate: a stratum defined by four or more covariates
+  jointly, an exclusive-or pattern, or one smaller than about 118 units (T10 records each)
 - A carryover check that sees a small carryover: the T8 v2 check catches one that biases the
   estimate by several standard errors, not one that biases it by a fraction of one
 - For difference-in-differences: anticipation windows, repeated cross-sections, time-varying
