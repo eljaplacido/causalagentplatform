@@ -90,10 +90,11 @@ describe("ApprovalPanel — success only after backend confirmation", () => {
     );
 
     await user.click(screen.getByTestId("reject-button"));
+    await user.selectOptions(screen.getByTestId("approval-domain"), "COMPLICATED");
     await user.type(screen.getByLabelText(/rejection reason/i), REASON);
     await user.click(screen.getByTestId("confirm-rejection"));
 
-    expect(onReject).toHaveBeenCalledWith(makeItem().id, REASON);
+    expect(onReject).toHaveBeenCalledWith(makeItem().id, REASON, "COMPLICATED");
     expect(screen.queryByTestId("approval-success")).toBeNull();
 
     pending.resolve();
@@ -145,6 +146,7 @@ describe("ApprovalPanel — backend failure is shown, never marked approved", ()
     );
 
     await user.click(screen.getByTestId("reject-button"));
+    await user.selectOptions(screen.getByTestId("approval-domain"), "CLEAR");
     await user.type(screen.getByLabelText(/rejection reason/i), REASON);
     await user.click(screen.getByTestId("confirm-rejection"));
 
@@ -236,5 +238,41 @@ describe("ApprovalPanel — an approval carries the approver's classification", 
     expect(screen.getByTestId("confirm-approval")).toBeEnabled();
     await user.click(screen.getByTestId("confirm-approval"));
     expect(onApprove).toHaveBeenCalledWith(makeItem().id, REASON, "COMPLEX");
+  });
+});
+
+describe("ApprovalPanel — a rejection carries the reviewer's classification too", () => {
+  // Rejecting needs an APPROVED Guardian verdict for GOVERNANCE_REJECT (septa-53),
+  // and Guardian does not approve anything in an unclassified situation (PR-006).
+  it("cannot be confirmed until a Cynefin domain is chosen, and DISORDER is not offered", async () => {
+    const user = userEvent.setup();
+    const onReject = vi.fn(() => Promise.resolve());
+    render(<ApprovalPanel item={makeItem()} onApprove={vi.fn()} onReject={onReject} />);
+
+    await user.click(screen.getByTestId("reject-button"));
+    await user.type(screen.getByLabelText(/rejection reason/i), REASON);
+    expect(screen.getByTestId("approval-domain")).toHaveValue("");
+    expect(screen.getByTestId("confirm-rejection")).toBeDisabled();
+    const offered = Array.from(
+      screen.getByTestId("approval-domain").querySelectorAll("option")
+    ).map((o) => o.getAttribute("value"));
+    expect(offered).not.toContain("DISORDER");
+
+    await user.selectOptions(screen.getByTestId("approval-domain"), "CHAOTIC");
+    expect(screen.getByTestId("confirm-rejection")).toBeEnabled();
+    await user.click(screen.getByTestId("confirm-rejection"));
+    expect(onReject).toHaveBeenCalledWith(makeItem().id, REASON, "CHAOTIC");
+  });
+
+  it("does not carry a domain chosen for approving over to rejecting", async () => {
+    const user = userEvent.setup();
+    render(<ApprovalPanel item={makeItem()} onApprove={vi.fn()} onReject={vi.fn()} />);
+
+    await user.click(screen.getByTestId("approve-button"));
+    await user.selectOptions(screen.getByTestId("approval-domain"), "COMPLICATED");
+    await user.click(screen.getByRole("button", { name: /cancel/i }));
+    await user.click(screen.getByTestId("reject-button"));
+    expect(screen.getByTestId("approval-domain")).toHaveValue("");
+    expect(screen.getByTestId("confirm-rejection")).toBeDisabled();
   });
 });

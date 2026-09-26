@@ -21,8 +21,16 @@ carryover while the system settles after a switch -- and each block then counts 
 effect is the difference of the arms' block means, with a Welch variance across blocks on
 t(K − 2). Trimming only the blocks after a switch, weighted by what remains, made each
 block depend on its neighbour's arm and under-covered (T8, development seeds: 0.89–0.91).
-A carryover check compares, in switched blocks, the minutes just after the washout with
-the rest (reported as a design check, never changing the status).
+A carryover check asks whether the effect is still moving after the washout: in each switched
+block, the least-squares slope of the outcome over the retained minutes; the mean slope of
+blocks switched into treatment against that of blocks switched out (a carryover still settling
+makes the effect rise through one and fall through the other), Welch, t(K_s − 2) over the K_s
+switched blocks, at ``policy.carryover_alpha``. A failure makes the result ``contested``: the
+estimate and interval are reported, the causal reading is withheld. T8 v2 gates it -- power
+0.8 against a carryover the washout does not cover and large enough to matter, false alarms
+at most 0.10 where the washout covers it -- and records what it cannot see: a carryover whose
+bias is a fraction of the estimate's standard error (T8's long_carryover, power about 0.1). No
+check on the retained minutes can: the residual there is small against minute-level noise.
 
 Refused: treatment that varies within a cluster (then the design is not what this
 assumes), fewer than ``min_clusters_per_arm`` clusters in either arm, and cluster sizes
@@ -123,34 +131,65 @@ def block_variance(means: pd.DataFrame) -> float:
     return float(a.var(ddof=1) / len(a) + b.var(ddof=1) / len(b))
 
 
+def block_slopes(frame: pd.DataFrame, block: str, since: str, y_col: str,
+                 start: float) -> pd.Series:
+    """Per block: least-squares slope of the outcome on time since the block began, over
+    ``since >= start``. A seam: `check_includes_washout` fits over the whole block."""
+    win = frame.loc[frame[since] >= start, [block, since, y_col]]
+    g = win.groupby(block)
+    sc = win[since] - g[since].transform("mean")
+    yc = win[y_col] - g[y_col].transform("mean")
+    sxx = (sc * sc).groupby(win[block]).sum()
+    sxy = (sc * yc).groupby(win[block]).sum()
+    return (sxy / sxx.where(sxx > 0)).dropna()
+
+
+def carryover_contrast(into: pd.Series, out: pd.Series) -> tuple[float, float, int]:
+    """Into- minus out-of-treatment mean slope: (difference, Welch t, df = K_s - 2).
+    A seam: `carryover_check_blind` pools the two directions."""
+    diff = float(into.mean() - out.mean())
+    se = math.sqrt(float(into.var(ddof=1)) / len(into) + float(out.var(ddof=1)) / len(out))
+    return diff, (diff / se if se > 0 else 0.0), len(into) + len(out) - 2
+
+
 def carryover_check(sub: pd.DataFrame, block: str, d_col: str, y_col: str, time: str,
                     washout: float, alpha: float) -> DesignCheck:
-    """Switched blocks: effect just after the washout vs later in the block.
+    """Is the effect still moving after the washout? Switched blocks only.
 
-    If the system has settled, the early-minus-late difference is the same in blocks
-    switched into treatment as in blocks switched out of it; residual carryover makes the
-    first negative (the effect still arriving) and the second positive (still leaving).
+    With the system settled by the end of the washout, the outcome's slope over the rest
+    of a block has the same expectation in blocks switched into treatment as in blocks
+    switched out (the daily cycle is common to both; which blocks switch is randomized).
+    A carryover still settling makes it rise through one and fall through the other.
+    The difference of the two mean slopes is tested with a Welch variance across blocks on
+    t(K_s - 2) -- the block, as for the estimate, the independent observation.
     """
     switched = _switched(sub, block, d_col, time)
     since = sub[time] - sub.groupby(block)[time].transform("min")
     frame = sub.assign(_since=since)
-    frame = frame[frame[block].map(switched).astype(bool) & (frame["_since"] >= washout)]
-    early = frame["_since"] < 2 * washout
-    diffs = (frame[early].groupby(block)[y_col].mean()
-             - frame[~early].groupby(block)[y_col].mean()).dropna()
-    arm = frame.groupby(block)[d_col].first().reindex(diffs.index)
-    into, out = diffs[arm == 1], diffs[arm == 0]
+    frame = frame[frame[block].map(switched).astype(bool)]
+    slopes = block_slopes(frame, block, "_since", y_col, washout)
+    arm = frame.groupby(block)[d_col].first().reindex(slopes.index)
+    into, out = slopes[arm == 1], slopes[arm == 0]
+    name = "no carryover beyond the washout"
     if len(into) < 2 or len(out) < 2:
-        return DesignCheck(name="no carryover beyond the washout", passed=True,
-                           detail="too few switched blocks to check")
-    test = stats.ttest_ind(into, out, equal_var=False)
-    p = float(test.pvalue)
+        return DesignCheck(name=name, passed=True,
+                           detail="not run: fewer than two switched blocks in each direction")
+    diff, tstat, df = carryover_contrast(into, out)
+    p = float(2 * stats.t.sf(abs(tstat), df)) if df > 0 else 1.0
     return DesignCheck(
-        name="no carryover beyond the washout",
+        name=name,
         passed=p > alpha,
-        detail=f"early-minus-late difference, switched into vs out of treatment: "
-        f"{float(into.mean() - out.mean()):.4g} (Welch p={p:.2g})",
+        detail=f"slope of the outcome after the washout, blocks switched into minus out of "
+        f"treatment: {diff:.4g} per unit of {time} (t={tstat:.2f} on {df} df, p={p:.2g}, "
+        f"level {alpha}; {len(into)} + {len(out)} switched blocks)",
     )
+
+
+def carryover_status(status: ResultStatus, check: DesignCheck | None) -> ResultStatus:
+    """A failed carryover check makes the result contested. A seam: `flag_not_gating`."""
+    if check is not None and not check.passed:
+        return ResultStatus.contested
+    return status
 
 
 def icc(y: F, t: F, cluster: NDArray[Any]) -> float | None:
@@ -272,7 +311,7 @@ def analyze_cluster(
                 cert=cert,
             )
         carryover = carryover_check(sub, c_col, d_col, y_col, query.time, query.washout,
-                                    policy.refutation_alpha)
+                                    policy.carryover_alpha)
         sub = kept
     sizes = sub.groupby(c_col).size().to_numpy(dtype=float)
     cv = float(sizes.std() / sizes.mean())
@@ -296,7 +335,8 @@ def analyze_cluster(
     if carryover is not None:
         checks.append(carryover)
         if not carryover.passed:
-            warnings = [*warnings, f"carryover beyond the washout: {carryover.detail}"]
+            warnings = [*warnings, "carryover beyond the washout, so the result is contested: "
+                        f"{carryover.detail}"]
     prov["data_digest"] = data_digest(sub)
     y = sub[y_col].to_numpy(dtype=float)
     t = sub[d_col].to_numpy(dtype=float)
@@ -328,6 +368,7 @@ def analyze_cluster(
     status = ResultStatus.provisional if unreviewed else ResultStatus.supported
     if unreviewed:
         warnings = [*warnings, f"graph contains unreviewed edges: {unreviewed}"]
+    status = carryover_status(status, carryover)
     result = CausalResult(
         status=status,
         query=query,

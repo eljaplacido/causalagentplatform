@@ -3,7 +3,10 @@
 /**
  * ReviewQueue — Structured review queue for Governance Officer (US-27).
  *
- * Ordered by risk tier (CRITICAL → HIGH → MEDIUM → LOW).
+ * Ordered by risk tier (CRITICAL → HIGH → MEDIUM → LOW), keeping the given
+ * order within a tier (the backend sends oldest first). The tier and its reasons
+ * come from the backend (backend/src/semantic_layer/review_risk.py); an item
+ * whose submitter was never recorded says so.
  * Clicking a row calls onSelectItem for the ApprovalPanel.
  */
 
@@ -196,6 +199,7 @@ export function ReviewQueue({
                   </td>
                   <td className="px-4 py-3">
                     <span
+                      title={item.riskReasons?.join("; ") || undefined}
                       className={cn(
                         "rounded-full border px-2 py-0.5 text-xs font-semibold",
                         riskConfig.bg,
@@ -207,7 +211,7 @@ export function ReviewQueue({
                     </span>
                   </td>
                   <td className="hidden px-4 py-3 text-muted-foreground sm:table-cell">
-                    {item.submittedBy}
+                    {item.submittedBy ?? "not recorded"}
                   </td>
                   <td className="hidden px-4 py-3 text-muted-foreground lg:table-cell">
                     {formatTimestamp(item.submittedAt)}

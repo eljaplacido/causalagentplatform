@@ -146,7 +146,8 @@ def causal_analyze(
       analysis after every batch instead -- read that way its error rate is far above 5%.
     - **Randomized by service, measured by request**: `cluster`, or the interval can be several
       times too narrow. **Switchback**: `cluster` = the block, `time` = the minute, `washout`
-      chosen from what you know of the system (the built-in carryover check is weak).
+      chosen from what you know of the system. A carryover still settling after the washout
+      makes the result `contested`; the check catches only a large one, so a pass is weak.
 
     `graph` syntax: `Z -> X -> Y; Z -> Y`; `X <-> Y` means an unmeasured common cause;
     `latent U` declares an unmeasured node. Data: either `data` as {column: [values]} or

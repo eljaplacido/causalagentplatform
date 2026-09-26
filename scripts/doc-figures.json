@@ -454,15 +454,64 @@
     },
     {
       "doc": "README.md",
-      "says": "catches it only 2% of the time",
-      "figure": "2",
+      "says": "in 91.8% of runs when the carryover biases the estimate by three standard errors",
+      "figure": "91.8",
+      "bench": "t8-switchback",
+      "path": "/designs[id=material_carryover]/carryover_flag_rate",
+      "scale": 100
+    },
+    {
+      "doc": "README.md",
+      "says": "in only 9.5% when the bias is a fraction of one (coverage 0.887)",
+      "figure": "9.5",
       "bench": "t8-switchback",
       "path": "/designs[id=long_carryover]/carryover_flag_rate",
       "scale": 100
     },
     {
+      "doc": "README.md",
+      "says": "in only 9.5% when the bias is a fraction of one (coverage 0.887)",
+      "figure": "0.887",
+      "bench": "t8-switchback",
+      "path": "/designs[id=long_carryover]/coverage"
+    },
+    {
       "doc": "packages/causal-core/README.md",
-      "says": "the estimate is biased (−0.086) and covers 88.7%",
+      "says": "in 91.8% of runs where the\n  carryover biases the estimate by −0.424",
+      "figure": "91.8",
+      "bench": "t8-switchback",
+      "path": "/designs[id=material_carryover]/carryover_flag_rate",
+      "scale": 100
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "carryover biases the estimate by −0.424",
+      "figure": "0.424",
+      "bench": "t8-switchback",
+      "path": "/designs[id=material_carryover]/mean_error",
+      "scale": -1
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "false alarms of\n  5.4–6.1% where the washout covers it",
+      "figure": "5.4",
+      "bench": "t8-switchback",
+      "path": "/designs[id=instant|carryover|null_effect|strong_autocorrelation]/carryover_flag_rate",
+      "agg": "min",
+      "scale": 100
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "false alarms of\n  5.4–6.1% where the washout covers it",
+      "figure": "6.1",
+      "bench": "t8-switchback",
+      "path": "/designs[id=instant|carryover|null_effect|strong_autocorrelation]/carryover_flag_rate",
+      "agg": "max",
+      "scale": 100
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "at −0.085 (coverage 88.7%) it fires in 9.5% of runs",
       "figure": "88.7",
       "bench": "t8-switchback",
       "path": "/designs[id=long_carryover]/coverage",
@@ -470,11 +519,157 @@
     },
     {
       "doc": "packages/causal-core/README.md",
-      "says": "only 2% of runs: it is reported",
-      "figure": "2",
+      "says": "at −0.085 (coverage 88.7%) it fires in 9.5% of runs",
+      "figure": "9.5",
       "bench": "t8-switchback",
       "path": "/designs[id=long_carryover]/carryover_flag_rate",
       "scale": 100
+    },
+    {
+      "doc": "README.md",
+      "says": "reached it in 1.9–2.9% of runs",
+      "figure": "1.9",
+      "bench": "t9-rosenbaum",
+      "path": "/designs[id=pairs_bias_2|pairs_bias_4]/exceed_truth_rate",
+      "agg": "min",
+      "scale": 100,
+      "round": "outward"
+    },
+    {
+      "doc": "README.md",
+      "says": "reached it in 1.9–2.9% of runs",
+      "figure": "2.9",
+      "bench": "t9-rosenbaum",
+      "path": "/designs[id=pairs_bias_2|pairs_bias_4]/exceed_truth_rate",
+      "agg": "max",
+      "scale": 100,
+      "round": "outward"
+    },
+    {
+      "doc": "README.md",
+      "says": "kept the conclusion at two-thirds of it in 91.8–96.7%",
+      "figure": "91.8",
+      "bench": "t9-rosenbaum",
+      "path": "/designs[id=pairs_bias_2|pairs_bias_4]/retain_rate",
+      "agg": "min",
+      "scale": 100,
+      "round": "outward"
+    },
+    {
+      "doc": "README.md",
+      "says": "kept the conclusion at two-thirds of it in 91.8–96.7%",
+      "figure": "96.7",
+      "bench": "t9-rosenbaum",
+      "path": "/designs[id=pairs_bias_2|pairs_bias_4]/retain_rate",
+      "agg": "max",
+      "scale": 100,
+      "round": "outward"
+    },
+    {
+      "doc": "README.md",
+      "says": "the median Γ* was 1.63 against a design sensitivity of 1.88",
+      "figure": "1.63",
+      "bench": "t9-rosenbaum",
+      "path": "/designs[id=e2e_hidden_bias]/median_gamma_star"
+    },
+    {
+      "doc": "README.md",
+      "says": "the median Γ* was 1.63 against a design sensitivity of 1.88",
+      "figure": "1.88",
+      "bench": "t9-rosenbaum",
+      "path": "/designs[id=e2e_hidden_bias]/design_sensitivity"
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "reached the planted bias in 1.9–2.9% of runs",
+      "figure": "1.9",
+      "bench": "t9-rosenbaum",
+      "path": "/designs[id=pairs_bias_2|pairs_bias_4]/exceed_truth_rate",
+      "agg": "min",
+      "scale": 100,
+      "round": "outward"
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "reached the planted bias in 1.9–2.9% of runs",
+      "figure": "2.9",
+      "bench": "t9-rosenbaum",
+      "path": "/designs[id=pairs_bias_2|pairs_bias_4]/exceed_truth_rate",
+      "agg": "max",
+      "scale": 100,
+      "round": "outward"
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "kept the conclusion at two-thirds of it in 91.8–96.7%",
+      "figure": "91.8",
+      "bench": "t9-rosenbaum",
+      "path": "/designs[id=pairs_bias_2|pairs_bias_4]/retain_rate",
+      "agg": "min",
+      "scale": 100,
+      "round": "outward"
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "kept the conclusion at two-thirds of it in 91.8–96.7%",
+      "figure": "96.7",
+      "bench": "t9-rosenbaum",
+      "path": "/designs[id=pairs_bias_2|pairs_bias_4]/retain_rate",
+      "agg": "max",
+      "scale": 100,
+      "round": "outward"
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "the median Γ* was 1.63 against the design's sensitivity of 1.88",
+      "figure": "1.63",
+      "bench": "t9-rosenbaum",
+      "path": "/designs[id=e2e_hidden_bias]/median_gamma_star"
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "the median Γ* was 1.63 against the design's sensitivity of 1.88",
+      "figure": "1.88",
+      "bench": "t9-rosenbaum",
+      "path": "/designs[id=e2e_hidden_bias]/design_sensitivity"
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "at −0.085 (coverage 88.7%) it fires in 9.5% of runs",
+      "figure": "0.085",
+      "bench": "t8-switchback",
+      "path": "/designs[id=long_carryover]/mean_error",
+      "scale": -1
+    },
+    {
+      "doc": "docs/CURRENT_STAGE.md",
+      "says": "power 0.918 against a carryover that biases the estimate by three standard errors, false alarms 0.054–0.061",
+      "figure": "0.918",
+      "bench": "t8-switchback",
+      "path": "/designs[id=material_carryover]/carryover_flag_rate"
+    },
+    {
+      "doc": "docs/CURRENT_STAGE.md",
+      "says": "power 0.918 against a carryover that biases the estimate by three standard errors, false alarms 0.054–0.061",
+      "figure": "0.054",
+      "bench": "t8-switchback",
+      "path": "/designs[id=instant|carryover|null_effect|strong_autocorrelation]/carryover_flag_rate",
+      "agg": "min"
+    },
+    {
+      "doc": "docs/CURRENT_STAGE.md",
+      "says": "power 0.918 against a carryover that biases the estimate by three standard errors, false alarms 0.054–0.061",
+      "figure": "0.061",
+      "bench": "t8-switchback",
+      "path": "/designs[id=instant|carryover|null_effect|strong_autocorrelation]/carryover_flag_rate",
+      "agg": "max"
+    },
+    {
+      "doc": "docs/CURRENT_STAGE.md",
+      "says": "but it misses one whose bias is a fraction of a standard error (0.095)",
+      "figure": "0.095",
+      "bench": "t8-switchback",
+      "path": "/designs[id=long_carryover]/carryover_flag_rate"
     }
   ]
 }

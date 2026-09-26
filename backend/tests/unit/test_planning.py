@@ -16,6 +16,12 @@ from __future__ import annotations
 
 import pytest
 
+from src.orchestration import planning
+from src.orchestration.graph import (
+    route_after_cynefin,
+    route_after_disorder,
+    route_after_plan_ahead,
+)
 from src.orchestration.planning import (
     FLARERecedingHorizonPlanner,
     PlanningResult,
@@ -317,8 +323,14 @@ async def test_node_plan_ahead_commits_action() -> None:
     assert len(result["epistemic"].recommendations) == 1
 
 
-async def test_node_plan_ahead_escalates_on_failure() -> None:
-    """Node escalates when no safe action is found."""
+async def test_node_plan_ahead_unsimulated_failure_goes_on_for_a_person() -> None:
+    """A plan nothing could simulate commits nothing, claims nothing, and needs a person.
+
+    This used to assert ``no_safe_action_found``, which routed the session around the
+    Guardian. Confidence 0.1 with no fragment is a threshold on the action's own
+    number, not a finding about its consequences (register planning-simulation-no-data):
+    the candidates go on to the Guardian marked unsimulated, and a person chooses.
+    """
     state_data = {
         "epistemic": _make_epistemic_state(
             recommendations=[
@@ -329,8 +341,66 @@ async def test_node_plan_ahead_escalates_on_failure() -> None:
         "disorder_retries": 0,
     }
     result = await node_plan_ahead(state_data)
+    epistemic = result["epistemic"]
+    assert result["plan_outcome"] == "uncommitted"
+    assert epistemic.requires_human_review is True
+    assert "no_safe_action_found" not in epistemic.flags
+    assert "plan_unsimulated" in epistemic.flags
+    assert [r.action for r in epistemic.recommendations] == ["Bad action"]
+    assert "Not simulated" in epistemic.recommendations[0].rationale
+    assert route_after_plan_ahead(result) == "guardian_check"  # type: ignore[arg-type]
+
+
+async def test_node_plan_ahead_escalates_on_simulated_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """When the lookahead did estimate consequences and every candidate failed, escalate."""
+
+    async def _estimated_harm(**_: object) -> tuple[float | None, float, bool, str | None]:
+        return (-0.4, 0.1, True, "estimated harm")
+
+    monkeypatch.setattr(planning, "_simulate_single_action", _estimated_harm)
+    state_data = {
+        "epistemic": _make_epistemic_state(
+            recommendations=[_make_recommendation(rank=1, action="Harmful action", confidence=0.9)],
+        ),
+        "disorder_retries": 0,
+    }
+    result = await node_plan_ahead(state_data)
+    assert result["plan_outcome"] == "no_safe_action"
     assert result["epistemic"].requires_human_review is True
     assert "no_safe_action_found" in result["epistemic"].flags
+    assert "plan_unsimulated" not in result["epistemic"].flags
+    assert route_after_plan_ahead(result) == "escalate_human"  # type: ignore[arg-type]
+
+
+async def test_committed_but_unsimulated_plan_says_so() -> None:
+    state_data = {
+        "epistemic": _make_epistemic_state(
+            recommendations=[_make_recommendation(rank=1, action="Safe action", confidence=0.9)],
+        ),
+        "disorder_retries": 0,
+    }
+    result = await node_plan_ahead(state_data)
+    assert result["plan_outcome"] == "committed"
+    assert {"plan_ahead_committed", "plan_unsimulated"} <= set(result["epistemic"].flags)
+    assert "Not simulated" in result["epistemic"].recommendations[0].rationale
+
+
+def test_route_after_plan_ahead_ignores_flags_a_resumed_session_carries() -> None:
+    """A resumed session carries every earlier run's flags; routing reads this run's outcome."""
+    stale = _make_epistemic_state().model_copy(
+        update={"requires_human_review": True, "flags": ["no_safe_action_found"]}
+    )
+    state = {"epistemic": stale, "disorder_retries": 0, "plan_outcome": "committed"}
+    assert route_after_plan_ahead(state) == "guardian_check"  # type: ignore[arg-type]
+
+
+def test_disorder_is_retried_once_then_escalated() -> None:
+    """DisorderProtocol re-classifies once (AGENTS.md §5.1); a second DISORDER escalates."""
+    state = {"epistemic": _make_epistemic_state(), "disorder_retries": 1}
+    assert route_after_disorder(state) == "cynefin_classify"  # type: ignore[arg-type]
+    assert route_after_cynefin(state) == "escalate_human"  # type: ignore[arg-type]
 
 
 async def test_plan_with_approved_fragment() -> None:

@@ -1,5 +1,74 @@
 {
   "$defs": {
+    "Abstention": {
+      "additionalProperties": false,
+      "properties": {
+        "certificate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IdentificationCertificate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "detail": {
+          "title": "Detail",
+          "type": "string"
+        },
+        "diagnostics": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Diagnostics"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "kind": {
+          "const": "refusal",
+          "default": "refusal",
+          "title": "Kind",
+          "type": "string"
+        },
+        "missing_information": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Missing Information",
+          "type": "array"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "query": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CausalQuery"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "reason": {
+          "$ref": "#/$defs/AbstentionReason"
+        }
+      },
+      "required": [
+        "reason",
+        "detail",
+        "provenance"
+      ],
+      "title": "Abstention",
+      "type": "object"
+    },
     "AbstentionReason": {
       "enum": [
         "NON_IDENTIFIABLE",
@@ -16,6 +85,40 @@
       ],
       "title": "AbstentionReason",
       "type": "string"
+    },
+    "ApparatusFailure": {
+      "additionalProperties": false,
+      "properties": {
+        "detail": {
+          "title": "Detail",
+          "type": "string"
+        },
+        "error_type": {
+          "title": "Error Type",
+          "type": "string"
+        },
+        "kind": {
+          "const": "apparatus_failure",
+          "default": "apparatus_failure",
+          "title": "Kind",
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "stage": {
+          "title": "Stage",
+          "type": "string"
+        }
+      },
+      "required": [
+        "stage",
+        "error_type",
+        "detail",
+        "provenance"
+      ],
+      "title": "ApparatusFailure",
+      "type": "object"
     },
     "BalanceRow": {
       "additionalProperties": false,
@@ -293,6 +396,152 @@
         "outcome"
       ],
       "title": "CausalQuery",
+      "type": "object"
+    },
+    "CausalResult": {
+      "additionalProperties": false,
+      "properties": {
+        "certificate": {
+          "$ref": "#/$defs/IdentificationCertificate"
+        },
+        "claims": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Claim"
+          },
+          "title": "Claims",
+          "type": "array"
+        },
+        "diagnostics": {
+          "$ref": "#/$defs/Diagnostics"
+        },
+        "estimates": {
+          "items": {
+            "$ref": "#/$defs/EstimateRecord"
+          },
+          "title": "Estimates",
+          "type": "array"
+        },
+        "event_study": {
+          "default": [],
+          "description": "Panel designs only: the effect by periods since adoption, pre-periods included as placebos.",
+          "items": {
+            "$ref": "#/$defs/EventTimeEffect"
+          },
+          "title": "Event Study",
+          "type": "array"
+        },
+        "heterogeneity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Heterogeneity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "kind": {
+          "const": "result",
+          "default": "result",
+          "title": "Kind",
+          "type": "string"
+        },
+        "primary": {
+          "$ref": "#/$defs/EstimateRecord"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "query": {
+          "$ref": "#/$defs/CausalQuery"
+        },
+        "refutations": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RefutationResult"
+          },
+          "title": "Refutations",
+          "type": "array"
+        },
+        "result_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "sha256 of the JCS form of this object without this field.",
+          "title": "Result Digest"
+        },
+        "segments": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SegmentEffect"
+          },
+          "title": "Segments",
+          "type": "array"
+        },
+        "sensitivity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Sensitivity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "sequential": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SequentialSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Sequential designs only: the confidence sequence at every look. `primary` carries the last look, with the sequence as its interval."
+        },
+        "status": {
+          "$ref": "#/$defs/ResultStatus"
+        },
+        "triangulation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Triangulation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "warnings": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "status",
+        "query",
+        "certificate",
+        "primary",
+        "estimates",
+        "diagnostics",
+        "provenance"
+      ],
+      "title": "CausalResult",
       "type": "object"
     },
     "Claim": {
@@ -1088,7 +1337,7 @@
       "type": "object"
     },
     "ResultStatus": {
-      "description": "How much weight a produced estimate can bear.\n\nsupported   -- identified, estimators agree, no falsification test failed.\nprovisional -- as supported, but the graph contains unreviewed edges.\ncontested   -- a falsification test failed or estimators disagree beyond\n               sampling noise. The numbers are reported; causal language is not.",
+      "description": "How much weight a produced estimate can bear.\n\nsupported   -- identified, estimators agree, no falsification test failed.\nprovisional -- as supported, but the graph contains unreviewed edges.\ncontested   -- a falsification test failed, estimators disagree beyond sampling\n               noise, or a switchback's carryover outlasts its washout. The numbers\n               are reported; causal language is not.",
       "enum": [
         "supported",
         "provisional",
@@ -1096,6 +1345,73 @@
       ],
       "title": "ResultStatus",
       "type": "string"
+    },
+    "RosenbaumSensitivity": {
+      "additionalProperties": false,
+      "description": "How much hidden bias the matched comparison survives (back-door, binary treatment).",
+      "properties": {
+        "gamma_star": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The sensitivity value: the largest gamma >= 1 at which the test of no effect, one-sided in the direction of the primary estimate at (1 - ci_level) / 2 (the level of the primary interval and of e_value_ci), still rejects; gamma is the factor by which two units with the same covariates may differ in their odds of treatment. None when the test does not reject even at gamma = 1.",
+          "title": "Gamma Star"
+        },
+        "matched_difference": {
+          "description": "Mean treated-minus-control difference over the pairs. Its population is the matched units, not the primary estimand's.",
+          "title": "Matched Difference",
+          "type": "number"
+        },
+        "max_abs_smd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Largest absolute standardized difference of the adjustment covariates between the matched arms. Residual imbalance is bias the bound does not cover.",
+          "title": "Max Abs Smd"
+        },
+        "method": {
+          "description": "The matching and the test, in words.",
+          "title": "Method",
+          "type": "string"
+        },
+        "n_pairs": {
+          "title": "N Pairs",
+          "type": "integer"
+        },
+        "n_unmatched": {
+          "description": "Units of the smaller arm with no partner inside the caliper.",
+          "title": "N Unmatched",
+          "type": "integer"
+        },
+        "p_upper": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Upper bound on the one-sided p-value of no effect when hidden bias is at most gamma, keyed by gamma.",
+          "title": "P Upper",
+          "type": "object"
+        }
+      },
+      "required": [
+        "method",
+        "n_pairs",
+        "n_unmatched",
+        "matched_difference"
+      ],
+      "title": "RosenbaumSensitivity",
+      "type": "object"
     },
     "Rung": {
       "description": "Pearl's ladder. A query must declare which rung it asks about.",
@@ -1283,6 +1599,29 @@
           ],
           "default": null,
           "title": "Robustness Value Alpha"
+        },
+        "rosenbaum": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RosenbaumSensitivity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "rosenbaum_null_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rosenbaum Null Reason"
         }
       },
       "title": "Sensitivity",
@@ -1506,150 +1845,25 @@
       "type": "object"
     }
   },
-  "$id": "urn:causalplatform:claims:0.10.0:causal_result",
+  "$id": "urn:causalplatform:claims:0.12.0:outcome",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "additionalProperties": false,
-  "properties": {
-    "certificate": {
-      "$ref": "#/$defs/IdentificationCertificate"
+  "discriminator": {
+    "mapping": {
+      "apparatus_failure": "#/$defs/ApparatusFailure",
+      "refusal": "#/$defs/Abstention",
+      "result": "#/$defs/CausalResult"
     },
-    "claims": {
-      "default": [],
-      "items": {
-        "$ref": "#/$defs/Claim"
-      },
-      "title": "Claims",
-      "type": "array"
-    },
-    "diagnostics": {
-      "$ref": "#/$defs/Diagnostics"
-    },
-    "estimates": {
-      "items": {
-        "$ref": "#/$defs/EstimateRecord"
-      },
-      "title": "Estimates",
-      "type": "array"
-    },
-    "event_study": {
-      "default": [],
-      "description": "Panel designs only: the effect by periods since adoption, pre-periods included as placebos.",
-      "items": {
-        "$ref": "#/$defs/EventTimeEffect"
-      },
-      "title": "Event Study",
-      "type": "array"
-    },
-    "heterogeneity": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/Heterogeneity"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null
-    },
-    "kind": {
-      "const": "result",
-      "default": "result",
-      "title": "Kind",
-      "type": "string"
-    },
-    "primary": {
-      "$ref": "#/$defs/EstimateRecord"
-    },
-    "provenance": {
-      "$ref": "#/$defs/Provenance"
-    },
-    "query": {
-      "$ref": "#/$defs/CausalQuery"
-    },
-    "refutations": {
-      "default": [],
-      "items": {
-        "$ref": "#/$defs/RefutationResult"
-      },
-      "title": "Refutations",
-      "type": "array"
-    },
-    "result_digest": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "description": "sha256 of the JCS form of this object without this field.",
-      "title": "Result Digest"
-    },
-    "segments": {
-      "default": [],
-      "items": {
-        "$ref": "#/$defs/SegmentEffect"
-      },
-      "title": "Segments",
-      "type": "array"
-    },
-    "sensitivity": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/Sensitivity"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null
-    },
-    "sequential": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/SequentialSummary"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "description": "Sequential designs only: the confidence sequence at every look. `primary` carries the last look, with the sequence as its interval."
-    },
-    "status": {
-      "$ref": "#/$defs/ResultStatus"
-    },
-    "triangulation": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/Triangulation"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null
-    },
-    "warnings": {
-      "default": [],
-      "items": {
-        "type": "string"
-      },
-      "title": "Warnings",
-      "type": "array"
-    }
+    "propertyName": "kind"
   },
-  "required": [
-    "status",
-    "query",
-    "certificate",
-    "primary",
-    "estimates",
-    "diagnostics",
-    "provenance"
-  ],
-  "title": "CausalResult",
-  "type": "object"
+  "oneOf": [
+    {
+      "$ref": "#/$defs/CausalResult"
+    },
+    {
+      "$ref": "#/$defs/Abstention"
+    },
+    {
+      "$ref": "#/$defs/ApparatusFailure"
+    }
+  ]
 }

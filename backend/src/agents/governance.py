@@ -24,21 +24,28 @@ import hashlib
 import json
 import os
 from abc import ABCMeta
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
 import structlog
+from sqlalchemy import text
 
 from src.agents.base import HALLUCINATION_THRESHOLD, BaseAgent
 from src.db.factory import CloudSqlFactory
-from src.db.types import TEXT_ARRAY, TIMESTAMP, typed_text
+from src.db.types import TEXT_ARRAY, TIMESTAMP, json_value, typed_text
 from src.exceptions import AuditWriteError
 from src.semantic_layer.models import (
     CynefinDomain,
     EpistemicState,
     GuardianVerdict,
+    SensitivityResult,
 )
+from src.semantic_layer.provenance_capture import guardian_check_record
+from src.semantic_layer.provenance_store import ProvenanceStore
+from src.semantic_layer.review_risk import recorded_sensitivity
+from src.semantic_layer.verdict import GOVERNANCE_APPROVE
 from src.semantic_layer.verdict import claim as verdict_claim
 from src.semantic_layer.verdict import sign as verdict_sign
 
@@ -56,9 +63,16 @@ _POLICY_RULES = {
     "PR-004": "Double-rejection escalation: same payload rejected twice triggers REQUIRES_ESCALATION.",
     "PR-005": "Cycle count limit: cycle_count >= 5 requires REQUIRES_ESCALATION.",
     "PR-006": "DISORDER domain: no verdict can be APPROVED in DISORDER domain.",
-    "PR-007": "Sensitivity analysis: edges without sensitivity_result blocked from APPROVED.",
+    "PR-007": (
+        "Sensitivity analysis: an edge is not APPROVED without a sensitivity result the "
+        "platform recorded for it (RECORD_SENSITIVITY) on an assumption it rests on."
+    ),
     "PR-008": "Drift-triggered actions: Any action initiated by drift detection must include full evidence payload and cannot modify semantic layer without re-validation workflow.",
     "PR-009": "Data contract enforcement: Agent actions consuming data products with active contract violations must be blocked or warned. Violations are surfaced for human review.",
+    "PR-010": (
+        "Planner escalation: a run whose lookahead found no safe action "
+        "(plan_outcome no_safe_action) cannot be APPROVED; it requires escalation."
+    ),
 }
 
 
@@ -68,12 +82,77 @@ _POLICY_RULES = {
 _SUBJECT_KEYS = ("subject_id", "object_id")
 
 
+#: PR-010's contract. A check built from a planned run carries the planner's result in
+#: the payload under PLAN_OUTCOME_KEY; NO_SAFE_ACTION is the value PlanAhead
+#: (src/orchestration/planning.py) reports when its lookahead found no action it could
+#: commit. It is read from the payload of *this* check, never from the state's flags:
+#: a resumed session carries every earlier run's flags, so a flag cannot say what this
+#: run's planner found. A caller that sends the value only makes the check stricter.
+PLAN_OUTCOME_KEY = "plan_outcome"
+NO_SAFE_ACTION = "no_safe_action"
+
+
 def _subject_of(payload: dict[str, Any]) -> str | None:
     for key in _SUBJECT_KEYS:
         value = payload.get(key)
         if value:
             return str(value)
     return None
+
+
+# ── PR-007: what an edge's sensitivity result is ──────────────────────────────
+#
+# CausalEdge has no sensitivity field. The platform stores a SensitivityResult
+# (E-value / Rosenbaum) on an Assumption (001_initial.sql,
+# assumptions.sensitivity_result), and an edge names the assumptions it rests on in
+# assumption_refs. An edge therefore has a sensitivity result when at least one
+# assumption it references carries a valid SensitivityResult that the platform
+# recorded for this edge, and has not been REJECTED in review. It is read from the
+# database, never from the payload being checked: a caller that could attach its own
+# result would choose it. For the same reason a result a drafter put on an assumption
+# they drafted does not count: only one recorded by
+# SemanticLayerRegistry.record_edge_sensitivity under a signed, spent
+# RECORD_SENSITIVITY verdict for this edge, whose id the assumption stores (013). The
+# reading is src/semantic_layer/review_risk.py recorded_sensitivity, which the review
+# queue's risk tiers share.
+
+
+@dataclass(frozen=True)
+class EdgeSensitivity:
+    """The platform-recorded sensitivity results of the edge a check would approve."""
+
+    edge_id: str
+    assumption_count: int
+    results: list[SensitivityResult] = field(default_factory=list)
+
+
+async def edge_sensitivity(payload: dict[str, Any]) -> EdgeSensitivity | None:
+    """The recorded sensitivity results of the edge an approval check names, if any.
+
+    None when the check is not for GOVERNANCE_APPROVE, names no subject, or its
+    subject is not a stored edge: PR-007 judges approving an edge and nothing else.
+    """
+    if payload.get("action_type") != GOVERNANCE_APPROVE:
+        return None
+    subject = _subject_of(payload)
+    if subject is None:
+        return None
+    try:
+        subject = str(UUID(subject))
+    except ValueError:
+        return None
+
+    async with CloudSqlFactory.get_session_factory()() as session:
+        edge = await session.execute(
+            text("SELECT assumption_refs FROM causal_edges WHERE id = :eid"),
+            {"eid": subject},
+        )
+        found = edge.one_or_none()
+        if found is None:
+            return None
+        refs = [str(r) for r in (json_value(found[0], []) or [])]
+        results = (await recorded_sensitivity(session, {subject: refs}))[subject]
+    return EdgeSensitivity(edge_id=subject, assumption_count=len(refs), results=results)
 
 
 class GuardianCheckOutput:
@@ -222,9 +301,16 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
         self,
         action_payload: dict[str, Any],
         state: EpistemicState,
+        *,
+        notes: str | None = None,
     ) -> GuardianCheckOutput:
         """
         Evaluate an action payload against platform policy rules.
+
+        ``notes`` is written in the audit row beside the verdict, for a reader of the
+        trail (GET /api/governance/audit-log): what the check was judged on that its
+        payload hash alone cannot show, such as where the Cynefin domain came from.
+        It is not part of the signed claim and changes no rule.
 
         Steps:
           1. Compute payload hash (for deduplication and audit linkage)
@@ -241,8 +327,10 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
         reason = "All policy checks passed."
 
         try:
+            # Inside the try: if the edge cannot be read, the check fails closed.
+            sensitivity = await edge_sensitivity(action_payload)
             verdict, reason, rules_fired = self._evaluate_policies(
-                action_payload, state, payload_hash
+                action_payload, state, payload_hash, sensitivity
             )
         except Exception as exc:
             verdict = GuardianVerdict.REJECTED
@@ -266,6 +354,8 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
             policy_rules_cited=rules_fired,
             session_id=state.session_id,
             subject_id=_subject_of(action_payload),
+            notes=notes,
+            record_provenance=True,
         )
 
         self._log.info(
@@ -332,9 +422,13 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
         payload: dict[str, Any],
         state: EpistemicState,
         payload_hash: str,
+        sensitivity: EdgeSensitivity | None = None,
     ) -> tuple[GuardianVerdict, str, list[str]]:
         """
         Run all policy rules in priority order.
+
+        ``sensitivity`` is what :func:`edge_sensitivity` read for the edge an
+        approval check names; None when the check is not approving an edge.
 
         Returns (verdict, reason, rules_fired).
         Stops at the first REJECTED or REQUIRES_ESCALATION verdict.
@@ -370,6 +464,16 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
                 rules_fired,
             )
 
+        # PR-010: the planner found no safe action -- a person decides, not the Guardian
+        if payload.get(PLAN_OUTCOME_KEY) == NO_SAFE_ACTION:
+            rules_fired.append("PR-010")
+            return (
+                GuardianVerdict.REQUIRES_ESCALATION,
+                "The plan's lookahead found no safe action to commit. A run its own "
+                "planner escalated cannot be approved; it goes to a human reviewer.",
+                rules_fired,
+            )
+
         # PR-002: Grounding risk (src.agents.grounding_risk computes the score)
         if state.hallucination_risk_score > HALLUCINATION_THRESHOLD:
             rules_fired.append("PR-002")
@@ -389,6 +493,20 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
                 GuardianVerdict.REJECTED,
                 "DAG cycle detected in proposed edges. "
                 "Causal graph must be acyclic. Rejected.",
+                rules_fired,
+            )
+
+        # PR-007: an edge is not approved without a sensitivity result
+        if sensitivity is not None and not sensitivity.results:
+            rules_fired.append("PR-007")
+            return (
+                GuardianVerdict.REJECTED,
+                f"Edge {sensitivity.edge_id} has no sensitivity result: none of the "
+                f"{sensitivity.assumption_count} assumption(s) it rests on carries one "
+                "recorded by the platform for this edge (or each that does was "
+                "rejected in review). A result a drafter attached to an assumption does "
+                "not count. Run the kernel's sensitivity analysis on the edge (POST "
+                "/api/semantic/edges/{id}/sensitivity) before approving it.",
                 rules_fired,
             )
 
@@ -500,12 +618,18 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
         subject_id: str | None = None,
         notes: str | None = None,
         authority: bool = True,
+        record_provenance: bool = False,
     ) -> UUID:
         """
         Append an immutable entry to audit_log.
 
         This is the ONLY method that writes to audit_log in this class.
         It uses an INSERT — never UPDATE or DELETE.
+
+        With `record_provenance` (a Guardian check), the Guardian's provenance
+        activity citing this row is inserted in the same transaction, so the
+        verdict and its provenance exist together or not at all (ADR-002;
+        src/semantic_layer/provenance_capture.py).
 
         Raises AuditWriteError if the insert fails (which is a P0 incident).
         """
@@ -567,6 +691,21 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
                         "notes": notes,
                     },
                 )
+                if record_provenance and session_id:
+                    await ProvenanceStore().append(
+                        [
+                            guardian_check_record(
+                                session_id=session_id,
+                                agent_id=agent_id,
+                                audit_entry_id=entry_id,
+                                verdict=verdict_value,
+                                policy_rules_cited=list(policy_rules_cited),
+                                action_type=action_type,
+                                payload_hash=payload_hash,
+                            )
+                        ],
+                        session=session,
+                    )
                 await session.commit()
         except Exception as exc:
             self._log.critical(
