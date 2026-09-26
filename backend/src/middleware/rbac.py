@@ -202,6 +202,17 @@ def approved_only(user: dict[str, Any]) -> bool:
     return not (READ_ALL_ROLES & set(roles_of(user)))
 
 
+def may_use_session(user: dict[str, Any], owner: str | None) -> bool:
+    """Whether `user` may read or resume a session started by `owner`.
+
+    The owner may, and so may a governance role (the audit trail's readers). A
+    session saved without an owner is theirs alone."""
+    if set(GOVERNANCE_ROLES) & set(roles_of(user)):
+        return True
+    uid = user.get("uid")
+    return owner is not None and isinstance(uid, str) and uid == owner
+
+
 def scope_for_user(user: dict[str, Any] | None) -> DbScope:
     """The database scope for `user`: `domain_scope` and the platform roles it holds.
 

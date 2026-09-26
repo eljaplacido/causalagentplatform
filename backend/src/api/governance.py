@@ -35,7 +35,7 @@ from src.agents.grounding_risk import grounding_risk
 from src.db.factory import CloudSqlFactory
 from src.db.types import TIMESTAMP
 from src.exceptions import GuardianBlockedError, InvalidTransitionError, ObjectNotFoundError
-from src.middleware.rbac import GOVERNANCE_ROLES, domain_scope, guard
+from src.middleware.rbac import GOVERNANCE_ROLES, domain_scope, guard, may_use_session
 from src.orchestration.session_store import SessionStateStore
 from src.semantic_layer.models import (
     AuditEntry,
@@ -209,7 +209,13 @@ async def guardian_check(
     # session there are no reasoning cycles to count, and the domain is the
     # caller's declaration -- omitted, it is DISORDER, which PR-006 rejects.
     risk = grounding_risk(body.narrative, body.outcome)
-    stored = await _sessions.load(body.session_id) if body.session_id else None
+    found = await _sessions.load_with_owner(body.session_id) if body.session_id else None
+    if found is not None and not may_use_session(user, found[1]):
+        raise HTTPException(
+            status_code=403,
+            detail=f"Session '{body.session_id}' belongs to another user.",
+        )
+    stored = found[0] if found is not None else None
     domain = stored.cynefin_domain if stored is not None else body.cynefin_domain
     state = EpistemicState(
         session_id=session_id,
