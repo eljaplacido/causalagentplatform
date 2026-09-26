@@ -219,7 +219,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-47: 3.2 lists migrations 001-010, the compose init script, the RLS row, the roles and grants, and that deployments connect as causal_app)"
+        "by": "Claude (septa-10: the backend pin moved; DATA_LAYER makes no claim about package versions)"
       }
     },
     "docs/HANDOFFS.md": {
@@ -280,7 +280,7 @@
           "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
-          "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
+          "backend/pyproject.toml": "28974685007e1ae3d255c6c8811c41027867bff2eeae81dfb9145cdce5dfc429",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
           ".env.example": "f5dbf40f551d60b4b91d5bbaa9b36a2404f89536421fe51b8bcbf17a6ae1258f",
@@ -289,7 +289,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-8: the backend pin moved to causal-core>=0.10.0; the page states no kernel version and no DiD options, unchanged)"
+        "by": "Claude (septa-10: backend now needs causal-decision>=0.5.0 (the calibration report shape); the requirements line says so)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -312,7 +312,7 @@
         "sha256": {
           ".github/workflows": "507210537708c484cabb55c1c2481d367609598832a89ca4a1a0e033b5e265ca",
           "backend/tests": "0c8d80e14a71871a39ebc59c14514ef354f15334222bf0b3406b14aa4527f0a9",
-          "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
+          "backend/pyproject.toml": "28974685007e1ae3d255c6c8811c41027867bff2eeae81dfb9145cdce5dfc429",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
           ".gnomon/ci.sh": "8379e43234946f44d8e569a68c60d42923500ded3012d88bf2a477f5ebecf8aa",
@@ -325,7 +325,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-10: C0 added to the gate table and the seeded-defect list)"
+        "by": "Claude (septa-10: the backend pin moved; the doc names no package versions)"
       }
     },
     "docs/UIX.md": {
