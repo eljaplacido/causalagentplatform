@@ -24,21 +24,27 @@ import hashlib
 import json
 import os
 from abc import ABCMeta
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
 import structlog
+from pydantic import ValidationError
+from sqlalchemy import bindparam, column, select, table, text
 
 from src.agents.base import HALLUCINATION_THRESHOLD, BaseAgent
 from src.db.factory import CloudSqlFactory
-from src.db.types import TEXT_ARRAY, TIMESTAMP, typed_text
+from src.db.types import TEXT_ARRAY, TIMESTAMP, json_value, typed_text
 from src.exceptions import AuditWriteError
 from src.semantic_layer.models import (
     CynefinDomain,
     EpistemicState,
     GuardianVerdict,
+    ReviewStatus,
+    SensitivityResult,
 )
+from src.semantic_layer.verdict import GOVERNANCE_APPROVE
 from src.semantic_layer.verdict import claim as verdict_claim
 from src.semantic_layer.verdict import sign as verdict_sign
 
@@ -74,6 +80,72 @@ def _subject_of(payload: dict[str, Any]) -> str | None:
         if value:
             return str(value)
     return None
+
+
+# ── PR-007: what an edge's sensitivity result is ──────────────────────────────
+#
+# CausalEdge has no sensitivity field. The platform stores a SensitivityResult
+# (E-value / Rosenbaum) on an Assumption (001_initial.sql,
+# assumptions.sensitivity_result), and an edge names the assumptions it rests on in
+# assumption_refs. An edge therefore has a sensitivity result when at least one
+# assumption it references carries a valid SensitivityResult and has not been
+# REJECTED in review. It is read from the database, never from the payload being
+# checked: a caller that could attach its own result would choose it.
+
+_ASSUMPTIONS = table("assumptions", column("id"), column("review_status"),
+                     column("sensitivity_result"))
+
+
+@dataclass(frozen=True)
+class EdgeSensitivity:
+    """The sensitivity results stored for the edge a check would approve."""
+
+    edge_id: str
+    assumption_count: int
+    results: list[SensitivityResult] = field(default_factory=list)
+
+
+async def edge_sensitivity(payload: dict[str, Any]) -> EdgeSensitivity | None:
+    """The stored sensitivity results of the edge an approval check names, if any.
+
+    None when the check is not for GOVERNANCE_APPROVE, names no subject, or its
+    subject is not a stored edge: PR-007 judges approving an edge and nothing else.
+    """
+    if payload.get("action_type") != GOVERNANCE_APPROVE:
+        return None
+    subject = _subject_of(payload)
+    if subject is None:
+        return None
+    try:
+        subject = str(UUID(subject))
+    except ValueError:
+        return None
+
+    async with CloudSqlFactory.get_session_factory()() as session:
+        edge = await session.execute(
+            text("SELECT assumption_refs FROM causal_edges WHERE id = :eid"),
+            {"eid": subject},
+        )
+        found = edge.one_or_none()
+        if found is None:
+            return None
+        refs = [str(r) for r in (json_value(found[0], []) or [])]
+        results: list[SensitivityResult] = []
+        if refs:
+            rows = await session.execute(
+                select(
+                    _ASSUMPTIONS.c.review_status, _ASSUMPTIONS.c.sensitivity_result
+                ).where(_ASSUMPTIONS.c.id.in_(bindparam("ids", expanding=True))),
+                {"ids": refs},
+            )
+            for status, stored in rows.all():
+                if stored is None or str(status) == ReviewStatus.REJECTED.value:
+                    continue
+                try:
+                    results.append(SensitivityResult.model_validate(json_value(stored)))
+                except (ValidationError, ValueError, TypeError):
+                    continue
+    return EdgeSensitivity(edge_id=subject, assumption_count=len(refs), results=results)
 
 
 class GuardianCheckOutput:
@@ -241,8 +313,10 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
         reason = "All policy checks passed."
 
         try:
+            # Inside the try: if the edge cannot be read, the check fails closed.
+            sensitivity = await edge_sensitivity(action_payload)
             verdict, reason, rules_fired = self._evaluate_policies(
-                action_payload, state, payload_hash
+                action_payload, state, payload_hash, sensitivity
             )
         except Exception as exc:
             verdict = GuardianVerdict.REJECTED
@@ -332,9 +406,13 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
         payload: dict[str, Any],
         state: EpistemicState,
         payload_hash: str,
+        sensitivity: EdgeSensitivity | None = None,
     ) -> tuple[GuardianVerdict, str, list[str]]:
         """
         Run all policy rules in priority order.
+
+        ``sensitivity`` is what :func:`edge_sensitivity` read for the edge an
+        approval check names; None when the check is not approving an edge.
 
         Returns (verdict, reason, rules_fired).
         Stops at the first REJECTED or REQUIRES_ESCALATION verdict.
@@ -389,6 +467,19 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
                 GuardianVerdict.REJECTED,
                 "DAG cycle detected in proposed edges. "
                 "Causal graph must be acyclic. Rejected.",
+                rules_fired,
+            )
+
+        # PR-007: an edge is not approved without a sensitivity result
+        if sensitivity is not None and not sensitivity.results:
+            rules_fired.append("PR-007")
+            return (
+                GuardianVerdict.REJECTED,
+                f"Edge {sensitivity.edge_id} has no sensitivity result: none of the "
+                f"{sensitivity.assumption_count} assumption(s) it rests on carries one "
+                "(or each that does was rejected in review). Record a sensitivity "
+                "analysis (E-value / Rosenbaum) on an assumption the edge references "
+                "before approving it.",
                 rules_fired,
             )
 

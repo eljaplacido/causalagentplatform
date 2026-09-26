@@ -653,7 +653,7 @@ class SemanticLayerRegistry:
             record = row.mappings().one_or_none()
         if record is None:
             raise ObjectNotFoundError(str(assumption_id), "Assumption")
-        raw = _parse_json_fields(dict(record), ["scope", "elicited_by"])
+        raw = _parse_json_fields(dict(record), ["scope", "elicited_by", "sensitivity_result"])
         return Assumption.model_validate(raw)
 
     async def list_pending_assumptions(self, domain: str | None = None) -> Sequence[Assumption]:
@@ -672,7 +672,9 @@ class SemanticLayerRegistry:
                 params,
             )
             return [
-                Assumption.model_validate(_parse_json_fields(dict(r), ["scope", "elicited_by"]))
+                Assumption.model_validate(
+                    _parse_json_fields(dict(r), ["scope", "elicited_by", "sensitivity_result"])
+                )
                 for r in rows.mappings()
             ]
 
@@ -825,11 +827,12 @@ class SemanticLayerRegistry:
                     typed_text(
                         "INSERT INTO assumptions ("
                         "  id, statement, assumption_type, scope, justification, "
-                        "  elicited_from, elicited_by, elicited_at, review_status, domain"
+                        "  elicited_from, elicited_by, elicited_at, review_status, domain, "
+                        "  sensitivity_result"
                         ") VALUES ("
                         "  :id, :statement, :assumption_type, :scope, :justification, "
                         "  :elicited_from, :elicited_by, :elicited_at, :review_status, "
-                        "  :domain"
+                        "  :domain, :sensitivity_result"
                         ")",
                         elicited_at=TIMESTAMP,
                     ),
@@ -846,6 +849,13 @@ class SemanticLayerRegistry:
                         "elicited_at": draft.elicited_at,
                         "review_status": _sv(draft.review_status),
                         "domain": draft.domain,
+                        # What Guardian PR-007 reads for the edges resting on this
+                        # assumption. It used to be dropped here.
+                        "sensitivity_result": (
+                            draft.sensitivity_result.model_dump_json()
+                            if draft.sensitivity_result is not None
+                            else None
+                        ),
                     },
                 )
 
