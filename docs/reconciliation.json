@@ -189,7 +189,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
+        "by": "Claude (housekeeping: update-PR bullet: npm majors ignored as pyproject majors are)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -253,13 +253,13 @@
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
-          ".github": "405abf54754d93806c64cd703261a4cac70212e22955f1dd3c651a237dbdb2cb",
+          ".github": "dc7f36f2e6fb60c5d92b10fda5a47877c6d0781ab449acd28e49a13903c89ca4",
           ".gnomon": "ef33b01c3cfb5e5d70d83032e0bc2510e5306a54a9be8f6396daf1bf60f354bd"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
+        "by": "Claude (housekeeping: dependabot.yml now ignores npm majors; the page names the file, not its rules)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -325,7 +325,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
+        "by": "Claude (housekeeping: 5.4 majors bullet: npm majors ignored, septa-82)"
       }
     },
     "docs/UIX.md": {
