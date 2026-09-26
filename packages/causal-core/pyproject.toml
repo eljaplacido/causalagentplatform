@@ -88,6 +88,7 @@ addopts = ["--tb=short", "-q"]
 markers = [
     "t0: T0 analytic-SCM correctness gate (pre-registered; see benchmarks/t0/PRE-REGISTRATION.md)",
     "t4: T4 segment-effect gate (pre-registered; see benchmarks/t4-segments/PRE-REGISTRATION.md)",
+    "t10: T10 positivity and overlap gate (pre-registered; see benchmarks/t10-positivity/PRE-REGISTRATION.md)",
     "t8: T8 switchback designs gate (pre-registered; see benchmarks/t8-switchback/PRE-REGISTRATION.md)",
     "t7: T7 cluster-randomized designs gate (pre-registered; see benchmarks/t7-cluster/PRE-REGISTRATION.md)",
     "t6: T6 anytime-valid monitoring gate (pre-registered; see benchmarks/t6-sequential/PRE-REGISTRATION.md)",

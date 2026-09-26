@@ -126,10 +126,10 @@ EXTENSIONS = frozenset(
     "py md json jsonl toml sh ts tsx mts cts mjs cjs js sql yml yaml txt csv cfg ini lock".split()
 )
 PLACEHOLDER = re.compile(r"[<>{}$…]|\.\.\.")
-GATE_ID = re.compile(r"\b([TDA]\d)\b")
-_GATE_ITEM = r"\b[TDA]\d\b(?:\s*[–-]\s*[TDA]\d\b)?"  # T0, or a range T2–T8
+GATE_ID = re.compile(r"\b([TDA]\d+)\b")
+_GATE_ITEM = r"\b[TDA]\d+\b(?:\s*[–-]\s*[TDA]\d+\b)?"  # T0, T10, or a range T2–T8
 GATE_RUN = re.compile(rf"{_GATE_ITEM}(?:\s*(?:,|/|\band\b|\bor\b)\s*{_GATE_ITEM})*")
-GATE_RANGE = re.compile(r"\b([TDA])(\d)\s*[–-]\s*([TDA])(\d)\b")
+GATE_RANGE = re.compile(r"\b([TDA])(\d+)\s*[–-]\s*([TDA])(\d+)\b")
 STEP_NAME = re.compile(r"^[a-z][a-z0-9]*(?:-[a-z0-9]+)+$")
 STEP_CONTEXT = re.compile(r"\b(?:step|steps|row|rows)\b")
 CODE_SPAN = re.compile(r"`([^`\n]+)`")

@@ -240,6 +240,35 @@ def test_merged_type_unions_accept_exactly_what_the_long_form_accepts() -> None:
     assert server._merge_type_unions(constrained) == constrained, "only bare types merge"
 
 
+def test_dropped_implied_types_accept_exactly_what_the_long_form_accepts() -> None:
+    from jsonschema import Draft202012Validator
+
+    cases = [
+        ({"enum": ["treated", "control"], "type": "string"}, {"enum": ["treated", "control"]}),
+        ({"const": "result", "type": "string"}, {"const": "result"}),
+        (
+            {"maxItems": 2, "minItems": 2, "prefixItems": [{"type": "number"}] * 2,
+             "type": "array"},
+            {"items": {"type": "number"}, "maxItems": 2, "minItems": 2, "type": "array"},
+        ),
+    ]
+    values = ("treated", "control", "result", "x", 1, None, [0.1, 0.9], [0.1], [0.1, 0.2, 0.3],
+              [0.1, "a"], {"a": 1})
+    for long_form, short in cases:
+        assert server._drop_implied_types(long_form) == short
+        for value in values:
+            assert Draft202012Validator(long_form).is_valid(value) == Draft202012Validator(
+                short
+            ).is_valid(value), (long_form, value)
+    kept = [
+        {"enum": ["a", 1], "type": "string"},  # not every value a string: type still excludes 1
+        {"prefixItems": [{"type": "number"}, {"type": "string"}], "minItems": 2, "maxItems": 2},
+        {"prefixItems": [{"type": "number"}] * 2, "minItems": 1, "maxItems": 2},
+    ]
+    for schema in kept:
+        assert server._drop_implied_types(schema) == schema, schema
+
+
 def test_a_watched_canary_is_monitored_and_decided_over_mcp() -> None:
     from causal_core.bench import t6
 

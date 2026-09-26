@@ -26,7 +26,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
-CONTRACT_VERSION = "0.11.0"
+CONTRACT_VERSION = "0.12.0"
 
 
 class _Model(BaseModel):
@@ -253,6 +253,34 @@ class AnalysisPolicy(_Model):
     min_per_arm: int = Field(default=10, ge=2)
     propensity_bounds: tuple[float, float] = (0.01, 0.99)
     max_extreme_propensity_share: float = Field(default=0.05, ge=0, le=1)
+    overlap_region_bound: float = Field(
+        default=0.05,
+        ge=0,
+        lt=0.5,
+        description="Binary treatments with an adjustment set: a covariate region is a positivity "
+        "violation for an arm when the upper confidence bound on that arm's probability there, "
+        "from held-out units, is below this. 0 turns the region check off. A violation share "
+        "above max_extreme_propensity_share refuses; a smaller one is warned about (T10).",
+    )
+    overlap_region_alpha: float = Field(
+        default=0.05,
+        gt=0,
+        lt=0.5,
+        description="One-sided level of the Clopper-Pearson bound in the overlap-region check.",
+    )
+    overlap_region_depth: int = Field(
+        default=4,
+        ge=1,
+        le=8,
+        description="Depth of the tree whose leaves are the candidate regions: the most covariates "
+        "a region can be defined by jointly.",
+    )
+    limited_overlap_bounds: tuple[float, float] = Field(
+        default=(0.1, 0.9),
+        description="Propensities outside these bounds (Crump et al. 2009) count toward the "
+        "limited-overlap flag, set when their share exceeds max_extreme_propensity_share. The flag "
+        "warns; it does not refuse or change the estimate.",
+    )
     missing: Literal["error", "drop"] = "error"
     min_first_stage_f: float = Field(default=10.0, ge=0)
     cross_fit_folds: int = Field(default=5, ge=2)
@@ -380,6 +408,35 @@ class PropensityDiagnostics(_Model):
     ess_control: float
 
 
+class OverlapRegion(_Model):
+    """A region of the adjustment covariates in which one arm (almost) never occurs."""
+
+    rule: str = Field(description="The region, as a conjunction of conditions on the adjustment "
+                      "covariates as encoded (categorical ones as dummy columns).")
+    n_units: int = Field(description="Held-out units in the region: the ones that judged it.")
+    n_treated: int
+    missing_arm: Literal["treated", "control"]
+    upper_bound: float = Field(description="One-sided upper confidence bound on the probability "
+                               "of the missing arm in this region, from the held-out units.")
+
+
+class OverlapDiagnostics(_Model):
+    """Where positivity fails or is thin beyond what one propensity model can express. The
+    thresholds are the policy's (overlap_region_*, limited_overlap_bounds); the region check
+    ran when ``diagnostics.checks`` has its row."""
+
+    violation_share: float = Field(description="ATE: share of units in a violation region. ATT: "
+                                   "share of treated units in a region without controls.")
+    regions: tuple[OverlapRegion, ...] = Field(default=(), description="The violation regions, "
+                                               "largest first (at most ten).")
+    limited_share: float = Field(description="Share of units (ATT: treated units) whose "
+                                         "propensity is outside limited_overlap_bounds (ATT: "
+                                         "above the upper one).")
+    limited_overlap: bool = Field(description="The share exceeds max_extreme_propensity_share: "
+                                  "there the estimate rests on few comparable units or on the "
+                                  "outcome model.")
+
+
 class BalanceRow(_Model):
     covariate: str
     smd_raw: float
@@ -406,6 +463,7 @@ class Diagnostics(_Model):
         "against the outcome's spread.",
     )
     propensity: PropensityDiagnostics | None = None
+    overlap: OverlapDiagnostics | None = None
     balance: tuple[BalanceRow, ...] = ()
     srm_p_value: float | None = None
     n_clusters: int | None = None

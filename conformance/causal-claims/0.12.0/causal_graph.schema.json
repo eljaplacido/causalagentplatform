@@ -68,7 +68,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:causalplatform:claims:0.11.0:causal_graph",
+  "$id": "urn:causalplatform:claims:0.12.0:causal_graph",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "A causal graph over named variables.\n\nDirected edges are causal claims. A bidirected edge ``a <-> b`` says an\nunmeasured common cause of ``a`` and ``b`` may exist. Nodes listed in\n``latent`` are unmeasured: they may appear in edges but never in data.\nThe edges that are *absent* are the strongest assumptions in the graph.",

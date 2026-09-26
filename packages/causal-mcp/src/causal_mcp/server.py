@@ -128,6 +128,48 @@ def _merge_type_unions(node: Any) -> Any:
     return node
 
 
+def _drop_implied_types(node: Any) -> Any:
+    """``{"enum": ["a", "b"], "type": "string"}`` as ``{"enum": ["a", "b"]}``, the same for a
+    string ``const``, and a fixed-length tuple of one type, ``{"prefixItems": [A, A],
+    "minItems": 2, "maxItems": 2}``, as ``{"items": A, "minItems": 2, "maxItems": 2}``.
+
+    Each is the same schema (JSON Schema 2020-12, sections 6.1.1-6.1.3 and 10.3.1): a value
+    equal to one of the listed strings is a string, so the ``type`` keyword excludes nothing
+    the ``enum`` or ``const`` admits; and an array of exactly k elements each valid under A is
+    what both tuple forms accept. Pydantic writes the long forms.
+    """
+    if isinstance(node, dict):
+        out = {
+            k: (
+                {name: _drop_implied_types(sub) for name, sub in v.items()}
+                if k in ("properties", "$defs") and isinstance(v, dict)
+                else _drop_implied_types(v)
+            )
+            for k, v in node.items()
+        }
+        values = out.get("enum", [out["const"]] if "const" in out else None)
+        if (
+            out.get("type") == "string"
+            and isinstance(values, list)
+            and values
+            and all(isinstance(v, str) for v in values)
+        ):
+            out.pop("type")
+        prefix = out.get("prefixItems")
+        if (
+            isinstance(prefix, list)
+            and prefix
+            and "items" not in out
+            and out.get("minItems") == out.get("maxItems") == len(prefix)
+            and all(p == prefix[0] for p in prefix)
+        ):
+            out["items"] = out.pop("prefixItems")[0]
+        return out
+    if isinstance(node, list):
+        return [_drop_implied_types(v) for v in node]
+    return node
+
+
 def _slim_output_schema(server: MCPServer, name: str) -> None:
     """Drop annotations (descriptions, titles, defaults) from a tool's OUTPUT schema; keep
     them on its input.
@@ -141,12 +183,15 @@ def _slim_output_schema(server: MCPServer, name: str) -> None:
     schemas began carrying the contract's parameter descriptions (septa-4): a default in an
     output schema validates nothing. Input schemas keep every word, because that is what an
     agent reads to call a tool correctly. Unions of bare types are written as one type list
-    (contract 0.10.0, when two panel fields pushed the listing past its budget again): the
-    same schema in fewer bytes.
+    (contract 0.10.0, when two panel fields pushed the listing past its budget again), and a
+    ``type`` implied by a string ``enum`` or ``const`` is dropped (contract 0.12.0, the overlap
+    diagnostics): the same schema in fewer bytes.
     """
     tool = server._tool_manager.get_tool(name)  # private: mcp 2.2 exposes no setter
     if tool is not None and tool.output_schema is not None:
-        tool.__dict__["output_schema"] = _merge_type_unions(_strip_prose(tool.output_schema))
+        tool.__dict__["output_schema"] = _drop_implied_types(
+            _merge_type_unions(_strip_prose(tool.output_schema))
+        )
 
 
 def build_server() -> MCPServer:
