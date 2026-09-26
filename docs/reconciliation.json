@@ -32,12 +32,12 @@
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "fc5b6d1b7db3a4cae3ded89459aa58661b1946eaf6e8b8807fbc5bc34e674477"
+          "docs/CURRENT_STAGE.md": "100b315b2ad4b02531ffef2481ae54d8d82b99c94f9e8b22fa39e9da514b3d67"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: T5 row from septa-8 present; #14 changed nothing it quotes)"
+        "by": "Claude (septa-60: re-read; CURRENT_STAGE gained a governance row, README quotes none of that table)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -54,10 +54,10 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "7ea978f77fdbbf32f505ad2a2fc7cd7491ce98ad43f325e868410087b50f2a6d",
-          "backend/src": "c06af80dee95babb1eed74ffbc5435ffe7f1cb1fdc8bf8f8489d087ad42aabe1",
+          "conformance/declared_not_implemented.json": "abd9d911c3bc393767e0deb547213546157e37d1a9e8119ae9166243a013c8b7",
+          "backend/src": "fd3af1eca976f5023b792e76996c5c0ac7ac099ed94e9dcf8a751b1b535ea6d7",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
+          "backend/tests": "5a107e0caab853630fad32417a2c789907abf359c052b3e596601d2ee5b1b5b6",
           "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
           "packages": "b6ee9e7b2337b6a02a1015e9b026ef382e06dd7afb17259c76142ad2af9e8a02",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
@@ -65,7 +65,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: both the dast-not-built row (#14) and the did-* rows (septa-8) present)"
+        "by": "Claude (septa-60: new governance row for the approve action binding; governance paragraph names the action; register rows unchanged)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -80,7 +80,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/semantic_layer": "e272da84c43185ababee3962259d2982e2cf531c26ba422c0dc3fd4be44a70f3",
+          "backend/src/semantic_layer": "8ac845c7489a43f6fbbeb2ae926ef875a0221b5af2a043319f689b75ef3fb795",
           "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
           "packages/semantic-types/src": "fe7182fc233b307aa02d26a958898db94ead599601fe740dcfe2981bf5a1150d",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
@@ -89,7 +89,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: re-read for DB claims; its one PostgreSQL mention, 007_causal_models.sql, still holds; registry.py changed only its bind types)"
+        "by": "Claude (septa-60: re-read; its status table and registry rules still hold -- promote_to_approved now also binds the verdict to GOVERNANCE_APPROVE, which the ADR does not describe at that level)"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -177,19 +177,19 @@
         "on": "2026-09-26",
         "sha256": {
           "backend/src/middleware": "0a00dc9c734e148a08c531bcd281d3afe81a8189ef75ef669543b89cd0e4136b",
-          "backend/src/api/governance.py": "74095eefc36dc973a8dd5aae5d8bba89d44aa860c32862fa729a5c10b55bf3c3",
+          "backend/src/api/governance.py": "93d25c77353fe973c758b54fe278ef1a2b0adf434ff956eba1084c5cdc419684",
           "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
-          "backend/src/semantic_layer/registry.py": "91529601ce53d74c25763a017f4a43ad552c13e94d562f513165b079c16c71b7",
+          "backend/src/semantic_layer/registry.py": "9d1fc587dc2ff05c9e07b50051a4b10154c87b07ac03ccb25a0dc9f9955f2c3f",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
           "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
           "backend/src/db/migrations": "6b52679eb2132b16e3bb238da5d6a7bde969f409bba4bd63b431c94456db74f1",
-          "backend/src/semantic_layer/verdict.py": "2807535994f0073bd9f58cc2774822d9f7bd1749aa7801d669eb2301bde3ac00",
+          "backend/src/semantic_layer/verdict.py": "4b32849d51f5dd4b19a0dd93d807b817eab0083210bc10180745c8454a61c230",
           ".github/workflows": "1ae0fadaa874c419905d5c24ebadf5ccca68705dc7d83057ea81682712fae31b"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: #14's image-scan and SBOM text present; septa-8 does not touch it)"
+        "by": "Claude (septa-60: Guardian Circumvention says promote_to_approved accepts only a GOVERNANCE_APPROVE verdict)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -212,14 +212,14 @@
           "backend/src/semantic_layer/models.py": "f3b7a600ac8e8c4ce7beb48145a188b2394f3775b6ad7d094613cbb9798d3b05",
           "backend/src/sensors": "d38f988ccb52659ac4ecc8724e8aa775b2e6e9fca76b73dbba6576c3f3d1dcba",
           "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
-          "backend/src/semantic_layer/registry.py": "91529601ce53d74c25763a017f4a43ad552c13e94d562f513165b079c16c71b7",
+          "backend/src/semantic_layer/registry.py": "9d1fc587dc2ff05c9e07b50051a4b10154c87b07ac03ccb25a0dc9f9955f2c3f",
           "backend/src/agents/drift_monitor.py": "9279c31636b3b663007f21e7aa671ffe738a535432f610ecb5b6de00ae6bd815",
           "backend/src/skills/drift_detect.py": "9432982258b155287a90701d76dc9bf331dd8c65fbc692ad37fcd124fcab7111"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-47: 3.2 lists migrations 001-010, the compose init script, the RLS row, the roles and grants, and that deployments connect as causal_app)"
+        "by": "Claude (septa-60: 2.2 rule 1 names the GOVERNANCE_APPROVE binding and its test)"
       }
     },
     "docs/HANDOFFS.md": {
@@ -311,7 +311,7 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "1ae0fadaa874c419905d5c24ebadf5ccca68705dc7d83057ea81682712fae31b",
-          "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
+          "backend/tests": "5a107e0caab853630fad32417a2c789907abf359c052b3e596601d2ee5b1b5b6",
           "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
@@ -325,7 +325,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: python-lock and images job (#14) and the T5 row (septa-8) both present)"
+        "by": "Claude (septa-60: guardian/ row names the approve action binding)"
       }
     },
     "docs/UIX.md": {
@@ -355,13 +355,13 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "b3a206babea176dd53fdebe83037e38e66922eeced1def6dbfb248262c2477a6",
-          "conformance/declared_not_implemented.json": "7ea978f77fdbbf32f505ad2a2fc7cd7491ce98ad43f325e868410087b50f2a6d",
-          "docs/CURRENT_STAGE.md": "fc5b6d1b7db3a4cae3ded89459aa58661b1946eaf6e8b8807fbc5bc34e674477"
+          "conformance/declared_not_implemented.json": "abd9d911c3bc393767e0deb547213546157e37d1a9e8119ae9166243a013c8b7",
+          "docs/CURRENT_STAGE.md": "100b315b2ad4b02531ffef2481ae54d8d82b99c94f9e8b22fa39e9da514b3d67"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: septa-49 done (#14) and septa-8 now marked done)"
+        "by": "Claude (septa-60: p0 Done names the approve binding; the register moved only citation lines)"
       }
     },
     "SECURITY.md": {
@@ -378,16 +378,16 @@
         "on": "2026-09-26",
         "sha256": {
           "backend/src/middleware": "0a00dc9c734e148a08c531bcd281d3afe81a8189ef75ef669543b89cd0e4136b",
-          "backend/src/api/governance.py": "74095eefc36dc973a8dd5aae5d8bba89d44aa860c32862fa729a5c10b55bf3c3",
+          "backend/src/api/governance.py": "93d25c77353fe973c758b54fe278ef1a2b0adf434ff956eba1084c5cdc419684",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
           "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
-          "backend/src/semantic_layer/registry.py": "91529601ce53d74c25763a017f4a43ad552c13e94d562f513165b079c16c71b7",
-          "backend/src/semantic_layer/verdict.py": "2807535994f0073bd9f58cc2774822d9f7bd1749aa7801d669eb2301bde3ac00"
+          "backend/src/semantic_layer/registry.py": "9d1fc587dc2ff05c9e07b50051a4b10154c87b07ac03ccb25a0dc9f9955f2c3f",
+          "backend/src/semantic_layer/verdict.py": "4b32849d51f5dd4b19a0dd93d807b817eab0083210bc10180745c8454a61c230"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-47: domain isolation now enforced also by PostgreSQL RLS binding causal_app, start-up refusal as owner/superuser/BYPASSRLS; the compose passwords sentence names both logins)"
+        "by": "Claude (septa-60: Guardian verdicts paragraph and the semantic-layer write claim name the GOVERNANCE_APPROVE binding)"
       }
     }
   }
