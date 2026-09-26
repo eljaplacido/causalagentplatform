@@ -16,6 +16,7 @@ can shrink the set alone.
 from __future__ import annotations
 
 import importlib.util
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -63,7 +64,8 @@ def _full_core_report() -> list[tuple[str, str, str]]:
     cases = []
     for f in sorted((CORE / "tests").rglob("test_*.py")):
         rel = f.relative_to(CORE / "tests").parts
-        marker = rel[0] if len(rel) > 1 and rel[0] in {"t0", "t4", "t5", "t6", "t7", "t8"} else ""
+        # A gate's tests live in a directory named for its marker (t0, t4, ..., t10).
+        marker = rel[0] if len(rel) > 1 and re.fullmatch(r"t\d+", rel[0]) else ""
         if f.name == "test_real_data.py":
             marker = "real_data"
         cases.append((_classname(f), marker, "passed"))
@@ -77,10 +79,12 @@ def _gate(gs: ModuleType, junit: Path) -> bool:
 def test_the_required_markers_come_from_the_table_and_the_pyproject() -> None:
     gs = _load()
     table = gs.gate_table_markers()
-    assert table["packages/causal-core"] >= {"t0", "real_data", "t4", "t5", "t6", "t7", "t8"}
-    assert table["packages/causal-decision"] >= {"d0", "a0"}
+    assert table["packages/causal-core"] >= {
+        "t0", "real_data", "t4", "t5", "t6", "t7", "t8", "t9", "t10"
+    }
+    assert table["packages/causal-decision"] >= {"d0", "a0", "c0"}
     declared = gs.declared_gate_markers(CORE)
-    assert {"t0", "t4", "t5", "t6", "t7", "t8", "real_data"} <= declared
+    assert {"t0", "t4", "t5", "t6", "t7", "t8", "t9", "t10", "real_data"} <= declared
     assert "slow" not in declared and "crosscheck" not in declared
 
 
