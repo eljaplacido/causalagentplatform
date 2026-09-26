@@ -1,12 +1,20 @@
 # prompts/
 
-**Specification artefacts, not runtime inputs.** Nothing in `backend/src`, `packages/` or
-`frontend/src` loads these files: no agent reads a template from here, and no LLM is called with
-one (`src/agents/llm_factory.py` has no callers; `llm-routing-no-callers` in
-`conformance/declared_not_implemented.json`). They record what each skill's prompt is meant to
-contain, in the four-part structure `docs/AGENTS.md` §6.3 specifies. A reference to one of these paths
-elsewhere (for example a provenance record's `prompt_template_id` in a test) names the template; it
-does not mean the file was read.
+**One runtime template; the rest are specifications.** `explanation_generate.yaml` is loaded at
+runtime by `backend/src/agents/prompt_templates.py` and rendered by `backend/src/agents/narration.py`
+for the two callers of the LLM layer (the SimulationAgent's draft explanation, and
+`POST /api/v1/decisions` with `narrate: true`). The loader refuses a repeated key, a missing part, a
+`version` that is not `MAJOR.MINOR.PATCH`, a `skill` other than the file name, a
+`provider_capability` the factory does not route, and `llm_required: false`, and rendering refuses
+a missing or unexpected `{{variable}}`. The template's id (`prompts/<skill>.yaml@<version>`) and
+the sha256 of the file are recorded on every LLM invocation made with it, so **editing a loaded
+template changes what the model is asked: bump its `version`.** `PROMPTS_DIR` points the loader
+elsewhere; the backend image copies this directory to `/app/prompts`.
+
+The other thirteen files are not loaded: their skills call no model. They record what each
+skill's prompt is meant to contain, in the four-part structure `docs/AGENTS.md` §6.3 specifies. A
+reference to one of these paths elsewhere (for example a provenance record's `prompt_template_id`
+in a test) names the template; it does not mean the file was read.
 
 ## Shape
 

@@ -1,27 +1,32 @@
 "use client";
 
 /**
- * DAG Workbench — unified graph-authoring surface (Phase 2 MVP, read-only).
+ * DAG Workbench — unified graph-authoring surface.
  *
  * Shows:
  *   - Fragment list grouped by domain (left panel)
  *   - Selected fragment rendered on DAGCanvas (top-right)
  *   - Edge detail when a canvas edge is clicked (bottom-right)
+ *   - FragmentDraftComposer: propose a new fragment from the edges of the
+ *     fragments opened here, classified, through the governed draft flow
  *
  * Data:
- *   - GET /api/semantic/fragments
- *   - GET /api/semantic/fragments/{id}   (after fragment selection)
- *   - GET /api/semantic/edges/{id}       (fanned out per edge ID in the fragment)
+ *   - GET  /api/semantic/fragments
+ *   - GET  /api/semantic/fragments/{id}   (after fragment selection)
+ *   - GET  /api/semantic/edges/{id}       (fanned out per edge ID in the fragment)
+ *   - POST /api/semantic/drafts           (the composer: Guardian check, then DRAFT)
+ *   - GET  /api/governance/review-queue   (the composer: is the saved draft queued?)
  *
  * Failure mode:
  *   - If backend is unreachable and NEXT_PUBLIC_ENABLE_MOCK_FALLBACK is set,
- *     a single mock fragment is shown with an explicit badge.
+ *     a single mock fragment is shown with an explicit badge, and drafting is
+ *     disabled (a draft of mock edges could only be refused).
  *   - Otherwise, a degraded-state message is shown (no silent mock substitution).
+ *   - A draft the Guardian blocks is shown with its verdict and reason.
  *
- * Out of scope for MVP (tracked in CURRENT_STAGE.md Phase 2):
- *   - Edge mutation (propose / edit / delete) — needs backend edge CRUD + UI form.
+ * Not built here (tracked in docs/CURRENT_STAGE.md, register dag-workbench):
+ *   - Authoring new edges or entities (the composer reuses existing edges).
  *   - Agent-suggested edges from CausalDiscoveryAgent.
- *   - Reusable-fragment catalog with cloning.
  */
 
 import { useMemo, useState } from "react";
@@ -29,7 +34,9 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { GitBranch, RefreshCw, AlertTriangle, Search } from "lucide-react";
 
 import { DAGCanvas, type DAGEdge, type DAGNode } from "@/components/graph/DAGCanvas";
+import { FragmentDraftComposer } from "@/components/graph/FragmentDraftComposer";
 import { PersonaSelector } from "@/components/shared/PersonaSelector";
+import { ViewNav } from "@/components/shared/ViewNav";
 import {
   semanticApi,
   type CausalEdgeResponse,
@@ -277,6 +284,7 @@ export default function WorkbenchPage() {
           </span>
         )}
         <div className="ml-auto flex items-center gap-3">
+          <ViewNav current="workbench" />
           {!fragmentsLoading && (
             <button
               type="button"
@@ -580,6 +588,19 @@ export default function WorkbenchPage() {
               </section>
             </>
           )}
+
+          <FragmentDraftComposer
+            candidateEdges={useMock ? [] : edges}
+            candidateSource={effectiveFragment?.name ?? null}
+            defaultDomain={effectiveFragment?.domain}
+            disabledReason={
+              useMock
+                ? "Mock data is shown because the backend is unreachable; drafting is disabled."
+                : dataSource === "error"
+                  ? "The backend is unavailable; drafting is disabled."
+                  : null
+            }
+          />
         </main>
       </div>
     </div>

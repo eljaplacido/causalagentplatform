@@ -63,7 +63,6 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
 from src.api.main import app
-from src.api.provenance import _provenance_store, store_provenance_record
 from src.semantic_layer.models import (
     CausalEdge,
     CausalEntity,
@@ -78,6 +77,7 @@ from src.semantic_layer.models import (
     UserRef,
 )
 from src.semantic_layer.provenance import ProvenanceRecord
+from src.semantic_layer.provenance_store import ProvenanceStore
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -199,15 +199,12 @@ async def test_an_approved_object_carries_lineage_from_source_to_approver(
     object_id, draft_verdict = await _submit(kind)
     session = f"api-draft-{AUTHOR['uid']}"
     record = ProvenanceRecord(session_id=session, agent_id="api-draft-submission")
-    store_provenance_record(record)
-    try:
-        approve_verdict = await _check(object_id, kind)
-        resp = await _approve(object_id, kind, approve_verdict)
-        assert resp.status_code == 200, resp.text
+    await ProvenanceStore().append([record])
+    approve_verdict = await _check(object_id, kind)
+    resp = await _approve(object_id, kind, approve_verdict)
+    assert resp.status_code == 200, resp.text
 
-        got = await _lineage(GOVERNANCE, kind, object_id)
-    finally:
-        _provenance_store.pop(session, None)
+    got = await _lineage(GOVERNANCE, kind, object_id)
     assert got.status_code == 200, got.text
     chain = LineageChain.model_validate(got.json())
 

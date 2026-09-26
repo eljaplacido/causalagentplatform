@@ -49,6 +49,9 @@ CATCHER: dict[str, Callable[[dict[str, Any]], bool]] = {
     "leaky_estimator": _refuters,
     "refuter_always_passes": _refuters,
     "triangulation_disabled": _triangulation,
+    "specification_test_disabled": _triangulation,
+    "specification_pooled_arms": _triangulation,
+    "triangulation_flag_ignored": _triangulation,
 }
 
 

@@ -615,7 +615,7 @@ async def test_promote_to_approved_updates_edge_status(
     # requires on record along with its source data (septa-15).
     await registry.propose_draft(edge, await verdict_for(edge.id), submitted_by=_user())
 
-    approving = await verdict_for(edge.id)
+    approving = await verdict_for(edge.id, action_type="GOVERNANCE_APPROVE")
     await registry.promote_to_approved(
         object_id=edge.id,
         object_type="CausalEdge",

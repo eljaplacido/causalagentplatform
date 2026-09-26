@@ -3,14 +3,16 @@ Incident persistence — Phase-5 follow-up to fix the in-memory-only Incidents p
 
 Endpoints:
   GET  /api/v1/incidents/            — list recent incidents (newest first)
-  GET  /api/v1/incidents/{id}        — single incident with merged decision verdicts
+  GET  /api/v1/incidents/{id}        — single incident with its human decisions merged
 
 `save_incident()` is called from the triage endpoint after the LangGraph pipeline
 returns a final EpistemicState, so submitting an incident through the UI
 durably stores the record (title, severity, services, hypotheses, interventions).
 
-Intervention verdicts (approve/reject) are stored in audit_log via interventions.py;
-this module joins them in on read so the UI rehydrates the post-decision state.
+Human intervention decisions (approve/reject) are stored in audit_log via
+interventions.py; this module joins them in on read, as each intervention's
+humanDecision beside the Guardian's guardianVerdict, so the UI rehydrates the
+post-decision state without mistaking one for the other.
 """
 
 from __future__ import annotations
@@ -26,7 +28,7 @@ from sqlalchemy import bindparam, text
 
 from src.db.factory import CloudSqlFactory
 from src.db.types import TIMESTAMP, json_value, timestamp_text, typed_text
-from src.middleware.auth import get_current_user
+from src.middleware.rbac import guard
 
 log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/api/v1/incidents", tags=["Incidents"])
@@ -73,16 +75,20 @@ async def save_incident(
     proposed_interventions: list[dict[str, Any]],
     submitted_by: str,
     requires_human_review: bool,
-) -> None:
-    """Upsert an incident row. Idempotent on `id` (latest payload wins)."""
+) -> bool:
+    """Upsert an incident row, idempotent on `id` for its submitter.
+
+    The submitter's later payload wins; anyone else's changes nothing and
+    returns False (the route refuses it with 409 before triage, `incident_submitter`)."""
     now = datetime.now(UTC)
     status_value = "ACTIVE" if requires_human_review else "INVESTIGATING"
 
     async with CloudSqlFactory.get_session_factory()() as session:
         # An upsert on the id (incident IDs come from upstream: PagerDuty etc.). It
         # was INSERT OR REPLACE, which is SQLite-only; ON CONFLICT is both dialects'.
-        # created_at is left out of the update, so the first submission's stands.
-        await session.execute(
+        # created_at is left out of the update, so the first submission's stands, and
+        # the update applies only to the same submitter's row.
+        result = await session.execute(
             typed_text(
                 "INSERT INTO incidents "
                 "(id, title, severity, affected_services, status, session_id, "
@@ -102,7 +108,8 @@ async def save_incident(
                 "draft_explanation = excluded.draft_explanation, "
                 "causal_hypotheses = excluded.causal_hypotheses, "
                 "proposed_interventions = excluded.proposed_interventions, "
-                "submitted_by = excluded.submitted_by, updated_at = excluded.updated_at",
+                "updated_at = excluded.updated_at "
+                "WHERE incidents.submitted_by = excluded.submitted_by",
                 now=TIMESTAMP,
             ),
             {
@@ -125,12 +132,26 @@ async def save_incident(
         )
         await session.commit()
 
+    if not result.rowcount:  # type: ignore[attr-defined]
+        log.warning("incident.overwrite_refused", incident_id=incident_id, by=submitted_by)
+        return False
     log.info(
         "incident.persisted",
         incident_id=incident_id,
         severity=severity,
         verdict=guardian_verdict,
     )
+    return True
+
+
+async def incident_submitter(incident_id: str) -> str | None:
+    """Who submitted the incident `incident_id` (None when there is none)."""
+    async with CloudSqlFactory.get_session_factory()() as session:
+        row = await session.execute(
+            text("SELECT submitted_by FROM incidents WHERE id = :id"), {"id": incident_id}
+        )
+        found = row.scalar_one_or_none()
+    return None if found is None else str(found)
 
 
 # ── Read paths ────────────────────────────────────────────────────────────────
@@ -187,14 +208,18 @@ async def _load_decisions_by_incident(incident_ids: list[str]) -> dict[str, dict
 def _merge_decisions(
     record: IncidentRecord, decisions: dict[str, str]
 ) -> IncidentRecord:
-    """Apply intervention verdicts from audit_log onto the stored proposed_interventions."""
+    """Add each human decision from audit_log to its stored intervention.
+
+    The decision goes in its own field, humanDecision. guardianVerdict stays the
+    Guardian's own verdict as stored at triage: a person's decision is not one.
+    """
     if not decisions or not record.proposed_interventions:
         return record
     updated = []
     for intervention in record.proposed_interventions:
         int_id = intervention.get("id")
         if int_id and int_id in decisions:
-            intervention = {**intervention, "guardianVerdict": decisions[int_id]}
+            intervention = {**intervention, "humanDecision": decisions[int_id]}
         updated.append(intervention)
     return record.model_copy(update={"proposed_interventions": updated})
 
@@ -223,12 +248,12 @@ def _row_to_record(row: Any) -> IncidentRecord:
 @router.get(
     "/",
     response_model=list[IncidentRecord],
-    summary="List recent incidents (newest first) with intervention verdicts merged",
+    summary="List recent incidents (newest first) with human decisions merged",
 )
 async def list_incidents(
     limit: int = Query(default=50, ge=1, le=500),
     status_filter: str | None = Query(default=None, alias="status", description="Filter by status (ACTIVE, INVESTIGATING, RESOLVED)"),
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/incidents/")),
 ) -> list[IncidentRecord]:
     params: dict[str, Any] = {"limit": limit}
     sql = _LIST_INCIDENTS
@@ -249,11 +274,11 @@ async def list_incidents(
 @router.get(
     "/{incident_id}",
     response_model=IncidentRecord,
-    summary="Fetch a single incident with intervention verdicts merged",
+    summary="Fetch a single incident with human decisions merged",
 )
 async def get_incident(
     incident_id: str,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/incidents/{incident_id}")),
 ) -> IncidentRecord:
     async with CloudSqlFactory.get_session_factory()() as session:
         row = await session.execute(

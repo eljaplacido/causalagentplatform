@@ -216,6 +216,27 @@ def test_a_partial_list_of_gates_fails(tmp_path: Path) -> None:
     _fails_on(_run(_tree(tmp_path / "bad", files)), "gate list", "leaves out D0")
 
 
+def test_a_list_that_leaves_out_a_c_gate_fails(tmp_path: Path) -> None:
+    """C0 (calibration) was the first gate whose id is not T, D or A; the parser missed it."""
+    skill = SKILL.replace(
+        "| T0 analytic | packages/core | `t0` | benchmarks/t0/ |",
+        "| T0 analytic | packages/core | `t0` | benchmarks/t0/ |\n"
+        "| T2 real | packages/core | `t0` | benchmarks/t2/ |\n"
+        "| T3 real | packages/core | `t0` | benchmarks/t3/ |\n"
+        "| C0 report | packages/core | `t0` | benchmarks/c0/ |",
+    ).replace("match = '\\b(verify|t0)\\b'", "match = '\\b(verify|t0|t2|t3|c0)\\b'")
+    files: dict[str, str | None] = {
+        ".gnomon/skills/verifying-changes.md": skill,
+        "benchmarks/t2/PRE-REGISTRATION.md": "#\n",
+        "benchmarks/t3/PRE-REGISTRATION.md": "#\n",
+        "benchmarks/c0/PRE-REGISTRATION.md": "#\n",
+    }
+    files["AGENTS.md"] = AGENTS + "\nThe gates (T0, T2, T3 and C0) run every PR.\n"
+    assert _run(_tree(tmp_path / "ok", files)).returncode == 0
+    files["AGENTS.md"] = AGENTS + "\nThe gates (T0, T2, T3) run every PR.\n"
+    _fails_on(_run(_tree(tmp_path / "bad", files)), "gate list", "leaves out C0")
+
+
 def test_a_skill_match_that_misses_a_gate_fails(tmp_path: Path) -> None:
     skill = SKILL.replace(
         "| T0 analytic | packages/core | `t0` | benchmarks/t0/ |",

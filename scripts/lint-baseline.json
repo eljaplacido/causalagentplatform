@@ -33,10 +33,16 @@
     "2026-09-25 (septa-50): the B608 and B101 skips are gone; backend/pyproject.toml's [tool.bandit] skips no rule. The 13 B608 sites were reviewed one by one and none carried a request value into SQL text: governance.py's audit-log WHERE, and registry.py's list_entities, list_fragments and list_pending_assumptions, joined fixed condition strings whose values were bound; incidents.py built a numbered placeholder list and a fixed status clause; interventions.py a fixed incident clause; registry.py's promote_to_approved, reject_draft and list_pending_review_queue interpolated a table and column name from a closed object_type mapping. Each is now a literal statement, an expanding bind parameter, or SQLAlchemy Core over a lightweight untyped table with every value a named bindparam() given at execution, as text() binds were (a literal compared to a column takes a type from the value and asyncpg renders a ::VARCHAR cast PostgreSQL refuses against UUID and JSONB columns) -- no # nosec. backend/tests/integration/test_sql_filters_bound.py pins the queries' results on seeded rows and sends SQL-shaped values through them. B101 is LOW, so it is reported, not counted; src's one assert (api/decisions.py, a type-narrowing after a validator) became an explicit check. bandit-backend stays at 0 MEDIUM+.",
     "2026-09-25 (septa-52): ruff 415 -> 412, mypy 39 -> 38. The backend now also runs on PostgreSQL (backend-pytest-postgres); the bind types in the new src/db/types.py are clean. The gains are in code the change replaced: mypy's index error and two ruff E501s went with platform.py's SQLite-only strftime() weekly query, and an import-order finding in a test file it touched was fixed.",
     "2026-09-26 (septa-47): ruff 412 -> 411, mypy unchanged at 38. The row-level-security change (src/db/scope.py, the per-request scope, the app role in the test fixtures) is clean; the gain is scripts/seed_data.py's main(), annotated when it was wrapped in a service scope.",
+    "2026-09-26 (septa-48, septa-16): ruff 411 -> 405, mypy unchanged at 38. The durable provenance store and its capture code are clean; the gains are in files the change rewrote: four E741 `l` loop variables and a TC003 in src/api/provenance.py's PROV-JSON export, and an E741 in tests/unit/test_provenance.py.",
+    "2026-09-26 (session-guardian): ruff 411 -> 409, mypy unchanged at 38. The session graph's new escalation and planning code is clean; the gain is two E501s in graph.py's output node and router signature, wrapped while the file was open.",
+    "2026-09-26 (small-batch-1): ruff 411 -> 403, mypy 38 -> 37. backend/src/api/health.py and its unit tests were deleted: a /health/{neo4j,sensors,alerts,drift-monitor} router the app never mounted, whose sensor and alert globals nothing outside the tests ever set. Its findings went with it.",
+    "2026-09-26 (small-batch-1): ruff 403 -> 401. scripts/seed_data.py's --clear was rewritten (correct columns, no append-only table, an owner-only privilege check on PostgreSQL); the new code is clean and the two findings in the code it replaced went with it.",
+    "2026-09-26 (small-batch-2): ruff 411 -> 380, mypy 38 -> 32, measured against 465b919. The gains are code deleted: src/api/health.py (a router the app never mounted), src/sensors/periodic_drift.py (DriftSensor, never started) and tests/unit/test_health_api.py. The code this batch added is clean.",
+    "2026-09-26 (septa-17/37): mypy 38 -> 37, ruff unchanged at 411. The LLM layer's first callers (src/agents/narration.py, prompt_templates.py) are clean; the gain is llm_factory.get_llm's lone @overload (a single overload is a mypy error), removed when the function gained its prompt-template parameters.",
     "2026-09-26 (septa-14/15, measured against e5c7f88): ruff 411 -> 410, mypy unchanged at 38. The versioning and lineage code is clean; the gain is tests/unit/test_registry.py's conftest import, now used at runtime (make_data_source), no longer a TC001."
   ],
   "ruff": {
-    "max_findings": 410,
+    "max_findings": 405,
     "measured_with": "ruff 0.15.22",
     "cwd": "backend",
     "args": [
@@ -54,7 +60,7 @@
     ]
   },
   "mypy": {
-    "max_findings": 38,
+    "max_findings": 32,
     "measured_with": "mypy 1.20.2 (compiled: yes)",
     "cwd": "backend",
     "args": [

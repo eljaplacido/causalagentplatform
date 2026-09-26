@@ -1,7 +1,7 @@
 +++
 name = "benchmark discipline"
 description = "Freeze the bars before the run, keep every failing run, move a bar only with a version bump and a changelog, and prove the gate can fail before trusting a pass"
-match = '\b(benchmark|benchmarks|pre-?registration|pre-?register\w*|bars?|gate|t0|t2|t3|t4|t5|t6|t7|t8|d0|a0|ihdp|lalonde|seeded[- ]defects?|negative control|coverage|power|results?)\b'
+match = '\b(benchmark|benchmarks|pre-?registration|pre-?register\w*|bars?|gate|t0|t2|t3|t4|t5|t6|t7|t8|t9|t10|d0|a0|c0|ihdp|lalonde|seeded[- ]defects?|negative control|coverage|power|results?)\b'
 roles = ["coordinator", "implementor", "implement", "plan", "critique", "verifier"]
 +++
 
@@ -25,7 +25,10 @@ write_allow excludes it.
 **2. Keep every run, especially the failing ones.** Results go in
 `benchmarks/<gate>/results/<YYYY-MM-DD>-v<prereg version>-run<N>.json`,
 written by the gate's `--out` and carrying `prereg_sha256`, `prereg_version`
-and the `git` commit it ran on (`-dirty` if the tree was). A failing run is
+and the `git` commit of the checkout the gate's code was imported from, not
+the working directory's (`-dirty` if that tree was). Only a 40-hex commit with
+no `-dirty` that is an ancestor of HEAD counts as a clean run; `unknown` never
+stands (t8-switchback v2 run1 is kept on file under that rule). A failing run is
 committed and never deleted or overwritten: `t0/results/2026-09-19-v1-run1.json`
 and `t2-ihdp/results/2026-09-19-v1-run1.json` failed, and they are why v2 and
 the pinv fix exist. A results directory with only passes is a finding.

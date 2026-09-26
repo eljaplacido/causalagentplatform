@@ -2,7 +2,7 @@
 
 > **Scope:** Canonical reference for all agents deployed across the Unified Enterprise Causal Platform. Every agent, skill, and orchestration pattern must conform to this document. This file is loaded as shared context by every agent in the system.
 >
-> **This document is a specification, not a description of the code.** All eight agents below exist and run, but several of the skills beneath them return a constant. What is actually implemented is in [`CURRENT_STAGE.md`](CURRENT_STAGE.md), where every row links to the test that pins it; what this document claims and the code does not do is in [`conformance/declared_not_implemented.json`](../conformance/declared_not_implemented.json), checked on every run by `scripts/status_claims.py`. As of 2026-09-25 that covers the evidence-grounding and expert-elicitation skills (`agent-skills-are-stubs`), causal discovery (`causal-discovery`), the counterfactual skill (`scm-counterfactuals`), the capability-routed LLM layer, which nothing calls (`llm-routing-no-callers`), the Cynefin classifier, which is a keyword stub (`cynefin-classifier-keyword-stub`), and the Rust crates named under several agents, which do not exist in this repository (`rust-crates`).
+> **This document is a specification, not a description of the code.** All eight agents below exist and run, but several of the skills beneath them return a constant. What is actually implemented is in [`CURRENT_STAGE.md`](CURRENT_STAGE.md), where every row links to the test that pins it; what this document claims and the code does not do is in [`conformance/declared_not_implemented.json`](../conformance/declared_not_implemented.json), checked on every run by `scripts/status_claims.py`. As of 2026-09-25 that covers the evidence-grounding and expert-elicitation skills (`agent-skills-are-stubs`), causal discovery (`causal-discovery`), the counterfactual skill (`scm-counterfactuals`), and the Cynefin classifier, which is a keyword stub (`cynefin-classifier-keyword-stub`). Earlier versions also named Rust crates (`cynepic-*`), EconML, PyMC, Kafka and a Neo4j causal-graph store as backing these agents; none of them is in this repository or used by it, and those claims were withdrawn (`rust-crates`, `econml-pymc`, `kafka-streaming`, `neo4j-graph-store` in the register's `left_the_list`).
 
 ---
 
@@ -50,7 +50,7 @@ Agents do not generate outputs directly. They generate **EpistemicState transiti
 
 **Tools available:** `causal_propose_edge`, `confounder_screen`, `conditional_independence_test`, `evidence_link`, `semantic_layer_read`
 
-**Backed by:** `cynepic-causal` crate (Rust) for DAG operations, DoWhy / EconML for statistical estimation
+**Backed by:** `packages/causal-core` for graph checks and identification (networkx); no statistical discovery is implemented (`causal-discovery` in the register)
 
 ---
 
@@ -94,10 +94,11 @@ Agents do not generate outputs directly. They generate **EpistemicState transiti
 - Cannot be bypassed or overridden by other agents
 - Escalation must route to a human reviewer, never to another agent
 - All verdicts are immutable once written
+- A run whose PlanAhead lookahead found no safe action is never approved: a check whose payload carries `plan_outcome: "no_safe_action"` is `REQUIRES_ESCALATION` (rule PR-010, `src/agents/governance.py`)
 
 **Tools available:** `guardian_check`, `sensitivity_test`, `placebo_check`, `assumption_audit`, `drift_detect`, `audit_write`
 
-**Backed by:** `cynepic-guardian` Rust crate, OPA policy engine, CSL-Core
+**Backed by:** `GovernanceAgent` in `src/agents/governance.py` (policy rules PR-001 to PR-005 evaluated in Python); OPA and CSL-Core are not used
 
 ---
 
@@ -124,14 +125,16 @@ Agents do not generate outputs directly. They generate **EpistemicState transiti
 
 **Tools available:** `counterfactual_reason`, `intervention_estimate`, `scenario_compare`, `explanation_generate`, `semantic_layer_read`
 
-**Backed by:** Pearl's three-level causal hierarchy, DoWhy / PyMC / EconML
+**Current implementation note:** `SimulationAgent.process(state, data=...)` estimates the approved fragment's Treatment -> Outcome effect with the kernel when it is given data (one column per node id), and records the kernel's sensitivity analysis on the fragment's draft edge from that treatment to that outcome, through a Guardian verdict for `RECORD_SENSITIVITY`: a new IGNORABILITY assumption the edge rests on, which is what Guardian PR-007 reads before the edge can be approved (septa-62). No platform flow passes it data yet; `POST /api/semantic/edges/{edge_id}/sensitivity` runs the same analysis for one draft edge on the caller's data.
+
+**Backed by:** `packages/causal-core` (identification and estimation, called through `src/skills/_kernel.py`); the counterfactual skill is a labelled heuristic (`scm-counterfactuals` in the register)
 
 ---
 
 #### `DriftMonitorAgent`
 **Role:** Continuously monitors causal and semantic drift across the platform. Alerts when learned causal structure diverges from live data patterns or when entity definitions shift.
 
-**Current implementation note:** Production-ready with multi-type drift detection (distribution, causal, semantic, concept), configurable thresholds, comprehensive severity scoring (0-100), and Neo4j-native alert storage with 90-day TTL. Integrates with experience buffer for pattern learning. Alert emission via Kafka ready for integration.
+**Current implementation note:** Production-ready with multi-type drift detection (distribution, causal, semantic, concept), configurable thresholds, comprehensive severity scoring (0-100), and optional Neo4j alert storage with a 90-day TTL when `NEO4J_URI` is set (without it, alerts are not stored; the Neo4j path is tested against mocks only). Alerts are emitted in-process through `AlertEmitter` (`src/sensors/alert_emit.py`: structured log, registered callbacks, deduplication and throttling); there is no message broker.
 
 **Inputs:**
 - Live data streams or batch snapshots
@@ -145,7 +148,7 @@ Agents do not generate outputs directly. They generate **EpistemicState transiti
 - Identified drift type: distribution, causal, semantic, or concept drift
 - Per-feature divergence scores
 - Suggested re-validation trigger
-- Alerts stored in Neo4j with TTL and acknowledgment tracking
+- Alerts stored in Neo4j with TTL and acknowledgment tracking, when `NEO4J_URI` is set
 
 **Constraints:**
 - Alerts must include the statistical evidence (KL divergence value, chi-squared result, etc.)
@@ -155,7 +158,7 @@ Agents do not generate outputs directly. They generate **EpistemicState transiti
 
 **Tools available:** `drift_detect`, `detect_semantic_drift`, `detect_causal_drift`, `detect_concept_drift`, `calculate_drift_severity`, `store_drift_alert`, `get_recent_drift_alerts`, `alert_emit`
 
-**Backed by:** KL-divergence monitoring (histogram and JS methods), Neo4j alert storage, cynepic-bayes Bayesian belief tracking
+**Backed by:** KL-divergence monitoring (histogram and JS methods), optional Neo4j alert storage, in-process `AlertEmitter`; no Bayesian belief tracking is implemented
 
 **Configuration:**
 ```python
@@ -163,8 +166,8 @@ DriftMonitorAgent(
     kl_threshold=0.1,              # Moderate drift threshold
     severe_kl_threshold=0.5,       # Severe drift threshold
     semantic_similarity_threshold=0.7,
-    enable_neo4j_storage=True,     # Store alerts in Neo4j
-    enable_alert_emission=True,    # Emit to Kafka
+    enable_neo4j_storage=True,     # Store alerts in Neo4j (needs NEO4J_URI)
+    enable_alert_emission=True,    # Emit through the in-process AlertEmitter
 )
 ```
 
@@ -197,7 +200,7 @@ DriftMonitorAgent(
 #### `IncidentTriageAgent`
 **Role:** First-response agent for operational incidents. Classifies problem complexity via Cynefin, proposes likely causal drivers, retrieves relevant past incidents from the experience buffer, and surfaces actionable interventions.
 
-**Current implementation note:** The harness now uses a Neo4j-native experience buffer with TTL (90-day expiry) and relevance decay (30-day half-life) when `NEO4J_URI` is configured. Falls back to durable session-state snapshots when Neo4j is unavailable. Intervention and counterfactual reasoning use graph-grounded heuristics. Observationally calibrated incident estimators remain future work. Cynefin classification is a keyword stub, measured below always guessing the most common domain (register `cynefin-classifier-keyword-stub`): a description with no chaotic, complex or complicated keyword is classified `DISORDER` with confidence 0.0, and triage then runs no analysis and flags the incident for human review.
+**Current implementation note:** The harness uses an optional Neo4j experience buffer with TTL (90-day expiry) and relevance decay (30-day half-life) when `NEO4J_URI` is configured (tested against mocks only). Without it, it reads durable session-state snapshots from SQL. Intervention and counterfactual reasoning use graph-grounded heuristics. Observationally calibrated incident estimators remain future work. Cynefin classification is a keyword stub, measured below always guessing the most common domain (register `cynefin-classifier-keyword-stub`): a description with no chaotic, complex or complicated keyword is classified `DISORDER` with confidence 0.0, and triage then runs no analysis and flags the incident for human review.
 
 **Inputs:**
 - Incident alert payload (title, affected services, metrics snapshot, alert timestamps)
@@ -226,7 +229,7 @@ DriftMonitorAgent(
 #### `ChangeImpactAgent`
 **Role:** Pre-deployment analysis agent. Given a proposed change, estimates likely causal impact on downstream services, SLOs, and risk metrics.
 
-**Current implementation note:** The harness now resolves approved fragment edges and performs bounded downstream path tracing plus heuristic SLO screening. Full Neo4j traversal and outcome-calibrated estimators remain future work.
+**Current implementation note:** The harness now resolves approved fragment edges and performs bounded downstream path tracing plus heuristic SLO screening, over the SQL-stored graph. Outcome-calibrated estimators remain future work.
 
 **Inputs:**
 - Change request specification
@@ -254,7 +257,7 @@ Classifies a problem into one of five Cynefin domains: `CLEAR`, `COMPLICATED`, `
 
 **Inputs:** Problem description, available data features, time sensitivity flag
 **Output:** Domain label, confidence score, recommended reasoning strategy
-**Reference implementation:** `IncidentTriageAgent._skill_cynefin_classify` in `src/agents/incident_triage.py`, a keyword stub that never returns `CLEAR` and returns `DISORDER` (confidence 0.0) when no keyword matches; the `cynepic-router` Rust crate named here earlier does not exist in this repository
+**Reference implementation:** `IncidentTriageAgent._skill_cynefin_classify` in `src/agents/incident_triage.py`, a keyword stub that never returns `CLEAR` and returns `DISORDER` (confidence 0.0) when no keyword matches; the Rust router named here earlier does not exist in this repository
 
 ---
 
@@ -263,7 +266,7 @@ Proposes a directed causal edge between two variables, with evidence and a confi
 
 **Inputs:** Source variable, target variable, dataset statistics, domain context
 **Output:** Edge proposal with statistical test results, confidence, and evidence citations
-**Reference implementation:** `cynepic-causal` Rust crate, DoWhy Python
+**Reference implementation:** `CausalDiscoveryAgent` in `src/agents/causal_discovery.py`; edges are proposed for Guardian review, not discovered from data (`causal-discovery` in the register)
 
 ---
 
@@ -272,7 +275,7 @@ Applies Pearl's three-level hierarchy: Abduction → Action → Prediction.
 
 **Inputs:** Structural causal model (SCM), observation, query (intervention or counterfactual)
 **Output:** Estimated counterfactual distribution, identification status, sensitivity label
-**Reference implementation:** DoWhy, EconML, PyMC
+**Reference implementation:** `src/skills/counterfactual_reason.py`, a labelled heuristic (`heuristic: true`, `NOT_ASSESSED`); no structural causal model is fitted (`scm-counterfactuals` in the register)
 
 ---
 
@@ -281,7 +284,7 @@ Submits an action, graph change, or recommendation to the Guardian policy engine
 
 **Inputs:** Action payload, current EpistemicState, applicable policy rules
 **Output:** `APPROVED` / `REJECTED` / `REQUIRES_ESCALATION` verdict with reason and rule citations
-**Reference implementation:** `cynepic-guardian` Rust crate, OPA
+**Reference implementation:** `GovernanceAgent.check` in `src/agents/governance.py`
 
 ---
 
@@ -291,9 +294,9 @@ Retrieves similar past incidents from the experience buffer with TTL filtering a
 **Inputs:** Incident description, domain filter, service filters, result limit
 **Output:** Ranked list of similar incidents with similarity scores, decay factors, resolutions
 **Storage backends:** 
-- Neo4j (production): Graph-native with 90-day TTL, 30-day half-life relevance decay
-- SQL (fallback): Session-state snapshot interim when Neo4j unavailable
-**Configuration:** Set `NEO4J_URI` to enable production backend
+- Neo4j (optional, when `NEO4J_URI` is set): 90-day TTL, 30-day half-life relevance decay; tested against mocks only
+- SQL (default): reads durable session-state snapshots
+**Configuration:** Set `NEO4J_URI` to use the Neo4j backend
 
 ---
 
@@ -327,6 +330,11 @@ Produces a human-readable causal explanation for a recommendation or estimate.
 **Inputs:** Simulation result, assumption set, target persona (EXECUTIVE / ANALYST / OPERATOR / COMPLIANCE)
 **Output:** Narrative explanation with explicit assumption disclosures, confidence ranges
 
+*Implemented as* `src/agents/narration.py`, from `prompts/explanation_generate.yaml`: the model
+writes the narrative and cites every number (confidence ranges included) as a claim token of the
+kernel outcome; a reply that fails PR-002 grounding is discarded for the caller's deterministic
+text (§7).
+
 ---
 
 #### `confounder_screen`
@@ -354,11 +362,11 @@ Appends an immutable entry to the platform audit trail.
 ---
 
 #### `effect_estimate`
-Computes Average Treatment Effect (ATE) using DoWhy identification and estimation frameworks over an approved graph fragment.
+Computes Average Treatment Effect (ATE) with `packages/causal-core` identification and estimation over an approved graph fragment.
 
 **Inputs:** Approved graph fragment, identification strategy, assumption set, optional observational data
 **Output:** ATE with confidence interval, estimator name, treatment and outcome IDs
-**Reference implementation:** `src/skills/effect_estimate.py` (DoWhy, PyMC)
+**Reference implementation:** `src/skills/effect_estimate.py`, delegating to `packages/causal-core`
 
 ---
 
@@ -367,7 +375,7 @@ Validates whether a causal effect is identifiable given a graph fragment and ass
 
 **Inputs:** Graph fragment, treatment/outcome specification, available covariates
 **Output:** Identification status, valid backdoor/frontdoor/IV strategies, blocking constraints
-**Reference implementation:** `src/skills/identification_check.py` (DoWhy)
+**Reference implementation:** `src/skills/identification_check.py`, delegating to `packages/causal-core`
 
 ---
 
@@ -533,12 +541,27 @@ Intake → CynefinClassify → [Router]
     │                                  ├── Backpropagate (failure detection)
     │                                  └── CommitNext (one action only)
     │                                    ╱           ╲
-    │                          GuardianCheck    EscalateHuman
-    │                               ↓                ↓
-    │                           Output           [Human review]
-    ├── CHAOTIC      → EscalateHuman → [Human approval required]
+    │                                   │       EscalateHuman
+    │                                   ↓            ↓
+    │                               GuardianCheck ←──┘
+    │                                   ↓
+    │                               Output  [requires_human_review on every escalation]
+    ├── CHAOTIC      → EscalateHuman → GuardianCheck → Output [Human approval required]
     └── DISORDER     → DisorderProtocol → CynefinClassify [retry once, then EscalateHuman]
 ```
+
+Every path ends GuardianCheck → Output: nothing a session returns lacks a Guardian verdict, and
+every verdict is written to `audit_log` before the response. An escalation is ruled on and
+recorded like any other output (`action_type` `GRAPH_HUMAN_ESCALATION`, with the escalation's
+reason in the payload the row's hash binds): the Guardian returns REQUIRES_ESCALATION for
+CHAOTIC (PR-003) and REJECTED for DISORDER (PR-006), and the response still routes the run to a
+person. Until 2026-09-26 EscalateHuman went straight to the end of the graph, so no escalation
+left an audit record, and every classified run escalated at PlanAhead: the planner simulates
+nothing (register `planning-simulation-no-data`), and its "no safe action found" was a
+threshold on the recommendations' own confidences. A plan nothing could simulate now goes to
+the Guardian marked `plan_unsimulated`, with that said on each recommendation; only a lookahead
+that estimated consequences and found every candidate unsafe escalates. Pinned by
+`backend/tests/integration/test_session_reaches_guardian.py`, on SQLite and PostgreSQL.
 
 ### 5.2 Graph Node Responsibilities
 
@@ -549,8 +572,12 @@ Intake → CynefinClassify → [Router]
 | `CausalAnalysis` | `CausalDiscoveryAgent` | Graph fragment available |
 | `CausalDiscovery` | `CausalDiscoveryAgent` | Complex domain with low evidence |
 | `PlanAhead` | `plan_action_sequence` skill | Candidate recommendations exist |
-| `GuardianCheck` | `GovernanceAgent` | PlanAhead found safe action |
-| `EscalateHuman` | — | CHAOTIC domain, DISORDER still unresolved after one retry, Guardian REQUIRES_ESCALATION, or PlanAhead found no safe action |
+| `GuardianCheck` | `GovernanceAgent` | Every run, before `Output`: after PlanAhead, and after EscalateHuman |
+| `EscalateHuman` | — | CHAOTIC domain, DISORDER still unresolved after one retry, or PlanAhead's lookahead estimated every candidate unsafe; then `GuardianCheck` |
+
+`CynefinClassify` classifies the problem as submitted, not the latest narrative an agent wrote:
+`/incident` used to re-classify the triage agent's own summary, which carries no keyword, so
+every non-chaotic incident became DISORDER.
 
 ### 5.3 Circuit Breaker Rules (enforced by `GovernanceAgent`)
 
@@ -569,10 +596,11 @@ Intake → CynefinClassify → [Router]
 |---|---|---|---|
 | **Working memory** | In-process `EpistemicState` | Current reasoning cycle state | Session |
 | **Session memory** | PostgreSQL / Cloud SQL + in-process hot cache | Latest `EpistemicState` snapshot per session, resume context, API continuity | Session persisted across process restarts; richer per-user preference memory still pending |
-| **Graph memory** | Neo4j | Approved causal graph assets, edges, entities, assumptions | Platform lifetime |
-| **Experience buffer** | Neo4j target; current interim reads from durable session snapshots | Past incident patterns, resolutions, outcome feedback | Platform lifetime target; current interim store has no soft-expiry yet |
+| **Graph memory** | PostgreSQL / SQLite (`graph_fragments`, `causal_edges`) | Approved causal graph assets, edges, entities, assumptions | Platform lifetime |
+| **Experience buffer** | Durable session snapshots in SQL; Neo4j optionally, when `NEO4J_URI` is set | Past incident patterns, resolutions, outcome feedback | SQL snapshots have no soft-expiry; the Neo4j backend applies a 90-day TTL |
 | **Audit memory** | Append-only PostgreSQL | All agent actions and Guardian verdicts | Immutable, regulatory lifetime |
-| **Semantic registry** | PostgreSQL + Neo4j | Causal semantic layer objects (entities, treatments, outcomes) | Governed lifecycle |
+| **Provenance memory** | Append-only PostgreSQL (`provenance_entries`, `provenance_erasures`) | W3C PROV records of session runs, Guardian checks and decisions (ADR-002); written by the session and decision routes and by the Guardian beside its audit row, not by the other agents | Kept; an erasure is a tombstone that hides a session's records from the API, never a deletion |
+| **Semantic registry** | PostgreSQL / SQLite | Causal semantic layer objects (entities, treatments, outcomes) | Governed lifecycle |
 
 ### 6.2 Memory Access Patterns
 
@@ -583,7 +611,7 @@ Write:  WorkingMemory → [GuardianCheck] → SemanticLayer / GraphMemory / Audi
 
 Agents **never write directly** to long-term stores. All writes are mediated by `audit_write` and, for semantic layer and graph memory, require a Guardian `APPROVED` verdict first.
 
-**Current boundary note:** Session-state durability is now implemented as governed `EpistemicState` snapshot persistence for orchestration continuity. The incident harness also reads those durable snapshots as an interim experience buffer. This is not yet a full preference/profile memory layer or the final Neo4j episodic-memory design, and it does not bypass Guardian-gated semantic writes.
+**Current boundary note:** Session-state durability is now implemented as governed `EpistemicState` snapshot persistence for orchestration continuity. The incident harness also reads those durable snapshots as an interim experience buffer. This is not a full preference/profile memory layer, and it does not bypass Guardian-gated semantic writes.
 
 ### 6.3 Prompt Architecture (PR)
 
@@ -597,6 +625,15 @@ Prompt recipes follow a strict four-part structure:
 ```
 
 Prompt templates are versioned in `prompts/` alongside their schema contracts. No agent uses ad-hoc prompts at runtime.
+
+**What runs today.** One template is loaded: `prompts/explanation_generate.yaml` (v2.0.0), by
+`src/agents/prompt_templates.py`, which rejects a file with a repeated key, a missing part, a
+`version` that is not `MAJOR.MINOR.PATCH`, a `skill` other than the file's name, a
+`provider_capability` the factory does not route, or `llm_required: false`, and refuses to render
+with a variable missing or unexpected. The template's id (`prompts/<skill>.yaml@<version>`) and the
+sha256 of the file go into the provenance record of every call made with it. A template that does
+not load stops the call: the agent keeps its deterministic text, it never falls back to an ad-hoc
+prompt. The other thirteen files are specifications for skills that call no model (`prompts/README.md`).
 
 ---
 
@@ -612,7 +649,27 @@ Agents specify **capability requirements**, not model names — the LLM factory 
 | `code_generation` | `deepseek-r1:70b` | `claude-sonnet-4-20250514` | `gpt-4o` | `deepseek-reasoner` |
 | `planning` | declared, no model mapped (resolves to `unknown`) | same | same | same |
 
-Routing is handled by `src/agents/llm_factory.py`. Provider selection is never hardcoded in skill implementations. The provider is the first one configured, in the order Ollama (`OLLAMA_BASE_URL`), Anthropic (`ANTHROPIC_API_KEY`), OpenAI (`OPENAI_API_KEY`), DeepSeek (`DEEPSEEK_API_KEY`; each key may instead be a file named by `<NAME>_FILE`, `src/secret_source.py`); if building its client fails, the others are tried in the same order. The capability then picks the model within that provider, as in the table; each default can be overridden by environment variable (`OLLAMA_CAUSAL_MODEL`, `ANTHROPIC_MODEL`, `OPENAI_FAST_MODEL`, ...). Nothing calls `get_llm` today (register `llm-routing-no-callers`).
+Routing is handled by `src/agents/llm_factory.py`. Provider selection is never hardcoded in skill implementations. The provider is the first one configured, in the order Ollama (`OLLAMA_BASE_URL`), Anthropic (`ANTHROPIC_API_KEY`), OpenAI (`OPENAI_API_KEY`), DeepSeek (`DEEPSEEK_API_KEY`; each key may instead be a file named by `<NAME>_FILE`, `src/secret_source.py`); if building its client fails, the others are tried in the same order. The capability then picks the model within that provider, as in the table; each default can be overridden by environment variable (`OLLAMA_CAUSAL_MODEL`, `ANTHROPIC_MODEL`, `OPENAI_FAST_MODEL`, ...), and the Ollama overrides (with `OLLAMA_MODEL` as the fallback for all four) are read at call time. The table's defaults are large models; on a smaller host set `OLLAMA_CAUSAL_MODEL` to one it has (the live test ran with `qwen2.5:7b-instruct`).
+
+**Who calls it, and what for: language, never numbers.** Local-first is the intended
+configuration: point `OLLAMA_BASE_URL` at a local Ollama and no cloud key is needed. Two paths call
+`get_llm` today, both through `src/agents/narration.py` (the `explanation_generate` skill):
+
+| Caller | What the model writes | Fallback |
+|---|---|---|
+| `SimulationAgent` | `draft_explanation` of the kernel outcome (a result or a kernel refusal) | the agent's deterministic text |
+| `POST /api/v1/decisions` with `narrate: true` | `narrative`: the verdict and analysis in plain language, for a `persona`; written after the ledger write and never sealed into it | the deterministic `explanation` |
+
+The model is asked to cite numbers only as claim tokens (`[[claim:effect]]`). Its reply is
+untrusted text: it is scored by `grounding_risk` -- the PR-002 check, `causal_core.claims.verify`
+against the kernel outcome -- before and after the tokens are rendered with the kernel's values,
+and a reply with an unbound number, an unknown token, causal wording the outcome does not license,
+no text, too much text (over 2000 characters), or a call that fails or exceeds
+`LLM_TIMEOUT_SECONDS` (default 60) is discarded for the fallback, with the reason recorded (a
+`NARRATION` reasoning step on the agent's state; `narrative.reason` over HTTP). With no provider
+configured nothing is attempted, and the platform behaves as it did before the layer existed.
+Every call is captured as an `LLMInvocation` (below; ADR-002). No other agent calls a model: the
+rest of the agents' reasoning is rule or kernel code.
 
 ---
 
@@ -652,9 +709,9 @@ Before any new agent or skill is merged into the platform, it must satisfy:
 
 | Capability | Library |
 |---|---|
-| Causal effect estimation | `packages/causal-core` is the engine (numpy/scipy/pandas/networkx). Roadmap, not dependencies today: DoWhy, EconML, statsmodels |
+| Causal effect estimation | `packages/causal-core` is the engine (numpy/scipy/pandas/networkx). DoWhy and y0 appear only in its optional `crosscheck` extra, as independent identification engines its tests compare against. EconML and PyMC are not dependencies; a new estimator (EconML's among them) would enter through causal-core's `causal_core.estimators` entry-point registry |
 | Causal discovery | Roadmap: causal-learn (no discovery is implemented; `causal-discovery` in the register) |
-| Bayesian belief tracking | Roadmap: PyMC (not a dependency; `econml-pymc` in the register) |
+| Bayesian belief tracking | Not implemented; no library is used |
 | Policy as code | OPA (planned), TLA+ (`specs/guardian_policy.tla`) |
 | Workflow orchestration | LangGraph |
 

@@ -2,7 +2,7 @@
 
 **Suite:** T2, semi-synthetic data: real covariates with simulated potential outcomes
 **System under test:** `causal_core.analyze`
-**Registered:** 2026-09-19, version 1
+**Registered:** 2026-09-19, version 1; version 2 on 2026-09-26 (see Changelog)
 **Runs:** every release, and on demand with `python -m causal_core.bench.ihdp`. It needs network
 access or a warm cache.
 
@@ -66,8 +66,8 @@ all 25.
 ```toml
 [meta]
 suite = "T2-IHDP"
-version = 1
-registered = "2026-09-19"
+version = 2
+registered = "2026-09-26"
 
 [data]
 base_url = "http://www.fredjo.com/files/"
@@ -88,6 +88,13 @@ ate_min_coverage_if_answered = 0.90
 # allowing for Monte Carlo error over 100 realizations.
 max_supported_miss_share = 0.10
 
+[overlap]
+# v2. Per configuration: the share of realizations whose ATE is refused for POSITIVITY or whose
+# result carries the limited-overlap flag (diagnostics.overlap.limited_overlap) must reach
+# ate_min_flagged_share; the same share for the ATT must stay at or below att_max_flagged_share.
+ate_min_flagged_share = 0.90
+att_max_flagged_share = 0.10
+
 [reported]
 # Not gated.
 mean_abs_error = true              # the usual IHDP metric, eps_ATE / eps_ATT
@@ -106,6 +113,23 @@ status_distribution = true
 - The supported-miss bar applies the platform's central promise, *never confidently wrong*, to
   data with known truth.
 
+**The overlap flag (v2).** Run 1 showed the ATE answered in every realization, no refusal: the
+by-construction violation went undetected. It was not a violation the kernel could have refused.
+Hill removed treated children by mother's race, and race is not among the 25 covariates the analysis
+adjusts for; no binary covariate level has zero treated units (the smallest treated shares are 1 of
+27 and 2 of 55). What the removal leaves in the covariates is *limited* overlap: many profiles with a
+propensity near zero, none with none. Contract 0.12.0 adds two checks (pre-registered as T10): honest
+overlap regions, which refuse when a region of the covariates lacks an arm, and a limited-overlap
+flag, set when more than 5% of units have an estimated propensity outside [0.1, 0.9] (Crump et al.
+2009; for the ATT, treated units above 0.9). v2 gates that the IHDP ATE is flagged or refused and the
+ATT, which the design supports, is not.
+
+Disclosed: before this version was written, both quantities were computed on these data outside the
+kernel (a scratch script using the kernel's logistic helper and a prototype of the region check):
+the share of units outside [0.1, 0.9] was 0.332 in every realization for the ATE, the share of
+treated units above 0.9 was 0 for the ATT, and the prototype found no region without treated units.
+The bars were set from the design's logic, not from those figures, but the figures were seen.
+
 **Reported, not gated: rival estimators (v1.1).** Beside the kernel, each realization is also
 estimated by (a) the naive difference in means and (b) an OLS regression of `y` on `t` and all 25
 covariates, with a heteroskedasticity-robust (HC1) 95% interval — the estimate a careful analyst
@@ -121,3 +145,8 @@ across its realizations, so a ranking here is weak evidence either way.
   OLS with covariates and HC1 intervals). No bar or design changed, and no bar reads them.
   Prompted by an external review's point that a benchmark result means more positioned against
   what an analyst would otherwise use.
+- v2 (2026-09-26): the `[overlap]` bars (register entry `kernel-overlap-detection-limits`; ledger
+  septa-34, with T10). Prompted by every run so far (runs 1–5), in which the ATE was answered in
+  100 of 100 realizations with no overlap diagnostic at all. The ATE must now be refused for
+  POSITIVITY or flagged for limited overlap in at least 0.90 of realizations per configuration, and
+  the ATT flagged in at most 0.10. The data, the configurations and every v1 bar are unchanged.

@@ -44,7 +44,6 @@ export type {
   StatisticalResult,
   SensitivityResult,
   CausalObjectRef,
-  KafkaTopic,
   Cursor,
 } from "./primitives.js";
 
@@ -93,10 +92,7 @@ export type {
   GovernanceVerdictIssuedEvent,
   ConnectorHealthResult,
   CausalConnector,
-  KafkaTopicName,
 } from "./connectors.js";
-
-export { KAFKA_TOPICS } from "./connectors.js";
 
 export type {
   // Skill I/O contracts

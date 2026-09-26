@@ -102,16 +102,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/semantic_layer/provenance.py": "02fe831e092fb8bb01d05db9fc9d871ae544e09b2adca565d0df34e3086fa474",
-          "backend/src/semantic_layer/contracts.py": "8af9432f179c0d3e8652b3b7d4a48db9edbff3f5acc1fb25c8a6e8d9af3eaaa4",
-          "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
-          "backend/src/agents/llm_factory.py": "f7a2d5514b4002494fe1cf9edf69c5b9cc31b8d2751fe39b335ecbfce4d8014a",
-          "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0"
+          "backend/src/semantic_layer/provenance.py": "c912fb0af67442b984325d80528867c559ccb0332ac7725ac448e48f87164c89",
+          "backend/src/semantic_layer/contracts.py": "96357377af27b488fd82e05c2601a907cbf99afe7cd9ae71819ee37c7e284068",
+          "backend/src/api/provenance.py": "55fa5a3e0153904f557da134e6e0f3a8c8c1ae0ab8b5fe4faa8a6918a70c617e",
+          "backend/src/agents/llm_factory.py": "e10b999f795c944f596ff9d2f113bc56a5f07e5b64b464fee712dc08e4a1f9ed",
+          "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: re-read for DB claims; governance.py now binds audit_log's rules as TEXT[] and created_at as TIMESTAMPTZ, which changes nothing this ADR says about the audit trail)"
+        "by": "Claude (merge #50 into #48: LLM layer has callers (this branch) and invocations go to the durable store (#30): ADR-002 status, criteria and component rows, CURRENT_STAGE LLM bullet and provenance-flow row, ADR-003 planner note all say so; grepped for 'no callers', 'in-memory' and 'No LLM is called', none stale; ORCHESTRATION merged cleanly on LF; TESTING_CICD keeps main's Neo4j text and this branch's LLM-calls paragraph)"
       }
     },
     "docs/ADR-003-hierarchical-planning-and-evaluation.md": {
@@ -124,14 +124,14 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/orchestration": "026e61993e2c3e51962380e4d4e957cf5d26e650455679bd5e7cdce75c31c2f4",
+          "backend/src/orchestration": "e2eb3496c39122094c47140ed28a932742480b35a2cbe4d2c1a11a40e9a0c6f7",
           "backend/src/evaluation": "9a2708b95f3bae7f8b05075e62815c7f51cb3f6e7939a585c1c2c26e5b500b07",
-          "backend/src/api/platform.py": "16dcc7dbc23c2cf627fff078cbdf4e5355833ea156073ab190f48ba60574b613"
+          "backend/src/api/platform.py": "39769fc666af1350f66c73cce0aa1381556a2ed226c0807b8366e633c6013773"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: re-read; platform.py's metrics now group weeks in Python instead of SQLite's strftime and the DB connector is named by dialect; the three evaluation endpoints the ADR describes are unchanged)"
+        "by": "Claude (backend integrity fixes, merged onto #54: SECURITY and CYBERSECURITY 4.0 say every route but the liveness probe has a matrix row, reads included, and sessions are owner-or-governance; CURRENT_STAGE rows for role-less reads, session ownership, incident overwrites, exact-id intervention decisions with single closure, weekly metrics; TESTING_CICD names the new tests; ADR-003, AGENTS and ROADMAP re-read after session.py and the merge, nothing they state moved)"
       }
     },
     "docs/AGENTS.md": {
@@ -146,16 +146,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/agents": "ab6334ee1a9e15e7e3a6bf4647430473456a86799863b8ce80b3110670587aa9",
-          "backend/src/skills": "7c14f6095d38b78711081427d4f98e3f621a0a72de4b377d6fc374c346c4ecea",
-          "packages/causal-mcp": "ac8ffe5b31a7fc07dfbfaee6156a0003bc0753f30c9a3a730b99d39de085a913",
-          "backend/src/orchestration": "026e61993e2c3e51962380e4d4e957cf5d26e650455679bd5e7cdce75c31c2f4",
-          "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957"
+          "backend/src/agents": "f54499833e60481971d54deb0252ae7fe46d03ac7fd066ccfa1282a85a1b5769",
+          "backend/src/skills": "b0bcef79c64f6b8d2f35f87f92095d54c52cec7d972a4cf1520b95fcc0d68347",
+          "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d",
+          "backend/src/orchestration": "e2eb3496c39122094c47140ed28a932742480b35a2cbe4d2c1a11a40e9a0c6f7",
+          "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #26 into septa-53: subjects follow main (causal-mcp replaces the deleted backend/mcp_server); reject-authority text and main's content both present)"
+        "by": "Claude (backend integrity fixes, merged onto #54: SECURITY and CYBERSECURITY 4.0 say every route but the liveness probe has a matrix row, reads included, and sessions are owner-or-governance; CURRENT_STAGE rows for role-less reads, session ownership, incident overwrites, exact-id intervention decisions with single closure, weekly metrics; TESTING_CICD names the new tests; ADR-003, AGENTS and ROADMAP re-read after session.py and the merge, nothing they state moved)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -250,14 +250,14 @@
         "on": "2026-09-26",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
-          "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
-          ".github": "a9782837c71d18b904bb5e7188bdf665d0c614cc841aa872adae9b2d305e29ff",
-          ".gnomon": "25561ccec95ea65980dc9c037b24b494f0963626b71b7eca61dfa00ec72a75f4"
+          "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9",
+          ".github": "db12d364ec234ff9774297f81b08649ec310d368304c47fbfcfa04138f630ac4",
+          ".gnomon": "a558f75c29b7ae1902d14d8ee3bbc557e692c15d06db681da00566b4609b10d2"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24-#26/#28 into septa-53: reject-authority text kept on main's updated docs; TESTING_CICD rows three-way merged)"
+        "by": "Claude (merge of the train into the gate fix: CURRENT_STAGE's package row states the import-origin and identity rules over the train's measured counts; TESTING_CICD's unit row lists both sides' tests; the rest merged cleanly and was re-read for gate-step claims)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -277,17 +277,17 @@
         "sha256": {
           "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
-          "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
+          "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
+          "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
-          ".env.example": "f5dbf40f551d60b4b91d5bbaa9b36a2404f89536421fe51b8bcbf17a6ae1258f",
-          "backend/scripts": "36d9419c9cb543ee85703a4d4008be1c16e383c5d7567d9c7bcb6dce92ad64da"
+          ".env.example": "c1b1272a098696c6c0e72ba533fca78db4060da7c549715d14fb1167656e906a",
+          "backend/scripts": "adfe996282f443b9f37340ccda7e0e85afae2ad77fbed2455cc8dc6a63dc987b"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24-#26/#28 into septa-53: reject-authority text kept on main's updated docs; TESTING_CICD rows three-way merged)"
+        "by": "Claude (merge #48 into #49, contract 0.13.0: gate lists name T9, T10 and C0 together (README, benchmarks README, AGENTS, skills, QUICKSTART, TESTING_CICD); ROADMAP robustness row has overlap (T10) and Rosenbaum (T9), positivity moved to done; CURRENT_STAGE gates list adds T10, the kernel-limits bullet keeps this branch's overlap text, package row restored from collected counts 256/146/43)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -334,12 +334,12 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "frontend/src": "d357d66d238bdc673ac0c5215b914bf4a8649a1ea7ca09c9e5bb0052c0b48fcb"
+          "frontend/src": "b466587cba2f440aaacdd3395df8690b5c08971f869236ecd9694a646caf0b31"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-53: ApprovalPanel asks for the Cynefin domain on reject as on approve; the page calls /reject only on an APPROVED verdict)"
+        "by": "Claude (merge of the train into the frontend views: the draft route classifies now (#53), so ROADMAP, CURRENT_STAGE and the dag-workbench register reality say a classified draft reaches the queue and name what keeps it partial; TESTING_CICD's vitest paragraph covers both sides' tests; UIX keeps this branch's component table and view-test note, and no 'no page submits drafts' remains)"
       }
     },
     "docs/ROADMAP.md": {

@@ -200,10 +200,15 @@ CREATE TABLE IF NOT EXISTS assumptions (
     next_review_due     TEXT,
     sensitivity_result  TEXT,
     domain              TEXT NOT NULL,
+    -- 013_assumption_sensitivity_verdict.sql: the verdict the platform recorded
+    -- sensitivity_result under; NULL for a drafted assumption.
+    sensitivity_verdict_id TEXT REFERENCES audit_log(id),
     -- 014_semantic_object_versions.sql: the head's revision, and the data it came from.
     revision            INTEGER NOT NULL DEFAULT 1 CHECK (revision >= 1),
     source_data         TEXT
 );
+CREATE UNIQUE INDEX IF NOT EXISTS ux_assumptions_sensitivity_verdict
+    ON assumptions (sensitivity_verdict_id);
 CREATE TABLE IF NOT EXISTS causal_edges (
     id                  TEXT PRIMARY KEY,
     source_id           TEXT NOT NULL,
@@ -224,6 +229,7 @@ CREATE TABLE IF NOT EXISTS causal_edges (
     lineage             TEXT NOT NULL DEFAULT '[]',
     domain              TEXT NOT NULL,
     created_at          TEXT NOT NULL,
+    created_by          TEXT,
     -- 014_semantic_object_versions.sql: the head's revision, and the data it came from.
     revision            INTEGER NOT NULL DEFAULT 1 CHECK (revision >= 1),
     source_data         TEXT
@@ -371,6 +377,51 @@ CREATE TRIGGER IF NOT EXISTS tg_decision_model_refs_no_delete
 BEFORE DELETE ON decision_model_refs
 BEGIN
     SELECT RAISE(ABORT, 'decision_model_refs is append-only: DELETE is not permitted');
+END;
+-- Provenance (011_provenance.sql): PROV records and LLM invocations, and the
+-- tombstones that hide a session's entries from the API. Both append-only: an
+-- erasure is a row in provenance_erasures, never a DELETE.
+CREATE TABLE IF NOT EXISTS provenance_entries (
+    sequence            INTEGER PRIMARY KEY AUTOINCREMENT,
+    id                  TEXT NOT NULL UNIQUE,
+    kind                TEXT NOT NULL CHECK (kind IN ('record', 'invocation')),
+    session_id          TEXT NOT NULL,
+    agent_id            TEXT NOT NULL,
+    recorded_at         TEXT NOT NULL,
+    body                TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_provenance_entries_session
+    ON provenance_entries (session_id, sequence);
+CREATE TABLE IF NOT EXISTS provenance_erasures (
+    id                  TEXT PRIMARY KEY,
+    session_id          TEXT NOT NULL,
+    hides_through       INTEGER NOT NULL CHECK (hides_through >= 0),
+    hidden_count        INTEGER NOT NULL CHECK (hidden_count >= 0),
+    erased_by           TEXT NOT NULL CHECK (length(trim(erased_by)) > 0),
+    reason              TEXT NOT NULL CHECK (length(trim(reason)) >= 10),
+    erased_at           TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_provenance_erasures_session
+    ON provenance_erasures (session_id, hides_through);
+CREATE TRIGGER IF NOT EXISTS tg_provenance_entries_no_update
+BEFORE UPDATE ON provenance_entries
+BEGIN
+    SELECT RAISE(ABORT, 'provenance_entries is append-only: UPDATE is not permitted');
+END;
+CREATE TRIGGER IF NOT EXISTS tg_provenance_entries_no_delete
+BEFORE DELETE ON provenance_entries
+BEGIN
+    SELECT RAISE(ABORT, 'provenance_entries is append-only: DELETE is not permitted');
+END;
+CREATE TRIGGER IF NOT EXISTS tg_provenance_erasures_no_update
+BEFORE UPDATE ON provenance_erasures
+BEGIN
+    SELECT RAISE(ABORT, 'provenance_erasures is append-only: UPDATE is not permitted');
+END;
+CREATE TRIGGER IF NOT EXISTS tg_provenance_erasures_no_delete
+BEFORE DELETE ON provenance_erasures
+BEGIN
+    SELECT RAISE(ABORT, 'provenance_erasures is append-only: DELETE is not permitted');
 END;
 -- The version history of semantic objects (014_semantic_object_versions.sql): each
 -- row is an object's complete state at one revision; the object's own table holds

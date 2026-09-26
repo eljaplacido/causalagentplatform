@@ -53,6 +53,12 @@ resolve_venv() {
     return 1
 }
 
+# That borrowed venv's editable installs of causal_core / causal_decision point at the
+# main checkout; every packages/*/src of THIS tree goes first so the suites below test
+# the code here, not there (the same rule as .gnomon/ci.sh and its import-origin step).
+PKG_SRC_PATH="$(for d in "$(pwd)"/packages/*/src; do [ -d "$d" ] && printf '%s:' "$d"; done)"
+export PYTHONPATH="${PKG_SRC_PATH%:}${PYTHONPATH:+:$PYTHONPATH}"
+
 if ! VENV="$(resolve_venv)"; then
     echo "❌ verify: no backend virtualenv (tried \$BACKEND_VENV, backend/.venv, the main checkout's)."
     echo "   Nothing was checked, and a gate that checked nothing does not pass."

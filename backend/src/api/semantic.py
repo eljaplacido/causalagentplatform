@@ -11,6 +11,8 @@ Endpoints:
   GET  /api/semantic/edges/{id}/audit-trail — full audit trail for an edge
   GET  /api/semantic/objects/{type}/{id}/versions — every recorded version of an object
   GET  /api/semantic/objects/{type}/{id}/lineage  — source data → drafter → verdicts → approver
+  POST /api/semantic/edges/{id}/sensitivity — run the kernel on a draft edge's question
+                                             and record its sensitivity analysis (septa-62)
 
 All write operations require a Guardian APPROVED verdict.  The draft submission
 endpoint runs a governance check inline before persisting.
@@ -26,14 +28,18 @@ from __future__ import annotations
 from typing import Annotated, Any
 from uuid import UUID
 
+import pandas as pd
 import structlog
+from causal_core import analyze
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
+from src.agents.edge_sensitivity import record_edge_sensitivity, sensitivity_from_outcome
 from src.agents.governance import GovernanceAgent
 from src.api.provenance import get_provenance_graph
-from src.exceptions import ObjectNotFoundError
+from src.exceptions import GuardianBlockedError, InvalidTransitionError, ObjectNotFoundError
 from src.middleware.rbac import approved_only, domain_scope, guard, in_scope
+from src.orchestration.session_store import SessionStateStore
 from src.semantic_layer.models import (
     ApprovalStatus,
     Assumption,
@@ -48,6 +54,7 @@ from src.semantic_layer.models import (
     LineageChain,
     ReviewStatus,
     SemanticObjectVersion,
+    SensitivityResult,
     UserRef,
 )
 from src.semantic_layer.registry import SemanticLayerRegistry
@@ -61,6 +68,7 @@ _DRAFT_AGENT = "api-draft-submission"
 # Singletons (lazily created per request in production — here shared for simplicity)
 _registry = SemanticLayerRegistry()
 _governance = GovernanceAgent(agent_id="governance-agent-api")
+_sessions = SessionStateStore()
 
 
 # ── Request / Response schemas ────────────────────────────────────────────────
@@ -81,9 +89,16 @@ class DraftSubmissionRequest(BaseModel):
     )
     cynefin_domain: CynefinDomain | None = Field(
         None,
-        description="The Cynefin domain the submitter classifies this situation as, as "
-        "on /api/governance/check. Omitted, it is DISORDER, which rule PR-006 rejects: "
-        "an unclassified draft is refused, as it always was.",
+        description="The situation's Cynefin domain, as classified by the caller, as for "
+        "POST /api/governance/check. Omitted, it is DISORDER, which Guardian rule PR-006 "
+        "refuses; CHAOTIC is escalated (PR-003). Ignored when `session_id` names a session. "
+        "Recorded, with who declared it, in the verdict's audit row.",
+    )
+    session_id: str | None = Field(
+        None,
+        description="A reasoning session (POST /api/v1/session) whose classified domain and "
+        "cycle count the Guardian reads instead of a declaration. A session that does not "
+        "exist is refused (404).",
     )
 
 
@@ -92,6 +107,11 @@ class DraftSubmissionResponse(BaseModel):
     object_type: str
     guardian_verdict: str
     audit_entry_id: str
+    cynefin_domain: str = Field(description="The domain the Guardian judged the draft in.")
+    domain_source: str = Field(
+        description="Where that domain came from: `session <id>`, `declared by <uid>`, or "
+        "`not declared` (DISORDER)."
+    )
     message: str
 
 
@@ -247,9 +267,13 @@ async def submit_draft(
 
     Flow:
       1. Parse and validate the payload into the appropriate Pydantic model
-      2. Run a GovernanceAgent check on the draft payload
-      3. If APPROVED: persist the draft via SemanticLayerRegistry
-      4. If REJECTED or REQUIRES_ESCALATION: return 403 with reason
+      2. Classify the situation: the named session's domain (`session_id`), else the
+         caller's declaration (`cynefin_domain`), else DISORDER
+      3. Run a GovernanceAgent check on the draft payload in that domain (PR-006
+         refuses DISORDER, PR-003 escalates CHAOTIC); the domain and its source are
+         in the checked payload and the audit row's notes
+      4. If APPROVED: persist the draft via SemanticLayerRegistry
+      5. If REJECTED or REQUIRES_ESCALATION: return 403 with reason and rules cited
 
     Authentication: Bearer token required.
     Note: Drafts persisted here still have approval_status=DRAFT.  A separate
@@ -296,7 +320,8 @@ async def submit_draft(
     # Attribution comes from the token, not from the body. `created_by` is a
     # required field on CausalEntity and GraphFragment, so the submitter has to
     # put *something* there -- and left to itself that something can be anyone.
-    # CausalEdge and Assumption have no such field and are left alone.
+    # CausalEdge's (012_edge_created_by.sql) is optional and stamped the same way;
+    # Assumption has no such field (elicited_by is the person it was elicited from).
     if "created_by" in type(draft_obj).model_fields:
         draft_obj = draft_obj.model_copy(update={"created_by": user_ref})
 
@@ -308,15 +333,35 @@ async def submit_draft(
             detail=f"domain '{draft_obj.domain}' is outside this user's domain scope",
         )
 
-    # Build an EpistemicState for the governance check
-    # The submitter's classification, when given, is what the Guardian rules in.
-    # Without one the state defaults to DISORDER and PR-006 refuses every draft --
-    # which, before the field existed, was every draft this route ever received.
+    # The situation's domain, classified the way POST /api/governance/check does: a
+    # named session's own classification, else the caller's declaration, else
+    # DISORDER -- which PR-006 refuses. It used to be nothing at all, so every draft
+    # submitted here was DISORDER and refused. The domain and its source go into the
+    # checked payload (the verdict's payload hash binds them) and the audit row's
+    # notes, so a reader of the trail sees what the draft was judged in, and on whose
+    # word.
+    stored = None
+    if body.session_id:
+        stored = await _sessions.load(body.session_id)
+        if stored is None:
+            raise HTTPException(
+                status_code=404, detail=f"session '{body.session_id}' not found"
+            )
+    if stored is not None:
+        domain = CynefinDomain(stored.cynefin_domain)
+        source = f"session {body.session_id}"
+    elif body.cynefin_domain is not None:
+        domain = CynefinDomain(body.cynefin_domain)
+        source = f"declared by {uid}"
+    else:
+        domain = CynefinDomain.DISORDER
+        source = "not declared"
+
     state = EpistemicState(
-        session_id=session_id,
+        session_id=body.session_id or session_id,
         agent_id=_DRAFT_AGENT,
-        proposed_edges=[],
-        **({"cynefin_domain": body.cynefin_domain} if body.cynefin_domain else {}),
+        cycle_count=stored.cycle_count if stored is not None else 0,
+        cynefin_domain=domain,
     )
 
     # Run governance check
@@ -325,10 +370,13 @@ async def submit_draft(
         "object_type": body.object_type,
         "object_id": str(draft_obj.id),
         "submitted_by": uid,
+        "cynefin_domain": domain.value,
+        "cynefin_domain_source": source,
         "payload_summary": str(draft_obj.model_dump())[:500],
     }
+    notes = f"cynefin_domain={domain.value} ({source})"
 
-    governance_result = await _governance.check(action_payload, state)
+    governance_result = await _governance.check(action_payload, state, notes=notes)
 
     if governance_result.verdict not in (
         GuardianVerdict.APPROVED,
@@ -346,6 +394,9 @@ async def submit_draft(
                 "error": "guardian_blocked",
                 "verdict": str(governance_result.verdict),
                 "reason": governance_result.reason,
+                "policy_rules_cited": list(governance_result.policy_rules_cited),
+                "cynefin_domain": domain.value,
+                "domain_source": source,
                 "audit_entry_id": str(governance_result.audit_entry_id),
             },
         )
@@ -371,6 +422,8 @@ async def submit_draft(
         object_type=body.object_type,
         guardian_verdict=str(governance_result.verdict),
         audit_entry_id=str(governance_result.audit_entry_id),
+        cynefin_domain=domain.value,
+        domain_source=source,
         message=f"{body.object_type} draft submitted. Awaiting Governance Officer review.",
     )
 
@@ -485,9 +538,174 @@ async def get_object_lineage(
         chain = await _registry.get_lineage(object_type, object_id, domains=domain_scope(user))
     except ObjectNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    records = [
-        record.id
-        for session_id in chain.provenance_sessions
-        for record in get_provenance_graph(session_id).records
-    ]
+    # The durable provenance store (011_provenance.sql), as its API shows it: a
+    # record an erasure tombstone hides is not listed here either.
+    records = []
+    for session_id in chain.provenance_sessions:
+        graph, _erasures = await get_provenance_graph(session_id)
+        records.extend(record.id for record in graph.records)
     return chain.model_copy(update={"provenance_records": records})
+
+
+# ── An edge's sensitivity analysis (septa-62) ─────────────────────────────────
+
+Cell = float | int | str | bool | None
+
+
+class EdgeSensitivityRequest(BaseModel):
+    """What the kernel analyses: the edge's own question, on the caller's data."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    data: dict[str, list[Cell]] = Field(
+        ...,
+        description="Columns as lists. The edge's source and target ids name two of them "
+        "(node ids are used in full, as everywhere the kernel reads a fragment).",
+    )
+    adjust_for: list[str] = Field(
+        default_factory=list,
+        description="Measured common causes of the edge's source and target (columns). The "
+        "analysis graph is the edge plus an edge from each of these into its source and its "
+        "target; the E-value then says how strong confounding *beyond* them would have to be.",
+    )
+    cynefin_domain: CynefinDomain | None = Field(
+        None,
+        description="The situation's domain, as for POST /api/governance/check: the "
+        "caller's declaration when no session is named; omitted, DISORDER, which PR-006 "
+        "refuses. Ignored when `session_id` names a session.",
+    )
+    session_id: str | None = Field(
+        None,
+        description="A reasoning session whose classified domain and cycle count the "
+        "Guardian reads instead.",
+    )
+
+
+class EdgeSensitivityResponse(BaseModel):
+    edge_id: str
+    outcome_kind: str = Field(description="result | abstention | apparatus_failure")
+    detail: str | None = Field(
+        None, description="Why there is no sensitivity result, when there is none."
+    )
+    sensitivity: SensitivityResult | None
+    assumption_id: str | None = Field(
+        None, description="The IGNORABILITY assumption the result was recorded on."
+    )
+    guardian_verdict: str | None
+    audit_entry_id: str | None
+
+
+@router.post(
+    "/edges/{edge_id}/sensitivity",
+    response_model=EdgeSensitivityResponse,
+    summary="Run the kernel on a draft edge's question and record its sensitivity analysis",
+)
+async def analyse_edge_sensitivity(
+    edge_id: UUID,
+    body: EdgeSensitivityRequest,
+    user: dict[str, Any] = Depends(guard("POST", "/api/semantic/edges/{edge_id}/sensitivity")),
+) -> EdgeSensitivityResponse:
+    """Estimate the effect of the edge's source on its target and record how robust it is.
+
+    The platform runs ``causal_core.analyze`` for source -> target on the supplied data,
+    over the edge and the declared common causes. When the kernel returns a sensitivity
+    analysis (the E-value; a Rosenbaum gamma* where the kernel reports one), the Guardian
+    is asked for a verdict for RECORD_SENSITIVITY on the edge and, if it approves, the
+    registry records the result as a new IGNORABILITY assumption the edge rests on --
+    what Guardian PR-007 reads before an edge can be approved.
+
+    A kernel refusal is a result: 200 with its reason, nothing written. 403 when the
+    Guardian does not approve the recording, 404 for an edge outside the caller's
+    scope, 409 for an edge that is APPROVED or DEPRECATED (never changed in place), 422
+    for data that lack the edge's columns.
+    """
+    uid = str(user.get("uid", "unknown"))
+    scope = domain_scope(user)
+    edge = await _visible_edge(edge_id, user)
+    if str(edge.approval_status) not in ("DRAFT", "UNDER_REVIEW"):
+        raise HTTPException(
+            status_code=409,
+            detail=f"CausalEdge {edge_id} is {edge.approval_status}: a sensitivity result is "
+            "recorded on a draft under review, never on an approved or deprecated edge",
+        )
+
+    source, target = str(edge.source.id), str(edge.target.id)
+    if edge.direction == "BACKWARD":
+        source, target = target, source
+    needed = [source, target, *body.adjust_for]
+    missing = [c for c in needed if c not in body.data]
+    if missing:
+        raise HTTPException(status_code=422, detail=f"data has no column for {missing}")
+    try:
+        frame = pd.DataFrame(body.data)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=f"data: {exc}") from exc
+
+    graph = [(source, target)]
+    for c in body.adjust_for:
+        graph += [(c, source), (c, target)]
+    outcome = analyze(frame, graph, treatment=source, outcome=target).model_dump(mode="json")
+    result = sensitivity_from_outcome(outcome, computed_by=uid)
+    log.info(
+        "api.semantic.edge_sensitivity",
+        edge_id=str(edge_id),
+        kind=outcome.get("kind"),
+        has_result=result is not None,
+        uid=uid,
+    )
+    if result is None:
+        detail = outcome.get("detail") or "the kernel ran no sensitivity analysis"
+        return EdgeSensitivityResponse(
+            edge_id=str(edge_id),
+            outcome_kind=str(outcome.get("kind")),
+            detail=str(detail),
+            sensitivity=None,
+            guardian_verdict=None,
+            audit_entry_id=None,
+        )
+
+    stored = await _sessions.load(body.session_id) if body.session_id else None
+    domain = stored.cynefin_domain if stored is not None else body.cynefin_domain
+    state = EpistemicState(
+        session_id=body.session_id or f"api-sensitivity-{uid}",
+        agent_id=f"api-user-{uid}",
+        cycle_count=stored.cycle_count if stored is not None else 0,
+        **({"cynefin_domain": domain} if domain else {}),
+    )
+    try:
+        recorded = await record_edge_sensitivity(
+            edge_id,
+            result,
+            governance=_governance,
+            state=state,
+            actor=UserRef(id=uid, email=user.get("email"), name=user.get("name")),
+            evidence={"rows": len(frame), "adjust_for": list(body.adjust_for)},
+            registry=_registry,
+            domains=scope,
+        )
+    except ObjectNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except InvalidTransitionError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except GuardianBlockedError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+    if recorded.assumption_id is None:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "guardian_blocked",
+                "verdict": str(recorded.verdict),
+                "reason": recorded.reason,
+                "policy_rules_cited": recorded.policy_rules_cited,
+                "audit_entry_id": str(recorded.audit_entry_id),
+            },
+        )
+    return EdgeSensitivityResponse(
+        edge_id=str(edge_id),
+        outcome_kind=str(outcome.get("kind")),
+        sensitivity=result,
+        assumption_id=str(recorded.assumption_id),
+        guardian_verdict=str(recorded.verdict),
+        audit_entry_id=str(recorded.audit_entry_id),
+    )

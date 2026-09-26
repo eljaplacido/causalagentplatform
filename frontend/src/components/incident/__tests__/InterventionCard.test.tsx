@@ -420,3 +420,35 @@ describe("InterventionCard — assumptions progressive disclosure", () => {
     ).toBeDefined();
   });
 });
+
+// Preconditions: an Intervention whose estimatedEffect is absent -- which is
+// every incident intervention today, since neither the triage endpoint nor the
+// incidents API returns an estimate.
+// Postconditions: the card says there is no estimate and renders no interval
+// or point estimate.
+describe("InterventionCard — no estimate is not a zero estimate", () => {
+  it("renders 'No effect estimate' and no interval when estimatedEffect is absent", () => {
+    const withoutEffect: Intervention = makeIntervention();
+    delete withoutEffect.estimatedEffect;
+    render(
+      <InterventionCard intervention={withoutEffect} onApprove={vi.fn()} onReject={vi.fn()} />
+    );
+    expect(screen.getByTestId("no-effect-estimate")).toHaveTextContent("No effect estimate");
+    expect(screen.queryByTestId("effect-estimate-bar")).toBeNull();
+    expect(document.body.textContent).not.toMatch(/95% CI/);
+  });
+
+  it("shows a human decision beside the Guardian verdict, not instead of it", () => {
+    render(
+      <InterventionCard
+        intervention={makeIntervention({ guardianVerdict: "REQUIRES_ESCALATION", humanDecision: "APPROVED" })}
+        onApprove={vi.fn()}
+        onReject={vi.fn()}
+      />
+    );
+    expect(screen.getByTestId("guardian-verdict-badge").getAttribute("data-verdict")).toBe(
+      "REQUIRES_ESCALATION"
+    );
+    expect(screen.getByTestId("human-decision").getAttribute("data-decision")).toBe("APPROVED");
+  });
+});

@@ -164,6 +164,19 @@ class CynefinDomain(StrEnum):
     DISORDER = "DISORDER"
 
 
+class RiskTier(StrEnum):
+    """How much approving a pending object could change, for the review queue.
+
+    Derived by src/semantic_layer/review_risk.py; the same four values as RiskTier
+    in packages/semantic-types.
+    """
+
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    CRITICAL = "CRITICAL"
+
+
 # ── Sub-objects ───────────────────────────────────────────────────────────────
 
 
@@ -443,6 +456,9 @@ class CausalEdge(BaseModel):
     version: str = "1.0.0"
     lineage: list[LineageRecord] = Field(default_factory=list)
     domain: str
+    #: Who drafted the edge. POST /api/semantic/drafts stamps it from the token, as
+    #: it does for entities and fragments; None for edges drafted before 012.
+    created_by: UserRef | None = None
     #: Server-kept: 1 at the draft, +1 per recorded state change. Every revision is
     #: a row in semantic_object_versions; this row is the current one.
     revision: int = Field(1, ge=1)
