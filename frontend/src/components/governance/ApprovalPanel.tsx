@@ -405,6 +405,7 @@ export function ApprovalPanel({
 
   return (
     <div
+      data-testid="approval-panel"
       className={cn(
         "rounded-xl border border-border bg-card overflow-hidden",
         className
@@ -416,14 +417,18 @@ export function ApprovalPanel({
           <div>
             <h3 className="text-base font-bold text-foreground">{item.objectName}</h3>
             <p className="text-xs text-muted-foreground">
-              {item.objectType.replace("_", " ")} · Submitted by {item.submittedBy}
+              {item.objectType.replace("_", " ")} ·{" "}
+              <span data-testid="business-domain">{item.businessDomain || "—"}</span>{" "}
+              · Submitted by {item.submittedBy}
             </p>
           </div>
-          <CynefinBadge
-            domain={item.domain}
-            confidence={0}
-            size="sm"
-          />
+          {item.cynefinDomain && (
+            <CynefinBadge
+              domain={item.cynefinDomain}
+              confidence={0}
+              size="sm"
+            />
+          )}
         </div>
       </div>
 
