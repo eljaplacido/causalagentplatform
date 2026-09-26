@@ -55,7 +55,7 @@
         "sha256": {
           "conformance/declared_not_implemented.json": "257308cb44ac839c8ad47ecfdda3bd5fea5f0404da9f1cdb17cf27dacd3c96a3",
           "backend/src": "211572b1be3ced45905cff9d7e2a8113dbf97127d1332f3e49577691dad39e28",
-          "backend/tests": "2de4b7564bb4cf5f24f16d11698f18a077b3fe5591275ef187108131ee131ac6",
+          "backend/tests": "5d5e8945856ad35857de34f092a9168f36009df82d3d2a587d507fde17e6dc74",
           "frontend/src": "4410d00e4045e853a0a85dedf14b931917491d6994db3eb6f759216f762dab87",
           "packages": "f39decf6dcae81c0e60801fa80c933c6547de55348adb3fd3867119423414373",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
@@ -63,7 +63,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (ui-renders-what-backend-sends: three frontend rows added with their tests; review-queue-risk-tier note re-cited to the dash the UI now shows; the gate table stays the 2026-09-25 measurement it says it is)"
+        "by": "Claude (ui-renders-what-backend-sends: re-read after a line wrap in test_incident_decision_merge.py; three frontend rows and the re-cited review-queue-risk-tier note stand)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -309,7 +309,7 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "2de4b7564bb4cf5f24f16d11698f18a077b3fe5591275ef187108131ee131ac6",
+          "backend/tests": "5d5e8945856ad35857de34f092a9168f36009df82d3d2a587d507fde17e6dc74",
           "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
@@ -323,7 +323,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (ui-renders-what-backend-sends: unit/ names the incidents decision-merge test; 3.3 lists the api client, CynefinBadge and analyst tests and the render-what-the-backend-sends contract)"
+        "by": "Claude (ui-renders-what-backend-sends: re-read after a line wrap in test_incident_decision_merge.py; 3.1 and 3.3 stand)"
       }
     },
     "docs/UIX.md": {
