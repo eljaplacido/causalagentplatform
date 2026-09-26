@@ -262,7 +262,10 @@ export interface ReviewQueueItem {
    */
   cynefinDomain?: CynefinDomain;
   riskTier: RiskTier;
-  submittedBy: string;
+  /** The facts that decided riskTier (backend/src/semantic_layer/review_risk.py). */
+  riskReasons?: string[];
+  /** Who drafted the object; null when the backend has no record of it. */
+  submittedBy: string | null;
   submittedAt: string; // ISO8601
   status: ReviewQueueStatus;
   evidenceCitations: Evidence[];

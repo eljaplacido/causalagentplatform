@@ -20,10 +20,10 @@
       "why": "status line, what's in the box, quick-start commands, MCP entry point",
       "subjects": [
         "backend/pyproject.toml",
-        "backend/mcp_server",
         "frontend/package.json",
         "launch_backend.sh",
-        "docs/CURRENT_STAGE.md"
+        "docs/CURRENT_STAGE.md",
+        "packages/causal-mcp"
       ],
       "baseline": {
         "on": "2026-09-26",
@@ -45,7 +45,6 @@
       "subjects": [
         "conformance/declared_not_implemented.json",
         "backend/src",
-        "backend/mcp_server",
         "backend/tests",
         "frontend/src",
         "packages",
@@ -126,14 +125,14 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/orchestration": "026e61993e2c3e51962380e4d4e957cf5d26e650455679bd5e7cdce75c31c2f4",
+          "backend/src/orchestration": "7776a0a563af5bda75451c4ff4bb546683ae9947207f6da8b0545c1781976c8f",
           "backend/src/evaluation": "9a2708b95f3bae7f8b05075e62815c7f51cb3f6e7939a585c1c2c26e5b500b07",
-          "backend/src/api/platform.py": "16dcc7dbc23c2cf627fff078cbdf4e5355833ea156073ab190f48ba60574b613"
+          "backend/src/api/platform.py": "f7c4646310f0b2ef312e224c093000eb90aff0a890966cdff9482a348976781b"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: re-read; platform.py's metrics now group weeks in Python instead of SQLite's strftime and the DB connector is named by dialect; the three evaluation endpoints the ADR describes are unchanged)"
+        "by": "Claude (merge #37 into #38: ADR-001 keeps the governed-escalation text with #47's SimulationAgent line; ADR-003 says PR-010 now bites, pinned end to end; CURRENT_STAGE session rows combined, PR-010 row cites the session test; AGENTS PR-010 line holds; README/QUICKSTART/ORCHESTRATION/ROADMAP/TESTING_CICD merged cleanly, re-read for session and kernel claims)"
       }
     },
     "docs/AGENTS.md": {
@@ -141,9 +140,9 @@
       "subjects": [
         "backend/src/agents",
         "backend/src/skills",
-        "backend/mcp_server",
         "backend/src/orchestration",
-        "prompts"
+        "prompts",
+        "packages/causal-mcp"
       ],
       "baseline": {
         "on": "2026-09-26",
@@ -176,20 +175,20 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/middleware": "0a00dc9c734e148a08c531bcd281d3afe81a8189ef75ef669543b89cd0e4136b",
-          "backend/src/api/governance.py": "74095eefc36dc973a8dd5aae5d8bba89d44aa860c32862fa729a5c10b55bf3c3",
-          "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
-          "backend/src/semantic_layer/registry.py": "91529601ce53d74c25763a017f4a43ad552c13e94d562f513165b079c16c71b7",
+          "backend/src/middleware": "2ccb514c0d866d9821835ae3e12b4643addaff0d5bbccb03fb599145231feb05",
+          "backend/src/api/governance.py": "f04db4d767e8a62c4315c46635a3e93d045a0817116acb6d33bbdb0d3a230cd0",
+          "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
+          "backend/src/semantic_layer/registry.py": "32f6f4cee20e193c4ab87d60ca5b90a9aba8e18a01feef60c166433e63c7374c",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
-          "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
-          "backend/src/db/migrations": "6b52679eb2132b16e3bb238da5d6a7bde969f409bba4bd63b431c94456db74f1",
-          "backend/src/semantic_layer/verdict.py": "2807535994f0073bd9f58cc2774822d9f7bd1749aa7801d669eb2301bde3ac00",
+          "backend/src/api/provenance.py": "55fa5a3e0153904f557da134e6e0f3a8c8c1ae0ab8b5fe4faa8a6918a70c617e",
+          "backend/src/db/migrations": "0c6e574f90adda4f934a3cf66ecea153f5610294203d4c4cf1cc344c17368319",
+          "backend/src/semantic_layer/verdict.py": "13e537f2b000c10f10e57b0453f1f459b5237a2d60ea009103247a8bfbcade80",
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
+        "by": "Claude (merge #47 into #53: read each conflict against the code; SECURITY states both review bindings with PR-007's platform-recorded rule and the drafts route; UIX keeps the reject flow and the no-draft-page note; CYBERSECURITY 7.2 says a drafter's own result does not count)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -229,15 +228,15 @@
         "backend/src/semantic_layer/models.py"
       ],
       "baseline": {
-        "on": "2026-09-25",
+        "on": "2026-09-26",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
-          "backend/src/semantic_layer/models.py": "f3b7a600ac8e8c4ce7beb48145a188b2394f3775b6ad7d094613cbb9798d3b05"
+          "backend/src/semantic_layer/models.py": "9d20689801ee209370c995278bfa23f58d19fd0c68a65d86e705e4fb7b1a036f"
         }
       },
       "last_read": {
-        "on": "2026-09-25",
-        "by": "Claude (septa-25: re-read for PR-002, /check request fields, risk score and cycle count; hallucination_risk_checked constraint is spec, satisfied by /check computing it)"
+        "on": "2026-09-26",
+        "by": "Claude (septa-36: re-read; models.py gained RiskTier and CausalEdge.created_by, neither is a handoff field it describes)"
       }
     },
     "docs/ORCHESTRATION.md": {
@@ -252,14 +251,14 @@
         "on": "2026-09-26",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
-          "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
-          ".github": "405abf54754d93806c64cd703261a4cac70212e22955f1dd3c651a237dbdb2cb",
-          ".gnomon": "ef33b01c3cfb5e5d70d83032e0bc2510e5306a54a9be8f6396daf1bf60f354bd"
+          "prompts": "664b74cd837a44513e10dc0a7a5c44a3015816f928c93d4f7831320b0231e50f",
+          ".github": "db12d364ec234ff9774297f81b08649ec310d368304c47fbfcfa04138f630ac4",
+          ".gnomon": "bb564221cb7a0339004787d342172182a5662510dfb4a6c2eded2c6a82567ac9"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
+        "by": "Claude (merge #38 into #40: gate lists name T9 and C0 together (AGENTS, skills, benchmarks README, TESTING_CICD seeded-defect list); ROADMAP keeps the train's done list with calibration evidence open; CURRENT_STAGE package counts 233/146/41 measured on this tree; README and QUICKSTART quote no version floors)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -377,17 +376,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/middleware": "0a00dc9c734e148a08c531bcd281d3afe81a8189ef75ef669543b89cd0e4136b",
-          "backend/src/api/governance.py": "74095eefc36dc973a8dd5aae5d8bba89d44aa860c32862fa729a5c10b55bf3c3",
+          "backend/src/middleware": "2ccb514c0d866d9821835ae3e12b4643addaff0d5bbccb03fb599145231feb05",
+          "backend/src/api/governance.py": "f04db4d767e8a62c4315c46635a3e93d045a0817116acb6d33bbdb0d3a230cd0",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
-          "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
-          "backend/src/semantic_layer/registry.py": "91529601ce53d74c25763a017f4a43ad552c13e94d562f513165b079c16c71b7",
-          "backend/src/semantic_layer/verdict.py": "2807535994f0073bd9f58cc2774822d9f7bd1749aa7801d669eb2301bde3ac00"
+          "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
+          "backend/src/semantic_layer/registry.py": "32f6f4cee20e193c4ab87d60ca5b90a9aba8e18a01feef60c166433e63c7374c",
+          "backend/src/semantic_layer/verdict.py": "13e537f2b000c10f10e57b0453f1f459b5237a2d60ea009103247a8bfbcade80"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-47: domain isolation now enforced also by PostgreSQL RLS binding causal_app, start-up refusal as owner/superuser/BYPASSRLS; the compose passwords sentence names both logins)"
+        "by": "Claude (merge #47 into #53: read each conflict against the code; SECURITY states both review bindings with PR-007's platform-recorded rule and the drafts route; UIX keeps the reject flow and the no-draft-page note; CYBERSECURITY 7.2 says a drafter's own result does not count)"
       }
     }
   }

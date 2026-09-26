@@ -1,7 +1,7 @@
 # Prompt template: causal_propose_edge
 # Version: 1.0.0
 # Skill: causal_propose_edge (AGENTS.md §3.1)
-# Reference: cynepic-causal Rust crate, DoWhy Python
+# Reference: CausalDiscovery agent, src/agents/causal_discovery.py
 
 version: "1.0.0"
 skill: causal_propose_edge

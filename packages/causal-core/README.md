@@ -41,7 +41,7 @@ The command exits 0 for a result, 2 for a refusal and 1 for an apparatus failure
 | **Estimate** | A portfolio of difference in means, Lin regression, Hajek IPW, cross-fitted AIPW and DML, linear front-door, 2SLS and proximal 2SLS. Every standard error comes from the estimator's influence function, and every interval is coverage-tested. |
 | **Triangulate** | Estimators that rest on different assumptions are compared, with the correlation between them taken into account. If they disagree, the result is marked *contested*. |
 | **Refute** | A placebo treatment, negative-control outcomes and conditional independences implied by the graph. Their false-alarm rates and power are measured, not assumed. |
-| **Sensitivity** | E-values (VanderWeele & Ding) and Cinelli–Hazlett robustness values. |
+| **Sensitivity** | E-values (VanderWeele & Ding) and Cinelli–Hazlett robustness values; for back-door designs with a binary treatment, a Rosenbaum bound on a 1:1 matched design the kernel builds: Γ*, the largest hidden bias at which the matched comparison still rejects no effect. |
 | **Claims** | Every number that may appear in prose is a claim bound to a field. `cc.verify(text, out)` rejects any number that isn't one. It also rejects causal wording ("caused", "will reduce") unless the result is *supported*. |
 | **Provenance** | Digests of the graph, query, data and policy, all in RFC 8785 canonical JSON, plus a digest of the result itself. The same inputs reproduce the same `result_digest`. |
 
@@ -151,6 +151,16 @@ before any run. It runs on every change:
   5.4–6.1% where the washout covers it. It cannot see a carryover whose bias is small next to
   the standard error: at −0.085 (coverage 88.7%) it fires in 9.5% of runs, and no check on the
   minutes after the washout could do much better at these sizes.
+
+- **T9 (Rosenbaum sensitivity):** pair differences drawn from Rosenbaum's model with the hidden
+  bias planted at its worst case, and full analyses with an unmeasured confounder of known
+  strength. The reported Γ* reached the planted bias in 1.9–2.9% of runs (bar 3.5%, nominal 2.5%)
+  and kept the conclusion at two-thirds of it in 91.8–96.7%; with a confounder of odds ratio 3
+  behind a real analysis, the median Γ* was 1.63 against the design's sensitivity of 1.88, and no
+  run claimed 3. Γ* speaks to the matched comparison's test of no effect, not to the AIPW
+  estimate; Wilcoxon's statistic understates design sensitivity, and residual imbalance after
+  inexact matching is bias the bound does not cover (the result reports the largest standardized
+  difference).
 
 **Switchbacks.** `analyze(..., design="randomized", cluster=<block>, time=<minute>,
 washout=<minutes>)` drops the first `washout` minutes of every block and compares block means

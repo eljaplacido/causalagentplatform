@@ -99,6 +99,9 @@ ROUTE_ROLES: dict[tuple[str, str], tuple[str, ...]] = {
     ("GET", "/api/semantic/edges/{edge_id}"): ALL_ROLES,
     ("GET", "/api/semantic/edges/{edge_id}/audit-trail"): ALL_ROLES,
     ("POST", "/api/semantic/drafts"): DRAFT_ROLES,
+    # Recording the kernel's sensitivity analysis of a draft edge adds an assumption
+    # to it: a draft write (§4.1 Graph Write), inside the user's domains.
+    ("POST", "/api/semantic/edges/{edge_id}/sensitivity"): DRAFT_ROLES,
     # Governance
     ("POST", "/api/governance/check"): CHECK_ROLES,
     ("POST", "/api/governance/approve/{object_id}"): GOVERNANCE_ROLES,
@@ -110,11 +113,12 @@ ROUTE_ROLES: dict[tuple[str, str], tuple[str, ...]] = {
     ("POST", "/api/v1/session/incident"): ALL_ROLES,
     # Platform: a probe over the request body, changing nothing.
     ("POST", "/api/v1/platform/evaluation/calibration"): ALL_ROLES,
-    # Provenance: read like the audit log, and erased only by governance roles.
+    # Provenance: read like the audit log. An erasure is a tombstone that hides a
+    # session's records from these reads; nothing deletes one.
     ("GET", "/api/v1/provenance/trace/{session_id}"): GOVERNANCE_ROLES,
     ("GET", "/api/v1/provenance/export/{session_id}"): GOVERNANCE_ROLES,
     ("GET", "/api/v1/provenance/invocations/{session_id}"): GOVERNANCE_ROLES,
-    ("DELETE", "/api/v1/provenance/session/{session_id}"): GOVERNANCE_ROLES,
+    ("POST", "/api/v1/provenance/session/{session_id}/erasure"): GOVERNANCE_ROLES,
     # Interventions: whoever decides one records what it did.
     ("POST", "/api/v1/interventions/feedback"): DECISION_ROLES,
     ("POST", "/api/v1/interventions/{intervention_id}/approve"): DECISION_ROLES,

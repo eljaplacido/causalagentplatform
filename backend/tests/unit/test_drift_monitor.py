@@ -17,7 +17,7 @@ Invariants tested:
 
 From AGENTS.md §2.1 DriftMonitorAgent:
   'NEVER write to the semantic layer (alert-only, no graph modifications)'
-  'Emit drift alerts via Kafka topics'
+  'Emit drift alerts through the in-process AlertEmitter'
   'Detect: causal drift, distribution drift, semantic drift, concept drift'
 """
 
@@ -686,7 +686,7 @@ async def test_alert_emit_failure_not_hidden(db_engine: object) -> None:
         return {"kl_divergence": 0.8, "drifted_features": [], "drift_type": "distribution", "feature_scores": {}}
 
     async def mock_emit(*, severity, alert_type, message, context):
-        raise RuntimeError("Kafka broker unreachable")
+        raise RuntimeError("alert callback failed")
 
     async def mock_structure_compare(inputs):
         return {"structural_drift_detected": False, "affected_edges": []}

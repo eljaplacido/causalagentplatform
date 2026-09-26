@@ -7,14 +7,13 @@ Responsibilities (AGENTS.md §2.1 DriftMonitorAgent):
   - Detect semantic drift (entity definition inconsistencies)
   - Detect concept drift (model performance degradation)
   - Emit drift alerts through the in-process AlertEmitter (logging, callbacks,
-    deduplication; AGENTS.md's Kafka topics do not exist -- register
-    kafka-streaming)
-  - Store drift alerts in Neo4j for audit and tracking
+    deduplication; there is no message broker)
+  - Store drift alerts in Neo4j for audit and tracking, when NEO4J_URI is set
   - NEVER write to the semantic layer (alert-only, no graph modifications)
 
 Implemented skills:
   drift_detect              — compute KL divergence on feature distributions
-  store_drift_alert         — persist alerts to Neo4j
+  store_drift_alert         — persist alerts to Neo4j (optional)
   get_recent_drift_alerts   — retrieve recent alerts
   causal_structure_compare  — compare graph edges against live data patterns
   alert_emit                — emit a drift alert through AlertEmitter
@@ -27,7 +26,7 @@ EpistemicState constraints enforced:
 Production readiness:
   - Configurable thresholds via constructor parameters
   - Drift severity scoring with multi-factor analysis
-  - Neo4j-native alert storage with TTL
+  - Optional Neo4j alert storage with TTL (NEO4J_URI; tested against mocks only)
   - Integration with experience buffer for pattern learning
 """
 
@@ -61,8 +60,8 @@ _DEFAULT_KL_THRESHOLD = 0.1
 _DEFAULT_SEVERE_KL_THRESHOLD = 0.5
 _DEFAULT_SEMANTIC_SIMILARITY_THRESHOLD = 0.7
 
-#: Where an emitted alert goes: the in-process AlertEmitter. There is no Kafka
-#: producer (register kafka-streaming), so no topic is named.
+#: Where an emitted alert goes: the in-process AlertEmitter. There is no message
+#: broker, so no topic is named.
 _ALERT_CHANNEL = "AlertEmitter (in-process)"
 
 
@@ -71,8 +70,8 @@ class DriftMonitorAgent(BaseAgent):
     Continuous monitoring agent that detects and alerts on drift.
 
     This agent is read-only with respect to the semantic layer.
-    It emits alerts through the in-process AlertEmitter and stores them in
-    Neo4j for audit.
+    It emits alerts through the in-process AlertEmitter and, when NEO4J_URI
+    is set, stores them in Neo4j for audit.
     Flags the EpistemicState for human review when severe drift is detected.
 
     Designed to run as a background agent (maps to OpenFang automate lane).
@@ -112,8 +111,8 @@ class DriftMonitorAgent(BaseAgent):
         self._enable_neo4j_storage = enable_neo4j_storage
         self._enable_alert_emission = enable_alert_emission
 
-        # In-process alert emitter: logging, registered callbacks, deduplication
-        # and throttling. There is no message bus behind it.
+        # In-process alert emitter: structured log and registered callbacks,
+        # with deduplication and throttling. There is no message broker.
         # Imported lazily to break circular import with sensors package.
         from src.sensors.alert_emit import AlertEmitter
         self._alert_emitter = AlertEmitter(source=agent_id)
@@ -425,7 +424,7 @@ class DriftMonitorAgent(BaseAgent):
         recommendation: str,
         evidence: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Emit the alert through AlertEmitter and store it in Neo4j."""
+        """Emit the alert through AlertEmitter and store it in Neo4j (if configured)."""
         alert_result = {
             "alert_type": alert_type,
             "severity": severity,

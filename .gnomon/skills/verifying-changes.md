@@ -1,7 +1,7 @@
 +++
 name = "verifying changes"
 description = "Which command decides pass/fail in this repository, what its ratchets and gates mean, and how to move one honestly"
-match = '\b(verify|verifying|ci|ci\.sh|gate|ratchet|baseline|coverage|ruff|mypy|lint|done|passing|green|pytest|t0|t2|t3|t4|t5|t6|t7|t8|d0|a0|parity)\b'
+match = '\b(verify|verifying|ci|ci\.sh|gate|ratchet|baseline|coverage|ruff|mypy|lint|done|passing|green|pytest|t0|t2|t3|t4|t5|t6|t7|t8|t9|d0|a0|c0|parity)\b'
 roles = ["implementor", "verifier", "implement", "critique", "coordinator"]
 +++
 
@@ -72,8 +72,10 @@ the package runs every marker:
 | T6 anytime-valid monitoring | packages/causal-core | `t6` | benchmarks/t6-sequential/ |
 | T7 cluster-randomized | packages/causal-core | `t7` | benchmarks/t7-cluster/ |
 | T8 switchback | packages/causal-core | `t8` | benchmarks/t8-switchback/ |
+| T9 Rosenbaum sensitivity | packages/causal-core | `t9` | benchmarks/t9-rosenbaum/ |
 | D0 decision table | packages/causal-decision | `d0` | benchmarks/d0-decision-policy/ |
 | A0 assumption impact | packages/causal-decision | `a0` | benchmarks/a0-assumption-impact/ |
+| C0 calibration report (simulated) | packages/causal-decision | `c0` | benchmarks/c0-calibration/ |
 
 T2 and T3 SKIP unless their data is cached (`~/.cache/causal-core`) or
 `CAUSAL_FETCH=1`; a skipped real-data gate is not a passed one -- the row's
