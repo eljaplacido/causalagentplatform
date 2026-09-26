@@ -1,5 +1,74 @@
 {
   "$defs": {
+    "Abstention": {
+      "additionalProperties": false,
+      "properties": {
+        "certificate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IdentificationCertificate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "detail": {
+          "title": "Detail",
+          "type": "string"
+        },
+        "diagnostics": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Diagnostics"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "kind": {
+          "const": "refusal",
+          "default": "refusal",
+          "title": "Kind",
+          "type": "string"
+        },
+        "missing_information": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Missing Information",
+          "type": "array"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "query": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CausalQuery"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "reason": {
+          "$ref": "#/$defs/AbstentionReason"
+        }
+      },
+      "required": [
+        "reason",
+        "detail",
+        "provenance"
+      ],
+      "title": "Abstention",
+      "type": "object"
+    },
     "AbstentionReason": {
       "enum": [
         "NON_IDENTIFIABLE",
@@ -16,6 +85,40 @@
       ],
       "title": "AbstentionReason",
       "type": "string"
+    },
+    "ApparatusFailure": {
+      "additionalProperties": false,
+      "properties": {
+        "detail": {
+          "title": "Detail",
+          "type": "string"
+        },
+        "error_type": {
+          "title": "Error Type",
+          "type": "string"
+        },
+        "kind": {
+          "const": "apparatus_failure",
+          "default": "apparatus_failure",
+          "title": "Kind",
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "stage": {
+          "title": "Stage",
+          "type": "string"
+        }
+      },
+      "required": [
+        "stage",
+        "error_type",
+        "detail",
+        "provenance"
+      ],
+      "title": "ApparatusFailure",
+      "type": "object"
     },
     "BalanceRow": {
       "additionalProperties": false,
@@ -79,6 +182,25 @@
           "default": null,
           "description": "Randomized designs only: the column identifying the unit of randomization (service, region, tenant) when outcomes are measured on finer units (requests, users). Standard errors are then cluster-robust; treatment must be constant within a cluster.",
           "title": "Cluster"
+        },
+        "control_group": {
+          "default": "never_treated",
+          "description": "Panel designs only: never_treated compares each cohort with units never treated; not_yet_treated adds cohorts not yet treated at that period, for rollouts that reach every unit.",
+          "enum": [
+            "never_treated",
+            "not_yet_treated"
+          ],
+          "title": "Control Group",
+          "type": "string"
+        },
+        "covariates": {
+          "default": [],
+          "description": "Panel designs only: time-invariant, pre-treatment columns under which parallel trends is assumed to hold; each group-time effect is then doubly robust (Sant'Anna & Zhao 2020). Covariates that vary within a unit, and poor overlap, are refused.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Covariates",
+          "type": "array"
         },
         "design": {
           "$ref": "#/$defs/Design",
@@ -274,6 +396,152 @@
         "outcome"
       ],
       "title": "CausalQuery",
+      "type": "object"
+    },
+    "CausalResult": {
+      "additionalProperties": false,
+      "properties": {
+        "certificate": {
+          "$ref": "#/$defs/IdentificationCertificate"
+        },
+        "claims": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Claim"
+          },
+          "title": "Claims",
+          "type": "array"
+        },
+        "diagnostics": {
+          "$ref": "#/$defs/Diagnostics"
+        },
+        "estimates": {
+          "items": {
+            "$ref": "#/$defs/EstimateRecord"
+          },
+          "title": "Estimates",
+          "type": "array"
+        },
+        "event_study": {
+          "default": [],
+          "description": "Panel designs only: the effect by periods since adoption, pre-periods included as placebos.",
+          "items": {
+            "$ref": "#/$defs/EventTimeEffect"
+          },
+          "title": "Event Study",
+          "type": "array"
+        },
+        "heterogeneity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Heterogeneity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "kind": {
+          "const": "result",
+          "default": "result",
+          "title": "Kind",
+          "type": "string"
+        },
+        "primary": {
+          "$ref": "#/$defs/EstimateRecord"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "query": {
+          "$ref": "#/$defs/CausalQuery"
+        },
+        "refutations": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RefutationResult"
+          },
+          "title": "Refutations",
+          "type": "array"
+        },
+        "result_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "sha256 of the JCS form of this object without this field.",
+          "title": "Result Digest"
+        },
+        "segments": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SegmentEffect"
+          },
+          "title": "Segments",
+          "type": "array"
+        },
+        "sensitivity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Sensitivity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "sequential": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SequentialSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Sequential designs only: the confidence sequence at every look. `primary` carries the last look, with the sequence as its interval."
+        },
+        "status": {
+          "$ref": "#/$defs/ResultStatus"
+        },
+        "triangulation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Triangulation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "warnings": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "status",
+        "query",
+        "certificate",
+        "primary",
+        "estimates",
+        "diagnostics",
+        "provenance"
+      ],
+      "title": "CausalResult",
       "type": "object"
     },
     "Claim": {
@@ -1487,150 +1755,25 @@
       "type": "object"
     }
   },
-  "$id": "urn:causalplatform:claims:0.9.0:causal_result",
+  "$id": "urn:causalplatform:claims:0.10.0:outcome",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "additionalProperties": false,
-  "properties": {
-    "certificate": {
-      "$ref": "#/$defs/IdentificationCertificate"
+  "discriminator": {
+    "mapping": {
+      "apparatus_failure": "#/$defs/ApparatusFailure",
+      "refusal": "#/$defs/Abstention",
+      "result": "#/$defs/CausalResult"
     },
-    "claims": {
-      "default": [],
-      "items": {
-        "$ref": "#/$defs/Claim"
-      },
-      "title": "Claims",
-      "type": "array"
-    },
-    "diagnostics": {
-      "$ref": "#/$defs/Diagnostics"
-    },
-    "estimates": {
-      "items": {
-        "$ref": "#/$defs/EstimateRecord"
-      },
-      "title": "Estimates",
-      "type": "array"
-    },
-    "event_study": {
-      "default": [],
-      "description": "Panel designs only: the effect by periods since adoption, pre-periods included as placebos.",
-      "items": {
-        "$ref": "#/$defs/EventTimeEffect"
-      },
-      "title": "Event Study",
-      "type": "array"
-    },
-    "heterogeneity": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/Heterogeneity"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null
-    },
-    "kind": {
-      "const": "result",
-      "default": "result",
-      "title": "Kind",
-      "type": "string"
-    },
-    "primary": {
-      "$ref": "#/$defs/EstimateRecord"
-    },
-    "provenance": {
-      "$ref": "#/$defs/Provenance"
-    },
-    "query": {
-      "$ref": "#/$defs/CausalQuery"
-    },
-    "refutations": {
-      "default": [],
-      "items": {
-        "$ref": "#/$defs/RefutationResult"
-      },
-      "title": "Refutations",
-      "type": "array"
-    },
-    "result_digest": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "description": "sha256 of the JCS form of this object without this field.",
-      "title": "Result Digest"
-    },
-    "segments": {
-      "default": [],
-      "items": {
-        "$ref": "#/$defs/SegmentEffect"
-      },
-      "title": "Segments",
-      "type": "array"
-    },
-    "sensitivity": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/Sensitivity"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null
-    },
-    "sequential": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/SequentialSummary"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "description": "Sequential designs only: the confidence sequence at every look. `primary` carries the last look, with the sequence as its interval."
-    },
-    "status": {
-      "$ref": "#/$defs/ResultStatus"
-    },
-    "triangulation": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/Triangulation"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null
-    },
-    "warnings": {
-      "default": [],
-      "items": {
-        "type": "string"
-      },
-      "title": "Warnings",
-      "type": "array"
-    }
+    "propertyName": "kind"
   },
-  "required": [
-    "status",
-    "query",
-    "certificate",
-    "primary",
-    "estimates",
-    "diagnostics",
-    "provenance"
-  ],
-  "title": "CausalResult",
-  "type": "object"
+  "oneOf": [
+    {
+      "$ref": "#/$defs/CausalResult"
+    },
+    {
+      "$ref": "#/$defs/Abstention"
+    },
+    {
+      "$ref": "#/$defs/ApparatusFailure"
+    }
+  ]
 }

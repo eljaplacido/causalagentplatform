@@ -204,6 +204,42 @@ def test_a_staggered_rollout_can_be_analysed_and_decided_over_mcp() -> None:
     assert decided.decision.verdict.value == "act_with_approval", decided.explanation
 
 
+def test_a_rollout_with_covariates_and_no_never_treated_units_is_analysed_over_mcp() -> None:
+    """The two panel fields of contract 0.10.0 reach the kernel over MCP, and the response
+    validates against the output schema as listed (after its type unions were merged)."""
+    import asyncio
+
+    import jsonschema
+    from causal_core.bench import t5
+
+    frame = t5.simulate(t5.DESIGNS["covariates_not_yet_treated"], 8, 0.5,
+                        np.random.default_rng(6))
+    out = tools.causal_analyze(graph=t5.GRAPH, treatment="rollout", outcome="latency",
+                               data={c: frame[c].tolist() for c in frame},
+                               design="difference_in_differences", unit="unit", time="period",
+                               estimand="att", covariates=["x"], control_group="not_yet_treated")
+    assert out.outcome.kind == "result", out.report
+    assert out.outcome.primary.estimator == "did_group_time_dr"
+    assert out.outcome.primary.details["control_group"] == "not_yet_treated"
+    listed = asyncio.run(server.build_server().list_tools())
+    schema = next(t for t in listed if t.name == "causal_analyze").output_schema
+    jsonschema.validate(out.model_dump(mode="json"), schema)
+
+
+def test_merged_type_unions_accept_exactly_what_the_long_form_accepts() -> None:
+    from jsonschema import Draft202012Validator
+
+    long_form = {"anyOf": [{"type": "number"}, {"type": "null"}]}
+    short = server._merge_type_unions(long_form)
+    assert short == {"type": ["number", "null"]}
+    for value in (1.5, 0, None, "x", [1], {"a": 1}, True):
+        assert Draft202012Validator(long_form).is_valid(value) == Draft202012Validator(
+            short
+        ).is_valid(value), value
+    constrained = {"anyOf": [{"type": "string", "minLength": 1}, {"type": "null"}]}
+    assert server._merge_type_unions(constrained) == constrained, "only bare types merge"
+
+
 def test_a_watched_canary_is_monitored_and_decided_over_mcp() -> None:
     from causal_core.bench import t6
 

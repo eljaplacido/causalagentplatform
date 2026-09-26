@@ -26,7 +26,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
-CONTRACT_VERSION = "0.9.0"
+CONTRACT_VERSION = "0.10.0"
 
 
 class _Model(BaseModel):
@@ -226,6 +226,19 @@ class CausalQuery(_Model):
         default=None,
         description="Panel designs only: the column holding the period, as an integer or an "
         "ordered value. Periods are the distinct values in sorted order.",
+    )
+    covariates: tuple[str, ...] = Field(
+        default=(),
+        description="Panel designs only: time-invariant, pre-treatment columns under which "
+        "parallel trends is assumed to hold; each group-time effect is then doubly robust "
+        "(Sant'Anna & Zhao 2020). Covariates that vary within a unit, and poor overlap, are "
+        "refused.",
+    )
+    control_group: Literal["never_treated", "not_yet_treated"] = Field(
+        default="never_treated",
+        description="Panel designs only: never_treated compares each cohort with units never "
+        "treated; not_yet_treated adds cohorts not yet treated at that period, for rollouts "
+        "that reach every unit.",
     )
     population: str | None = None
     horizon: str | None = None

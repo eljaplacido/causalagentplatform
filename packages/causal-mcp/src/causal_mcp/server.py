@@ -94,6 +94,40 @@ def _strip_prose(node: Any) -> Any:
     return node
 
 
+def _merge_type_unions(node: Any) -> Any:
+    """``{"anyOf": [{"type": "number"}, {"type": "null"}]}`` as ``{"type": ["number", "null"]}``.
+
+    The two are the same schema (JSON Schema 2020-12, section 6.1.1): a value is valid under
+    one exactly when it is valid under the other. Pydantic writes every optional scalar the
+    long way, and the output schemas carry a few hundred of them.
+    """
+    if isinstance(node, dict):
+        out = {
+            k: (
+                {name: _merge_type_unions(sub) for name, sub in v.items()}
+                if k in ("properties", "$defs") and isinstance(v, dict)
+                else _merge_type_unions(v)
+            )
+            for k, v in node.items()
+        }
+        branches = out.get("anyOf")
+        if (
+            isinstance(branches, list)
+            and len(branches) > 1
+            and "type" not in out
+            and all(
+                isinstance(b, dict) and set(b) == {"type"} and isinstance(b["type"], str)
+                for b in branches
+            )
+        ):
+            out.pop("anyOf")
+            out["type"] = [b["type"] for b in branches]
+        return out
+    if isinstance(node, list):
+        return [_merge_type_unions(v) for v in node]
+    return node
+
+
 def _slim_output_schema(server: MCPServer, name: str) -> None:
     """Drop annotations (descriptions, titles, defaults) from a tool's OUTPUT schema; keep
     them on its input.
@@ -106,11 +140,13 @@ def _slim_output_schema(server: MCPServer, name: str) -> None:
     and conformance/causal-claims already publish in full. Defaults went too when the input
     schemas began carrying the contract's parameter descriptions (septa-4): a default in an
     output schema validates nothing. Input schemas keep every word, because that is what an
-    agent reads to call a tool correctly.
+    agent reads to call a tool correctly. Unions of bare types are written as one type list
+    (contract 0.10.0, when two panel fields pushed the listing past its budget again): the
+    same schema in fewer bytes.
     """
     tool = server._tool_manager.get_tool(name)  # private: mcp 2.2 exposes no setter
     if tool is not None and tool.output_schema is not None:
-        tool.__dict__["output_schema"] = _strip_prose(tool.output_schema)
+        tool.__dict__["output_schema"] = _merge_type_unions(_strip_prose(tool.output_schema))
 
 
 def build_server() -> MCPServer:

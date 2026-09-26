@@ -339,11 +339,26 @@ def _analyze(
             frame,
             query,
             policy,
-            cert=panel_certificate(prov["graph_digest"], ENGINE),
+            cert=panel_certificate(prov["graph_digest"], ENGINE, query),
             unreviewed=unreviewed,
             warnings=warnings,
             prov=prov,
             refuse=refuse,
+        )
+    panel_only = sorted(
+        name
+        for name, given in (
+            ("covariates", bool(query.covariates)),
+            ("control_group", query.control_group != "never_treated"),
+        )
+        if given
+    )
+    if panel_only:
+        return refuse(
+            AbstentionReason.INVALID_INPUT,
+            f"{panel_only} apply to design='difference_in_differences' only; with design="
+            f"'{query.design.value}' they would be ignored",
+            q=query,
         )
     de_x = g.descendants({query.treatment})
     for nco in query.negative_control_outcomes:
