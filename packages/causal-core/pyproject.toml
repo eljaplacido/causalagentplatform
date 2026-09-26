@@ -45,6 +45,7 @@ dev = [
     "pyarrow>=15",
     "packaging>=23",  # scripts/check_licenses.py
     "polars>=1.0",
+    "threadpoolctl>=3.1",  # tests/test_scale.py pins BLAS to one thread
 ]
 
 [project.scripts]
