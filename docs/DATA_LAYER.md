@@ -259,12 +259,18 @@ its state today.
    applies the same checks, and the verdict must also have been issued for action
    `GOVERNANCE_REJECT`; a verdict for `GOVERNANCE_REJECT` or `GOVERNANCE_APPROVE` authorises
    that decision only (`septa-53`). See `backend/tests/guardian/test_verdict_binding.py`.
-2. **All objects are versioned.** Does not hold. Objects carry a `version` field (default
-   `1.0.0`), but approval and rejection `UPDATE` the row in place, changing its status, approver
-   and lineage, and no code path ever increments `version`. Register:
-   `semantic-objects-mutated-in-place`.
-3. **All approved objects have lineage.** Partial. Approval appends one lineage step, and the
-   verdict reference is set. See §6 and register `lineage-partial`.
+2. **All objects are versioned.** Holds for entities, edges, fragments and assumptions. Every
+   state is an immutable row in `semantic_object_versions` (`014_semantic_object_versions.sql`):
+   the object's complete row at that revision, what changed it, who, and on which verdict. The
+   object's own row is the current version; approval and rejection record the next revision and
+   never rewrite one, and the database refuses a head update that skips that
+   (ADR-001 §4; `backend/tests/unit/test_registry_versioning.py`). Interventions are not
+   versioned yet (register `interventions-mutated-in-place`).
+3. **All approved objects have lineage.** Holds from source data to approver: approval refuses
+   an object whose source data or drafter is not on record, and
+   `GET /api/semantic/objects/{type}/{id}/lineage` serves the chain (§6;
+   `backend/tests/integration/test_lineage_chain.py`). The onward link, to the analyses that used
+   an object, is register `lineage-to-analyses`.
 4. **Draft objects do not participate in simulations.** Holds: SimulationAgent refuses a fragment
    that is not APPROVED.
 5. **Deprecated objects are retained.** Holds: nothing deletes a semantic object. Rejection is
@@ -338,13 +344,14 @@ grants, row-level security and most `CHECK` constraints exist only on the Postgr
 |---|---|---|---|
 | `audit_log` | 001, 002 | yes | Every Guardian verdict and agent action record. Append-only |
 | `verdict_consumption` | 002 | yes | One row per spent verdict. Its primary key is what makes a verdict single-use |
-| `causal_entities`, `causal_edges`, `graph_fragments`, `assumptions` | 001 (+002 for `causal_entities.guardian_verdict_ref`, +006 for `graph_fragments.lineage`) | yes | The semantic layer objects of §2 |
+| `causal_entities`, `causal_edges`, `graph_fragments`, `assumptions` | 001 (+002 for `causal_entities.guardian_verdict_ref`, +006 for `graph_fragments.lineage`, +014 for `revision` and `source_data`) | yes | The semantic layer objects of §2: each row the current version of its object. A row changes only by advancing `revision` by one over a recorded revision (014's triggers, on both engines) |
+| `semantic_object_versions` | 014 | yes | Every version of every semantic object: its complete row at a revision (`state`), the change (`PROPOSED`, `APPROVED`, `REJECTED`, `RECORDED`), actor, agent and platform version, and verdict. Append-only; domain-scoped by RLS on PostgreSQL. 014 recorded each existing row as revision 1 |
 | `interventions` | 001 | yes | Intervention log: expected vs actual effect, feedback closure |
 | `decision_records` | 003 | yes | The decision ledger's hash chain, one sealed record per row. Append-only |
 | `decision_followups` | 004, 005 | yes | The follow-up plan written at decision time, and each later realization. Append-only; 005 allows one row per decision and kind, so a decision is measured once |
 | `causal_model_versions`, `decision_model_refs` | 007 | yes | The assumption registry: immutable model versions (content-addressed, each naming its parent), and which decision used which version. Append-only |
 | `session_state` | 008 | yes | Latest `EpistemicState` snapshot per session (`orchestration/session_store.py`), upserted on `session_id`; also what the incident triage agent's experience buffer reads back |
-| (row-level security) | 001, replaced by 010 | no | Not a table: 010 puts a domain policy on `causal_entities`, `causal_edges` and `graph_fragments`, fed by the settings `backend/src/db/scope.py` sets on every transaction (docs/CYBERSECURITY.md §4.2), and grants `causal_app` the sequence 004 created after 001's grant |
+| (row-level security) | 001, replaced by 010 (+014) | no | Not a table: 010 puts a domain policy on `causal_entities`, `causal_edges` and `graph_fragments` (014 adds `semantic_object_versions`), fed by the settings `backend/src/db/scope.py` sets on every transaction (docs/CYBERSECURITY.md §4.2), and grants `causal_app` the sequence 004 created after 001's grant |
 | `incidents` | 009 | yes | Incident records (`api/incidents.py`), upserted on `id` with `INSERT ... ON CONFLICT`, keeping the first `created_at`. Decisions on their interventions are `audit_log` rows, joined in on read |
 
 Until 008 and 009 (septa-52) `session_state` and `incidents` existed only in the SQLite schema,
@@ -534,26 +541,37 @@ None of the drift types triggers re-estimation, a sensitivity re-test or a fragm
 
 ## 6. Lineage and Provenance
 
-> **Status:** partial -- see register `lineage-partial`.
+> **Status:** implemented from source data to approver (`backend/tests/integration/test_lineage_chain.py`,
+> SQLite and PostgreSQL). Not linked onward to the analyses that used an object (register
+> `lineage-to-analyses`).
 
-The `causal_edges` and `causal_entities` tables carry a `lineage` column (a JSON list), and the
-models declare it as `list[LineageRecord]`. `graph_fragments` gained the same column in
-`006_graph_fragment_lineage.sql` (and in the SQLite DDL). This is what actually gets written:
+`GET /api/semantic/objects/{type}/{id}/lineage` returns a `LineageChain` for an entity, edge,
+fragment or assumption, assembled by `SemanticLayerRegistry.get_lineage` from what the platform
+recorded -- the version history (§2.2 rule 2) and `audit_log` -- not from the `lineage` list the
+submitter sent, which stays on the object as the submitter's own claim:
 
-- for an edge, the `lineage` list the submitter sent with the draft (`propose_draft` stores it
-  as given); an entity's draft lineage is not stored, and the column keeps its `[]` default;
-- one entry per human decision: `promote_to_approved` appends `{step_type: "APPROVED", actor_id,
-  timestamp, description}` naming the verdict id, and `reject_draft` appends a `REJECTED` step.
-  Both read `lineage` from the object's table first; before 006 that read failed for a
-  `GraphFragment`, so no fragment could be approved or rejected.
+| Link | From | What it names |
+|---|---|---|
+| `sourceData` | The object's `source_data`, declared with the draft (`POST /api/semantic/drafts` payload `sourceData`) and carried in every version | The data it was drafted from: `kind`, `ref`, and a `sha256:` digest pinning its content |
+| `draftedBy` | Revision 1 (`PROPOSED`) | The person the token named, the agent the draft came through (`api-draft-submission`), the platform version, the time |
+| `verdicts` | `audit_log`: every verdict spent on a version, and every row issued for the object | Action, verdict, rules cited, the Guardian agent, the session, whether the signature verifies, the revision it was spent on; the unsigned human decision records with their notes |
+| `approvedBy` | The `APPROVED` version | The approver, the time, the verdict |
+| `steps` | The version history | Each revision: change, actor, agent, platform version, verdict |
+| `provenanceSessions`, `provenanceRecords` | The verdicts' sessions; the provenance store | The provenance records held for those sessions |
+| `gaps`, `complete` | -- | Every link that was never recorded, by name; `complete` only when there are none |
 
-Nothing records the original data source, the transformation steps (agent, skill, version), or
-the policy rules applied into `lineage`. The Guardian verdict and the rules it cited are in
-`audit_log`, linked from the row by `guardian_verdict_ref`, and the evidence and assumptions are
-linked by id (`evidence_refs`, `assumption_refs`). So the chain can be partly rebuilt by joining
-those, but no single field holds it. That is a step towards the transparency the EU AI Act asks
-for (Art. 13). It is not evidence of meeting it, and nothing here reproduces an analysis from its
-lineage.
+Approval requires the head of the chain: `promote_to_approved` refuses an object whose source
+data or drafter is not on record (`LineageIncompleteError`, 422 from `/approve`, the verdict not
+spent). An object approved before versioning keeps what its row says, attributed as such, and
+its chain lists what is missing (no history, no source data, no approval verdict) rather than
+inventing it.
+
+Limits. The digest is the submitter's declaration: the platform does not read the data to check
+it. The provenance store on this branch is the in-process one (`src/api/provenance.py`), keyed
+by session; a durable store plugs in behind `get_provenance_graph` without changing the chain.
+Nothing records which analyses, simulations or decisions used an object's versions (register
+`lineage-to-analyses`). The chain is a record towards the transparency the EU AI Act asks for
+(Art. 13); it is not evidence of meeting it.
 
 ---
 
@@ -565,9 +583,9 @@ lineage.
 | GovernanceAgent | The action payload and `EpistemicState` it is given | `audit_log` (every verdict, signed) | Its verdict is what `propose_draft` / `promote_to_approved` / `reject_draft` require |
 | SimulationAgent | APPROVED graph fragments | `EpistemicState.simulation_results` (in memory; the `session_state` snapshot) | Read-only on the semantic layer |
 | DriftMonitorAgent | Whatever its skills are handed (see §5) | In-process `AlertEmitter` | No semantic-layer writes; no Kafka |
-| `GET /api/semantic/*` | Entities, edges, fragments inside the user's domain scope; APPROVED only for a `viewer` | -- | Outside the scope is 404 (CYBERSECURITY.md §4.2) |
-| `POST /api/semantic/drafts` | -- | `causal_edges` / `graph_fragments` / `causal_entities` / `assumptions` as DRAFT | A drafting role, a domain inside the user's scope, then a GovernanceAgent check; status forced to DRAFT |
-| `POST /api/governance/approve/{id}`, `/reject/{id}` | -- | Status, approver and lineage on the same row | A governance role, the object inside the reviewer's domains; see §2.2 rule 2 |
+| `GET /api/semantic/*` | Entities, edges, fragments inside the user's domain scope; APPROVED only for a `viewer`. `/objects/{type}/{id}/versions` and `/lineage` read the history and the chain (§6) under the same rule | -- | Outside the scope is 404 (CYBERSECURITY.md §4.2) |
+| `POST /api/semantic/drafts` | -- | `causal_edges` / `graph_fragments` / `causal_entities` / `assumptions` as DRAFT, and its revision 1 in `semantic_object_versions` | A drafting role, a domain inside the user's scope, then a GovernanceAgent check in the `cynefinDomain` the request declares (omitted: DISORDER, refused by PR-006); status forced to DRAFT |
+| `POST /api/governance/approve/{id}`, `/reject/{id}` | -- | The next version: a `semantic_object_versions` row, and the head advanced to it | A governance role, the object inside the reviewer's domains; approval also needs source data and drafter on record; see §2.2 rules 2 and 3 |
 | `POST /api/v1/decisions` | A registered model version, when the request names one | `decision_records`, `decision_followups`, and `decision_model_refs` when a model is named | Append-only hash chain |
 | `POST /api/v1/models`, `/{name}/versions`, `/{name}/reviews` | The model's head | `causal_model_versions` | Append-only; a version is appended only to the head it was built on; proposing needs a drafting role, reviews a governance role |
 

@@ -131,8 +131,8 @@ priority first, and the priorities put hardening the platform before new estimat
   remaining estimator (`septa-7`), calibration (`septa-10`), anchoring (`septa-11`), Rosenbaum bounds (`septa-12`),
   Guardian PR-007 (`septa-33`), positivity detection and triangulation at moderate n (`septa-34`,
   `septa-35`), and the review queue's risk tier (`septa-36`).
-- **p3 and p4.** The rest of the register (versioned semantic objects, lineage,
-  provenance, the LLM layer, Cynefin routing, frontend views and others), then the longer-range
+- **p3 and p4.** The rest of the register (versioned interventions, lineage onward to
+  analyses, provenance, the LLM layer, Cynefin routing, frontend views and others), then the longer-range
   methods: discovery, rung-3 counterfactuals, general ID estimation, subgroup discovery. Many of
   these end either in the capability or in its claim being withdrawn from the docs.
 

@@ -130,8 +130,8 @@ objects a user lists, reads, drafts into, and reviews; an object outside it is
 not found. Without the claim, `governance_officer` and `platform_engineer` see
 every domain and every other role sees none. This is enforced in the
 application and, on PostgreSQL, again by the database: row-level security on
-`causal_entities`, `causal_edges` and `graph_fragments` reads the caller's
-scope, which the backend sets on every transaction, and binds `causal_app`, the
+`causal_entities`, `causal_edges`, `graph_fragments` and their version history
+(`semantic_object_versions`) reads the caller's scope, which the backend sets on every transaction, and binds `causal_app`, the
 role the backend connects as. The backend refuses to start on PostgreSQL as a
 superuser, a `BYPASSRLS` role or the tables' owner. Details in
 `docs/CYBERSECURITY.md` §4.2.
@@ -176,6 +176,12 @@ keep in mind when evaluating issues:
   their own endpoints.
 - **Audit log is append-only**. Any path that allows deletion or rewriting of
   `audit_log` entries is critical-severity.
+- **Semantic-object history is append-only.** Every state of an entity, edge,
+  fragment or assumption is a row of `semantic_object_versions`, and the
+  object's own row changes only by advancing its revision over a recorded one
+  (`014_semantic_object_versions.sql`; the database enforces both). A path that
+  rewrites or deletes a version, or changes an object without recording the
+  new version, is critical-severity. Interventions are not versioned.
 - **`EpistemicState`** is the single in-flight contract. Code that mutates it
   outside an agent boundary, or smuggles data past it, is in scope.
 - **MCP tools must not crash the server**. A `causal-mcp` tool call answers with

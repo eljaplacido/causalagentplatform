@@ -126,7 +126,13 @@ through `timestamp_text` and `json_value`; until both ran, the Guardian could no
 holds the two schemas to the same tables and columns, and
 `tests/integration/test_rls_domain_isolation.py` holds the database's domain isolation (PostgreSQL
 only, so skipped on SQLite: with negative controls that drop a policy, disable RLS, or connect as
-the owner). To run the PostgreSQL half locally, with a
+the owner). `tests/unit/test_registry_versioning.py` holds semantic-object versioning on both
+engines: each engine's triggers (014 and their SQLite rendering in `SQLITE_DDL`) must refuse an
+update of a version row and a head update that skips the revision rule, which is why a test that
+seeds a semantic row directly and then changes it must go through the registry. Its PostgreSQL-only
+cases check the commit-time trigger, `causal_app`'s grants on the history, and that 014's backfill
+is idempotent. `tests/integration/test_lineage_chain.py` drives draft, check and approval through
+the API and reads the lineage chain back. To run the PostgreSQL half locally, with a
 throwaway server bound to localhost:
 
 ```bash

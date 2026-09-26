@@ -388,11 +388,12 @@ async def get_edge_audit_trail(
     user: dict[str, Any] = Depends(guard("GET", "/api/semantic/edges/{edge_id}/audit-trail")),
 ) -> list[AuditEntry]:
     """
-    Return the full audit trail for a CausalEdge.
+    Return the audit_log entry the edge's current guardian_verdict_ref names.
 
-    The audit trail consists of all audit_log entries associated with the
-    edge's guardian_verdict_ref.  This satisfies EU AI Act Art. 13 lineage
-    requirements.
+    That is the verdict behind the edge's current version only. Every verdict
+    issued for it, with the rest of its lineage, is
+    GET /api/semantic/objects/CausalEdge/{edge_id}/lineage. Neither is evidence
+    of meeting EU AI Act Art. 13; that claim was withdrawn (septa-15).
     """
     if approved_only(user):
         await _visible_edge(edge_id, user)
