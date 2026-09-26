@@ -52,7 +52,7 @@ def explain(decision: Decision, outcome: CausalOutcome, strict: bool = True) -> 
         # thresholds and the experiment's arithmetic are this layer's, not the kernel's,
         # so they are declared rather than smuggled in.
         allowed = _declared_numbers(decision)
-        report = verify(text, outcome, allow=allowed)
+        report = verify(_without_quotes(text, decision), outcome, allow=allowed)
         if not report.ok:
             raise ValueError(f"decision rationale failed verification: {report.reasons()}")
     return "\n".join(lines)
@@ -65,3 +65,17 @@ def _declared_numbers(decision: Decision) -> tuple[str, ...]:
     if ev.benefit_ci:
         out |= {f"{ev.benefit_ci[0]:.4g}", f"{ev.benefit_ci[1]:.4g}"}
     return tuple(out)
+
+
+def _without_quotes(text: str, decision: Decision) -> str:
+    """The rationale with the request's own free text taken out before it is checked.
+
+    The rationale quotes the requester ("Act: cut price 30%."); a digit or a causal verb
+    in that quote is theirs, not a claim of the analysis, so it is neither bound nor
+    refused. Only the quoted text is removed: the same number anywhere else is checked.
+    """
+    r = decision.request
+    quoted = [q for q in (r.action, r.population, r.horizon) if q and len(q.strip()) >= 3]
+    for q in sorted(quoted, key=len, reverse=True):
+        text = text.replace(q, " ")
+    return text

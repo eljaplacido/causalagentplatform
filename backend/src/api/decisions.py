@@ -254,6 +254,16 @@ async def make_decision(
         frame, graph, query=query, policy=body.analysis_policy or AnalysisPolicy()
     )
     decision = decide(outcome, request, policy)
+    # Written before the entry is sealed: an explanation that fails its own
+    # verification is a bug in this layer, and it must not leave a sealed entry
+    # behind an error the caller would retry (it used to, answering 500 after the
+    # write).
+    try:
+        explanation = explain(decision, outcome)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=500, detail=f"the decision's explanation failed verification: {exc}"
+        ) from exc
 
     try:
         record = await _store.record(
@@ -350,7 +360,6 @@ async def make_decision(
         uid=user.get("uid"),
     )
 
-    explanation = explain(decision, outcome)
     narrative: Narrative | None = None
     if body.narrate:
         # After the ledger write, on purpose: the sealed record holds the verdict and the
