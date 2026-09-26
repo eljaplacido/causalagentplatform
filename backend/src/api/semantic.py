@@ -76,6 +76,19 @@ class DraftSubmissionRequest(BaseModel):
         ...,
         description="The draft object payload matching the target Pydantic model.",
     )
+    cynefin_domain: CynefinDomain | None = Field(
+        None,
+        description="The situation's Cynefin domain, as classified by the caller, as for "
+        "POST /api/governance/check. Omitted, it is DISORDER, which Guardian rule PR-006 "
+        "refuses; CHAOTIC is escalated (PR-003). Ignored when `session_id` names a session. "
+        "Recorded, with who declared it, in the verdict's audit row.",
+    )
+    session_id: str | None = Field(
+        None,
+        description="A reasoning session (POST /api/v1/session) whose classified domain and "
+        "cycle count the Guardian reads instead of a declaration. A session that does not "
+        "exist is refused (404).",
+    )
 
 
 class DraftSubmissionResponse(BaseModel):
@@ -83,6 +96,11 @@ class DraftSubmissionResponse(BaseModel):
     object_type: str
     guardian_verdict: str
     audit_entry_id: str
+    cynefin_domain: str = Field(description="The domain the Guardian judged the draft in.")
+    domain_source: str = Field(
+        description="Where that domain came from: `session <id>`, `declared by <uid>`, or "
+        "`not declared` (DISORDER)."
+    )
     message: str
 
 
@@ -238,9 +256,13 @@ async def submit_draft(
 
     Flow:
       1. Parse and validate the payload into the appropriate Pydantic model
-      2. Run a GovernanceAgent check on the draft payload
-      3. If APPROVED: persist the draft via SemanticLayerRegistry
-      4. If REJECTED or REQUIRES_ESCALATION: return 403 with reason
+      2. Classify the situation: the named session's domain (`session_id`), else the
+         caller's declaration (`cynefin_domain`), else DISORDER
+      3. Run a GovernanceAgent check on the draft payload in that domain (PR-006
+         refuses DISORDER, PR-003 escalates CHAOTIC); the domain and its source are
+         in the checked payload and the audit row's notes
+      4. If APPROVED: persist the draft via SemanticLayerRegistry
+      5. If REJECTED or REQUIRES_ESCALATION: return 403 with reason and rules cited
 
     Authentication: Bearer token required.
     Note: Drafts persisted here still have approval_status=DRAFT.  A separate
@@ -299,13 +321,35 @@ async def submit_draft(
             detail=f"domain '{draft_obj.domain}' is outside this user's domain scope",
         )
 
-    # Build an EpistemicState for the governance check
+    # The situation's domain, classified the way POST /api/governance/check does: a
+    # named session's own classification, else the caller's declaration, else
+    # DISORDER -- which PR-006 refuses. It used to be nothing at all, so every draft
+    # submitted here was DISORDER and refused. The domain and its source go into the
+    # checked payload (the verdict's payload hash binds them) and the audit row's
+    # notes, so a reader of the trail sees what the draft was judged in, and on whose
+    # word.
+    stored = None
+    if body.session_id:
+        stored = await _sessions.load(body.session_id)
+        if stored is None:
+            raise HTTPException(
+                status_code=404, detail=f"session '{body.session_id}' not found"
+            )
+    if stored is not None:
+        domain = CynefinDomain(stored.cynefin_domain)
+        source = f"session {body.session_id}"
+    elif body.cynefin_domain is not None:
+        domain = CynefinDomain(body.cynefin_domain)
+        source = f"declared by {uid}"
+    else:
+        domain = CynefinDomain.DISORDER
+        source = "not declared"
+
     state = EpistemicState(
-        session_id=session_id,
+        session_id=body.session_id or session_id,
         agent_id="api-draft-submission",
-        proposed_edges=(
-            []
-        ),
+        cycle_count=stored.cycle_count if stored is not None else 0,
+        cynefin_domain=domain,
     )
 
     # Run governance check
@@ -314,10 +358,13 @@ async def submit_draft(
         "object_type": body.object_type,
         "object_id": str(draft_obj.id),
         "submitted_by": uid,
+        "cynefin_domain": domain.value,
+        "cynefin_domain_source": source,
         "payload_summary": str(draft_obj.model_dump())[:500],
     }
+    notes = f"cynefin_domain={domain.value} ({source})"
 
-    governance_result = await _governance.check(action_payload, state)
+    governance_result = await _governance.check(action_payload, state, notes=notes)
 
     if governance_result.verdict not in (
         GuardianVerdict.APPROVED,
@@ -335,6 +382,9 @@ async def submit_draft(
                 "error": "guardian_blocked",
                 "verdict": str(governance_result.verdict),
                 "reason": governance_result.reason,
+                "policy_rules_cited": list(governance_result.policy_rules_cited),
+                "cynefin_domain": domain.value,
+                "domain_source": source,
                 "audit_entry_id": str(governance_result.audit_entry_id),
             },
         )
@@ -355,6 +405,8 @@ async def submit_draft(
         object_type=body.object_type,
         guardian_verdict=str(governance_result.verdict),
         audit_entry_id=str(governance_result.audit_entry_id),
+        cynefin_domain=domain.value,
+        domain_source=source,
         message=f"{body.object_type} draft submitted. Awaiting Governance Officer review.",
     )
 

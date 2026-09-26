@@ -306,9 +306,16 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
         self,
         action_payload: dict[str, Any],
         state: EpistemicState,
+        *,
+        notes: str | None = None,
     ) -> GuardianCheckOutput:
         """
         Evaluate an action payload against platform policy rules.
+
+        ``notes`` is written in the audit row beside the verdict, for a reader of the
+        trail (GET /api/governance/audit-log): what the check was judged on that its
+        payload hash alone cannot show, such as where the Cynefin domain came from.
+        It is not part of the signed claim and changes no rule.
 
         Steps:
           1. Compute payload hash (for deduplication and audit linkage)
@@ -352,6 +359,7 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
             policy_rules_cited=rules_fired,
             session_id=state.session_id,
             subject_id=_subject_of(action_payload),
+            notes=notes,
         )
 
         self._log.info(
