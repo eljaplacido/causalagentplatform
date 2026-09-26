@@ -49,7 +49,9 @@ def test_a_human_decision_does_not_overwrite_the_guardian_verdict() -> None:
     decided, undecided = merged.proposed_interventions
     assert decided["guardianVerdict"] == "REQUIRES_ESCALATION"
     assert decided["humanDecision"] == "APPROVED"
-    assert undecided == {"id": "int-2-s", "title": "Scale out", "guardianVerdict": "REQUIRES_ESCALATION"}
+    assert undecided == {
+        "id": "int-2-s", "title": "Scale out", "guardianVerdict": "REQUIRES_ESCALATION",
+    }
     # The stored record is left as it was.
     assert "humanDecision" not in record.proposed_interventions[0]
 
