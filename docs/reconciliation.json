@@ -28,16 +28,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/pyproject.toml": "476ec05f21b7f622cc2515fdf8241a4f3aa584f0116d2777db85c069bec9af3e",
-          "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
+          "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "dc46896aa4920d224e582ec77813a9d018a9493c541d3fd7f99cac651c0a43f2"
+          "docs/CURRENT_STAGE.md": "4ff13e19f306224a957da1ca17720c130ce90f0e77ebecb8474f63c383163908",
+          "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-34: T10 positivity gate, overlap regions, contract 0.12.0)"
+        "by": "Claude (merge #48 into #49, contract 0.13.0: gate lists name T9, T10 and C0 together (README, benchmarks README, AGENTS, skills, QUICKSTART, TESTING_CICD); ROADMAP robustness row has overlap (T10) and Rosenbaum (T9), positivity moved to done; CURRENT_STAGE gates list adds T10, the kernel-limits bullet keeps this branch's overlap text, package row restored from collected counts 256/146/43)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,18 +53,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "6fbea8c728887929cbeb1c67ec0bd865f3d019c447ec86cc9f938e912c6a998f",
-          "backend/src": "c06af80dee95babb1eed74ffbc5435ffe7f1cb1fdc8bf8f8489d087ad42aabe1",
-          "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
-          "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
-          "packages": "d7a5fddc0172069e13b5abceb714a4e97e47fc868d3a5e8bbc79069edad6a273",
+          "conformance/declared_not_implemented.json": "e00e9c8f10fca1adf76cca22e12d217cac60f403c4351063066984286ec92837",
+          "backend/src": "0e22c0cb440a22fdd11420432e3d2529fc4b378fac66315c8b50671cc2721648",
+          "backend/tests": "6d900b40ae73a4d2cdcd5fbf0a947a8b10a9533cac22cfa8e080a7b8f0cfc481",
+          "frontend/src": "cfe44a11e817c5d272f7125694a5cba46c438299c632f63315a8f836a9278d80",
+          "packages": "a6c7988ee90609bed73f420354454bd96e2d1af5422828e769849bb7d77a777a",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-34: T10 positivity gate, overlap regions, contract 0.12.0)"
+        "by": "Claude (merge #48 into #49, contract 0.13.0: gate lists name T9, T10 and C0 together (README, benchmarks README, AGENTS, skills, QUICKSTART, TESTING_CICD); ROADMAP robustness row has overlap (T10) and Rosenbaum (T9), positivity moved to done; CURRENT_STAGE gates list adds T10, the kernel-limits bullet keeps this branch's overlap text, package row restored from collected counts 256/146/43)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -151,12 +150,12 @@
           "backend/src/skills": "b0bcef79c64f6b8d2f35f87f92095d54c52cec7d972a4cf1520b95fcc0d68347",
           "backend/src/orchestration": "7776a0a563af5bda75451c4ff4bb546683ae9947207f6da8b0545c1781976c8f",
           "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9",
-          "packages/causal-mcp": "f86dd08d8fef8f9b09adab83770f37de1234101a5c84ff11ef0427bdab2507d1"
+          "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #50 into #48: LLM layer has callers (this branch) and invocations go to the durable store (#30): ADR-002 status, criteria and component rows, CURRENT_STAGE LLM bullet and provenance-flow row, ADR-003 planner note all say so; grepped for 'no callers', 'in-memory' and 'No LLM is called', none stale; ORCHESTRATION merged cleanly on LF; TESTING_CICD keeps main's Neo4j text and this branch's LLM-calls paragraph)"
+        "by": "Claude (merge #48 into #49, contract 0.13.0: gate lists name T9, T10 and C0 together (README, benchmarks README, AGENTS, skills, QUICKSTART, TESTING_CICD); ROADMAP robustness row has overlap (T10) and Rosenbaum (T9), positivity moved to done; CURRENT_STAGE gates list adds T10, the kernel-limits bullet keeps this branch's overlap text, package row restored from collected counts 256/146/43)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -251,14 +250,14 @@
         "on": "2026-09-26",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
-          "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
-          ".github": "405abf54754d93806c64cd703261a4cac70212e22955f1dd3c651a237dbdb2cb",
-          ".gnomon": "f3352f8793f8face130de3466a345c4203e99b09b798da9b94007dbb0e805a7f"
+          "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9",
+          ".github": "db12d364ec234ff9774297f81b08649ec310d368304c47fbfcfa04138f630ac4",
+          ".gnomon": "ed5129d3368fde1d6486d5bc6540b1a09ab020e8f0166e8115b267b6f26be1d3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-34: T10 positivity gate, overlap regions, contract 0.12.0)"
+        "by": "Claude (merge #48 into #49, contract 0.13.0: gate lists name T9, T10 and C0 together (README, benchmarks README, AGENTS, skills, QUICKSTART, TESTING_CICD); ROADMAP robustness row has overlap (T10) and Rosenbaum (T9), positivity moved to done; CURRENT_STAGE gates list adds T10, the kernel-limits bullet keeps this branch's overlap text, package row restored from collected counts 256/146/43)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -278,17 +277,17 @@
         "sha256": {
           "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
-          "backend/pyproject.toml": "476ec05f21b7f622cc2515fdf8241a4f3aa584f0116d2777db85c069bec9af3e",
+          "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
+          "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
-          ".env.example": "f5dbf40f551d60b4b91d5bbaa9b36a2404f89536421fe51b8bcbf17a6ae1258f",
-          "backend/scripts": "36d9419c9cb543ee85703a4d4008be1c16e383c5d7567d9c7bcb6dce92ad64da"
+          ".env.example": "c1b1272a098696c6c0e72ba533fca78db4060da7c549715d14fb1167656e906a",
+          "backend/scripts": "adfe996282f443b9f37340ccda7e0e85afae2ad77fbed2455cc8dc6a63dc987b"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-34: T10 positivity gate, overlap regions, contract 0.12.0)"
+        "by": "Claude (merge #48 into #49, contract 0.13.0: gate lists name T9, T10 and C0 together (README, benchmarks README, AGENTS, skills, QUICKSTART, TESTING_CICD); ROADMAP robustness row has overlap (T10) and Rosenbaum (T9), positivity moved to done; CURRENT_STAGE gates list adds T10, the kernel-limits bullet keeps this branch's overlap text, package row restored from collected counts 256/146/43)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -310,21 +309,21 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
-          "backend/pyproject.toml": "476ec05f21b7f622cc2515fdf8241a4f3aa584f0116d2777db85c069bec9af3e",
+          "backend/tests": "6d900b40ae73a4d2cdcd5fbf0a947a8b10a9533cac22cfa8e080a7b8f0cfc481",
+          "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
-          ".gnomon/ci.sh": "8379e43234946f44d8e569a68c60d42923500ded3012d88bf2a477f5ebecf8aa",
-          "scripts": "d3bc176610234a10d15d75680749b4117de22b8a5ec522926d030dd4d6b9496a",
+          ".gnomon/ci.sh": "a05e016e87f09e27989ffc185d06ad2b55c6d31f4e9b9cc2954b8cfdf7a40e45",
+          "scripts": "df7404bc8ba506966c750b8d65843addca0ef732ad218e9f94a9d451643e86e3",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
-          "benchmarks": "3fb7a9abf6637f306cc2d41ea0e53ee51be469359447c26064ae3019ea6e183a",
-          "packages/causal-core/tests": "706aa5dc98b90fa2d49f574ac358b2ab9f62960be9487f80aac821eaa87e20f5",
-          "packages/causal-decision/tests": "c7ccd2d2b91e1ec53a3eb456c70f670268b2ec1f8f431e161f399360b94ef7de"
+          "benchmarks": "d2948f22857509b065db2c8c8fd958ef053a3b3e1ec254ebc316edc905eed5ae",
+          "packages/causal-core/tests": "4ff62e3d56d616ead73e56d797ad7ff81e66e8bc4911eb0f6eb5fcf47098484b",
+          "packages/causal-decision/tests": "811166b3dd05cfc3cbd62c7e71fcf1d62666fb738c97dcb65e34725fede4d034"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-34: T10 positivity gate, overlap regions, contract 0.12.0)"
+        "by": "Claude (merge #48 into #49, contract 0.13.0: gate lists name T9, T10 and C0 together (README, benchmarks README, AGENTS, skills, QUICKSTART, TESTING_CICD); ROADMAP robustness row has overlap (T10) and Rosenbaum (T9), positivity moved to done; CURRENT_STAGE gates list adds T10, the kernel-limits bullet keeps this branch's overlap text, package row restored from collected counts 256/146/43)"
       }
     },
     "docs/UIX.md": {
@@ -353,14 +352,14 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "packages/causal-core/src/causal_core": "a8c563be432be9a5fa4f108c5122c4fab24f7e6628a5b4c6de1041939b080097",
-          "conformance/declared_not_implemented.json": "6fbea8c728887929cbeb1c67ec0bd865f3d019c447ec86cc9f938e912c6a998f",
-          "docs/CURRENT_STAGE.md": "dc46896aa4920d224e582ec77813a9d018a9493c541d3fd7f99cac651c0a43f2"
+          "packages/causal-core/src/causal_core": "010a35ba7875e9d49cae1993f18530b7fedfab7da24aac0b12b170258f52ebd8",
+          "conformance/declared_not_implemented.json": "e00e9c8f10fca1adf76cca22e12d217cac60f403c4351063066984286ec92837",
+          "docs/CURRENT_STAGE.md": "4ff13e19f306224a957da1ca17720c130ce90f0e77ebecb8474f63c383163908"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-34: T10 positivity gate, overlap regions, contract 0.12.0)"
+        "by": "Claude (merge #48 into #49, contract 0.13.0: gate lists name T9, T10 and C0 together (README, benchmarks README, AGENTS, skills, QUICKSTART, TESTING_CICD); ROADMAP robustness row has overlap (T10) and Rosenbaum (T9), positivity moved to done; CURRENT_STAGE gates list adds T10, the kernel-limits bullet keeps this branch's overlap text, package row restored from collected counts 256/146/43)"
       }
     },
     "SECURITY.md": {

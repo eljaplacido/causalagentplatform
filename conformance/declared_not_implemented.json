@@ -147,7 +147,7 @@
       "capability": "Triangulation flags outcome-model misspecification in causal-core",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:203",
+          "at": "packages/causal-core/README.md:212",
           "says": "Its power was 0.04 at n = 2,000"
         }
       ],
@@ -170,7 +170,7 @@
       "capability": "Estimation of effects identified only by the general ID algorithm (e.g. the napkin graph)",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:225",
+          "at": "packages/causal-core/README.md:234",
           "says": "Estimation for general ID functionals"
         }
       ],
@@ -193,18 +193,18 @@
       "capability": "causal-core methods beyond the current portfolio: nonparametric front-door, discovery, time series, interference between units",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:227",
+          "at": "packages/causal-core/README.md:236",
           "says": "Nonparametric front-door"
         },
         {
-          "at": "packages/causal-core/README.md:229",
+          "at": "packages/causal-core/README.md:238",
           "says": "Discovery"
         }
       ],
       "reality": "Listed as not implemented in the package README; none of these exists in the kernel. (Anytime-valid sequential tests left this entry on 2026-09-25 with T6; cluster-randomized designs, which handle dependence within clusters but not spillovers between them, arrived the same day with T7, and switchback designs with T8.)",
       "evidence": [
         {
-          "at": "packages/causal-core/README.md:222",
+          "at": "packages/causal-core/README.md:231",
           "says": "Not implemented yet"
         }
       ],
