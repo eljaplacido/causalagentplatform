@@ -94,11 +94,11 @@
       "capability": "Sensitivity to unmeasured confounding (E-values, Rosenbaum bounds)",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:375",
+          "at": "docs/AGENTS.md:380",
           "says": "Computes Rosenbaum sensitivity bounds and E-values for unmeasured confounders"
         },
         {
-          "at": "docs/CYBERSECURITY.md:405",
+          "at": "docs/CYBERSECURITY.md:420",
           "says": "- Rosenbaum sensitivity bounds"
         },
         {
@@ -129,11 +129,11 @@
           "says": "DoWhy / EconML for statistical estimation"
         },
         {
-          "at": "docs/AGENTS.md:361",
+          "at": "docs/AGENTS.md:366",
           "says": "(DoWhy, PyMC)"
         },
         {
-          "at": "docs/AGENTS.md:666",
+          "at": "docs/AGENTS.md:700",
           "says": "DoWhy, EconML, statsmodels"
         },
         {
@@ -144,7 +144,7 @@
       "reality": "Neither EconML nor PyMC is a dependency; estimation is causal-core (and DoWhy is no longer a backend dependency either). causal-core's plug-in registry is the way to add EconML estimators.",
       "evidence": [
         {
-          "at": "backend/pyproject.toml:51",
+          "at": "backend/pyproject.toml:52",
           "says": "\"causal-core>=0.11.0\","
         }
       ],
@@ -183,49 +183,6 @@
         "kind": "retraction",
         "path": "docs/AGENTS.md",
         "asserts": "the crate references are removed from the docs and the docstrings that repeat them"
-      }
-    },
-    {
-      "id": "llm-routing-no-callers",
-      "status": "declared-not-implemented",
-      "capability": "Capability-based LLM routing used by the agents",
-      "claimed_in": [
-        {
-          "at": "docs/AGENTS.md:24",
-          "says": "Provider-agnostic LLM"
-        },
-        {
-          "at": "docs/AGENTS.md:616",
-          "says": "the LLM factory resolves capability \u2192 provider at runtime"
-        },
-        {
-          "at": "docs/AGENTS.md:626",
-          "says": "Routing is handled by `src/agents/llm_factory.py`"
-        },
-        {
-          "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md@13e7d92:99",
-          "says": "`src/agents/llm_factory.py` emits LLMInvocation metadata (implemented)"
-        },
-        {
-          "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md@13e7d92:111",
-          "says": "`src/agents/llm_factory.py` capture hook | Implemented"
-        },
-        {
-          "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md@13e7d92:120",
-          "says": "Every LLM call via `get_llm(session_id=..., agent_id=...)` auto-captures invocation metadata"
-        }
-      ],
-      "reality": "get_llm has no call site outside its own docstring: no agent invokes an LLM, and every agent's reasoning is rule or heuristic code.",
-      "evidence": [
-        {
-          "at": "backend/src/agents/llm_factory.py:145",
-          "says": "def get_llm("
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/unit/test_llm_routing_used.py",
-        "asserts": "an agent path requests a capability through get_llm and its output depends on the (stubbed) model's reply"
       }
     },
     {
@@ -273,7 +230,7 @@
           "says": "Append-only audit trail"
         },
         {
-          "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md:134",
+          "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md:142",
           "says": "`src/api/provenance.py` | Implemented"
         }
       ],
@@ -518,7 +475,7 @@
       "reality": "The chain is built, persisted, served and verified, and decision_records is append-only in the production schema. Both ends of anchoring now exist in code: GET /api/v1/decisions/checkpoint returns the head to publish, and POST /api/v1/decisions/verify-anchored checks the chain against checkpoints kept elsewhere, catching a rewrite that re-seals every later entry (which /verify passes) and a truncation below a checkpoint. What does not exist is the publishing: nothing sends a checkpoint to a store the platform cannot rewrite, so until a deployment does, the ledger still evidences internal consistency only.",
       "evidence": [
         {
-          "at": "backend/src/api/decisions.py:316",
+          "at": "backend/src/api/decisions.py:368",
           "says": "A pass means the chain is *internally* consistent. It cannot mean more than"
         },
         {
@@ -653,29 +610,6 @@
         "kind": "test",
         "path": "backend/tests/integration/test_calibration_evidence.py",
         "asserts": "a pre-registered minimum number of decidable follow-ups exists, each rate is reported with an interval, 'could not resolve' is reported separately from 'no difference' (a paired comparison with too few discordant outcomes cannot reach significance), and docs/CURRENT_STAGE.md cites a measured calibration figure with the run that produced it"
-      }
-    },
-    {
-      "id": "prompt-templates-not-loaded",
-      "status": "declared-not-implemented",
-      "capability": "Agents render their prompts from the versioned templates in prompts/",
-      "claimed_in": [
-        {
-          "at": "docs/AGENTS.md:610",
-          "says": "Prompt templates are versioned in `prompts/` alongside their schema contracts. No agent uses ad-hoc prompts at runtime."
-        }
-      ],
-      "reality": "Nothing in backend/src, packages or frontend/src reads prompts/*.yaml, and no runtime path calls an LLM at all (llm-routing-no-callers). The templates are specification artefacts; prompts/README.md now says so. Ten of the fourteen also carried a duplicate top-level `skill:` key, which no loader had ever complained about because none had ever run.",
-      "evidence": [
-        {
-          "at": "prompts/README.md:3",
-          "says": "**Specification artefacts, not runtime inputs.**"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/unit/test_prompt_templates_loaded.py",
-        "asserts": "a runtime agent renders its prompt from the matching prompts/*.yaml template and fails when the template is missing or malformed -- or AGENTS.md:609 is retracted"
       }
     },
     {
@@ -828,7 +762,7 @@
       "capability": "Runtime data contracts: freshness, schema and semantic checks before agents consume data (Guardian PR-009)",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:413",
+          "at": "docs/AGENTS.md:418",
           "says": "Validates a data contract at runtime before agent data consumption, enforcing freshness SLAs, schema compliance, and semantic alignment."
         },
         {
@@ -871,7 +805,7 @@
           "says": "1. SimulateAhead   \u2014 Forward-simulate action consequences using the approved SCM"
         },
         {
-          "at": "docs/AGENTS.md:543",
+          "at": "docs/AGENTS.md:548",
           "says": "SimulateAhead (SCM lookahead)"
         },
         {
@@ -1061,7 +995,7 @@
           "says": "Cynefin domain classification with confidence"
         },
         {
-          "at": "docs/AGENTS.md:559",
+          "at": "docs/AGENTS.md:564",
           "says": "Domain confidence > 0.7"
         },
         {
@@ -1088,7 +1022,7 @@
       "capability": "Dynamic application security testing (DAST): a scanner such as OWASP ZAP run against a running API, weekly",
       "claimed_in": [
         {
-          "at": "docs/CYBERSECURITY.md:597",
+          "at": "docs/CYBERSECURITY.md:612",
           "says": "DAST: OWASP ZAP against a staging API (weekly). Not built: there is no staging"
         }
       ],
@@ -1288,6 +1222,20 @@
       "fixed_in": "c5b8251",
       "pinned_by": "packages/causal-core/tests/t8/test_carryover_power.py",
       "note": "Implemented as pre-registered in T8 v2 (46a1eae) before the code, and passed its registered runs (benchmarks/t8-switchback/results/2026-09-26-v2-run1.json, ecfa386, whose git field is 'unknown' because the gate was started outside the checkout; run2, c95af52, repeats it from the checkout, byte-identical otherwise). The check is now the least-squares slope of the outcome over the retained window of each switched block, into- minus out-of-treatment mean slope, Welch on t(K_s - 2), at a new policy level carryover_alpha = 0.05 (contract 0.11.0); a failure makes the result contested, estimate and interval unchanged. Registered run: power 0.918 in material_carryover (tau = 1.5, lambda = 30, washout 20; bias -0.424, coverage 0.122 unchecked), bar 0.8; false alarms 0.054-0.061 in the four designs the washout covers, bar 0.10; every flagged replication contested and no other. Seeded defects carryover_check_blind, check_includes_washout and flag_not_gating each caught by their bar. Limit, recorded rather than claimed away: against v1's long_carryover (tau = 0.3, bias -0.085, a fraction of a standard error) the check fires in 9.5% of runs, and no check on the minutes after the washout can do much better at T8's sizes -- an oracle GLS matched filter knowing lambda and rho has power near 0.13 on paper. The washout must still be chosen from knowledge of the system."
+    },
+    {
+      "id": "llm-routing-no-callers",
+      "was": "get_llm has no call site outside its own docstring: no agent invokes an LLM, and every agent's reasoning is rule or heuristic code.",
+      "fixed_in": "f6b7305",
+      "pinned_by": "backend/tests/unit/test_llm_routing_used.py",
+      "note": "Implemented for language only. Two callers reach get_llm through src/agents/narration.py (the explanation_generate skill): the SimulationAgent's draft_explanation of a kernel outcome, and POST /api/v1/decisions with narrate: true (written after the ledger write, never sealed). The capability comes from the template (causal_reasoning), the provider from the environment, local Ollama first (OLLAMA_BASE_URL, OLLAMA_CAUSAL_MODEL read at call time). The model writes prose citing claim tokens; the reply is kept only if grounding_risk (PR-002, causal_core.claims.verify against the outcome) scores it 0 before and after the tokens are rendered, otherwise the deterministic text is kept and the reason recorded. With no provider configured nothing is attempted. The capture hook records every call as an LLMInvocation with the template id and hash, into the in-memory store of src/api/provenance.py -- the only store on main; the durable provenance store is PR #30. Tests use LangChain's deterministic fake chat model (test_llm_routing_used.py, test_prompt_templates_loaded.py, tests/integration/test_decision_narrative.py); one live test (llm_live, deselected unless LLM_LIVE=1) ran against a local qwen2.5:7b-instruct. Not done: no other agent calls a model; the other capabilities (fast_classification, document_extraction, code_generation, planning) have no caller."
+    },
+    {
+      "id": "prompt-templates-not-loaded",
+      "was": "Nothing in backend/src, packages or frontend/src reads prompts/*.yaml, and no runtime path calls an LLM at all (llm-routing-no-callers). The templates are specification artefacts; prompts/README.md now says so. Ten of the fourteen also carried a duplicate top-level `skill:` key, which no loader had ever complained about because none had ever run.",
+      "fixed_in": "f6b7305",
+      "pinned_by": "backend/tests/unit/test_prompt_templates_loaded.py",
+      "note": "Implemented for the one skill that calls a model. src/agents/prompt_templates.py loads prompts/explanation_generate.yaml (v2.0.0), rejecting a repeated key, a missing part, a non-semver version, a skill other than the file name, an unrouted provider_capability, llm_required: false, and a missing or unexpected render variable; the rendered prompt is the four-part [CONTEXT]/[SKILL]/[CONSTRAINTS]/[OUTPUT_FORMAT] structure of AGENTS.md 6.3, and its id and sha256 are recorded on the LLMInvocation. A template that does not load stops the call (no ad-hoc prompt; the deterministic text is kept). The other thirteen templates stay specifications for skills that call no model, as prompts/README.md says; they are not loaded, and are not claimed to be."
     }
   ]
 }

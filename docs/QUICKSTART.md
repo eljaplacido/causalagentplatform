@@ -134,9 +134,27 @@ setting both `NAME` and `NAME_FILE` is an error. To rotate the key, list the old
 restart; unspent verdicts signed with the old key keep working until you remove it from the list.
 `docs/CYBERSECURITY.md` §8.2 has the details.
 
-**LLM providers.** `backend/.env.example` lists them, and `src/agents/llm_factory.py` can build a
-client for each, but no agent or skill calls it today (`llm-routing-no-callers` in the register).
-Nothing needs an API key to run.
+**LLM (optional, local-first).** The platform runs without any model: every number, verdict and
+explanation has a deterministic source, and that is what you get with nothing configured. With a
+model, two paths use it for *language only* -- the SimulationAgent's draft explanation and
+`POST /api/v1/decisions` with `"narrate": true` -- and a reply is kept only if every number in it
+is a claim of the kernel's outcome (PR-002 grounding); otherwise the deterministic text is shown,
+with the reason (`docs/AGENTS.md` §7). To use a local Ollama, no API key and no cloud cost:
+
+```bash
+ollama pull qwen2.5:7b-instruct            # or any instruct model your host can run
+echo "OLLAMA_BASE_URL=http://127.0.0.1:11434" >> backend/.env
+echo "OLLAMA_CAUSAL_MODEL=qwen2.5:7b-instruct" >> backend/.env   # the default names a 122B model
+```
+
+`LLM_TIMEOUT_SECONDS` (default 60) bounds each call. `backend/.env.example` lists the cloud
+providers too; Ollama wins when both are set. The tests never need a model: the suite clears the
+provider variables and uses a fake chat model. One live test runs against your Ollama on request:
+
+```bash
+cd backend && LLM_LIVE=1 OLLAMA_BASE_URL=http://127.0.0.1:11434 \
+  OLLAMA_CAUSAL_MODEL=qwen2.5:7b-instruct pytest -m llm_live -s --no-cov tests/unit/test_llm_routing_used.py
+```
 
 > **Security:** never commit `.env` files. They are gitignored.
 
@@ -323,7 +341,7 @@ causalplatform/
 ├── benchmarks/              # pre-registered gates and their results
 ├── conformance/             # claim-contract schemas + the declared-not-implemented register
 ├── docs/                    # specifications, status page (CURRENT_STAGE.md), ADRs
-├── prompts/                 # prompt specifications (not loaded at runtime)
+├── prompts/                 # prompt templates (explanation_generate loaded at runtime; the rest specs)
 ├── scripts/                 # the gate's checks and ratchets
 ├── .gnomon/                 # agent harness surface; ci.sh is the gate
 ├── docker-compose.yml       # optional local services

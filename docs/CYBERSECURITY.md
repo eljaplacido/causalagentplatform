@@ -72,8 +72,22 @@ An adversary injects false or misleading causal edges or evidence into the graph
 #### Prompt Injection (LLM Plane)
 Crafted user input or external data attempts to override agent instructions or exfiltrate EpistemicState contents.
 
-No LLM is called anywhere in the platform today (register `llm-routing-no-callers`), so this
-plane has no live surface yet. When one exists:
+Two paths call an LLM, for language only: the SimulationAgent's draft explanation and
+`POST /api/v1/decisions` with `narrate: true` (`src/agents/narration.py`; local Ollama is the
+first provider). **Model output is untrusted text.** It never carries a number, verdict or
+decision into the platform: the model is asked for claim tokens, and its reply is kept only if
+`grounding_risk` (PR-002, `causal_core.claims.verify` against the kernel outcome) scores it 0
+before and after the tokens are rendered; otherwise it is discarded for the deterministic text and
+the reason recorded. Replies over 2000 characters, empty replies, failed calls and calls over
+`LLM_TIMEOUT_SECONDS` are discarded the same way. The decision narrative is written after the
+ledger write and is never sealed into it. The prompt is rendered from a versioned template
+(`prompts/explanation_generate.yaml`) whose id and hash are recorded on every invocation.
+What grounding does NOT stop: a reply with no numbers and no causal wording that is still wrong or
+misleading in words (for example, calling a contested result convincing), or text a prompt
+injection steered, provided it stays within the claims. The prompt's inputs are the kernel
+outcome's own fields (variable names, estimator names, warnings, assumption statements) -- data
+from the request and the graph, so a hostile column name reaches the prompt. The API returns the
+narrative as a JSON string; a client must render it as text, never as HTML.
 - Structured I/O contracts: agents accept typed inputs, never raw strings from untrusted
   sources. **In place** for the API, which validates request bodies with Pydantic.
 - **In place:** grounding-risk scoring of prose submitted to `POST /api/governance/check`
@@ -82,7 +96,8 @@ plane has no live surface yet. When one exists:
   request cannot supply the score or the cycle count (422). When a session is named, that
   session supplies the domain and cycle count. This is a deterministic grounding check, not a
   model of hallucination, and it scores only the prose it is given.
-- **Target:** input sanitization before any LLM skill call.
+- **Target:** input sanitization before any LLM skill call. Today the inputs are typed kernel
+  fields, not free text from the request body, but they are not sanitised.
 - **Target:** agent outputs validated against an output schema before any downstream action.
 
 #### Guardian Circumvention
@@ -443,7 +458,7 @@ injecting it as a variable), and access logging and rotation schedules are the m
 | `GUARDIAN_SIGNING_KEYS_PREVIOUS` | `_FILE` or env; comma- or newline-separated | Retired keys that still verify, never sign |
 | `DATABASE_URL` | `_FILE` or env | PostgreSQL, outside `ENV=local` without a Cloud SQL socket |
 | `NEO4J_PASSWORD` | `_FILE` or env | Neo4j, when `NEO4J_URI` is set |
-| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `DEEPSEEK_API_KEY` | `_FILE` or env | LLM clients (nothing calls `get_llm` today) |
+| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `DEEPSEEK_API_KEY` | `_FILE` or env | Cloud LLM clients for the narration callers (unset on a local-first deployment: Ollama needs no key) |
 | `GOOGLE_APPLICATION_CREDENTIALS` | env, already a path to a key file | Firebase Admin; or ADC with no file at all |
 
 **Start-up refusal.** Local development is `ENV` unset or `local` (case and whitespace
