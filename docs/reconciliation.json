@@ -54,7 +54,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "7ea978f77fdbbf32f505ad2a2fc7cd7491ce98ad43f325e868410087b50f2a6d",
+          "conformance/declared_not_implemented.json": "d0b9e6a5c3cfeb9b8864df4e9474bcb5b54a654bfc9340f34bf9dc00e39ec53b",
           "backend/src": "c06af80dee95babb1eed74ffbc5435ffe7f1cb1fdc8bf8f8489d087ad42aabe1",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
@@ -65,7 +65,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: both the dast-not-built row (#14) and the did-* rows (septa-8) present)"
+        "by": "Claude (deps: the register moved only the dast-not-built citation line (CYBERSECURITY 590 -> 592); no row or status changed, both pages still true)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -355,13 +355,13 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "b3a206babea176dd53fdebe83037e38e66922eeced1def6dbfb248262c2477a6",
-          "conformance/declared_not_implemented.json": "7ea978f77fdbbf32f505ad2a2fc7cd7491ce98ad43f325e868410087b50f2a6d",
+          "conformance/declared_not_implemented.json": "d0b9e6a5c3cfeb9b8864df4e9474bcb5b54a654bfc9340f34bf9dc00e39ec53b",
           "docs/CURRENT_STAGE.md": "fc5b6d1b7db3a4cae3ded89459aa58661b1946eaf6e8b8807fbc5bc34e674477"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: septa-49 done (#14) and septa-8 now marked done)"
+        "by": "Claude (deps: the register moved only the dast-not-built citation line (CYBERSECURITY 590 -> 592); no row or status changed, both pages still true)"
       }
     },
     "SECURITY.md": {
