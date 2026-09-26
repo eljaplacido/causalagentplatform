@@ -250,7 +250,7 @@
       "reality": "The chain is built, persisted, served and verified, and decision_records is append-only in the production schema. Both ends of anchoring now exist in code: GET /api/v1/decisions/checkpoint returns the head to publish, and POST /api/v1/decisions/verify-anchored checks the chain against checkpoints kept elsewhere, catching a rewrite that re-seals every later entry (which /verify passes) and a truncation below a checkpoint. What does not exist is the publishing: nothing sends a checkpoint to a store the platform cannot rewrite, so until a deployment does, the ledger still evidences internal consistency only.",
       "evidence": [
         {
-          "at": "backend/src/api/decisions.py:368",
+          "at": "backend/src/api/decisions.py:413",
           "says": "A pass means the chain is *internally* consistent. It cannot mean more than"
         },
         {
@@ -545,7 +545,7 @@
       "capability": "Runtime data contracts: freshness, schema and semantic checks before agents consume data (Guardian PR-009)",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:418",
+          "at": "docs/AGENTS.md:421",
           "says": "Validates a data contract at runtime before agent data consumption, enforcing freshness SLAs, schema compliance, and semantic alignment."
         },
         {
@@ -588,7 +588,7 @@
           "says": "1. SimulateAhead   \u2014 Forward-simulate action consequences using the approved SCM"
         },
         {
-          "at": "docs/AGENTS.md:548",
+          "at": "docs/AGENTS.md:540",
           "says": "SimulateAhead (SCM lookahead)"
         },
         {
@@ -706,11 +706,11 @@
           "says": "Agents self-classify the domain complexity of a query before selecting a reasoning strategy."
         },
         {
-          "at": "docs/AGENTS.md:209",
+          "at": "docs/AGENTS.md:212",
           "says": "Cynefin domain classification with confidence"
         },
         {
-          "at": "docs/AGENTS.md:564",
+          "at": "docs/AGENTS.md:571",
           "says": "Domain confidence > 0.7"
         },
         {
@@ -737,7 +737,7 @@
       "capability": "Dynamic application security testing (DAST): a scanner such as OWASP ZAP run against a running API, weekly",
       "claimed_in": [
         {
-          "at": "docs/CYBERSECURITY.md:612",
+          "at": "docs/CYBERSECURITY.md:663",
           "says": "DAST: OWASP ZAP against a staging API (weekly). Not built: there is no staging"
         }
       ],

@@ -55,8 +55,9 @@ The World Model report identifies two directly applicable gaps:
    PlatformState graph
 
 3. `_ProvenanceCapturingLLM` integration: planning metadata captured for
-   provenance audit when LLM-based planning is used. Not built: the planner calls no LLM,
-   and `get_llm` has no callers (register `llm-routing-no-callers`)
+   provenance audit when LLM-based planning is used. Not built: the planner calls no LLM.
+   (`get_llm`'s callers are the SimulationAgent's narration and the decisions route, whose
+   invocations the wrapper records.)
 
 ### LangGraph Topology Update
 
