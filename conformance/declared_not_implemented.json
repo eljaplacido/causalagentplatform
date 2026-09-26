@@ -770,7 +770,7 @@
           "says": "| **Concept drift** | Model performance degradation over time | Re-estimation trigger |"
         }
       ],
-      "reality": "The drift functions compute when called directly with data (KL/JS on histograms, a correlation-below-0.5 check labelled causal drift, Jaccard word overlap on definitions, a chi-squared test on labels). DriftMonitorAgent.process, which the periodic sensor runs, hands each skill only a fragment id, so drift_detect returns kl_divergence 0.0 with note no_data_for_comparison, the structure and semantic comparisons return no drift for want of edges and definitions, and concept_drift is passed as False. The pipeline therefore cannot raise a drift alert. Alerts go to an in-process AlertEmitter; the Kafka topic named in its return value has no producer.",
+      "reality": "The drift functions compute when called directly with data (KL/JS on histograms, a correlation-below-0.5 check labelled causal drift, Jaccard word overlap on definitions, a chi-squared test on labels). DriftMonitorAgent.process hands each skill only a fragment id, so drift_detect returns kl_divergence 0.0 with note no_data_for_comparison, the structure and semantic comparisons return no drift for want of edges and definitions, and concept_drift is passed as False. The pipeline therefore cannot raise a drift alert, and nothing runs it on a schedule: the periodic DriftSensor, which no code ever started, was deleted. Alerts go to an in-process AlertEmitter; the Kafka topic named in its return value has no producer.",
       "evidence": [
         {
           "at": "backend/src/agents/drift_monitor.py:598",
@@ -788,7 +788,7 @@
       "leaves_by": {
         "kind": "test",
         "path": "backend/tests/integration/test_drift_pipeline_data.py",
-        "asserts": "the periodic sensor, run over a fragment whose stored baseline differs from current data by a known shift, raises a drift alert carrying the measured divergence -- and does not for an unshifted copy"
+        "asserts": "the drift pipeline (DriftMonitorAgent.process, and whatever schedules it), run over a fragment whose stored baseline differs from current data by a known shift, raises a drift alert carrying the measured divergence -- and does not for an unshifted copy"
       }
     },
     {

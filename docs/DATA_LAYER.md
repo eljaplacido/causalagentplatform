@@ -509,9 +509,11 @@ fragment id → drift_detect (KL) → causal_structure_compare → semantic_drif
 The thresholds are `_DEFAULT_KL_THRESHOLD = 0.1` and `_DEFAULT_SEVERE_KL_THRESHOLD = 0.5`.
 The agent calls each skill with the fragment id only, and each skill returns "no drift" when
 it gets no data: `drift_detect` answers `kl_divergence 0.0` with `note: no_data_for_comparison`,
-and the other two answer `no_fragment_edges` and `no_definitions_for_comparison`. So the periodic
-sensor (`backend/src/sensors/periodic_drift.py`), which runs this agent, cannot raise a drift
-alert today. Alerts go to `AlertEmitter` (logging, callbacks, deduplication). The
+and the other two answer `no_fragment_edges` and `no_definitions_for_comparison`. So the agent
+cannot raise a drift alert today, and nothing runs it on a schedule: the periodic `DriftSensor`
+that was meant to, never started by the app, was deleted in September 2026 rather than scheduled
+to alert on nothing. Alerts go to `AlertEmitter` (`backend/src/sensors/alert_emit.py`: logging,
+callbacks, deduplication). The
 `platform.drift.alert.v1` topic name in the agent's return value is only a label: no Kafka
 producer exists (register `kafka-streaming`).
 
