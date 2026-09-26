@@ -181,19 +181,19 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 
 `.gnomon/ci.sh` is the command that decides whether a change passes. It prints PASS, FAIL, SKIPPED or ADVISORY for each step, with a count of what the step inspected, and exits 0, 1, 2 or 3 accordingly (see Summary). The numbers it holds are ratchets. Each file records when and against which commit its number was measured:
 
-| Gate | Committed baseline | Measured 2026-09-26 (at `11b445e`, small-batch-1; fresh venvs, `.gnomon/ci.sh`) |
+| Gate | Committed baseline | Measured 2026-09-26 (at `6208759`, small-batch-1 on the merge train; fresh venvs, `.gnomon/ci.sh`) |
 |---|---|---|
-| Backend tests (unit, integration, guardian) | at least 500 tests; every test file reports ([`scripts/gate-scope-floors.json`](../scripts/gate-scope-floors.json)) | 900 passed on SQLite (33 skipped: the PostgreSQL-only tests), 62 of 62 files; 933 passed, 0 skipped on PostgreSQL |
-| Backend line coverage, full suite | floor 84.0%, may only rise ([`scripts/coverage-floor.json`](../scripts/coverage-floor.json)) | 84.06% (5161/6140 statements, the SQLite suite; the PostgreSQL step runs the same tests) |
-| ruff (backend/) | at most 401 findings, may only fall ([`scripts/lint-baseline.json`](../scripts/lint-baseline.json)) | 401 over 143 files |
+| Backend tests (unit, integration, guardian) | at least 500 tests; every test file reports ([`scripts/gate-scope-floors.json`](../scripts/gate-scope-floors.json)) | 1007 passed on SQLite (37 skipped: the PostgreSQL-only tests), 73 of 73 files; 1044 passed, 0 skipped on PostgreSQL |
+| Backend line coverage, full suite | floor 84.0%, may only rise ([`scripts/coverage-floor.json`](../scripts/coverage-floor.json)) | 85.87% (5745/6690 statements, the SQLite suite; the PostgreSQL step runs the same tests) |
+| ruff (backend/) | at most 405 findings, may only fall ([`scripts/lint-baseline.json`](../scripts/lint-baseline.json)) | 387 over 153 files |
 | ruff (scripts/) | zero | 0 over 14 files |
-| mypy --strict (backend/src) | at most 37 errors, may only fall | 37 over 70 files |
-| mypy --strict (each package's src) | zero, per package | 0 for causal-core (38 files), causal-decision (13) and causal-mcp (5) |
-| Frontend tsc / vitest | must pass | 51 files typecheck; 68 tests in 9 files |
-| Frontend eslint (`frontend/src`, Next's core-web-vitals and TypeScript rules) | zero findings, may not rise ([`scripts/lint-baseline.json`](../scripts/lint-baseline.json)) | 0 over 45 files |
+| mypy --strict (backend/src) | at most 37 errors, may only fall | 37 over 74 files |
+| mypy --strict (each package's src) | zero, per package | 0 for causal-core (40 files), causal-decision (15) and causal-mcp (5) |
+| Frontend tsc / vitest | must pass | 52 files typecheck; 76 tests in 10 files |
+| Frontend eslint (`frontend/src`, Next's core-web-vitals and TypeScript rules) | zero findings, may not rise ([`scripts/lint-baseline.json`](../scripts/lint-baseline.json)) | 0 over 46 files |
+| Every Python package under `packages/` | its suite must pass in the package's environment, and a skipped test fails it | causal-core 234 passed (T0, T4, T5, T6, T7, T8 and T9 gates, and T2/T3 with their data cached); causal-decision 146 (D0, A0 and C0); causal-mcp 41 |
 | Skill modules imported by a test | 2 known gaps, may only shrink | 9 of 11 |
-| Skill modules imported by a test | 2 known gaps, may only shrink | 9 of 11 |
-| State-changing routes called by a test | no gaps allowed | 17 of 17 (and 17 of 17 mounted) |
+| State-changing routes called by a test | no gaps allowed | 18 of 18 (and 18 of 18 mounted) |
 | MCP tools referenced by a test (`packages/causal-mcp`) | no gaps allowed | 6 of 6 |
 
 `scripts/doc_reconciliation.py` reports which documents in `docs/` are owed a re-read because the code they describe has changed. It is an advisory step: it fails nothing, but while any document is owed a re-read the gate exits 3, not 0. Only this page and the root README had been read against the code when tracking began.
