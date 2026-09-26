@@ -110,7 +110,8 @@ DATABASE_URL=postgresql+asyncpg://causal_app:<that secret>@<host>:5432/<db>
 
 Against the compose stack (§4) that is
 `postgresql+asyncpg://causal_app:causal_app_local_dev@localhost:5432/causalplatform`: its init
-script sets that local-dev password. Migrations and seeding run as the owner (`causal`).
+script sets that local-dev password. Migrations run as the owner (`causal`), and so would seeding
+(§8), which today runs on SQLite only.
 
 The dev auth bypass works only with `ENV=local`, so a local session with the bypass is always on
 SQLite. Neo4j is used only when `NEO4J_URI` is set; otherwise the graph and experience-buffer paths
@@ -282,6 +283,20 @@ cd backend
 .venv/bin/python -m scripts.seed_data --all          # everything
 .venv/bin/python -m scripts.seed_data --clear        # remove seeded data
 ```
+
+The seeder writes to a local SQLite database (`ENV=local`, the default). It does not run on
+PostgreSQL yet: its inserts bind JSON text where the PostgreSQL schema has array columns
+(`policy_rules_cited`, `tags`, `edge_ids`), and asyncpg refuses them.
+
+`--clear` deletes the seeder's rows from the tables that allow a delete: graph fragments and
+entities whose `created_by` is the seeder, edges whose Guardian verdict is a seeder audit row, and
+incidents the seeder submitted. It never touches an append-only table (`audit_log`,
+`decision_records`, `decision_followups`, `causal_model_versions`, `decision_model_refs`), whose
+triggers refuse a delete: the seeder's audit rows stay, `--clear` reports how many it kept, and
+seeding again adds new ones. For a fully empty database, delete the SQLite file (`SQLITE_PATH`,
+default `backend/local_dev.db`) instead. On PostgreSQL `--clear` must run as the tables' owner;
+`causal_app` has no `DELETE` grant, and as `causal_app` it refuses before deleting anything
+(`backend/tests/integration/test_seed_data_clear.py`).
 
 With `ENV=local` and `DEV_AUTH_BYPASS=true`, the backend accepts the fixed dev token
 `dev-local-token` (`backend/src/middleware/auth.py`) — it is not a real credential and is refused
