@@ -37,7 +37,14 @@ from sqlalchemy import bindparam, column, select, table, text, update
 from sqlalchemy.exc import IntegrityError
 
 from src.db.factory import CloudSqlFactory
-from src.db.types import TEXT_ARRAY, TIMESTAMP, UUID_ARRAY, timestamp_text, typed_text
+from src.db.types import (
+    TEXT_ARRAY,
+    TIMESTAMP,
+    UUID_ARRAY,
+    json_value,
+    timestamp_text,
+    typed_text,
+)
 from src.exceptions import GuardianBlockedError, InvalidTransitionError, ObjectNotFoundError
 from src.semantic_layer.models import (
     ApprovalStatus,
@@ -49,7 +56,15 @@ from src.semantic_layer.models import (
     GraphFragment,
     GuardianVerdict,
     ReviewStatus,
+    RiskTier,
     UserRef,
+)
+from src.semantic_layer.review_risk import (
+    TIER_RANK,
+    edge_risk,
+    entity_risk,
+    fragment_risk,
+    usable_sensitivity,
 )
 from src.semantic_layer.verdict import GOVERNANCE_APPROVE
 from src.semantic_layer.verdict import claim as verdict_claim
@@ -60,6 +75,8 @@ if TYPE_CHECKING:
 
     from sqlalchemy.ext.asyncio import AsyncSession
     from sqlalchemy.sql.expression import TableClause
+
+    from src.semantic_layer.models import SensitivityResult
 
 log = structlog.get_logger(__name__)
 
@@ -427,7 +444,8 @@ _GRAPH_FRAGMENTS = _table("graph_fragments", *_FRAGMENT_COLUMNS, "lineage")
 _ASSUMPTIONS = _table("assumptions", *_ASSUMPTION_COLUMNS)
 _CAUSAL_EDGES = _table(
     "causal_edges", "id", "edge_type", "domain", "approval_status", "created_at",
-    "approved_at", "approved_by", "guardian_verdict_ref", "lineage",
+    "approved_at", "approved_by", "guardian_verdict_ref", "lineage", "confidence",
+    "assumption_refs", "created_by",
 )
 
 #: The object types a review may approve or reject: their table, and the column
@@ -438,6 +456,22 @@ _REVIEWABLE_TABLES: dict[str, tuple[TableClause, str]] = {
     "GraphFragment": (_GRAPH_FRAGMENTS, "name"),
     "CausalEntity": (_CAUSAL_ENTITIES, "name"),
 }
+
+#: What the review queue reads from each reviewable table beyond the common columns:
+#: the fields its risk tier is derived from, and who created the object.
+_QUEUE_COLUMNS: dict[str, tuple[str, ...]] = {
+    "CausalEdge": ("confidence", "assumption_refs", "created_by"),
+    "GraphFragment": ("edge_ids", "created_by"),
+    "CausalEntity": ("created_by",),
+}
+
+
+def _moment(value: str | None) -> datetime:
+    """A queue item's created_at as an aware datetime, for ordering; missing sorts last."""
+    if not value:
+        return datetime.max.replace(tzinfo=UTC)
+    moment = datetime.fromisoformat(value)
+    return moment if moment.tzinfo is not None else moment.replace(tzinfo=UTC)
 
 
 def _outside(domains: Collection[str] | None, domain: Any) -> bool:
@@ -527,7 +561,7 @@ class SemanticLayerRegistry:
                     "SELECT id, source_id, source_type, target_id, target_type, "
                     "edge_type, direction, confidence, evidence_refs, assumption_refs, "
                     "approval_status, approved_by, approved_at, guardian_verdict_ref, "
-                    "version, lineage, domain, created_at "
+                    "version, lineage, domain, created_at, created_by "
                     "FROM causal_edges WHERE id = :eid"
                 ),
                 {"eid": str(edge_id)},
@@ -541,7 +575,7 @@ class SemanticLayerRegistry:
         raw["target"] = {"id": raw.pop("target_id"), "object_type": raw.pop("target_type")}
         raw = _parse_json_fields(
             raw,
-            ["evidence_refs", "assumption_refs", "lineage", "approved_by"],
+            ["evidence_refs", "assumption_refs", "lineage", "approved_by", "created_by"],
         )
         return CausalEdge.model_validate(raw)
 
@@ -722,12 +756,12 @@ class SemanticLayerRegistry:
                         "  id, source_id, source_type, target_id, target_type, "
                         "  edge_type, direction, confidence, evidence_refs, "
                         "  assumption_refs, approval_status, guardian_verdict_ref, "
-                        "  version, lineage, domain, created_at"
+                        "  version, lineage, domain, created_at, created_by"
                         ") VALUES ("
                         "  :id, :source_id, :source_type, :target_id, :target_type, "
                         "  :edge_type, :direction, :confidence, :evidence_refs, "
                         "  :assumption_refs, :approval_status, :verdict_ref, "
-                        "  :version, :lineage, :domain, :created_at"
+                        "  :version, :lineage, :domain, :created_at, :created_by"
                         ")",
                         evidence_refs=UUID_ARRAY,
                         assumption_refs=UUID_ARRAY,
@@ -750,6 +784,11 @@ class SemanticLayerRegistry:
                         "lineage": json.dumps([r.model_dump() for r in draft.lineage], default=str),
                         "domain": draft.domain,
                         "created_at": datetime.now(UTC),
+                        "created_by": (
+                            draft.created_by.model_dump_json()
+                            if draft.created_by is not None
+                            else None
+                        ),
                     },
                 )
 
@@ -1051,16 +1090,24 @@ class SemanticLayerRegistry:
         self, limit: int = 50, domains: Collection[str] | None = None
     ) -> list[dict[str, Any]]:
         """
-        Return all DRAFT / UNDER_REVIEW objects ordered by risk tier for the
-        governance review queue.
+        Return the DRAFT / UNDER_REVIEW objects inside `domains`, most at risk first.
 
-        Returns a list of dicts with keys: id, object_type, domain, name,
-        approval_status, created_at.
+        Each dict has id, object_type, domain, name, approval_status, created_at,
+        risk_tier, risk_reasons and submitted_by. The tier is derived from stored
+        fields by src/semantic_layer/review_risk.py (edges by stated confidence and
+        stored sensitivity results, fragments by whether they carry an unapproved
+        edge, entities LOW); the queue is ordered CRITICAL, HIGH, MEDIUM, LOW and
+        oldest first within a tier. submitted_by is the id in the object's
+        created_by, or None where none was recorded (edges drafted before 011).
+
+        Every pending object is read before the cut to `limit`: a tier depends on the
+        row, so cutting each table first could drop a CRITICAL item for a LOW one.
         """
-        results: list[dict[str, Any]] = []
+        pending: list[dict[str, Any]] = []
         async with CloudSqlFactory.get_session_factory()() as session:
             for obj_type, (t, name_col) in _REVIEWABLE_TABLES.items():
-                params: dict[str, Any] = {"reviewable": list(_REVIEWABLE), "lim": limit}
+                extra = _QUEUE_COLUMNS[obj_type]
+                params: dict[str, Any] = {"reviewable": list(_REVIEWABLE)}
                 rows = await session.execute(
                     select(
                         t.c.id,
@@ -1068,31 +1115,102 @@ class SemanticLayerRegistry:
                         t.c.domain,
                         t.c.approval_status,
                         t.c.created_at,
-                    )
-                    .where(
+                        *(t.c[c] for c in extra),
+                    ).where(
                         t.c.approval_status.in_(bindparam("reviewable", expanding=True)),
                         *_domain_filter(t, domains, params),
-                    )
-                    .order_by(t.c.created_at.asc())
-                    .limit(bindparam("lim")),
+                    ),
                     params,
                 )
-                for r in rows.mappings():
-                    results.append(
-                        {
-                            "id": str(r["id"]),
-                            "object_type": obj_type,
-                            "domain": r["domain"],
-                            "name": r["name"],
-                            "approval_status": r["approval_status"],
-                            "created_at": (
-                                r["created_at"].isoformat()
-                                if hasattr(r["created_at"], "isoformat")
-                                else str(r["created_at"])
-                            ) if r["created_at"] else None,
-                        }
-                    )
+                pending.extend({"object_type": obj_type, **dict(r)} for r in rows.mappings())
 
-        # Sort combined results chronologically (oldest first = highest priority)
-        results.sort(key=lambda x: x.get("created_at") or "")
+            sensitivity = await self._sensitivity_by_assumption(session, pending)
+            edge_status = await self._edge_status(session, pending, domains)
+
+        results: list[dict[str, Any]] = []
+        for row in pending:
+            if row["object_type"] == "CausalEdge":
+                refs = [str(a) for a in (json_value(row["assumption_refs"], []) or [])]
+                found = [sensitivity[a] for a in refs if a in sensitivity]
+                tier, reasons = edge_risk(float(row["confidence"]), found)
+            elif row["object_type"] == "GraphFragment":
+                edge_ids = [str(e) for e in (json_value(row["edge_ids"], []) or [])]
+                tier, reasons = fragment_risk(edge_ids, edge_status)
+            else:
+                tier, reasons = entity_risk()
+            creator = json_value(row["created_by"])
+            results.append(
+                {
+                    "id": str(row["id"]),
+                    "object_type": row["object_type"],
+                    "domain": row["domain"],
+                    "name": row["name"],
+                    "approval_status": row["approval_status"],
+                    "created_at": timestamp_text(row["created_at"]),
+                    "risk_tier": tier.value,
+                    "risk_reasons": reasons,
+                    "submitted_by": (
+                        str(creator["id"])
+                        if isinstance(creator, dict) and creator.get("id")
+                        else None
+                    ),
+                }
+            )
+
+        results.sort(key=lambda x: (TIER_RANK[RiskTier(x["risk_tier"])], _moment(x["created_at"])))
         return results[:limit]
+
+    @staticmethod
+    async def _sensitivity_by_assumption(
+        session: AsyncSession, pending: list[dict[str, Any]]
+    ) -> dict[str, SensitivityResult]:
+        """The usable sensitivity result of every assumption a pending edge names."""
+        refs = sorted(
+            {
+                str(a)
+                for row in pending
+                if row["object_type"] == "CausalEdge"
+                for a in (json_value(row["assumption_refs"], []) or [])
+            }
+        )
+        if not refs:
+            return {}
+        t = _ASSUMPTIONS
+        rows = await session.execute(
+            select(t.c.id, t.c.review_status, t.c.sensitivity_result).where(
+                t.c.id.in_(bindparam("ids", expanding=True))
+            ),
+            {"ids": refs},
+        )
+        found: dict[str, SensitivityResult] = {}
+        for r in rows.mappings():
+            result = usable_sensitivity(r["review_status"], r["sensitivity_result"])
+            if result is not None:
+                found[str(r["id"])] = result
+        return found
+
+    @staticmethod
+    async def _edge_status(
+        session: AsyncSession, pending: list[dict[str, Any]], domains: Collection[str] | None
+    ) -> dict[str, Any]:
+        """The approval status of every edge a pending fragment names, inside `domains`."""
+        ids = sorted(
+            {
+                str(e)
+                for row in pending
+                if row["object_type"] == "GraphFragment"
+                for e in (json_value(row["edge_ids"], []) or [])
+            }
+        )
+        if not ids:
+            return {}
+        t = _CAUSAL_EDGES
+        params: dict[str, Any] = {"ids": ids}
+        rows = await session.execute(
+            select(t.c.id, t.c.approval_status).where(
+                t.c.id.in_(bindparam("ids", expanding=True)),
+                *_domain_filter(t, domains, params),
+            ),
+            params,
+        )
+        return {str(r["id"]): r["approval_status"] for r in rows.mappings()}

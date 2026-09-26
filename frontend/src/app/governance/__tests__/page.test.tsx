@@ -48,6 +48,9 @@ const backendQueueItem = {
   name: ITEM_NAME,
   approval_status: "DRAFT",
   created_at: "2026-09-18T10:00:00Z",
+  risk_tier: "HIGH",
+  risk_reasons: ["no stored sensitivity result on an assumption it rests on"],
+  submitted_by: "ryo.tanaka",
 };
 
 // AuditEntry serialises camelCase (alias_generator=_camel); the AuditLogResponse
@@ -414,7 +417,7 @@ describe("GovernancePage — the queue shows the backend's risk tier and submitt
     );
     expect(within(first).getByText("not recorded")).toBeInTheDocument();
 
-    const [second] = screen.getAllByTestId("review-item");
+    const second = screen.getByTestId("review-item");
     expect(second).toHaveAttribute("data-item-id", lowEntity.id);
     expect(within(second).getByText("Low")).toBeInTheDocument();
     expect(within(second).getByText("ana")).toBeInTheDocument();

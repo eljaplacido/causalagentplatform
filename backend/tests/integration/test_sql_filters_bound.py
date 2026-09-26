@@ -334,7 +334,9 @@ async def test_registry_lists_filter_and_scope(semantic_rows: None) -> None:
     assert [a.statement for a in pending] == ["a-dev-pending"]
 
     queue = await reg.list_pending_review_queue()
-    assert [q["name"] for q in queue] == ["e-dev-draft", "f-dev-draft", "f-fin-draft",
+    # By risk tier, then oldest first (septa-36): fragments (MEDIUM) before entities
+    # (LOW); it was oldest first across types.
+    assert [q["name"] for q in queue] == ["f-dev-draft", "f-fin-draft", "e-dev-draft",
                                           "e-fin-draft"]
     queue = await reg.list_pending_review_queue(domains={"finance"})
     assert {(q["object_type"], q["name"]) for q in queue} == {

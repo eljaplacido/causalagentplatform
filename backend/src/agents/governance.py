@@ -30,7 +30,6 @@ from typing import Any
 from uuid import UUID, uuid4
 
 import structlog
-from pydantic import ValidationError
 from sqlalchemy import bindparam, column, select, table, text
 
 from src.agents.base import HALLUCINATION_THRESHOLD, BaseAgent
@@ -41,9 +40,9 @@ from src.semantic_layer.models import (
     CynefinDomain,
     EpistemicState,
     GuardianVerdict,
-    ReviewStatus,
     SensitivityResult,
 )
+from src.semantic_layer.review_risk import usable_sensitivity
 from src.semantic_layer.verdict import GOVERNANCE_APPROVE
 from src.semantic_layer.verdict import claim as verdict_claim
 from src.semantic_layer.verdict import sign as verdict_sign
@@ -90,7 +89,9 @@ def _subject_of(payload: dict[str, Any]) -> str | None:
 # assumption_refs. An edge therefore has a sensitivity result when at least one
 # assumption it references carries a valid SensitivityResult and has not been
 # REJECTED in review. It is read from the database, never from the payload being
-# checked: a caller that could attach its own result would choose it.
+# checked: a caller that could attach its own result would choose it. The reading
+# is src/semantic_layer/review_risk.py usable_sensitivity, which the review queue's
+# risk tiers share.
 
 _ASSUMPTIONS = table("assumptions", column("id"), column("review_status"),
                      column("sensitivity_result"))
@@ -139,12 +140,9 @@ async def edge_sensitivity(payload: dict[str, Any]) -> EdgeSensitivity | None:
                 {"ids": refs},
             )
             for status, stored in rows.all():
-                if stored is None or str(status) == ReviewStatus.REJECTED.value:
-                    continue
-                try:
-                    results.append(SensitivityResult.model_validate(json_value(stored)))
-                except (ValidationError, ValueError, TypeError):
-                    continue
+                result = usable_sensitivity(status, stored)
+                if result is not None:
+                    results.append(result)
     return EdgeSensitivity(edge_id=subject, assumption_count=len(refs), results=results)
 
 
