@@ -71,23 +71,23 @@ jobs:
           --health-timeout 5s
           --health-retries 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Full history: the register cites some claims at the revision they were made
           # (file@rev:line), and a shallow clone cannot verify those.
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "20"
           cache: npm
 
       - name: Cache benchmark data
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/causal-core
           key: causal-core-data-${{ hashFiles('benchmarks/t2-ihdp/PRE-REGISTRATION.md', 'benchmarks/t3-lalonde/PRE-REGISTRATION.md') }}
@@ -154,7 +154,7 @@ jobs:
 
       - name: Keep the gate log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ci-gate-log
           path: ci-gate.log
@@ -180,9 +180,9 @@ jobs:
     env:
       TRIVY_IMAGE: aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -190,7 +190,7 @@ jobs:
         run: docker build -f "${{ matrix.image }}/Dockerfile" -t "causal-platform-${{ matrix.image }}:ci-${{ github.run_id }}-${{ github.run_attempt }}" .
 
       - name: Cache the vulnerability database
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/trivy
           key: trivy-db-${{ github.run_id }}
@@ -213,7 +213,7 @@ jobs:
 
       - name: Keep the report and the image SBOM
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: image-${{ matrix.image }}
           path: scan/
