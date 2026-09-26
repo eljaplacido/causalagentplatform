@@ -1,5 +1,5 @@
 -- ===========================================================================
--- 011_edge_created_by.sql
+-- 012_edge_created_by.sql
 --
 -- causal_edges gets the created_by column its siblings have.
 --

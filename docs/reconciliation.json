@@ -54,8 +54,8 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "6b681bdf41baee443a6d9861655b90f7d9b86eaaef14555441e9272c109e56b1",
-          "backend/src": "6ca5592e485aeebd8e9a4a0c98319d3c57ae068dd13e50ffa8a0f29a6fcb2508",
+          "conformance/declared_not_implemented.json": "703a728d2f54dd528266363a620bdde06ccdc71a255998d26171ea7b27f0fb90",
+          "backend/src": "7da218504677aa33c206da1b86eeb8eb382ade9344b713b8b36fb6a21acbf191",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "backend/tests": "ec946ae24599f8d111b7faff7336eb8d14e6469e4c5cc40896396936b30f061d",
           "frontend/src": "653e2e1dd0b61fab109dbe492e7facb12581472ba80c9aa3e550616a5d3c5902",
@@ -65,7 +65,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-36: review-queue row implemented with backend and frontend tests; register counts 35 open / 29 left)"
+        "by": "Claude (migration renumbered 011 -> 012_edge_created_by so it follows #30's 011_provenance; content unchanged)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -182,14 +182,14 @@
           "backend/src/semantic_layer/registry.py": "7353cc8b8dbbb31cffcdfb2f7658ab802f07c58650a8dee70cd83f8650c19536",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
           "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
-          "backend/src/db/migrations": "75392a6e974289a0ee6b70f23163dcd6b6cd129212def8bfb9a6a142b12aba48",
+          "backend/src/db/migrations": "deb8e99b8e619c145353da0566913555421eb3daa3f028d4f0f90a5eeccfd558",
           "backend/src/semantic_layer/verdict.py": "4b32849d51f5dd4b19a0dd93d807b817eab0083210bc10180745c8454a61c230",
           ".github/workflows": "1ae0fadaa874c419905d5c24ebadf5ccca68705dc7d83057ea81682712fae31b"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-36: re-read the RBAC table and domain-scope lines for the review queue; still true, and migration 011 adds only a nullable column)"
+        "by": "Claude (migration renumbered 011 -> 012_edge_created_by so it follows #30's 011_provenance; content unchanged)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -207,7 +207,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/db": "18efce1c8be2fc30ca0e73dc32eb3d91073d00a2f2adc513381fd793a994dc45",
+          "backend/src/db": "77eb64d030e31eef254341f965338dd1c8a89f2b0c416158624e8c1688441e50",
           "backend/src/connectors": "47199e6fd213f90c59af28dda1c6469d256d6595cdd433fbbd1a2957ec723569",
           "backend/src/semantic_layer/models.py": "9d20689801ee209370c995278bfa23f58d19fd0c68a65d86e705e4fb7b1a036f",
           "backend/src/sensors": "d38f988ccb52659ac4ecc8724e8aa775b2e6e9fca76b73dbba6576c3f3d1dcba",
@@ -219,7 +219,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-36: 3.2 lists 001-011 and causal_edges.created_by; CausalEdge interface shows createdBy)"
+        "by": "Claude (migration renumbered 011 -> 012_edge_created_by so it follows #30's 011_provenance; content unchanged)"
       }
     },
     "docs/HANDOFFS.md": {
@@ -355,13 +355,13 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "b3a206babea176dd53fdebe83037e38e66922eeced1def6dbfb248262c2477a6",
-          "conformance/declared_not_implemented.json": "6b681bdf41baee443a6d9861655b90f7d9b86eaaef14555441e9272c109e56b1",
+          "conformance/declared_not_implemented.json": "703a728d2f54dd528266363a620bdde06ccdc71a255998d26171ea7b27f0fb90",
           "docs/CURRENT_STAGE.md": "f821226daaf873e3de48ce2c45e1ad2cbe8447fcbad5353adf61245970301392"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-36: p2 Done names the review queue risk tier)"
+        "by": "Claude (migration renumbered 011 -> 012_edge_created_by so it follows #30's 011_provenance; content unchanged)"
       }
     },
     "SECURITY.md": {
