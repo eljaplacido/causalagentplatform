@@ -28,16 +28,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/pyproject.toml": "cdabd6c6e24ab6d579d2aa1de3d0d6db5b8802e87b10489cc3df43a2d34a47ed",
-          "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
+          "backend/pyproject.toml": "aed6cbb405b21ebabf3b25620ab10ff1bc095f3860cf0c079a378b539875580a",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "46e75a70ec7bc324ae6d3edd6d3bcb7bbb44d15ccaa2fc06aec165fceba94c7e"
+          "docs/CURRENT_STAGE.md": "f1f840fc4f5e982e275b65a688b5e9df3e122adc26e61d18faf8aaba630e127e",
+          "packages/causal-mcp": "f86dd08d8fef8f9b09adab83770f37de1234101a5c84ff11ef0427bdab2507d1"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (small-batch-1: moved only by CURRENT_STAGE's Gates table; its seeding line (--all, SQLite) still holds)"
+        "by": "Claude (merge #40 into #46: governance page and ApprovalPanel show the business domain with the backend's risk tier and submitter; drift_monitor keeps this branch's alert_emit fix on main's LF text; health.py deletion reflected in #29's Neo4j test, DATA_LAYER and the register; ADR-002 keeps main's provenance-retention row and this branch's contract-latency row; CURRENT_STAGE Gates table re-measured from this tree's gate run (septa-68))"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,18 +53,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "845993e1726f21faf65c25acef97bab860e3155e13ccb19892ebca0ec6bfd480",
-          "backend/src": "b0d52f95e7e8d49ee18c26f6092fd88f321569d8d28f3c6ff255200e5717c63e",
-          "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "b5ca416b5f8cffc707abc658e368f538d54c170caeb9ada114c97b83742a3dcf",
-          "frontend/src": "53904fc3d2b9f3b1c068c10fec234755fb7191909a9f1ca24c5eb376614a3265",
-          "packages": "f39decf6dcae81c0e60801fa80c933c6547de55348adb3fd3867119423414373",
+          "conformance/declared_not_implemented.json": "42138512a725d57d90607324a8af749e0aec77142b6b6abe4f3c4d7392fe213f",
+          "backend/src": "cde5f4e6e7c2ee7b93e8c1f2dedc68342b45634b64a75623872f6df20bfc2d2d",
+          "backend/tests": "9443f6a378e2b955e3902018e12be0dd233d39e47bc8d672039116aa8cc1b94c",
+          "frontend/src": "cfe44a11e817c5d272f7125694a5cba46c438299c632f63315a8f836a9278d80",
+          "packages": "c64361259b84856ce02d9b623ea3149011f0cc6b814061ce479df6c12d66cbbc",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (small-batch-1: Gates table re-measured at 11b445e; Health endpoint row re-cited to the mounted /health's test; register re-citations checked by status_claims)"
+        "by": "Claude (merge #40 into #46: governance page and ApprovalPanel show the business domain with the backend's risk tier and submitter; drift_monitor keeps this branch's alert_emit fix on main's LF text; health.py deletion reflected in #29's Neo4j test, DATA_LAYER and the register; ADR-002 keeps main's provenance-retention row and this branch's contract-latency row; CURRENT_STAGE Gates table re-measured from this tree's gate run (septa-68))"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -79,16 +78,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/semantic_layer": "ea55bd4224a1f8bfcca328b39114e95a6b6b42a8f9fe00bc57370332c01e6222",
-          "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
-          "packages/semantic-types/src": "fe7182fc233b307aa02d26a958898db94ead599601fe740dcfe2981bf5a1150d",
+          "backend/src/semantic_layer": "2b3aee3ef98dd7c74992a44be9588d099de06c829997fe78cb6a75ddf6594e30",
+          "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
+          "packages/semantic-types/src": "b88502a55b3406392490bc55954f738e1c9557acaa2e273743cdb113c4bc31ce",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
-          "backend/src/orchestration/graph.py": "1c42a22eed003aa1e67b1ffc70545347304a0cc5170959464f263439b727eacc"
+          "backend/src/orchestration/graph.py": "9e75a97dcfccf2e649b77e2b52bd0bc1ae8d11aaf7a3af5c072d4bcb2e09d7e8"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (small-batch-1: contracts.py changed only ContractRegistry's docstring; ADR-001 says nothing about it)"
+        "by": "Claude (merge #40 into #46: governance page and ApprovalPanel show the business domain with the backend's risk tier and submitter; drift_monitor keeps this branch's alert_emit fix on main's LF text; health.py deletion reflected in #29's Neo4j test, DATA_LAYER and the register; ADR-002 keeps main's provenance-retention row and this branch's contract-latency row; CURRENT_STAGE Gates table re-measured from this tree's gate run (septa-68))"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -103,16 +102,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/semantic_layer/provenance.py": "02fe831e092fb8bb01d05db9fc9d871ae544e09b2adca565d0df34e3086fa474",
+          "backend/src/semantic_layer/provenance.py": "c912fb0af67442b984325d80528867c559ccb0332ac7725ac448e48f87164c89",
           "backend/src/semantic_layer/contracts.py": "96357377af27b488fd82e05c2601a907cbf99afe7cd9ae71819ee37c7e284068",
-          "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
-          "backend/src/agents/llm_factory.py": "f7a2d5514b4002494fe1cf9edf69c5b9cc31b8d2751fe39b335ecbfce4d8014a",
-          "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0"
+          "backend/src/api/provenance.py": "55fa5a3e0153904f557da134e6e0f3a8c8c1ae0ab8b5fe4faa8a6918a70c617e",
+          "backend/src/agents/llm_factory.py": "cf027815b09bfd658aa041072ebd42158e3bdf5f6e76d3f8941ed7b227fd9f1e",
+          "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (small-batch-1: Redis-cache mitigation dropped; Part B's in-memory ContractRegistry description matches the new docstring)"
+        "by": "Claude (merge #40 into #46: governance page and ApprovalPanel show the business domain with the backend's risk tier and submitter; drift_monitor keeps this branch's alert_emit fix on main's LF text; health.py deletion reflected in #29's Neo4j test, DATA_LAYER and the register; ADR-002 keeps main's provenance-retention row and this branch's contract-latency row; CURRENT_STAGE Gates table re-measured from this tree's gate run (septa-68))"
       }
     },
     "docs/ADR-003-hierarchical-planning-and-evaluation.md": {
@@ -147,16 +146,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/agents": "8044bc0482380ad8cf9ce9ffb44d76ae94d2748975d634582aaeb584dea5d5a8",
-          "backend/src/skills": "7c14f6095d38b78711081427d4f98e3f621a0a72de4b377d6fc374c346c4ecea",
-          "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/src/orchestration": "026e61993e2c3e51962380e4d4e957cf5d26e650455679bd5e7cdce75c31c2f4",
-          "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957"
+          "backend/src/agents": "748c3b7f1398dfb683ac629c248d785a65c3483dbae7bf26b07f1a746798d8b3",
+          "backend/src/skills": "b0bcef79c64f6b8d2f35f87f92095d54c52cec7d972a4cf1520b95fcc0d68347",
+          "backend/src/orchestration": "7776a0a563af5bda75451c4ff4bb546683ae9947207f6da8b0545c1781976c8f",
+          "prompts": "664b74cd837a44513e10dc0a7a5c44a3015816f928c93d4f7831320b0231e50f",
+          "packages/causal-mcp": "f86dd08d8fef8f9b09adab83770f37de1234101a5c84ff11ef0427bdab2507d1"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (small-batch-1: drift_monitor.py: alert_emit now emits via AlertEmitter and names no topic; the spec's Kafka line stays, pinned by register kafka-streaming)"
+        "by": "Claude (merge #40 into #46: governance page and ApprovalPanel show the business domain with the backend's risk tier and submitter; drift_monitor keeps this branch's alert_emit fix on main's LF text; health.py deletion reflected in #29's Neo4j test, DATA_LAYER and the register; ADR-002 keeps main's provenance-retention row and this branch's contract-latency row; CURRENT_STAGE Gates table re-measured from this tree's gate run (septa-68))"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -206,19 +205,19 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/db": "d43e2f0b4736735ce4661b7a43652f2469db73154a1d01578812c463dd2a8251",
-          "backend/src/connectors": "47199e6fd213f90c59af28dda1c6469d256d6595cdd433fbbd1a2957ec723569",
-          "backend/src/semantic_layer/models.py": "f3b7a600ac8e8c4ce7beb48145a188b2394f3775b6ad7d094613cbb9798d3b05",
+          "backend/src/db": "918886f41d041a016e43d2e32818791a28481b49a24d7ce149b7ec71a42bf826",
+          "backend/src/connectors": "2b7f65f2acc7f7732deecdad2c8c1b72e4db72caed067285d65631be65c4edfa",
+          "backend/src/semantic_layer/models.py": "9d20689801ee209370c995278bfa23f58d19fd0c68a65d86e705e4fb7b1a036f",
           "backend/src/sensors": "d38f988ccb52659ac4ecc8724e8aa775b2e6e9fca76b73dbba6576c3f3d1dcba",
-          "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
-          "backend/src/semantic_layer/registry.py": "91529601ce53d74c25763a017f4a43ad552c13e94d562f513165b079c16c71b7",
-          "backend/src/agents/drift_monitor.py": "9e20568516281d94bb007349f8841e0ec14b008192c5d32c5eeff4131e8544fc",
+          "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
+          "backend/src/semantic_layer/registry.py": "32f6f4cee20e193c4ab87d60ca5b90a9aba8e18a01feef60c166433e63c7374c",
+          "backend/src/agents/drift_monitor.py": "3e5807b7fcc88cb7215e1126cbf5461c293020fb2153937fbbd923ca085b2c9f",
           "backend/src/skills/drift_detect.py": "9432982258b155287a90701d76dc9bf331dd8c65fbc692ad37fcd124fcab7111"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (small-batch-1: 5.1 now says the return value names the AlertEmitter channel and records the old topic label and false emitted=true)"
+        "by": "Claude (merge #40 into #46: governance page and ApprovalPanel show the business domain with the backend's risk tier and submitter; drift_monitor keeps this branch's alert_emit fix on main's LF text; health.py deletion reflected in #29's Neo4j test, DATA_LAYER and the register; ADR-002 keeps main's provenance-retention row and this branch's contract-latency row; CURRENT_STAGE Gates table re-measured from this tree's gate run (septa-68))"
       }
     },
     "docs/HANDOFFS.md": {
@@ -278,17 +277,17 @@
         "sha256": {
           "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
-          "backend/pyproject.toml": "cdabd6c6e24ab6d579d2aa1de3d0d6db5b8802e87b10489cc3df43a2d34a47ed",
+          "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
+          "backend/pyproject.toml": "aed6cbb405b21ebabf3b25620ab10ff1bc095f3860cf0c079a378b539875580a",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
-          ".env.example": "f5dbf40f551d60b4b91d5bbaa9b36a2404f89536421fe51b8bcbf17a6ae1258f",
+          ".env.example": "10b19ac63993ff640ea47936fb99d53938077413273463afe5e5661313451c97",
           "backend/scripts": "94c21c5743fcd94843eab233de5ca2e92b913b84cb7148ae0917a33a76d8b254"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (small-batch-1: section 8 re-read: --clear scope, owner-only on PostgreSQL, the seeder is SQLite-only today)"
+        "by": "Claude (merge #40 into #46: governance page and ApprovalPanel show the business domain with the backend's risk tier and submitter; drift_monitor keeps this branch's alert_emit fix on main's LF text; health.py deletion reflected in #29's Neo4j test, DATA_LAYER and the register; ADR-002 keeps main's provenance-retention row and this branch's contract-latency row; CURRENT_STAGE Gates table re-measured from this tree's gate run (septa-68))"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -310,21 +309,21 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "b5ca416b5f8cffc707abc658e368f538d54c170caeb9ada114c97b83742a3dcf",
-          "backend/pyproject.toml": "cdabd6c6e24ab6d579d2aa1de3d0d6db5b8802e87b10489cc3df43a2d34a47ed",
+          "backend/tests": "9443f6a378e2b955e3902018e12be0dd233d39e47bc8d672039116aa8cc1b94c",
+          "backend/pyproject.toml": "aed6cbb405b21ebabf3b25620ab10ff1bc095f3860cf0c079a378b539875580a",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
-          ".gnomon/ci.sh": "8379e43234946f44d8e569a68c60d42923500ded3012d88bf2a477f5ebecf8aa",
-          "scripts": "b9e15ecef4d3aa0f569d7b84a3e2578d73cf0513d186afafe31b468d8f927b85",
+          ".gnomon/ci.sh": "a05e016e87f09e27989ffc185d06ad2b55c6d31f4e9b9cc2954b8cfdf7a40e45",
+          "scripts": "61c928c1e062505ea75468213cebcba73fb1bdb2aeeca95a4cd4e04a46a599df",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
-          "benchmarks": "2ea289c99ef957a2b22a4eed544e76c06e45eb8a2c844d384f9e05eb7f84d940",
-          "packages/causal-core/tests": "ca9a8600b9bdeb81d9509afcb864900159868a7509bcc0aa13fff0fc501869f5",
-          "packages/causal-decision/tests": "c7ccd2d2b91e1ec53a3eb456c70f670268b2ec1f8f431e161f399360b94ef7de"
+          "benchmarks": "58eaf5af920accec421ce7392b3d999aa35199d6f471c989b7fab25b3865acd0",
+          "packages/causal-core/tests": "4496d9663daa2b71e5a548c0ac79983c4ba33380ac0829eb3232292f23303ee1",
+          "packages/causal-decision/tests": "811166b3dd05cfc3cbd62c7e71fcf1d62666fb738c97dcb65e34725fede4d034"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (small-batch-1: relock's --refresh-package documented; test_health_api.py removal and new seed/drift/py_lock tests change no claim here)"
+        "by": "Claude (merge #40 into #46: governance page and ApprovalPanel show the business domain with the backend's risk tier and submitter; drift_monitor keeps this branch's alert_emit fix on main's LF text; health.py deletion reflected in #29's Neo4j test, DATA_LAYER and the register; ADR-002 keeps main's provenance-retention row and this branch's contract-latency row; CURRENT_STAGE Gates table re-measured from this tree's gate run (septa-68))"
       }
     },
     "docs/UIX.md": {
@@ -335,12 +334,12 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "frontend/src": "53904fc3d2b9f3b1c068c10fec234755fb7191909a9f1ca24c5eb376614a3265"
+          "frontend/src": "cfe44a11e817c5d272f7125694a5cba46c438299c632f63315a8f836a9278d80"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (small-batch-1: governance: business domain as a label, Cynefin badge only when classified, CynefinBadge renders unknown input as Unclassified)"
+        "by": "Claude (merge #40 into #46: governance page and ApprovalPanel show the business domain with the backend's risk tier and submitter; drift_monitor keeps this branch's alert_emit fix on main's LF text; health.py deletion reflected in #29's Neo4j test, DATA_LAYER and the register; ADR-002 keeps main's provenance-retention row and this branch's contract-latency row; CURRENT_STAGE Gates table re-measured from this tree's gate run (septa-68))"
       }
     },
     "docs/ROADMAP.md": {
@@ -353,14 +352,14 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "packages/causal-core/src/causal_core": "6b029f17fceb5b8a44c784ea601802c8d97c1d2ed3ce9a6a92c2600823826501",
-          "conformance/declared_not_implemented.json": "845993e1726f21faf65c25acef97bab860e3155e13ccb19892ebca0ec6bfd480",
-          "docs/CURRENT_STAGE.md": "46e75a70ec7bc324ae6d3edd6d3bcb7bbb44d15ccaa2fc06aec165fceba94c7e"
+          "packages/causal-core/src/causal_core": "65b5b9fe4d2bc339a536717c0fdd0f252483ac9e136b0600914ff3590a977c45",
+          "conformance/declared_not_implemented.json": "42138512a725d57d90607324a8af749e0aec77142b6b6abe4f3c4d7392fe213f",
+          "docs/CURRENT_STAGE.md": "f1f840fc4f5e982e275b65a688b5e9df3e122adc26e61d18faf8aaba630e127e"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (small-batch-1: moved only by register re-citations and CURRENT_STAGE's Gates figures; no ROADMAP claim touches them)"
+        "by": "Claude (merge #40 into #46: governance page and ApprovalPanel show the business domain with the backend's risk tier and submitter; drift_monitor keeps this branch's alert_emit fix on main's LF text; health.py deletion reflected in #29's Neo4j test, DATA_LAYER and the register; ADR-002 keeps main's provenance-retention row and this branch's contract-latency row; CURRENT_STAGE Gates table re-measured from this tree's gate run (septa-68))"
       }
     },
     "SECURITY.md": {
