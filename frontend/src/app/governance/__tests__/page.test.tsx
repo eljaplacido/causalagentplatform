@@ -41,10 +41,14 @@ const ITEM_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
 const ITEM_NAME = "payment_latency → checkout_conversion";
 const REASON = "Evidence and sensitivity analysis support this edge.";
 
+// `domain` is the semantic-layer BUSINESS domain the object belongs to
+// (causal_edges.domain, e.g. "devops") -- not a Cynefin classification. An
+// earlier fixture used "complicated" here, which hid that the page fed this
+// value to CynefinBadge and crashed on every real one.
 const backendQueueItem = {
   id: ITEM_ID,
   object_type: "CausalEdge",
-  domain: "complicated",
+  domain: "devops",
   name: ITEM_NAME,
   approval_status: "DRAFT",
   created_at: "2026-09-18T10:00:00Z",
@@ -126,6 +130,24 @@ afterEach(() => {
 });
 
 // ─── Live backend ────────────────────────────────────────────────────────────────
+
+describe("GovernancePage — a review item's business domain is not a Cynefin domain", () => {
+  it("shows the business domain as a plain label and no Cynefin badge when none is classified", async () => {
+    const user = userEvent.setup();
+    governanceApiMock.reviewQueue.mockResolvedValue([backendQueueItem]);
+    governanceApiMock.auditLog.mockResolvedValue(auditResponse([]));
+
+    renderPage();
+    const row = await screen.findByTestId("first-review-item");
+    expect(within(row).getByTestId("business-domain")).toHaveTextContent("devops");
+    expect(within(row).queryByTestId("cynefin-badge")).toBeNull();
+
+    await user.click(row);
+    const panel = screen.getByTestId("approval-panel");
+    expect(within(panel).getByTestId("business-domain")).toHaveTextContent("devops");
+    expect(within(panel).queryByTestId("cynefin-badge")).toBeNull();
+  });
+});
 
 describe("GovernancePage — approve calls the backend and waits for it", () => {
   it("shows success only after check + approve succeed, then refetches queue and audit log", async () => {
