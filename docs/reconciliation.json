@@ -184,12 +184,12 @@
           "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
           "backend/src/db/migrations": "6b52679eb2132b16e3bb238da5d6a7bde969f409bba4bd63b431c94456db74f1",
           "backend/src/semantic_layer/verdict.py": "2807535994f0073bd9f58cc2774822d9f7bd1749aa7801d669eb2301bde3ac00",
-          ".github/workflows": "bf9c4e3882bdd93a8cf5a76fef10cfeac861dd567d0e5a6932bc21f68d900dab"
+          ".github/workflows": "84bcaecddea0bab4108c515e3449d0eb59ea5f8b864cb9b9a6b42b8415ebac20"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (deps: frontend image now node:24-alpine (8.3); update-PR bullet names the new ignore rules; #16 action majors change nothing it states)"
+        "by": "Claude (deps: ci.yml node 20->24; the doc's node claims are about the image (24 LTS), unchanged)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -253,13 +253,13 @@
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
-          ".github": "56a4e02fcd2860382c9085fc73754c38325b86f0f5f69da3058a783bb7c9dc22",
+          ".github": "b7983107b8c81d6478b870d67aa5489a0684ea821091c94aa897172074adb76e",
           ".gnomon": "e9afa6dfbb985f1524e04a4ca8de7b5210e7e43e52d4106baca6d2a1b847532a"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (deps: #16 action bumps and the dependabot.yml ignore rules; the page names only copilot-instructions and ISSUE_TEMPLATE under .github, unchanged)"
+        "by": "Claude (deps: ci.yml node version; the page names the workflow, not versions)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -310,7 +310,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          ".github/workflows": "bf9c4e3882bdd93a8cf5a76fef10cfeac861dd567d0e5a6932bc21f68d900dab",
+          ".github/workflows": "84bcaecddea0bab4108c515e3449d0eb59ea5f8b864cb9b9a6b42b8415ebac20",
           "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
           "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
@@ -325,7 +325,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (deps: 5.4 gains how dependabot PRs are handled; #16 action majors leave 5.1 true, Node 20 and Python 3.12 unchanged)"
+        "by": "Claude (deps: CI's gate job now sets up Node 24 LTS; the job-steps list says so)"
       }
     },
     "docs/UIX.md": {

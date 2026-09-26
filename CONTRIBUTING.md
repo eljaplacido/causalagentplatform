@@ -27,7 +27,7 @@ says so.
 
 ## Setting up
 
-Python 3.12 and Node 20, as CI uses. Two Python environments, because the kernel and the backend
+Python 3.12 and Node 24 LTS, as CI uses. Two Python environments, because the kernel and the backend
 pin different MCP SDK majors (the backend's legacy server is on v1, causal-mcp on v2):
 
 Each installs from a hash-pinned lock in `requirements/` (every distribution pinned, every file
