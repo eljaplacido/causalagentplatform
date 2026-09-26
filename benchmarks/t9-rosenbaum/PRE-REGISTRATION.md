@@ -201,8 +201,10 @@ Bar by bar, with `Γ*` the reported sensitivity value (`null` counts as below ev
   it applies to; the bars (0.035, 0.05) only need to catch a `Γ*` that does not converge to the
   design sensitivity.
 - *Defects.* `random_pairs` leaves `e2e_null_measured`'s measured confounding in the pairs (a
-  mean difference near `2·(P(X=1 | T=1) − P(X=1 | T=0)) ≈ 0.6` with ~911 pairs), so the false rate
-  goes to 1. `lower_bound` makes `p⁺` the minimum over assignments, so `Γ*` far exceeds `Γ₀`
+  mean difference near `2·(P(X=1 | T=1) − P(X=1 | T=0)) ≈ 0.6` with ~911 pairs), so the test
+  rejects whenever it looks in that direction — about half the replications, since the direction
+  is the sign of the (unbiased) primary estimate — and the false rate goes to about 0.5 (see the
+  Changelog). `lower_bound` makes `p⁺` the minimum over assignments, so `Γ*` far exceeds `Γ₀`
   whenever the data favour treatment. `alpha_not_halved` moves the sharp exceedance rate from 0.025
   to about 0.05, three SEs above the bar — so its catch is deterministic under the registered seed
   but not by a wide margin.
@@ -236,3 +238,12 @@ Bar by bar, with `Γ*` the reported sensitivity value (`null` counts as below ev
   it. The method text now says so, and the kernel follows the book. No design here produces a zero
   difference (the outcomes are continuous), so no bar, design or defect is affected, and no T9
   run has been made.
+- v1, correction of a justification before any run (2026-09-26). "Why these bars" said
+  `random_pairs` sends `e2e_null_measured`'s false rate to 1. A development run (seed 4242, 300
+  replications — not this document's seed) gave 0.55: the test's direction is the sign of the
+  primary estimate, which the defect does not touch and which is unbiased in that design, so the
+  biased pairs are tested in the wrong direction about half the time. The text now says about
+  0.5. The defect is still far above its bar (0.07); no bar, design or defect changes, and no T9
+  run has been made. The same development run gave `pairs_null` 0.070 at 1,000 replications; on
+  6,000 replications of three other development seeds (1, 2, 3) it was 0.050, 0.051 and 0.044, so
+  the bar stands.
