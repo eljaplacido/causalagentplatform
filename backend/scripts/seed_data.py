@@ -21,6 +21,10 @@ TIMESTAMPTZ, is what SQLite accepts and asyncpg refuses. On PostgreSQL it may
 connect as causal_app: main() runs everything inside a service scope, which the
 row-level-security policies let write every domain, and causal_app's INSERT and
 UPDATE grants are all seeding needs.
+
+--clear deletes the seeder's rows from the mutable tables only; the append-only
+audit trail keeps the seeder's audit rows. On PostgreSQL --clear runs as the
+tables' owner, never as causal_app (see "Clear seeded data" below).
 """
 
 from __future__ import annotations
@@ -547,7 +551,7 @@ REVIEW_FRAGMENTS = [
         "domain": "devops",
         "description": (
             "Draft: notification-service backpressure propagates to api-gateway "
-            "via shared Redis. Cycle-check pending."
+            "via their shared message queue. Cycle-check pending."
         ),
         "status": FragmentApprovalStatus.DRAFT,
         "tags": ["devops", "backpressure", "draft", "seeded"],
@@ -978,32 +982,112 @@ def seed_incidents(engine: Any) -> dict[str, Any]:
 
 
 # ── Clear seeded data ─────────────────────────────────────────────────────────
+#
+# --clear deletes the seeder's rows from the tables that allow a DELETE at all,
+# and nothing else:
+#
+#   graph_fragments, causal_entities  created_by is the seeder's UserRef
+#   causal_edges                      guardian_verdict_ref is a seeder audit row
+#                                     (edges carry no created_by)
+#   incidents                         submitted_by is the seeder
+#
+# It never touches an append-only table -- audit_log, decision_records,
+# decision_followups, causal_model_versions, decision_model_refs -- whose
+# triggers refuse a DELETE on both backends (and on PostgreSQL no role is
+# granted one). The seeder's audit rows therefore stay, by design, and --clear
+# reports how many it kept. Seeding again adds new ones.
+#
+# On PostgreSQL it must run as a role that may DELETE from those tables: the
+# tables' owner, as migrations and seeding do (docs/QUICKSTART.md). causal_app,
+# the role the backend connects as, has no DELETE grant anywhere; as causal_app
+# --clear refuses up front instead of failing halfway.
+
+#: The tables --clear deletes from, children before parents.
+CLEARABLE_TABLES: tuple[str, ...] = (
+    "graph_fragments",
+    "causal_edges",
+    "causal_entities",
+    "incidents",
+)
+
+#: Tables --clear never touches: append-only by trigger (and by grant on PostgreSQL).
+APPEND_ONLY_TABLES: tuple[str, ...] = (
+    "audit_log",
+    "decision_records",
+    "decision_followups",
+    "causal_model_versions",
+    "decision_model_refs",
+)
+
+_SEEDER_AGENT_ID = "seeder"
 
 
-def clear_seeded_data(engine: Any) -> dict[str, int]:
-    """Remove all seeded data from the database."""
-    cleared: dict[str, int] = {}
+def _clear_statements(dialect: str) -> dict[str, str]:
+    """The DELETE for each clearable table, in the given SQL dialect."""
+    if dialect == "postgresql":
+        created_by_seeder = "created_by->>'id' = :seeder_id"
+    elif dialect == "sqlite":
+        created_by_seeder = "json_extract(created_by, '$.id') = :seeder_id"
+    else:
+        raise RuntimeError(f"seed_data --clear: unsupported database dialect {dialect!r}")
+    return {
+        "graph_fragments": f"DELETE FROM graph_fragments WHERE {created_by_seeder}",
+        "causal_edges": (
+            "DELETE FROM causal_edges WHERE guardian_verdict_ref IN "
+            "(SELECT id FROM audit_log WHERE agent_id = :seeder_agent)"
+        ),
+        "causal_entities": f"DELETE FROM causal_entities WHERE {created_by_seeder}",
+        "incidents": "DELETE FROM incidents WHERE submitted_by = :seeder_id",
+    }
 
-    async def _clear():
-        async with CloudSqlFactory.get_session_factory()() as session:
-            for table in ["audit_log", "causal_entities", "graph_fragments",
-                          "causal_edges", "assumptions"]:
-                result = await session.execute(
-                    text(f"DELETE FROM {table} WHERE "
-                         "(agent_id = 'seeder' OR action_type LIKE 'SEED_%' OR "
-                         "action_type = 'EVALUATION_SEED' "
-                         "OR created_by LIKE '%seeder%')"))
-                cleared[table] = result.rowcount or 0
-            # Seeded incidents use id prefix INC-SEED-
-            inc_result = await session.execute(
-                text("DELETE FROM incidents WHERE id LIKE 'INC-SEED-%' OR submitted_by = 'seeder-001'")
+
+async def clear_seeded(session: Any) -> dict[str, Any]:
+    """Delete the seeder's rows (see above) in one transaction on ``session``."""
+    dialect = session.bind.dialect.name
+    statements = _clear_statements(dialect)
+
+    if dialect == "postgresql":
+        role = (await session.execute(text("SELECT current_user"))).scalar()
+        missing = [
+            table
+            for table in CLEARABLE_TABLES
+            if not (
+                await session.execute(
+                    text("SELECT has_table_privilege(:t, 'DELETE')"), {"t": table}
+                )
+            ).scalar()
+        ]
+        if missing:
+            raise RuntimeError(
+                f"seed_data --clear deletes rows and must run as the tables' owner: "
+                f"role {role!r} has no DELETE on {', '.join(missing)}. Run it with "
+                "DATABASE_URL naming the owner (the role that ran the migrations), "
+                "not causal_app. Nothing was deleted."
             )
-            cleared["incidents"] = inc_result.rowcount or 0
-            await session.commit()
+
+    params = {"seeder_id": _SEEDER_USER.id, "seeder_agent": _SEEDER_AGENT_ID}
+    cleared: dict[str, int] = {}
+    for table in CLEARABLE_TABLES:
+        result = await session.execute(text(statements[table]), params)
+        cleared[table] = result.rowcount or 0
+    kept = (
+        await session.execute(
+            text("SELECT COUNT(*) FROM audit_log WHERE agent_id = :seeder_agent"), params
+        )
+    ).scalar()
+    await session.commit()
+    return {"cleared": cleared, "retained_append_only": {"audit_log": int(kept or 0)}}
+
+
+def clear_seeded_data(engine: Any) -> dict[str, Any]:
+    """Remove the seeder's rows from the clearable tables (see above)."""
+
+    async def _clear() -> dict[str, Any]:
+        async with CloudSqlFactory.get_session_factory()() as session:
+            return await clear_seeded(session)
 
     import asyncio
-    asyncio.run(_clear())
-    return cleared
+    return asyncio.run(_clear())
 
 
 # ── Main CLI ──────────────────────────────────────────────────────────────────
@@ -1033,8 +1117,7 @@ def _main() -> None:
     args = parser.parse_args()
 
     if args.clear:
-        result = clear_seeded_data(None)
-        print(json.dumps({"cleared": result}, indent=2))
+        print(json.dumps(clear_seeded_data(None), indent=2))
         return
 
     if not any([args.devops, args.marketing, args.evaluation, args.reviews, args.incidents, args.all]):

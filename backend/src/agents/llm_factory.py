@@ -309,12 +309,18 @@ def _build_fallback_llm(capability: Capability, temperature: float) -> Any:
 
 # ── Provenance capture wrapper ─────────────────────────────────────────────────
 
+#: Captures scheduled from a synchronous call inside a running loop, held so the
+#: loop does not drop them before they finish.
+_PENDING_CAPTURES: set[Any] = set()
+
 
 class _ProvenanceCapturingLLM:
     """
     Wraps a LangChain LLM to auto-capture LLMInvocation metadata on every call.
 
-    Writes invocation records via the provenance store module when imported.
+    Appends each invocation to the durable provenance store
+    (src/semantic_layer/provenance_store.py). No runtime path calls get_llm yet
+    (register llm-routing-no-callers), so nothing reaches this today.
     """
 
     def __init__(
@@ -339,15 +345,9 @@ class _ProvenanceCapturingLLM:
         t0 = _time.perf_counter()
         try:
             result = await self._llm.ainvoke(prompt, **kwargs)
-            success = True
-            error_msg = None
-        except Exception as exc:
-            success = False
-            error_msg = str(exc)
-            raise
         finally:
             duration_ms = (_time.perf_counter() - t0) * 1000
-            self._capture(duration_ms, success, error_msg)
+            await self._persist(self._invocation(duration_ms))
 
         return result
 
@@ -357,55 +357,68 @@ class _ProvenanceCapturingLLM:
         t0 = _time.perf_counter()
         try:
             result = self._llm.invoke(prompt, **kwargs)
-            success = True
-            error_msg = None
-        except Exception as exc:
-            success = False
-            error_msg = str(exc)
-            raise
         finally:
             duration_ms = (_time.perf_counter() - t0) * 1000
-            self._capture(duration_ms, success, error_msg)
+            self._persist_sync(self._invocation(duration_ms))
 
         return result
 
-    def _capture(self, duration_ms: float, success: bool, error_msg: str | None) -> None:
-        """Emit LLMInvocation to the provenance store."""
+    def _invocation(self, duration_ms: float) -> Any:
+        """The LLMInvocation for one call, or None if it cannot be built."""
         try:
-            from src.api.provenance import store_llm_invocation
             from src.semantic_layer.provenance import (
                 LLMCapability,
                 LLMInvocation,
                 LLMProvider,
             )
 
-            # Map string capability/provider to enums
-            cap_map = {
-                "causal_reasoning": LLMCapability.CAUSAL_REASONING,
-                "fast_classification": LLMCapability.FAST_CLASSIFICATION,
-                "document_extraction": LLMCapability.DOCUMENT_EXTRACTION,
-                "code_generation": LLMCapability.CODE_GENERATION,
-                "planning": LLMCapability.PLANNING,
-            }
-            prov_map = {
-                "ollama": LLMProvider.OLLAMA,
-                "anthropic": LLMProvider.ANTHROPIC,
-                "openai": LLMProvider.OPENAI,
-                "deepseek": LLMProvider.DEEPSEEK,
-            }
-
-            invocation = LLMInvocation(
+            return LLMInvocation(
                 session_id=self._session_id,
                 agent_id=self._agent_id,
-                capability=cap_map.get(self._capability, LLMCapability.CAUSAL_REASONING),
-                provider=prov_map.get(self._provider, LLMProvider.OLLAMA),
+                capability=LLMCapability(self._capability)
+                if self._capability in LLMCapability.__members__.values()
+                else LLMCapability.CAUSAL_REASONING,
+                provider=LLMProvider(self._provider)
+                if self._provider in LLMProvider.__members__.values()
+                else LLMProvider.OLLAMA,
                 model_name=self._model_name,
                 latency_ms=round(duration_ms, 2),
             )
-            store_llm_invocation(invocation)
+        except Exception as exc:
+            log.warning("llm_factory.provenance_capture.build_failed", error=str(exc))
+            return None
 
-        except Exception:
-            pass  # Provenance capture is best-effort; never block on failure
+    async def _persist(self, invocation: Any) -> None:
+        """Append the invocation to the durable provenance store.
+
+        Best-effort, as ADR-002 specifies: a failure is logged, never raised,
+        so provenance cannot block a model call.
+        """
+        if invocation is None:
+            return
+        try:
+            from src.semantic_layer.provenance_store import ProvenanceStore
+
+            await ProvenanceStore().append(invocations=[invocation])
+        except Exception as exc:
+            log.warning(
+                "llm_factory.provenance_capture.failed",
+                session_id=self._session_id,
+                error=str(exc),
+            )
+
+    def _persist_sync(self, invocation: Any) -> None:
+        """`_persist` from synchronous code: run it, or schedule it on a running loop."""
+        import asyncio
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            asyncio.run(self._persist(invocation))
+            return
+        task = loop.create_task(self._persist(invocation))
+        _PENDING_CAPTURES.add(task)
+        task.add_done_callback(_PENDING_CAPTURES.discard)
 
     # Passthrough attribute access to the underlying LLM
     def __getattr__(self, name: str) -> Any:

@@ -17,7 +17,8 @@ And they can be scored: ``causal_decision.outcome`` records what would have to b
 re-run to find out whether a verdict held, and compares the prediction with the
 answer -- or records, with the kernel's own reason, that the later data can no
 longer say. An action applied to everybody leaves nothing to compare against, and
-that case is counted rather than quietly dropped.
+that case is counted rather than quietly dropped. The report states each rate
+with a Clopper-Pearson interval, and none at all from fewer than ten follow-ups.
 
 The verdict is a pure function of (outcome, request, policy), so a recorded decision
 can be replayed and disputed.
@@ -48,6 +49,9 @@ from causal_decision.ledger import (
 from causal_decision.outcome import (
     CalibrationReport,
     FollowUp,
+    PairedComparison,
+    RateBounds,
+    RateEstimate,
     Realization,
     compare,
     plan,
@@ -69,6 +73,9 @@ __all__ = [
     "EvidenceRef",
     "ExperimentSpec",
     "FollowUp",
+    "PairedComparison",
+    "RateBounds",
+    "RateEstimate",
     "Realization",
     "RiskClass",
     "RiskRule",

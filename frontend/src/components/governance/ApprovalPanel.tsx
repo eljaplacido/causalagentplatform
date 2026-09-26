@@ -40,8 +40,10 @@ import type {
 } from "@/lib/types";
 
 /**
- * The situations an approver may declare. DISORDER is not offered: it means
- * "not classified", and Guardian rule PR-006 refuses to approve in it.
+ * The situations a reviewer may declare, approving or rejecting. DISORDER is not
+ * offered: it means "not classified", and Guardian rule PR-006 refuses to approve
+ * anything in it -- a rejection included, since rejecting needs an APPROVED
+ * verdict for GOVERNANCE_REJECT (septa-53).
  */
 export const APPROVAL_DOMAINS: readonly Exclude<CynefinDomain, "DISORDER">[] = [
   "CLEAR",
@@ -57,8 +59,8 @@ export interface ApprovalPanelProps {
    * otherwise. The success state is shown only after this resolves.
    */
   onApprove: (id: string, reason: string, cynefinDomain: CynefinDomain) => Promise<void>;
-  /** Same contract as onApprove, for rejections. */
-  onReject: (id: string, reason: string) => Promise<void>;
+  /** Same contract as onApprove, for rejections, and it carries the domain too. */
+  onReject: (id: string, reason: string, cynefinDomain: CynefinDomain) => Promise<void>;
   /**
    * When set, approve/reject are disabled and this explanation is shown
    * (e.g. the page is displaying mock fallback data).
@@ -283,9 +285,10 @@ export function ApprovalPanel({
 }: ApprovalPanelProps) {
   const [mode, setMode] = useState<"idle" | "approve" | "reject">("idle");
   const [reason, setReason] = useState("");
-  // The approver's classification of the situation. Guardian reads it (PR-003,
-  // PR-006); nothing pre-selects it, so an approval always carries a human's
-  // judgement rather than a default that happens to pass.
+  // The reviewer's classification of the situation. Guardian reads it (PR-003,
+  // PR-006) for an approval and a rejection alike; nothing pre-selects it, so a
+  // decision always carries a human's judgement rather than a default that
+  // happens to pass.
   const [cynefinDomain, setCynefinDomain] = useState<CynefinDomain | "">("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Set ONLY after onApprove/onReject resolved, i.e. the backend confirmed the
@@ -317,11 +320,11 @@ export function ApprovalPanel({
     setIsSubmitting(true);
     setError(null);
     try {
+      if (!cynefinDomain) return;
       if (kind === "approve") {
-        if (!cynefinDomain) return;
         await onApprove(target.id, reason, cynefinDomain);
       } else {
-        await onReject(target.id, reason);
+        await onReject(target.id, reason, cynefinDomain);
       }
       setConfirmed({
         itemId: target.id,
@@ -405,6 +408,7 @@ export function ApprovalPanel({
 
   return (
     <div
+      data-testid="approval-panel"
       className={cn(
         "rounded-xl border border-border bg-card overflow-hidden",
         className
@@ -416,14 +420,18 @@ export function ApprovalPanel({
           <div>
             <h3 className="text-base font-bold text-foreground">{item.objectName}</h3>
             <p className="text-xs text-muted-foreground">
-              {item.objectType.replace("_", " ")} · Submitted by {item.submittedBy}
+              {item.objectType.replace("_", " ")} ·{" "}
+              <span data-testid="business-domain">{item.businessDomain || "—"}</span>{" "}
+              · Submitted by {item.submittedBy ?? "not recorded"}
             </p>
           </div>
-          <CynefinBadge
-            domain={item.domain}
-            confidence={0}
-            size="sm"
-          />
+          {item.cynefinDomain && (
+            <CynefinBadge
+              domain={item.cynefinDomain}
+              confidence={0}
+              size="sm"
+            />
+          )}
         </div>
       </div>
 
@@ -476,7 +484,7 @@ export function ApprovalPanel({
               {mode === "approve" ? "Approval reason" : "Rejection reason"}{" "}
               <span className="text-muted-foreground">(recorded in audit trail)</span>
             </label>
-            {mode === "approve" && (
+            {(mode === "approve" || mode === "reject") && (
               <>
                 <label
                   htmlFor="approval-domain"
@@ -484,7 +492,9 @@ export function ApprovalPanel({
                 >
                   Situation (Cynefin domain){" "}
                   <span className="text-muted-foreground">
-                    (required: Guardian does not approve in an unclassified situation)
+                    {mode === "approve"
+                      ? "(required: Guardian does not approve in an unclassified situation)"
+                      : "(required: Guardian does not authorise a rejection in an unclassified situation)"}
                   </span>
                 </label>
                 <select
@@ -604,7 +614,7 @@ export function ApprovalPanel({
             <button
               data-testid="confirm-rejection"
               onClick={() => void submitDecision("reject")}
-              disabled={isSubmitting || decisionsDisabled}
+              disabled={isSubmitting || decisionsDisabled || !cynefinDomain}
               className={cn(
                 "flex flex-1 items-center justify-center gap-1.5 rounded-md border px-4 py-2.5 text-sm font-semibold",
                 "border-red-300 bg-red-50 text-red-700 hover:bg-red-100",

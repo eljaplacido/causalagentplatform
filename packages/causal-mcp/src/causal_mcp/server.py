@@ -128,6 +128,39 @@ def _merge_type_unions(node: Any) -> Any:
     return node
 
 
+def _drop_implied_types(node: Any) -> Any:
+    """``{"enum": ["a", "b"], "type": "string"}`` as ``{"enum": ["a", "b"]}``; the same for
+    ``const``.
+
+    An ``enum`` (or ``const``) admits exactly the values it lists (JSON Schema 2020-12, section
+    6.1.2), so when every listed value is a string, ``"type": "string"`` excludes nothing more:
+    the two schemas accept the same values. Every enumeration and discriminator in the
+    contract is written with both (contract 0.12.0, when the Rosenbaum fields pushed the listing
+    past its budget).
+    """
+    if isinstance(node, dict):
+        out = {
+            k: (
+                {name: _drop_implied_types(sub) for name, sub in v.items()}
+                if k in ("properties", "$defs") and isinstance(v, dict)
+                else _drop_implied_types(v)
+            )
+            for k, v in node.items()
+        }
+        values = out.get("enum", [out["const"]] if "const" in out else None)
+        if (
+            out.get("type") == "string"
+            and isinstance(values, list)
+            and values
+            and all(isinstance(v, str) for v in values)
+        ):
+            out.pop("type")
+        return out
+    if isinstance(node, list):
+        return [_drop_implied_types(v) for v in node]
+    return node
+
+
 def _slim_output_schema(server: MCPServer, name: str) -> None:
     """Drop annotations (descriptions, titles, defaults) from a tool's OUTPUT schema; keep
     them on its input.
@@ -142,11 +175,14 @@ def _slim_output_schema(server: MCPServer, name: str) -> None:
     output schema validates nothing. Input schemas keep every word, because that is what an
     agent reads to call a tool correctly. Unions of bare types are written as one type list
     (contract 0.10.0, when two panel fields pushed the listing past its budget again): the
-    same schema in fewer bytes.
+    same schema in fewer bytes; so is a string enumeration without its implied
+    ``"type": "string"`` (contract 0.12.0).
     """
     tool = server._tool_manager.get_tool(name)  # private: mcp 2.2 exposes no setter
     if tool is not None and tool.output_schema is not None:
-        tool.__dict__["output_schema"] = _merge_type_unions(_strip_prose(tool.output_schema))
+        tool.__dict__["output_schema"] = _drop_implied_types(
+            _merge_type_unions(_strip_prose(tool.output_schema))
+        )
 
 
 def build_server() -> MCPServer:

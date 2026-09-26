@@ -147,7 +147,14 @@ _POLICY_DESCRIPTIONS = {
     "PR-004": "Double-rejection escalation: same payload rejected twice triggers REQUIRES_ESCALATION.",
     "PR-005": "Cycle count limit: cycle_count >= 5 requires REQUIRES_ESCALATION.",
     "PR-006": "DISORDER domain: no verdict can be APPROVED in DISORDER domain.",
-    "PR-007": "Sensitivity analysis: edges without sensitivity_result blocked from APPROVED.",
+    "PR-007": (
+        "Sensitivity analysis: an edge is not APPROVED without a sensitivity result the "
+        "platform recorded for it (RECORD_SENSITIVITY) on an assumption it rests on."
+    ),
+    "PR-010": (
+        "Planner escalation: a run whose lookahead found no safe action "
+        "(plan_outcome no_safe_action) cannot be APPROVED; it requires escalation."
+    ),
 }
 
 

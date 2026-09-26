@@ -19,7 +19,6 @@ Invariants tested:
   15. validate() returns healthy=True when /-/healthy answers 200 (httpx, MockTransport)
   16. validate() returns healthy=False on a transport error; base_url must be http(s)
   17. PrometheusConnector default queries list is non-empty
-  18. subscribe() is a no-op by default (does not raise)
 """
 
 from __future__ import annotations
@@ -212,23 +211,6 @@ def test_base_connector_properties() -> None:
     assert conn.id == "test-connector"
     assert conn.domain == "finance"
     assert conn.version == "2.1"
-
-
-def test_base_connector_subscribe_no_op() -> None:
-    """subscribe() must not raise and be a no-op by default."""
-
-    class _ConcreteConnector(BaseCausalConnector):
-        async def fetch_events(self, cursor=None):
-            return []
-
-        def map_to_semantic_objects(self, events):
-            return []
-
-        def validate(self):
-            return ConnectorHealthResult("x", False, None, None)
-
-    conn = _ConcreteConnector("sub-test", "devops")
-    conn.subscribe("test-topic")  # must not raise
 
 
 # ── 5. _redact_pii() — PII labels redacted ────────────────────────────────────

@@ -193,3 +193,44 @@ def test_the_repository_locks_are_current() -> None:
     assert proc.returncode == 0, proc.stdout
     for name in ("backend", "kernel", "image"):
         assert f"ok   {name}:" in proc.stdout
+
+
+def _fake_uv(tmp_path: Path) -> tuple[Path, Path]:
+    """A `uv` that records each argv (one JSON list per line) and succeeds."""
+    log = tmp_path / "uv-calls.jsonl"
+    exe = tmp_path / "fakeuv"
+    exe.write_text(
+        f"#!{sys.executable}\n"
+        "import json, sys\n"
+        f"with open({str(log)!r}, 'a') as fh:\n"
+        "    fh.write(json.dumps(sys.argv[1:]) + '\\n')\n"
+        "if sys.argv[1:] == ['--version']:\n"
+        "    print('uv 0.0.0 (fake)')\n"
+    )
+    exe.chmod(exe.stat().st_mode | stat.S_IEXEC)
+    return exe, log
+
+
+def test_relock_refreshes_every_local_package(tmp_path: Path) -> None:
+    # uv caches a built wheel of a local package by path; after its version bumps
+    # (causal-core 0.10 -> 0.11) a relock resolved against the stale cached build
+    # until UV_NO_CACHE=1. relock must ask uv to rebuild each local package it
+    # names (--refresh-package), leaving the cache for index packages alone.
+    root = _tree(tmp_path, GOOD_DEPS, GOOD_PINS)
+    (root / "other").mkdir()
+    (root / "other" / "pyproject.toml").write_text(
+        '[project]\nname = "Other_Pkg"\nversion = "2.0"\ndependencies = []\n'
+    )
+    (root / "requirements" / "demo.in").write_text("-e ./pkg[dev]\n./other\nsix\n")
+    uv, log = _fake_uv(tmp_path)
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPT), "--root", str(root), "relock", "demo"],
+        capture_output=True, text=True, check=False, env={"UV": str(uv), "PATH": ""},
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    calls = [json.loads(line) for line in log.read_text().splitlines()]
+    compile_cmd = next(c for c in calls if c[:2] == ["pip", "compile"])
+    refreshed = [compile_cmd[i + 1] for i, a in enumerate(compile_cmd) if a == "--refresh-package"]
+    assert sorted(refreshed) == ["demo-pkg", "other-pkg"]
+    # Only the local packages: a blanket --refresh / --no-cache would refetch the world.
+    assert "--refresh" not in compile_cmd and "--no-cache" not in compile_cmd

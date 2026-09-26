@@ -188,10 +188,9 @@ class ContractViolation(BaseModel):
 
 class ContractRegistry:
     """
-    In-memory registry for data contracts (SQLite-backed in production).
+    In-memory registry for data contracts: lookup and validation at runtime.
 
-    Provides lookup and validation of contracts at runtime.
-    Production implementation should use PostgreSQL + Redis cache.
+    Contracts live in this process only; nothing persists them.
     """
 
     def __init__(self) -> None:
