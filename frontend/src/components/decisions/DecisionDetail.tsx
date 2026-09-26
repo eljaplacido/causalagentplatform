@@ -5,7 +5,9 @@
  *
  * Everything shown is a field of the DecisionRecord GET /api/v1/decisions
  * returned: the verdict, the checks that produced it, the evidence it rested
- * on, and the chain digests. Numbers are shown verbatim.
+ * on, and the chain digests. Numbers are shown in the kernel's own format
+ * (4 significant digits, causal_core.claims.format_number) with the exact value
+ * as the title; an absent value is "—".
  *
  * The follow-up form posts rows covering the period AFTER the decision to
  * POST /api/v1/decisions/{entry_digest}/followup; the graph, the query and the
@@ -22,11 +24,13 @@ import { AlertTriangle } from "lucide-react";
 
 import {
   decisionsApi,
+  type DecisionEvidence,
   type DecisionRecordResponse,
+  type DecisionRequestResponse,
   type FollowUpColumns,
   type FollowUpResponse,
 } from "@/lib/api";
-import { formatTimestamp, verbatim } from "@/lib/utils";
+import { formatFigure, formatKernelNumber, formatTimestamp, verbatim } from "@/lib/utils";
 import { VerdictBadge } from "./VerdictBadge";
 
 function Field({ label, children, testId }: { label: string; children: React.ReactNode; testId?: string }) {
@@ -40,26 +44,95 @@ function Field({ label, children, testId }: { label: string; children: React.Rea
   );
 }
 
+type FigureValue = Parameters<typeof formatFigure>[0];
+
+/** A figure as read (formatFigure), its exact value as the title. */
+function FigureField({ label, value, testId }: { label: string; value: FigureValue; testId?: string }) {
+  return (
+    <div>
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="break-all font-mono text-foreground" data-testid={testId} title={verbatim(value)}>
+        {formatFigure(value)}
+      </dd>
+    </div>
+  );
+}
+
+const CLAIM = /⟦claim:([^⟧]+)⟧/;
+
+/**
+ * The value of each claim marker the decision layer writes into a rationale
+ * (causal_decision.policy._rationale: effect, ci.level, effect.ci.lo,
+ * effect.ci.hi, n), read back from the record's own evidence -- the claims
+ * themselves are not stored. The evidence holds the effect as a benefit in the
+ * requested direction (benefit = sign * effect, the interval sorted after the
+ * sign), so the effect is sign * benefit and its interval the signed interval
+ * re-sorted; nothing is estimated here. ci.level is a percentage, as the
+ * kernel's claim is. Null when the evidence lacks the field.
+ */
+export function claimValue(
+  id: string,
+  ev: DecisionEvidence,
+  request: Pick<DecisionRequestResponse, "direction">
+): string | null {
+  const sign = request.direction === "increase" ? 1 : -1;
+  const ci = ev.benefit_ci ?? null;
+  const signedCi = ci ? [sign * ci[0], sign * ci[1]].sort((a, b) => a - b) : null;
+  const value: number | null | undefined = {
+    effect: ev.benefit == null ? null : sign * ev.benefit,
+    "effect.ci.lo": signedCi ? signedCi[0] : null,
+    "effect.ci.hi": signedCi ? signedCi[1] : null,
+    "ci.level": ev.ci_level == null ? null : ev.ci_level * 100,
+    n: ev.n_used,
+  }[id];
+  if (value == null || !Number.isFinite(value)) return null;
+  return formatKernelNumber(value) + (id === "ci.level" ? "%" : "");
+}
+
 /**
  * The recorded rationale keeps the analysis's figures as claim markers
- * (⟦claim:effect⟧): causal_decision.explain fills them from the outcome, which
- * the ledger does not store whole. They are shown as named placeholders, not
- * filled in here -- the recorded evidence below carries the numbers.
+ * (⟦claim:effect⟧), filled in by causal_decision.explain from the outcome,
+ * which the ledger does not store whole. When every marker maps to a field of
+ * this record's evidence (claimValue), the rationale is shown with those
+ * figures bound; otherwise it is shown as what it is, a template, with the
+ * markers named.
  */
-export function RationaleText({ text }: { text: string }) {
-  const parts = text.split(/⟦claim:([^⟧]+)⟧/);
+export function RationaleText({
+  text,
+  evidence,
+  request,
+}: {
+  text: string;
+  evidence: DecisionEvidence;
+  request: Pick<DecisionRequestResponse, "direction">;
+}) {
+  const parts = text.split(new RegExp(CLAIM.source, "g"));
+  const ids = parts.filter((_, i) => i % 2 === 1);
+  const bound = ids.map((id) => claimValue(id, evidence, request));
+  const allBound = bound.every((v) => v !== null);
   return (
-    <p className="text-sm text-foreground" data-testid="decision-rationale">
-      {parts.map((part, i) =>
-        i % 2 === 1 ? (
-          <code key={i} title="a figure of the analysis; see the evidence below" className="rounded bg-muted px-1 font-mono text-[11px] text-muted-foreground">
-            {part}
-          </code>
-        ) : (
-          <span key={i}>{part}</span>
-        )
+    <div className="space-y-1">
+      {!allBound && (
+        <p data-testid="rationale-template-label" className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Rationale template: the record does not carry every figure it names
+        </p>
       )}
-    </p>
+      <p className="text-sm text-foreground" data-testid="decision-rationale">
+        {parts.map((part, i) => {
+          if (i % 2 === 0) return <span key={i}>{part}</span>;
+          const value = allBound ? bound[(i - 1) / 2] : null;
+          return value !== null && value !== undefined ? (
+            <span key={i} title={`${part}, from this decision's recorded evidence`} className="font-mono">
+              {value}
+            </span>
+          ) : (
+            <code key={i} title="a figure of the analysis the record does not carry" className="rounded bg-muted px-1 font-mono text-[11px] text-muted-foreground">
+              {part}
+            </code>
+          );
+        })}
+      </p>
+    </div>
   );
 }
 
@@ -161,16 +234,16 @@ function FollowUpForm({ record }: { record: DecisionRecordResponse }) {
         <div role="status" data-testid="followup-result" className="space-y-2 rounded-md border border-border bg-muted/30 p-2 text-xs">
           <p className="text-foreground">{result.explanation}</p>
           <dl className="grid grid-cols-2 gap-x-4 gap-y-1">
-            <Field label="Decidable">{verbatim(r.decidable)}</Field>
-            {!r.decidable && <Field label="Undecidable reason">{verbatim(r.undecidable_reason)}</Field>}
-            <Field label="Predicted benefit">{verbatim(r.predicted_benefit)}</Field>
-            <Field label="Predicted interval">{verbatim(r.predicted_ci)}</Field>
-            <Field label="Realized benefit" testId="followup-realized-benefit">{verbatim(r.realized_benefit)}</Field>
-            <Field label="Realized interval">{verbatim(r.realized_ci)}</Field>
-            <Field label="Point in predicted interval">{verbatim(r.point_in_predicted_ci)}</Field>
-            <Field label="Intervals overlap">{verbatim(r.intervals_overlap)}</Field>
-            <Field label="Cleared worthwhile">{verbatim(r.cleared_worthwhile)}</Field>
-            <Field label="Realized harm">{verbatim(r.realized_harm)}</Field>
+            <FigureField label="Decidable" value={r.decidable} />
+            {!r.decidable && <FigureField label="Undecidable reason" value={r.undecidable_reason} />}
+            <FigureField label="Predicted benefit" value={r.predicted_benefit} />
+            <FigureField label="Predicted interval" value={r.predicted_ci} />
+            <FigureField label="Realized benefit" value={r.realized_benefit} testId="followup-realized-benefit" />
+            <FigureField label="Realized interval" value={r.realized_ci} />
+            <FigureField label="Point in predicted interval" value={r.point_in_predicted_ci} />
+            <FigureField label="Intervals overlap" value={r.intervals_overlap} />
+            <FigureField label="Cleared worthwhile" value={r.cleared_worthwhile} />
+            <FigureField label="Realized harm" value={r.realized_harm} />
           </dl>
           {r.undecidable_detail && <p className="text-muted-foreground">{r.undecidable_detail}</p>}
         </div>
@@ -195,30 +268,30 @@ export function DecisionDetail({ record }: { record: DecisionRecordResponse }) {
         </p>
       </header>
 
-      <RationaleText text={d.rationale} />
+      <RationaleText text={d.rationale} evidence={ev} request={d.request} />
 
       <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs sm:grid-cols-3">
         <Field label="Outcome">{d.request.outcome} ({d.request.direction})</Field>
         <Field label="Risk class">{d.request.risk_class}</Field>
-        <Field label="Reversible">{verbatim(d.request.reversible)}</Field>
-        <Field label="Minimum worthwhile effect">{verbatim(d.request.minimum_worthwhile_effect)}</Field>
-        <Field label="Harm threshold">{verbatim(d.request.harm_threshold)}</Field>
+        <FigureField label="Reversible" value={d.request.reversible} />
+        <FigureField label="Minimum worthwhile effect" value={d.request.minimum_worthwhile_effect} />
+        <FigureField label="Harm threshold" value={d.request.harm_threshold} />
         <Field label="Evidence kind">{ev.kind}</Field>
         {ev.kind === "result" ? (
           <>
-            <Field label="Benefit" testId="decision-benefit">{verbatim(ev.benefit)}</Field>
-            <Field label="Benefit interval" testId="decision-benefit-ci">{verbatim(ev.benefit_ci)}</Field>
-            <Field label="Interval level">{verbatim(ev.ci_level)}</Field>
-            <Field label="Estimator">{verbatim(ev.estimator)}</Field>
-            <Field label="Estimand">{verbatim(ev.estimand)}</Field>
+            <FigureField label="Benefit" value={ev.benefit} testId="decision-benefit" />
+            <FigureField label="Benefit interval" value={ev.benefit_ci} testId="decision-benefit-ci" />
+            <FigureField label="Interval level" value={ev.ci_level} />
+            <FigureField label="Estimator" value={ev.estimator} />
+            <FigureField label="Estimand" value={ev.estimand} />
             <Field label="Identification">
-              {verbatim(ev.identification_strategy)} (tier {verbatim(ev.identification_tier)})
+              {formatFigure(ev.identification_strategy)} (tier {formatFigure(ev.identification_tier)})
             </Field>
-            <Field label="E-value (interval)">{verbatim(ev.e_value_ci)}</Field>
-            <Field label="Rows used">{verbatim(ev.n_used)}</Field>
+            <FigureField label="E-value (interval)" value={ev.e_value_ci} />
+            <FigureField label="Rows used" value={ev.n_used} />
           </>
         ) : (
-          <Field label="Refusal reason" testId="decision-refusal-reason">{verbatim(ev.refusal_reason)}</Field>
+          <FigureField label="Refusal reason" value={ev.refusal_reason} testId="decision-refusal-reason" />
         )}
         {record.evidence.model && (
           <Field label="Model version">
@@ -231,20 +304,20 @@ export function DecisionDetail({ record }: { record: DecisionRecordResponse }) {
         <table className="w-full text-xs">
           <caption className="mb-1 text-left font-semibold text-foreground">Checks (each can only lower the verdict)</caption>
           <thead>
-            <tr className="text-left text-muted-foreground">
-              <th scope="col" className="py-1 font-normal">Check</th>
-              <th scope="col" className="py-1 font-normal">Passed</th>
-              <th scope="col" className="py-1 font-normal">Allows</th>
-              <th scope="col" className="py-1 font-normal">Detail</th>
+            <tr className="border-b border-border text-left text-muted-foreground">
+              <th scope="col" className="py-1 pl-0 pr-3 font-semibold">Check</th>
+              <th scope="col" className="px-3 py-1 font-semibold">Passed</th>
+              <th scope="col" className="px-3 py-1 font-semibold">Allows</th>
+              <th scope="col" className="px-3 py-1 font-semibold">Detail</th>
             </tr>
           </thead>
           <tbody>
             {d.checks.map((c) => (
               <tr key={c.name} className="border-t border-border align-top">
-                <th scope="row" className="py-1 text-left font-mono font-normal text-foreground">{c.name}</th>
-                <td className="py-1 font-mono">{c.passed ? "yes" : "no"}</td>
-                <td className="py-1 font-mono">{c.allows}</td>
-                <td className="py-1 text-muted-foreground">{c.detail}</td>
+                <th scope="row" className="py-1 pl-0 pr-3 text-left font-mono font-normal text-foreground">{c.name}</th>
+                <td className="px-3 py-1 font-mono">{c.passed ? "yes" : "no"}</td>
+                <td className="px-3 py-1 font-mono">{c.allows}</td>
+                <td className="px-3 py-1 text-muted-foreground">{c.detail}</td>
               </tr>
             ))}
           </tbody>
@@ -268,9 +341,9 @@ export function DecisionDetail({ record }: { record: DecisionRecordResponse }) {
           <p className="text-muted-foreground">{d.experiment.question}</p>
           <dl className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
             <Field label="Unit">{d.experiment.unit}</Field>
-            <Field label="Units per arm">{verbatim(d.experiment.units_per_arm)}</Field>
-            <Field label="Estimated days">{verbatim(d.experiment.estimated_days)}</Field>
-            <Field label="Minimum detectable effect">{verbatim(d.experiment.minimum_detectable_effect)}</Field>
+            <FigureField label="Units per arm" value={d.experiment.units_per_arm} />
+            <FigureField label="Estimated days" value={d.experiment.estimated_days} />
+            <FigureField label="Minimum detectable effect" value={d.experiment.minimum_detectable_effect} />
           </dl>
         </div>
       )}

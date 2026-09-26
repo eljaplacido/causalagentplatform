@@ -47,8 +47,12 @@ surface below is built varies (see §4.2).
 - **`/decisions` (decision ledger)** lists `GET /api/v1/decisions` (filter by action, limit),
   shows a record's verdict, checks, evidence and chain digests, verifies the chain
   (`/verify`), takes a follow-up (`POST .../{entry_digest}/followup`, once per decision) and shows
-  the calibration report (`/calibration`). Numbers are shown as the API sent them; a null rate
-  is shown as null.
+  the calibration report (`/calibration`). Numbers are the API's, shown in the kernel's own
+  format (four significant digits, as `causal_core.claims.format_number` writes them) with the
+  exact value as the tooltip; an absent value or a null rate is shown as "—". The rationale's
+  claim markers (`⟦claim:effect⟧`, the interval's ends, its level, `n`) are filled from the
+  record's own evidence, the effect read back from the stored benefit by the requested direction;
+  when the record lacks a figure a marker names, the rationale is labelled as a template.
 - **`/registry` (assumption registry)** lists `GET /api/v1/models` and shows a model's versions,
   the diff between two, the impact of a version on recorded decisions, and the history check.
   It is read-only: registering, revising and reviewing a model are API-only.

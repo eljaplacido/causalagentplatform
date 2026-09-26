@@ -1,16 +1,16 @@
 /**
  * CalibrationReportPanel — GET /api/v1/decisions/calibration, as returned.
  *
- * Predicted against measured, over every follow-up taken. Every rate is shown
- * exactly as the backend sent it; a null rate is shown as null with the reason
- * the backend gives for it (nothing decidable stands behind it), never as 0%
- * or 100%. The undecidable follow-ups are counted beside the rates, by reason,
+ * Predicted against measured, over every follow-up taken. Every rate is the
+ * backend's, shown in the kernel's number format with the exact value as the
+ * title; a null rate is shown as "—" with the reason the backend gives for it
+ * (nothing decidable stands behind it), never as 0% or 100%. The undecidable follow-ups are counted beside the rates, by reason,
  * because they are not missing at random.
  */
 
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import type { CalibrationReportResponse } from "@/lib/api";
-import { verbatim } from "@/lib/utils";
+import { formatFigure, verbatim } from "@/lib/utils";
 
 export interface CalibrationReportPanelProps {
   report: CalibrationReportResponse | undefined;
@@ -82,7 +82,7 @@ export function CalibrationReportPanel({ report, isLoading, error }: Calibration
         <>
           {report.n_decisions === 0 && (
             <p className="text-xs text-muted-foreground" data-testid="calibration-empty">
-              No follow-up has been measured yet, so every rate below is null. The honest
+              No follow-up has been measured yet, so every rate below is null (—). The honest
               reading of this report, until follow-ups exist, is its counts.
             </p>
           )}
@@ -92,7 +92,7 @@ export function CalibrationReportPanel({ report, isLoading, error }: Calibration
               <div key={key}>
                 <dt className="text-muted-foreground">{label}</dt>
                 <dd className="font-mono text-foreground" data-testid={`calibration-${key}`}>
-                  {verbatim(report[key] as number)}
+                  {formatFigure(report[key] as number)}
                 </dd>
               </div>
             ))}
@@ -104,8 +104,8 @@ export function CalibrationReportPanel({ report, isLoading, error }: Calibration
               return (
                 <div key={key} className="flex flex-wrap items-baseline justify-between gap-2 border-t border-border pt-1">
                   <dt className="text-muted-foreground">{label}</dt>
-                  <dd className="font-mono text-foreground" data-testid={`calibration-${key}`}>
-                    {verbatim(value)}
+                  <dd className="font-mono text-foreground" data-testid={`calibration-${key}`} title={verbatim(value)}>
+                    {formatFigure(value)}
                     {value === null && (
                       <span className="ml-2 font-sans text-muted-foreground">
                         (no decidable follow-up stands behind it)

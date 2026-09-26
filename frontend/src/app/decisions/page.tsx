@@ -6,7 +6,8 @@
  * Personas: Executive (decision summary + outcome tracking), Governance
  * Officer (audit), Causal Analyst (follow-ups). UIX §2.
  *
- * Data (all from the backend, shown verbatim; nothing here computes a number):
+ * Data (all from the backend; numbers in the kernel's 4-significant-digit format
+ * with the exact value as the title, and nothing here estimates a number):
  *   - GET  /api/v1/decisions?action=&limit=      the sealed records, newest chain
  *   - GET  /api/v1/decisions/verify               recompute the hash chain
  *   - GET  /api/v1/decisions/calibration          predicted vs measured
