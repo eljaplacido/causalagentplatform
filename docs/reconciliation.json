@@ -32,12 +32,12 @@
           "packages/causal-mcp": "ac8ffe5b31a7fc07dfbfaee6156a0003bc0753f30c9a3a730b99d39de085a913",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "d88a341f9cdffe82914dfccd7141763c0951cd9374b632b9414c1256fade4fb7"
+          "docs/CURRENT_STAGE.md": "658bc18f9f6afbd203141430db44cd9f9b8a15be227135218e8383b877bf49fc"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#25/#28 into septa-6: both sides' content present -- legacy server described only as history; T8 v2, Node 24, runner text from main)"
+        "by": "Claude (small-batch-2: re-read; CURRENT_STAGE gained a Neo4j-health row and re-took the health row, nothing README says moved)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "6b574e51ad3b3a62ef58c782f8ec68592326cb4488fedf826bf32115b243907a",
-          "backend/src": "c06af80dee95babb1eed74ffbc5435ffe7f1cb1fdc8bf8f8489d087ad42aabe1",
-          "backend/tests": "bd98daa5d7f1ec988d20ce624d1615e642ec8ca412d2e0a4fd7d75baabdd1aca",
+          "conformance/declared_not_implemented.json": "e1d976f1211ea4ce1bd942174cde2179cb762caafd92543112c1c8060c47750f",
+          "backend/src": "ecd0e199b7d169012637b00101b2713cafef0f0d9a6bb40f57956780fe07175e",
+          "backend/tests": "d3791420ae7c7ae857e4fe43928c0167c36312db3b6e8a4dbfa42f94f3d2fa49",
           "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
-          "packages": "f39decf6dcae81c0e60801fa80c933c6547de55348adb3fd3867119423414373",
+          "packages": "9c942abc628920542c5c6039f545006b242610fe638b2ceb7f913f34d3219a3e",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#25/#28 into septa-6: both sides' content present -- legacy server described only as history; T8 v2, Node 24, runner text from main)"
+        "by": "Claude (small-batch-2: health row takes PR #46's evidence; new row for Neo4j health on /api/v1/platform/connectors; register citations re-cited)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -126,12 +126,12 @@
         "sha256": {
           "backend/src/orchestration": "026e61993e2c3e51962380e4d4e957cf5d26e650455679bd5e7cdce75c31c2f4",
           "backend/src/evaluation": "9a2708b95f3bae7f8b05075e62815c7f51cb3f6e7939a585c1c2c26e5b500b07",
-          "backend/src/api/platform.py": "16dcc7dbc23c2cf627fff078cbdf4e5355833ea156073ab190f48ba60574b613"
+          "backend/src/api/platform.py": "53e44066c1dadd112ffa81bce33bb923cad04696cca70ede5904f2b01376c617"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: re-read; platform.py's metrics now group weeks in Python instead of SQLite's strftime and the DB connector is named by dialect; the three evaluation endpoints the ADR describes are unchanged)"
+        "by": "Claude (small-batch-2: re-read; platform.py's connectors gained a Neo4j check, the three evaluation endpoints the ADR describes are unchanged)"
       }
     },
     "docs/AGENTS.md": {
@@ -174,7 +174,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/middleware": "0a00dc9c734e148a08c531bcd281d3afe81a8189ef75ef669543b89cd0e4136b",
+          "backend/src/middleware": "e08b38ca451495d24d95778c7f15e6ebd1e6d220e41cbd0f007766549630f1cb",
           "backend/src/api/governance.py": "74095eefc36dc973a8dd5aae5d8bba89d44aa860c32862fa729a5c10b55bf3c3",
           "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
           "backend/src/semantic_layer/registry.py": "91529601ce53d74c25763a017f4a43ad552c13e94d562f513165b079c16c71b7",
@@ -187,7 +187,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#25/#28 into septa-6: both sides' content present -- legacy server described only as history; T8 v2, Node 24, runner text from main)"
+        "by": "Claude (small-batch-2: 3.1: PUBLIC_PATHS matched exactly, with the test that pins it)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -208,7 +208,7 @@
           "backend/src/db": "d43e2f0b4736735ce4661b7a43652f2469db73154a1d01578812c463dd2a8251",
           "backend/src/connectors": "47199e6fd213f90c59af28dda1c6469d256d6595cdd433fbbd1a2957ec723569",
           "backend/src/semantic_layer/models.py": "f3b7a600ac8e8c4ce7beb48145a188b2394f3775b6ad7d094613cbb9798d3b05",
-          "backend/src/sensors": "d38f988ccb52659ac4ecc8724e8aa775b2e6e9fca76b73dbba6576c3f3d1dcba",
+          "backend/src/sensors": "37f0b547a27bf3617693225db822302372fe941185153afa65d9cc5296e3360c",
           "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
           "backend/src/semantic_layer/registry.py": "91529601ce53d74c25763a017f4a43ad552c13e94d562f513165b079c16c71b7",
           "backend/src/agents/drift_monitor.py": "9279c31636b3b663007f21e7aa671ffe738a535432f610ecb5b6de00ae6bd815",
@@ -217,7 +217,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-47: 3.2 lists migrations 001-010, the compose init script, the RLS row, the roles and grants, and that deployments connect as causal_app)"
+        "by": "Claude (small-batch-2: 5.1: DriftSensor deleted, AlertEmitter stays; 3.1: graph-neo4j connector states)"
       }
     },
     "docs/HANDOFFS.md": {
@@ -282,12 +282,12 @@
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
           ".env.example": "f5dbf40f551d60b4b91d5bbaa9b36a2404f89536421fe51b8bcbf17a6ae1258f",
-          "backend/scripts": "36d9419c9cb543ee85703a4d4008be1c16e383c5d7567d9c7bcb6dce92ad64da"
+          "backend/scripts": "1b110791ba58bd29c47c02d5b83d1b36b7da24743ab35e1d190d4a5380523c00"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#25/#28 into septa-6: both sides' content present -- legacy server described only as history; T8 v2, Node 24, runner text from main)"
+        "by": "Claude (small-batch-2: seeding runs on SQLite and PostgreSQL, as causal_app or the owner)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -309,21 +309,21 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "bd98daa5d7f1ec988d20ce624d1615e642ec8ca412d2e0a4fd7d75baabdd1aca",
+          "backend/tests": "d3791420ae7c7ae857e4fe43928c0167c36312db3b6e8a4dbfa42f94f3d2fa49",
           "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
           ".gnomon/ci.sh": "a05e016e87f09e27989ffc185d06ad2b55c6d31f4e9b9cc2954b8cfdf7a40e45",
-          "scripts": "b02346ce8b8bc5739d9c16f9eca354d6eb179e9d4cd40cbbaa9991a7cc3662f7",
+          "scripts": "e62c35b0e7f05ebd23c93d65634877197542c61558e8641c859d2cc5574af39a",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "2ea289c99ef957a2b22a4eed544e76c06e45eb8a2c844d384f9e05eb7f84d940",
-          "packages/causal-core/tests": "ca9a8600b9bdeb81d9509afcb864900159868a7509bcc0aa13fff0fc501869f5",
+          "packages/causal-core/tests": "468a9bd86b2ea137c7e9173e05d84be36ab10b6a90ef66a5221034c50261386f",
           "packages/causal-decision/tests": "c7ccd2d2b91e1ec53a3eb456c70f670268b2ec1f8f431e161f399360b94ef7de"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#25/#28 into septa-6: both sides' content present -- legacy server described only as history; T8 v2, Node 24, runner text from main)"
+        "by": "Claude (small-batch-2: log-event list names drift_monitor.*; health/sensor tests deleted, the scale test now budgets CPU time -- neither named here)"
       }
     },
     "docs/UIX.md": {
@@ -353,13 +353,13 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "6b029f17fceb5b8a44c784ea601802c8d97c1d2ed3ce9a6a92c2600823826501",
-          "conformance/declared_not_implemented.json": "6b574e51ad3b3a62ef58c782f8ec68592326cb4488fedf826bf32115b243907a",
-          "docs/CURRENT_STAGE.md": "d88a341f9cdffe82914dfccd7141763c0951cd9374b632b9414c1256fade4fb7"
+          "conformance/declared_not_implemented.json": "e1d976f1211ea4ce1bd942174cde2179cb762caafd92543112c1c8060c47750f",
+          "docs/CURRENT_STAGE.md": "658bc18f9f6afbd203141430db44cd9f9b8a15be227135218e8383b877bf49fc"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#25/#28 into septa-6: both sides' content present -- legacy server described only as history; T8 v2, Node 24, runner text from main)"
+        "by": "Claude (small-batch-2: re-read; register prose for drift-monitor-no-data and CURRENT_STAGE rows changed, nothing ROADMAP states moved)"
       }
     },
     "SECURITY.md": {
@@ -375,7 +375,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/middleware": "0a00dc9c734e148a08c531bcd281d3afe81a8189ef75ef669543b89cd0e4136b",
+          "backend/src/middleware": "e08b38ca451495d24d95778c7f15e6ebd1e6d220e41cbd0f007766549630f1cb",
           "backend/src/api/governance.py": "74095eefc36dc973a8dd5aae5d8bba89d44aa860c32862fa729a5c10b55bf3c3",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
           "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
@@ -385,7 +385,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-47: domain isolation now enforced also by PostgreSQL RLS binding causal_app, start-up refusal as owner/superuser/BYPASSRLS; the compose passwords sentence names both logins)"
+        "by": "Claude (small-batch-2: authentication paragraph: public paths listed with /favicon.ico and matched exactly, never by prefix)"
       }
     }
   }
