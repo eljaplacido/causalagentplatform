@@ -3,14 +3,16 @@ Incident persistence — Phase-5 follow-up to fix the in-memory-only Incidents p
 
 Endpoints:
   GET  /api/v1/incidents/            — list recent incidents (newest first)
-  GET  /api/v1/incidents/{id}        — single incident with merged decision verdicts
+  GET  /api/v1/incidents/{id}        — single incident with its human decisions merged
 
 `save_incident()` is called from the triage endpoint after the LangGraph pipeline
 returns a final EpistemicState, so submitting an incident through the UI
 durably stores the record (title, severity, services, hypotheses, interventions).
 
-Intervention verdicts (approve/reject) are stored in audit_log via interventions.py;
-this module joins them in on read so the UI rehydrates the post-decision state.
+Human intervention decisions (approve/reject) are stored in audit_log via
+interventions.py; this module joins them in on read, as each intervention's
+humanDecision beside the Guardian's guardianVerdict, so the UI rehydrates the
+post-decision state without mistaking one for the other.
 """
 
 from __future__ import annotations
@@ -187,14 +189,18 @@ async def _load_decisions_by_incident(incident_ids: list[str]) -> dict[str, dict
 def _merge_decisions(
     record: IncidentRecord, decisions: dict[str, str]
 ) -> IncidentRecord:
-    """Apply intervention verdicts from audit_log onto the stored proposed_interventions."""
+    """Add each human decision from audit_log to its stored intervention.
+
+    The decision goes in its own field, humanDecision. guardianVerdict stays the
+    Guardian's own verdict as stored at triage: a person's decision is not one.
+    """
     if not decisions or not record.proposed_interventions:
         return record
     updated = []
     for intervention in record.proposed_interventions:
         int_id = intervention.get("id")
         if int_id and int_id in decisions:
-            intervention = {**intervention, "guardianVerdict": decisions[int_id]}
+            intervention = {**intervention, "humanDecision": decisions[int_id]}
         updated.append(intervention)
     return record.model_copy(update={"proposed_interventions": updated})
 
@@ -223,7 +229,7 @@ def _row_to_record(row: Any) -> IncidentRecord:
 @router.get(
     "/",
     response_model=list[IncidentRecord],
-    summary="List recent incidents (newest first) with intervention verdicts merged",
+    summary="List recent incidents (newest first) with human decisions merged",
 )
 async def list_incidents(
     limit: int = Query(default=50, ge=1, le=500),
@@ -249,7 +255,7 @@ async def list_incidents(
 @router.get(
     "/{incident_id}",
     response_model=IncidentRecord,
-    summary="Fetch a single incident with intervention verdicts merged",
+    summary="Fetch a single incident with human decisions merged",
 )
 async def get_incident(
     incident_id: str,

@@ -208,11 +208,17 @@ async def test_incident_list_filters_and_merges_verdicts(
     assert resp.status_code == 200, resp.text
     listed = {r["id"]: r for r in resp.json()}
     assert list(listed) == ["inc-3", "inc-2", "inc-1"]
-    verdicts = {
-        iv["id"]: iv.get("guardianVerdict")
+    # The decisions of record arrive as humanDecision; the stored rows carry no
+    # Guardian verdict, and a human decision does not supply one.
+    decisions = {
+        iv["id"]: iv.get("humanDecision")
         for r in listed.values() for iv in r["proposed_interventions"]
     }
-    assert verdicts == {"iv-1": "APPROVED", "iv-2": None, "iv-3": "REJECTED"}
+    assert decisions == {"iv-1": "APPROVED", "iv-2": None, "iv-3": "REJECTED"}
+    assert all(
+        "guardianVerdict" not in iv
+        for r in listed.values() for iv in r["proposed_interventions"]
+    )
 
     resp = await client.get("/api/v1/incidents/", params={"status": "ACTIVE"})
     assert [r["id"] for r in resp.json()] == ["inc-3", "inc-1"]
