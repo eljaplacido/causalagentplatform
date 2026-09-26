@@ -31,13 +31,13 @@
           "backend/pyproject.toml": "25968f523349c1421cca680f16b6f6237cbfec92deaba9eef7821cc59969bdc8",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "66bfd6221d6b1776a148d86bf13c70f4d5a6b9f001a037b3e981e96e026e7164",
+          "docs/CURRENT_STAGE.md": "96b51b41e621827eadf7fd94ce9421e8b62bbf85eff7ca1d40872010237eab09",
           "packages/causal-mcp": "f86dd08d8fef8f9b09adab83770f37de1234101a5c84ff11ef0427bdab2507d1"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #37 into #38: ADR-001 keeps the governed-escalation text with #47's SimulationAgent line; ADR-003 says PR-010 now bites, pinned end to end; CURRENT_STAGE session rows combined, PR-010 row cites the session test; AGENTS PR-010 line holds; README/QUICKSTART/ORCHESTRATION/ROADMAP/TESTING_CICD merged cleanly, re-read for session and kernel claims)"
+        "by": "Claude (CURRENT_STAGE's only change is the Gates row's package counts, 233/118/41; neither doc quotes them)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -354,12 +354,12 @@
         "sha256": {
           "packages/causal-core/src/causal_core": "65b5b9fe4d2bc339a536717c0fdd0f252483ac9e136b0600914ff3590a977c45",
           "conformance/declared_not_implemented.json": "592937572fb5329b3a088a3a71ff1f32defa7b5d662732d5cdea680485cb4507",
-          "docs/CURRENT_STAGE.md": "66bfd6221d6b1776a148d86bf13c70f4d5a6b9f001a037b3e981e96e026e7164"
+          "docs/CURRENT_STAGE.md": "96b51b41e621827eadf7fd94ce9421e8b62bbf85eff7ca1d40872010237eab09"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #37 into #38: ADR-001 keeps the governed-escalation text with #47's SimulationAgent line; ADR-003 says PR-010 now bites, pinned end to end; CURRENT_STAGE session rows combined, PR-010 row cites the session test; AGENTS PR-010 line holds; README/QUICKSTART/ORCHESTRATION/ROADMAP/TESTING_CICD merged cleanly, re-read for session and kernel claims)"
+        "by": "Claude (CURRENT_STAGE's only change is the Gates row's package counts, 233/118/41; neither doc quotes them)"
       }
     },
     "SECURITY.md": {
