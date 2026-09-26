@@ -422,7 +422,7 @@
       "reality": "Measured power against a planted misspecification that biases regression adjustment by ~0.16 (~1.2 SE of the difference): 0.04 at n=2,000 (reported), 1.00 at n=50,000 (gated). At moderate n, 'estimators agree' is weak evidence that a model is right.",
       "evidence": [
         {
-          "at": "benchmarks/t0/PRE-REGISTRATION.md:183",
+          "at": "benchmarks/t0/PRE-REGISTRATION.md:266",
           "says": "Triangulation power at n = 2,000 failed"
         }
       ],
