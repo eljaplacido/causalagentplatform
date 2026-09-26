@@ -1030,24 +1030,6 @@
       }
     },
     {
-      "id": "legacy-mcp-server",
-      "status": "planned",
-      "capability": "One MCP server: the legacy backend server retired in favour of packages/causal-mcp",
-      "claimed_in": [],
-      "reality": "backend/mcp_server (mcp SDK v1, seven backend skills, two of them heuristic triage scores rather than effects) still ships beside packages/causal-mcp (SDK v2, the kernel, the decision layer, causal_impact, a narrative verifier). As of 2026-09-25 no gnomon role is granted it, its gnomon declaration is commented out, and it warns on startup that it is deprecated. It is not deleted because client configurations outside this repository may still launch `causal-platform-mcp`, and scripts/gate_scope.py's mcp-tools identity check still inspects it.",
-      "evidence": [
-        {
-          "at": "backend/mcp_server/server.py@f64b2b0:106",
-          "says": "causal-platform MCP server is DEPRECATED"
-        }
-      ],
-      "leaves_by": {
-        "kind": "retraction",
-        "path": "backend/mcp_server",
-        "asserts": "the directory, its console script and its stdio test are removed, and gate_scope's mcp-tools check inspects causal-mcp's TOOLS instead"
-      }
-    },
-    {
       "id": "cynefin-classifier-keyword-stub",
       "status": "declared-not-implemented",
       "capability": "Cynefin-domain classification that routing, human escalation and Guardian rules can rely on",
@@ -1120,6 +1102,13 @@
     }
   ],
   "left_the_list": [
+    {
+      "id": "legacy-mcp-server",
+      "was": "backend/mcp_server (MCP SDK v1, seven backend skills, two of them heuristic triage scores rather than effects) shipped beside packages/causal-mcp; deprecated and granted to no gnomon role, it was kept for client configurations outside the repository that might still launch `causal-platform-mcp`",
+      "fixed_in": "b86ca81",
+      "pinned_by": "backend/tests/unit/test_one_mcp_server.py",
+      "note": "Left by its leaves_by kind, retraction, and by the deletion itself (septa-6, after the owner confirmed no external client needs it): the directory, its console script, its tests and the backend's mcp dependency are gone, the docs describe it only as history, and gate_scope's mcp-tools check left with it, the one server being inspected by kernel-mcp-tools. The test pins the absence: no package, no console script, no mcp dependency or import in backend/src, and gate_scope reading causal-mcp's TOOLS."
+    },
     {
       "id": "mcp-tools-crash-and-stdout-logging",
       "was": "2 of 7 MCP tools raised TypeError (stdlib loggers called with structlog kwargs) and structlog wrote log lines to stdout, the stdio protocol channel",

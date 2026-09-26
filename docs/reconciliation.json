@@ -28,15 +28,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
+          "backend/pyproject.toml": "5d7f13ffeb61028450fd1ce8d65c029f89fddf539c82d7cb5f1e56d367c0a8c9",
+          "packages/causal-mcp": "9b45b2e9e037849d5333991c6599891077454c73ad582d24d381620e974f1ffd",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "fc5b6d1b7db3a4cae3ded89459aa58661b1946eaf6e8b8807fbc5bc34e674477"
+          "docs/CURRENT_STAGE.md": "a854f8b7893e5af2b805bf852c43449154e48f21a2f9668490c5fea8959b368e"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: T5 row from septa-8 present; #14 changed nothing it quotes)"
+        "by": "Claude (septa-6: the legacy MCP server is gone; the box lists one MCP server, packages/causal-mcp, and the old console script only as history)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -52,9 +53,9 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "7ea978f77fdbbf32f505ad2a2fc7cd7491ce98ad43f325e868410087b50f2a6d",
+          "conformance/declared_not_implemented.json": "365f3147c37dba3f2018f75427609cb19cebf38f892efc1f55a3864996d85f68",
           "backend/src": "c06af80dee95babb1eed74ffbc5435ffe7f1cb1fdc8bf8f8489d087ad42aabe1",
-          "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
+          "backend/tests": "bd98daa5d7f1ec988d20ce624d1615e642ec8ca412d2e0a4fd7d75baabdd1aca",
           "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
           "packages": "b6ee9e7b2337b6a02a1015e9b026ef382e06dd7afb17259c76142ad2af9e8a02",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
@@ -62,7 +63,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: both the dast-not-built row (#14) and the did-* rows (septa-8) present)"
+        "by": "Claude (septa-6: legacy-mcp-server row implemented with test_one_mcp_server.py, the deleted server's implemented row and gate-scope row removed, the stdout fix re-pinned to causal-mcp's stdio test)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -147,13 +148,14 @@
         "sha256": {
           "backend/src/agents": "ab6334ee1a9e15e7e3a6bf4647430473456a86799863b8ce80b3110670587aa9",
           "backend/src/skills": "7c14f6095d38b78711081427d4f98e3f621a0a72de4b377d6fc374c346c4ecea",
+          "packages/causal-mcp": "9b45b2e9e037849d5333991c6599891077454c73ad582d24d381620e974f1ffd",
           "backend/src/orchestration": "026e61993e2c3e51962380e4d4e957cf5d26e650455679bd5e7cdce75c31c2f4",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: re-read the memory tiers; session memory in PostgreSQL is now true, 008_session_state.sql, and the experience buffer's session_state reads run on it too)"
+        "by": "Claude (septa-6: section 3.4 names packages/causal-mcp as the one server; the legacy backend server survives only as a History paragraph; wiring and the appendix row updated)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -249,13 +251,13 @@
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
-          ".github": "0a8d8e713831ebec1cc8e44c2f719c44085c453b44baed2d4607ac2fa3df132b",
-          ".gnomon": "e9afa6dfbb985f1524e04a4ca8de7b5210e7e43e52d4106baca6d2a1b847532a"
+          ".github": "672dde8050fd9d8b6643962da25c9ef70e04d9501a79105f09f4edc0fcb016d6",
+          ".gnomon": "471dfc98191effc16f96121757bb10305d01cab131bbb4bf8d584a372b1c1ec5"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: #14's workflow and dependabot changes; the page names the surface files, still true)"
+        "by": "Claude (septa-6: .gnomon tools/roles/skills and a dependabot comment changed; the page names the surface files only, still true)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -276,7 +278,7 @@
           "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
-          "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
+          "backend/pyproject.toml": "5d7f13ffeb61028450fd1ce8d65c029f89fddf539c82d7cb5f1e56d367c0a8c9",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
           ".env.example": "f5dbf40f551d60b4b91d5bbaa9b36a2404f89536421fe51b8bcbf17a6ae1258f",
@@ -285,7 +287,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-8: the backend pin moved to causal-core>=0.10.0; the page states no kernel version and no DiD options, unchanged)"
+        "by": "Claude (septa-6: section 7 now shows the one MCP server; the legacy demo and the mcp_server tree entry removed; the backend drops its mcp pin)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -307,12 +309,12 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "1ae0fadaa874c419905d5c24ebadf5ccca68705dc7d83057ea81682712fae31b",
-          "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
-          "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
+          "backend/tests": "bd98daa5d7f1ec988d20ce624d1615e642ec8ca412d2e0a4fd7d75baabdd1aca",
+          "backend/pyproject.toml": "5d7f13ffeb61028450fd1ce8d65c029f89fddf539c82d7cb5f1e56d367c0a8c9",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
-          ".gnomon/ci.sh": "8379e43234946f44d8e569a68c60d42923500ded3012d88bf2a477f5ebecf8aa",
-          "scripts": "f0b53ec6456489ff7a911dc1b94d72ee20926fb6a5b68d63badd302cc5ae9090",
+          ".gnomon/ci.sh": "a05e016e87f09e27989ffc185d06ad2b55c6d31f4e9b9cc2954b8cfdf7a40e45",
+          "scripts": "9876fc98bb2f4cbbee1142e1434bd6e44183f49738a9af07c136effc107a7c45",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "a017cd3d799db03c83693deb1efeb7a8c2fb2e73e532f4fe5ce3895002f7be0a",
           "packages/causal-core/tests": "be7509f8646efd6a27d3b142715e440739d17255e7ffc1ebcde5bc05aa95c2b2",
@@ -321,7 +323,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: python-lock and images job (#14) and the T5 row (septa-8) both present)"
+        "by": "Claude (septa-6: bandit-backend scans backend/src only, gate-scope inspects the one MCP server, the unit/ row no longer lists MCP wrappers)"
       }
     },
     "docs/UIX.md": {
@@ -351,13 +353,13 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "b3a206babea176dd53fdebe83037e38e66922eeced1def6dbfb248262c2477a6",
-          "conformance/declared_not_implemented.json": "7ea978f77fdbbf32f505ad2a2fc7cd7491ce98ad43f325e868410087b50f2a6d",
-          "docs/CURRENT_STAGE.md": "fc5b6d1b7db3a4cae3ded89459aa58661b1946eaf6e8b8807fbc5bc34e674477"
+          "conformance/declared_not_implemented.json": "365f3147c37dba3f2018f75427609cb19cebf38f892efc1f55a3864996d85f68",
+          "docs/CURRENT_STAGE.md": "a854f8b7893e5af2b805bf852c43449154e48f21a2f9668490c5fea8959b368e"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: septa-49 done (#14) and septa-8 now marked done)"
+        "by": "Claude (septa-6: p1 now lists deleting the legacy MCP server as done; legacy-mcp-server left the register)"
       }
     },
     "SECURITY.md": {
