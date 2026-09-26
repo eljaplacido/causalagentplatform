@@ -28,16 +28,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
-          "packages/causal-mcp": "ac8ffe5b31a7fc07dfbfaee6156a0003bc0753f30c9a3a730b99d39de085a913",
+          "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
+          "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "0f9a39c4764ea8c6d1956f884e506baf1d4d35abd1a432b331beedd125a240a1"
+          "docs/CURRENT_STAGE.md": "f85a4e44e9e2938d7d45676310d7b36dae4b3dbdbf1300a2abf83176e9605f33"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-24: decision ledger and assumption registry views built; workbench drafts a classified fragment, dag-workbench narrowed to partial; e2e stubbed and run by hand)"
+        "by": "Claude (merge of the train into the frontend views: the draft route classifies now (#53), so ROADMAP, CURRENT_STAGE and the dag-workbench register reality say a classified draft reaches the queue and name what keeps it partial; TESTING_CICD's vitest paragraph covers both sides' tests; UIX keeps this branch's component table and view-test note, and no 'no page submits drafts' remains)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "fdf84da9265c2ecefad3a450941e5557cab1911aa028a3452c13e807613a1c15",
-          "backend/src": "5d104e029b81eb564cc22f905604efaa2a7cfcd20482df947a211fc3b871f570",
-          "backend/tests": "aa5434d14e2a7f34e9c385f15c79890c946ceee6bf5e33fc13dd2af7f1f6a8b7",
-          "frontend/src": "37624d3ce5f10a2c9cd20f17debd12363b2da3ab3301c91d63efc96c45b43386",
-          "packages": "f39decf6dcae81c0e60801fa80c933c6547de55348adb3fd3867119423414373",
+          "conformance/declared_not_implemented.json": "03645e5288222fe6242ee5531df616d44d08a18b825cfeaa50ccd52c8cbfb57f",
+          "backend/src": "876804994de907af20157812e48aceac9d4e2ca5e6ba8ff4bf57082b32a8d48c",
+          "backend/tests": "52038b7b53fa52560bfe381566e0cafaae84775fc6b84b09ef4a403c918fc799",
+          "frontend/src": "b466587cba2f440aaacdd3395df8690b5c08971f869236ecd9694a646caf0b31",
+          "packages": "3db39091c39ce9505cd29724d44146782817a497ebf917e8ce3e3f74d1079b56",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-24: decision ledger and assumption registry views built; workbench drafts a classified fragment, dag-workbench narrowed to partial; e2e stubbed and run by hand)"
+        "by": "Claude (merge of the train into the frontend views: the draft route classifies now (#53), so ROADMAP, CURRENT_STAGE and the dag-workbench register reality say a classified draft reaches the queue and name what keeps it partial; TESTING_CICD's vitest paragraph covers both sides' tests; UIX keeps this branch's component table and view-test note, and no 'no page submits drafts' remains)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -309,21 +309,21 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "aa5434d14e2a7f34e9c385f15c79890c946ceee6bf5e33fc13dd2af7f1f6a8b7",
-          "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
+          "backend/tests": "52038b7b53fa52560bfe381566e0cafaae84775fc6b84b09ef4a403c918fc799",
+          "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "c488a844dd07e837e2d22c4b661f4efd3becea08b2315052affe794a0cd78fa6",
           ".gnomon/ci.sh": "a05e016e87f09e27989ffc185d06ad2b55c6d31f4e9b9cc2954b8cfdf7a40e45",
-          "scripts": "b02346ce8b8bc5739d9c16f9eca354d6eb179e9d4cd40cbbaa9991a7cc3662f7",
+          "scripts": "f320a88d5bcd4c70f81d69f5e103b33b80568094e4e22023db2182b36f02156e",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
-          "benchmarks": "2ea289c99ef957a2b22a4eed544e76c06e45eb8a2c844d384f9e05eb7f84d940",
-          "packages/causal-core/tests": "ca9a8600b9bdeb81d9509afcb864900159868a7509bcc0aa13fff0fc501869f5",
-          "packages/causal-decision/tests": "c7ccd2d2b91e1ec53a3eb456c70f670268b2ec1f8f431e161f399360b94ef7de"
+          "benchmarks": "29568520a660ee325cd3ba990a0e9ba6be64e73b9090aab26b5b4d076d85b951",
+          "packages/causal-core/tests": "d0597e531730f3655d2849ed91d39a91986fcfd027c28a484f762b14b781bec6",
+          "packages/causal-decision/tests": "811166b3dd05cfc3cbd62c7e71fcf1d62666fb738c97dcb65e34725fede4d034"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-24: decision ledger and assumption registry views built; workbench drafts a classified fragment, dag-workbench narrowed to partial; e2e stubbed and run by hand)"
+        "by": "Claude (merge of the train into the frontend views: the draft route classifies now (#53), so ROADMAP, CURRENT_STAGE and the dag-workbench register reality say a classified draft reaches the queue and name what keeps it partial; TESTING_CICD's vitest paragraph covers both sides' tests; UIX keeps this branch's component table and view-test note, and no 'no page submits drafts' remains)"
       }
     },
     "docs/UIX.md": {
@@ -334,12 +334,12 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "frontend/src": "37624d3ce5f10a2c9cd20f17debd12363b2da3ab3301c91d63efc96c45b43386"
+          "frontend/src": "b466587cba2f440aaacdd3395df8690b5c08971f869236ecd9694a646caf0b31"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-24: decision ledger and assumption registry views built; workbench drafts a classified fragment, dag-workbench narrowed to partial; e2e stubbed and run by hand)"
+        "by": "Claude (merge of the train into the frontend views: the draft route classifies now (#53), so ROADMAP, CURRENT_STAGE and the dag-workbench register reality say a classified draft reaches the queue and name what keeps it partial; TESTING_CICD's vitest paragraph covers both sides' tests; UIX keeps this branch's component table and view-test note, and no 'no page submits drafts' remains)"
       }
     },
     "docs/ROADMAP.md": {
@@ -352,14 +352,14 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "packages/causal-core/src/causal_core": "6b029f17fceb5b8a44c784ea601802c8d97c1d2ed3ce9a6a92c2600823826501",
-          "conformance/declared_not_implemented.json": "fdf84da9265c2ecefad3a450941e5557cab1911aa028a3452c13e807613a1c15",
-          "docs/CURRENT_STAGE.md": "0f9a39c4764ea8c6d1956f884e506baf1d4d35abd1a432b331beedd125a240a1"
+          "packages/causal-core/src/causal_core": "18d2aa2f2ef7931f67675a18f9e0ba170989adc9fa7cbf2a7bee4ea53c3342a3",
+          "conformance/declared_not_implemented.json": "03645e5288222fe6242ee5531df616d44d08a18b825cfeaa50ccd52c8cbfb57f",
+          "docs/CURRENT_STAGE.md": "f85a4e44e9e2938d7d45676310d7b36dae4b3dbdbf1300a2abf83176e9605f33"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-24: decision ledger and assumption registry views built; workbench drafts a classified fragment, dag-workbench narrowed to partial; e2e stubbed and run by hand)"
+        "by": "Claude (merge of the train into the frontend views: the draft route classifies now (#53), so ROADMAP, CURRENT_STAGE and the dag-workbench register reality say a classified draft reaches the queue and name what keeps it partial; TESTING_CICD's vitest paragraph covers both sides' tests; UIX keeps this branch's component table and view-test note, and no 'no page submits drafts' remains)"
       }
     },
     "SECURITY.md": {

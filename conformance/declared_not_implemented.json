@@ -140,8 +140,8 @@
           "says": "semanticApi.submitDraft("
         },
         {
-          "at": "backend/src/api/semantic.py:311",
-          "says": "governance_result = await _governance.check(action_payload, state)"
+          "at": "backend/src/api/semantic.py:367",
+          "says": "governance_result = await _governance.check(action_payload, state, notes=notes)"
         },
         {
           "at": "frontend/e2e/workbench-authoring.spec.ts:9",
@@ -673,11 +673,11 @@
           "says": "Agents self-classify the domain complexity of a query before selecting a reasoning strategy."
         },
         {
-          "at": "docs/AGENTS.md:209",
+          "at": "docs/AGENTS.md:212",
           "says": "Cynefin domain classification with confidence"
         },
         {
-          "at": "docs/AGENTS.md:548",
+          "at": "docs/AGENTS.md:571",
           "says": "Domain confidence > 0.7"
         },
         {
@@ -722,7 +722,7 @@
       "capability": "One-click Rosenbaum / E-value sensitivity analysis on an approved edge, in the UI",
       "claimed_in": [
         {
-          "at": "docs/UIX.md:192",
+          "at": "docs/UIX.md:208",
           "says": "I want to run a one-click Rosenbaum sensitivity analysis on any approved edge"
         }
       ],
