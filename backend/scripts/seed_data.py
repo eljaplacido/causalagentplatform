@@ -13,6 +13,14 @@ Usage:
     .venv/bin/python -m scripts.seed_data --devops   # DevOps only
     .venv/bin/python -m scripts.seed_data --marketing # Marketing only
     .venv/bin/python -m scripts.seed_data --clear     # Clear seeded data
+
+It seeds SQLite and PostgreSQL alike. Every INSERT declares its parameters' types
+with the bind types in src/db/types.py (TEXT_ARRAY, UUID_ARRAY, TIMESTAMP): a
+raw JSON string bound into a TEXT[]/UUID[] column, or an ISO string into a
+TIMESTAMPTZ, is what SQLite accepts and asyncpg refuses. On PostgreSQL it may
+connect as causal_app: main() runs everything inside a service scope, which the
+row-level-security policies let write every domain, and causal_app's INSERT and
+UPDATE grants are all seeding needs.
 """
 
 from __future__ import annotations
@@ -26,6 +34,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import text
 
 from src.db.factory import CloudSqlFactory
+from src.db.types import TEXT_ARRAY, TIMESTAMP, UUID_ARRAY, typed_text
 from src.semantic_layer.models import (
     ApprovalStatus,
     CausalEntity,
@@ -85,7 +94,7 @@ async def _insert_seed_edge(
     approved_at = created_at if approval_status == "APPROVED" else None
     approved_by = _SEEDER_USER.model_dump_json() if approval_status == "APPROVED" else None
     await session.execute(
-        text(
+        typed_text(
             "INSERT INTO causal_edges ("
             "id, source_id, source_type, target_id, target_type, "
             "edge_type, direction, confidence, evidence_refs, assumption_refs, "
@@ -96,7 +105,11 @@ async def _insert_seed_edge(
             ":etype, :dir, :conf, :evidence, :assumptions, "
             ":status, :approved_by, :approved_at, :verdict, "
             ":version, :lineage, :domain, :created_at"
-            ")"
+            ")",
+            evidence=UUID_ARRAY,
+            assumptions=UUID_ARRAY,
+            approved_at=TIMESTAMP,
+            created_at=TIMESTAMP,
         ),
         {
             "id": str(edge_id),
@@ -107,8 +120,8 @@ async def _insert_seed_edge(
             "etype": edge_type,
             "dir": "FORWARD",
             "conf": confidence,
-            "evidence": "[]",
-            "assumptions": "[]",
+            "evidence": [],
+            "assumptions": [],
             "status": approval_status,
             "approved_by": approved_by,
             "approved_at": approved_at,
@@ -163,10 +176,12 @@ def seed_devops(engine: Any) -> dict[str, Any]:
             for svc_name, desc in SERVICES.items():
                 verdict_id = _verdict_id()
                 await session.execute(
-                    text(
+                    typed_text(
                         "INSERT INTO audit_log (id, agent_id, action_type, payload_hash, "
                         "guardian_verdict, policy_rules_cited, created_at) "
-                        "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)"
+                        "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)",
+                        rules=TEXT_ARRAY,
+                        ts=TIMESTAMP,
                     ),
                     {
                         "id": str(verdict_id),
@@ -174,7 +189,7 @@ def seed_devops(engine: Any) -> dict[str, Any]:
                         "action": "SEED_ENTITY",
                         "hash": hashlib.sha256(svc_name.encode()).hexdigest(),
                         "verdict": "APPROVED",
-                        "rules": "[]",
+                        "rules": [],
                         "ts": now,
                     },
                 )
@@ -193,12 +208,15 @@ def seed_devops(engine: Any) -> dict[str, Any]:
                     tags=["devops", "service", "seeded"],
                 )
                 await session.execute(
-                    text(
+                    typed_text(
                         "INSERT INTO causal_entities (id, name, entity_type, domain, description, "
                         "attributes, ontology_version, approval_status, created_by, created_at, "
                         "approved_at, approved_by, lineage, tags) "
                         "VALUES (:id, :name, :type, :domain, :desc, :attrs, :ont, :status, "
-                        ":created_by, :created_at, :approved_at, :approved_by, :lineage, :tags)"
+                        ":created_by, :created_at, :approved_at, :approved_by, :lineage, :tags)",
+                        created_at=TIMESTAMP,
+                        approved_at=TIMESTAMP,
+                        tags=TEXT_ARRAY,
                     ),
                     {
                         "id": str(entity.id),
@@ -210,11 +228,11 @@ def seed_devops(engine: Any) -> dict[str, Any]:
                         "ont": entity.ontology_version,
                         "status": str(entity.approval_status),
                         "created_by": entity.created_by.model_dump_json(),
-                        "created_at": entity.created_at.isoformat(),
-                        "approved_at": entity.approved_at.isoformat(),
+                        "created_at": entity.created_at,
+                        "approved_at": entity.approved_at,
                         "approved_by": entity.approved_by.model_dump_json(),
                         "lineage": "[]",
-                        "tags": json.dumps(entity.tags),
+                        "tags": entity.tags,
                     },
                 )
                 entities_map[svc_name] = entity.id
@@ -226,10 +244,12 @@ def seed_devops(engine: Any) -> dict[str, Any]:
             frag_verdict = _verdict_id()
             frag_id = uuid4()
             await session.execute(
-                text(
+                typed_text(
                     "INSERT INTO audit_log (id, agent_id, action_type, payload_hash, "
                     "guardian_verdict, policy_rules_cited, created_at) "
-                    "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)"
+                    "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)",
+                    rules=TEXT_ARRAY,
+                    ts=TIMESTAMP,
                 ),
                 {
                     "id": str(frag_verdict),
@@ -237,7 +257,7 @@ def seed_devops(engine: Any) -> dict[str, Any]:
                     "action": "SEED_FRAGMENT",
                     "hash": hashlib.sha256(b"deployment-latency-fragment").hexdigest(),
                     "verdict": "APPROVED",
-                    "rules": '["PR-001"]',
+                    "rules": ["PR-001"],
                     "ts": now,
                 },
             )
@@ -278,28 +298,31 @@ def seed_devops(engine: Any) -> dict[str, Any]:
                 tags=["devops", "deployment", "latency", "seeded"],
             )
             await session.execute(
-                text(
+                typed_text(
                     "INSERT INTO graph_fragments (id, name, domain, description, edge_ids, "
                     "entry_nodes, exit_nodes, approval_status, version, usage_count, tags, "
                     "guardian_verdict_ref, created_by, created_at) "
                     "VALUES (:id, :name, :domain, :desc, :edges, :entry, :exit, :status, "
-                    ":version, :usage, :tags, :verdict, :created_by, :created_at)"
+                    ":version, :usage, :tags, :verdict, :created_by, :created_at)",
+                    edges=UUID_ARRAY,
+                    tags=TEXT_ARRAY,
+                    created_at=TIMESTAMP,
                 ),
                 {
                     "id": str(fragment.id),
                     "name": fragment.name,
                     "domain": fragment.domain,
                     "desc": fragment.description,
-                    "edges": json.dumps([str(e) for e in fragment.edges]),
+                    "edges": [str(e) for e in fragment.edges],
                     "entry": json.dumps([r.model_dump(mode="json") for r in fragment.entry_nodes]),
                     "exit": json.dumps([r.model_dump(mode="json") for r in fragment.exit_nodes]),
                     "status": str(fragment.approval_status),
                     "version": fragment.version,
                     "usage": fragment.usage_count,
-                    "tags": json.dumps(fragment.tags),
+                    "tags": fragment.tags,
                     "verdict": str(frag_verdict),
                     "created_by": fragment.created_by.model_dump_json(),
-                    "created_at": fragment.created_at.isoformat(),
+                    "created_at": fragment.created_at,
                 },
             )
             created["fragments"].append({"id": str(frag_id), "name": fragment.name})
@@ -323,10 +346,12 @@ def seed_marketing(engine: Any) -> dict[str, Any]:
             verdict_id = _verdict_id()
             frag_id = uuid4()
             await session.execute(
-                text(
+                typed_text(
                     "INSERT INTO audit_log (id, agent_id, action_type, payload_hash, "
                     "guardian_verdict, policy_rules_cited, created_at) "
-                    "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)"
+                    "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)",
+                    rules=TEXT_ARRAY,
+                    ts=TIMESTAMP,
                 ),
                 {
                     "id": str(verdict_id),
@@ -334,7 +359,7 @@ def seed_marketing(engine: Any) -> dict[str, Any]:
                     "action": "SEED_FRAGMENT",
                     "hash": hashlib.sha256(b"churn-causal-fragment").hexdigest(),
                     "verdict": "APPROVED",
-                    "rules": '["PR-001", "PR-007"]',
+                    "rules": ["PR-001", "PR-007"],
                     "ts": now,
                 },
             )
@@ -387,28 +412,31 @@ def seed_marketing(engine: Any) -> dict[str, Any]:
                 tags=["marketing", "churn", "customer-retention", "seeded"],
             )
             await session.execute(
-                text(
+                typed_text(
                     "INSERT INTO graph_fragments (id, name, domain, description, edge_ids, "
                     "entry_nodes, exit_nodes, approval_status, version, usage_count, tags, "
                     "guardian_verdict_ref, created_by, created_at) "
                     "VALUES (:id, :name, :domain, :desc, :edges, :entry, :exit, :status, "
-                    ":version, :usage, :tags, :verdict, :created_by, :created_at)"
+                    ":version, :usage, :tags, :verdict, :created_by, :created_at)",
+                    edges=UUID_ARRAY,
+                    tags=TEXT_ARRAY,
+                    created_at=TIMESTAMP,
                 ),
                 {
                     "id": str(fragment.id),
                     "name": fragment.name,
                     "domain": fragment.domain,
                     "desc": fragment.description,
-                    "edges": json.dumps([str(e) for e in fragment.edges]),
+                    "edges": [str(e) for e in fragment.edges],
                     "entry": json.dumps([r.model_dump(mode="json") for r in fragment.entry_nodes]),
                     "exit": json.dumps([r.model_dump(mode="json") for r in fragment.exit_nodes]),
                     "status": str(fragment.approval_status),
                     "version": fragment.version,
                     "usage": fragment.usage_count,
-                    "tags": json.dumps(fragment.tags),
+                    "tags": fragment.tags,
                     "verdict": str(verdict_id),
                     "created_by": fragment.created_by.model_dump_json(),
-                    "created_at": fragment.created_at.isoformat(),
+                    "created_at": fragment.created_at,
                 },
             )
             created["fragments"].append({"id": str(frag_id), "name": fragment.name})
@@ -445,15 +473,17 @@ def seed_evaluation_data(engine: Any) -> dict[str, Any]:
 
                     entry_id = str(uuid4())
                     policy_rules = (
-                        '["PR-002"]' if verdict == "REJECTED"
-                        else '["PR-003"]' if verdict == "REQUIRES_ESCALATION"
-                        else '["PR-001"]'
+                        ["PR-002"] if verdict == "REJECTED"
+                        else ["PR-003"] if verdict == "REQUIRES_ESCALATION"
+                        else ["PR-001"]
                     )
                     await session.execute(
-                        text(
+                        typed_text(
                             "INSERT INTO audit_log (id, agent_id, action_type, payload_hash, "
                             "guardian_verdict, policy_rules_cited, session_id, created_at) "
-                            "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :session, :ts)"
+                            "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :session, :ts)",
+                            rules=TEXT_ARRAY,
+                            ts=TIMESTAMP,
                         ),
                         {
                             "id": entry_id,
@@ -556,10 +586,12 @@ def seed_review_queue(engine: Any) -> dict[str, Any]:
                 ts = (datetime.now(UTC) - timedelta(days=offset, hours=offset * 3)).isoformat()
 
                 await session.execute(
-                    text(
+                    typed_text(
                         "INSERT INTO audit_log (id, agent_id, action_type, payload_hash, "
                         "guardian_verdict, policy_rules_cited, created_at) "
-                        "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)"
+                        "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)",
+                        rules=TEXT_ARRAY,
+                        ts=TIMESTAMP,
                     ),
                     {
                         "id": str(verdict_id),
@@ -567,7 +599,7 @@ def seed_review_queue(engine: Any) -> dict[str, Any]:
                         "action": "SEED_REVIEW_FRAGMENT",
                         "hash": hashlib.sha256(frag_spec["name"].encode()).hexdigest(),
                         "verdict": "REQUIRES_ESCALATION",
-                        "rules": frag_spec["rules"],
+                        "rules": json.loads(frag_spec["rules"]),
                         "ts": ts,
                     },
                 )
@@ -608,25 +640,28 @@ def seed_review_queue(engine: Any) -> dict[str, Any]:
                     tags=frag_spec["tags"],
                 )
                 await session.execute(
-                    text(
+                    typed_text(
                         "INSERT INTO graph_fragments (id, name, domain, description, edge_ids, "
                         "entry_nodes, exit_nodes, approval_status, version, usage_count, tags, "
                         "guardian_verdict_ref, created_by, created_at) "
                         "VALUES (:id, :name, :domain, :desc, :edges, :entry, :exit, :status, "
-                        ":version, :usage, :tags, :verdict, :created_by, :created_at)"
+                        ":version, :usage, :tags, :verdict, :created_by, :created_at)",
+                        edges=UUID_ARRAY,
+                        tags=TEXT_ARRAY,
+                        created_at=TIMESTAMP,
                     ),
                     {
                         "id": str(fragment.id),
                         "name": fragment.name,
                         "domain": fragment.domain,
                         "desc": fragment.description,
-                        "edges": json.dumps([str(e) for e in fragment.edges]),
+                        "edges": [str(e) for e in fragment.edges],
                         "entry": json.dumps([r.model_dump(mode="json") for r in fragment.entry_nodes]),
                         "exit": json.dumps([r.model_dump(mode="json") for r in fragment.exit_nodes]),
                         "status": str(fragment.approval_status),
                         "version": fragment.version,
                         "usage": fragment.usage_count,
-                        "tags": json.dumps(fragment.tags),
+                        "tags": fragment.tags,
                         "verdict": str(verdict_id),
                         "created_by": fragment.created_by.model_dump_json(),
                         "created_at": ts,
@@ -639,10 +674,12 @@ def seed_review_queue(engine: Any) -> dict[str, Any]:
                 ts = (datetime.now(UTC) - timedelta(days=offset + 1, hours=2)).isoformat()
 
                 await session.execute(
-                    text(
+                    typed_text(
                         "INSERT INTO audit_log (id, agent_id, action_type, payload_hash, "
                         "guardian_verdict, policy_rules_cited, created_at) "
-                        "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)"
+                        "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)",
+                        rules=TEXT_ARRAY,
+                        ts=TIMESTAMP,
                     ),
                     {
                         "id": str(verdict_id),
@@ -650,7 +687,7 @@ def seed_review_queue(engine: Any) -> dict[str, Any]:
                         "action": "SEED_REVIEW_ENTITY",
                         "hash": hashlib.sha256(ent_spec["name"].encode()).hexdigest(),
                         "verdict": "REQUIRES_ESCALATION",
-                        "rules": '["PR-001"]',
+                        "rules": ["PR-001"],
                         "ts": ts,
                     },
                 )
@@ -667,12 +704,15 @@ def seed_review_queue(engine: Any) -> dict[str, Any]:
                     tags=[ent_spec["domain"], "pending-review", "seeded"],
                 )
                 await session.execute(
-                    text(
+                    typed_text(
                         "INSERT INTO causal_entities (id, name, entity_type, domain, description, "
                         "attributes, ontology_version, approval_status, created_by, created_at, "
                         "approved_at, approved_by, lineage, tags) "
                         "VALUES (:id, :name, :type, :domain, :desc, :attrs, :ont, :status, "
-                        ":created_by, :created_at, :approved_at, :approved_by, :lineage, :tags)"
+                        ":created_by, :created_at, :approved_at, :approved_by, :lineage, :tags)",
+                        created_at=TIMESTAMP,
+                        approved_at=TIMESTAMP,
+                        tags=TEXT_ARRAY,
                     ),
                     {
                         "id": str(entity.id),
@@ -688,7 +728,7 @@ def seed_review_queue(engine: Any) -> dict[str, Any]:
                         "approved_at": None,
                         "approved_by": None,
                         "lineage": "[]",
-                        "tags": json.dumps(entity.tags),
+                        "tags": entity.tags,
                     },
                 )
                 created["entities"].append({"id": str(entity.id), "name": ent_spec["name"], "status": str(ent_spec["status"])})
@@ -854,10 +894,12 @@ def seed_incidents(engine: Any) -> dict[str, Any]:
                             sort_keys=True,
                         )
                         await session.execute(
-                            text(
+                            typed_text(
                                 "INSERT INTO audit_log (id, agent_id, action_type, payload_hash, "
                                 "guardian_verdict, policy_rules_cited, session_id, created_at) "
-                                "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :session, :ts)"
+                                "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :session, :ts)",
+                                rules=TEXT_ARRAY,
+                                ts=TIMESTAMP,
                             ),
                             {
                                 "id": str(uuid4()),
@@ -865,7 +907,7 @@ def seed_incidents(engine: Any) -> dict[str, Any]:
                                 "action": f"INTERVENTION_{intervention['verdict']}",
                                 "hash": payload,
                                 "verdict": intervention["verdict"],
-                                "rules": '["PR-006"]',
+                                "rules": ["PR-006"],
                                 "session": spec["id"],
                                 "ts": decision_ts,
                             },
@@ -882,15 +924,31 @@ def seed_incidents(engine: Any) -> dict[str, Any]:
                 ]
 
                 await session.execute(
-                    text(
-                        "INSERT OR REPLACE INTO incidents "
+                    # An upsert on the fixed seed ids, as the incidents API does:
+                    # INSERT OR REPLACE is SQLite-only; ON CONFLICT is both dialects'.
+                    typed_text(
+                        "INSERT INTO incidents "
                         "(id, title, severity, affected_services, status, session_id, "
                         "cynefin_domain, domain_confidence, overall_confidence, guardian_verdict, "
                         "draft_explanation, causal_hypotheses, proposed_interventions, "
                         "submitted_by, created_at, updated_at) "
                         "VALUES (:id, :title, :sev, :svcs, :status, :session_id, "
                         ":cynefin, :dc, :oc, :verdict, :explain, :hyp, :ints, "
-                        ":by, :ts, :ts)"
+                        ":by, :ts, :ts) "
+                        "ON CONFLICT (id) DO UPDATE SET "
+                        "title = excluded.title, severity = excluded.severity, "
+                        "affected_services = excluded.affected_services, "
+                        "status = excluded.status, session_id = excluded.session_id, "
+                        "cynefin_domain = excluded.cynefin_domain, "
+                        "domain_confidence = excluded.domain_confidence, "
+                        "overall_confidence = excluded.overall_confidence, "
+                        "guardian_verdict = excluded.guardian_verdict, "
+                        "draft_explanation = excluded.draft_explanation, "
+                        "causal_hypotheses = excluded.causal_hypotheses, "
+                        "proposed_interventions = excluded.proposed_interventions, "
+                        "submitted_by = excluded.submitted_by, "
+                        "created_at = excluded.created_at, updated_at = excluded.updated_at",
+                        ts=TIMESTAMP,
                     ),
                     {
                         "id": spec["id"],

@@ -111,7 +111,8 @@ DATABASE_URL=postgresql+asyncpg://causal_app:<that secret>@<host>:5432/<db>
 
 Against the compose stack (§4) that is
 `postgresql+asyncpg://causal_app:causal_app_local_dev@localhost:5432/causalplatform`: its init
-script sets that local-dev password. Migrations and seeding run as the owner (`causal`).
+script sets that local-dev password. Migrations run as the owner (`causal`); seeding (§8) runs as
+`causal_app` or the owner.
 
 The dev auth bypass works only with `ENV=local`, so a local session with the bypass is always on
 SQLite. Neo4j is used only when `NEO4J_URI` is set; otherwise the graph and experience-buffer paths
@@ -278,6 +279,13 @@ cd backend
 .venv/bin/python -m scripts.seed_data --all          # everything
 .venv/bin/python -m scripts.seed_data --clear        # remove seeded data
 ```
+
+The seeder runs on SQLite (`ENV=local`, the default) and on PostgreSQL, where it may connect as
+`causal_app`: it writes inside a service scope, which the row-level-security policies let write
+every domain, and it needs only the `INSERT`/`UPDATE` grants `causal_app` has
+(`backend/tests/integration/test_seed_data_backends.py`). Incidents are upserted on their fixed
+ids; the rest is added anew each run, and on PostgreSQL a second `--all` without `--clear` stops
+at the first graph fragment, which is unique on (name, version, domain) there.
 
 With `ENV=local` and `DEV_AUTH_BYPASS=true`, the backend accepts the fixed dev token
 `dev-local-token` (`backend/src/middleware/auth.py`) — it is not a real credential and is refused

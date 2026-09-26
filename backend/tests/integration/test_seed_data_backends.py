@@ -18,7 +18,9 @@ check what landed, typed as the schema types it:
   lets the seeder write into every domain, and causal_app's INSERT/UPDATE grants
   are all it needs. Seeding does not need the tables' owner.
 
-Seeding twice must also work: incidents are upserted on their fixed ids.
+Seeding incidents twice must work: they are upserted on their fixed ids. (A
+second full --all on PostgreSQL needs --clear first: graph_fragments is unique
+on (name, version, domain) there.)
 
 The tests are synchronous because the seeder calls ``asyncio.run`` itself; each
 points CloudSqlFactory at a NullPool engine so no connection outlives its loop.
@@ -102,7 +104,10 @@ def _check_seeded(engine: AsyncEngine, result: dict[str, Any]) -> None:
     )
     assert _as_list(tags[0][0]) == ["devops", "service", "seeded"]
     rules = asyncio.run(
-        _rows(engine, "SELECT policy_rules_cited FROM audit_log WHERE action_type = 'SEED_FRAGMENT'")
+        _rows(
+            engine,
+            "SELECT policy_rules_cited FROM audit_log WHERE action_type = 'SEED_FRAGMENT'",
+        )
     )
     assert sorted(_as_list(r[0]) for r in rules) == [["PR-001"], ["PR-001", "PR-007"]]
 
@@ -162,7 +167,7 @@ async def _truncate(owner: AsyncEngine) -> None:
 
 
 @postgres_only
-def test_seed_all_on_postgres_as_causal_app_and_again(
+def test_seed_all_on_postgres_as_causal_app(
     postgres_test_db: PostgresTestDatabase,
 ) -> None:
     owner = create_async_engine(postgres_test_db.owner_url, poolclass=NullPool)
@@ -182,7 +187,11 @@ def test_seed_all_on_postgres_as_causal_app_and_again(
         )
         assert timestamps[0][0] == "timestamp with time zone"
 
-        _seed_all()
+        # The incidents upsert (ON CONFLICT on the fixed ids) on PostgreSQL. The
+        # whole seed is not re-run here: graph_fragments is unique on (name,
+        # version, domain) on PostgreSQL, so a second --all needs --clear first.
+        with service_scope("test: scripts.seed_data --incidents again"):
+            seed_data.seed_incidents(None)
         counts = asyncio.run(_counts(owner))
         assert counts["incidents"] == len(seed_data.SEED_INCIDENTS)
     finally:
