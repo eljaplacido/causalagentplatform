@@ -28,16 +28,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
-          "packages/causal-mcp": "ac8ffe5b31a7fc07dfbfaee6156a0003bc0753f30c9a3a730b99d39de085a913",
+          "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
+          "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "c8072f35203c373074ddee54e6138505d8d079f874d4a350abe7fff93600f8e5"
+          "docs/CURRENT_STAGE.md": "44ec75b5bca3e2f4c2e86dd5caf31e26908a83411394a02185ffaa1efffbe0fd"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (read whole page; only CURRENT_STAGE package gate row changed; T8 figures still match the standing run, now v2 run2, per doc_figures)"
+        "by": "Claude (merge of the train into the gate fix: CURRENT_STAGE's package row states the import-origin and identity rules over the train's measured counts; TESTING_CICD's unit row lists both sides' tests; the rest merged cleanly and was re-read for gate-step claims)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "a66317f55542f47c72959f2f2d51670b0bae328a6254417805f0caf4dd158fb4",
-          "backend/src": "ba34dca9be81464de469e17b5ce0806fcf1de5864967ec19f3bac383ae1fb774",
-          "backend/tests": "bffc6b180e5103681330ca6bd4e9ff0b521423113c859380649f1b0f0e52af21",
-          "frontend/src": "d357d66d238bdc673ac0c5215b914bf4a8649a1ea7ca09c9e5bb0052c0b48fcb",
-          "packages": "2abc2f86705c69e6ce4f5c5f0d525bb9001b8a76f7da69e95456ec855b60a768",
+          "conformance/declared_not_implemented.json": "03645e5288222fe6242ee5531df616d44d08a18b825cfeaa50ccd52c8cbfb57f",
+          "backend/src": "876804994de907af20157812e48aceac9d4e2ca5e6ba8ff4bf57082b32a8d48c",
+          "backend/tests": "b542e299135fbc8c671668ba6e04537030c668d3e1296afbaeaae3fabd7f5329",
+          "frontend/src": "b466587cba2f440aaacdd3395df8690b5c08971f869236ecd9694a646caf0b31",
+          "packages": "1384322f9b6670fbe83ad33b5f0a9893d596568ac1fa7dafa0b0c1ed58af0389",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (read whole page; package gate row now states import-origin, test-file and gate-marker conditions; no status changed)"
+        "by": "Claude (merge of the train into the gate fix: CURRENT_STAGE's package row states the import-origin and identity rules over the train's measured counts; TESTING_CICD's unit row lists both sides' tests; the rest merged cleanly and was re-read for gate-step claims)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -250,14 +250,14 @@
         "on": "2026-09-26",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
-          "prompts": "664b74cd837a44513e10dc0a7a5c44a3015816f928c93d4f7831320b0231e50f",
+          "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9",
           ".github": "db12d364ec234ff9774297f81b08649ec310d368304c47fbfcfa04138f630ac4",
-          ".gnomon": "49f1f13e1130b61c6ae6d2681a5e8f1ccbf4b7e86a39900875aa8447104ee025"
+          ".gnomon": "a558f75c29b7ae1902d14d8ee3bbc557e692c15d06db681da00566b4609b10d2"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (read whole page; nothing it says about .gnomon changed with ci.sh/verify.sh/skills edits)"
+        "by": "Claude (merge of the train into the gate fix: CURRENT_STAGE's package row states the import-origin and identity rules over the train's measured counts; TESTING_CICD's unit row lists both sides' tests; the rest merged cleanly and was re-read for gate-step claims)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -309,21 +309,21 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "bffc6b180e5103681330ca6bd4e9ff0b521423113c859380649f1b0f0e52af21",
-          "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
+          "backend/tests": "b542e299135fbc8c671668ba6e04537030c668d3e1296afbaeaae3fabd7f5329",
+          "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
-          "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
+          "frontend/playwright.config.ts": "c488a844dd07e837e2d22c4b661f4efd3becea08b2315052affe794a0cd78fa6",
           ".gnomon/ci.sh": "9bd34338c9fb7a397f25f383bee73cde526105c9217e6e1ee60bf0e8c0802956",
-          "scripts": "215ed8ac70bda47697806258a7cfb868fc7b9426b08dbe7ce918f86c76536c75",
+          "scripts": "e7f6200cc07b79f285380bed4e545ae53e19b998d82a6437ead0fffdac601571",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
-          "benchmarks": "2ea289c99ef957a2b22a4eed544e76c06e45eb8a2c844d384f9e05eb7f84d940",
-          "packages/causal-core/tests": "9e30e22184127ca42064721f006e1bce7ba65ee5c9f2cdb0aaa76cf34e401bf7",
-          "packages/causal-decision/tests": "346d0e453a82ef4838c61cfcf479452a253b94829e651827e44ffdb2a6cf7837"
+          "benchmarks": "29568520a660ee325cd3ba990a0e9ba6be64e73b9090aab26b5b4d076d85b951",
+          "packages/causal-core/tests": "9100d049011c0d40676f25535f0df4dba0cbd7039acc96e7e1c4b8eab1fbfa3d",
+          "packages/causal-decision/tests": "ba13e24dd22403ccd0773c06f1140b7db6d3e84f306c23cf5efa96be62c10ead"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (read whole page against ci.sh import-origin, package-row identity checks, doc_figures/test_benchmark_results provenance rules; step table, 3.1 and 3.2 updated)"
+        "by": "Claude (merge of the train into the gate fix: CURRENT_STAGE's package row states the import-origin and identity rules over the train's measured counts; TESTING_CICD's unit row lists both sides' tests; the rest merged cleanly and was re-read for gate-step claims)"
       }
     },
     "docs/UIX.md": {
@@ -352,14 +352,14 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "packages/causal-core/src/causal_core": "322872a7e4741d7858134a4f9807daf10b5836ecda1fbe045e08f281286828e4",
-          "conformance/declared_not_implemented.json": "a66317f55542f47c72959f2f2d51670b0bae328a6254417805f0caf4dd158fb4",
-          "docs/CURRENT_STAGE.md": "c8072f35203c373074ddee54e6138505d8d079f874d4a350abe7fff93600f8e5"
+          "packages/causal-core/src/causal_core": "fee739ab430ee5145e6e125ab755d0e3d2cb6c08bdc4b45c0f58857b21fb7686",
+          "conformance/declared_not_implemented.json": "03645e5288222fe6242ee5531df616d44d08a18b825cfeaa50ccd52c8cbfb57f",
+          "docs/CURRENT_STAGE.md": "44ec75b5bca3e2f4c2e86dd5caf31e26908a83411394a02185ffaa1efffbe0fd"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (read whole page; git_sha provenance change in causal_core.bench touches nothing it claims)"
+        "by": "Claude (merge of the train into the gate fix: CURRENT_STAGE's package row states the import-origin and identity rules over the train's measured counts; TESTING_CICD's unit row lists both sides' tests; the rest merged cleanly and was re-read for gate-step claims)"
       }
     },
     "SECURITY.md": {
