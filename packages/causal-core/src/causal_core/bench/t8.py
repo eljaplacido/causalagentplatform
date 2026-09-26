@@ -3,7 +3,9 @@ T8: the switchback designs gate. Bars from benchmarks/t8-switchback/PRE-REGISTRA
 
 One system, randomized hourly between arms, measured every minute: carryover after each
 switch, AR(1) noise, a daily cycle. Measured: bias and coverage of the steady-state effect
-with a declared washout, the carryover check's rejection rate (reported), and refusals.
+with a declared washout, the carryover check's false alarms where the washout covers the
+carryover and its power where it does not (v2), that a flag makes the result contested, and
+refusals.
 """
 
 from __future__ import annotations
@@ -24,7 +26,7 @@ from scipy.signal import lfilter
 
 import causal_core as cc
 from causal_core.bench.t0 import git_sha
-from causal_core.contract import AbstentionReason, AnalysisPolicy, CausalResult
+from causal_core.contract import AbstentionReason, AnalysisPolicy, CausalResult, ResultStatus
 
 GRAPH = "policy -> latency"
 
@@ -59,7 +61,9 @@ DESIGNS = {
     "null_effect": Design("null_effect", 0.0, 5.0, 0.8),
     "strong_autocorrelation": Design("strong_autocorrelation", 0.3, 5.0, 0.97),
     "long_carryover": Design("long_carryover", 0.3, 30.0, 0.8),
+    "material_carryover": Design("material_carryover", 1.5, 30.0, 0.8),
 }
+CHECK = "no carryover beyond the washout"
 
 
 def simulate(d: Design, cfg: Mapping[str, Any], rng: np.random.Generator,
@@ -107,6 +111,8 @@ class DesignReport:
     bias_in_mcse: float
     coverage: float
     carryover_flag_rate: float
+    contested_rate: float = 0.0
+    status_mismatches: int = 0
     first_failure: str = ""
 
 
@@ -115,7 +121,7 @@ def run_design(d: Design, cfg: Mapping[str, Any], reps: int | None = None) -> De
     n_reps = reps or st["reps"]
     rng = _rng(st["seed"], d.id)
     errors: list[float] = []
-    covered = flagged = 0
+    covered = flagged = contested = mismatched = 0
     first_failure = ""
     for _ in range(n_reps):
         out = analyse(simulate(d, cfg, rng), cfg)
@@ -125,8 +131,11 @@ def run_design(d: Design, cfg: Mapping[str, Any], reps: int | None = None) -> De
         errors.append(out.primary.point - d.tau)
         ci = out.primary.ci
         covered += bool(ci and ci.lo <= d.tau <= ci.hi)
-        flagged += any(c.name == "no carryover beyond the washout" and not c.passed
-                       for c in out.diagnostics.checks)
+        flag = any(c.name == CHECK and not c.passed for c in out.diagnostics.checks)
+        is_contested = out.status is ResultStatus.contested
+        flagged += flag
+        contested += is_contested
+        mismatched += flag != is_contested
     k = len(errors)
     mean = float(np.mean(errors)) if k else float("nan")
     mcse = float(np.std(errors, ddof=1) / np.sqrt(k)) if k > 1 else float("nan")
@@ -135,20 +144,35 @@ def run_design(d: Design, cfg: Mapping[str, Any], reps: int | None = None) -> De
         bias_in_mcse=abs(mean) / mcse if mcse and mcse > 0 else float("inf"),
         coverage=covered / k if k else 0.0,
         carryover_flag_rate=flagged / k if k else 0.0,
+        contested_rate=contested / k if k else 0.0,
+        status_mismatches=mismatched,
         first_failure=first_failure,
     )
 
 
 def check_estimation(cfg: Mapping[str, Any], reps: int | None = None,
                      only: tuple[str, ...] | None = None) -> tuple[list[DesignReport], list[str]]:
-    est = cfg["estimation"]
-    names = list(only or [*est["designs"], "long_carryover"])
+    est, co = cfg["estimation"], cfg["carryover"]
+    names = list(only or dict.fromkeys([*est["designs"], *co["reported"],
+                                        *co["power_designs"]]))
     reports = [run_design(DESIGNS[n], cfg, reps) for n in names]
     failures: list[str] = []
     lo, hi = est["coverage_band"]
+    if AnalysisPolicy().carryover_alpha != co["alpha"]:
+        failures.append(f"carryover_alpha {AnalysisPolicy().carryover_alpha} is not the "
+                        f"registered {co['alpha']}")
     for r in reports:
+        if r.status_mismatches:
+            failures.append(f"{r.id}: status: {r.status_mismatches} replications where a failed "
+                            f"carryover check and a {co['flagged_status']} status disagree")
+        if r.id in co["false_alarm_designs"] and r.carryover_flag_rate > co["false_alarm_max"]:
+            failures.append(f"{r.id}: carryover false alarms {r.carryover_flag_rate:.3f} > "
+                            f"{co['false_alarm_max']}")
+        if r.id in co["power_designs"] and r.carryover_flag_rate < co["power_min"]:
+            failures.append(f"{r.id}: carryover power {r.carryover_flag_rate:.3f} < "
+                            f"{co['power_min']}")
         if r.id not in est["designs"]:
-            continue  # reported, not gated
+            continue  # estimation reported, not gated
         if r.results < r.reps:
             failures.append(f"{r.id}: {r.reps - r.results} replications produced no result "
                             f"({r.first_failure})")
@@ -200,6 +224,9 @@ def check_refusals(cfg: Mapping[str, Any]) -> tuple[dict[str, str], list[str]]:
 CATCHER: dict[str, tuple[str, str]] = {
     "no_washout": ("carryover", ": bias"),
     "minute_level_se": ("instant", ": coverage"),
+    "carryover_check_blind": ("material_carryover", ": carryover power"),
+    "check_includes_washout": ("carryover", ": carryover false alarms"),
+    "flag_not_gating": ("material_carryover", ": status"),
 }
 
 
