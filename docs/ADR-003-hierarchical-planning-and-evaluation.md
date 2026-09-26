@@ -88,6 +88,12 @@ As implemented in `backend/src/orchestration/planning.py`:
 - Planning failures escalate to human review. The node sets `requires_human_review` and the
   flag `no_safe_action_found`, and the router sends the session to `escalate_human`, skipping
   the Guardian. The Cynefin domain is not changed to CHAOTIC
+- The Guardian's side of that contract is rule PR-010 (`src/agents/governance.py`): a check
+  whose payload carries `plan_outcome: "no_safe_action"` is `REQUIRES_ESCALATION`, never
+  APPROVED. It reads the payload of the check, not the state's `no_safe_action_found` flag,
+  which a resumed session carries from earlier runs. It bites when the GuardianCheck node
+  forwards the plan's outcome; while the router sends such a run past the Guardian, nothing
+  sends it
 - Effect estimation from the approved fragment: attempted, always refused for lack of data (see
   SimulateAhead). One consequence: under an APPROVED fragment every confidence is halved, so
   an action needs confidence of at least 0.8 to be committed, while without a fragment it needs

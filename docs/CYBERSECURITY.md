@@ -71,7 +71,13 @@ An adversary injects false or misleading causal edges or evidence into the graph
   edge is REJECTED unless an assumption the edge references, not rejected in review, carries a
   stored `SensitivityResult`, read from the database rather than the request
   (`backend/tests/guardian/test_pr007_sensitivity_gate.py`). A result that is not robust still
-  counts; the reviewer sees it.
+  counts; the reviewer sees it. The platform records one on a draft edge when it runs the
+  kernel on the edge's question (`POST /api/semantic/edges/{edge_id}/sensitivity`, and
+  SimulationAgent given data): a new IGNORABILITY assumption carrying the kernel's E-value (and
+  a Rosenbaum gamma* where the kernel reports one), written only under a Guardian verdict for
+  `RECORD_SENSITIVITY` on that edge, never onto an approved edge or an existing assumption
+  (`backend/tests/guardian/test_edge_sensitivity_recorded.py`). A drafter can still attach a
+  result of their own to an assumption they draft.
 
 #### Prompt Injection (LLM Plane)
 Crafted user input or external data attempts to override agent instructions or exfiltrate EpistemicState contents.
@@ -199,7 +205,7 @@ granted role gets 403, a token holding a granted role does not.
 | Route | Roles |
 |---|---|
 | `GET /api/semantic/entities[/{id}]`, `/fragments[/{id}]`, `/edges/{id}[/audit-trail]` | any platform role; a `viewer` reads APPROVED objects only; bounded by domain scope (§4.2) |
-| `POST /api/semantic/drafts` | `analyst`, `graph_author`, `platform_engineer`, `agent` (`DRAFT_ROLES`); only into the user's domains |
+| `POST /api/semantic/drafts`, `POST /api/semantic/edges/{id}/sensitivity` | `analyst`, `graph_author`, `platform_engineer`, `agent` (`DRAFT_ROLES`); only into the user's domains |
 | `POST /api/governance/check` | `graph_author`, `governance_officer`, `platform_engineer`, `agent` |
 | `POST /api/governance/approve/{id}`, `/reject/{id}`, `GET /review-queue`, `GET /audit-log` | `governance_officer`, `platform_engineer` (`GOVERNANCE_ROLES`); approve, reject and the queue bounded by domain scope |
 | `POST /api/v1/models/{name}/reviews` | `GOVERNANCE_ROLES`; a reviewer is also refused on edges they introduced |
@@ -357,7 +363,7 @@ assessment, and the Status column says how much of each control exists.
 
 | EU AI Act Requirement | Platform Control | Status |
 |---|---|---|
-| Art. 9 – Risk management system | GovernanceAgent + Guardian policy engine | Partial: rules PR-001 to PR-008 evaluate (PR-007 on edge approvals); PR-009 reads caller-supplied inputs; PR-002's score is computed from the prose checked |
+| Art. 9 – Risk management system | GovernanceAgent + Guardian policy engine | Partial: rules PR-001 to PR-008 and PR-010 evaluate (PR-007 on edge approvals, PR-010 on a plan with no safe action); PR-009 reads caller-supplied inputs; PR-002's score is computed from the prose checked |
 | Art. 10 – Data governance | Semantic layer lineage, PII pseudonymization | Partial lineage (`lineage-partial`); no pseudonymization (`gdpr-controls`) |
 | Art. 11 – Technical documentation | DATA_LAYER.md, AGENTS.md, assumption registries | Documents exist; the register lists where they overclaim |
 | Art. 13 – Transparency | explanation_generate skill, assumption disclosure in outputs | Partial |

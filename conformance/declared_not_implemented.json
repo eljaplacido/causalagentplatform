@@ -36,11 +36,11 @@
       "capability": "Counterfactual reasoning over a structural causal model",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:273",
+          "at": "docs/AGENTS.md:276",
           "says": "Structural causal model (SCM), observation, query (intervention or counterfactual)"
         },
         {
-          "at": "docs/AGENTS.md:274",
+          "at": "docs/AGENTS.md:277",
           "says": "Estimated counterfactual distribution"
         },
         {
@@ -94,11 +94,11 @@
       "capability": "Sensitivity to unmeasured confounding (E-values, Rosenbaum bounds)",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:375",
+          "at": "docs/AGENTS.md:378",
           "says": "Computes Rosenbaum sensitivity bounds and E-values for unmeasured confounders"
         },
         {
-          "at": "docs/CYBERSECURITY.md:412",
+          "at": "docs/CYBERSECURITY.md:418",
           "says": "- Rosenbaum sensitivity bounds"
         },
         {
@@ -129,11 +129,11 @@
           "says": "DoWhy / EconML for statistical estimation"
         },
         {
-          "at": "docs/AGENTS.md:361",
+          "at": "docs/AGENTS.md:364",
           "says": "(DoWhy, PyMC)"
         },
         {
-          "at": "docs/AGENTS.md:666",
+          "at": "docs/AGENTS.md:669",
           "says": "DoWhy, EconML, statsmodels"
         },
         {
@@ -164,11 +164,11 @@
           "says": "`cynepic-causal` crate (Rust) for DAG operations"
         },
         {
-          "at": "docs/AGENTS.md:158",
+          "at": "docs/AGENTS.md:161",
           "says": "cynepic-bayes Bayesian belief tracking"
         },
         {
-          "at": "docs/AGENTS.md:266",
+          "at": "docs/AGENTS.md:269",
           "says": "`cynepic-causal` Rust crate"
         }
       ],
@@ -195,11 +195,11 @@
           "says": "Provider-agnostic LLM"
         },
         {
-          "at": "docs/AGENTS.md:616",
+          "at": "docs/AGENTS.md:619",
           "says": "the LLM factory resolves capability \u2192 provider at runtime"
         },
         {
-          "at": "docs/AGENTS.md:626",
+          "at": "docs/AGENTS.md:629",
           "says": "Routing is handled by `src/agents/llm_factory.py`"
         },
         {
@@ -311,7 +311,7 @@
       "reality": "The semantic layer (fragments, edges) is stored through SQLAlchemy (SQLite/PostgreSQL); Neo4j code exists only for the experience buffer and drift alerts, is exercised only against mocks, and no d-separation or path query runs in Neo4j.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:624",
+          "at": "backend/src/semantic_layer/registry.py:665",
           "says": "FROM graph_fragments"
         }
       ],
@@ -335,7 +335,7 @@
           "says": "3.3 Kafka (Event Streaming)"
         },
         {
-          "at": "docs/AGENTS.md:134",
+          "at": "docs/AGENTS.md:137",
           "says": "Alert emission via Kafka ready for integration"
         },
         {
@@ -521,11 +521,11 @@
       "capability": "Agent evaluation endpoints (consistency, calibration, decision quality) measure the running platform",
       "claimed_in": [
         {
-          "at": "backend/src/api/platform.py:752",
+          "at": "backend/src/api/platform.py:756",
           "says": "    summary=\"Agent confidence calibration probe\","
         },
         {
-          "at": "backend/src/api/platform.py:794",
+          "at": "backend/src/api/platform.py:798",
           "says": "    summary=\"Composite decision quality index\","
         },
         {
@@ -544,7 +544,7 @@
       "reality": "None of the three observes an agent. /evaluation/consistency scores num_runs identical EMPTY recommendation lists against each other, so the variance it reports is 0 by construction whatever the platform is doing. /evaluation/calibration scores the confidences in the request body, and CalibrationProbe states it uses their variance as a proxy because there is no ground truth -- calibration needs realized outcomes, and nothing records one. /evaluation/decision-quality combines four numbers taken as query parameters, defaulting to 0.75/0.05/0.80/0.70, so its 'index' is whatever the caller passes. The module docstring claimed 'No static or mock values' until 2026-09-24; it now names these three as excluded.",
       "evidence": [
         {
-          "at": "backend/src/api/platform.py:732",
+          "at": "backend/src/api/platform.py:736",
           "says": "    mock_recommendations: list[list[Any]] = [[] for _ in range(num_runs)]"
         },
         {
@@ -552,7 +552,7 @@
           "says": "        - Variance of confidence scores as a proxy for calibration"
         },
         {
-          "at": "backend/src/api/platform.py:800",
+          "at": "backend/src/api/platform.py:804",
           "says": "    calibration_score: float = Query(default=0.70, ge=0.0, le=1.0),"
         }
       ],
@@ -568,7 +568,7 @@
       "capability": "EvidenceGroundingAgent and DomainExpertElicitationAgent produce the outputs AGENTS.md specifies",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:182",
+          "at": "docs/AGENTS.md:185",
           "says": "- Evidence citations with relevance scores"
         },
         {
@@ -626,7 +626,7 @@
       "capability": "Agents render their prompts from the versioned templates in prompts/",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:610",
+          "at": "docs/AGENTS.md:613",
           "says": "Prompt templates are versioned in `prompts/` alongside their schema contracts. No agent uses ad-hoc prompts at runtime."
         }
       ],
@@ -665,15 +665,19 @@
           "says": "Version increments on any field change"
         }
       ],
-      "reality": "Approval and rejection UPDATE the object's own row: promote_to_approved rewrites approval_status, approved_at, approved_by, guardian_verdict_ref and lineage, and reject_draft rewrites approval_status (to DEPRECATED) and lineage. The version column keeps its 1.0.0 default, because no code path increments it and no new row is written for a new version. The previous state survives only as lineage entries and audit_log rows. The interventions feedback endpoint likewise UPDATEs interventions in place.",
+      "reality": "Approval and rejection UPDATE the object's own row: promote_to_approved rewrites approval_status, approved_at, approved_by, guardian_verdict_ref and lineage, and reject_draft rewrites approval_status (to DEPRECATED) and lineage, and record_edge_sensitivity (septa-62) rewrites a draft edge's assumption_refs and lineage to add the assumption carrying the kernel's sensitivity result. The version column keeps its 1.0.0 default, because no code path increments it and no new row is written for a new version. The previous state survives only as lineage entries and audit_log rows. The interventions feedback endpoint likewise UPDATEs interventions in place.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:991",
+          "at": "backend/src/semantic_layer/registry.py:998",
           "says": "\"status\": \"APPROVED\","
         },
         {
-          "at": "backend/src/semantic_layer/registry.py:1071",
+          "at": "backend/src/semantic_layer/registry.py:1078",
           "says": ".values(approval_status=bindparam(\"status\"), lineage=bindparam(\"lineage\")),"
+        },
+        {
+          "at": "backend/src/semantic_layer/registry.py:1198",
+          "says": "assumption_refs=bindparam(\"refs\", type_=UUID_ARRAY),"
         }
       ],
       "leaves_by": {
@@ -692,7 +696,7 @@
           "says": "3. All approved objects carry lineage."
         },
         {
-          "at": "backend/src/api/semantic.py:369",
+          "at": "backend/src/api/semantic.py:378",
           "says": "This satisfies EU AI Act Art. 13 lineage"
         },
         {
@@ -700,10 +704,10 @@
           "says": "This satisfies EU AI Act Article 13 transparency requirements"
         }
       ],
-      "reality": "Approval and rejection each append one step (APPROVED or REJECTED: actor, time, verdict id), and an edge keeps whatever lineage list its submitter sent. Nothing records the data source, the transformation steps or the policy rules into lineage, and no platform code constructs a LineageRecord. An entity's submitted lineage is not stored (the INSERT omits the column). Fragments had no lineage column at all until 006_graph_fragment_lineage.sql, so approving or rejecting one failed outright. The Guardian verdict, its cited rules, and the evidence and assumption ids are linked by reference, so the chain can be partly rebuilt by joins. Nothing shows that this satisfies EU AI Act Art. 13.",
+      "reality": "Approval and rejection each append one step (APPROVED or REJECTED: actor, time, verdict id), recording a sensitivity result appends a MODIFIED step naming the new assumption and the verdict, and an edge keeps whatever lineage list its submitter sent. Nothing records the data source, the transformation steps or the policy rules into lineage, and no platform code constructs a LineageRecord. An entity's submitted lineage is not stored (the INSERT omits the column). Fragments had no lineage column at all until 006_graph_fragment_lineage.sql, so approving or rejecting one failed outright. The Guardian verdict, its cited rules, and the evidence and assumption ids are linked by reference, so the chain can be partly rebuilt by joins. Nothing shows that this satisfies EU AI Act Art. 13.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:959",
+          "at": "backend/src/semantic_layer/registry.py:966",
           "says": "select(t.c.lineage, t.c.approval_status, t.c.domain).where("
         },
         {
@@ -723,7 +727,7 @@
       "capability": "Continuous distribution, causal, semantic and concept drift monitoring",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:134",
+          "at": "docs/AGENTS.md:137",
           "says": "Production-ready with multi-type drift detection (distribution, causal, semantic, concept)"
         },
         {
@@ -793,7 +797,7 @@
       "capability": "Runtime data contracts: freshness, schema and semantic checks before agents consume data (Guardian PR-009)",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:413",
+          "at": "docs/AGENTS.md:416",
           "says": "Validates a data contract at runtime before agent data consumption, enforcing freshness SLAs, schema compliance, and semantic alignment."
         },
         {
@@ -808,11 +812,11 @@
       "reality": "contracts.py defines the contract, SLA and violation models and a ContractRegistry that can register, look up and remove contracts. Nothing evaluates a contract, nothing produces a ContractViolation, and only the tests instantiate the registry. PR-009 fires only when a caller sends action_type DATA_ACCESS_WITH_CONTRACT, which no code path does, and it reads the violation list from that caller's own payload. So a caller that reports no violations is never blocked.",
       "evidence": [
         {
-          "at": "backend/src/agents/governance.py:517",
+          "at": "backend/src/agents/governance.py:541",
           "says": "if action_type == \"DATA_ACCESS_WITH_CONTRACT\":"
         },
         {
-          "at": "backend/src/agents/governance.py:518",
+          "at": "backend/src/agents/governance.py:542",
           "says": "contract_violations = payload.get(\"contract_violations\", [])"
         },
         {
@@ -836,7 +840,7 @@
           "says": "1. SimulateAhead   \u2014 Forward-simulate action consequences using the approved SCM"
         },
         {
-          "at": "docs/AGENTS.md:543",
+          "at": "docs/AGENTS.md:546",
           "says": "SimulateAhead (SCM lookahead)"
         },
         {
@@ -995,11 +999,11 @@
           "says": "Agents self-classify the domain complexity of a query before selecting a reasoning strategy."
         },
         {
-          "at": "docs/AGENTS.md:209",
+          "at": "docs/AGENTS.md:212",
           "says": "Cynefin domain classification with confidence"
         },
         {
-          "at": "docs/AGENTS.md:559",
+          "at": "docs/AGENTS.md:562",
           "says": "Domain confidence > 0.7"
         },
         {
@@ -1044,7 +1048,7 @@
       "capability": "Dynamic application security testing (DAST): a scanner such as OWASP ZAP run against a running API, weekly",
       "claimed_in": [
         {
-          "at": "docs/CYBERSECURITY.md:597",
+          "at": "docs/CYBERSECURITY.md:603",
           "says": "DAST: OWASP ZAP against a staging API (weekly). Not built: there is no staging"
         }
       ],
@@ -1243,7 +1247,7 @@
       "was": "PR-007 is in the Guardian's rule table and nowhere in its evaluation: no check reads a sensitivity result, so an edge is approved whether or not any sensitivity analysis was run, and PR-007 is never cited on a verdict. The rules that are evaluated are PR-001 to PR-006, PR-008, and PR-009 (on one action type).",
       "fixed_in": "4d68ac5",
       "pinned_by": "backend/tests/guardian/test_pr007_sensitivity_gate.py",
-      "note": "Implemented for approvals. A /check for GOVERNANCE_APPROVE whose subject is a stored edge reads the edge's sensitivity results from the database (src/agents/governance.py edge_sensitivity) and is REJECTED citing PR-007 when there are none; evaluated after PR-001, before PR-004, and an unreadable edge fails closed. What counts as an edge's sensitivity result: CausalEdge has no field of its own, so it is a valid SensitivityResult (E-value / Rosenbaum) stored on an assumption the edge names in assumption_refs, that assumption not REJECTED in review; the checked payload cannot supply one. The write path it needs was broken too: propose_draft dropped an assumption's sensitivity_result, and the reads did not decode it; both fixed. Pinned with results from causal_core.analyze on simulated data. Limits: PR-007 asks for a result, not a robust one -- a result that says not robust still counts, and the reviewer sees it (the CYBERSECURITY.md claim, since withdrawn, said 'pass'); proposing an edge (the process() path's proposed_edges) is not approving it and is not judged; nothing in the platform yet records the kernel's sensitivity output on an assumption automatically -- a result arrives with the assumption's draft."
+      "note": "Implemented for approvals. A /check for GOVERNANCE_APPROVE whose subject is a stored edge reads the edge's sensitivity results from the database (src/agents/governance.py edge_sensitivity) and is REJECTED citing PR-007 when there are none; evaluated after PR-001, before PR-004, and an unreadable edge fails closed. What counts as an edge's sensitivity result: CausalEdge has no field of its own, so it is a valid SensitivityResult (E-value / Rosenbaum) stored on an assumption the edge names in assumption_refs, that assumption not REJECTED in review; the checked payload cannot supply one. The write path it needs was broken too: propose_draft dropped an assumption's sensitivity_result, and the reads did not decode it; both fixed. Pinned with results from causal_core.analyze on simulated data. Limits: PR-007 asks for a result, not a robust one -- a result that says not robust still counts, and the reviewer sees it (the CYBERSECURITY.md claim, since withdrawn, said 'pass'); proposing an edge (the process() path's proposed_edges) is not approving it and is not judged; until septa-62 nothing in the platform recorded the kernel's sensitivity output on an assumption -- a result arrived only with the assumption's draft; since then POST /api/semantic/edges/{edge_id}/sensitivity and SimulationAgent record it, through a Guardian verdict for RECORD_SENSITIVITY, as a new IGNORABILITY assumption on the draft edge (backend/tests/guardian/test_edge_sensitivity_recorded.py)."
     },
     {
       "id": "review-queue-risk-tier",
