@@ -81,22 +81,34 @@ jobs:
           path: ~/.cache/causal-core
           key: causal-core-data-${{ hashFiles('benchmarks/t2-ihdp/PRE-REGISTRATION.md', 'benchmarks/t3-lalonde/PRE-REGISTRATION.md') }}
 
+      # Both environments install from a hash-pinned lock (requirements/*.txt, made by
+      # `python3 scripts/py_lock.py relock`), in two steps. The first is the only one that
+      # fetches: every distribution pinned, every file checked against its sha256, and
+      # --no-deps so nothing outside the lock is resolved (pip itself is in the lock and
+      # upgrades itself here). The second installs this checkout's own packages, which
+      # are not on an index and so not in the lock: --no-deps again, so they pull in
+      # nothing, and --no-build-isolation, so they build with the hatchling the lock just
+      # installed instead of fetching an unhashed one. `pip check` proves the pair whole;
+      # the gate's python-lock step then requires the environment to equal the lock.
       - name: Backend environment (backend/.venv)
         run: |
           python -m venv backend/.venv
-          # pip first: the gate's pip-audit audits this environment, pip included.
-          backend/.venv/bin/python -m pip install -q --upgrade pip
-          backend/.venv/bin/pip install -q -e packages/causal-core \
-            -e packages/causal-decision -e "backend[dev]"
+          backend/.venv/bin/python -m pip install -q --require-hashes --no-deps \
+            -r requirements/backend.txt
+          backend/.venv/bin/python -m pip install -q --no-deps --no-build-isolation \
+            -e packages/causal-core -e packages/causal-decision -e "backend[dev]"
+          backend/.venv/bin/python -m pip check
 
       - name: Kernel environment (packages/causal-core/.venv)
         run: |
           python -m venv packages/causal-core/.venv
-          packages/causal-core/.venv/bin/python -m pip install -q --upgrade pip
-          packages/causal-core/.venv/bin/pip install -q \
+          packages/causal-core/.venv/bin/python -m pip install -q --require-hashes --no-deps \
+            -r requirements/kernel.txt
+          packages/causal-core/.venv/bin/python -m pip install -q --no-deps --no-build-isolation \
             -e "packages/causal-core[dev,crosscheck,ml]" \
             -e "packages/causal-decision[dev]" \
-            -e "packages/causal-mcp[dev,http,decision]" httpx
+            -e "packages/causal-mcp[dev,http,decision]"
+          packages/causal-core/.venv/bin/python -m pip check
 
       - name: Frontend dependencies
         run: npm ci
@@ -135,3 +147,62 @@ jobs:
         with:
           name: ci-gate-log
           path: ci-gate.log
+
+  # The container images, in their own job so the gate job above stays one command.
+  # Each image is built from its Dockerfile (from the repository root, as both
+  # Dockerfiles require) and scanned by Trivy at a pinned version, by digest: Trivy's
+  # own release channel was compromised once (March 2026), so neither a moving tag nor
+  # a setup action is trusted here. scripts/image_scan.py judges the report: a HIGH or
+  # CRITICAL finding with a published fix fails the job unless
+  # scripts/image-scan-allowlist.json excuses it with a reason and a review_by date; a
+  # finding with no fix published is listed, not failed. The job also keeps a
+  # CycloneDX SBOM of each image as an artifact. On the weekly schedule too, so a fix
+  # published since the last push surfaces without one.
+  images:
+    name: image ${{ matrix.image }} (build + Trivy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [backend, frontend]
+    env:
+      TRIVY_IMAGE: aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build ${{ matrix.image }}/Dockerfile
+        run: docker build -f "${{ matrix.image }}/Dockerfile" -t "causal-platform-${{ matrix.image }}:ci" .
+
+      - name: Cache the vulnerability database
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/trivy
+          key: trivy-db-${{ github.run_id }}
+          restore-keys: trivy-db-
+
+      - name: Scan (Trivy, HIGH and CRITICAL)
+        run: |
+          mkdir -p "$HOME/.cache/trivy" scan
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$HOME/.cache/trivy:/root/.cache/trivy" -v "$PWD/scan:/out" "$TRIVY_IMAGE" \
+            image --scanners vuln --severity HIGH,CRITICAL --list-all-pkgs --format json \
+            --output "/out/trivy-${{ matrix.image }}.json" "causal-platform-${{ matrix.image }}:ci"
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$HOME/.cache/trivy:/root/.cache/trivy" -v "$PWD/scan:/out" "$TRIVY_IMAGE" \
+            image --skip-db-update --format cyclonedx \
+            --output "/out/sbom-${{ matrix.image }}.cdx.json" "causal-platform-${{ matrix.image }}:ci"
+
+      - name: Judge the report against the reviewed allowlist
+        run: python3 scripts/image_scan.py "scan/trivy-${{ matrix.image }}.json" --image "${{ matrix.image }}"
+
+      - name: Keep the report and the image SBOM
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-${{ matrix.image }}
+          path: scan/

@@ -3,10 +3,14 @@
 
 Two audits, one rule:
 
+  scripts/dep_audit.py pip --pip-audit BIN --requirement requirements/backend.txt --label backend
+      pip-audit over a hash-pinned lock (scripts/py_lock.py), the pins whose markers
+      hold here: exactly what CI installs, and what the gate's python-lock step
+      requires the tested environment to equal. What .gnomon/ci.sh runs.
   scripts/dep_audit.py pip --pip-audit BIN --python PY --label backend
-      pip-audit over the environment PY runs in (its site-packages), which is the
-      environment the gate is testing -- not a fresh resolution of the ranges in
-      pyproject.toml, which would audit something no step runs.
+      pip-audit over the environment PY runs in (its site-packages) -- for an
+      environment no lock describes. Not a fresh resolution of the ranges in
+      pyproject.toml, either way, which would audit something no step runs.
   scripts/dep_audit.py npm
       npm audit over package-lock.json at the repository root (every workspace).
 
@@ -100,14 +104,22 @@ def _network_or_crash(tool: str, proc: subprocess.CompletedProcess[str]) -> Exce
     return DidNotReport(f"{tool} exited {proc.returncode} without a report: {tail[:300]}")
 
 
-def audit_pip(pip_audit: str, python: str) -> Audit:
+def audit_pip(pip_audit: str, python: str = "", requirement: str = "") -> Audit:
     if not Path(pip_audit).is_file():
         raise NotMeasured(f"pip-audit is not installed at {pip_audit}")
-    where = _run([python, "-c", "import sysconfig; print(sysconfig.get_paths()['purelib'])"], ROOT)
-    site = where.stdout.strip()
-    if where.returncode != 0 or not Path(site).is_dir():
-        raise DidNotReport(f"cannot locate site-packages for {python}: {where.stderr.strip()[:200]}")
-    proc = _run([pip_audit, "--path", site, "-f", "json", "--progress-spinner", "off"], ROOT)
+    if requirement:
+        if not Path(requirement).is_file():
+            raise DidNotReport(f"the lock {requirement} is absent")
+        requirement = str(Path(requirement).resolve())
+        # --disable-pip: read the pins as written (every one hashed), resolve nothing.
+        target = ["-r", requirement, "--require-hashes", "--disable-pip"]
+    else:
+        where = _run([python, "-c", "import sysconfig; print(sysconfig.get_paths()['purelib'])"], ROOT)
+        site = where.stdout.strip()
+        if where.returncode != 0 or not Path(site).is_dir():
+            raise DidNotReport(f"cannot locate site-packages for {python}: {where.stderr.strip()[:200]}")
+        target = ["--path", site]
+    proc = _run([pip_audit, *target, "-f", "json", "--progress-spinner", "off"], ROOT)
     try:
         report = json.loads(proc.stdout)
         deps = report["dependencies"]
@@ -248,7 +260,9 @@ def main() -> int:
     sub = ap.add_subparsers(dest="ecosystem", required=True)
     pip = sub.add_parser("pip", help="pip-audit over a Python environment")
     pip.add_argument("--pip-audit", required=True, help="path to the pip-audit executable")
-    pip.add_argument("--python", required=True, help="the python whose environment is audited")
+    what = pip.add_mutually_exclusive_group(required=True)
+    what.add_argument("--requirement", help="a hash-pinned lock to audit (requirements/*.txt)")
+    what.add_argument("--python", help="the python whose environment is audited")
     pip.add_argument("--label", default="python", help="a name for the environment, for the summary")
     sub.add_parser("npm", help="npm audit over package-lock.json")
     ap.add_argument("--today", default="", help=argparse.SUPPRESS)  # tests pin the date
@@ -258,7 +272,7 @@ def main() -> int:
 
     try:
         if args.ecosystem == "pip":
-            audit = audit_pip(args.pip_audit, args.python)
+            audit = audit_pip(args.pip_audit, args.python or "", args.requirement or "")
             return judge(f"pip-audit ({args.label})", "pypi", audit, today, Path(args.allowlist))
         audit = audit_npm()
         return judge("npm audit", "npm", audit, today, Path(args.allowlist))

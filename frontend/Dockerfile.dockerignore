@@ -1,0 +1,15 @@
+# Used instead of the root .dockerignore when building frontend/Dockerfile (BuildKit
+# reads <Dockerfile>.dockerignore). The build needs the root package manifests,
+# packages/semantic-types and frontend/; nothing else is sent.
+*
+!package.json
+!package-lock.json
+!packages/semantic-types
+!frontend
+**/node_modules
+**/.next
+**/dist
+**/.env
+**/.env.*
+frontend/e2e
+frontend/Dockerfile*

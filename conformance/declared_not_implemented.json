@@ -79,7 +79,7 @@
         },
         {
           "at": "backend/src/agents/causal_discovery.py:394",
-          "says": "stub — real data required"
+          "says": "stub \u2014 real data required"
         }
       ],
       "leaves_by": {
@@ -196,7 +196,7 @@
         },
         {
           "at": "docs/AGENTS.md:616",
-          "says": "the LLM factory resolves capability → provider at runtime"
+          "says": "the LLM factory resolves capability \u2192 provider at runtime"
         },
         {
           "at": "docs/AGENTS.md:626",
@@ -639,7 +639,7 @@
       "claimed_in": [
         {
           "at": "docs/ROADMAP.md:12",
-          "says": "> target outcome — and is that evidence strong enough to act on without asking a human?"
+          "says": "> target outcome \u2014 and is that evidence strong enough to act on without asking a human?"
         }
       ],
       "reality": "The machinery is built and pinned: every decision seals a follow-up plan carrying the prediction it used, POST /api/v1/decisions/{entry_digest}/followup re-runs that plan's own analysis over a later window, and GET /api/v1/decisions/calibration aggregates. What does not exist is the evidence: no follow-up has been taken on any real operation, so every rate in the report is null. That is the honest state and the report says so rather than reading as a perfect score. This entry leaves the list when a body of follow-ups exists and the thresholds have been moved by what it showed -- which is operational history, not code.",
@@ -685,7 +685,7 @@
       "claimed_in": [
         {
           "at": "backend/src/semantic_layer/registry.py:6",
-          "says": "2. All objects are versioned — no in-place mutation; deprecate and replace."
+          "says": "2. All objects are versioned \u2014 no in-place mutation; deprecate and replace."
         },
         {
           "at": "docs/DATA_LAYER.md@13e7d92:242",
@@ -693,7 +693,7 @@
         },
         {
           "at": "docs/ADR-001-canonical-semantic-layer.md@13e7d92:71",
-          "says": "All objects are versioned — no in-place mutation (Rule #2)"
+          "says": "All objects are versioned \u2014 no in-place mutation (Rule #2)"
         },
         {
           "at": "docs/ADR-001-canonical-semantic-layer.md@13e7d92:91",
@@ -868,7 +868,7 @@
       "claimed_in": [
         {
           "at": "backend/src/orchestration/planning.py:7",
-          "says": "1. SimulateAhead   — Forward-simulate action consequences using the approved SCM"
+          "says": "1. SimulateAhead   \u2014 Forward-simulate action consequences using the approved SCM"
         },
         {
           "at": "docs/AGENTS.md:543",
@@ -928,45 +928,6 @@
       }
     },
     {
-      "id": "supply-chain-scanning-not-in-ci",
-      "status": "declared-not-implemented",
-      "capability": "Supply-chain controls beyond the dependency audit: a container image scan (Trivy) as a CI gate, an SBOM for every release, DAST against a running API, hash-pinned Python dependencies, automated dependency-update PRs",
-      "claimed_in": [
-        {
-          "at": "docs/CYBERSECURITY.md@13e7d92:254",
-          "says": "SBOM generated for every release (Syft / Grype)"
-        },
-        {
-          "at": "docs/CYBERSECURITY.md@13e7d92:255",
-          "says": "Trivy vulnerability scan as CI gate (block on HIGH/CRITICAL)"
-        },
-        {
-          "at": "docs/CYBERSECURITY.md@13e7d92:262",
-          "says": "Pinned dependencies with hash verification"
-        },
-        {
-          "at": "SECURITY.md@13e7d92:64",
-          "says": "dependabot or equivalent"
-        }
-      ],
-      "reality": "The gate now runs bandit, a secret scan, pip-audit and npm audit (security-scanning-not-in-ci left the list), but no workflow builds the Docker images, so no image is scanned; release.yml attaches no SBOM; nothing runs DAST; Python dependencies install from the ranges in pyproject.toml with no lockfile or hashes (npm is pinned, with integrity hashes, by package-lock.json); and there is no dependabot configuration. The weekly scheduled run of the gate surfaces a newly published advisory, but opens no update PR.",
-      "evidence": [
-        {
-          "at": "backend/pyproject.toml:19",
-          "says": "\"fastapi>=0.115,<0.142\","
-        },
-        {
-          "at": ".github/workflows/ci.yml:89",
-          "says": "backend/.venv/bin/pip install -q -e packages/causal-core \\"
-        }
-      ],
-      "leaves_by": {
-        "kind": "ci-run",
-        "path": ".github/workflows/ci.yml",
-        "asserts": "a step builds the backend and frontend images and scans them, failing on HIGH/CRITICAL findings not in a reviewed allowlist; release.yml attaches an SBOM to every release; the Python environments CI tests install from a hash-pinned lock. DAST and update PRs leave by being built or by the claims being retracted"
-      }
-    },
-    {
       "id": "gdpr-controls",
       "status": "declared-not-implemented",
       "capability": "Privacy controls: PII pseudonymization at ingestion, logical erasure, portable export",
@@ -977,11 +938,11 @@
         },
         {
           "at": "docs/CYBERSECURITY.md@13e7d92:181",
-          "says": "| Art. 17 – Right to erasure | Pseudonymization + key deletion (logical erasure) |"
+          "says": "| Art. 17 \u2013 Right to erasure | Pseudonymization + key deletion (logical erasure) |"
         },
         {
           "at": "docs/CYBERSECURITY.md@13e7d92:182",
-          "says": "| Art. 20 – Data portability | Semantic layer export (JSON-LD format) |"
+          "says": "| Art. 20 \u2013 Data portability | Semantic layer export (JSON-LD format) |"
         }
       ],
       "reality": "No code pseudonymizes, tokenizes or strips any field, no erasure path exists, and no JSON-LD (or other) export of the semantic layer exists. No connector runs in the platform, so today PII can enter only through API request bodies, and nothing inspects them for it. The Art. 30 row (records of processing) is the one backed by something real: audit_log.",
@@ -1137,6 +1098,24 @@
         "kind": "test",
         "path": "packages/causal-core/tests/t8/test_carryover_power.py",
         "asserts": "a pre-registered T8 version gates the carryover check's power at >= 0.8 against a carryover the washout does not cover, with a false-alarm bar where it does"
+      }
+    },
+    {
+      "id": "dast-not-built",
+      "status": "planned",
+      "capability": "Dynamic application security testing (DAST): a scanner such as OWASP ZAP run against a running API, weekly",
+      "claimed_in": [
+        {
+          "at": "docs/CYBERSECURITY.md:590",
+          "says": "DAST: OWASP ZAP against a staging API (weekly). Not built: there is no staging"
+        }
+      ],
+      "reality": "Not built. Nothing starts the API and scans it dynamically; there is no staging environment to scan. The container images are built and scanned for known vulnerabilities in CI (job images), which is not DAST.",
+      "evidence": [],
+      "leaves_by": {
+        "kind": "ci-run",
+        "path": ".github/workflows/dast.yml",
+        "asserts": "a workflow starts the backend (the built image, or a staging deployment) and runs a DAST scanner against its API, failing on findings not in a reviewed allowlist"
       }
     }
   ],
@@ -1313,6 +1292,13 @@
       "fixed_in": "210126e",
       "pinned_by": "packages/causal-core/tests/t5/test_did_extensions.py",
       "note": "Implemented in part, and the rest split rather than claimed. Covariate-conditional parallel trends (CausalQuery.covariates: each group-time effect is Sant'Anna & Zhao's doubly robust DiD, logistic propensity and linear outcome regression, with an influence function carrying both models' estimation effects) and not-yet-treated comparisons (CausalQuery.control_group) shipped in contract 0.10.0, pre-registered as T5 v4 (fbdbc1a) before the code, and passed its first registered run (benchmarks/t5-did/results/2026-09-26-v4-run1.json, 7b4ce0f): five new designs, including covariate-driven adoption timing where the unconditional estimate is biased by 0.54 and each nuisance model misspecified in turn; three new refusals (poor overlap -> POSITIVITY, time-varying covariate -> INVALID_INPUT, no comparison units -> DESIGN_CHECK_FAILED); four new seeded defects, each caught by its registered bias bar. Limits: under a misspecified outcome model the intervals sit near the coverage band's floor (0.932 in the registered run, 0.914-0.942 on development seeds); linear-index nuisance models only. The Rambachan-Roth machinery is now did-rambachan-roth; anticipation, repeated cross-sections and time-varying covariates are did-anticipation-cross-sections."
+    },
+    {
+      "id": "supply-chain-scanning-not-in-ci",
+      "was": "The gate now runs bandit, a secret scan, pip-audit and npm audit (security-scanning-not-in-ci left the list), but no workflow builds the Docker images, so no image is scanned; release.yml attaches no SBOM; nothing runs DAST; Python dependencies install from the ranges in pyproject.toml with no lockfile or hashes (npm is pinned, with integrity hashes, by package-lock.json); and there is no dependabot configuration. The weekly scheduled run of the gate surfaces a newly published advisory, but opens no update PR.",
+      "fixed_in": "a6a864d",
+      "pinned_by": "backend/tests/unit/test_py_lock.py",
+      "note": "Implemented, except DAST, which did not leave: it is dast-not-built. Hash-pinned installs: every Python environment CI builds installs from a lock in requirements/ (backend.txt for backend/.venv, kernel.txt for packages/causal-core/.venv and release.yml's verify job, image.txt for backend/Dockerfile, release.txt for the published wheels), made by `uv pip compile --universal --generate-hashes` from requirements/*.in and installed with pip --require-hashes --no-deps; the repository's own packages, not on an index and so not in the lock, then install from the checkout with --no-deps --no-build-isolation (hatchling and editables come from the lock), and pip check proves the pair whole. The gate step python-lock (scripts/py_lock.py check) fails a lock whose inputs (the .in file and the dependency tables of each pyproject.toml it names) changed since `python3 scripts/py_lock.py relock` recorded them in requirements/lock-inputs.json, a lock that does not satisfy its local packages, and a tested environment that differs from its lock; the pip-audit steps audit the locks (pip-audit-image added for image.txt). Image scan: CI job `images` builds backend/Dockerfile and frontend/Dockerfile (the latter did not build at all before this change; it now builds from the repository root with output: standalone) and scans each with Trivy 0.74.0 pinned by digest; scripts/image_scan.py fails a HIGH or CRITICAL finding with a published fix not excused in scripts/image-scan-allowlist.json (empty), lists findings with no fix published without failing (44 in the backend image's Debian 13 base packages on 2026-09-26, none in the frontend's), and fails a report that lists no package. The one fixable pair it found (msgpack and setuptools copies vendored in pip 26.2.1) went by removing pip from the runtime image. SBOM: release.yml installs the built wheels with requirements/release.txt into a fresh environment, writes a CycloneDX 1.6 SBOM of it with cyclonedx-bom 7.4.0, checks it lists exactly the locked pins and the three packages (scripts/sbom_check.py), keeps it as an artifact and attaches it to the tag's GitHub release; the images job keeps a Trivy CycloneDX SBOM per image. Update PRs: .github/dependabot.yml, weekly and grouped, for the locks, the pyproject ranges, npm, GitHub Actions and the base images (pinned by digest). Negative controls: test_py_lock.py (a dependency edit without a re-lock, a pin below a floor, a pin without a hash, an environment one version, one package or one extra away from its lock), test_image_scan.py, test_sbom_check.py, and test_dep_audit.py for the lock mode. Not verified here: the images job and release.yml have not run on GitHub (their steps were run locally with the same images and tools), and Dependabot's handling of the uv-compiled locks is untested. Not changed: the release's build tools are pinned by version, not hash; HIGH findings with no fix published are not gated."
     }
   ]
 }

@@ -1,0 +1,19 @@
+{
+  "_comment": [
+    "Reviewed exceptions to the container image scan (CI job `images`, Trivy), read by",
+    "scripts/image_scan.py. A HIGH or CRITICAL finding with a published fix fails the job",
+    "unless an entry here names it. Each entry: id (the CVE or GHSA id), image (backend |",
+    "frontend), package, reason (why it cannot be fixed now and why it does not reach this",
+    "service), review_by (YYYY-MM-DD). An entry past review_by fails, and so does one whose",
+    "finding is no longer reported (strike it off).",
+    "",
+    "2026-09-26: empty. Trivy 0.74.0 over both images: no HIGH or CRITICAL finding with a fix.",
+    "The one fixable pair found (msgpack 1.1.2 GHSA-6v7p-g79w-8964 and setuptools 70.3.0",
+    "CVE-2025-47273: the copies pip 26.2.1 vendors, declared in its bundled bom.cdx.json) went",
+    "by removing pip, which nothing runs at run time, from the backend's runtime image.",
+    "The backend image's 44 HIGH findings in Debian 13 packages (util-linux, ncurses, systemd,",
+    "acl, perl-base) have no fixed version published; image_scan.py lists them without",
+    "failing, and a base-image bump picks the fixes up when Debian ships them."
+  ],
+  "entries": []
+}

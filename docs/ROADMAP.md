@@ -102,8 +102,10 @@ priority first, and the priorities put hardening the platform before new estimat
   (`septa-47`); the governance page's Approve, which could never succeed, now
   names the object and the approver's classification (`septa-46`); the gate runs bandit, a
   secret scan, pip-audit and npm audit, and every advisory they found was fixed rather than
-  excused (`septa-27`; container scans, a release SBOM and hash-pinned Python installs are still
-  open, register `supply-chain-scanning-not-in-ci`). Every secret is
+  excused (`septa-27`); CI installs every Python environment from a hash-pinned lock that the
+  gate holds current, scans both container images with Trivy, and attaches a CycloneDX SBOM to
+  each release, and Dependabot opens update PRs (`septa-49`; DAST is not built, register
+  `dast-not-built`). Every secret is
   read from its variable or a mounted `<NAME>_FILE`, the backend refuses to start outside
   `ENV=local` without a signing key, and the key rotates through a previous-keys list
   (`septa-28`; no secret-manager client). The backend suite runs on PostgreSQL as well as

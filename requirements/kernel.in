@@ -1,0 +1,12 @@
+# Inputs of requirements/kernel.txt: the environment .gnomon/ci.sh tests the three
+# kernel packages in (packages/causal-core/.venv in CI), and release.yml's verify
+# job. Re-lock after editing this file or any pyproject.toml it names:
+#     python3 scripts/py_lock.py relock
+# (Local packages, pip, hatchling and editables: see requirements/backend.in.)
+pip
+hatchling
+editables
+-e ./packages/causal-core[dev,crosscheck,ml]
+-e ./packages/causal-decision[dev]
+-e ./packages/causal-mcp[dev,http,decision]
+httpx

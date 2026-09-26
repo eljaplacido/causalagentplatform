@@ -275,3 +275,40 @@ def test_npm_an_unreachable_registry_is_not_measured(tmp_path: Path) -> None:
     _fake_tool(tmp_path, "npm", body, code=1)
     proc = _npm(tmp_path, _allowlist(tmp_path, []))
     assert proc.returncode == 2, proc.stdout
+
+
+def test_a_lock_is_audited_as_written(tmp_path: Path) -> None:
+    # --requirement: pip-audit reads the hash-pinned lock (requirements/*.txt) with pip
+    # disabled, so what it audits is exactly what CI installs, and a finding still fails.
+    argv_log = tmp_path / "argv.json"
+    tool = _fake_tool(tmp_path, "pip-audit", _pip_report(VULN, CLEAN), code=1)
+    tool.write_text(
+        tool.read_text().replace(
+            "import sys\n",
+            f"import json, sys\njson.dump(sys.argv[1:], open({str(argv_log)!r}, 'w'))\n",
+            1,
+        )
+    )
+    lock = tmp_path / "demo.txt"
+    lock.write_text("examplepkg==1.0.0 \\\n    --hash=sha256:" + "ab" * 32 + "\n")
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPT), "--today", TODAY,
+         "--allowlist", str(_allowlist(tmp_path, [])), "pip", "--pip-audit", str(tool),
+         "--requirement", str(lock), "--label", "demo"],
+        capture_output=True, text=True, check=False,
+    )
+    assert proc.returncode == 1, proc.stdout
+    assert "FAIL examplepkg 1.0.0: CVE-2099-0001" in proc.stdout
+    argv = json.loads(argv_log.read_text())
+    assert argv[:4] == ["-r", str(lock.resolve()), "--require-hashes", "--disable-pip"]
+    assert "--path" not in argv
+
+
+def test_an_absent_lock_fails(tmp_path: Path) -> None:
+    tool = _fake_tool(tmp_path, "pip-audit", _pip_report(CLEAN))
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPT), "--allowlist", str(_allowlist(tmp_path, [])), "pip",
+         "--pip-audit", str(tool), "--requirement", str(tmp_path / "missing.txt")],
+        capture_output=True, text=True, check=False,
+    )
+    assert proc.returncode == 1 and "the lock" in proc.stdout and "is absent" in proc.stdout
