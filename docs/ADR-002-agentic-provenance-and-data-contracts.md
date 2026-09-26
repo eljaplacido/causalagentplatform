@@ -65,10 +65,16 @@ Two critical gaps identified from cross-referencing the 2026 standards landscape
 
 3. **Module `src/agents/llm_factory.py`** extended with:
    - `_ProvenanceCapturingLLM` wrapper that auto-captures LLMInvocation on every call
-   - Optional `session_id` and `agent_id` params on `get_llm()` enable provenance tracking
-   - Best-effort capture (never blocks on provenance failure)
-   - **Status:** the wrapper writes to the durable store, but `get_llm` has no callers, so
-     nothing is captured (register `llm-routing-no-callers`)
+   - Optional `session_id` and `agent_id` params on `get_llm()` enable provenance tracking, and
+     `prompt_template_id` / `prompt_template_hash` name the versioned template the prompt was
+     rendered from
+   - Best-effort capture (never blocks on provenance failure; a failed capture is logged)
+   - **Status:** exercised. The SimulationAgent's narration and `POST /api/v1/decisions` with
+     `narrate: true` call `get_llm(session_id=..., agent_id=..., prompt_template_id=...,
+     prompt_template_hash=...)` (`src/agents/narration.py`), and every call -- successful or
+     failed -- appends an `LLMInvocation` with provider, model, capability, template id and hash,
+     temperature, token counts when the provider reports them, and latency. It is appended to the
+     durable, append-only provenance store (`src/semantic_layer/provenance_store.py`)
 
 4. **Prompt `prompts/provenance_trace.yaml`** for the `provenance_trace` skill. The file exists,
    and no code loads it
@@ -113,7 +119,7 @@ The Status column was PASS on every row when the ADR was written. As read agains
 | EpistemicState contract preserved | PASS | Provenance records are separate from state; they do not mutate it |
 | Guardian-gated writes enforced | NOT MET | Nothing writes contract violations, and PR-009 never sees a real one |
 | Audit trail integrity maintained | PASS | Provenance is append-only (`011_provenance.sql`); an erasure is a kept tombstone. It is a separate table from `audit_log`; a Guardian check's provenance record cites its `audit_log` row and is written in the same transaction |
-| Provider-agnostic implementation | PASS, unexercised | The capture wrapper is provider-agnostic; no call goes through it |
+| Provider-agnostic implementation | PASS | The capture wrapper is provider-agnostic; the narration calls go through it, with local Ollama as the first provider |
 | PII handling compliant | NOT ASSESSED | Nothing pseudonymises identifiers (see CYBERSECURITY.md §5) |
 
 ## Risk Assessment
@@ -127,7 +133,7 @@ The Status column was PASS on every row when the ADR was written. As read agains
 
 ## Dependencies
 
-- `src/agents/llm_factory.py`: the LLMInvocation capture wrapper exists; `get_llm` has no callers
+- `src/agents/llm_factory.py`: the LLMInvocation capture wrapper, reached by `src/agents/narration.py`
 - `src/api/main.py` registers the provenance router (implemented)
 - `src/agents/governance.py`: the PR-009 rule exists; no caller sends the action type it checks
 - Neo4j: future work. Provenance is stored in PostgreSQL (SQLite locally), not in a graph store
@@ -143,15 +149,15 @@ its coverage are reported by `.gnomon/ci.sh` on every run.
 | `src/semantic_layer/contracts.py` | Models and a lookup registry. No contract evaluation; register `data-contracts-not-enforced` | `tests/unit/test_contracts.py` |
 | `src/api/provenance.py`, `src/semantic_layer/provenance_store.py` | Implemented: durable, append-only, erasure by tombstone | `tests/integration/test_provenance_append_only.py` |
 | Provenance written by running flows | Implemented for session runs, Guardian checks and decisions | `tests/integration/test_provenance_flow.py` |
-| `src/agents/llm_factory.py` capture hook | Writes to the durable store; unreachable at runtime, since `get_llm` has no callers (register `llm-routing-no-callers`) | `tests/integration/test_provenance_flow.py` (with a stub model) |
+| `src/agents/llm_factory.py` capture hook | Implemented; writes to the durable store, reached by the narration callers, records the template id and hash | `tests/unit/test_llm_routing_used.py`, `tests/unit/test_prompt_templates_loaded.py`, `tests/integration/test_provenance_flow.py` |
 | `src/agents/governance.py` PR-009 | Rule written; no caller sends `DATA_ACCESS_WITH_CONTRACT` | -- |
 | `prompts/provenance_trace.yaml` | Created; not loaded by any code | -- |
 
 ## Consequences
 
 ### Positive (intended; see Implementation Status for what holds)
-- An LLM call made through `get_llm(session_id=..., agent_id=...)` would capture invocation
-  metadata. No call is made
+- An LLM call made through `get_llm(session_id=..., agent_id=...)` captures invocation metadata,
+  including the prompt template it was rendered from. The narration calls are the ones made
 - Provenance traces are queryable via API endpoints, for session runs, Guardian checks and
   decisions
 - Data contracts would enforce freshness SLAs at runtime. Nothing evaluates a contract today

@@ -141,7 +141,19 @@ docker rm -f causal-pg-test
 The optional Neo4j code paths (experience buffer, drift-alert storage) are tested only with a
 mocked driver; Neo4j is not the causal graph store (`neo4j-graph-store` was retracted). No backend test asserts a causal estimate against ground truth:
 the backend delegates estimation to `packages/causal-core`, and that is where estimates are
-gated (§3.2).
+gated (§3.2); the narration tests check the kernel's interval covers
+the effect their simulated data were built with only as a premise, before testing what the LLM
+layer did with the number.
+
+**LLM calls.** No backend test needs a model or the network. `tests/conftest.py` clears the
+provider variables (`OLLAMA_BASE_URL`, the cloud keys and their `_FILE` forms) for every test, so a
+developer's own configuration cannot reach an agent test; tests that exercise the LLM layer
+(`unit/test_llm_routing_used.py`, `unit/test_prompt_templates_loaded.py`,
+`integration/test_decision_narrative.py`) configure Ollama and substitute LangChain's
+deterministic fake chat model for the client. One test is marked `llm_live` and calls a real local
+Ollama; it is **deselected** (not skipped, which `backend-pytest-postgres` would fail) unless
+`LLM_LIVE=1`, and the gate never sets it. Run it with `LLM_LIVE=1 OLLAMA_BASE_URL=...
+OLLAMA_CAUSAL_MODEL=... pytest -m llm_live -s --no-cov tests/unit/test_llm_routing_used.py`.
 
 ### 3.2 Causal correctness: the pre-registered benchmarks
 

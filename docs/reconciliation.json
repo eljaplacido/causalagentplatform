@@ -20,19 +20,19 @@
       "why": "status line, what's in the box, quick-start commands, MCP entry point",
       "subjects": [
         "backend/pyproject.toml",
-        "packages/causal-mcp",
         "frontend/package.json",
         "launch_backend.sh",
-        "docs/CURRENT_STAGE.md"
+        "docs/CURRENT_STAGE.md",
+        "packages/causal-mcp"
       ],
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/pyproject.toml": "aed6cbb405b21ebabf3b25620ab10ff1bc095f3860cf0c079a378b539875580a",
-          "packages/causal-mcp": "f86dd08d8fef8f9b09adab83770f37de1234101a5c84ff11ef0427bdab2507d1",
+          "backend/pyproject.toml": "b41be40dc62c7cca30d87191f93cfd33251def033ab012bf41e72e5e40973395",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "87190ed92d95a396709dad92442b88d3b252090580fc9b66f4f7cd8d601adf45"
+          "docs/CURRENT_STAGE.md": "887ba2e29a43260dcee98a05fe3d5268de5cfdef7e8fa7a5d48be9a6f20efe54",
+          "packages/causal-mcp": "f86dd08d8fef8f9b09adab83770f37de1234101a5c84ff11ef0427bdab2507d1"
         }
       },
       "last_read": {
@@ -53,9 +53,9 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "06aa634fe74b3c9bfac8ec28980fe0a07de11d4a3c30ac3969d4f4d02c8cb87e",
-          "backend/src": "1e9d3dc122d2a853b6e75237687f61c563a799d77455879243a2b65d50065008",
-          "backend/tests": "b789634220d1ef99b3ab8786d15747d1e9e4920749b9acf4cea920b618b9287e",
+          "conformance/declared_not_implemented.json": "74de4d5ffb39f8cd7f7ea29e708401550e81aa9656d996252e6dfde79d3f97c5",
+          "backend/src": "0e22c0cb440a22fdd11420432e3d2529fc4b378fac66315c8b50671cc2721648",
+          "backend/tests": "6d900b40ae73a4d2cdcd5fbf0a947a8b10a9533cac22cfa8e080a7b8f0cfc481",
           "frontend/src": "cfe44a11e817c5d272f7125694a5cba46c438299c632f63315a8f836a9278d80",
           "packages": "d2f937f66efee78148564d82fbe376b1b72ca9e6c6e60068c8e8afb85bb4fcfa",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
@@ -63,7 +63,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
+        "by": "Claude (merge #50 into #48: LLM layer has callers (this branch) and invocations go to the durable store (#30): ADR-002 status, criteria and component rows, CURRENT_STAGE LLM bullet and provenance-flow row, ADR-003 planner note all say so; grepped for 'no callers', 'in-memory' and 'No LLM is called', none stale; ORCHESTRATION merged cleanly on LF; TESTING_CICD keeps main's Neo4j text and this branch's LLM-calls paragraph)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -105,13 +105,13 @@
           "backend/src/semantic_layer/provenance.py": "c912fb0af67442b984325d80528867c559ccb0332ac7725ac448e48f87164c89",
           "backend/src/semantic_layer/contracts.py": "96357377af27b488fd82e05c2601a907cbf99afe7cd9ae71819ee37c7e284068",
           "backend/src/api/provenance.py": "55fa5a3e0153904f557da134e6e0f3a8c8c1ae0ab8b5fe4faa8a6918a70c617e",
-          "backend/src/agents/llm_factory.py": "cf027815b09bfd658aa041072ebd42158e3bdf5f6e76d3f8941ed7b227fd9f1e",
+          "backend/src/agents/llm_factory.py": "e10b999f795c944f596ff9d2f113bc56a5f07e5b64b464fee712dc08e4a1f9ed",
           "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
+        "by": "Claude (merge #50 into #48: LLM layer has callers (this branch) and invocations go to the durable store (#30): ADR-002 status, criteria and component rows, CURRENT_STAGE LLM bullet and provenance-flow row, ADR-003 planner note all say so; grepped for 'no callers', 'in-memory' and 'No LLM is called', none stale; ORCHESTRATION merged cleanly on LF; TESTING_CICD keeps main's Neo4j text and this branch's LLM-calls paragraph)"
       }
     },
     "docs/ADR-003-hierarchical-planning-and-evaluation.md": {
@@ -131,7 +131,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
+        "by": "Claude (merge #50 into #48: LLM layer has callers (this branch) and invocations go to the durable store (#30): ADR-002 status, criteria and component rows, CURRENT_STAGE LLM bullet and provenance-flow row, ADR-003 planner note all say so; grepped for 'no callers', 'in-memory' and 'No LLM is called', none stale; ORCHESTRATION merged cleanly on LF; TESTING_CICD keeps main's Neo4j text and this branch's LLM-calls paragraph)"
       }
     },
     "docs/AGENTS.md": {
@@ -139,23 +139,23 @@
       "subjects": [
         "backend/src/agents",
         "backend/src/skills",
-        "packages/causal-mcp",
         "backend/src/orchestration",
-        "prompts"
+        "prompts",
+        "packages/causal-mcp"
       ],
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/agents": "748c3b7f1398dfb683ac629c248d785a65c3483dbae7bf26b07f1a746798d8b3",
+          "backend/src/agents": "f54499833e60481971d54deb0252ae7fe46d03ac7fd066ccfa1282a85a1b5769",
           "backend/src/skills": "b0bcef79c64f6b8d2f35f87f92095d54c52cec7d972a4cf1520b95fcc0d68347",
-          "packages/causal-mcp": "f86dd08d8fef8f9b09adab83770f37de1234101a5c84ff11ef0427bdab2507d1",
           "backend/src/orchestration": "7776a0a563af5bda75451c4ff4bb546683ae9947207f6da8b0545c1781976c8f",
-          "prompts": "664b74cd837a44513e10dc0a7a5c44a3015816f928c93d4f7831320b0231e50f"
+          "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9",
+          "packages/causal-mcp": "f86dd08d8fef8f9b09adab83770f37de1234101a5c84ff11ef0427bdab2507d1"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
+        "by": "Claude (merge #50 into #48: LLM layer has callers (this branch) and invocations go to the durable store (#30): ADR-002 status, criteria and component rows, CURRENT_STAGE LLM bullet and provenance-flow row, ADR-003 planner note all say so; grepped for 'no callers', 'in-memory' and 'No LLM is called', none stale; ORCHESTRATION merged cleanly on LF; TESTING_CICD keeps main's Neo4j text and this branch's LLM-calls paragraph)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -250,14 +250,14 @@
         "on": "2026-09-26",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
-          "prompts": "664b74cd837a44513e10dc0a7a5c44a3015816f928c93d4f7831320b0231e50f",
+          "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9",
           ".github": "db12d364ec234ff9774297f81b08649ec310d368304c47fbfcfa04138f630ac4",
           ".gnomon": "bb564221cb7a0339004787d342172182a5662510dfb4a6c2eded2c6a82567ac9"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #38 into #40: gate lists name T9 and C0 together (AGENTS, skills, benchmarks README, TESTING_CICD seeded-defect list); ROADMAP keeps the train's done list with calibration evidence open; CURRENT_STAGE package counts 233/146/41 measured on this tree; README and QUICKSTART quote no version floors)"
+        "by": "Claude (merge #50 into #48: LLM layer has callers (this branch) and invocations go to the durable store (#30): ADR-002 status, criteria and component rows, CURRENT_STAGE LLM bullet and provenance-flow row, ADR-003 planner note all say so; grepped for 'no callers', 'in-memory' and 'No LLM is called', none stale; ORCHESTRATION merged cleanly on LF; TESTING_CICD keeps main's Neo4j text and this branch's LLM-calls paragraph)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -278,16 +278,16 @@
           "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
-          "backend/pyproject.toml": "aed6cbb405b21ebabf3b25620ab10ff1bc095f3860cf0c079a378b539875580a",
+          "backend/pyproject.toml": "b41be40dc62c7cca30d87191f93cfd33251def033ab012bf41e72e5e40973395",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
-          ".env.example": "10b19ac63993ff640ea47936fb99d53938077413273463afe5e5661313451c97",
+          ".env.example": "c1b1272a098696c6c0e72ba533fca78db4060da7c549715d14fb1167656e906a",
           "backend/scripts": "adfe996282f443b9f37340ccda7e0e85afae2ad77fbed2455cc8dc6a63dc987b"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
+        "by": "Claude (merge #50 into #48: LLM layer has callers (this branch) and invocations go to the durable store (#30): ADR-002 status, criteria and component rows, CURRENT_STAGE LLM bullet and provenance-flow row, ADR-003 planner note all say so; grepped for 'no callers', 'in-memory' and 'No LLM is called', none stale; ORCHESTRATION merged cleanly on LF; TESTING_CICD keeps main's Neo4j text and this branch's LLM-calls paragraph)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -309,12 +309,12 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "b789634220d1ef99b3ab8786d15747d1e9e4920749b9acf4cea920b618b9287e",
-          "backend/pyproject.toml": "aed6cbb405b21ebabf3b25620ab10ff1bc095f3860cf0c079a378b539875580a",
+          "backend/tests": "6d900b40ae73a4d2cdcd5fbf0a947a8b10a9533cac22cfa8e080a7b8f0cfc481",
+          "backend/pyproject.toml": "b41be40dc62c7cca30d87191f93cfd33251def033ab012bf41e72e5e40973395",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
           ".gnomon/ci.sh": "a05e016e87f09e27989ffc185d06ad2b55c6d31f4e9b9cc2954b8cfdf7a40e45",
-          "scripts": "2edc6c26a73622247b41baf5b85f14330695253388e9b3c63c470750f339894c",
+          "scripts": "f5a1a71d34b802455f2bfb1b90ec608c2242df7c46a15f913072b5c24d0d1bea",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "58eaf5af920accec421ce7392b3d999aa35199d6f471c989b7fab25b3865acd0",
           "packages/causal-core/tests": "25d7a9bf81d3202afcd2359570774f2ea059d0e74d2b949146e44c6f3070042c",
@@ -323,7 +323,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
+        "by": "Claude (merge #50 into #48: LLM layer has callers (this branch) and invocations go to the durable store (#30): ADR-002 status, criteria and component rows, CURRENT_STAGE LLM bullet and provenance-flow row, ADR-003 planner note all say so; grepped for 'no callers', 'in-memory' and 'No LLM is called', none stale; ORCHESTRATION merged cleanly on LF; TESTING_CICD keeps main's Neo4j text and this branch's LLM-calls paragraph)"
       }
     },
     "docs/UIX.md": {
@@ -353,8 +353,8 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "65b5b9fe4d2bc339a536717c0fdd0f252483ac9e136b0600914ff3590a977c45",
-          "conformance/declared_not_implemented.json": "06aa634fe74b3c9bfac8ec28980fe0a07de11d4a3c30ac3969d4f4d02c8cb87e",
-          "docs/CURRENT_STAGE.md": "87190ed92d95a396709dad92442b88d3b252090580fc9b66f4f7cd8d601adf45"
+          "conformance/declared_not_implemented.json": "74de4d5ffb39f8cd7f7ea29e708401550e81aa9656d996252e6dfde79d3f97c5",
+          "docs/CURRENT_STAGE.md": "887ba2e29a43260dcee98a05fe3d5268de5cfdef7e8fa7a5d48be9a6f20efe54"
         }
       },
       "last_read": {

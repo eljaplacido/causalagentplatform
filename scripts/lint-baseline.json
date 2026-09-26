@@ -37,7 +37,8 @@
     "2026-09-26 (session-guardian): ruff 411 -> 409, mypy unchanged at 38. The session graph's new escalation and planning code is clean; the gain is two E501s in graph.py's output node and router signature, wrapped while the file was open.",
     "2026-09-26 (small-batch-1): ruff 411 -> 403, mypy 38 -> 37. backend/src/api/health.py and its unit tests were deleted: a /health/{neo4j,sensors,alerts,drift-monitor} router the app never mounted, whose sensor and alert globals nothing outside the tests ever set. Its findings went with it.",
     "2026-09-26 (small-batch-1): ruff 403 -> 401. scripts/seed_data.py's --clear was rewritten (correct columns, no append-only table, an owner-only privilege check on PostgreSQL); the new code is clean and the two findings in the code it replaced went with it.",
-    "2026-09-26 (small-batch-2): ruff 411 -> 380, mypy 38 -> 32, measured against 465b919. The gains are code deleted: src/api/health.py (a router the app never mounted), src/sensors/periodic_drift.py (DriftSensor, never started) and tests/unit/test_health_api.py. The code this batch added is clean."
+    "2026-09-26 (small-batch-2): ruff 411 -> 380, mypy 38 -> 32, measured against 465b919. The gains are code deleted: src/api/health.py (a router the app never mounted), src/sensors/periodic_drift.py (DriftSensor, never started) and tests/unit/test_health_api.py. The code this batch added is clean.",
+    "2026-09-26 (septa-17/37): mypy 38 -> 37, ruff unchanged at 411. The LLM layer's first callers (src/agents/narration.py, prompt_templates.py) are clean; the gain is llm_factory.get_llm's lone @overload (a single overload is a mypy error), removed when the function gained its prompt-template parameters."
   ],
   "ruff": {
     "max_findings": 405,

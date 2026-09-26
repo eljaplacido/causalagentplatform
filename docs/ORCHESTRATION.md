@@ -193,4 +193,4 @@ kept out of version control; nothing here reads it, and a checkout without it is
 | `.github/copilot-instructions.md` | Pointer to `AGENTS.md` plus Copilot-specific essentials |
 | `.github/ISSUE_TEMPLATE/*.yml` | Structured issues for Copilot Coding Agent |
 | `templates/*.md` | Handoff packet templates |
-| `prompts/*.yaml` | Prompt specifications for platform skills (not loaded at runtime; see `prompts/README.md`) |
+| `prompts/*.yaml` | Prompt templates for platform skills: `explanation_generate.yaml` is loaded and rendered at runtime; the rest are specifications (see `prompts/README.md`) |

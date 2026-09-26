@@ -2,7 +2,7 @@
 
 > **Scope:** Canonical reference for all agents deployed across the Unified Enterprise Causal Platform. Every agent, skill, and orchestration pattern must conform to this document. This file is loaded as shared context by every agent in the system.
 >
-> **This document is a specification, not a description of the code.** All eight agents below exist and run, but several of the skills beneath them return a constant. What is actually implemented is in [`CURRENT_STAGE.md`](CURRENT_STAGE.md), where every row links to the test that pins it; what this document claims and the code does not do is in [`conformance/declared_not_implemented.json`](../conformance/declared_not_implemented.json), checked on every run by `scripts/status_claims.py`. As of 2026-09-25 that covers the evidence-grounding and expert-elicitation skills (`agent-skills-are-stubs`), causal discovery (`causal-discovery`), the counterfactual skill (`scm-counterfactuals`), the capability-routed LLM layer, which nothing calls (`llm-routing-no-callers`), and the Cynefin classifier, which is a keyword stub (`cynefin-classifier-keyword-stub`). Earlier versions also named Rust crates (`cynepic-*`), EconML, PyMC, Kafka and a Neo4j causal-graph store as backing these agents; none of them is in this repository or used by it, and those claims were withdrawn (`rust-crates`, `econml-pymc`, `kafka-streaming`, `neo4j-graph-store` in the register's `left_the_list`).
+> **This document is a specification, not a description of the code.** All eight agents below exist and run, but several of the skills beneath them return a constant. What is actually implemented is in [`CURRENT_STAGE.md`](CURRENT_STAGE.md), where every row links to the test that pins it; what this document claims and the code does not do is in [`conformance/declared_not_implemented.json`](../conformance/declared_not_implemented.json), checked on every run by `scripts/status_claims.py`. As of 2026-09-25 that covers the evidence-grounding and expert-elicitation skills (`agent-skills-are-stubs`), causal discovery (`causal-discovery`), the counterfactual skill (`scm-counterfactuals`), and the Cynefin classifier, which is a keyword stub (`cynefin-classifier-keyword-stub`). Earlier versions also named Rust crates (`cynepic-*`), EconML, PyMC, Kafka and a Neo4j causal-graph store as backing these agents; none of them is in this repository or used by it, and those claims were withdrawn (`rust-crates`, `econml-pymc`, `kafka-streaming`, `neo4j-graph-store` in the register's `left_the_list`).
 
 ---
 
@@ -330,6 +330,11 @@ Produces a human-readable causal explanation for a recommendation or estimate.
 **Inputs:** Simulation result, assumption set, target persona (EXECUTIVE / ANALYST / OPERATOR / COMPLIANCE)
 **Output:** Narrative explanation with explicit assumption disclosures, confidence ranges
 
+*Implemented as* `src/agents/narration.py`, from `prompts/explanation_generate.yaml`: the model
+writes the narrative and cites every number (confidence ranges included) as a claim token of the
+kernel outcome; a reply that fails PR-002 grounding is discarded for the caller's deterministic
+text (§7).
+
 ---
 
 #### `confounder_screen`
@@ -621,6 +626,15 @@ Prompt recipes follow a strict four-part structure:
 
 Prompt templates are versioned in `prompts/` alongside their schema contracts. No agent uses ad-hoc prompts at runtime.
 
+**What runs today.** One template is loaded: `prompts/explanation_generate.yaml` (v2.0.0), by
+`src/agents/prompt_templates.py`, which rejects a file with a repeated key, a missing part, a
+`version` that is not `MAJOR.MINOR.PATCH`, a `skill` other than the file's name, a
+`provider_capability` the factory does not route, or `llm_required: false`, and refuses to render
+with a variable missing or unexpected. The template's id (`prompts/<skill>.yaml@<version>`) and the
+sha256 of the file go into the provenance record of every call made with it. A template that does
+not load stops the call: the agent keeps its deterministic text, it never falls back to an ad-hoc
+prompt. The other thirteen files are specifications for skills that call no model (`prompts/README.md`).
+
 ---
 
 ## 7. Multi-Provider LLM Routing
@@ -635,7 +649,27 @@ Agents specify **capability requirements**, not model names — the LLM factory 
 | `code_generation` | `deepseek-r1:70b` | `claude-sonnet-4-20250514` | `gpt-4o` | `deepseek-reasoner` |
 | `planning` | declared, no model mapped (resolves to `unknown`) | same | same | same |
 
-Routing is handled by `src/agents/llm_factory.py`. Provider selection is never hardcoded in skill implementations. The provider is the first one configured, in the order Ollama (`OLLAMA_BASE_URL`), Anthropic (`ANTHROPIC_API_KEY`), OpenAI (`OPENAI_API_KEY`), DeepSeek (`DEEPSEEK_API_KEY`; each key may instead be a file named by `<NAME>_FILE`, `src/secret_source.py`); if building its client fails, the others are tried in the same order. The capability then picks the model within that provider, as in the table; each default can be overridden by environment variable (`OLLAMA_CAUSAL_MODEL`, `ANTHROPIC_MODEL`, `OPENAI_FAST_MODEL`, ...). Nothing calls `get_llm` today (register `llm-routing-no-callers`).
+Routing is handled by `src/agents/llm_factory.py`. Provider selection is never hardcoded in skill implementations. The provider is the first one configured, in the order Ollama (`OLLAMA_BASE_URL`), Anthropic (`ANTHROPIC_API_KEY`), OpenAI (`OPENAI_API_KEY`), DeepSeek (`DEEPSEEK_API_KEY`; each key may instead be a file named by `<NAME>_FILE`, `src/secret_source.py`); if building its client fails, the others are tried in the same order. The capability then picks the model within that provider, as in the table; each default can be overridden by environment variable (`OLLAMA_CAUSAL_MODEL`, `ANTHROPIC_MODEL`, `OPENAI_FAST_MODEL`, ...), and the Ollama overrides (with `OLLAMA_MODEL` as the fallback for all four) are read at call time. The table's defaults are large models; on a smaller host set `OLLAMA_CAUSAL_MODEL` to one it has (the live test ran with `qwen2.5:7b-instruct`).
+
+**Who calls it, and what for: language, never numbers.** Local-first is the intended
+configuration: point `OLLAMA_BASE_URL` at a local Ollama and no cloud key is needed. Two paths call
+`get_llm` today, both through `src/agents/narration.py` (the `explanation_generate` skill):
+
+| Caller | What the model writes | Fallback |
+|---|---|---|
+| `SimulationAgent` | `draft_explanation` of the kernel outcome (a result or a kernel refusal) | the agent's deterministic text |
+| `POST /api/v1/decisions` with `narrate: true` | `narrative`: the verdict and analysis in plain language, for a `persona`; written after the ledger write and never sealed into it | the deterministic `explanation` |
+
+The model is asked to cite numbers only as claim tokens (`[[claim:effect]]`). Its reply is
+untrusted text: it is scored by `grounding_risk` -- the PR-002 check, `causal_core.claims.verify`
+against the kernel outcome -- before and after the tokens are rendered with the kernel's values,
+and a reply with an unbound number, an unknown token, causal wording the outcome does not license,
+no text, too much text (over 2000 characters), or a call that fails or exceeds
+`LLM_TIMEOUT_SECONDS` (default 60) is discarded for the fallback, with the reason recorded (a
+`NARRATION` reasoning step on the agent's state; `narrative.reason` over HTTP). With no provider
+configured nothing is attempted, and the platform behaves as it did before the layer existed.
+Every call is captured as an `LLMInvocation` (below; ADR-002). No other agent calls a model: the
+rest of the agents' reasoning is rule or kernel code.
 
 ---
 

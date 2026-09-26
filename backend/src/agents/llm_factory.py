@@ -27,7 +27,7 @@ Usage::
 from __future__ import annotations
 
 import os
-from typing import Any, Literal, overload
+from typing import Any, Literal
 
 import structlog
 
@@ -116,10 +116,26 @@ _OPENAI_MODELS: dict[Capability, str] = {
 # ── Model name resolution ─────────────────────────────────────────────────────
 
 
+#: The environment variable that overrides each capability's Ollama model. Read at
+#: call time as well as at import, so a model chosen after the process started (a
+#: test, a notebook) is the one used.
+_OLLAMA_MODEL_ENV: dict[Capability, str] = {
+    "causal_reasoning": "OLLAMA_CAUSAL_MODEL",
+    "fast_classification": "OLLAMA_FAST_MODEL",
+    "document_extraction": "OLLAMA_DOC_MODEL",
+    "code_generation": "OLLAMA_CODE_MODEL",
+}
+
+
 def _get_model_name(provider: str, capability: Capability) -> str:
     """Resolve the model name for a given provider and capability."""
     mapping: dict[Capability, str] | None = None
     if provider == "ollama":
+        if capability in _OLLAMA_MODELS:
+            env = _OLLAMA_MODEL_ENV.get(capability)
+            override = (os.getenv(env) if env else None) or os.getenv("OLLAMA_MODEL")
+            if override:
+                return override
         mapping = _OLLAMA_MODELS
     elif provider == "anthropic":
         mapping = _ANTHROPIC_MODELS
@@ -141,12 +157,10 @@ class LLMNotAvailableError(RuntimeError):
     """Raised when no LLM provider is configured."""
 
 
-@overload
-def get_llm(
-    *,
-    capability: Capability = "causal_reasoning",
-    temperature: float = 0.2,
-) -> Any: ...
+def llm_configured() -> bool:
+    """True when some provider is configured. Callers with a deterministic fallback check this
+    first, so that an unconfigured platform takes the fallback without a failed client build."""
+    return _detect_provider() != "none"
 
 
 def get_llm(
@@ -155,6 +169,8 @@ def get_llm(
     temperature: float = 0.2,
     session_id: str | None = None,
     agent_id: str | None = None,
+    prompt_template_id: str | None = None,
+    prompt_template_hash: str | None = None,
 ) -> Any:
     """
     Return a LangChain-compatible chat model for the given capability.
@@ -170,6 +186,9 @@ def get_llm(
         temperature: Sampling temperature (0.0 = deterministic, 1.0 = creative)
         session_id: Optional session ID for provenance tracking
         agent_id: Optional agent ID for provenance tracking
+        prompt_template_id: The versioned template the prompt was rendered from
+            (``prompts/<skill>.yaml@<version>``), recorded on every captured invocation
+        prompt_template_hash: sha256 of that template file, recorded likewise
 
     Returns:
         A LangChain BaseChatModel instance.
@@ -202,14 +221,21 @@ def get_llm(
             error=str(exc),
         )
         # Fall back to next available provider
-        llm = _build_fallback_llm(capability, temperature)
-        provider = _detect_provider()  # Re-detect after fallback
+        llm, provider = _build_fallback_llm(capability, temperature)
         model_name = _get_model_name(provider, capability)
 
     # ── Auto-capture LLM invocation metadata for provenance tracking ─────────
     if session_id and agent_id:
         llm = _wrap_with_invocation_capture(
-            llm, session_id, agent_id, provider, model_name, capability
+            llm,
+            session_id,
+            agent_id,
+            provider,
+            model_name,
+            capability,
+            temperature=temperature,
+            prompt_template_id=prompt_template_id,
+            prompt_template_hash=prompt_template_hash,
         )
 
     return llm
@@ -269,7 +295,7 @@ def _build_llm(
     raise LLMNotAvailableError(f"Unknown provider: {provider}")
 
 
-def _build_fallback_llm(capability: Capability, temperature: float) -> Any:
+def _build_fallback_llm(capability: Capability, temperature: float) -> tuple[Any, str]:
     """Try fallback providers in order of preference: ollama → anthropic → openai → deepseek."""
     fallback_order = ["ollama", "anthropic", "openai", "deepseek"]
     active_provider = _detect_provider()
@@ -292,7 +318,7 @@ def _build_fallback_llm(capability: Capability, temperature: float) -> Any:
                 capability=capability,
                 model=model_name,
             )
-            return _build_llm(provider, model_name, capability, temperature)
+            return _build_llm(provider, model_name, capability, temperature), provider
         except Exception as exc:
             log.warning(
                 "llm_factory.fallback_failed",
@@ -314,13 +340,24 @@ def _build_fallback_llm(capability: Capability, temperature: float) -> Any:
 _PENDING_CAPTURES: set[Any] = set()
 
 
+def _token_counts(result: Any) -> tuple[int, int]:
+    """(input, output) tokens from a LangChain message's ``usage_metadata``, 0 when absent."""
+    usage = getattr(result, "usage_metadata", None)
+    if not isinstance(usage, dict):
+        return 0, 0
+    return int(usage.get("input_tokens") or 0), int(usage.get("output_tokens") or 0)
+
+
 class _ProvenanceCapturingLLM:
     """
     Wraps a LangChain LLM to auto-capture LLMInvocation metadata on every call.
 
-    Appends each invocation to the durable provenance store
-    (src/semantic_layer/provenance_store.py). No runtime path calls get_llm yet
-    (register llm-routing-no-callers), so nothing reaches this today.
+    Each call -- successful or not -- appends one ``LLMInvocation`` to the durable
+    provenance store (src/semantic_layer/provenance_store.py): session, agent,
+    capability, provider, model, the prompt template's id and hash, temperature,
+    token counts (when the provider reports them) and latency. Capture is
+    best-effort, as ADR-002 specifies: a failure to record is logged and never
+    fails the call.
     """
 
     def __init__(
@@ -331,6 +368,10 @@ class _ProvenanceCapturingLLM:
         provider: str,
         model_name: str,
         capability: Capability,
+        *,
+        temperature: float = 0.0,
+        prompt_template_id: str | None = None,
+        prompt_template_hash: str | None = None,
     ) -> None:
         self._llm = llm
         self._session_id = session_id
@@ -338,32 +379,35 @@ class _ProvenanceCapturingLLM:
         self._provider = provider
         self._model_name = model_name
         self._capability = capability
+        self._temperature = temperature
+        self._prompt_template_id = prompt_template_id
+        self._prompt_template_hash = prompt_template_hash
 
     async def ainvoke(self, prompt: Any, **kwargs: Any) -> Any:
         import time as _time
 
         t0 = _time.perf_counter()
+        result: Any = None
         try:
             result = await self._llm.ainvoke(prompt, **kwargs)
         finally:
             duration_ms = (_time.perf_counter() - t0) * 1000
-            await self._persist(self._invocation(duration_ms))
-
+            await self._persist(self._invocation(duration_ms, result))
         return result
 
     def invoke(self, prompt: Any, **kwargs: Any) -> Any:
         import time as _time
 
         t0 = _time.perf_counter()
+        result: Any = None
         try:
             result = self._llm.invoke(prompt, **kwargs)
         finally:
             duration_ms = (_time.perf_counter() - t0) * 1000
-            self._persist_sync(self._invocation(duration_ms))
-
+            self._persist_sync(self._invocation(duration_ms, result))
         return result
 
-    def _invocation(self, duration_ms: float) -> Any:
+    def _invocation(self, duration_ms: float, result: Any) -> Any:
         """The LLMInvocation for one call, or None if it cannot be built."""
         try:
             from src.semantic_layer.provenance import (
@@ -372,6 +416,7 @@ class _ProvenanceCapturingLLM:
                 LLMProvider,
             )
 
+            tokens_in, tokens_out = _token_counts(result)
             return LLMInvocation(
                 session_id=self._session_id,
                 agent_id=self._agent_id,
@@ -382,6 +427,11 @@ class _ProvenanceCapturingLLM:
                 if self._provider in LLMProvider.__members__.values()
                 else LLMProvider.OLLAMA,
                 model_name=self._model_name,
+                prompt_template_id=self._prompt_template_id,
+                prompt_template_hash=self._prompt_template_hash,
+                temperature=self._temperature,
+                input_token_count=tokens_in,
+                output_token_count=tokens_out,
                 latency_ms=round(duration_ms, 2),
             )
         except Exception as exc:
@@ -432,6 +482,10 @@ def _wrap_with_invocation_capture(
     provider: str,
     model_name: str,
     capability: Capability,
+    *,
+    temperature: float = 0.0,
+    prompt_template_id: str | None = None,
+    prompt_template_hash: str | None = None,
 ) -> Any:
     """Wrap an LLM instance with automatic invocation metadata capture."""
     log.info(
@@ -440,6 +494,7 @@ def _wrap_with_invocation_capture(
         agent_id=agent_id,
         provider=provider,
         model=model_name,
+        prompt_template_id=prompt_template_id,
     )
     return _ProvenanceCapturingLLM(
         llm=llm,
@@ -448,4 +503,7 @@ def _wrap_with_invocation_capture(
         provider=provider,
         model_name=model_name,
         capability=capability,
+        temperature=temperature,
+        prompt_template_id=prompt_template_id,
+        prompt_template_hash=prompt_template_hash,
     )
