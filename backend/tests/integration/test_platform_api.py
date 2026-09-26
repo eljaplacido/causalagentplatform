@@ -441,6 +441,35 @@ async def test_metrics_approval_rate_calculation(
     assert abs(body["overall_approval_rate"] - 0.75) < 0.001
 
 
+async def test_metrics_weekly_verdicts_count_every_audit_row_as_the_overall_rate_does(
+    client: AsyncClient, db_engine: object
+) -> None:
+    """Known truth, from seeded rows all in this week: 2 APPROVED rows of two
+    sessions, and 1 REQUIRES_ESCALATION and 1 REJECTED row that carry no session
+    (as the seeder's and the governance API's rows do). Verdicts: 2 approved of 4,
+    1 escalation; sessions: 2.
+
+    The weekly figures used to count only rows with a session_id while the
+    overall rate counted every row, so the executive page showed 76% beside 74%
+    and "Escalations (4w) 0" while the audit trail listed escalations.
+    """
+    now = datetime.now(UTC) - timedelta(seconds=5)
+    rows = [
+        {**_audit_row(now), "verdict": "APPROVED", "sid": "sess-a"},
+        {**_audit_row(now), "verdict": "APPROVED", "sid": "sess-b"},
+        {**_audit_row(now), "verdict": "REQUIRES_ESCALATION", "sid": None},
+        {**_audit_row(now), "verdict": "REJECTED", "sid": None},
+    ]
+    await _seed_audit_log(db_engine, rows)
+    body = (await client.get("/api/v1/platform/metrics")).json()
+    this_week = body["weekly_sessions"][-1]
+    assert this_week["session_count"] == 2
+    assert this_week["approval_rate"] == 0.5
+    assert this_week["escalation_count"] == 1
+    # Every row is in this week, so the two rates are over the same rows.
+    assert body["overall_approval_rate"] == this_week["approval_rate"]
+
+
 async def test_metrics_requires_auth(db_engine: object) -> None:
     """Metrics endpoint returns 401 without auth token."""
     async with AsyncClient(

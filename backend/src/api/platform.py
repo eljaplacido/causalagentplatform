@@ -478,8 +478,13 @@ async def get_platform_metrics(
 
     async with CloudSqlFactory.get_session_factory()() as session:
         # ── Weekly session metrics ───────────────────────────────────────────
-        # Group audit_log entries by week (each session produces at least one entry)
-        # We approximate "sessions" as unique session_ids in audit_log
+        # Group audit_log entries by week. "Sessions" are the distinct session_ids
+        # among them; the verdict figures (approval rate, escalations) count every
+        # row, as overall_approval_rate does. They used to count only rows with a
+        # session_id, so this week's rate and the overall one were over different
+        # rows (the executive page showed 76% beside 74%), and escalations recorded
+        # without a session -- the seeder's, the governance API's -- were never
+        # counted ("Escalations (4w) 0" beside an audit trail listing them).
         # Grouped here, not in SQL: strftime() is SQLite's, and on PostgreSQL the
         # failed statement also aborted the transaction, so every query after it in
         # this session failed too and the endpoint returned nothing but padding.
@@ -491,8 +496,7 @@ async def get_platform_metrics(
                 typed_text(
                     "SELECT created_at, session_id, guardian_verdict "
                     "FROM audit_log "
-                    "WHERE created_at >= :cutoff "
-                    "  AND session_id IS NOT NULL",
+                    "WHERE created_at >= :cutoff",
                     cutoff=TIMESTAMP,
                 ),
                 {"cutoff": mondays[0]},
@@ -507,7 +511,8 @@ async def get_platform_metrics(
                 week = weeks.get(monday)
                 if week is None:
                     continue
-                week["sessions"].add(row["session_id"])
+                if row["session_id"] is not None:
+                    week["sessions"].add(row["session_id"])
                 week["total"] += 1
                 week["approved"] += row["guardian_verdict"] == "APPROVED"
                 week["escalated"] += row["guardian_verdict"] == "REQUIRES_ESCALATION"
