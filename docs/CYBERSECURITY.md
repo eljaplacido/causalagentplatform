@@ -200,7 +200,7 @@ granted role gets 403, a token holding a granted role does not.
 | `POST /api/v1/decisions`, `POST /api/v1/decisions/{digest}/followup` | `analyst`, `governance_officer`, `platform_engineer`, `sre` |
 | `POST /api/v1/interventions/{id}/approve`, `/reject`, `POST /api/v1/interventions/feedback` | `governance_officer`, `platform_engineer`, `sre` (`DECISION_ROLES`) |
 | `POST /api/v1/session/run`, `/incident`, `POST /api/v1/decisions/verify-anchored`, `POST /api/v1/platform/evaluation/calibration` | any platform role |
-| `GET /api/v1/provenance/trace/{id}`, `/export/{id}`, `/invocations/{id}`, `DELETE /api/v1/provenance/session/{id}` | `GOVERNANCE_ROLES` |
+| `GET /api/v1/provenance/trace/{id}`, `/export/{id}`, `/invocations/{id}`, `POST /api/v1/provenance/session/{id}/erasure` | `GOVERNANCE_ROLES` |
 
 "Any platform role" is one of `viewer`, `analyst`, `graph_author`, `governance_officer`,
 `platform_engineer`, `agent`, `sre`: a valid token with none of them is refused. Every other
@@ -221,9 +221,10 @@ Where §4.1 does not say, these are the least-privilege choices made:
   read-only check and `graph_author` "submit"; `analyst` drafts through `/drafts`, which runs
   its own check, and gets no direct `/check`.
 - **Sessions** run the platform graph; §4.1 gives every role "Run".
-- **Provenance** is read like the audit log (governance roles only), and its erasure (a test
-  cleanup route) needs a governance role. It still erases: provenance is not append-only
-  (register `provenance-not-append-only`).
+- **Provenance** is read like the audit log (governance roles only), and so is its erasure.
+  Provenance is append-only (`011_provenance.sql`: no role holds UPDATE or DELETE, and a trigger
+  refuses both); an erasure writes a tombstone naming who, when and why, which hides the
+  session's earlier records from the provenance reads and deletes nothing.
 - **`graph_author` "Audit Log: Read own"** is not provided: the audit log stays governance-only.
 - **`sre`** is not in §4.1. It is the incident-commander role that decides interventions, and
   it reads all of the semantic layer.
@@ -311,8 +312,9 @@ application-only), and the tables that carry no domain.
 ## 5. Data Privacy
 
 > **Status:** target design. No pseudonymization, erasure or export control exists (register
-> `gdpr-controls`). No connector runs in the platform today (DATA_LAYER.md §4), so nothing
-> ingests operational data yet.
+> `gdpr-controls`). The provenance erasure (§4.0) hides records from the API and keeps them in
+> the database, so it is not Art. 17 erasure. No connector runs in the platform today
+> (DATA_LAYER.md §4), so nothing ingests operational data yet.
 
 ### 5.1 PII Handling in Causal Models
 

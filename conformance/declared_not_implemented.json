@@ -98,7 +98,7 @@
           "says": "Computes Rosenbaum sensitivity bounds and E-values for unmeasured confounders"
         },
         {
-          "at": "docs/CYBERSECURITY.md:405",
+          "at": "docs/CYBERSECURITY.md:407",
           "says": "- Rosenbaum sensitivity bounds"
         },
         {
@@ -133,7 +133,7 @@
           "says": "(DoWhy, PyMC)"
         },
         {
-          "at": "docs/AGENTS.md:666",
+          "at": "docs/AGENTS.md:667",
           "says": "DoWhy, EconML, statsmodels"
         },
         {
@@ -195,11 +195,11 @@
           "says": "Provider-agnostic LLM"
         },
         {
-          "at": "docs/AGENTS.md:616",
+          "at": "docs/AGENTS.md:617",
           "says": "the LLM factory resolves capability \u2192 provider at runtime"
         },
         {
-          "at": "docs/AGENTS.md:626",
+          "at": "docs/AGENTS.md:627",
           "says": "Routing is handled by `src/agents/llm_factory.py`"
         },
         {
@@ -261,33 +261,6 @@
         "kind": "test",
         "path": "backend/tests/integration/test_review_queue_risk.py",
         "asserts": "/review-queue returns risk_tier and submitted_by derived from each object and orders by risk tier"
-      }
-    },
-    {
-      "id": "provenance-store-no-callers",
-      "status": "declared-not-implemented",
-      "capability": "Provenance records written by real platform flows",
-      "claimed_in": [
-        {
-          "at": "docs/CURRENT_STAGE.md@4e036a0:33",
-          "says": "Append-only audit trail"
-        },
-        {
-          "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md:134",
-          "says": "`src/api/provenance.py` | Implemented"
-        }
-      ],
-      "reality": "store_provenance_record has no call site: nothing outside the tests writes a provenance record, so the provenance API serves only what tests put there.",
-      "evidence": [
-        {
-          "at": "backend/src/api/provenance.py:41",
-          "says": "def store_provenance_record(record: ProvenanceRecord) -> None:"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/integration/test_provenance_flow.py",
-        "asserts": "a real flow (e.g. POST /api/v1/session/run) produces a provenance record retrievable from the provenance API"
       }
     },
     {
@@ -366,7 +339,7 @@
           "says": "Ingestion Bus (Kafka)"
         },
         {
-          "at": "docs/DATA_LAYER.md:405",
+          "at": "docs/DATA_LAYER.md:406",
           "says": "3.3 Kafka (Event Streaming)"
         },
         {
@@ -518,7 +491,7 @@
       "reality": "The chain is built, persisted, served and verified, and decision_records is append-only in the production schema. Both ends of anchoring now exist in code: GET /api/v1/decisions/checkpoint returns the head to publish, and POST /api/v1/decisions/verify-anchored checks the chain against checkpoints kept elsewhere, catching a rewrite that re-seals every later entry (which /verify passes) and a truncation below a checkpoint. What does not exist is the publishing: nothing sends a checkpoint to a store the platform cannot rewrite, so until a deployment does, the ledger still evidences internal consistency only.",
       "evidence": [
         {
-          "at": "backend/src/api/decisions.py:316",
+          "at": "backend/src/api/decisions.py:361",
           "says": "A pass means the chain is *internally* consistent. It cannot mean more than"
         },
         {
@@ -661,7 +634,7 @@
       "capability": "Agents render their prompts from the versioned templates in prompts/",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:610",
+          "at": "docs/AGENTS.md:611",
           "says": "Prompt templates are versioned in `prompts/` alongside their schema contracts. No agent uses ad-hoc prompts at runtime."
         }
       ],
@@ -843,11 +816,11 @@
       "reality": "contracts.py defines the contract, SLA and violation models and a ContractRegistry that can register, look up and remove contracts. Nothing evaluates a contract, nothing produces a ContractViolation, and only the tests instantiate the registry. PR-009 fires only when a caller sends action_type DATA_ACCESS_WITH_CONTRACT, which no code path does, and it reads the violation list from that caller's own payload. So a caller that reports no violations is never blocked.",
       "evidence": [
         {
-          "at": "backend/src/agents/governance.py:428",
+          "at": "backend/src/agents/governance.py:431",
           "says": "if action_type == \"DATA_ACCESS_WITH_CONTRACT\":"
         },
         {
-          "at": "backend/src/agents/governance.py:429",
+          "at": "backend/src/agents/governance.py:432",
           "says": "contract_violations = payload.get(\"contract_violations\", [])"
         },
         {
@@ -905,29 +878,6 @@
       }
     },
     {
-      "id": "provenance-not-append-only",
-      "status": "declared-not-implemented",
-      "capability": "Append-only provenance records",
-      "claimed_in": [
-        {
-          "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md@13e7d92:84",
-          "says": "Both provenance and contract records are append-only"
-        }
-      ],
-      "reality": "Provenance records live in an in-process dict, lost on restart, and DELETE /api/v1/provenance/session/{id} erases a session's records. Since the role matrix that delete needs a governance role (governance_officer or platform_engineer), but it still erases, so the store is not append-only.",
-      "evidence": [
-        {
-          "at": "backend/src/api/provenance.py:281",
-          "says": "_provenance_store.pop(session_id, None)"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/integration/test_provenance_append_only.py",
-        "asserts": "provenance records are persisted, survive a process restart, and no route or store method removes or rewrites one"
-      }
-    },
-    {
       "id": "gdpr-controls",
       "status": "declared-not-implemented",
       "capability": "Privacy controls: PII pseudonymization at ingestion, logical erasure, portable export",
@@ -945,7 +895,7 @@
           "says": "| Art. 20 \u2013 Data portability | Semantic layer export (JSON-LD format) |"
         }
       ],
-      "reality": "No code pseudonymizes, tokenizes or strips any field, no erasure path exists, and no JSON-LD (or other) export of the semantic layer exists. No connector runs in the platform, so today PII can enter only through API request bodies, and nothing inspects them for it. The Art. 30 row (records of processing) is the one backed by something real: audit_log.",
+      "reality": "No code pseudonymizes, tokenizes or strips any field, no erasure path exists (a provenance erasure, POST /api/v1/provenance/session/{id}/erasure, writes a tombstone that hides a session's provenance from the API and deletes nothing, so it is not Art. 17 erasure), and no JSON-LD (or other) export of the semantic layer exists. No connector runs in the platform, so today PII can enter only through API request bodies, and nothing inspects them for it. The Art. 30 row (records of processing) is the one backed by something real: audit_log.",
       "evidence": [
         {
           "at": "backend/src/connectors/base.py:146",
@@ -964,7 +914,7 @@
       "capability": "Guardian PR-007: edges without a sensitivity result are blocked from APPROVED",
       "claimed_in": [
         {
-          "at": "backend/src/agents/governance.py:59",
+          "at": "backend/src/agents/governance.py:61",
           "says": "\"PR-007\": \"Sensitivity analysis: edges without sensitivity_result blocked from APPROVED.\","
         },
         {
@@ -975,7 +925,7 @@
       "reality": "PR-007 is in the Guardian's rule table and nowhere in its evaluation: no check reads a sensitivity result, so an edge is approved whether or not any sensitivity analysis was run, and PR-007 is never cited on a verdict. The rules that are evaluated are PR-001 to PR-006, PR-008, and PR-009 (on one action type).",
       "evidence": [
         {
-          "at": "backend/src/agents/governance.py:375",
+          "at": "backend/src/agents/governance.py:378",
           "says": "rules_fired.append(\"PR-002\")"
         }
       ],
@@ -1106,7 +1056,7 @@
       "capability": "Dynamic application security testing (DAST): a scanner such as OWASP ZAP run against a running API, weekly",
       "claimed_in": [
         {
-          "at": "docs/CYBERSECURITY.md:590",
+          "at": "docs/CYBERSECURITY.md:592",
           "says": "DAST: OWASP ZAP against a staging API (weekly). Not built: there is no staging"
         }
       ],
@@ -1299,6 +1249,20 @@
       "fixed_in": "a6a864d",
       "pinned_by": "backend/tests/unit/test_py_lock.py",
       "note": "Implemented, except DAST, which did not leave: it is dast-not-built. Hash-pinned installs: every Python environment CI builds installs from a lock in requirements/ (backend.txt for backend/.venv, kernel.txt for packages/causal-core/.venv and release.yml's verify job, image.txt for backend/Dockerfile, release.txt for the published wheels), made by `uv pip compile --universal --generate-hashes` from requirements/*.in and installed with pip --require-hashes --no-deps; the repository's own packages, not on an index and so not in the lock, then install from the checkout with --no-deps --no-build-isolation (hatchling and editables come from the lock), and pip check proves the pair whole. The gate step python-lock (scripts/py_lock.py check) fails a lock whose inputs (the .in file and the dependency tables of each pyproject.toml it names) changed since `python3 scripts/py_lock.py relock` recorded them in requirements/lock-inputs.json, a lock that does not satisfy its local packages, and a tested environment that differs from its lock; the pip-audit steps audit the locks (pip-audit-image added for image.txt). Image scan: CI job `images` builds backend/Dockerfile and frontend/Dockerfile (the latter did not build at all before this change; it now builds from the repository root with output: standalone) and scans each with Trivy 0.74.0 pinned by digest; scripts/image_scan.py fails a HIGH or CRITICAL finding with a published fix not excused in scripts/image-scan-allowlist.json (empty), lists findings with no fix published without failing (44 in the backend image's Debian 13 base packages on 2026-09-26, none in the frontend's), and fails a report that lists no package. The one fixable pair it found (msgpack and setuptools copies vendored in pip 26.2.1) went by removing pip from the runtime image. SBOM: release.yml installs the built wheels with requirements/release.txt into a fresh environment, writes a CycloneDX 1.6 SBOM of it with cyclonedx-bom 7.4.0, checks it lists exactly the locked pins and the three packages (scripts/sbom_check.py), keeps it as an artifact and attaches it to the tag's GitHub release; the images job keeps a Trivy CycloneDX SBOM per image. Update PRs: .github/dependabot.yml, weekly and grouped, for the locks, the pyproject ranges, npm, GitHub Actions and the base images (pinned by digest). Negative controls: test_py_lock.py (a dependency edit without a re-lock, a pin below a floor, a pin without a hash, an environment one version, one package or one extra away from its lock), test_image_scan.py, test_sbom_check.py, and test_dep_audit.py for the lock mode. Not verified here: the images job and release.yml have not run on GitHub (their steps were run locally with the same images and tools), and Dependabot's handling of the uv-compiled locks is untested. Not changed: the release's build tools are pinned by version, not hash; HIGH findings with no fix published are not gated."
+    },
+    {
+      "id": "provenance-not-append-only",
+      "was": "Provenance records live in an in-process dict, lost on restart, and DELETE /api/v1/provenance/session/{id} erases a session's records. Since the role matrix that delete needs a governance role (governance_officer or platform_engineer), but it still erases, so the store is not append-only.",
+      "fixed_in": "8ba6026",
+      "pinned_by": "backend/tests/integration/test_provenance_append_only.py",
+      "note": "Implemented. Migration 011_provenance.sql (and its SQLITE_DDL rendering) stores provenance in provenance_entries (PROV records and LLM invocations, the model as JSON, ordered by sequence) and provenance_erasures; src/semantic_layer/provenance_store.py appends and reads, with no update or delete method. causal_app holds SELECT and INSERT only on both tables, and UPDATE and DELETE are trapped by trigger on PostgreSQL and SQLite, so the owner is refused too. DELETE /api/v1/provenance/session/{id} is gone; POST /api/v1/provenance/session/{id}/erasure (governance roles, a reason of at least ten characters) writes a tombstone -- who, when, why, how many entries -- that hides the session's entries up to that point from trace, export and invocations, which return the tombstone instead. Entries written afterwards are served. The pinning test asserts persistence across a new store, the refusals (and on PostgreSQL causal_app's missing privileges), that no provenance route deletes, the tombstone's hiding and keeping, the reason requirement and the role checks. Not changed: the hidden rows remain in the database, readable by its owner and by causal_governance (causal_readonly is not granted SELECT on the entries), so an erasure is not GDPR Art. 17 erasure -- that is still gdpr-controls. The other half of the withdrawn ADR sentence, contract records, is not append-only either: ContractRegistry is an in-memory store with a remove method, which ADR-002 now says, and no flow uses it (data-contracts-not-enforced)."
+    },
+    {
+      "id": "provenance-store-no-callers",
+      "was": "store_provenance_record has no call site: nothing outside the tests writes a provenance record, so the provenance API serves only what tests put there.",
+      "fixed_in": "8ba6026",
+      "pinned_by": "backend/tests/integration/test_provenance_flow.py",
+      "note": "Implemented for the flows that run. POST /api/v1/session/run and /incident append the run's agent, activity, one activity per reasoning step it added, and its input and output entities (digests of the description, the states and each step's inputs and outputs, not their content); GovernanceAgent.check appends a Guardian activity citing its audit_log row in the same transaction as that row, which covers POST /api/governance/check, approvals, rejections, the triage agent's check and the graph's GuardianCheck node; POST /api/v1/decisions appends the data and graph entities (digests, or the registered model's name, version and digest), the analysis activity and the ledger-entry entity under session decision:<entry_digest> (src/semantic_layer/provenance_capture.py). The pinning test drives each route and reads the records back through GET /api/v1/provenance/trace. Still unwired, and not claimed: LLM invocations -- the llm_factory capture hook now writes to the durable store (tested with a stub model), but no runtime path calls get_llm (llm-routing-no-callers); agents do not write provenance themselves, their reasoning steps are recorded by the session route; and a /session/run whose planner finds no safe action escalates before the GuardianCheck node, so its output cites no audit row."
     }
   ]
 }

@@ -32,12 +32,12 @@
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "fc5b6d1b7db3a4cae3ded89459aa58661b1946eaf6e8b8807fbc5bc34e674477"
+          "docs/CURRENT_STAGE.md": "5e0977de5441165bce71225deb0c0abffb9eaa93a0a3b2a5ad4ef9953cdbfcf4"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: T5 row from septa-8 present; #14 changed nothing it quotes)"
+        "by": "Claude (septa-48/septa-16: provenance durable and append-only, erasure a tombstone; writers are session runs, Guardian checks and decisions; LLM invocations unwired)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -54,10 +54,10 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "7ea978f77fdbbf32f505ad2a2fc7cd7491ce98ad43f325e868410087b50f2a6d",
-          "backend/src": "c06af80dee95babb1eed74ffbc5435ffe7f1cb1fdc8bf8f8489d087ad42aabe1",
+          "conformance/declared_not_implemented.json": "4f9e7dab04df99ca7c99fc7f04cef7143f1a08fbd28fb15ea6ae75351c3b7912",
+          "backend/src": "ce8c0278f04fd83a05ed14c2bdaf7b50c15390b1d1de0a94f572b656c0ff47f5",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
+          "backend/tests": "93da32857e0a6400869e0f722c2f47a1ae9c6089ef989e3ae0e147f23a617f2b",
           "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
           "packages": "b6ee9e7b2337b6a02a1015e9b026ef382e06dd7afb17259c76142ad2af9e8a02",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
@@ -65,7 +65,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: both the dast-not-built row (#14) and the did-* rows (septa-8) present)"
+        "by": "Claude (septa-48/septa-16: provenance durable and append-only, erasure a tombstone; writers are session runs, Guardian checks and decisions; LLM invocations unwired)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -80,8 +80,8 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/semantic_layer": "e272da84c43185ababee3962259d2982e2cf531c26ba422c0dc3fd4be44a70f3",
-          "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
+          "backend/src/semantic_layer": "f24097eb47f3f82233cb1b802d7b4f7c4ef5a831b1381840ced5d06a32985c1c",
+          "backend/src/agents/governance.py": "00d1a222ccf9aed2cafbfe9e74146024143df409db94322027826d103632d8fd",
           "packages/semantic-types/src": "fe7182fc233b307aa02d26a958898db94ead599601fe740dcfe2981bf5a1150d",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
           "backend/src/orchestration/graph.py": "1c42a22eed003aa1e67b1ffc70545347304a0cc5170959464f263439b727eacc"
@@ -89,7 +89,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: re-read for DB claims; its one PostgreSQL mention, 007_causal_models.sql, still holds; registry.py changed only its bind types)"
+        "by": "Claude (septa-48/septa-16: provenance durable and append-only, erasure a tombstone; writers are session runs, Guardian checks and decisions; LLM invocations unwired)"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -104,16 +104,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/semantic_layer/provenance.py": "02fe831e092fb8bb01d05db9fc9d871ae544e09b2adca565d0df34e3086fa474",
+          "backend/src/semantic_layer/provenance.py": "c912fb0af67442b984325d80528867c559ccb0332ac7725ac448e48f87164c89",
           "backend/src/semantic_layer/contracts.py": "8af9432f179c0d3e8652b3b7d4a48db9edbff3f5acc1fb25c8a6e8d9af3eaaa4",
-          "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
-          "backend/src/agents/llm_factory.py": "f7a2d5514b4002494fe1cf9edf69c5b9cc31b8d2751fe39b335ecbfce4d8014a",
-          "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0"
+          "backend/src/api/provenance.py": "55fa5a3e0153904f557da134e6e0f3a8c8c1ae0ab8b5fe4faa8a6918a70c617e",
+          "backend/src/agents/llm_factory.py": "cf027815b09bfd658aa041072ebd42158e3bdf5f6e76d3f8941ed7b227fd9f1e",
+          "backend/src/agents/governance.py": "00d1a222ccf9aed2cafbfe9e74146024143df409db94322027826d103632d8fd"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: re-read for DB claims; governance.py now binds audit_log's rules as TEXT[] and created_at as TIMESTAMPTZ, which changes nothing this ADR says about the audit trail)"
+        "by": "Claude (septa-48/septa-16: provenance durable and append-only, erasure a tombstone; writers are session runs, Guardian checks and decisions; LLM invocations unwired)"
       }
     },
     "docs/ADR-003-hierarchical-planning-and-evaluation.md": {
@@ -148,7 +148,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/agents": "ab6334ee1a9e15e7e3a6bf4647430473456a86799863b8ce80b3110670587aa9",
+          "backend/src/agents": "27fcd27b5aae9c6d76fdf2452f798618e0055d3941d3fc313e9f779ddf0ab87f",
           "backend/src/skills": "7c14f6095d38b78711081427d4f98e3f621a0a72de4b377d6fc374c346c4ecea",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "backend/src/orchestration": "026e61993e2c3e51962380e4d4e957cf5d26e650455679bd5e7cdce75c31c2f4",
@@ -157,7 +157,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: re-read the memory tiers; session memory in PostgreSQL is now true, 008_session_state.sql, and the experience buffer's session_state reads run on it too)"
+        "by": "Claude (septa-48/septa-16: provenance durable and append-only, erasure a tombstone; writers are session runs, Guardian checks and decisions; LLM invocations unwired)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -176,20 +176,20 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/middleware": "0a00dc9c734e148a08c531bcd281d3afe81a8189ef75ef669543b89cd0e4136b",
+          "backend/src/middleware": "b207b9d2692cb17a5a2f92da2cd96460548d2d81b343d73c82b14ed34bf59fb3",
           "backend/src/api/governance.py": "74095eefc36dc973a8dd5aae5d8bba89d44aa860c32862fa729a5c10b55bf3c3",
-          "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
+          "backend/src/agents/governance.py": "00d1a222ccf9aed2cafbfe9e74146024143df409db94322027826d103632d8fd",
           "backend/src/semantic_layer/registry.py": "91529601ce53d74c25763a017f4a43ad552c13e94d562f513165b079c16c71b7",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
-          "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
-          "backend/src/db/migrations": "6b52679eb2132b16e3bb238da5d6a7bde969f409bba4bd63b431c94456db74f1",
+          "backend/src/api/provenance.py": "55fa5a3e0153904f557da134e6e0f3a8c8c1ae0ab8b5fe4faa8a6918a70c617e",
+          "backend/src/db/migrations": "a6e3fdf45fc8af8d1a3d185565248d1e563e887bb4d2fe5064fdad472bd3c4c0",
           "backend/src/semantic_layer/verdict.py": "2807535994f0073bd9f58cc2774822d9f7bd1749aa7801d669eb2301bde3ac00",
           ".github/workflows": "1ae0fadaa874c419905d5c24ebadf5ccca68705dc7d83057ea81682712fae31b"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: #14's image-scan and SBOM text present; septa-8 does not touch it)"
+        "by": "Claude (septa-48/septa-16: provenance durable and append-only, erasure a tombstone; writers are session runs, Guardian checks and decisions; LLM invocations unwired)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -207,7 +207,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/db": "d43e2f0b4736735ce4661b7a43652f2469db73154a1d01578812c463dd2a8251",
+          "backend/src/db": "71181c6b0aea2205be3dd543a996fe7d14c5a2f886451703810f0bb0db378bb4",
           "backend/src/connectors": "47199e6fd213f90c59af28dda1c6469d256d6595cdd433fbbd1a2957ec723569",
           "backend/src/semantic_layer/models.py": "f3b7a600ac8e8c4ce7beb48145a188b2394f3775b6ad7d094613cbb9798d3b05",
           "backend/src/sensors": "d38f988ccb52659ac4ecc8724e8aa775b2e6e9fca76b73dbba6576c3f3d1dcba",
@@ -219,7 +219,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-47: 3.2 lists migrations 001-010, the compose init script, the RLS row, the roles and grants, and that deployments connect as causal_app)"
+        "by": "Claude (septa-48/septa-16: provenance durable and append-only, erasure a tombstone; writers are session runs, Guardian checks and decisions; LLM invocations unwired)"
       }
     },
     "docs/HANDOFFS.md": {
@@ -311,12 +311,12 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "1ae0fadaa874c419905d5c24ebadf5ccca68705dc7d83057ea81682712fae31b",
-          "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
+          "backend/tests": "93da32857e0a6400869e0f722c2f47a1ae9c6089ef989e3ae0e147f23a617f2b",
           "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
           ".gnomon/ci.sh": "8379e43234946f44d8e569a68c60d42923500ded3012d88bf2a477f5ebecf8aa",
-          "scripts": "f0b53ec6456489ff7a911dc1b94d72ee20926fb6a5b68d63badd302cc5ae9090",
+          "scripts": "32eec520c47b75d15218f31b52c37de564716290d2390896a49b5018be9c1cf8",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "a017cd3d799db03c83693deb1efeb7a8c2fb2e73e532f4fe5ce3895002f7be0a",
           "packages/causal-core/tests": "be7509f8646efd6a27d3b142715e440739d17255e7ffc1ebcde5bc05aa95c2b2",
@@ -325,7 +325,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: python-lock and images job (#14) and the T5 row (septa-8) both present)"
+        "by": "Claude (septa-48/septa-16: provenance durable and append-only, erasure a tombstone; writers are session runs, Guardian checks and decisions; LLM invocations unwired)"
       }
     },
     "docs/UIX.md": {
@@ -355,13 +355,13 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "b3a206babea176dd53fdebe83037e38e66922eeced1def6dbfb248262c2477a6",
-          "conformance/declared_not_implemented.json": "7ea978f77fdbbf32f505ad2a2fc7cd7491ce98ad43f325e868410087b50f2a6d",
-          "docs/CURRENT_STAGE.md": "fc5b6d1b7db3a4cae3ded89459aa58661b1946eaf6e8b8807fbc5bc34e674477"
+          "conformance/declared_not_implemented.json": "4f9e7dab04df99ca7c99fc7f04cef7143f1a08fbd28fb15ea6ae75351c3b7912",
+          "docs/CURRENT_STAGE.md": "5e0977de5441165bce71225deb0c0abffb9eaa93a0a3b2a5ad4ef9953cdbfcf4"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: septa-49 done (#14) and septa-8 now marked done)"
+        "by": "Claude (septa-48/septa-16: provenance durable and append-only, erasure a tombstone; writers are session runs, Guardian checks and decisions; LLM invocations unwired)"
       }
     },
     "SECURITY.md": {
@@ -377,17 +377,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/middleware": "0a00dc9c734e148a08c531bcd281d3afe81a8189ef75ef669543b89cd0e4136b",
+          "backend/src/middleware": "b207b9d2692cb17a5a2f92da2cd96460548d2d81b343d73c82b14ed34bf59fb3",
           "backend/src/api/governance.py": "74095eefc36dc973a8dd5aae5d8bba89d44aa860c32862fa729a5c10b55bf3c3",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
-          "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
+          "backend/src/agents/governance.py": "00d1a222ccf9aed2cafbfe9e74146024143df409db94322027826d103632d8fd",
           "backend/src/semantic_layer/registry.py": "91529601ce53d74c25763a017f4a43ad552c13e94d562f513165b079c16c71b7",
           "backend/src/semantic_layer/verdict.py": "2807535994f0073bd9f58cc2774822d9f7bd1749aa7801d669eb2301bde3ac00"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-47: domain isolation now enforced also by PostgreSQL RLS binding causal_app, start-up refusal as owner/superuser/BYPASSRLS; the compose passwords sentence names both logins)"
+        "by": "Claude (septa-48/septa-16: provenance durable and append-only, erasure a tombstone; writers are session runs, Guardian checks and decisions; LLM invocations unwired)"
       }
     }
   }
