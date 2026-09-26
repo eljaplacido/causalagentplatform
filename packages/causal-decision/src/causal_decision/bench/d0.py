@@ -486,7 +486,7 @@ def main(argv: list[str] | None = None) -> int:
         "suite": "D0",
         "prereg_sha256": prereg_hash,
         "prereg_version": cfg["meta"]["version"],
-        "git": git_sha(),
+        "git": git_sha(__file__),
         **run(cfg),
     }
     text = json.dumps(doc, indent=2, default=str)

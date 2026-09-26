@@ -769,13 +769,27 @@ def _is_result_file(path: str) -> bool:
     return len(parts) >= 3 and parts[0] == "benchmarks" and parts[-2] == "results"
 
 
-def git_sha() -> str:
+def git_sha(code: str | Path | None = None) -> str:
+    """The commit of the checkout the running code was imported from, `-dirty` if its tree is.
+
+    `code` is a file or directory of that code (default: this module, i.e. causal_core); a
+    gate in another package passes its own `__file__`. Never the working directory: run
+    from one git worktree with a venv whose editable install points at another checkout,
+    the cwd's sha would stamp a result with a commit that is not the code that produced it.
+    """
+    where = Path(code if code is not None else __file__).resolve()
+    if where.is_file():
+        where = where.parent
     try:
         sha = subprocess.run(
-            ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True
+            ["git", "-C", str(where), "rev-parse", "HEAD"],
+            capture_output=True, text=True, check=True,
         ).stdout.strip()
+        # porcelain v1 paths are relative to the top of the repository, which is what
+        # _is_result_file expects, wherever inside it `where` is.
         status = subprocess.run(
-            ["git", "status", "--porcelain"], capture_output=True, text=True, check=True
+            ["git", "-C", str(where), "status", "--porcelain"],
+            capture_output=True, text=True, check=True,
         ).stdout.splitlines()
         # Untracked benchmark RESULT files are outputs, not code: runs of different gates
         # in parallel otherwise mark each other dirty. Anything else -- an edited file, an

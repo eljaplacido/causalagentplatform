@@ -7,6 +7,7 @@ and a manifest that checks nothing.
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import sys
@@ -84,3 +85,29 @@ def test_a_range_is_rounded_outward() -> None:
     assert not df.matches(0.9351, "0.94", "min", "outward")
     assert df.matches(0.9491, "94.9", "one", "nearest") is False  # unscaled
     assert df.matches(94.91, "94.9", "one", "nearest")
+
+
+def test_a_run_whose_commit_is_unknown_does_not_stand(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Negative control: `git: "unknown"` has no -dirty suffix, and once counted as a clean
+    tree. A standing run must name a 40-hex commit that is an ancestor of HEAD."""
+    from pytest import raises
+
+    df = _load()
+    bench = tmp_path / "benchmarks" / "tx"
+    (bench / "results").mkdir(parents=True)
+    prereg = b"# tx\n"
+    (bench / "PRE-REGISTRATION.md").write_bytes(prereg)
+    run = {"prereg_sha256": "sha256:" + hashlib.sha256(prereg).hexdigest(), "passed": True}
+    for i, git in enumerate(["unknown", "0" * 40, "abc1234"]):
+        (bench / "results" / f"r{i}.json").write_text(json.dumps({**run, "git": git}))
+    monkeypatch.setattr(df, "ROOT", tmp_path)
+    with raises(LookupError):
+        df.standing_run("tx")
+
+
+def test_the_untraceable_t8_run_is_skipped_for_a_later_one() -> None:
+    path, run = _load().standing_run("t8-switchback")
+    assert run["git"] != "unknown"
+    assert path.name != "2026-09-26-v2-run1.json"
