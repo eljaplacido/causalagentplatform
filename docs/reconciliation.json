@@ -32,12 +32,12 @@
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "fc5b6d1b7db3a4cae3ded89459aa58661b1946eaf6e8b8807fbc5bc34e674477"
+          "docs/CURRENT_STAGE.md": "f15fb78b50bc968915daab076ddadaacbd5e4354bc08b9fb2650ba1014ed271f"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: T5 row from septa-8 present; #14 changed nothing it quotes)"
+        "by": "Claude (session-guardian: re-read; the README makes no claim about session runs, the planner or escalation)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -54,10 +54,10 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "cc3aefae8c5ea3aa635bb0b805ccf1db0e5253c384c8b1ba679822b355098c63",
-          "backend/src": "c06af80dee95babb1eed74ffbc5435ffe7f1cb1fdc8bf8f8489d087ad42aabe1",
+          "conformance/declared_not_implemented.json": "f4257ba0a884001ac1d6691cbce66a4a3dc968c72c518951626d4239e7609ac6",
+          "backend/src": "19fa9d056f43e8e5b1e92a9c645c11ade59a0b9e5c68f32342b95f724b797f50",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
+          "backend/tests": "81dbee9dc2ae99ea55b450742ce1a4e0cfc551322ae4c6c961b95072115bfee9",
           "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
           "packages": "e0df8dd5f27d915fc2f45eb9b1d9d01500c8d30dde637dbfd332b32abeab7016",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
@@ -65,7 +65,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (self-hosted CI: the A0 gate test now inherits the environment; the row's claim is unchanged)"
+        "by": "Claude (session-guardian: new implemented row for governed session runs; planning-simulation-no-data and cynefin-classifier-keyword-stub rows unchanged, both still open)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -84,12 +84,12 @@
           "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
           "packages/semantic-types/src": "fe7182fc233b307aa02d26a958898db94ead599601fe740dcfe2981bf5a1150d",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
-          "backend/src/orchestration/graph.py": "1c42a22eed003aa1e67b1ffc70545347304a0cc5170959464f263439b727eacc"
+          "backend/src/orchestration/graph.py": "9e75a97dcfccf2e649b77e2b52bd0bc1ae8d11aaf7a3af5c072d4bcb2e09d7e8"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: re-read for DB claims; its one PostgreSQL mention, 007_causal_models.sql, still holds; registry.py changed only its bind types)"
+        "by": "Claude (session-guardian: Guardian integration points corrected: every session-graph path now ends in guardian_check, escalations included; they used to skip it)"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -126,14 +126,14 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/orchestration": "026e61993e2c3e51962380e4d4e957cf5d26e650455679bd5e7cdce75c31c2f4",
+          "backend/src/orchestration": "7776a0a563af5bda75451c4ff4bb546683ae9947207f6da8b0545c1781976c8f",
           "backend/src/evaluation": "9a2708b95f3bae7f8b05075e62815c7f51cb3f6e7939a585c1c2c26e5b500b07",
           "backend/src/api/platform.py": "16dcc7dbc23c2cf627fff078cbdf4e5355833ea156073ab190f48ba60574b613"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: re-read; platform.py's metrics now group weeks in Python instead of SQLite's strftime and the DB connector is named by dialect; the three evaluation endpoints the ADR describes are unchanged)"
+        "by": "Claude (session-guardian: planning failures rewritten: an estimated failure escalates through the Guardian, an unsimulated plan goes to it marked plan_unsimulated; topology redrawn)"
       }
     },
     "docs/AGENTS.md": {
@@ -151,13 +151,13 @@
           "backend/src/agents": "ab6334ee1a9e15e7e3a6bf4647430473456a86799863b8ce80b3110670587aa9",
           "backend/src/skills": "7c14f6095d38b78711081427d4f98e3f621a0a72de4b377d6fc374c346c4ecea",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/src/orchestration": "026e61993e2c3e51962380e4d4e957cf5d26e650455679bd5e7cdce75c31c2f4",
+          "backend/src/orchestration": "7776a0a563af5bda75451c4ff4bb546683ae9947207f6da8b0545c1781976c8f",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: re-read the memory tiers; session memory in PostgreSQL is now true, 008_session_state.sql, and the experience buffer's session_state reads run on it too)"
+        "by": "Claude (session-guardian: 5.1/5.2 redrawn: EscalateHuman goes on to GuardianCheck, CynefinClassify reads the submitted problem, DISORDER retries once)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -311,12 +311,12 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "507210537708c484cabb55c1c2481d367609598832a89ca4a1a0e033b5e265ca",
-          "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
+          "backend/tests": "81dbee9dc2ae99ea55b450742ce1a4e0cfc551322ae4c6c961b95072115bfee9",
           "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
           ".gnomon/ci.sh": "8379e43234946f44d8e569a68c60d42923500ded3012d88bf2a477f5ebecf8aa",
-          "scripts": "f0b53ec6456489ff7a911dc1b94d72ee20926fb6a5b68d63badd302cc5ae9090",
+          "scripts": "c67be0ad203c4ccdd3b050b8ba131d7505073e7d7cdc9b32adf65b5083a33e22",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "a017cd3d799db03c83693deb1efeb7a8c2fb2e73e532f4fe5ce3895002f7be0a",
           "packages/causal-core/tests": "be7509f8646efd6a27d3b142715e440739d17255e7ffc1ebcde5bc05aa95c2b2",
@@ -325,7 +325,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (self-hosted CI: 5.1 names the triggers, CI_RUNS_ON and the loopback DB; the A0 test change is internal)"
+        "by": "Claude (session-guardian: re-read; a new backend test file, and 'every Guardian verdict is a row in audit_log' now also holds for session escalations)"
       }
     },
     "docs/UIX.md": {
@@ -355,13 +355,13 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "b3a206babea176dd53fdebe83037e38e66922eeced1def6dbfb248262c2477a6",
-          "conformance/declared_not_implemented.json": "cc3aefae8c5ea3aa635bb0b805ccf1db0e5253c384c8b1ba679822b355098c63",
-          "docs/CURRENT_STAGE.md": "fc5b6d1b7db3a4cae3ded89459aa58661b1946eaf6e8b8807fbc5bc34e674477"
+          "conformance/declared_not_implemented.json": "f4257ba0a884001ac1d6691cbce66a4a3dc968c72c518951626d4239e7609ac6",
+          "docs/CURRENT_STAGE.md": "f15fb78b50bc968915daab076ddadaacbd5e4354bc08b9fb2650ba1014ed271f"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (self-hosted CI: CURRENT_STAGE moved; the roadmap makes no claim about CI runners)"
+        "by": "Claude (session-guardian: re-read; the register and CURRENT_STAGE moved, the roadmap names no session-graph behaviour that changed)"
       }
     },
     "SECURITY.md": {

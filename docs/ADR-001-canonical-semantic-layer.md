@@ -97,9 +97,12 @@ From AGENTS.md §1 and §2:
 - **All verdicts are immutable once written**
 
 Guardian integration points, as built:
-- The session graph (`backend/src/orchestration/graph.py`) runs a `guardian_check` node on every
-  CLEAR / COMPLICATED / COMPLEX path, after `plan_ahead`. CHAOTIC, and a plan with no safe
-  action, go to human escalation without it.
+- The session graph (`backend/src/orchestration/graph.py`) ends every path in a `guardian_check`
+  node: after `plan_ahead` on CLEAR / COMPLICATED / COMPLEX, and after human escalation (CHAOTIC,
+  unresolved DISORDER, a lookahead that found no safe action), which is ruled on and written to
+  `audit_log` like any other output. Until 2026-09-26 escalations skipped it, and every
+  classified run escalated at `plan_ahead`, so no session run reached it
+  (`backend/tests/integration/test_session_reaches_guardian.py`).
 - Only `GovernanceAgent` and `IncidentTriageAgent` call the `guardian_check` skill themselves.
   `BaseAgent._assert_guardian_approved`, the write guard meant for every agent, has no callers.
   The persistence guard that does hold is in the registry: every semantic-layer write needs a
