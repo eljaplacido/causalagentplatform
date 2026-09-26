@@ -28,16 +28,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
-          "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
+          "backend/pyproject.toml": "cdabd6c6e24ab6d579d2aa1de3d0d6db5b8802e87b10489cc3df43a2d34a47ed",
+          "backend/mcp_server": "5eecdddf78bd1cb465d4cbcf0709d7bdecbceacff5c49983ecad939ce2334052",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "fc5b6d1b7db3a4cae3ded89459aa58661b1946eaf6e8b8807fbc5bc34e674477"
+          "docs/CURRENT_STAGE.md": "4e1cc7e20dc230fc6c93e5571747fdc686c7c7b721bf0890f573b36f8a82883d"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: T5 row from septa-8 present; #14 changed nothing it quotes)"
+        "by": "Claude (septa-12: T9 row added with figures bound in doc-figures.json; nothing else it quotes moved)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -54,18 +54,18 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "7ea978f77fdbbf32f505ad2a2fc7cd7491ce98ad43f325e868410087b50f2a6d",
-          "backend/src": "c06af80dee95babb1eed74ffbc5435ffe7f1cb1fdc8bf8f8489d087ad42aabe1",
-          "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
+          "conformance/declared_not_implemented.json": "a6c6b6f8b75f81f82a092850d1524f7a6d75db82896d4cebc12f45feb0bea502",
+          "backend/src": "1d2236ca27953c3b9409abd626c343668d415b40df86ed8fa1ca087f7465a3fc",
+          "backend/mcp_server": "5eecdddf78bd1cb465d4cbcf0709d7bdecbceacff5c49983ecad939ce2334052",
+          "backend/tests": "67cb75c4e8c580f5e08d87193a957eec96dccd1961bfb7b23044c5f1712bda43",
           "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
-          "packages": "b6ee9e7b2337b6a02a1015e9b026ef382e06dd7afb17259c76142ad2af9e8a02",
+          "packages": "bf0a04b50df91098b2478622221cfbfbd954dd7ab23ccbd2cff47556b48cf4d7",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: both the dast-not-built row (#14) and the did-* rows (septa-8) present)"
+        "by": "Claude (septa-12: sensitivity row implemented, sensitivity-one-click-ui row added, T9 in the gates list, package counts 226/118/41 from this branch's gate)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -148,16 +148,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/agents": "ab6334ee1a9e15e7e3a6bf4647430473456a86799863b8ce80b3110670587aa9",
-          "backend/src/skills": "7c14f6095d38b78711081427d4f98e3f621a0a72de4b377d6fc374c346c4ecea",
-          "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
+          "backend/src/agents": "da5c215c5171c068c67a801a94f87cdd5f13c84adea26e83f4dea4c9b26a3005",
+          "backend/src/skills": "b0bcef79c64f6b8d2f35f87f92095d54c52cec7d972a4cf1520b95fcc0d68347",
+          "backend/mcp_server": "5eecdddf78bd1cb465d4cbcf0709d7bdecbceacff5c49983ecad939ce2334052",
           "backend/src/orchestration": "026e61993e2c3e51962380e4d4e957cf5d26e650455679bd5e7cdce75c31c2f4",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: re-read the memory tiers; session memory in PostgreSQL is now true, 008_session_state.sql, and the experience buffer's session_state reads run on it too)"
+        "by": "Claude (septa-12: the sensitivity_analysis skill now returns the kernel's Rosenbaum gamma* from matched pair differences, so line 375 is true of the skill; the legacy tool row says it takes no pairs)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -254,12 +254,12 @@
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
           ".github": "0a8d8e713831ebec1cc8e44c2f719c44085c453b44baed2d4607ac2fa3df132b",
-          ".gnomon": "e9afa6dfbb985f1524e04a4ca8de7b5210e7e43e52d4106baca6d2a1b847532a"
+          ".gnomon": "21e38593027751498a267733d67b4d384793dc71555f63880b1cb8fd1a56f2eb"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: #14's workflow and dependabot changes; the page names the surface files, still true)"
+        "by": "Claude (septa-12: the .gnomon change is the T9 gate row and match patterns; the page names the surface files, still true)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -280,7 +280,7 @@
           "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
-          "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
+          "backend/pyproject.toml": "cdabd6c6e24ab6d579d2aa1de3d0d6db5b8802e87b10489cc3df43a2d34a47ed",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
           ".env.example": "f5dbf40f551d60b4b91d5bbaa9b36a2404f89536421fe51b8bcbf17a6ae1258f",
@@ -289,7 +289,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-8: the backend pin moved to causal-core>=0.10.0; the page states no kernel version and no DiD options, unchanged)"
+        "by": "Claude (septa-12: backend pin moved to causal-core>=0.11.0; the page states no kernel version; the pytest line names T4-T9)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -311,21 +311,21 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "1ae0fadaa874c419905d5c24ebadf5ccca68705dc7d83057ea81682712fae31b",
-          "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
-          "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
+          "backend/tests": "67cb75c4e8c580f5e08d87193a957eec96dccd1961bfb7b23044c5f1712bda43",
+          "backend/pyproject.toml": "cdabd6c6e24ab6d579d2aa1de3d0d6db5b8802e87b10489cc3df43a2d34a47ed",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
           ".gnomon/ci.sh": "8379e43234946f44d8e569a68c60d42923500ded3012d88bf2a477f5ebecf8aa",
-          "scripts": "f0b53ec6456489ff7a911dc1b94d72ee20926fb6a5b68d63badd302cc5ae9090",
+          "scripts": "4d3baafd18f8d51391b68f55f31cc316a9d334c254ddee6caddfe1d29e08dc4d",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
-          "benchmarks": "a017cd3d799db03c83693deb1efeb7a8c2fb2e73e532f4fe5ce3895002f7be0a",
-          "packages/causal-core/tests": "be7509f8646efd6a27d3b142715e440739d17255e7ffc1ebcde5bc05aa95c2b2",
+          "benchmarks": "9884edad5a741e949b8045474479a6541d7847f105343bcbf095b2eff90bea34",
+          "packages/causal-core/tests": "20debc74cae881c1cc0d6a7bbe0716acc1076786916834fecf6ad3fff8ba85cf",
           "packages/causal-decision/tests": "61bde7786a6158cc99f269fd057908ce3959e5e812ac5d8b4c82c11c2c7200b4"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: python-lock and images job (#14) and the T5 row (septa-8) both present)"
+        "by": "Claude (septa-12: T9 row, tests/t9 in the seeded-defect list, the no-correctness-tests paragraph no longer names Rosenbaum bounds)"
       }
     },
     "docs/UIX.md": {
@@ -354,14 +354,14 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "packages/causal-core/src/causal_core": "b3a206babea176dd53fdebe83037e38e66922eeced1def6dbfb248262c2477a6",
-          "conformance/declared_not_implemented.json": "7ea978f77fdbbf32f505ad2a2fc7cd7491ce98ad43f325e868410087b50f2a6d",
-          "docs/CURRENT_STAGE.md": "fc5b6d1b7db3a4cae3ded89459aa58661b1946eaf6e8b8807fbc5bc34e674477"
+          "packages/causal-core/src/causal_core": "0751f8b9195a1a974834f8f1bed0de2dfd57cac8cc2356a0be300d5fc7c412dd",
+          "conformance/declared_not_implemented.json": "a6c6b6f8b75f81f82a092850d1524f7a6d75db82896d4cebc12f45feb0bea502",
+          "docs/CURRENT_STAGE.md": "4e1cc7e20dc230fc6c93e5571747fdc686c7c7b721bf0890f573b36f8a82883d"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: septa-49 done (#14) and septa-8 now marked done)"
+        "by": "Claude (septa-12: robustness row names Rosenbaum bounds (T9) and the missing weighted-estimator sensitivity model; septa-12 marked done)"
       }
     },
     "SECURITY.md": {
