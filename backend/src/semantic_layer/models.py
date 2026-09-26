@@ -644,7 +644,9 @@ class VersionChange(StrEnum):
     PROPOSED = "PROPOSED"   # the draft, revision 1
     APPROVED = "APPROVED"   # promote_to_approved
     REJECTED = "REJECTED"   # reject_draft (stored status DEPRECATED)
-    RECORDED = "RECORDED"   # a state that existed before versioning, recorded as found
+    #: a state that existed before versioning, recorded as found; or a change the
+    #: platform recorded on a draft (record_edge_sensitivity: a sensitivity result)
+    RECORDED = "RECORDED"
 
 
 class SemanticObjectVersion(BaseModel):

@@ -1629,6 +1629,8 @@ class SemanticLayerRegistry:
         verdict_id: UUID,
         actor: UserRef,
         domains: Collection[str] | None = None,
+        *,
+        agent_id: str | None = None,
     ) -> UUID:
         """Record a sensitivity analysis of a DRAFT / UNDER_REVIEW edge; return the new
         assumption's id.
@@ -1653,8 +1655,14 @@ class SemanticLayerRegistry:
         The write needs a Guardian APPROVED verdict issued for
         :data:`RECORD_SENSITIVITY` on this edge: signed, bound to the edge and the
         action, spent here in the same transaction as the insert and the update.
+
+        Both writes are versioned (014): the new assumption is recorded as its
+        revision 1 (PROPOSED, by ``actor`` through ``agent_id``, on the verdict), and
+        the edge's new ``assumption_refs`` and lineage are its next revision (change
+        RECORDED, the same actor, agent and verdict), the state they replace kept
+        in its history as it was. Its UPDATE is guarded on the revision read here,
+        so an approval or rejection in between is not overwritten.
         """
-        t = _CAUSAL_EDGES
         async with CloudSqlFactory.get_session_factory()() as session:
             await _assert_verdict_approved(
                 session,
@@ -1663,15 +1671,7 @@ class SemanticLayerRegistry:
                 context=RECORD_SENSITIVITY_CONTEXT,
                 action=RECORD_SENSITIVITY,
             )
-            current = await session.execute(
-                text(
-                    "SELECT source_id, source_type, target_id, target_type, "
-                    "assumption_refs, approval_status, lineage, domain "
-                    "FROM causal_edges WHERE id = :eid"
-                ),
-                {"eid": str(edge_id)},
-            )
-            found = current.mappings().one_or_none()
+            found = await _read_head(session, "CausalEdge", edge_id)
             if found is None or _outside(domains, found["domain"]):
                 raise ObjectNotFoundError(str(edge_id), "CausalEdge")
             _assert_reviewable(
@@ -1701,6 +1701,18 @@ class SemanticLayerRegistry:
                 domain=found["domain"],
             )
             await _insert_assumption(session, assumption, recorded_under=verdict_id)
+            made = await _read_head(session, "Assumption", assumption.id)
+            if made is None:  # pragma: no cover - inserted above, same transaction
+                raise ObjectNotFoundError(str(assumption.id), "Assumption")
+            await _insert_version(
+                session,
+                "Assumption",
+                _row_state("Assumption", made),
+                VersionChange.PROPOSED,
+                actor=actor,
+                agent_id=agent_id,
+                verdict_ref=verdict_id,
+            )
 
             refs = [str(r) for r in (json_value(found["assumption_refs"], []) or [])]
             history = _as_lineage(found["lineage"])
@@ -1715,22 +1727,19 @@ class SemanticLayerRegistry:
                     ),
                 }
             )
-            await session.execute(
-                update(t)
-                .where(
-                    t.c.id == bindparam("oid"),
-                    t.c.approval_status.in_(bindparam("reviewable", expanding=True)),
-                )
-                .values(
-                    assumption_refs=bindparam("refs", type_=UUID_ARRAY),
-                    lineage=bindparam("lineage"),
-                ),
+            await _record_change(
+                session,
+                "CausalEdge",
+                found,
                 {
-                    "oid": str(edge_id),
-                    "reviewable": list(_REVIEWABLE),
-                    "refs": [*refs, str(assumption.id)],
-                    "lineage": json.dumps(history),
+                    "assumption_refs": ([*refs, str(assumption.id)], UUID_ARRAY),
+                    "lineage": (json.dumps(history), None),
                 },
+                change=VersionChange.RECORDED,
+                actor=actor,
+                agent_id=agent_id,
+                verdict_ref=verdict_id,
+                attempted="given a sensitivity result",
             )
             await session.commit()
 
