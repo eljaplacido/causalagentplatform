@@ -541,6 +541,11 @@ published since the last push surfaces without one):
   exactly that (`scripts/sbom_check.py`), and attaches it to the tag's GitHub release.
 - **Update PRs.** `.github/dependabot.yml`: weekly, grouped, for the Python locks and ranges,
   npm, the GitHub Actions and the base images.
+- **Where CI runs.** Jobs run where the repository variable `CI_RUNS_ON` says: GitHub's hosted
+  runners when it is unset, otherwise self-hosted runners (label `causalplatform-ci`). A
+  self-hosted job executes the repository's code, including a dependency update's install
+  scripts, on that host as the runner's user; the repository is private, so no outside party can
+  open a pull request that runs there. The job's database listens on loopback only.
 - The Python build tools the release uses (`build`, `twine`, `cyclonedx-bom`) are pinned by
   version, not by hash. `safety` is not run; `pip-audit` covers the same advisories.
 

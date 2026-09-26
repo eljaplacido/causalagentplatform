@@ -211,14 +211,25 @@ Each file's `_comment` records when, and at which commit, its numbers were measu
 
 ### 5.1 CI (`.github/workflows/ci.yml`)
 
-Two jobs, on every push, on pull requests to `main`, and weekly on a schedule (so an advisory
-or a fix published since the last push surfaces without waiting for one). The gate job:
+Two jobs, on pushes to `main`, on pull requests to `main`, and weekly on a schedule (so an
+advisory or a fix published since the last push surfaces without waiting for one). A branch push
+does not run CI on its own; its pull request does.
+
+**Where jobs run.** `runs-on` reads the repository variable `CI_RUNS_ON`, a JSON runner label or
+list; unset, jobs run on GitHub's `ubuntu-latest`. While hosted minutes are unavailable it names
+self-hosted runners (label `causalplatform-ci`), which run one job each, so several can share a
+host: the database service takes a loopback port Docker chooses, and image tags carry the run
+id. Deleting the variable returns every job to hosted runners. A job on a self-hosted runner runs
+on that host as the runner's user, dependency updates included.
+
+The gate job:
 
 1. Check out with full history. The register cites some claims at the revision where they were
    made (`file@rev:line`), and a shallow clone cannot verify those.
 2. Set up Python 3.12 and Node 20; cache the benchmark data (keyed on the pre-registrations).
    A `postgres:16-alpine` service container (health-checked with `pg_isready`, a CI-only
-   throwaway password) runs beside the job for `backend-pytest-postgres`.
+   throwaway password, listening on loopback only) runs beside the job for
+   `backend-pytest-postgres`.
 3. Build `backend/.venv` (backend plus `causal-core` and `causal-decision`) and
    `packages/causal-core/.venv` (the three packages with their test extras) from their
    hash-pinned locks (§5.4): `pip install --require-hashes --no-deps -r requirements/<lock>.txt`,
