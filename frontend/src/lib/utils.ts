@@ -52,3 +52,16 @@ export function truncate(str: string, maxLength: number): string {
   if (str.length <= maxLength) return str;
   return `${str.slice(0, maxLength - 1)}…`;
 }
+
+/**
+ * A number, interval or flag from a backend or kernel response, as sent.
+ * Causal numbers are shown verbatim -- never rounded, rescaled or recomputed in
+ * the UI -- and an absent value is said to be absent (`null`), not shown as 0.
+ */
+export function verbatim(
+  value: number | boolean | string | readonly (number | null)[] | null | undefined
+): string {
+  if (value === null || value === undefined) return "null";
+  if (Array.isArray(value)) return `[${value.map((v) => (v === null ? "null" : String(v))).join(", ")}]`;
+  return String(value);
+}
