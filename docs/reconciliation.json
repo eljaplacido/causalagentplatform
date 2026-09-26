@@ -32,12 +32,12 @@
           "packages/causal-mcp": "ac8ffe5b31a7fc07dfbfaee6156a0003bc0753f30c9a3a730b99d39de085a913",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "77ad984cf78a1984275d3c02f8bb7097b06b860b686d2fefe1b7975b99c244e9"
+          "docs/CURRENT_STAGE.md": "905dcd913a9c23a116d1ad0d6eaa92cc5efe5aaad534a0ec73dc63ed5f772f54"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-35: T0 v4 triangulation specification test; register entry closed, figures bound, triangulation and T0 lines re-read)"
+        "by": "Claude (septa-35: CURRENT_STAGE package count moved 211 -> 222; neither doc quotes it)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -354,12 +354,12 @@
         "sha256": {
           "packages/causal-core/src/causal_core": "76588c939c4b779161fa173e980a033cefd9b5861e80d3f794235ed50d32aa2f",
           "conformance/declared_not_implemented.json": "b4271c45bebb81d473d15be52dae3dea0486c86762049a279d663374c3b8cf8d",
-          "docs/CURRENT_STAGE.md": "77ad984cf78a1984275d3c02f8bb7097b06b860b686d2fefe1b7975b99c244e9"
+          "docs/CURRENT_STAGE.md": "905dcd913a9c23a116d1ad0d6eaa92cc5efe5aaad534a0ec73dc63ed5f772f54"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-35: T0 v4 triangulation specification test; register entry closed, figures bound, triangulation and T0 lines re-read)"
+        "by": "Claude (septa-35: CURRENT_STAGE package count moved 211 -> 222; neither doc quotes it)"
       }
     },
     "SECURITY.md": {
