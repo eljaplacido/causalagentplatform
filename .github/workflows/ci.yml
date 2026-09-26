@@ -25,10 +25,15 @@ concurrency:
 permissions:
   contents: read
 
+# Where jobs run: the repository variable CI_RUNS_ON, a JSON runner label or list
+# (e.g. '["self-hosted","linux","ARM64","causalplatform-ci"]'). Unset, jobs run on
+# GitHub's ubuntu-latest. A self-hosted runner is how CI runs while hosted minutes are
+# unavailable; delete the variable to return to hosted runners. Nothing host-specific
+# is written here -- the label names the role, not the machine.
 jobs:
   gate:
     name: .gnomon/ci.sh
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 75
     env:
       # Real-data benchmarks (T2 IHDP, T3 LaLonde): fetched by pinned SHA-256, never
@@ -53,7 +58,9 @@ jobs:
           POSTGRES_PASSWORD: ci-only-throwaway
           POSTGRES_DB: postgres
         ports:
-          - 5432:5432
+          # Loopback only: on a self-hosted runner a bare 5432:5432 publishes the
+          # throwaway database on every interface of the host for the job's length.
+          - 127.0.0.1:5432:5432
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 5s
@@ -160,7 +167,7 @@ jobs:
   # published since the last push surfaces without one.
   images:
     name: image ${{ matrix.image }} (build + Trivy)
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
