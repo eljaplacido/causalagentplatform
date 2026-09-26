@@ -249,11 +249,11 @@
           "says": "class ReviewQueueItem(BaseModel):"
         },
         {
-          "at": "frontend/src/app/governance/page.tsx:230",
+          "at": "frontend/src/app/governance/page.tsx:236",
           "says": "riskTier: \"MEDIUM\","
         },
         {
-          "at": "frontend/src/app/governance/page.tsx:231",
+          "at": "frontend/src/app/governance/page.tsx:237",
           "says": "submittedBy: \"system\","
         }
       ],
