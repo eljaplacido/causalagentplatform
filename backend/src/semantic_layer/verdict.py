@@ -56,6 +56,13 @@ MIN_KEY_BYTES = 32
 
 SIGNATURE_VERSION = 1
 
+#: The actions a human review decision is issued for. The action is part of the
+#: signed claim (:func:`claim`), so a verdict records which decision it rules on and
+#: cannot be relabelled: the registry spends a GOVERNANCE_REJECT verdict only on a
+#: rejection, and a GOVERNANCE_APPROVE verdict never on a rejection or a new draft.
+GOVERNANCE_APPROVE = "GOVERNANCE_APPROVE"
+GOVERNANCE_REJECT = "GOVERNANCE_REJECT"
+
 _EPHEMERAL_KEY: bytes | None = None
 
 
@@ -151,8 +158,9 @@ def claim(
     """The statement a signature covers.
 
     Every field is one a forger would have to get right *and* be able to sign. The
-    subject is what binds the verdict to a single object; ``payload_hash`` binds it
-    to what was actually evaluated.
+    subject is what binds the verdict to a single object; ``action_type`` binds it to
+    the decision it rules on (:data:`GOVERNANCE_APPROVE`, :data:`GOVERNANCE_REJECT`);
+    ``payload_hash`` binds it to what was actually evaluated.
     """
     return {
         "v": SIGNATURE_VERSION,

@@ -32,12 +32,12 @@
           "packages/causal-mcp": "ac8ffe5b31a7fc07dfbfaee6156a0003bc0753f30c9a3a730b99d39de085a913",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "d88a341f9cdffe82914dfccd7141763c0951cd9374b632b9414c1256fade4fb7"
+          "docs/CURRENT_STAGE.md": "13073839aa692e13a3fbf3a2f9ef79d8b483e8204050ee528754c2c75b1cf124"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#25/#28 into septa-6: both sides' content present -- legacy server described only as history; T8 v2, Node 24, runner text from main)"
+        "by": "Claude (merge of #26 into septa-53: subjects follow main (causal-mcp replaces the deleted backend/mcp_server); reject-authority text and main's content both present)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "6b574e51ad3b3a62ef58c782f8ec68592326cb4488fedf826bf32115b243907a",
-          "backend/src": "c06af80dee95babb1eed74ffbc5435ffe7f1cb1fdc8bf8f8489d087ad42aabe1",
-          "backend/tests": "bd98daa5d7f1ec988d20ce624d1615e642ec8ca412d2e0a4fd7d75baabdd1aca",
-          "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
+          "conformance/declared_not_implemented.json": "af75c31b1c585fdd11a188a9a06b18c6f71f8b0400996343d6ebfe8e1ade15ab",
+          "backend/src": "5d104e029b81eb564cc22f905604efaa2a7cfcd20482df947a211fc3b871f570",
+          "backend/tests": "aa5434d14e2a7f34e9c385f15c79890c946ceee6bf5e33fc13dd2af7f1f6a8b7",
+          "frontend/src": "d357d66d238bdc673ac0c5215b914bf4a8649a1ea7ca09c9e5bb0052c0b48fcb",
           "packages": "f39decf6dcae81c0e60801fa80c933c6547de55348adb3fd3867119423414373",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#25/#28 into septa-6: both sides' content present -- legacy server described only as history; T8 v2, Node 24, runner text from main)"
+        "by": "Claude (merge of #26 into septa-53: subjects follow main (causal-mcp replaces the deleted backend/mcp_server); reject-authority text and main's content both present)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -78,7 +78,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/semantic_layer": "e272da84c43185ababee3962259d2982e2cf531c26ba422c0dc3fd4be44a70f3",
+          "backend/src/semantic_layer": "17e610c160bca9ff3017696f7a0a2b9fa2e47ea921f8855da6071d8672d4dfe0",
           "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
           "packages/semantic-types/src": "fe7182fc233b307aa02d26a958898db94ead599601fe740dcfe2981bf5a1150d",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
@@ -87,7 +87,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: re-read for DB claims; its one PostgreSQL mention, 007_causal_models.sql, still holds; registry.py changed only its bind types)"
+        "by": "Claude (septa-53: re-read; its registry claims (APPROVED verdict for every write, signed, subject-bound, single-use) still hold, rejection included)"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -155,7 +155,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#25/#28 into septa-6: both sides' content present -- legacy server described only as history; T8 v2, Node 24, runner text from main)"
+        "by": "Claude (merge of #26 into septa-53: subjects follow main (causal-mcp replaces the deleted backend/mcp_server); reject-authority text and main's content both present)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -175,19 +175,19 @@
         "on": "2026-09-26",
         "sha256": {
           "backend/src/middleware": "0a00dc9c734e148a08c531bcd281d3afe81a8189ef75ef669543b89cd0e4136b",
-          "backend/src/api/governance.py": "74095eefc36dc973a8dd5aae5d8bba89d44aa860c32862fa729a5c10b55bf3c3",
+          "backend/src/api/governance.py": "39899bb971fe283966cffddf41877fef67d47da6eef36944029487cbcdf74011",
           "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
-          "backend/src/semantic_layer/registry.py": "91529601ce53d74c25763a017f4a43ad552c13e94d562f513165b079c16c71b7",
+          "backend/src/semantic_layer/registry.py": "ecb30b6c847f2ceca7cdc4b54888c4d129cb8058212101b6d52f923f04c9d749",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
           "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
           "backend/src/db/migrations": "6b52679eb2132b16e3bb238da5d6a7bde969f409bba4bd63b431c94456db74f1",
-          "backend/src/semantic_layer/verdict.py": "2807535994f0073bd9f58cc2774822d9f7bd1749aa7801d669eb2301bde3ac00",
+          "backend/src/semantic_layer/verdict.py": "12f9101110cc775c51be9a8d8040bb01b9e8e6270bfb588c111fb204abc0d4f9",
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#25/#28 into septa-6: both sides' content present -- legacy server described only as history; T8 v2, Node 24, runner text from main)"
+        "by": "Claude (merge of #24-#26/#28 into septa-53: reject-authority text kept on main's updated docs; TESTING_CICD rows three-way merged)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -210,14 +210,14 @@
           "backend/src/semantic_layer/models.py": "f3b7a600ac8e8c4ce7beb48145a188b2394f3775b6ad7d094613cbb9798d3b05",
           "backend/src/sensors": "d38f988ccb52659ac4ecc8724e8aa775b2e6e9fca76b73dbba6576c3f3d1dcba",
           "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
-          "backend/src/semantic_layer/registry.py": "91529601ce53d74c25763a017f4a43ad552c13e94d562f513165b079c16c71b7",
+          "backend/src/semantic_layer/registry.py": "ecb30b6c847f2ceca7cdc4b54888c4d129cb8058212101b6d52f923f04c9d749",
           "backend/src/agents/drift_monitor.py": "9279c31636b3b663007f21e7aa671ffe738a535432f610ecb5b6de00ae6bd815",
           "backend/src/skills/drift_detect.py": "9432982258b155287a90701d76dc9bf331dd8c65fbc692ad37fcd124fcab7111"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-47: 3.2 lists migrations 001-010, the compose init script, the RLS row, the roles and grants, and that deployments connect as causal_app)"
+        "by": "Claude (septa-53: registry rule 1 says reject_draft needs an APPROVED verdict issued for GOVERNANCE_REJECT)"
       }
     },
     "docs/HANDOFFS.md": {
@@ -257,7 +257,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#25/#28 into septa-6: both sides' content present -- legacy server described only as history; T8 v2, Node 24, runner text from main)"
+        "by": "Claude (merge of #24-#26/#28 into septa-53: reject-authority text kept on main's updated docs; TESTING_CICD rows three-way merged)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -287,7 +287,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#25/#28 into septa-6: both sides' content present -- legacy server described only as history; T8 v2, Node 24, runner text from main)"
+        "by": "Claude (merge of #24-#26/#28 into septa-53: reject-authority text kept on main's updated docs; TESTING_CICD rows three-way merged)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -309,7 +309,7 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "bd98daa5d7f1ec988d20ce624d1615e642ec8ca412d2e0a4fd7d75baabdd1aca",
+          "backend/tests": "aa5434d14e2a7f34e9c385f15c79890c946ceee6bf5e33fc13dd2af7f1f6a8b7",
           "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
@@ -323,7 +323,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#25/#28 into septa-6: both sides' content present -- legacy server described only as history; T8 v2, Node 24, runner text from main)"
+        "by": "Claude (merge of #24-#26/#28 into septa-53: reject-authority text kept on main's updated docs; TESTING_CICD rows three-way merged)"
       }
     },
     "docs/UIX.md": {
@@ -332,14 +332,14 @@
         "frontend/src"
       ],
       "baseline": {
-        "on": "2026-09-25",
+        "on": "2026-09-26",
         "sha256": {
-          "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429"
+          "frontend/src": "d357d66d238bdc673ac0c5215b914bf4a8649a1ea7ca09c9e5bb0052c0b48fcb"
         }
       },
       "last_read": {
-        "on": "2026-09-25",
-        "by": "Claude (septa-46: ApprovalPanel domain choice; governance persona and inventory re-read)"
+        "on": "2026-09-26",
+        "by": "Claude (septa-53: ApprovalPanel asks for the Cynefin domain on reject as on approve; the page calls /reject only on an APPROVED verdict)"
       }
     },
     "docs/ROADMAP.md": {
@@ -353,13 +353,13 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "6b029f17fceb5b8a44c784ea601802c8d97c1d2ed3ce9a6a92c2600823826501",
-          "conformance/declared_not_implemented.json": "6b574e51ad3b3a62ef58c782f8ec68592326cb4488fedf826bf32115b243907a",
-          "docs/CURRENT_STAGE.md": "d88a341f9cdffe82914dfccd7141763c0951cd9374b632b9414c1256fade4fb7"
+          "conformance/declared_not_implemented.json": "af75c31b1c585fdd11a188a9a06b18c6f71f8b0400996343d6ebfe8e1ade15ab",
+          "docs/CURRENT_STAGE.md": "13073839aa692e13a3fbf3a2f9ef79d8b483e8204050ee528754c2c75b1cf124"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#25/#28 into septa-6: both sides' content present -- legacy server described only as history; T8 v2, Node 24, runner text from main)"
+        "by": "Claude (merge of #24-#26/#28 into septa-53: reject-authority text kept on main's updated docs; TESTING_CICD rows three-way merged)"
       }
     },
     "SECURITY.md": {
@@ -376,16 +376,16 @@
         "on": "2026-09-26",
         "sha256": {
           "backend/src/middleware": "0a00dc9c734e148a08c531bcd281d3afe81a8189ef75ef669543b89cd0e4136b",
-          "backend/src/api/governance.py": "74095eefc36dc973a8dd5aae5d8bba89d44aa860c32862fa729a5c10b55bf3c3",
+          "backend/src/api/governance.py": "39899bb971fe283966cffddf41877fef67d47da6eef36944029487cbcdf74011",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
           "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
-          "backend/src/semantic_layer/registry.py": "91529601ce53d74c25763a017f4a43ad552c13e94d562f513165b079c16c71b7",
-          "backend/src/semantic_layer/verdict.py": "2807535994f0073bd9f58cc2774822d9f7bd1749aa7801d669eb2301bde3ac00"
+          "backend/src/semantic_layer/registry.py": "ecb30b6c847f2ceca7cdc4b54888c4d129cb8058212101b6d52f923f04c9d749",
+          "backend/src/semantic_layer/verdict.py": "12f9101110cc775c51be9a8d8040bb01b9e8e6270bfb588c111fb204abc0d4f9"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-47: domain isolation now enforced also by PostgreSQL RLS binding causal_app, start-up refusal as owner/superuser/BYPASSRLS; the compose passwords sentence names both logins)"
+        "by": "Claude (septa-53: verdict binding now names the action in the signed claim; approve/reject need APPROVED verdicts for GOVERNANCE_APPROVE/GOVERNANCE_REJECT; the snapshot no longer says REJECTED for a rejection)"
       }
     }
   }

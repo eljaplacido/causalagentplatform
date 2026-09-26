@@ -11,9 +11,12 @@ Rules (from DATA_LAYER.md §2.2):
 Every write method validates the guardian_verdict_ref against the audit_log
 table before proceeding.  GuardianBlockedError is raised if:
   - The verdict_id does not exist in audit_log
-  - The verdict is not APPROVED
+  - The verdict is not APPROVED -- for a rejection too (septa-53)
   - The verdict is not signed by the Guardian (a row in an append-only log is a
     record of what happened, not an authorisation)
+  - The verdict was issued for another action: a rejection needs one issued for
+    GOVERNANCE_REJECT, and a GOVERNANCE_REJECT or GOVERNANCE_APPROVE verdict
+    authorises only that review decision
   - The verdict was issued for a different object, or for none
   - The verdict has already been spent (see verdict_consumption)
 
@@ -49,6 +52,7 @@ from src.semantic_layer.models import (
     ReviewStatus,
     UserRef,
 )
+from src.semantic_layer.verdict import GOVERNANCE_APPROVE, GOVERNANCE_REJECT
 from src.semantic_layer.verdict import claim as verdict_claim
 from src.semantic_layer.verdict import verify as verdict_verify
 
@@ -69,25 +73,33 @@ async def _assert_verdict_approved(
     verdict_id: UUID,
     subject_id: UUID,
     context: str = "write",
-    expected: GuardianVerdict = GuardianVerdict.APPROVED,
+    action: str | None = None,
 ) -> AuditEntry:
     """
     Assert that this verdict authorises *this* decision, then spend it.
 
-    ``expected`` is APPROVED for a write. A rejection needs the same four checks
-    against a REJECTED verdict: a human confirming a refusal should be acting on a
-    Guardian ruling about *this* object, not on any UUID they happened to send.
+    ``action`` is the review decision the caller is carrying out:
+    ``GOVERNANCE_APPROVE`` for a promotion, ``GOVERNANCE_REJECT`` for a rejection,
+    None for a write that is not a review decision (a new draft). Every one of them
+    needs an APPROVED verdict. A rejection used to need a REJECTED one, which the
+    Guardian issued only when it declined the reject request -- in practice only in
+    an unclassified (DISORDER) situation -- so the authority to reject hung on the
+    Guardian refusing to classify (septa-53).
 
-    Four questions, all of which used to go unasked except the first two:
+    Five questions, all of which used to go unasked except the first two:
 
       1. Does the verdict exist, and does it say APPROVED?
       2. Was it issued by the Guardian? An unsigned row, or one whose signature
          does not verify, is history rather than authority -- which matters
          because two code paths insert APPROVED rows without going through the
          Guardian at all, one of them under no role requirement.
-      3. Was it issued for *this* object? A verdict for object A is refused for
+      3. Was it issued for *this* decision? The action is in the signed claim. A
+         rejection needs a verdict issued for GOVERNANCE_REJECT; a verdict issued
+         for GOVERNANCE_REJECT or GOVERNANCE_APPROVE authorises that decision and
+         no other write.
+      4. Was it issued for *this* object? A verdict for object A is refused for
          object B.
-      4. Has it been spent? Recorded by inserting into `verdict_consumption`,
+      5. Has it been spent? Recorded by inserting into `verdict_consumption`,
          because audit_log is append-only and cannot be marked. The primary key
          there is what makes the second attempt fail.
 
@@ -113,10 +125,10 @@ async def _assert_verdict_approved(
         )
 
     verdict_status = record["guardian_verdict"]
-    if verdict_status != expected:
+    if verdict_status != GuardianVerdict.APPROVED:
         raise GuardianBlockedError(
             reason=(
-                f"Guardian verdict is {verdict_status}, not {expected.value} — "
+                f"Guardian verdict is {verdict_status}, not {GuardianVerdict.APPROVED.value} — "
                 f"{context} blocked"
             ),
             verdict_status=verdict_status,
@@ -144,6 +156,9 @@ async def _assert_verdict_approved(
             ),
             verdict_id=str(verdict_id),
         )
+
+    # After the signature, so the action read here is the one the Guardian signed.
+    _assert_action(record["action_type"], action, verdict_id, context)
 
     issued_for = record["subject_id"]
     if not issued_for:
@@ -204,6 +219,41 @@ async def _assert_verdict_approved(
         session_id=record["session_id"],
         created_at=record["created_at"],
     )
+
+
+#: The review decisions a verdict can be issued for. Each authorises that decision
+#: only: a verdict for one is never spent on the other, nor on a new draft.
+_REVIEW_ACTIONS = frozenset({GOVERNANCE_APPROVE, GOVERNANCE_REJECT})
+
+
+def _assert_action(issued: Any, action: str | None, verdict_id: UUID, context: str) -> None:
+    """Refuse a verdict issued for a different decision than the one being made.
+
+    A rejection accepts only GOVERNANCE_REJECT. A promotion accepts any action but
+    GOVERNANCE_REJECT (the API's approve flow checks GOVERNANCE_APPROVE; older
+    callers name other actions), and a new draft accepts neither review action.
+    """
+    issued = str(issued)
+    if issued == action:
+        return
+    if action == GOVERNANCE_REJECT:
+        raise GuardianBlockedError(
+            reason=(
+                f"Guardian verdict {verdict_id} was issued for action {issued}, not "
+                f"{GOVERNANCE_REJECT} — {context} blocked. Rejecting needs an APPROVED "
+                f"verdict from /check for action {GOVERNANCE_REJECT} on this object."
+            ),
+            verdict_id=str(verdict_id),
+        )
+    if issued in _REVIEW_ACTIONS:
+        raise GuardianBlockedError(
+            reason=(
+                f"Guardian verdict {verdict_id} was issued for action {issued}, not "
+                f"{action or 'a new draft'} — {context} blocked. A verdict for a review "
+                "decision authorises that decision and nothing else."
+            ),
+            verdict_id=str(verdict_id),
+        )
 
 
 #: The statuses a review may move an object out of. APPROVED and DEPRECATED are
@@ -862,6 +912,7 @@ class SemanticLayerRegistry:
                 verdict_id,
                 subject_id=object_id,
                 context=f"promote_to_approved({object_type})",
+                action=GOVERNANCE_APPROVE,
             )
 
             now = datetime.now(UTC)
@@ -940,13 +991,15 @@ class SemanticLayerRegistry:
         reason: str,
         domains: Collection[str] | None = None,
     ) -> None:
-        """Mark a draft REJECTED (stored as DEPRECATED), against a real REJECTED verdict.
+        """Mark a draft REJECTED (stored as DEPRECATED), against a Guardian verdict.
 
-        The API has always *required* a verdict_id on rejection and never read it, so
-        any UUID was accepted. It gets the same four checks approval gets -- exists,
-        is the verdict it claims to be, signed by the Guardian, issued for this object,
-        not already spent -- because "this was refused for a reason" is a claim about
-        the record, and an unchecked one is worth nothing.
+        The verdict must be APPROVED and issued for action ``GOVERNANCE_REJECT`` on
+        this object: the Guardian ruled that this rejection may go ahead, exactly as
+        an approval needs a ruling that the approval may. It gets every check approval
+        gets -- exists, APPROVED, signed by the Guardian, issued for this action and
+        this object, not already spent. It used to need a REJECTED verdict, which only
+        an unclassified (DISORDER) check produced, so a reviewer who classified the
+        situation could not reject at all (septa-53).
         """
         if object_type not in _REVIEWABLE_TABLES:
             raise ValueError(f"reject_draft: unknown object_type '{object_type}'")
@@ -959,7 +1012,7 @@ class SemanticLayerRegistry:
                 verdict_id,
                 subject_id=object_id,
                 context=f"reject_draft({object_type})",
-                expected=GuardianVerdict.REJECTED,
+                action=GOVERNANCE_REJECT,
             )
 
             now = datetime.now(UTC)

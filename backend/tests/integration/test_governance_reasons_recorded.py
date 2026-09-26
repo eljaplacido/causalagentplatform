@@ -109,7 +109,9 @@ async def test_the_rejection_reason_is_readable_from_the_audit_log(
 ) -> None:
     entity = make_causal_entity()
     await _seed_draft(db_session, entity)
-    verdict = await issue_verdict_for(db_session, entity.id, verdict="REJECTED")
+    verdict = await issue_verdict_for(
+        db_session, entity.id, verdict="APPROVED", action_type="GOVERNANCE_REJECT"
+    )
 
     resp = await gov_client.post(
         f"/api/governance/reject/{entity.id}",
