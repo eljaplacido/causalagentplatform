@@ -540,7 +540,9 @@ published since the last push surfaces without one):
   runtime environment (the built wheels plus `requirements/release.txt`), checks that it lists
   exactly that (`scripts/sbom_check.py`), and attaches it to the tag's GitHub release.
 - **Update PRs.** `.github/dependabot.yml`: weekly, grouped, for the Python locks and ranges,
-  npm, the GitHub Actions and the base images.
+  npm, the GitHub Actions and the base images. It ignores the pins the ratchets count per
+  version (ruff, mypy, bandit, pip-audit), pyproject majors, node lines that are not LTS, and
+  majors held by an open ledger item (TESTING_CICD.md §5.4).
 - The Python build tools the release uses (`build`, `twine`, `cyclonedx-bom`) are pinned by
   version, not by hash. `safety` is not run; `pip-audit` covers the same advisories.
 
