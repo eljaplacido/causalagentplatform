@@ -31,10 +31,12 @@ The platform serves people who are trying to make better decisions under uncerta
 
 Each persona sees a **filtered, task-optimized lens** on the same underlying platform data. The platform does not build separate UIs per persona—it applies a view configuration over a shared component library.
 
-Today, `PersonaSelector` switches between five views, and there is a page per view:
-`/incidents`, `/analyst`, `/executive`, `/governance` and `/engineer`, plus `/workbench`,
-`/decisions` and `/registry`, which link to each other (`ViewNav`). How much of each view's
-surface below is built varies (see §4.2).
+Today there is a page per persona view, `/incidents`, `/analyst`, `/executive`, `/governance` and
+`/engineer`, plus `/workbench`, `/decisions` and `/registry`. One navigation bar (`SiteNav`, in the
+root layout) sits above every page, the 404 page included: the brand links home, then all eight
+pages, the current one marked. On a persona page `PersonaSelector` switches persona and goes to
+that persona's page (it used to relabel itself and stay). How much of each view's surface below
+is built varies (see §4.2).
 
 - **`/workbench` (DAG Workbench)** shows the fragments and their edges, and proposes a new fragment
   from existing edges through `POST /api/semantic/drafts`. The drafter must classify the situation
@@ -284,7 +286,7 @@ Components under `frontend/src/components/` are marked **built**. The rest are *
 | **Simulation** | `InterventionComparison` (with `EffectEstimateBar` inside it), `AssumptionDisclosure` | `ScenarioRange` | Business Analyst, SRE |
 | **Governance** | `ReviewQueue`, `ApprovalPanel` | `AuditTrailEntry`, `SensitivityResult`, `AssumptionCard` | Governance Officer, Analyst |
 | **Evidence** | -- | `EvidenceCitation`, `DocumentSnippet`, `StatisticalTestResult`, `ConfidenceMeter` | Analyst, Governance Officer |
-| **Shared** | `EpistemicConfidenceBadge`, `ThinkingIndicator`, `PersonaSelector`, `AuditLogPanel`, `GuardianVerdictBadge`, `ViewNav` | -- | All |
+| **Shared** | `EpistemicConfidenceBadge`, `ThinkingIndicator`, `PersonaSelector`, `AuditLogPanel`, `GuardianVerdictBadge`, `SiteNav` | -- | All |
 
 The review queue shows each item's risk tier and submitter from the backend, most at risk
 first (US-27). The tier is derived from stored fields by `backend/src/semantic_layer/review_risk.py`:

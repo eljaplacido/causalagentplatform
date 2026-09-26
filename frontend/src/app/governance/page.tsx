@@ -489,9 +489,8 @@ export default function GovernancePage() {
     <div className="flex min-h-screen flex-col bg-background">
       {/* Top nav */}
       <header className="sticky top-0 z-10 flex items-center gap-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
-        <h1 className="text-sm font-bold text-foreground">Causal Platform</h1>
         <ShieldCheck className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-        <span className="text-sm text-muted-foreground">Governance</span>
+        <h1 className="text-sm font-bold text-foreground">Governance</h1>
         {pendingCount > 0 && (
           <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700 dark:bg-amber-950 dark:text-amber-300">
             {pendingCount} pending

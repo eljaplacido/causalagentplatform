@@ -26,7 +26,6 @@ import { AlertTriangle, Library, RefreshCw, ShieldCheck, ShieldX } from "lucide-
 import { ImpactReportView } from "@/components/registry/ImpactReportView";
 import { ModelDiffView } from "@/components/registry/ModelDiffView";
 import { ModelVersionView } from "@/components/registry/ModelVersionView";
-import { ViewNav } from "@/components/shared/ViewNav";
 import {
   modelsApi,
   type HistoryReportResponse,
@@ -258,7 +257,6 @@ export default function RegistryPage() {
           <Library className="h-4 w-4 text-muted-foreground" aria-hidden />
           Assumption registry
         </h1>
-        <ViewNav current="registry" className="ml-auto" />
       </header>
 
       <div className="flex flex-1 flex-col lg:flex-row">

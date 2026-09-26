@@ -211,8 +211,7 @@ export default function AnalystPage() {
     <div className="flex min-h-screen flex-col bg-background">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-20 flex items-center gap-4 border-b border-border bg-background/95 px-4 py-2.5 backdrop-blur-sm">
-        <span className="font-bold text-sm text-foreground">Causal Platform</span>
-        <span className="text-sm text-muted-foreground">Analyst Workbench</span>
+        <h1 className="text-sm font-bold text-foreground">Analyst Workbench</h1>
 
         {sessionState && (
           <div className="flex items-center gap-2 ml-2">

@@ -279,9 +279,8 @@ export default function ExecutivePage() {
     <div className="flex min-h-screen flex-col bg-background">
       {/* Header */}
       <header className="sticky top-0 z-10 flex items-center gap-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
-        <h1 className="text-sm font-bold text-foreground">Causal Platform</h1>
         <Briefcase className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-        <span className="text-sm text-muted-foreground">Manager Dashboard</span>
+        <h1 className="text-sm font-bold text-foreground">Manager Dashboard</h1>
         <div className="ml-auto">
           <PersonaSelector layout="dropdown" className="w-48" />
         </div>

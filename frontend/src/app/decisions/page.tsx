@@ -26,7 +26,6 @@ import { AlertTriangle, BookLock, RefreshCw, ShieldCheck, ShieldX } from "lucide
 import { CalibrationReportPanel } from "@/components/decisions/CalibrationReportPanel";
 import { DecisionDetail } from "@/components/decisions/DecisionDetail";
 import { VerdictBadge } from "@/components/decisions/VerdictBadge";
-import { ViewNav } from "@/components/shared/ViewNav";
 import {
   decisionsApi,
   type CalibrationReportResponse,
@@ -83,7 +82,6 @@ export default function DecisionsPage() {
           <BookLock className="h-4 w-4 text-muted-foreground" aria-hidden />
           Decision ledger
         </h1>
-        <ViewNav current="decisions" className="ml-auto" />
       </header>
 
       <main className="grid flex-1 gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:p-6">

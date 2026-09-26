@@ -388,9 +388,8 @@ export default function IncidentsPage() {
     <div className="flex min-h-screen flex-col bg-background">
       {/* Top nav */}
       <header className="sticky top-0 z-10 flex items-center gap-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
-        <h1 className="text-sm font-bold text-foreground">Causal Platform</h1>
         <Activity className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-        <span className="text-sm text-muted-foreground">Incidents</span>
+        <h1 className="text-sm font-bold text-foreground">Incidents</h1>
         <div className="ml-auto flex items-center gap-3">
           <PersonaSelector layout="dropdown" className="w-48" />
         </div>

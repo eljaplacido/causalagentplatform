@@ -36,7 +36,6 @@ import { GitBranch, RefreshCw, AlertTriangle, Search } from "lucide-react";
 import { DAGCanvas, type DAGEdge, type DAGNode } from "@/components/graph/DAGCanvas";
 import { FragmentDraftComposer } from "@/components/graph/FragmentDraftComposer";
 import { PersonaSelector } from "@/components/shared/PersonaSelector";
-import { ViewNav } from "@/components/shared/ViewNav";
 import {
   semanticApi,
   type CausalEdgeResponse,
@@ -266,9 +265,8 @@ export default function WorkbenchPage() {
     <div className="flex min-h-screen flex-col bg-background">
       {/* Top nav */}
       <header className="sticky top-0 z-10 flex items-center gap-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
-        <h1 className="text-sm font-bold text-foreground">Causal Platform</h1>
         <GitBranch className="h-4 w-4 text-muted-foreground" aria-hidden />
-        <span className="text-sm text-muted-foreground">DAG Workbench</span>
+        <h1 className="text-sm font-bold text-foreground">DAG Workbench</h1>
         <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
           {fragments.length} fragments
         </span>
@@ -284,7 +282,6 @@ export default function WorkbenchPage() {
           </span>
         )}
         <div className="ml-auto flex items-center gap-3">
-          <ViewNav current="workbench" />
           {!fragmentsLoading && (
             <button
               type="button"
