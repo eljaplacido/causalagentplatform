@@ -133,14 +133,14 @@
           "says": "Graph authoring UI (unified)"
         }
       ],
-      "reality": "/workbench composes a GraphFragment draft from existing edges and submits it, classified (a declared Cynefin domain or a session id), to POST /api/semantic/drafts, showing the Guardian's verdict or its 403 reason and whether the review queue lists the draft (pinned by frontend/src/app/workbench/__tests__/page.test.tsx). The route judges a classified draft in the declared or session domain (backend/tests/integration/test_draft_submission_api.py), so a user can submit one for approval. Two things keep it open: new edges and entities cannot be authored here; and the e2e spec stubs the backend and no gate step runs Playwright.",
+      "reality": "/workbench composes a GraphFragment draft from existing edges and submits it, classified (a declared Cynefin domain or a session id), to POST /api/semantic/drafts, showing the Guardian's verdict or its 403 reason and whether the review queue lists the draft (pinned by frontend/src/app/workbench/__tests__/page.test.tsx). The route judges a classified draft in the declared or session domain (backend/tests/integration/test_draft_submission_api.py), so a user can submit one for approval. Three things keep it open: new edges and entities cannot be authored here; a fragment drafted here declares no source data (`sourceData`), so since septa-15 /approve refuses it (422, LineageIncompleteError) until the composer asks for one; and the e2e spec stubs the backend and no gate step runs Playwright.",
       "evidence": [
         {
           "at": "frontend/src/components/graph/FragmentDraftComposer.tsx:107",
           "says": "semanticApi.submitDraft("
         },
         {
-          "at": "backend/src/api/semantic.py:367",
+          "at": "backend/src/api/semantic.py:379",
           "says": "governance_result = await _governance.check(action_payload, state, notes=notes)"
         },
         {
@@ -364,14 +364,14 @@
       "capability": "Interventions are versioned: recording an outcome writes a new version, not over the old one",
       "claimed_in": [
         {
-          "at": "docs/ADR-001-canonical-semantic-layer.md:82",
+          "at": "docs/ADR-001-canonical-semantic-layer.md:83",
           "says": "All objects are versioned \u2014 no in-place mutation (Rule #2)."
         }
       ],
       "reality": "Split from semantic-objects-mutated-in-place when the four semantic objects were versioned (014_semantic_object_versions.sql). POST /api/v1/interventions/feedback still UPDATEs the intervention's row (actual_effect, feedback_loop_closed, outcome_observed_at), so its state before the outcome was recorded survives only in audit_log.",
       "evidence": [
         {
-          "at": "backend/src/api/interventions.py:236",
+          "at": "backend/src/api/interventions.py:237",
           "says": "\"UPDATE interventions SET \""
         }
       ],
@@ -459,7 +459,7 @@
           "says": "  createdBy: UserRef;"
         },
         {
-          "at": "backend/src/semantic_layer/models.py:419",
+          "at": "backend/src/semantic_layer/models.py:432",
           "says": "class CausalEdge(BaseModel):"
         }
       ],
@@ -667,7 +667,7 @@
       "capability": "Dynamic application security testing (DAST): a scanner such as OWASP ZAP run against a running API, weekly",
       "claimed_in": [
         {
-          "at": "docs/CYBERSECURITY.md:617",
+          "at": "docs/CYBERSECURITY.md:680",
           "says": "DAST: OWASP ZAP against a staging API (weekly). Not built: there is no staging"
         }
       ],

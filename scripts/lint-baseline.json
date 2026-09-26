@@ -39,10 +39,11 @@
     "2026-09-26 (small-batch-1): ruff 403 -> 401. scripts/seed_data.py's --clear was rewritten (correct columns, no append-only table, an owner-only privilege check on PostgreSQL); the new code is clean and the two findings in the code it replaced went with it.",
     "2026-09-26 (small-batch-2): ruff 411 -> 380, mypy 38 -> 32, measured against 465b919. The gains are code deleted: src/api/health.py (a router the app never mounted), src/sensors/periodic_drift.py (DriftSensor, never started) and tests/unit/test_health_api.py. The code this batch added is clean.",
     "2026-09-26 (septa-17/37): mypy 38 -> 37, ruff unchanged at 411. The LLM layer's first callers (src/agents/narration.py, prompt_templates.py) are clean; the gain is llm_factory.get_llm's lone @overload (a single overload is a mypy error), removed when the function gained its prompt-template parameters.",
-    "2026-09-26 (septa-14/15, measured against e5c7f88): ruff 411 -> 410, mypy unchanged at 38. The versioning and lineage code is clean; the gain is tests/unit/test_registry.py's conftest import, now used at runtime (make_data_source), no longer a TC001."
+    "2026-09-26 (septa-14/15, measured against e5c7f88): ruff 411 -> 410, mypy unchanged at 38. The versioning and lineage code is clean; the gain is tests/unit/test_registry.py's conftest import, now used at runtime (make_data_source), no longer a TC001.",
+    "2026-09-26 (septa-14/15 merged with the train at a0ae954): ruff 405 -> 363, mypy unchanged at 32, measured on the merged tree. The notes above were each measured on their own branch against different bases, so their figures do not chain; the merged count is what the gains they record come to together, and the merge's own code (record_edge_sensitivity through _record_change, the tests' _write_directly helper) adds no finding (the one it did, an unsorted import in registry.py where both sides added names, was fixed)."
   ],
   "ruff": {
-    "max_findings": 405,
+    "max_findings": 363,
     "measured_with": "ruff 0.15.22",
     "cwd": "backend",
     "args": [
