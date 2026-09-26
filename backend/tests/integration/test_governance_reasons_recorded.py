@@ -86,7 +86,7 @@ async def test_approval_notes_are_readable_from_the_audit_log(
 ) -> None:
     entity = make_causal_entity()
     await _seed_draft(db_session, entity)
-    verdict = await issue_verdict_for(db_session, entity.id)
+    verdict = await issue_verdict_for(db_session, entity.id, action_type="GOVERNANCE_APPROVE")
 
     resp = await gov_client.post(
         f"/api/governance/approve/{entity.id}",
@@ -109,7 +109,9 @@ async def test_the_rejection_reason_is_readable_from_the_audit_log(
 ) -> None:
     entity = make_causal_entity()
     await _seed_draft(db_session, entity)
-    verdict = await issue_verdict_for(db_session, entity.id, verdict="REJECTED")
+    verdict = await issue_verdict_for(
+        db_session, entity.id, verdict="APPROVED", action_type="GOVERNANCE_REJECT"
+    )
 
     resp = await gov_client.post(
         f"/api/governance/reject/{entity.id}",
@@ -137,7 +139,7 @@ async def test_a_decision_record_cannot_be_spent_as_authority(
     """
     entity = make_causal_entity()
     await _seed_draft(db_session, entity)
-    verdict = await issue_verdict_for(db_session, entity.id)
+    verdict = await issue_verdict_for(db_session, entity.id, action_type="GOVERNANCE_APPROVE")
     approve = await gov_client.post(
         f"/api/governance/approve/{entity.id}",
         json={"object_type": "CausalEntity", "verdict_id": str(verdict), "notes": APPROVAL_NOTES},

@@ -1,7 +1,7 @@
 # Quickstart — Causal Platform
 
 > **Target:** developers and coding agents setting up a local checkout.
-> **Assumption:** Linux or macOS with Python 3.12+ and Node 20+. Docker is optional.
+> **Assumption:** Linux or macOS with Python 3.12+ and Node 24+ (the LTS line CI uses). Docker is optional.
 > Coding agents: read the root [`AGENTS.md`](../AGENTS.md) first.
 
 ---
@@ -40,7 +40,8 @@ backend/.venv/bin/python -m pip install --no-deps --no-build-isolation \
 ### Kernel virtual environment
 
 `packages/causal-core`, `packages/causal-decision` and `packages/causal-mcp` share one environment
-of their own (causal-mcp is on MCP SDK v2, the backend's legacy server on v1):
+of their own (causal-mcp is on MCP SDK v2, and the kernel suites have test dependencies the backend's
+environment does not):
 
 ```bash
 python3 -m venv packages/causal-core/.venv
@@ -113,8 +114,9 @@ Against the compose stack (§4) that is
 script sets that local-dev password. Migrations and seeding run as the owner (`causal`).
 
 The dev auth bypass works only with `ENV=local`, so a local session with the bypass is always on
-SQLite. Neo4j is used only when `NEO4J_URI` is set; otherwise the graph and experience-buffer paths
-fall back to SQL.
+SQLite. The causal graph is always in SQL. Neo4j is used only when `NEO4J_URI` is set, for the
+experience buffer and drift-alert storage; unset, the experience buffer reads SQL session
+snapshots and drift alerts are not stored.
 
 **Guardian signing key.** Every Guardian verdict is HMAC-signed with `GUARDIAN_SIGNING_KEY`.
 Locally you may leave it unset: each backend process then generates its own key and logs
@@ -157,19 +159,17 @@ EOF
 ## 4. Optional infrastructure (Docker)
 
 Nothing is required: with `ENV=local` the backend runs on SQLite with no services.
-Earlier versions of this page listed Kafka and Redis as requirements. No code talks to either (`kafka-streaming` in the register), so `docker-compose.yml` puts them behind a `future` profile.
+Earlier versions of this page listed Kafka and Redis as requirements. No code talks to either, so they were removed from `docker-compose.yml` and the Kafka claims withdrawn (`kafka-streaming` in the register's `left_the_list`).
 
 ```bash
 docker compose up -d                        # PostgreSQL and Neo4j
-docker compose --profile future up -d       # also Kafka, Kafka UI and Redis (nothing uses them)
 docker compose down
 ```
 
 | Service | URL / port | Notes |
 |---|---|---|
 | PostgreSQL | `localhost:5432` | Owner `causal`, password `causal_local_dev`; the backend's role `causal_app`, password `causal_app_local_dev` (both plain text in `docker-compose.yml`: a local-dev stack only). Used only when `ENV` is not `local` and `DATABASE_URL` points here as `causal_app` (§3), or by the tests through `TEST_DATABASE_URL`, as `causal` (§6). The schema is `backend/src/db/migrations/*.sql`, which the container's init script (`backend/src/db/docker/initdb.sh`) applies only when its volume is first created, and then gives `causal_app` its login: on an older volume, apply the newer files by hand (`psql -f`) and run `ALTER ROLE causal_app LOGIN PASSWORD 'causal_app_local_dev'`, or `docker compose down -v` to start over. |
-| Neo4j Browser | `http://localhost:7474` | Bolt `localhost:7687`. Used when `NEO4J_URI` is set. |
-| Kafka, Kafka UI, Redis | `9092`, `8080`, `6379` | `future` profile only. |
+| Neo4j Browser | `http://localhost:7474` | Bolt `localhost:7687`. Used when `NEO4J_URI` is set: the experience buffer and drift alerts, not the causal graph. |
 
 ---
 
@@ -224,7 +224,7 @@ written here. Pieces, when iterating:
 
 ```bash
 cd backend && .venv/bin/pytest -q                          # backend suite, on SQLite
-cd packages/causal-core && .venv/bin/pytest                # kernel, incl. the T0 and T4-T8 gates
+cd packages/causal-core && .venv/bin/pytest                # kernel, incl. the T0 and T4-T9 gates
 cd packages/causal-decision && ../causal-core/.venv/bin/pytest   # decision layer, incl. D0 and A0
 cd frontend && npm run type-check && npx vitest run        # frontend
 ```
@@ -248,9 +248,9 @@ bash .gnomon/ci.sh                                         # the gate, backend-p
 
 ---
 
-## 7. Try the MCP servers
+## 7. Try the MCP server
 
-**The kernel server (canonical).** `packages/causal-mcp`, console script `causal-mcp`:
+The one MCP server is `packages/causal-mcp`, console script `causal-mcp`:
 
 ```bash
 packages/causal-core/.venv/bin/causal-mcp                   # stdio
@@ -260,13 +260,8 @@ packages/causal-core/.venv/bin/causal-mcp --http --port 8765   # stateless HTTP
 Point an MCP client at it with `{"mcpServers": {"causal": {"command": "/abs/path/to/packages/causal-core/.venv/bin/causal-mcp"}}}`.
 Its tools, flow and `data_path` rules: [`packages/causal-mcp/README.md`](../packages/causal-mcp/README.md).
 
-**The legacy demo.** `backend/mcp_server/examples/client_demo.py` spawns the *legacy* server
-(`python -m mcp_server.server`, console script `causal-platform-mcp`, deprecated) and calls two of
-its tools; on its eight toy rows the estimate is a `LOW_N` refusal:
-
-```bash
-cd backend && .venv/bin/python -m mcp_server.examples.client_demo
-```
+(The backend's legacy server, console script `causal-platform-mcp`, was deleted in September 2026;
+a client configuration that still launches it should launch `causal-mcp`.)
 
 ---
 
@@ -307,7 +302,7 @@ causalplatform/
 ├── packages/
 │   ├── causal-core/         # the causal kernel (identification, estimation, refutation)
 │   ├── causal-decision/     # verdicts, decision ledger, outcome follow-up
-│   ├── causal-mcp/          # the kernel's MCP server (canonical)
+│   ├── causal-mcp/          # the kernel's MCP server (the only one)
 │   └── semantic-types/      # published TypeScript contract
 ├── backend/                 # FastAPI platform
 │   ├── src/
@@ -316,7 +311,6 @@ causalplatform/
 │   │   ├── db/              # engine factories (SQLite / PostgreSQL, Neo4j)
 │   │   ├── skills/          # backend skills; causal ones delegate to the kernel
 │   │   └── semantic_layer/  # Pydantic models + registry
-│   ├── mcp_server/          # legacy MCP server (deprecated)
 │   ├── tests/               # unit, integration, guardian
 │   └── pyproject.toml
 ├── frontend/                # Next.js UI

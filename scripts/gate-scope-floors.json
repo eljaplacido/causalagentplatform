@@ -12,13 +12,17 @@
     "floors: smoke alarms for scope collapse, set well BELOW today's counts so",
     "ordinary work never trips them and a broken selector always does. A floor is",
     "the weaker instrument -- it cannot see a partial miss -- which is why the",
-    "identity checks (pytest-files, vitest-files, skills-imported, mcp-tools,",
+    "identity checks (pytest-files, vitest-files, skills-imported, kernel-mcp-tools,",
     "routes-*) exist beside them.",
     "",
     "Measured 2026-09-19 at a61112a: backend 560 tests in 33 files, frontend 47",
     "tests in 5 files, ruff over 103 files, mypy over 59, tsc over 46; skills 4/10",
     "imported by a test, MCP tools 7/7 referenced, state-changing routes 5/11",
-    "referenced, 11/11 mounted."
+    "referenced, 11/11 mounted.",
+    "",
+    "2026-09-26 (septa-6): the mcp-tools check and its known_gaps entry left with the",
+    "legacy backend server it inspected (backend/mcp_server, deleted). The one MCP server,",
+    "packages/causal-mcp, is inspected by kernel-mcp-tools."
   ],
   "floors": {
     "backend-tests": {
@@ -48,15 +52,11 @@
   },
   "known_gaps": {
     "skills-imported": {
-      "why": "Skill modules no test imports. They run only transitively (MCP wrappers, agents), so no test pins their own contract. Each leaves this list when a test imports it -- ideally one asserting its output against a known ground truth.",
+      "why": "Skill modules no test imports. They run only transitively (through agents), so no test pins their own contract. Each leaves this list when a test imports it -- ideally one asserting its output against a known ground truth.",
       "items": [
         "_experience_buffer_sql",
         "experience_buffer"
       ]
-    },
-    "mcp-tools": {
-      "why": "None today: all 7 registered tools are referenced (tests/unit/test_mcp_tools.py calls each wrapper; tests/integration/test_mcp_stdio.py calls each over stdio).",
-      "items": []
     },
     "routes-tested": {
       "why": "None today: every state-changing route is called by a test. The governance and intervention decision routes left this list on 2026-09-21; the provenance delete and the calibration probe on 2026-09-25 (tests/integration/test_rbac_matrix.py).",

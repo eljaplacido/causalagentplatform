@@ -46,8 +46,9 @@ people act on, so these rules are stricter than the ones above:
   this session: an `mcp__causal_core__*` call, a test run, or a script you
   executed. Quote which call produced it. A causal number you reasoned your
   way to is a guess formatted as a finding; if no tool produced it, say it is
-  unmeasured. `mcp__causal__*` is the legacy backend server (heuristic tools,
-  being deprecated): do not cite it for a causal number.
+  unmeasured. `mcp__causal_core__*` is the repository's one MCP server; the
+  legacy backend server (`mcp__causal__*`) was deleted, so do not cite a tool
+  of that name for a causal number.
 - The kernel's flow, in order: `causal_check_graph` (draft the graph, read its
   testable implications) → `causal_identify` (identifiable before any data?)
   → `causal_analyze`, or `causal_decide` when the question is whether to act

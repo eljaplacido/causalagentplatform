@@ -3,12 +3,15 @@
 # Backend and frontend run natively (not in Docker) for hot-reload.
 #
 #   docker compose up -d                     PostgreSQL + Neo4j
-#   docker compose --profile future up -d    also Kafka, Kafka UI, Redis
 #
-# The `future` profile holds services no code talks to yet: there is no Kafka
-# or Redis client anywhere in the tree (`kafka-streaming` in
-# conformance/declared_not_implemented.json). They are kept for the work that
-# will need them, and off by default so a plain `up` starts nothing idle.
+# Neo4j is optional too: the backend uses it only when NEO4J_URI is set, for
+# the experience buffer and drift-alert storage (backend/src/db/neo4j_factory.py).
+# The causal graph itself lives in PostgreSQL/SQLite.
+#
+# Earlier versions also defined Kafka, Kafka UI and Redis under a `future`
+# profile. No code talks to either, and the claims that the platform streams
+# through Kafka were withdrawn (`kafka-streaming` in the register's
+# left_the_list), so the services were removed.
 
 services:
 
@@ -44,8 +47,6 @@ services:
     container_name: causalplatform-neo4j
     environment:
       NEO4J_AUTH: neo4j/causal_local_dev
-      NEO4J_PLUGINS: '["apoc"]'
-      NEO4J_dbms_security_procedures_unrestricted: apoc.*
       NEO4J_dbms_memory_heap_initial__size: 512m
       NEO4J_dbms_memory_heap_max__size: 1g
     ports:
@@ -60,66 +61,10 @@ services:
       timeout: 10s
       retries: 15
 
-  # ── Kafka (KRaft mode, no Zookeeper) ─────────────────────────────────────
-  kafka:
-    image: confluentinc/cp-kafka:7.6.0
-    container_name: causalplatform-kafka
-    profiles: ["future"]
-    environment:
-      KAFKA_NODE_ID: 1
-      KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-      CLUSTER_ID: causal-platform-local-cluster
-    ports:
-      - "9092:9092"
-    volumes:
-      - kafka_data:/var/lib/kafka/data
-    healthcheck:
-      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list"]
-      interval: 10s
-      timeout: 10s
-      retries: 15
-
-  # ── Kafka UI (dev convenience) ────────────────────────────────────────────
-  kafka-ui:
-    image: provectuslabs/kafka-ui:v0.7.2
-    container_name: causalplatform-kafka-ui
-    profiles: ["future"]
-    depends_on:
-      kafka:
-        condition: service_healthy
-    environment:
-      KAFKA_CLUSTERS_0_NAME: local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
-    ports:
-      - "8080:8080"
-
-  # ── Redis (session cache + rate limiting) ─────────────────────────────────
-  redis:
-    image: redis:7-alpine
-    container_name: causalplatform-redis
-    profiles: ["future"]
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
 volumes:
   postgres_data:
   neo4j_data:
   neo4j_logs:
-  kafka_data:
 
 networks:
   default:

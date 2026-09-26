@@ -27,7 +27,7 @@ sustainability investment assurance follow, in that order.
 | Retrieve the assumptions and evidence that apply | Done for causal models: `causal_decision.assumptions` and `/api/v1/models` keep each model as immutable, content-addressed versions whose edges carry origin and review status, and a decision names the version it used. Missing: retrieving evidence (documents, metrics) for an edge; nothing links it |
 | Decide identified / partially identified / unsupported | Done, except bounds: complete ID, back-door with the optimal adjustment set, front-door, conditional IV, proximal; 11 typed refusals, each with what is missing |
 | Estimate impact and uncertainty | Done for ATE and ATT with coverage-tested intervals; for effects within declared segments with family-wise correction and a heterogeneity test (pre-registered T4); for staggered rollouts by difference-in-differences with unit-clustered intervals and a pre-trends test, against never-treated or not-yet-treated units and, with covariates, doubly robust (T5); for watched randomized rollouts by anytime-valid confidence sequences (T6); for cluster-randomized rollouts with CR2 cluster-robust intervals (T7); and for switchbacks, where the caller chooses a washout that covers the carryover (T8). Missing: policy value, spillovers between units, DiD with anticipation or repeated cross-sections, a carryover check with real power, and subgroup *discovery* |
-| Robustness checks | Done: placebo, negative controls, graph-implied independences with measured power, overlap, balance, E-values, robustness values |
+| Robustness checks | Done: placebo, negative controls, graph-implied independences with measured power, overlap, balance, E-values, robustness values, and Rosenbaum bounds on a matched design for back-door designs with a binary treatment (T9). Missing: a sensitivity model for the weighted estimators themselves |
 | Decide: act, ask, experiment, refuse | Done: `packages/causal-decision` turns an outcome, a request and a policy into one verdict, deterministically, gated by the pre-registered D0 suite (v3: 19 scenarios, 8 properties, 8 seeded defects). Declared segments reach the verdict -- an action that harms one of them is not automated on a favourable pooled effect -- and so does a difference-in-differences result's parallel-trends breakdown: a conclusion a violation smaller than the pre-adoption ones would flip is sent to an experiment |
 | Evidence record | Partial: every result and every decision carries digests of its inputs and itself, decisions are persisted into a verified hash chain with the observed outcome recorded against them, and the model version a decision used is recorded. Checkpoints of the chain head can be taken and verified against (`/api/v1/decisions/checkpoint`, `/verify-anchored`). Missing: publishing a checkpoint somewhere the writer cannot edit |
 | Recommend the next experiment | Done for the case the layer can size: randomized units, with the minimum detectable effect, per-arm size, duration and guardrails. Clustered, switchback and sequential designs are not sized |
@@ -61,12 +61,12 @@ sustainability investment assurance follow, in that order.
    confidence sequences over a predictable-baseline AIPW score). Cluster-randomized designs are
    **done** (`causal_core.cluster`, pre-registered T7: CR2 intervals on t(K − 2), a refusal where
    a few clusters dominate). Switchback designs are **done** (also `causal_core.cluster`,
-   pre-registered T8: a uniform washout, block means, Welch on t(K − 2); the carryover check is
-   reported, not gated, is weak, and says so: `carryover-check-weak`). Parallel-trends
+   pre-registered T8: a uniform washout, block means, Welch on t(K − 2); since T8 v2 a
+   carryover check with gated power makes the result contested when the effect is still moving
+   after the washout, and misses a carryover too small next to the standard error). Parallel-trends
    sensitivity is **done** (intervals under a relative-magnitudes restriction and a breakdown
    multiple, T5 v3). Still to come, in the ledger's order: spillovers between randomized units
-   (`septa-7`) and a switchback carryover check with gated power as T8 v2, or a design that
-   estimates the carryover length (`septa-9`); then the DiD work the register still lists --
+   (`septa-7`); then the DiD work the register still lists --
    the full Rambachan–Roth sensitivity (`did-rambachan-roth`), and anticipation windows,
    repeated cross-sections and time-varying covariates (`did-anticipation-cross-sections`).
    Each with its own pre-registered gate and a seeded defect.
@@ -112,24 +112,40 @@ priority first, and the priorities put hardening the platform before new estimat
   SQLite, on the schema the migrations build: it found that the Guardian could not write
   `audit_log` there and that `session_state` and `incidents` had no migration, and both are
   fixed (`septa-52`, gate step `backend-pytest-postgres`). No SQL in `backend/src` is built
-  from strings, and bandit enforces it (`septa-50`). Open: rejecting a draft needs a Guardian
-  REJECTED verdict, which a classified reject request never gets (`septa-53`).
+  from strings, and bandit enforces it (`septa-50`). Approving a draft needs an APPROVED
+  Guardian verdict issued for `GOVERNANCE_APPROVE`, not one from a check for any other action
+  (`septa-60`), and rejecting one needs an APPROVED verdict for `GOVERNANCE_REJECT` on that
+  draft; the governance page sends the reviewer's classification with both. Rejecting used to
+  need a REJECTED verdict, which a classified reject request never got (`septa-53`).
 - **p1, release and drift.** Done: the gate checks that the skills and agent docs name only
   things that exist (`septa-3`), and the MCP tools' parameters are derived from `CausalQuery`,
   with a parity test (`septa-4`; it found `causal_impact` judging every earlier answer as
   observational, and `causal_decide` dropping `treatment_levels`). Open: protect `main`
   (`septa-1`; needs a public repository or a paid plan); a first PyPI release of the three
-  packages (`septa-2`); SeptaCore's optional stages that fit (`septa-5`); deleting the legacy MCP
-  server once no external client needs it (`septa-6`).
+  packages (`septa-2`); SeptaCore's optional stages that fit (`septa-5`). Also done: the legacy
+  MCP server, `backend/mcp_server`, deleted; `packages/causal-mcp` is the one server (`septa-6`).
 - **p2, the kernel and decision layer.** Done: DiD with covariates (doubly robust) and
-  not-yet-treated comparisons, T5 v4 (`septa-8`). Open: step 3's remaining estimators (`septa-7`,
-  `septa-9`), calibration (`septa-10`), anchoring (`septa-11`), Rosenbaum bounds (`septa-12`),
-  Guardian PR-007 (`septa-33`), positivity detection and triangulation at moderate n (`septa-34`,
-  `septa-35`), and the review queue's risk tier (`septa-36`).
-- **p3 and p4.** The rest of the register (versioned semantic objects, lineage,
-  provenance, the LLM layer, Cynefin routing, frontend views and others), then the longer-range
+  not-yet-treated comparisons, T5 v4 (`septa-8`); a switchback carryover check with gated power
+  whose flag makes the result contested, T8 v2 (`septa-9`; a carryover too small to bias the
+  estimate materially stays undetectable at T8's sizes, and is reported); Guardian PR-007, no
+  edge approved without a sensitivity result stored on an assumption it rests on (`septa-33`; since `062f57d` only one the
+  platform recorded for the edge counts, not a drafter's own), and the kernel's sensitivity
+  analysis of a draft edge recorded there when the platform runs it (`septa-62`); Rosenbaum bounds on
+  a matched design, T9 (`septa-12`);
+  the review queue ordered by a risk tier derived from stored fields, with who submitted each
+  item (`septa-36`). Open: step 3's remaining estimator (`septa-7`), calibration (`septa-10`),
+  anchoring (`septa-11`), positivity detection and triangulation
+  at moderate n (`septa-34`, `septa-35`).
+- **p3 and p4.** Done: provenance is durable and append-only, with erasure as a tombstone, and
+  session runs, Guardian checks and decisions write it (`septa-48`, `septa-16`). The rest of the
+  register (versioned semantic objects, lineage, the LLM layer, Cynefin routing, frontend views
+  and others), then the longer-range
   methods: discovery, rung-3 counterfactuals, general ID estimation, subgroup discovery. Many of
   these end either in the capability or in its claim being withdrawn from the docs.
+  Four have ended that way: EconML/PyMC backends, the `cynepic-*` Rust crates, Neo4j as the
+  causal graph store and Kafka streaming were claimed and never built, and are not needed by the
+  product, so the claims were withdrawn and the idle Kafka and Redis services removed
+  (`econml-pymc`, `rust-crates`, `neo4j-graph-store`, `kafka-streaming` in `left_the_list`).
 
 ## What this project will not do first
 

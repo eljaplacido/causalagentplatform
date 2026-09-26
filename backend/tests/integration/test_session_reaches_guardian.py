@@ -262,6 +262,11 @@ async def test_planner_escalation_is_ruled_on_and_recorded(
     row = await _graph_verdict_row(data["session_id"])
     _assert_governed(data, row)
     assert row["action_type"] == "GRAPH_HUMAN_ESCALATION"
+    # PR-010 (#47) bites now that the escalation reaches the Guardian: a plan with no
+    # safe action is never APPROVED.
+    assert row["guardian_verdict"] == "REQUIRES_ESCALATION"
+    assert "PR-010" in row["policy_rules_cited"]
+    assert data["guardian_verdict"] == "REQUIRES_ESCALATION"
 
 
 # ── The invariant ─────────────────────────────────────────────────────────────

@@ -41,7 +41,7 @@ The command exits 0 for a result, 2 for a refusal and 1 for an apparatus failure
 | **Estimate** | A portfolio of difference in means, Lin regression, Hajek IPW, cross-fitted AIPW and DML, linear front-door, 2SLS and proximal 2SLS. Every standard error comes from the estimator's influence function, and every interval is coverage-tested. |
 | **Triangulate** | Estimators that rest on different assumptions are compared, with the correlation between them taken into account. If they disagree, the result is marked *contested*. |
 | **Refute** | A placebo treatment, negative-control outcomes and conditional independences implied by the graph. Their false-alarm rates and power are measured, not assumed. |
-| **Sensitivity** | E-values (VanderWeele & Ding) and Cinelli–Hazlett robustness values. |
+| **Sensitivity** | E-values (VanderWeele & Ding) and Cinelli–Hazlett robustness values; for back-door designs with a binary treatment, a Rosenbaum bound on a 1:1 matched design the kernel builds: Γ*, the largest hidden bias at which the matched comparison still rejects no effect. |
 | **Claims** | Every number that may appear in prose is a claim bound to a field. `cc.verify(text, out)` rejects any number that isn't one. It also rejects causal wording ("caused", "will reduce") unless the result is *supported*. |
 | **Provenance** | Digests of the graph, query, data and policy, all in RFC 8785 canonical JSON, plus a digest of the result itself. The same inputs reproduce the same `result_digest`. |
 
@@ -146,12 +146,28 @@ before any run. It runs on every change:
 
 - **T8 (switchback designs):** a week of minutes, hourly blocks, AR(1) noise and a daily cycle:
   coverage 0.945–0.956 of the steady-state effect when the washout covers the carryover. When it
-  does not, the estimate is biased (−0.086) and covers 88.7%, and the carryover check flags it in
-  only 2% of runs: it is reported, not relied on.
+  does not, a carryover check makes the result `contested` (v2): in 91.8% of runs where the
+  carryover biases the estimate by −0.424 (three standard errors), with false alarms of
+  5.4–6.1% where the washout covers it. It cannot see a carryover whose bias is small next to
+  the standard error: at −0.085 (coverage 88.7%) it fires in 9.5% of runs, and no check on the
+  minutes after the washout could do much better at these sizes.
+
+- **T9 (Rosenbaum sensitivity):** pair differences drawn from Rosenbaum's model with the hidden
+  bias planted at its worst case, and full analyses with an unmeasured confounder of known
+  strength. The reported Γ* reached the planted bias in 1.9–2.9% of runs (bar 3.5%, nominal 2.5%)
+  and kept the conclusion at two-thirds of it in 91.8–96.7%; with a confounder of odds ratio 3
+  behind a real analysis, the median Γ* was 1.63 against the design's sensitivity of 1.88, and no
+  run claimed 3. Γ* speaks to the matched comparison's test of no effect, not to the AIPW
+  estimate; Wilcoxon's statistic understates design sensitivity, and residual imbalance after
+  inexact matching is bias the bound does not cover (the result reports the largest standardized
+  difference).
 
 **Switchbacks.** `analyze(..., design="randomized", cluster=<block>, time=<minute>,
 washout=<minutes>)` drops the first `washout` minutes of every block and compares block means
-(Welch, t(K − 2)).
+(Welch, t(K − 2)). A carryover check tests whether the effect is still moving after the washout
+(the outcome's slope over the rest of each switched block, into- against out-of-treatment
+switches, Welch on t(K_s − 2), at `policy.carryover_alpha` = 0.05); a failure makes the result
+`contested`, with the estimate still reported.
 
 **Randomized by cluster.** `analyze(..., design="randomized", cluster=<column>)` gives the
 unit-weighted effect with CR2 cluster-robust intervals on t(K − 2), and reports the intra-cluster
@@ -205,7 +221,8 @@ Data can be pandas, a dict of columns, pyarrow, polars, or any dataframe-interch
 - Time series
 - Interference between randomized units (spillovers from treated to untreated clusters);
   cluster and switchback designs handle dependence *within* a cluster or block only
-- A carryover check with real power: the current one is reported, and weak (T8)
+- A carryover check that sees a small carryover: the T8 v2 check catches one that biases the
+  estimate by several standard errors, not one that biases it by a fraction of one
 - For difference-in-differences: anticipation windows, repeated cross-sections, time-varying
   covariates, and the full Rambachan & Roth machinery (the kernel's parallel-trends sensitivity is
   a simplified, conservative form)

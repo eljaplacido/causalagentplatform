@@ -108,8 +108,6 @@ class BaseCausalConnector(ABC):
       - fetchEvents()       — pull events from the source system
       - mapToSemanticObjects() — map raw events to DRAFT semantic objects
       - validate()          — health check
-
-    The subscribe() method publishes events to a Kafka topic.
     """
 
     def __init__(self, connector_id: str, domain: str, version: str = "1.0") -> None:
@@ -166,10 +164,3 @@ class BaseCausalConnector(ABC):
           - Last sync completed without errors
         """
 
-    def subscribe(self, topic: str) -> None:
-        """
-        Publish events to a Kafka topic for real-time streaming.
-
-        Default implementation is a no-op stub.
-        Production: replace with confluent_kafka.Producer.
-        """

@@ -125,6 +125,12 @@ class ProvenanceRecord(BaseModel):
     tool_calls: list[UUID] = Field(default_factory=list)
     context_window_truncated: bool = False
 
+    # ── W3C PROV attributes (prov:label, and the node's other key-value pairs) ─
+    # What the node is, in words and in identifiers (a digest, a verdict, an
+    # audit_log id), so a trace can be read without the objects it points at.
+    label: str | None = None
+    attributes: dict[str, Any] = Field(default_factory=dict)
+
     # ── Governance ──────────────────────────────────────────────────────────────
     guardian_verdict_ref: UUID | None = None
     session_id: str = Field(..., min_length=1)

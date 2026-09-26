@@ -92,6 +92,7 @@ markers = [
     "t7: T7 cluster-randomized designs gate (pre-registered; see benchmarks/t7-cluster/PRE-REGISTRATION.md)",
     "t6: T6 anytime-valid monitoring gate (pre-registered; see benchmarks/t6-sequential/PRE-REGISTRATION.md)",
     "t5: T5 difference-in-differences gate (pre-registered; see benchmarks/t5-did/PRE-REGISTRATION.md)",
+    "t9: T9 Rosenbaum sensitivity gate (pre-registered; see benchmarks/t9-rosenbaum/PRE-REGISTRATION.md)",
     "slow: long-running (nightly) configuration",
     "crosscheck: compares against an independent engine (y0 / DoWhy); skipped if not installed",
     "real_data: pre-registered real-data benchmarks (T2 IHDP, T3 LaLonde); skipped unless cached or CAUSAL_FETCH=1",

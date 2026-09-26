@@ -206,7 +206,8 @@ def test_a_staggered_rollout_can_be_analysed_and_decided_over_mcp() -> None:
 
 def test_a_rollout_with_covariates_and_no_never_treated_units_is_analysed_over_mcp() -> None:
     """The two panel fields of contract 0.10.0 reach the kernel over MCP, and the response
-    validates against the output schema as listed (after its type unions were merged)."""
+    validates against the output schema as listed (after its type unions were merged and its
+    implied enumeration types dropped)."""
     import asyncio
 
     import jsonschema
@@ -238,6 +239,25 @@ def test_merged_type_unions_accept_exactly_what_the_long_form_accepts() -> None:
         ).is_valid(value), value
     constrained = {"anyOf": [{"type": "string", "minLength": 1}, {"type": "null"}]}
     assert server._merge_type_unions(constrained) == constrained, "only bare types merge"
+
+
+def test_an_enumeration_without_its_implied_type_accepts_exactly_the_same_values() -> None:
+    from jsonschema import Draft202012Validator
+
+    values = ("greater", "less", "", 0, 1.5, None, True, ["greater"], {"a": "greater"})
+    for long_form, short in (
+        ({"enum": ["greater", "less"], "type": "string"}, {"enum": ["greater", "less"]}),
+        ({"const": "result", "type": "string"}, {"const": "result"}),
+    ):
+        assert server._drop_implied_types(long_form) == short
+        for value in (*values, "result"):
+            assert Draft202012Validator(long_form).is_valid(value) == Draft202012Validator(
+                short
+            ).is_valid(value), (long_form, value)
+    mixed = {"enum": ["a", 1], "type": "string"}
+    assert server._drop_implied_types(mixed) == mixed, "only all-string enumerations"
+    named = {"properties": {"type": {"const": "x", "type": "string"}}}
+    assert server._drop_implied_types(named) == {"properties": {"type": {"const": "x"}}}
 
 
 def test_a_watched_canary_is_monitored_and_decided_over_mcp() -> None:
