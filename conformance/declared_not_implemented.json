@@ -74,11 +74,11 @@
       "reality": "The discovery agent proposes one edge between two freshly generated uuid4() nodes with a confidence looked up from the Cynefin domain; conditional_independence_test is a stub that returns None.",
       "evidence": [
         {
-          "at": "backend/src/agents/causal_discovery.py:330",
+          "at": "backend/src/agents/causal_discovery.py:329",
           "says": "source_id = uuid4()"
         },
         {
-          "at": "backend/src/agents/causal_discovery.py:394",
+          "at": "backend/src/agents/causal_discovery.py:392",
           "says": "stub \u2014 real data required"
         }
       ],
@@ -120,72 +120,6 @@
       }
     },
     {
-      "id": "econml-pymc",
-      "status": "declared-not-implemented",
-      "capability": "EconML / PyMC estimation backends",
-      "claimed_in": [
-        {
-          "at": "docs/AGENTS.md:53",
-          "says": "DoWhy / EconML for statistical estimation"
-        },
-        {
-          "at": "docs/AGENTS.md:364",
-          "says": "(DoWhy, PyMC)"
-        },
-        {
-          "at": "docs/AGENTS.md:669",
-          "says": "DoWhy, EconML, statsmodels"
-        },
-        {
-          "at": "docs/CURRENT_STAGE.md@4e036a0:84",
-          "says": "DoWhy/EconML"
-        }
-      ],
-      "reality": "Neither EconML nor PyMC is a dependency; estimation is causal-core (and DoWhy is no longer a backend dependency either). causal-core's plug-in registry is the way to add EconML estimators.",
-      "evidence": [
-        {
-          "at": "backend/pyproject.toml:51",
-          "says": "\"causal-core>=0.10.0\","
-        }
-      ],
-      "leaves_by": {
-        "kind": "retraction",
-        "path": "docs/AGENTS.md",
-        "asserts": "the claims are removed from the docs -- or the dependency is added with a test that exercises an estimator from it"
-      }
-    },
-    {
-      "id": "rust-crates",
-      "status": "declared-not-implemented",
-      "capability": "Rust crates (cynepic-causal, cynepic-bayes) backing DAG operations and belief tracking",
-      "claimed_in": [
-        {
-          "at": "docs/AGENTS.md:53",
-          "says": "`cynepic-causal` crate (Rust) for DAG operations"
-        },
-        {
-          "at": "docs/AGENTS.md:161",
-          "says": "cynepic-bayes Bayesian belief tracking"
-        },
-        {
-          "at": "docs/AGENTS.md:269",
-          "says": "`cynepic-causal` Rust crate"
-        }
-      ],
-      "reality": "This repository contains no Rust code and depends on no crate; the cynepic crates belong to separate projects that were inspiration only.",
-      "evidence": [
-        {
-          "at": "backend/src/agents/causal_discovery.py:312",
-          "says": "cynepic-causal Rust crate"
-        }
-      ],
-      "leaves_by": {
-        "kind": "retraction",
-        "path": "docs/AGENTS.md",
-        "asserts": "the crate references are removed from the docs and the docstrings that repeat them"
-      }
-    },
-    {
       "id": "llm-routing-no-callers",
       "status": "declared-not-implemented",
       "capability": "Capability-based LLM routing used by the agents",
@@ -195,11 +129,11 @@
           "says": "Provider-agnostic LLM"
         },
         {
-          "at": "docs/AGENTS.md:619",
+          "at": "docs/AGENTS.md:609",
           "says": "the LLM factory resolves capability \u2192 provider at runtime"
         },
         {
-          "at": "docs/AGENTS.md:629",
+          "at": "docs/AGENTS.md:619",
           "says": "Routing is handled by `src/agents/llm_factory.py`"
         },
         {
@@ -226,33 +160,6 @@
         "kind": "test",
         "path": "backend/tests/unit/test_llm_routing_used.py",
         "asserts": "an agent path requests a capability through get_llm and its output depends on the (stubbed) model's reply"
-      }
-    },
-    {
-      "id": "provenance-store-no-callers",
-      "status": "declared-not-implemented",
-      "capability": "Provenance records written by real platform flows",
-      "claimed_in": [
-        {
-          "at": "docs/CURRENT_STAGE.md@4e036a0:33",
-          "says": "Append-only audit trail"
-        },
-        {
-          "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md:134",
-          "says": "`src/api/provenance.py` | Implemented"
-        }
-      ],
-      "reality": "store_provenance_record has no call site: nothing outside the tests writes a provenance record, so the provenance API serves only what tests put there.",
-      "evidence": [
-        {
-          "at": "backend/src/api/provenance.py:41",
-          "says": "def store_provenance_record(record: ProvenanceRecord) -> None:"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/integration/test_provenance_flow.py",
-        "asserts": "a real flow (e.g. POST /api/v1/session/run) produces a provenance record retrievable from the provenance API"
       }
     },
     {
@@ -291,72 +198,6 @@
       }
     },
     {
-      "id": "neo4j-graph-store",
-      "status": "declared-not-implemented",
-      "capability": "Neo4j as the causal graph store (d-separation and backdoor-path queries)",
-      "claimed_in": [
-        {
-          "at": "docs/DATA_LAYER.md:284",
-          "says": "3.1 Neo4j (Graph Store)"
-        },
-        {
-          "at": "docs/DATA_LAYER.md:315",
-          "says": "d-separation query p95 < 50ms"
-        },
-        {
-          "at": "docs/CURRENT_STAGE.md@4e036a0:151",
-          "says": "Neo4j for causal graph storage"
-        }
-      ],
-      "reality": "The semantic layer (fragments, edges) is stored through SQLAlchemy (SQLite/PostgreSQL); Neo4j code exists only for the experience buffer and drift alerts, is exercised only against mocks, and no d-separation or path query runs in Neo4j.",
-      "evidence": [
-        {
-          "at": "backend/src/semantic_layer/registry.py:675",
-          "says": "FROM graph_fragments"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/integration/test_neo4j_live.py",
-        "asserts": "against a real Neo4j (the docker-compose service), the paths that claim Neo4j store and query what they claim to"
-      }
-    },
-    {
-      "id": "kafka-streaming",
-      "status": "declared-not-implemented",
-      "capability": "Kafka event streaming (ingestion bus, alert emission)",
-      "claimed_in": [
-        {
-          "at": "docs/DATA_LAYER.md:22",
-          "says": "Ingestion Bus (Kafka)"
-        },
-        {
-          "at": "docs/DATA_LAYER.md:408",
-          "says": "3.3 Kafka (Event Streaming)"
-        },
-        {
-          "at": "docs/AGENTS.md:137",
-          "says": "Alert emission via Kafka ready for integration"
-        },
-        {
-          "at": "docs/QUICKSTART.md@13e7d92:93",
-          "says": "The platform requires PostgreSQL 16, Neo4j 5, Kafka (KRaft), and Redis."
-        }
-      ],
-      "reality": "No Kafka client is a dependency or imported anywhere; the connector base class carries a comment to replace its stub with a producer. docker-compose starts a broker nothing talks to.",
-      "evidence": [
-        {
-          "at": "backend/src/connectors/base.py:174",
-          "says": "Production: replace with confluent_kafka.Producer."
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/integration/test_kafka_live.py",
-        "asserts": "an alert produced by the platform is consumed from the broker"
-      }
-    },
-    {
       "id": "dag-workbench",
       "status": "planned",
       "capability": "Unified graph-authoring UI (DAG Workbench)",
@@ -380,7 +221,7 @@
       "capability": "Triangulation flags outcome-model misspecification in causal-core",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:178",
+          "at": "packages/causal-core/README.md:184",
           "says": "Its power was 0.04 at n = 2,000"
         }
       ],
@@ -403,7 +244,7 @@
       "capability": "Estimation of effects identified only by the general ID algorithm (e.g. the napkin graph)",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:200",
+          "at": "packages/causal-core/README.md:206",
           "says": "Estimation for general ID functionals"
         }
       ],
@@ -426,18 +267,18 @@
       "capability": "causal-core methods beyond the current portfolio: nonparametric front-door, discovery, time series, interference between units",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:202",
+          "at": "packages/causal-core/README.md:208",
           "says": "Nonparametric front-door"
         },
         {
-          "at": "packages/causal-core/README.md:204",
+          "at": "packages/causal-core/README.md:210",
           "says": "Discovery"
         }
       ],
       "reality": "Listed as not implemented in the package README; none of these exists in the kernel. (Anytime-valid sequential tests left this entry on 2026-09-25 with T6; cluster-randomized designs, which handle dependence within clusters but not spillovers between them, arrived the same day with T7, and switchback designs with T8.)",
       "evidence": [
         {
-          "at": "packages/causal-core/README.md:197",
+          "at": "packages/causal-core/README.md:203",
           "says": "Not implemented yet"
         }
       ],
@@ -483,7 +324,7 @@
       "reality": "The chain is built, persisted, served and verified, and decision_records is append-only in the production schema. Both ends of anchoring now exist in code: GET /api/v1/decisions/checkpoint returns the head to publish, and POST /api/v1/decisions/verify-anchored checks the chain against checkpoints kept elsewhere, catching a rewrite that re-seals every later entry (which /verify passes) and a truncation below a checkpoint. What does not exist is the publishing: nothing sends a checkpoint to a store the platform cannot rewrite, so until a deployment does, the ledger still evidences internal consistency only.",
       "evidence": [
         {
-          "at": "backend/src/api/decisions.py:316",
+          "at": "backend/src/api/decisions.py:361",
           "says": "A pass means the chain is *internally* consistent. It cannot mean more than"
         },
         {
@@ -626,7 +467,7 @@
       "capability": "Agents render their prompts from the versioned templates in prompts/",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:613",
+          "at": "docs/AGENTS.md:603",
           "says": "Prompt templates are versioned in `prompts/` alongside their schema contracts. No agent uses ad-hoc prompts at runtime."
         }
       ],
@@ -742,15 +583,15 @@
       "reality": "The drift functions compute when called directly with data (KL/JS on histograms, a correlation-below-0.5 check labelled causal drift, Jaccard word overlap on definitions, a chi-squared test on labels). DriftMonitorAgent.process, which the periodic sensor runs, hands each skill only a fragment id, so drift_detect returns kl_divergence 0.0 with note no_data_for_comparison, the structure and semantic comparisons return no drift for want of edges and definitions, and concept_drift is passed as False. The pipeline therefore cannot raise a drift alert. Alerts go to an in-process AlertEmitter; the Kafka topic named in its return value has no producer.",
       "evidence": [
         {
-          "at": "backend/src/agents/drift_monitor.py:598",
+          "at": "backend/src/agents/drift_monitor.py:599",
           "says": "\"note\": \"no_data_for_comparison\","
         },
         {
-          "at": "backend/src/agents/drift_monitor.py:186",
+          "at": "backend/src/agents/drift_monitor.py:187",
           "says": "concept_drift=False,  # Would need label data"
         },
         {
-          "at": "backend/src/agents/drift_monitor.py:546",
+          "at": "backend/src/agents/drift_monitor.py:547",
           "says": "\"topic\": \"platform.drift.alert.v1\","
         }
       ],
@@ -766,7 +607,7 @@
       "capability": "The published TypeScript contract matches the backend models field for field",
       "claimed_in": [
         {
-          "at": "docs/ADR-001-canonical-semantic-layer.md:28",
+          "at": "docs/ADR-001-canonical-semantic-layer.md:27",
           "says": "MUST implement these core types with exact field alignment"
         },
         {
@@ -840,7 +681,7 @@
           "says": "1. SimulateAhead   \u2014 Forward-simulate action consequences using the approved SCM"
         },
         {
-          "at": "docs/AGENTS.md:546",
+          "at": "docs/AGENTS.md:535",
           "says": "SimulateAhead (SCM lookahead)"
         },
         {
@@ -874,29 +715,6 @@
       }
     },
     {
-      "id": "provenance-not-append-only",
-      "status": "declared-not-implemented",
-      "capability": "Append-only provenance records",
-      "claimed_in": [
-        {
-          "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md@13e7d92:84",
-          "says": "Both provenance and contract records are append-only"
-        }
-      ],
-      "reality": "Provenance records live in an in-process dict, lost on restart, and DELETE /api/v1/provenance/session/{id} erases a session's records. Since the role matrix that delete needs a governance role (governance_officer or platform_engineer), but it still erases, so the store is not append-only.",
-      "evidence": [
-        {
-          "at": "backend/src/api/provenance.py:281",
-          "says": "_provenance_store.pop(session_id, None)"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/integration/test_provenance_append_only.py",
-        "asserts": "provenance records are persisted, survive a process restart, and no route or store method removes or rewrites one"
-      }
-    },
-    {
       "id": "gdpr-controls",
       "status": "declared-not-implemented",
       "capability": "Privacy controls: PII pseudonymization at ingestion, logical erasure, portable export",
@@ -914,10 +732,10 @@
           "says": "| Art. 20 \u2013 Data portability | Semantic layer export (JSON-LD format) |"
         }
       ],
-      "reality": "No code pseudonymizes, tokenizes or strips any field, no erasure path exists, and no JSON-LD (or other) export of the semantic layer exists. No connector runs in the platform, so today PII can enter only through API request bodies, and nothing inspects them for it. The Art. 30 row (records of processing) is the one backed by something real: audit_log.",
+      "reality": "No code pseudonymizes, tokenizes or strips any field, no erasure path exists (a provenance erasure, POST /api/v1/provenance/session/{id}/erasure, writes a tombstone that hides a session's provenance from the API and deletes nothing, so it is not Art. 17 erasure), and no JSON-LD (or other) export of the semantic layer exists. No connector runs in the platform, so today PII can enter only through API request bodies, and nothing inspects them for it. The Art. 30 row (records of processing) is the one backed by something real: audit_log.",
       "evidence": [
         {
-          "at": "backend/src/connectors/base.py:146",
+          "at": "backend/src/connectors/base.py:144",
           "says": "def map_to_semantic_objects("
         }
       ],
@@ -972,24 +790,6 @@
       }
     },
     {
-      "id": "legacy-mcp-server",
-      "status": "planned",
-      "capability": "One MCP server: the legacy backend server retired in favour of packages/causal-mcp",
-      "claimed_in": [],
-      "reality": "backend/mcp_server (mcp SDK v1, seven backend skills, two of them heuristic triage scores rather than effects) still ships beside packages/causal-mcp (SDK v2, the kernel, the decision layer, causal_impact, a narrative verifier). As of 2026-09-25 no gnomon role is granted it, its gnomon declaration is commented out, and it warns on startup that it is deprecated. It is not deleted because client configurations outside this repository may still launch `causal-platform-mcp`, and scripts/gate_scope.py's mcp-tools identity check still inspects it.",
-      "evidence": [
-        {
-          "at": "backend/mcp_server/server.py:106",
-          "says": "causal-platform MCP server is DEPRECATED"
-        }
-      ],
-      "leaves_by": {
-        "kind": "retraction",
-        "path": "backend/mcp_server",
-        "asserts": "the directory, its console script and its stdio test are removed, and gate_scope's mcp-tools check inspects causal-mcp's TOOLS instead"
-      }
-    },
-    {
       "id": "cynefin-classifier-keyword-stub",
       "status": "declared-not-implemented",
       "capability": "Cynefin-domain classification that routing, human escalation and Guardian rules can rely on",
@@ -1003,7 +803,7 @@
           "says": "Cynefin domain classification with confidence"
         },
         {
-          "at": "docs/AGENTS.md:562",
+          "at": "docs/AGENTS.md:551",
           "says": "Domain confidence > 0.7"
         },
         {
@@ -1022,24 +822,6 @@
         "kind": "test",
         "path": "backend/tests/integration/test_cynefin_routing_gate.py",
         "asserts": "a pre-registered routing gate on a hand-labelled incident-phrasing set reports macro F1 against a most-common-class and a TF-IDF naive-Bayes baseline, per-domain recall with a CHAOTIC floor, calibration with per-bin counts, and the share of inputs it commits to -- and escalation of high-severity or irreversible incidents does not depend on the label at all"
-      }
-    },
-    {
-      "id": "carryover-check-weak",
-      "status": "planned",
-      "capability": "Detecting a switchback washout too short for the system's carryover",
-      "claimed_in": [],
-      "reality": "causal_core.cluster reports a carryover check (early-minus-late effect in switched blocks, Welch test) as a design check that never changes the status. T8 v1 measured it: with a 30-minute carryover and a 20-minute washout the estimate was biased by -0.086 and covered 0.887, and the check flagged it in 2% of runs. It is not a safeguard; the washout must be chosen from knowledge of the system.",
-      "evidence": [
-        {
-          "at": "benchmarks/t8-switchback/PRE-REGISTRATION.md:51",
-          "says": "reported, not gated"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "packages/causal-core/tests/t8/test_carryover_power.py",
-        "asserts": "a pre-registered T8 version gates the carryover check's power at >= 0.8 against a carryover the washout does not cover, with a false-alarm bar where it does"
       }
     },
     {
@@ -1066,7 +848,8 @@
       "id": "mcp-tools-crash-and-stdout-logging",
       "was": "2 of 7 MCP tools raised TypeError (stdlib loggers called with structlog kwargs) and structlog wrote log lines to stdout, the stdio protocol channel",
       "fixed_in": "6768cc6",
-      "pinned_by": "backend/tests/integration/test_mcp_stdio.py"
+      "pinned_by": "packages/causal-mcp/tests/test_stdio_flow.py",
+      "note": "Re-pinned in septa-6. The crash was in the legacy backend server, which septa-6 deleted together with its own pin (backend/tests/integration/test_mcp_stdio.py, last at f64b2b0). The property the fix established -- every tool callable over stdio at INFO logging, and every stdout line a JSON-RPC frame -- is held on the one server that remains by this test (test_stdout_is_only_jsonrpc)."
     },
     {
       "id": "ui-fabricated-approvals",
@@ -1255,6 +1038,62 @@
       "fixed_in": "1d1d429",
       "pinned_by": "backend/tests/integration/test_review_queue_risk.py",
       "note": "Implemented. GET /api/governance/review-queue returns risk_tier, risk_reasons and submitted_by for each item and orders by tier (CRITICAL, HIGH, MEDIUM, LOW), oldest first within a tier. The tier is derived from stored fields only, by rules defined in backend/src/semantic_layer/review_risk.py: an edge is CRITICAL below stated confidence 0.5, HIGH below 0.8 or when no stored sensitivity result on an assumption it rests on says it is robust (the results Guardian PR-007 reads: since 062f57d only those the platform recorded under a RECORD_SENSITIVITY verdict for the edge), else MEDIUM; a fragment is HIGH while it names an edge that is not APPROVED, else MEDIUM; an entity is LOW. These are this repository's own rules, not a standard: stated confidence is the proposer's number, so it can only raise a tier, never lower one on its own. submitted_by is the id in created_by; edges had no created_by, so CausalEdge gained one (migration 012_edge_created_by.sql, the SQLite DDL, propose_draft, get_edge), and edges drafted before it show null, which the UI renders as 'not recorded'. The frontend maps the three fields (frontend/src/app/governance/page.tsx) and ReviewQueue shows the reasons as the tier badge's title; pinned on that side by frontend/src/components/governance/__tests__/ReviewQueue.test.tsx and the queue test in frontend/src/app/governance/__tests__/page.test.tsx."
+    },
+    {
+      "id": "provenance-not-append-only",
+      "was": "Provenance records live in an in-process dict, lost on restart, and DELETE /api/v1/provenance/session/{id} erases a session's records. Since the role matrix that delete needs a governance role (governance_officer or platform_engineer), but it still erases, so the store is not append-only.",
+      "fixed_in": "8ba6026",
+      "pinned_by": "backend/tests/integration/test_provenance_append_only.py",
+      "note": "Implemented. Migration 011_provenance.sql (and its SQLITE_DDL rendering) stores provenance in provenance_entries (PROV records and LLM invocations, the model as JSON, ordered by sequence) and provenance_erasures; src/semantic_layer/provenance_store.py appends and reads, with no update or delete method. causal_app holds SELECT and INSERT only on both tables, and UPDATE and DELETE are trapped by trigger on PostgreSQL and SQLite, so the owner is refused too. DELETE /api/v1/provenance/session/{id} is gone; POST /api/v1/provenance/session/{id}/erasure (governance roles, a reason of at least ten characters) writes a tombstone -- who, when, why, how many entries -- that hides the session's entries up to that point from trace, export and invocations, which return the tombstone instead. Entries written afterwards are served. The pinning test asserts persistence across a new store, the refusals (and on PostgreSQL causal_app's missing privileges), that no provenance route deletes, the tombstone's hiding and keeping, the reason requirement and the role checks. Not changed: the hidden rows remain in the database, readable by its owner and by causal_governance (causal_readonly is not granted SELECT on the entries), so an erasure is not GDPR Art. 17 erasure -- that is still gdpr-controls. The other half of the withdrawn ADR sentence, contract records, is not append-only either: ContractRegistry is an in-memory store with a remove method, which ADR-002 now says, and no flow uses it (data-contracts-not-enforced)."
+    },
+    {
+      "id": "provenance-store-no-callers",
+      "was": "store_provenance_record has no call site: nothing outside the tests writes a provenance record, so the provenance API serves only what tests put there.",
+      "fixed_in": "8ba6026",
+      "pinned_by": "backend/tests/integration/test_provenance_flow.py",
+      "note": "Implemented for the flows that run. POST /api/v1/session/run and /incident append the run's agent, activity, one activity per reasoning step it added, and its input and output entities (digests of the description, the states and each step's inputs and outputs, not their content); GovernanceAgent.check appends a Guardian activity citing its audit_log row in the same transaction as that row, which covers POST /api/governance/check, approvals, rejections, the triage agent's check and the graph's GuardianCheck node; POST /api/v1/decisions appends the data and graph entities (digests, or the registered model's name, version and digest), the analysis activity and the ledger-entry entity under session decision:<entry_digest> (src/semantic_layer/provenance_capture.py). The pinning test drives each route and reads the records back through GET /api/v1/provenance/trace. Still unwired, and not claimed: LLM invocations -- the llm_factory capture hook now writes to the durable store (tested with a stub model), but no runtime path calls get_llm (llm-routing-no-callers); agents do not write provenance themselves, their reasoning steps are recorded by the session route; and a /session/run whose planner finds no safe action escalates before the GuardianCheck node, so its output cites no audit row."
+    },
+    {
+      "id": "econml-pymc",
+      "was": "EconML / PyMC estimation backends. Neither was ever a dependency; docs/AGENTS.md named them (with DoWhy) as backing the causal-discovery and simulation agents and the effect_estimate and counterfactual skills.",
+      "fixed_in": "4529617",
+      "pinned_by": "backend/tests/unit/test_infra_claims_withdrawn.py",
+      "note": "Left by retraction. Not needed: estimation is packages/causal-core, and a third-party estimator (EconML's among them) would enter through its `causal_core.estimators` entry-point registry with a pre-registered benchmark, not as a backend dependency. docs/AGENTS.md now names causal-core for each agent and skill (DoWhy and y0 appear only in causal-core's optional crosscheck extra, as test-time identification cross-checks); simulation.py's docstrings no longer name DoWhy/PyMC; NOTICE no longer lists EconML or PyMC. test_infra_claims_withdrawn.py fails if a dependency table or lock names econml or pymc, or a withdrawn phrasing returns to the docs, prompts or backend source."
+    },
+    {
+      "id": "rust-crates",
+      "was": "Rust crates (cynepic-causal, cynepic-bayes, cynepic-guardian, cynepic-router) named in docs/AGENTS.md, agent docstrings and prompt headers as backing DAG operations, belief tracking, the Guardian and Cynefin routing.",
+      "fixed_in": "4529617",
+      "pinned_by": "backend/tests/unit/test_infra_claims_withdrawn.py",
+      "note": "Left by retraction. The crates belong to separate projects that were inspiration only; this repository has no Rust. docs/AGENTS.md now names the Python that runs (causal-core for graph checks and identification, GovernanceAgent for the Guardian, the keyword stub for Cynefin; no Bayesian belief tracking exists); the causal_discovery.py and incident_triage.py docstrings and four prompts/*.yaml headers no longer name crates. Attribution of design inspiration (docs/AGENTS.md 9.3, ADR-001, a few code comments) stays. test_infra_claims_withdrawn.py fails on a tracked *.rs or Cargo manifest, or a `cynepic-* crate` phrasing in the docs, prompts or backend source."
+    },
+    {
+      "id": "neo4j-graph-store",
+      "was": "Neo4j as the causal graph store, running d-separation and back-door path queries (docs/DATA_LAYER.md 3.1 with a Cypher schema and a p95 target; docs/AGENTS.md's memory table put graph memory and the semantic registry in Neo4j).",
+      "fixed_in": "4529617",
+      "pinned_by": "backend/tests/unit/test_infra_claims_withdrawn.py",
+      "note": "Left by retraction, not by the live test its leaves_by named: the graph store is not needed. The graph lives in SQL (graph_fragments, causal_edges) and every graph query runs in packages/causal-core. DATA_LAYER 1 and 3.1, AGENTS.md (memory table, ChangeImpactAgent, experience buffer), QUICKSTART, TESTING_CICD and ADR-002 now say so. What stays, documented as optional: Neo4jFactory and the two side stores that use it when NEO4J_URI is set, the experience buffer (TTL and relevance decay) and drift-alert storage, and the compose neo4j service (APOC plugin dropped: nothing used it). Those paths are still tested only against a mocked driver, and src/api/health.py's /neo4j check is not mounted. test_infra_claims_withdrawn.py fails if the graph-store phrasings return or any module outside the factory, the two side stores and health.py reaches Neo4j."
+    },
+    {
+      "id": "kafka-streaming",
+      "was": "Kafka event streaming: an ingestion bus, drift-alert emission via Kafka, topics and consumer groups (docs/DATA_LAYER.md, docs/AGENTS.md, an earlier QUICKSTART listing Kafka as required). No Kafka client was a dependency; docker-compose started a broker nothing talked to.",
+      "fixed_in": "4529617",
+      "pinned_by": "backend/tests/unit/test_infra_claims_withdrawn.py",
+      "note": "Left by retraction. Not needed: no connector is called by the running platform, and drift alerts go through the in-process AlertEmitter (log, callbacks, deduplication). Removed: the compose kafka, kafka-ui and redis services (the whole idle `future` profile; no Redis client exists either) and their env examples; BaseCausalConnector.subscribe(), a no-op nothing called, and its test; semantic-types' KafkaTopic, KAFKA_TOPICS, KafkaTopicName and CausalConnector.subscribe. DATA_LAYER 3.3 now says there is no event streaming; AGENTS.md, CYBERSECURITY 5.2, QUICKSTART 4 and drift_monitor.py's docstrings say AlertEmitter. test_infra_claims_withdrawn.py fails if compose defines any service but postgres and neo4j, a Kafka or Redis client becomes a dependency, or a Kafka phrasing returns."
+    },
+    {
+      "id": "legacy-mcp-server",
+      "was": "backend/mcp_server (MCP SDK v1, seven backend skills, two of them heuristic triage scores rather than effects) shipped beside packages/causal-mcp; deprecated and granted to no gnomon role, it was kept for client configurations outside the repository that might still launch `causal-platform-mcp`",
+      "fixed_in": "b86ca81",
+      "pinned_by": "backend/tests/unit/test_one_mcp_server.py",
+      "note": "Left by its leaves_by kind, retraction, and by the deletion itself (septa-6, after the owner confirmed no external client needs it): the directory, its console script, its tests and the backend's mcp dependency are gone, the docs describe it only as history, and gate_scope's mcp-tools check left with it, the one server being inspected by kernel-mcp-tools. The test pins the absence: no package, no console script, no mcp dependency or import in backend/src, and gate_scope reading causal-mcp's TOOLS."
+    },
+    {
+      "id": "carryover-check-weak",
+      "was": "causal_core.cluster reports a carryover check (early-minus-late effect in switched blocks, Welch test) as a design check that never changes the status. T8 v1 measured it: with a 30-minute carryover and a 20-minute washout the estimate was biased by -0.086 and covered 0.887, and the check flagged it in 2% of runs. It is not a safeguard; the washout must be chosen from knowledge of the system.",
+      "fixed_in": "c5b8251",
+      "pinned_by": "packages/causal-core/tests/t8/test_carryover_power.py",
+      "note": "Implemented as pre-registered in T8 v2 (46a1eae) before the code, and passed its registered runs (benchmarks/t8-switchback/results/2026-09-26-v2-run1.json, ecfa386, whose git field is 'unknown' because the gate was started outside the checkout; run2, c95af52, repeats it from the checkout, byte-identical otherwise). The check is now the least-squares slope of the outcome over the retained window of each switched block, into- minus out-of-treatment mean slope, Welch on t(K_s - 2), at a new policy level carryover_alpha = 0.05 (contract 0.11.0); a failure makes the result contested, estimate and interval unchanged. Registered run: power 0.918 in material_carryover (tau = 1.5, lambda = 30, washout 20; bias -0.424, coverage 0.122 unchecked), bar 0.8; false alarms 0.054-0.061 in the four designs the washout covers, bar 0.10; every flagged replication contested and no other. Seeded defects carryover_check_blind, check_includes_washout and flag_not_gating each caught by their bar. Limit, recorded rather than claimed away: against v1's long_carryover (tau = 0.3, bias -0.085, a fraction of a standard error) the check fires in 9.5% of runs, and no check on the minutes after the washout can do much better at T8's sizes -- an oracle GLS matched filter knowing lambda and rho has power near 0.13 on paper. The washout must still be chosen from knowledge of the system."
     }
   ]
 }

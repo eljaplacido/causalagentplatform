@@ -48,19 +48,15 @@ dependencies = [
     "numpy>=2.0.0",
     "pandas>=2.2.0",
     "scipy>=1.11.0",           # Statistical tests for drift detection
-    "causal-core>=0.10.0",  # identification, estimation, refusals (packages/causal-core)
+    "causal-core>=0.11.0",  # identification, estimation, refusals (packages/causal-core)
     "causal-decision>=0.4.0",  # act / approve / experiment / refuse (packages/causal-decision)
-    # Agent integration
-    # v1 API: mcp 2.x removed mcp.server.fastmcp (packages/causal-mcp is the v2 server).
-    # 1.28.1 is the first 1.x with PYSEC-2026-3481/3482/3483 fixed.
-    "mcp>=1.28.1,<2",          # Model Context Protocol server (mcp_server/)
     # Security floors on TRANSITIVE dependencies. None of these is imported here; each
     # is a floor so that no resolution can pick a version with a published advisory
     # (pip-audit against the backend environment, 2026-09-25). The gate re-audits the
     # environment it tests on every run (.gnomon/ci.sh pip-audit-backend); raise a
     # floor here when that step names a new fix, rather than allowlisting it.
     "cryptography>=50.0.0",        # GHSA-537c-gmf6-5ccf, PYSEC-2026-3552/3553/3554 (google-auth, pyjwt)
-    "pyjwt>=2.13.0",               # PYSEC-2026-175..179 (firebase-admin, mcp)
+    "pyjwt>=2.13.0",               # PYSEC-2026-175..179 (firebase-admin)
     "pyasn1>=0.6.4",               # PYSEC-2026-3455/3456/3457 (google-auth via rsa)
     "urllib3>=2.7.0",              # PYSEC-2026-141/142 (requests)
     "h2>=4.4.1",                   # PYSEC-2026-3628 (httpx[http2] via firebase-admin)
@@ -97,11 +93,8 @@ production = [
     "uvicorn[standard]>=0.30.0",
 ]
 
-[project.scripts]
-causal-platform-mcp = "mcp_server.server:main"  # legacy server; the kernel server is packages/causal-mcp
-
 [tool.hatch.build.targets.wheel]
-packages = ["src", "mcp_server"]
+packages = ["src"]
 
 # ── Ruff ──────────────────────────────────────────────────────────────────────
 [tool.ruff]

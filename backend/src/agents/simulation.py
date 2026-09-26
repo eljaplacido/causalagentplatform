@@ -3,7 +3,7 @@ SimulationAgent — runs causal effect estimation over approved graph fragments.
 
 Responsibilities (AGENTS.md §2.1 SimulationAgent):
   - Load APPROVED graph fragments from the semantic layer
-  - Run DoWhy identification and estimation pipelines
+  - Run causal-core identification and estimation
   - Compute ATE with confidence intervals
   - Validate identification strategy against active assumptions
   - Store results in simulation_results on EpistemicState
@@ -15,8 +15,8 @@ Responsibilities (AGENTS.md §2.1 SimulationAgent):
 
 Implemented skills:
   semantic_layer_read      — load approved graph fragment
-  identification_check     — validate causal effect identifiability (DoWhy)
-  effect_estimate          — compute ATE via DoWhy / PyMC
+  identification_check     — validate causal effect identifiability (causal-core)
+  effect_estimate          — compute ATE via causal-core
   sensitivity_analysis     — Rosenbaum bounds / E-value computation
 
 EpistemicState constraints enforced:
@@ -443,7 +443,7 @@ class SimulationAgent(BaseAgent):
         """
         Check if the causal effect is identified under current assumptions.
 
-        Production: integrates DoWhy identification via backdoor/frontdoor/IV.
+        Delegates to causal-core identification (src/skills/identification_check.py).
         """
         try:
             return await identification_check(
@@ -460,7 +460,7 @@ class SimulationAgent(BaseAgent):
         """
         Estimate Average Treatment Effect (ATE).
 
-        Production: DoWhy linear estimator (fast) or PyMC MCMC (complex).
+        Delegates to causal-core estimation (src/skills/effect_estimate.py).
         """
         try:
             return await effect_estimate(

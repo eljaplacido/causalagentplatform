@@ -34,10 +34,9 @@ max_steps_total = 160
 # you actually wanted is a scope you will delete in frustration; a scope that
 # matches your layout is one you keep.
 # MCP scope. `mcp__causal_core` is the kernel's server (packages/causal-mcp, declared
-# in tools.toml as causal_core): the one whose numbers the pre-registered gates stand
-# behind, and the one system.md points causal numbers at. The LEGACY backend server
-# (`mcp__causal`, backend/mcp_server: heuristic skills) is granted to no role as of
-# 2026-09-25 -- see dni:legacy-mcp-server; its declaration in tools.toml is commented out.
+# in tools.toml as causal_core), the repository's one MCP server: the one whose numbers
+# the pre-registered gates stand behind, and the one system.md points causal numbers at.
+# (The legacy backend server, `mcp__causal`, was deleted on 2026-09-26 -- septa-6.)
 tools = ["read", "glob", "grep", "compute", "todo", "note", "task", "write", "skill", "mcp__causal_core"]
 # Which roles this one may hand work to. A sub-turn runs with the TARGET
 # role's tools, so this line -- not the one above -- bounds what delegation
@@ -66,7 +65,7 @@ temperature = 0.3
 top_p = 0.95
 max_steps = 32
 max_steps_total = 256
-# mcp__causal_core is the kernel; the legacy server is granted to no role (see coordinator).
+# mcp__causal_core is the kernel's server, the one MCP server (see coordinator).
 tools = ["read", "glob", "grep", "compute", "todo", "note", "write", "edit", "bash", "mcp__causal_core"]
 # Where this role may write: the source trees, the gate scripts and their
 # baselines, and the docs and register it must keep true alongside the code.
@@ -124,8 +123,7 @@ max_steps_total = 160
 #
 # mcp__causal_core is here so the verifier can re-derive a causal number the
 # implementor reported, from the tool, instead of trusting the transcript. Every
-# causal-mcp tool is annotated read-only, so it adds no write path. The legacy
-# server is granted to no role (see coordinator).
+# causal-mcp tool is annotated read-only, so it adds no write path.
 tools = ["read", "glob", "grep", "compute", "todo", "note", "bash", "mcp__causal_core"]
 # 'bash' can write anything, so 'tools' alone cannot make this role
 # read-only. This list is what actually constrains it: the gates can be run,

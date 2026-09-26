@@ -42,6 +42,8 @@ from src.semantic_layer.models import (
     GuardianVerdict,
     SensitivityResult,
 )
+from src.semantic_layer.provenance_capture import guardian_check_record
+from src.semantic_layer.provenance_store import ProvenanceStore
 from src.semantic_layer.review_risk import recorded_sensitivity
 from src.semantic_layer.verdict import GOVERNANCE_APPROVE
 from src.semantic_layer.verdict import claim as verdict_claim
@@ -353,6 +355,7 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
             session_id=state.session_id,
             subject_id=_subject_of(action_payload),
             notes=notes,
+            record_provenance=True,
         )
 
         self._log.info(
@@ -615,12 +618,18 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
         subject_id: str | None = None,
         notes: str | None = None,
         authority: bool = True,
+        record_provenance: bool = False,
     ) -> UUID:
         """
         Append an immutable entry to audit_log.
 
         This is the ONLY method that writes to audit_log in this class.
         It uses an INSERT — never UPDATE or DELETE.
+
+        With `record_provenance` (a Guardian check), the Guardian's provenance
+        activity citing this row is inserted in the same transaction, so the
+        verdict and its provenance exist together or not at all (ADR-002;
+        src/semantic_layer/provenance_capture.py).
 
         Raises AuditWriteError if the insert fails (which is a P0 incident).
         """
@@ -682,6 +691,21 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
                         "notes": notes,
                     },
                 )
+                if record_provenance and session_id:
+                    await ProvenanceStore().append(
+                        [
+                            guardian_check_record(
+                                session_id=session_id,
+                                agent_id=agent_id,
+                                audit_entry_id=entry_id,
+                                verdict=verdict_value,
+                                policy_rules_cited=list(policy_rules_cited),
+                                action_type=action_type,
+                                payload_hash=payload_hash,
+                            )
+                        ],
+                        session=session,
+                    )
                 await session.commit()
         except Exception as exc:
             self._log.critical(

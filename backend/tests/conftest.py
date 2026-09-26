@@ -342,7 +342,8 @@ async def db_session(
 #: What `verdict_for` is: give it the object you are about to write, get back a
 #: verdict that authorises that write and nothing else. The optional arguments are
 #: the verdict (default APPROVED) and the action it was issued for: an approval needs
-#: ``action_type="GOVERNANCE_APPROVE"`` (septa-60).
+#: ``action_type="GOVERNANCE_APPROVE"`` (septa-60), a rejection
+#: ``action_type="GOVERNANCE_REJECT"`` (septa-53).
 VerdictFactory = Callable[..., Awaitable[UUID]]
 
 

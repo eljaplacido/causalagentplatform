@@ -17,7 +17,6 @@ Early design drafts of this platform drew on prior research prototypes that each
 
 Without a single canonical model in *this* repo, we would risk re-introducing the same divergence between:
 - The backend skill implementations (`src/skills/`)
-- The MCP tool wrappers (`backend/mcp_server/tools.py`)
 - The frontend type bindings (`packages/semantic-types`)
 - The Guardian policy contracts
 
@@ -107,7 +106,8 @@ Guardian integration points, as built:
   before recording the kernel's sensitivity analysis on the draft edge it estimated.
   `BaseAgent._assert_guardian_approved`, the write guard meant for every agent, has no callers.
   The persistence guard that does hold is in the registry: every semantic-layer write needs a
-  signed, subject-bound, single-use APPROVED verdict (`_assert_verdict_approved`).
+  signed, subject-bound, single-use APPROVED verdict, and a review decision one issued for
+  exactly that action, `GOVERNANCE_APPROVE` or `GOVERNANCE_REJECT` (`_assert_verdict_approved`).
 - An audit trail entry is written on every verdict.
 - The circuit breaker escalates at `cycle_count >= 5` (PR-005; `MAX_CYCLES` in `agents/base.py`).
 
@@ -136,9 +136,10 @@ The canonical model must be the single source of truth across these surfaces in 
 |---|---|
 | `backend/src/semantic_layer/models.py` | Pydantic models match the canonical schema field-for-field |
 | `backend/src/skills/*` | Every skill accepts/returns the canonical shape. Today skills take and return plain `dict`s, not the models |
-| `backend/mcp_server/tools.py` | MCP wrappers accept JSON-native projections of the canonical shape |
 | `packages/semantic-types` (frontend) | TypeScript interfaces aligned to the canonical schema. They are hand-written, not generated, and the fields differ from `models.py` (register `semantic-types-field-divergence`). The shared enumerations are checked by `scripts/contract_parity.py` |
 | Guardian policies | Operate on canonical field names; do not encode legacy aliases |
+
+This table listed a fifth surface, the MCP wrappers in `backend/mcp_server/tools.py`, until that server was deleted (2026-09-26). The MCP server that remains, `packages/causal-mcp`, speaks the causal-core claim contract (`conformance/causal-claims/`), not this semantic layer.
 
 ### 6. Verification
 

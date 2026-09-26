@@ -34,6 +34,8 @@ from src.semantic_layer.models import (
     EpistemicState,
     GuardianVerdict,
 )
+from src.semantic_layer.provenance_capture import session_run_records
+from src.semantic_layer.provenance_store import ProvenanceStore
 
 log = structlog.get_logger(__name__)
 router = APIRouter()
@@ -44,6 +46,28 @@ _graph = compile_platform_graph()
 # In-process hot cache (session_id → last EpistemicState)
 _session_cache: dict[str, EpistemicState] = {}
 _session_store = SessionStateStore()
+_provenance = ProvenanceStore()
+
+
+async def _record_provenance(
+    initial: EpistemicState,
+    final: EpistemicState,
+    *,
+    route: str,
+    user: dict[str, Any],
+    resumed: bool,
+) -> None:
+    """Append the run's PROV records (src/semantic_layer/provenance_capture.py).
+
+    A failure raises: the session state is already saved, but a run whose
+    provenance could not be written is reported as failed rather than returned
+    as if its trace were complete.
+    """
+    await _provenance.append(
+        session_run_records(
+            initial, final, route=route, user_id=user.get("uid"), resumed=resumed
+        )
+    )
 
 
 # ── Request / Response models ─────────────────────────────────────────────────
@@ -276,6 +300,13 @@ async def run_session(
     # Cache for potential continuation
     _session_cache[session_id] = final
     await _session_store.save(final, user.get("uid"))
+    await _record_provenance(
+        initial_state,
+        final,
+        route="POST /api/v1/session/run",
+        user=user,
+        resumed=existing is not None,
+    )
 
     log.info(
         "session.run.complete",
@@ -350,6 +381,13 @@ async def triage_incident(
     if triaged_state.cynefin_domain == CynefinDomain.CHAOTIC:
         _session_cache[session_id] = triaged_state
         await _session_store.save(triaged_state, user.get("uid"))
+        await _record_provenance(
+            initial_state,
+            triaged_state,
+            route="POST /api/v1/session/incident",
+            user=user,
+            resumed=False,
+        )
         await _persist_incident(body, triaged_state, user)
         return _state_to_response(triaged_state)
 
@@ -357,6 +395,13 @@ async def triage_incident(
     final = await _run_graph(triaged_state)
     _session_cache[session_id] = final
     await _session_store.save(final, user.get("uid"))
+    await _record_provenance(
+        initial_state,
+        final,
+        route="POST /api/v1/session/incident",
+        user=user,
+        resumed=False,
+    )
     await _persist_incident(body, final, user)
 
     log.info(
