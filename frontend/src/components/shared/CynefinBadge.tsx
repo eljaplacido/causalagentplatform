@@ -11,6 +11,12 @@
  *   DISORDER    → gray
  *
  * Never conveys information by color alone — domain name is always visible.
+ *
+ * Input arrives from the backend as a string, so the CynefinDomain type is not
+ * a runtime guarantee. A known domain in any case is accepted; anything else
+ * (a business domain such as "devops", an empty value) renders a neutral
+ * "Unclassified" badge (data-domain="UNKNOWN") naming the value it got. It never
+ * throws, and never relabels an unknown value as a real Cynefin domain.
  */
 
 import { cn, formatConfidence } from "@/lib/utils";
@@ -25,17 +31,16 @@ export interface CynefinBadgeProps {
   className?: string;
 }
 
-const DOMAIN_CONFIG: Record<
-  CynefinDomain,
-  {
-    label: string;
-    icon: string;
-    bg: string;
-    text: string;
-    border: string;
-    description: string;
-  }
-> = {
+interface DomainStyle {
+  label: string;
+  icon: string;
+  bg: string;
+  text: string;
+  border: string;
+  description: string;
+}
+
+const DOMAIN_CONFIG: Record<CynefinDomain, DomainStyle> = {
   CLEAR: {
     label: "Clear",
     icon: "✓",
@@ -78,20 +83,20 @@ const DOMAIN_CONFIG: Record<
   },
 };
 
-/**
- * A value outside the Cynefin vocabulary (a backend string passed through
- * unchecked) renders as itself, labelled unrecognised, rather than throwing
- * or being dressed up as one of the five domains.
- */
-function unrecognisedConfig(domain: string) {
-  return {
-    label: String(domain),
-    icon: "?",
-    bg: "bg-zinc-100 dark:bg-zinc-800",
-    text: "text-zinc-700 dark:text-zinc-300",
-    border: "border-dashed border-zinc-300 dark:border-zinc-600",
-    description: "Not a recognised Cynefin domain.",
-  };
+const UNKNOWN_CONFIG: Omit<DomainStyle, "description"> = {
+  label: "Unclassified",
+  icon: "–",
+  bg: "bg-zinc-50 dark:bg-zinc-900",
+  text: "text-zinc-600 dark:text-zinc-400",
+  border: "border-dashed border-zinc-300 dark:border-zinc-600",
+};
+
+function resolveDomain(raw: unknown): CynefinDomain | null {
+  if (typeof raw !== "string") return null;
+  const upper = raw.trim().toUpperCase();
+  return Object.prototype.hasOwnProperty.call(DOMAIN_CONFIG, upper)
+    ? (upper as CynefinDomain)
+    : null;
 }
 
 const SIZE_CLASSES = {
@@ -118,14 +123,23 @@ export function CynefinBadge({
   size = "md",
   className,
 }: CynefinBadgeProps) {
-  const known = Object.prototype.hasOwnProperty.call(DOMAIN_CONFIG, domain);
-  const config = known ? DOMAIN_CONFIG[domain] : unrecognisedConfig(domain);
-  const sizes = SIZE_CLASSES[size];
+  // Typed CynefinDomain, but a backend string at runtime: treat it as unknown.
+  const raw: unknown = domain;
+  const known = resolveDomain(raw);
+  const config: DomainStyle = known
+    ? DOMAIN_CONFIG[known]
+    : {
+        ...UNKNOWN_CONFIG,
+        description: `Not a Cynefin domain: ${
+          typeof raw === "string" && raw !== "" ? raw : "(none)"
+        }`,
+      };
+  const sizes = SIZE_CLASSES[size] ?? SIZE_CLASSES.md;
 
   return (
     <span
       data-testid="cynefin-badge"
-      data-domain={domain}
+      data-domain={known ?? "UNKNOWN"}
       title={config.description}
       role="img"
       aria-label={

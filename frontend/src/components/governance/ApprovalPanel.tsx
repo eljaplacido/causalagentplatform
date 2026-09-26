@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { cn, formatConfidence } from "@/lib/utils";
 import { objectTypeLabel } from "@/components/governance/ReviewQueue";
+import { CynefinBadge } from "@/components/shared/CynefinBadge";
 import type {
   ReviewQueueItem,
   Evidence,
@@ -408,6 +409,7 @@ export function ApprovalPanel({
 
   return (
     <div
+      data-testid="approval-panel"
       className={cn(
         "rounded-xl border border-border bg-card overflow-hidden",
         className
@@ -419,16 +421,18 @@ export function ApprovalPanel({
           <div>
             <h3 className="text-base font-bold text-foreground">{item.objectName}</h3>
             <p className="text-xs text-muted-foreground">
-              {objectTypeLabel(item.objectType)} · Submitted by {item.submittedBy ?? "—"}
+              {objectTypeLabel(item.objectType)} ·{" "}
+              <span data-testid="business-domain">{item.businessDomain || "—"}</span>{" "}
+              · Submitted by {item.submittedBy ?? "not recorded"}
             </p>
           </div>
-          <span
-            data-testid="approval-item-domain"
-            title="The object's business domain"
-            className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground"
-          >
-            {item.domain || "—"}
-          </span>
+          {item.cynefinDomain && (
+            <CynefinBadge
+              domain={item.cynefinDomain}
+              confidence={0}
+              size="sm"
+            />
+          )}
         </div>
       </div>
 

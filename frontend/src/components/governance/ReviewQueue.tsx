@@ -3,15 +3,15 @@
 /**
  * ReviewQueue — Structured review queue for Governance Officer (US-27).
  *
- * Rows with a risk tier are ordered CRITICAL → HIGH → MEDIUM → LOW; rows
- * without one (the live review-queue endpoint sends none) keep the backend's
- * order (oldest first) after them. Every cell shows what the row carries, or a
- * dash when it carries nothing. The domain column is the object's business
- * domain as plain text, not a Cynefin badge.
+ * Ordered by risk tier (CRITICAL → HIGH → MEDIUM → LOW), keeping the given
+ * order within a tier (the backend sends oldest first). The tier and its reasons
+ * come from the backend (backend/src/semantic_layer/review_risk.py); an item
+ * whose submitter was never recorded says so.
  * Clicking a row calls onSelectItem for the ApprovalPanel.
  */
 
 import { cn, formatTimestamp } from "@/lib/utils";
+import { CynefinBadge } from "@/components/shared/CynefinBadge";
 import type { ReviewQueueItem, RiskTier } from "@/lib/types";
 
 export interface ReviewQueueProps {
@@ -82,9 +82,8 @@ export function objectTypeLabel(objectType: string): string {
 
 const NONE = "—";
 
-function riskOrder(tier: RiskTier | null): number {
-  return tier ? RISK_TIER_ORDER[tier] : Object.keys(RISK_TIER_ORDER).length;
-}
+/** Where a row without a tier sorts: after every tier. */
+const UNRANKED = 99;
 
 export function ReviewQueue({
   items,
@@ -95,7 +94,8 @@ export function ReviewQueue({
   const sorted = items
     .slice()
     .sort(
-      (a, b) => riskOrder(a.riskTier) - riskOrder(b.riskTier)
+      (a, b) =>
+        (RISK_TIER_ORDER[a.riskTier] ?? UNRANKED) - (RISK_TIER_ORDER[b.riskTier] ?? UNRANKED)
     );
 
   if (items.length === 0) {
@@ -170,7 +170,8 @@ export function ReviewQueue({
           </thead>
           <tbody>
             {sorted.map((item, index) => {
-              const riskConfig = item.riskTier ? RISK_TIER_CONFIG[item.riskTier] : null;
+              // Typed as always present, but a row from an older backend may carry none.
+              const riskConfig = item.riskTier ? RISK_TIER_CONFIG[item.riskTier] : undefined;
               const statusConfig = STATUS_CONFIG[item.status] ?? {
                 label: item.status,
                 class: "text-muted-foreground",
@@ -206,14 +207,29 @@ export function ReviewQueue({
                     {objectTypeLabel(item.objectType)}
                   </td>
                   <td
-                    className="hidden px-4 py-3 text-muted-foreground md:table-cell"
+                    className="hidden px-4 py-3 md:table-cell"
                     data-testid="review-item-domain"
                   >
-                    {item.domain || NONE}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span
+                        data-testid="business-domain"
+                        className="text-muted-foreground"
+                      >
+                        {item.businessDomain || NONE}
+                      </span>
+                      {item.cynefinDomain && (
+                        <CynefinBadge
+                          domain={item.cynefinDomain}
+                          confidence={0}
+                          size="sm"
+                        />
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     {riskConfig ? (
                       <span
+                        title={item.riskReasons?.join("; ") || undefined}
                         className={cn(
                           "rounded-full border px-2 py-0.5 text-xs font-semibold",
                           riskConfig.bg,
@@ -224,16 +240,13 @@ export function ReviewQueue({
                         {riskConfig.label}
                       </span>
                     ) : (
-                      <span
-                        className="text-muted-foreground"
-                        title="The review queue does not assess a risk tier"
-                      >
+                      <span className="text-muted-foreground" title="No risk tier was sent">
                         {NONE}
                       </span>
                     )}
                   </td>
                   <td className="hidden px-4 py-3 text-muted-foreground sm:table-cell">
-                    {item.submittedBy ?? NONE}
+                    {item.submittedBy ?? "not recorded"}
                   </td>
                   <td
                     className="hidden px-4 py-3 text-muted-foreground lg:table-cell"

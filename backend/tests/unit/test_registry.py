@@ -612,7 +612,7 @@ async def test_promote_to_approved_updates_edge_status(
     edge = _edge(verdict_id=approved_audit_entry_id)
     await registry.propose_draft(edge, await verdict_for(edge.id))
 
-    approving = await verdict_for(edge.id)
+    approving = await verdict_for(edge.id, action_type="GOVERNANCE_APPROVE")
     await registry.promote_to_approved(
         object_id=edge.id,
         object_type="CausalEdge",

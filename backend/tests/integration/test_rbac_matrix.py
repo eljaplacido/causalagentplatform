@@ -2,8 +2,9 @@
 The role matrix, and domain isolation, over HTTP.
 
 Register entry `rbac-matrix-and-domain-isolation`: two role sets guarded seven
-routes, and every other route -- including DELETE of a session's provenance --
-needed only a valid token. `src/middleware/rbac.py` now holds one matrix,
+routes, and every other route -- including DELETE of a session's provenance (a
+route since replaced by a tombstoning POST .../erasure) -- needed only a valid
+token. `src/middleware/rbac.py` now holds one matrix,
 ROUTE_ROLES, and each guarded route depends on its row.
 
 Preconditions
@@ -12,8 +13,9 @@ Preconditions
   - The SQLite test engine (`db_engine`) is live for every request.
 
 Postconditions (from CYBERSECURITY.md §4.0-§4.2 and the register's `leaves_by`)
-  1. Every mounted state-changing route (POST/PUT/PATCH/DELETE) has a matrix row
-     and depends on that row's guard. A matrix row names a mounted route.
+  1. Every mounted route but PUBLIC_ROUTES (the liveness probe) has a matrix
+     row and depends on that row's guard -- reads included, so a token holding
+     no platform role reads nothing. A matrix row names a mounted route.
   2. For every matrix row, a token holding no role the row grants gets 403; a
      token holding a granted role does not get 403.
   3. A user whose `domains` claim is one domain reads no semantic object of
@@ -42,11 +44,11 @@ from fastapi.routing import APIRoute
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
-from src.api import provenance as provenance_api
 from src.api.main import app
 from src.middleware.auth import get_current_user
-from src.middleware.rbac import ALL_ROLES, ROUTE_ROLES, domain_scope, guard
+from src.middleware.rbac import ALL_ROLES, PUBLIC_ROUTES, ROUTE_ROLES, domain_scope, guard
 from src.semantic_layer.provenance import ProvenanceRecord, ProvenanceRecordType
+from src.semantic_layer.provenance_store import ProvenanceStore
 from tests.conftest import (
     make_causal_edge,
     make_causal_entity,
@@ -102,21 +104,23 @@ def depends_on(route: APIRoute, dependency: Any) -> bool:
 
 
 def unguarded(application: FastAPI) -> list[str]:
-    """State-changing routes without a matrix row, or not depending on their row."""
+    """Non-public routes without a matrix row, or not depending on their row."""
     out = []
     for method, path, route in mounted_routes(application):
-        if method not in STATE_CHANGING:
-            continue
         key = (method, path)
+        if key in PUBLIC_ROUTES:
+            continue
         if key not in ROUTE_ROLES or not depends_on(route, guard(method, path)):
             out.append(f"{method} {path}")
     return out
 
 
-def test_every_state_changing_route_is_guarded_by_its_matrix_row() -> None:
+def test_every_route_but_the_public_ones_is_guarded_by_its_matrix_row() -> None:
     assert unguarded(app) == []
     served = {(m, p) for m, p, _ in mounted_routes(app)}
     assert sum(1 for m, _ in served if m in STATE_CHANGING) >= 17
+    assert sum(1 for m, _ in served if m == "GET") >= 30
+    assert served >= PUBLIC_ROUTES
 
 
 def test_every_matrix_row_is_a_mounted_route_that_depends_on_it() -> None:
@@ -128,7 +132,7 @@ def test_every_matrix_row_is_a_mounted_route_that_depends_on_it() -> None:
 
 
 def test_the_coverage_check_bites_on_an_unguarded_route() -> None:
-    """Negative control: a POST route on get_current_user alone is reported."""
+    """Negative control: routes on get_current_user alone are reported, reads too."""
     probe = FastAPI()
 
     @probe.post("/api/semantic/drafts")
@@ -137,7 +141,17 @@ def test_the_coverage_check_bites_on_an_unguarded_route() -> None:
     @probe.post("/api/v1/not-in-the-matrix")
     async def unknown(user: dict[str, Any] = Depends(get_current_user)) -> None: ...
 
-    assert unguarded(probe) == ["POST /api/semantic/drafts", "POST /api/v1/not-in-the-matrix"]
+    @probe.get("/api/v1/incidents/")
+    async def open_read(user: dict[str, Any] = Depends(get_current_user)) -> None: ...
+
+    @probe.get("/health")
+    async def health() -> None: ...
+
+    assert unguarded(probe) == [
+        "POST /api/semantic/drafts",
+        "POST /api/v1/not-in-the-matrix",
+        "GET /api/v1/incidents/",
+    ]
 
 
 def test_guard_refuses_a_key_the_matrix_does_not_hold() -> None:
@@ -213,45 +227,52 @@ async def test_each_granted_role_is_admitted(
         assert resp.status_code != 403, f"{method} {path} as {role}: {resp.text[:200]}"
 
 
-async def test_a_token_with_no_roles_is_refused_on_every_state_changing_route(
+async def test_a_token_with_no_roles_is_refused_on_every_guarded_route(
     db_engine: object,
 ) -> None:
-    async with _client({"uid": "nobody"}) as client:
+    """Reads included: the incidents list, the intervention decisions (reason and
+    decided_by), the decision ledger and the metrics all answered a role-less
+    token with 200 before they had matrix rows."""
+    async with _client({"uid": "nobody", "roles": []}) as client:
         for method, path in ROUTE_ROLES:
-            if method in STATE_CHANGING:
-                resp = await _call(client, method, path)
-                assert resp.status_code == 403, f"{method} {path}"
+            resp = await _call(client, method, path)
+            assert resp.status_code == 403, f"{method} {path}: {resp.status_code}"
 
 
 # ── The two routes nothing else calls ─────────────────────────────────────────
 
 
-def _seed_provenance(session_id: str) -> None:
-    provenance_api.store_provenance_record(
-        ProvenanceRecord(
-            record_type=ProvenanceRecordType.ENTITY,
-            session_id=session_id,
-            agent_id="test-agent",
-        )
+async def _seed_provenance(session_id: str) -> None:
+    await ProvenanceStore().append(
+        [
+            ProvenanceRecord(
+                record_type=ProvenanceRecordType.ENTITY,
+                session_id=session_id,
+                agent_id="test-agent",
+            )
+        ]
     )
 
 
 async def test_provenance_is_erased_only_by_a_governance_role(db_engine: object) -> None:
+    """Erasure is a tombstone (tests/integration/test_provenance_append_only.py);
+    who may write one is the matrix's business."""
     sid = f"prov-{uuid4()}"
-    _seed_provenance(sid)
-    try:
-        for role in ("analyst", "graph_author", "sre", "agent", "viewer"):
-            async with _client({"uid": role, "roles": [role]}) as client:
-                resp = await client.delete(f"/api/v1/provenance/session/{sid}")
-            assert resp.status_code == 403
-            assert sid in provenance_api._provenance_store, "a refused delete erased records"
+    await _seed_provenance(sid)
+    path = f"/api/v1/provenance/session/{sid}/erasure"
+    reason = {"reason": "Role-matrix test: hide this session."}
+    for role in ("analyst", "graph_author", "sre", "agent", "viewer"):
+        async with _client({"uid": role, "roles": [role]}) as client:
+            resp = await client.post(path, json=reason)
+        assert resp.status_code == 403
+        view = await ProvenanceStore().read(sid)
+        assert len(view.records) == 1 and not view.erasures, "a refused erasure hid records"
 
-        async with _client({"uid": "pe", "roles": ["platform_engineer"]}) as client:
-            resp = await client.delete(f"/api/v1/provenance/session/{sid}")
-        assert resp.status_code == 204
-        assert sid not in provenance_api._provenance_store
-    finally:
-        provenance_api._provenance_store.pop(sid, None)
+    async with _client({"uid": "pe", "roles": ["platform_engineer"]}) as client:
+        resp = await client.post(path, json=reason)
+    assert resp.status_code == 201
+    view = await ProvenanceStore().read(sid)
+    assert view.records == [] and [e.erased_by for e in view.erasures] == ["pe"]
 
 
 async def test_calibration_probe_needs_a_platform_role(db_engine: object) -> None:
@@ -403,7 +424,7 @@ async def test_a_devops_reviewer_cannot_rule_on_another_domain(
     other = two_domains["supply_chain"]["entity"]
     from uuid import UUID
 
-    approve_verdict = await verdict_for(UUID(other))
+    approve_verdict = await verdict_for(UUID(other), action_type="GOVERNANCE_APPROVE")
     reject_verdict = await verdict_for(UUID(other), action_type="GOVERNANCE_REJECT")
     async with _client(DEVOPS_GOVERNANCE) as client:
         approve = await client.post(
@@ -438,7 +459,10 @@ async def test_a_viewer_reads_approved_objects_only(
     approved = two_domains["devops"]["entity"]
     draft = two_domains["devops"]["fragment"]
     await registry.promote_to_approved(
-        UUID(approved), "CausalEntity", await verdict_for(UUID(approved)), make_user_ref("gov")
+        UUID(approved),
+        "CausalEntity",
+        await verdict_for(UUID(approved), action_type="GOVERNANCE_APPROVE"),
+        make_user_ref("gov"),
     )
     viewer = {"uid": "v", "roles": ["viewer"], "domains": ["devops"]}
     async with _client(viewer) as client:

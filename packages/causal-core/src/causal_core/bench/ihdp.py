@@ -24,7 +24,13 @@ import pandas as pd
 
 from causal_core.bench._fetch import download
 from causal_core.bench.lalonde import load_prereg as _load_toml_block
-from causal_core.contract import Abstention, AnalysisPolicy, CausalResult, ResultStatus
+from causal_core.contract import (
+    Abstention,
+    AbstentionReason,
+    AnalysisPolicy,
+    CausalResult,
+    ResultStatus,
+)
 from causal_core.pipeline import analyze
 
 COVARIATES = tuple(f"x{i}" for i in range(25))
@@ -94,6 +100,7 @@ def _one(args: tuple[int, pd.DataFrame, float, str, str]) -> dict[str, Any]:
     )
     rec: dict[str, Any] = {"r": r, "truth": truth, "kind": out.kind}
     if isinstance(out, CausalResult):
+        ov = out.diagnostics.overlap
         ci = out.primary.ci
         rec.update(
             status=out.status.value,
@@ -101,10 +108,19 @@ def _one(args: tuple[int, pd.DataFrame, float, str, str]) -> dict[str, Any]:
             se=out.primary.se,
             covered=bool(ci and ci.lo <= truth <= ci.hi),
             abs_error=abs(out.primary.point - truth),
+            # v2: the limited-overlap flag (contract 0.13.0).
+            overlap_flagged=bool(ov and ov.limited_overlap),
+            limited_overlap_share=ov.limited_share if ov else None,
+            violation_share=ov.violation_share if ov else None,
         )
     else:
         reason = out.reason.value if isinstance(out, Abstention) else out.error_type
-        rec.update(reason=reason, detail=out.detail[:200])
+        rec.update(
+            reason=reason,
+            detail=out.detail[:200],
+            overlap_flagged=isinstance(out, Abstention)
+            and out.reason is AbstentionReason.POSITIVITY,
+        )
     return rec
 
 
@@ -179,6 +195,7 @@ def run(
             res = [x for x in rows if x["kind"] == "result"]
             cov = float(np.mean([x["covered"] for x in res])) if res else None
             sup = [x for x in res if x["status"] == ResultStatus.supported.value]
+            flagged = float(np.mean([x["overlap_flagged"] for x in rows]))
             supported_total += len(sup)
             supported_misses += sum(not x["covered"] for x in sup)
             summary[f"{estimand}/{config}"] = {
@@ -187,6 +204,7 @@ def run(
                 "apparatus_failures": sum(x["kind"] == "apparatus_failure" for x in rows),
                 "status": Counter(x["status"] for x in res),
                 "coverage": cov,
+                "overlap_flagged_share": flagged,
                 "mean_abs_error": float(np.mean([x["abs_error"] for x in res])) if res else None,
                 "example_refusal": next(
                     (x["detail"] for x in rows if x["kind"] == "refusal"), None
@@ -203,6 +221,13 @@ def run(
                     f"ate/{config}: coverage {cov:.3f} of answered realizations "
                     f"< {g['ate_min_coverage_if_answered']}"
                 )
+            ov = cfg.get("overlap")  # v2
+            if ov is not None and estimand == "ate" and flagged < ov["ate_min_flagged_share"]:
+                failures.append(f"ate/{config}: overlap flagged or refused in only {flagged:.2f} "
+                                f"of realizations < {ov['ate_min_flagged_share']}")
+            if ov is not None and estimand == "att" and flagged > ov["att_max_flagged_share"]:
+                failures.append(f"att/{config}: overlap flagged or refused in {flagged:.2f} of "
+                                f"realizations > {ov['att_max_flagged_share']}")
             if any(x["kind"] == "apparatus_failure" for x in rows):
                 failures.append(f"{estimand}/{config}: apparatus failures")
     miss_share = supported_misses / supported_total if supported_total else 0.0

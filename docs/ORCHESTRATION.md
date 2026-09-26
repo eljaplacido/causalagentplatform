@@ -103,7 +103,7 @@ The external orchestration patterns are not arbitrary. They mirror the platform'
 | CLEAR | DirectAnswer → GuardianCheck → Output | `implement` — well-understood, execute directly |
 | COMPLICATED | CausalAnalysis → GuardianCheck → Output | `plan` — structured analysis by experts |
 | COMPLEX | CausalDiscovery → Expert Elicitation → GuardianCheck | `explore` + `plan` — emergent, probe first |
-| CHAOTIC | EscalateHuman → END | `govern` — stabilize, human takes command |
+| CHAOTIC | EscalateHuman → GuardianCheck (PR-003, recorded) → Output | `govern` — stabilize, human takes command |
 | DISORDER | DisorderProtocol → re-classify | Re-classify before choosing a lane |
 
 ### 3.2 Structural Parallels
@@ -193,4 +193,4 @@ kept out of version control; nothing here reads it, and a checkout without it is
 | `.github/copilot-instructions.md` | Pointer to `AGENTS.md` plus Copilot-specific essentials |
 | `.github/ISSUE_TEMPLATE/*.yml` | Structured issues for Copilot Coding Agent |
 | `templates/*.md` | Handoff packet templates |
-| `prompts/*.yaml` | Prompt specifications for platform skills (not loaded at runtime; see `prompts/README.md`) |
+| `prompts/*.yaml` | Prompt templates for platform skills: `explanation_generate.yaml` is loaded and rendered at runtime; the rest are specifications (see `prompts/README.md`) |

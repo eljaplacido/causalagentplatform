@@ -268,11 +268,22 @@ export interface ReviewQueueItem {
   objectName: string;
   /** The backend's object_type verbatim: CausalEdge | GraphFragment | CausalEntity. */
   objectType: string;
-  /** The object's business domain (e.g. "devops", "marketing") -- not a Cynefin domain. */
-  domain: string;
-  /** The review queue endpoint sends no risk tier; null means not assessed. */
-  riskTier: RiskTier | null;
-  /** The review queue endpoint sends no submitter; null means not known. */
+  /**
+   * The semantic-layer business domain the object belongs to (the backend's
+   * review-queue `domain`, e.g. "devops"). A plain label: it is NOT a Cynefin
+   * classification and must never be passed to CynefinBadge.
+   */
+  businessDomain: string;
+  /**
+   * A Cynefin classification of the item, present only when one was actually
+   * made. The review-queue endpoint returns none, so live items leave it unset;
+   * the approver classifies the situation in ApprovalPanel at decision time.
+   */
+  cynefinDomain?: CynefinDomain;
+  riskTier: RiskTier;
+  /** The facts that decided riskTier (backend/src/semantic_layer/review_risk.py). */
+  riskReasons?: string[];
+  /** Who drafted the object; null when the backend has no record of it. */
   submittedBy: string | null;
   /** ISO8601 created_at from the backend, or null when it sent none. */
   submittedAt: string | null;

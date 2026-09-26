@@ -68,7 +68,7 @@ async def _check(
     resp = await client.post(
         "/api/governance/check",
         json={
-            "action_type": "PROMOTE_OBJECT",
+            "action_type": "GOVERNANCE_APPROVE",
             "payload": {"object_type": "CausalEntity"},
             "subject_id": str(subject_id),
             "cynefin_domain": cynefin_domain,
@@ -115,7 +115,7 @@ async def test_an_unclassified_situation_is_still_refused(
     """
     resp = await gov_client.post(
         "/api/governance/check",
-        json={"action_type": "PROMOTE_OBJECT", "payload": {}, "subject_id": str(uuid4())},
+        json={"action_type": "GOVERNANCE_APPROVE", "payload": {}, "subject_id": str(uuid4())},
     )
     assert resp.status_code == 200
     body = resp.json()
@@ -269,7 +269,7 @@ async def test_a_rejected_check_cannot_approve(
     resp = await gov_client.post(
         "/api/governance/check",
         json={
-            "action_type": "PROMOTE_OBJECT",
+            "action_type": "GOVERNANCE_APPROVE",
             "payload": {},
             "subject_id": str(entity.id),
         },
@@ -293,7 +293,7 @@ async def test_a_check_that_named_no_subject_cannot_approve_anything(
     resp = await gov_client.post(
         "/api/governance/check",
         json={
-            "action_type": "PROMOTE_OBJECT",
+            "action_type": "GOVERNANCE_APPROVE",
             "payload": {},
             "cynefin_domain": "COMPLICATED",
         },

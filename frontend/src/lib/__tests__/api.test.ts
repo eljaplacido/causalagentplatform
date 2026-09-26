@@ -145,3 +145,34 @@ describe("CausalApiError", () => {
     expect(err.isNotAuthorised).toBe(false);
   });
 });
+
+/**
+ * POST /api/semantic/drafts judges a draft in a classified situation: the named
+ * session's domain, or the domain the drafter declares. Sent neither, the draft is
+ * DISORDER and Guardian PR-006 refuses it, so the client asks for one of the two.
+ */
+describe("semanticApi.submitDraft", () => {
+  function sentBody(): Record<string, unknown> {
+    const init = fetchMock.mock.calls[0]![1] as RequestInit;
+    return JSON.parse(String(init.body)) as Record<string, unknown>;
+  }
+
+  it("sends the declared Cynefin domain with the draft", async () => {
+    await semanticApi.submitDraft("CausalEntity", { name: "svc" }, { cynefinDomain: "COMPLICATED" });
+    expect(requestedUrl().pathname).toBe("/api/semantic/drafts");
+    expect(sentBody()).toEqual({
+      object_type: "CausalEntity",
+      payload: { name: "svc" },
+      cynefin_domain: "COMPLICATED",
+    });
+  });
+
+  it("sends a session id instead, and no declared domain, when the draft names a session", async () => {
+    await semanticApi.submitDraft("CausalEdge", { confidence: 0.7 }, { sessionId: "s-1" });
+    expect(sentBody()).toEqual({
+      object_type: "CausalEdge",
+      payload: { confidence: 0.7 },
+      session_id: "s-1",
+    });
+  });
+});

@@ -22,7 +22,7 @@ function makeItem(overrides: Partial<ReviewQueueItem> = {}): ReviewQueueItem {
     id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
     objectName: "payment_latency → checkout_conversion",
     objectType: "CausalEdge",
-    domain: "devops",
+    businessDomain: "devops",
     riskTier: "HIGH",
     submittedBy: "ryo.tanaka",
     submittedAt: new Date().toISOString(),

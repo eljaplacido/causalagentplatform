@@ -17,12 +17,14 @@ from typing import Any
 from unittest import mock
 
 import numpy as np
+from scipy import stats
 
 import causal_core.estimators as est_mod
 import causal_core.estimators.builtin as builtin
 import causal_core.identification as identify_mod
 import causal_core.pipeline as analyze_mod
 import causal_core.refute as refute_mod
+import causal_core.specification as spec_mod
 from causal_core.contract import AnalysisPolicy, EstimateRecord, Interval, Strategy
 from causal_core.estimators import Fit, Prepared
 from causal_core.identification.id_algorithm import IDResult
@@ -128,11 +130,55 @@ def refuter_always_passes() -> Iterator[None]:
 def triangulation_disabled() -> Iterator[None]:
     real = analyze_mod._triangulate
 
-    def fake(fits: Any, alpha: float) -> Any:
-        tri = real(fits, alpha)
+    def fake(*args: Any, **kwargs: Any) -> Any:
+        tri = real(*args, **kwargs)
         return None if tri is None else tri.model_copy(update={"agree": True})
 
     with mock.patch.object(analyze_mod, "_triangulate", fake):
+        yield
+
+
+@contextmanager
+def specification_test_disabled() -> Iterator[None]:
+    """The v3 kernel: triangulation compares estimates only."""
+    with mock.patch.object(analyze_mod, "outcome_model_specification", lambda *a, **k: None):
+        yield
+
+
+@contextmanager
+def specification_pooled_arms() -> Iterator[None]:
+    """One model for both arms, y ~ 1 + t + X, no interactions: heterogeneity reads as misfit."""
+
+    def pooled(d: Any, strategy: Any, fits: Any) -> Any:
+        real = spec_mod.outcome_model_specification(d, strategy, fits)
+        if real is None:
+            return None
+        X = np.column_stack([d.t, d.X])
+        res = spec_mod.arm_test(d.y, X, ("t", *d.covariate_names))
+        if res is None:
+            return None
+        return spec_mod.SpecificationTest(
+            model=real.model,
+            arms=("both arms",),
+            terms=res.terms,
+            statistic=res.statistic,
+            df=res.df,
+            p_value=float(stats.chi2.sf(res.statistic, res.df)),
+        )
+
+    with mock.patch.object(analyze_mod, "outcome_model_specification", pooled):
+        yield
+
+
+@contextmanager
+def triangulation_flag_ignored() -> Iterator[None]:
+    """A disagreement is reported but no longer contests the result."""
+    real = analyze_mod._result_status
+
+    def fake(failed: Any, tri: Any, unreviewed: Any) -> Any:
+        return real(failed, None, unreviewed)
+
+    with mock.patch.object(analyze_mod, "_result_status", fake):
         yield
 
 
@@ -144,4 +190,7 @@ DEFECTS: dict[str, Callable[[], Any]] = {
     "leaky_estimator": leaky_estimator,
     "refuter_always_passes": refuter_always_passes,
     "triangulation_disabled": triangulation_disabled,
+    "specification_test_disabled": specification_test_disabled,
+    "specification_pooled_arms": specification_pooled_arms,
+    "triangulation_flag_ignored": triangulation_flag_ignored,
 }

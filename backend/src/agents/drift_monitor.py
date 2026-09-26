@@ -6,16 +6,17 @@ Responsibilities (AGENTS.md §2.1 DriftMonitorAgent):
   - Detect causal drift (graph structure vs observed data patterns)
   - Detect semantic drift (entity definition inconsistencies)
   - Detect concept drift (model performance degradation)
-  - Emit drift alerts via Kafka topics
-  - Store drift alerts in Neo4j for audit and tracking
+  - Emit drift alerts through the in-process AlertEmitter (logging, callbacks,
+    deduplication; there is no message broker)
+  - Store drift alerts in Neo4j for audit and tracking, when NEO4J_URI is set
   - NEVER write to the semantic layer (alert-only, no graph modifications)
 
 Implemented skills:
   drift_detect              — compute KL divergence on feature distributions
-  store_drift_alert         — persist alerts to Neo4j
+  store_drift_alert         — persist alerts to Neo4j (optional)
   get_recent_drift_alerts   — retrieve recent alerts
   causal_structure_compare  — compare graph edges against live data patterns
-  alert_emit                — publish drift alert to Kafka topic
+  alert_emit                — emit a drift alert through AlertEmitter
 
 EpistemicState constraints enforced:
   - audit_log_required: All drift detections logged
@@ -25,7 +26,7 @@ EpistemicState constraints enforced:
 Production readiness:
   - Configurable thresholds via constructor parameters
   - Drift severity scoring with multi-factor analysis
-  - Neo4j-native alert storage with TTL
+  - Optional Neo4j alert storage with TTL (NEO4J_URI; tested against mocks only)
   - Integration with experience buffer for pattern learning
 """
 
@@ -59,13 +60,18 @@ _DEFAULT_KL_THRESHOLD = 0.1
 _DEFAULT_SEVERE_KL_THRESHOLD = 0.5
 _DEFAULT_SEMANTIC_SIMILARITY_THRESHOLD = 0.7
 
+#: Where an emitted alert goes: the in-process AlertEmitter. There is no message
+#: broker, so no topic is named.
+_ALERT_CHANNEL = "AlertEmitter (in-process)"
+
 
 class DriftMonitorAgent(BaseAgent):
     """
     Continuous monitoring agent that detects and alerts on drift.
 
     This agent is read-only with respect to the semantic layer.
-    It emits alerts via Kafka and stores them in Neo4j for audit.
+    It emits alerts through the in-process AlertEmitter and, when NEO4J_URI
+    is set, stores them in Neo4j for audit.
     Flags the EpistemicState for human review when severe drift is detected.
 
     Designed to run as a background agent (maps to OpenFang automate lane).
@@ -86,7 +92,7 @@ class DriftMonitorAgent(BaseAgent):
         severe_kl_threshold: Threshold for severe drift detection
         semantic_similarity_threshold: Threshold for semantic drift detection
         enable_neo4j_storage: Whether to store alerts in Neo4j
-        enable_alert_emission: Whether to emit alerts to Kafka
+        enable_alert_emission: Whether to emit alerts through AlertEmitter
     """
 
     def __init__(
@@ -105,8 +111,8 @@ class DriftMonitorAgent(BaseAgent):
         self._enable_neo4j_storage = enable_neo4j_storage
         self._enable_alert_emission = enable_alert_emission
 
-        # Production alert emitter — not a stub. Emits through all configured
-        # channels (logging, callbacks, Kafka-ready topic routing).
+        # In-process alert emitter: structured log and registered callbacks,
+        # with deduplication and throttling. There is no message broker.
         # Imported lazily to break circular import with sensors package.
         from src.sensors.alert_emit import AlertEmitter
         self._alert_emitter = AlertEmitter(source=agent_id)
@@ -418,7 +424,7 @@ class DriftMonitorAgent(BaseAgent):
         recommendation: str,
         evidence: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Emit alert to Kafka and store in Neo4j."""
+        """Emit the alert through AlertEmitter and store it in Neo4j (if configured)."""
         alert_result = {
             "alert_type": alert_type,
             "severity": severity,
@@ -427,7 +433,7 @@ class DriftMonitorAgent(BaseAgent):
             "evidence": evidence,
         }
 
-        # Emit to Kafka / alert infrastructure if enabled
+        # Emit through AlertEmitter if enabled
         if self._enable_alert_emission:
             try:
                 emit_out = await self._emit_production_alert(
@@ -543,7 +549,7 @@ class DriftMonitorAgent(BaseAgent):
             return {
                 "emitted": True,
                 "alert_id": alert.alert_id,
-                "topic": "platform.drift.alert.v1",
+                "channel": _ALERT_CHANNEL,
                 "timestamp": alert.timestamp.isoformat(),
             }
 
@@ -566,7 +572,9 @@ class DriftMonitorAgent(BaseAgent):
         if skill_name == "semantic_drift_detect":
             return await self._skill_semantic_drift_detect(inputs)
         if skill_name == "alert_emit":
-            return await self._skill_alert_emit(inputs)
+            # The skill needs the state to build the alert's context. It was not
+            # passed on, so the skill always took its no-state branch.
+            return await self._skill_alert_emit({**inputs, "_state": state})
         if skill_name == "semantic_layer_read":
             return await self._skill_semantic_layer_read(inputs)
         return await super()._execute_skill(skill_name, inputs, state)
@@ -698,22 +706,22 @@ class DriftMonitorAgent(BaseAgent):
         self, inputs: dict[str, Any]
     ) -> dict[str, Any]:
         """
-        Publish drift alert to Kafka topic.
-
-        Production: emits through AlertEmitter with deduplication,
-        throttling, and severity routing.
+        Emit a drift alert through AlertEmitter (deduplication, throttling,
+        severity routing). Without a state there is nothing to build the alert
+        from, and nothing is emitted.
         """
         # This skill is now a thin wrapper over _emit_production_alert.
         # The real emission happens through AlertEmitter.
         state = inputs.get("_state")
         if state is None:
-            # Legacy skill call without state — create minimal response
+            # A call without state: nothing to build the alert from. It used to
+            # answer emitted=True with a Kafka topic name while emitting nothing.
             self._log.warning(
-                "drift_monitor.alert.emit_legacy",
+                "drift_monitor.alert.emit_without_state",
                 alert_type=inputs.get("alert_type"),
-                note="alert_emit called without state; using minimal emission",
+                note="alert_emit called without state; nothing emitted",
             )
-            return {"emitted": True, "topic": "platform.drift.alert.v1"}
+            return {"emitted": False, "reason": "no_state"}
 
         return await self._emit_production_alert(
             state=state,
