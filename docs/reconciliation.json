@@ -31,13 +31,13 @@
           "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "4ff13e19f306224a957da1ca17720c130ce90f0e77ebecb8474f63c383163908",
+          "docs/CURRENT_STAGE.md": "ee73b5ab71d3a0d1e2415e7264430452d41966ebafa264f8250a2e7244bb4803",
           "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #48 into #49, contract 0.13.0: gate lists name T9, T10 and C0 together (README, benchmarks README, AGENTS, skills, QUICKSTART, TESTING_CICD); ROADMAP robustness row has overlap (T10) and Rosenbaum (T9), positivity moved to done; CURRENT_STAGE gates list adds T10, the kernel-limits bullet keeps this branch's overlap text, package row restored from collected counts 256/146/43)"
+        "by": "Claude (cascade of #46's re-measured Gates table: CURRENT_STAGE moved only in that table's figures, which neither README nor ROADMAP quotes)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -354,12 +354,12 @@
         "sha256": {
           "packages/causal-core/src/causal_core": "010a35ba7875e9d49cae1993f18530b7fedfab7da24aac0b12b170258f52ebd8",
           "conformance/declared_not_implemented.json": "e00e9c8f10fca1adf76cca22e12d217cac60f403c4351063066984286ec92837",
-          "docs/CURRENT_STAGE.md": "4ff13e19f306224a957da1ca17720c130ce90f0e77ebecb8474f63c383163908"
+          "docs/CURRENT_STAGE.md": "ee73b5ab71d3a0d1e2415e7264430452d41966ebafa264f8250a2e7244bb4803"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #48 into #49, contract 0.13.0: gate lists name T9, T10 and C0 together (README, benchmarks README, AGENTS, skills, QUICKSTART, TESTING_CICD); ROADMAP robustness row has overlap (T10) and Rosenbaum (T9), positivity moved to done; CURRENT_STAGE gates list adds T10, the kernel-limits bullet keeps this branch's overlap text, package row restored from collected counts 256/146/43)"
+        "by": "Claude (cascade of #46's re-measured Gates table: CURRENT_STAGE moved only in that table's figures, which neither README nor ROADMAP quotes)"
       }
     },
     "SECURITY.md": {
