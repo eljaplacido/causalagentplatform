@@ -81,11 +81,13 @@ sustainability investment assurance follow, in that order.
    was not the arithmetic: calibrating a causal prediction needs a causal estimate afterwards,
    and an action rolled out to everybody leaves no comparison group. That case is the kernel's
    own refusal, recorded as an undecidable measurement and counted beside the rates rather than
-   dropped — those decisions are not missing at random. What remains is operational history:
-   until follow-ups have been taken, every rate reads null, and the thresholds are consistent
-   rather than calibrated (`decision-thresholds-uncalibrated`). The gate that would judge that
-   evidence — a minimum follow-up count, intervals on each rate, "could not resolve" kept apart
-   from "no difference" — is `septa-10`.
+   dropped — those decisions are not missing at random. The report that would judge the
+   evidence is built and gated (`septa-10`, the C0 gate, on simulated streams): a rate only from
+   ten follow-ups or more, each with a Clopper-Pearson interval, undecidable follow-ups carried
+   into worst-case bounds, and "could not resolve" kept apart from "no difference". What remains
+   is operational history: no follow-up has been taken on a real operation, so every rate is
+   refused, and the thresholds are consistent rather than calibrated
+   (`decision-thresholds-uncalibrated`).
 6. **Domain packs.** Operations first, then energy flexibility. Not yet on the ledger.
 
 ## What is next
@@ -133,7 +135,8 @@ priority first, and the priorities put hardening the platform before new estimat
   analysis of a draft edge recorded there when the platform runs it (`septa-62`); Rosenbaum bounds on
   a matched design, T9 (`septa-12`);
   the review queue ordered by a risk tier derived from stored fields, with who submitted each
-  item (`septa-36`). Open: step 3's remaining estimator (`septa-7`), calibration (`septa-10`),
+  item (`septa-36`). Open: step 3's remaining estimator (`septa-7`), calibration evidence (`septa-10`: the report
+  and its simulated C0 gate are built; real follow-ups are not),
   anchoring (`septa-11`), positivity detection and triangulation
   at moderate n (`septa-34`, `septa-35`).
 - **p3 and p4.** Done: provenance is durable and append-only, with erasure as a tombstone, and

@@ -521,10 +521,14 @@ async def calibration(
 ) -> CalibrationReport:
     """Predicted against measured, over every follow-up taken.
 
-    Every rate is null when nothing stands behind it: a report over no decidable
-    measurements says so rather than reporting a perfect score. The undecidable
-    ones are counted beside the rates, by reason, because they are not missing at
-    random.
+    Every rate carries its counts and a Clopper-Pearson interval, and states no
+    value below the report's minimum (ten follow-ups): a report over no decidable
+    measurements says so rather than reporting a perfect score, and one over three
+    does not report 67%. The undecidable ones are counted beside the rates, by
+    reason, and carried as unknowns into the all-acted bounds, because they are not
+    missing at random. "Could not resolve" is reported apart from "no difference".
+    The C0 gate proves this arithmetic on simulated streams; it proves nothing
+    about real operations.
 
     This is what separates thresholds that are *consistent* from thresholds that
     are *calibrated*, and until enough follow-ups exist the honest reading of this

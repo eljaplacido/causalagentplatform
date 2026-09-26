@@ -48,7 +48,8 @@ The World Model report identifies two directly applicable gaps:
      earlier action by `0.1 / distance`
    - **CommitNext**: Commits only the next action, if it has not failed, its confidence is at
      least the threshold and its propagated value is at least 0.5; otherwise it tries the
-     second. If neither qualifies, nothing is committed and the session escalates
+     second. If neither qualifies, nothing is committed. What happens next depends on whether
+     anything was simulated (below, "Planning failures")
 
 2. `node_plan_ahead(state)` — LangGraph node integrating into the existing
    PlatformState graph
@@ -69,8 +70,12 @@ causal_discovery ───┘
    ┌────┴────┐
    │  ROUTER │
    └────┬────┘
-guardian_check   escalate_human
-(no failures)    (no safe action found)
+   │          escalate_human
+   │          (lookahead estimated every candidate unsafe)
+   ↓               ↓
+guardian_check ←───┘
+   ↓
+ output
 ```
 
 ### Planning Constraints
@@ -85,15 +90,22 @@ As implemented in `backend/src/orchestration/planning.py`:
   enforced by the agents and PR-005, not by the planner
 - Simulated actions labelled SIMULATED_NOT_EXECUTED: not implemented. The uncommitted lookahead
   outcomes stay on the planning result and are not surfaced as recommendations
-- Planning failures escalate to human review. The node sets `requires_human_review` and the
-  flag `no_safe_action_found`, and the router sends the session to `escalate_human`, skipping
-  the Guardian. The Cynefin domain is not changed to CHAOTIC
+- Planning failures: a lookahead that *estimated* consequences and found no candidate safe sets
+  `requires_human_review` and `no_safe_action_found`, and the router sends the session to
+  `escalate_human`, which goes on to the Guardian: the escalation is ruled on and written to
+  `audit_log`. A plan nothing could simulate -- every plan today, since no estimate is ever
+  produced -- is not a finding that no action is safe: it goes to the Guardian marked
+  `plan_unsimulated`, each recommendation says it was not simulated, and when nothing was
+  committed every candidate goes on and `requires_human_review` is set. Until 2026-09-26 the
+  unsimulated case also reported `no_safe_action_found` and escalated around the Guardian, so
+  no classified session ever reached it (`backend/tests/integration/test_session_reaches_guardian.py`).
+  The Cynefin domain is not changed to CHAOTIC
 - The Guardian's side of that contract is rule PR-010 (`src/agents/governance.py`): a check
   whose payload carries `plan_outcome: "no_safe_action"` is `REQUIRES_ESCALATION`, never
   APPROVED. It reads the payload of the check, not the state's `no_safe_action_found` flag,
-  which a resumed session carries from earlier runs. It bites when the GuardianCheck node
-  forwards the plan's outcome; while the router sends such a run past the Guardian, nothing
-  sends it
+  which a resumed session carries from earlier runs. The GuardianCheck node forwards the
+  plan's outcome, and an escalation now reaches it, so a no-safe-action run is ruled
+  `REQUIRES_ESCALATION` citing PR-010 and recorded
 - Effect estimation from the approved fragment: attempted, always refused for lack of data (see
   SimulateAhead). One consequence: under an APPROVED fragment every confidence is halved, so
   an action needs confidence of at least 0.8 to be committed, while without a fragment it needs
@@ -119,7 +131,7 @@ As implemented in `backend/src/orchestration/planning.py`:
 | Policy | Status | Notes |
 |--------|--------|-------|
 | EpistemicState contract preserved | PASS | Planning emits updated EpistemicState with committed recommendations |
-| Guardian-gated writes enforced | PASS | Committed actions still pass Guardian before execution |
+| Guardian-gated writes enforced | PASS | Every plan, committed or not, and every escalation passes the Guardian before the session returns |
 | Audit trail integrity maintained | PASS | Simulation states are labelled, not persisted to audit_log |
 | Provider-agnostic implementation | PASS | Planning uses causal SCM, not LLM calls |
 | PII handling compliant | PASS | Planning operates on anonymised graph fragments |
@@ -148,7 +160,7 @@ reports them on every run.
 | Component | Status | Tests |
 |---|---|---|
 | `src/orchestration/planning.py` | The planner runs; its simulation step estimates nothing (register `planning-simulation-no-data`) | `tests/unit/test_planning.py` |
-| `src/orchestration/graph.py` (modified) | PlanAhead node and routing wired in; CLEAR / COMPLICATED / COMPLEX sessions pass through it | `tests/unit/test_planning.py` (node and router) |
+| `src/orchestration/graph.py` (modified) | PlanAhead node and routing wired in; CLEAR / COMPLICATED / COMPLEX sessions pass through it, and every path, escalations included, ends in GuardianCheck | `tests/unit/test_planning.py` (node and router), `tests/integration/test_session_reaches_guardian.py` |
 | `prompts/plan_action_sequence.yaml` | Created; not loaded by any code | -- |
 
 ### Part B: Production Evaluation Pipeline

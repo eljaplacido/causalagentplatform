@@ -161,6 +161,7 @@ data, the metric, the pass threshold and the seeded defects the suite must catch
 | T9: Rosenbaum sensitivity | [`benchmarks/t9-rosenbaum/PRE-REGISTRATION.md`](../benchmarks/t9-rosenbaum/PRE-REGISTRATION.md) | `causal_core.sensitivity`, directly and through `causal_core.analyze` | Every PR (`pytest -m t9`) |
 | D0: the decision procedure | [`benchmarks/d0-decision-policy/PRE-REGISTRATION.md`](../benchmarks/d0-decision-policy/PRE-REGISTRATION.md) | `causal_decision.decide` | Every PR (`pytest -m d0` in `packages/causal-decision`) |
 | A0: whether a graph revision invalidates an estimate | [`benchmarks/a0-assumption-impact/PRE-REGISTRATION.md`](../benchmarks/a0-assumption-impact/PRE-REGISTRATION.md) | `causal_decision.assumptions.impact` | Every PR (`pytest -m a0` in `packages/causal-decision`) |
+| C0: whether the calibration report is honest about what follow-ups can say (simulated streams) | [`benchmarks/c0-calibration/PRE-REGISTRATION.md`](../benchmarks/c0-calibration/PRE-REGISTRATION.md) | `causal_decision.outcome.report` | Every PR (`pytest -m c0` in `packages/causal-decision`) |
 
 `packages/causal-core/tests/test_benchmark_results.py` holds the registrations to their runs:
 for every `benchmarks/*/PRE-REGISTRATION.md`, a committed result must record a passing run
@@ -168,7 +169,7 @@ against that file's exact bytes (`prereg_sha256`), so a bar cannot move after th
 without a new one. Failing runs stay on file beside it.
 
 The seeded-defect tests (`tests/t0/test_seeded_defects.py`, `tests/t4/…`, `tests/t5/…`, `tests/t6/…`, `tests/t7/…`, `tests/t8/…`,
-`tests/t9/…`, `tests/d0/…`, `tests/a0/…`) break the system under test on purpose and assert that the gate fails. A gate that cannot see a
+`tests/t9/…`, `tests/d0/…`, `tests/a0/…`, `tests/c0/…`) break the system under test on purpose and assert that the gate fails. A gate that cannot see a
 known defect does not count as a gate. The benchmark results, and the limits they found, are on
 the register (for example `kernel-triangulation-moderate-n`).
 

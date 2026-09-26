@@ -184,6 +184,63 @@
       "path": "/cases"
     },
     {
+      "doc": "README.md",
+      "says": "cover that truth in 95.75–100% of streams",
+      "figure": "95.75",
+      "bench": "c0-calibration",
+      "path": "/configs/*/coverage/*",
+      "agg": "min",
+      "scale": 100
+    },
+    {
+      "doc": "README.md",
+      "says": "cover that truth in 95.75–100% of streams",
+      "figure": "100",
+      "bench": "c0-calibration",
+      "path": "/configs/*/coverage/*",
+      "agg": "max",
+      "scale": 100
+    },
+    {
+      "doc": "README.md",
+      "says": "never below 95.0% from 10 to 200 follow-ups",
+      "figure": "95.0",
+      "bench": "c0-calibration",
+      "path": "/exact/min_interval_coverage",
+      "scale": 100
+    },
+    {
+      "doc": "README.md",
+      "says": "5 seeded defects caught. |",
+      "figure": "5",
+      "bench": "c0-calibration",
+      "path": "/seeded_defects_caught",
+      "agg": "count_true"
+    },
+    {
+      "doc": "docs/CURRENT_STAGE.md",
+      "says": "coverage of the constructed truth 0.9575–1.0 over 400 streams",
+      "figure": "0.9575",
+      "bench": "c0-calibration",
+      "path": "/configs/*/coverage/*",
+      "agg": "min"
+    },
+    {
+      "doc": "docs/CURRENT_STAGE.md",
+      "says": "coverage of the constructed truth 0.9575–1.0 over 400 streams",
+      "figure": "1.0",
+      "bench": "c0-calibration",
+      "path": "/configs/*/coverage/*",
+      "agg": "max"
+    },
+    {
+      "doc": "docs/CURRENT_STAGE.md",
+      "says": "exact interval coverage ≥ 0.95 at every n from 10 to 200",
+      "figure": "0.95",
+      "bench": "c0-calibration",
+      "path": "/exact/min_interval_coverage"
+    },
+    {
       "doc": "packages/causal-core/README.md",
       "says": "Pooled 95% interval coverage is\n  94.9%",
       "figure": "94.9",

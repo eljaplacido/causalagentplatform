@@ -184,16 +184,24 @@ def _state_to_response(state: EpistemicState) -> SessionStateResponse:
     )
 
 
-async def _run_graph(initial_state: EpistemicState) -> EpistemicState:
+async def _run_graph(initial_state: EpistemicState, description: str) -> EpistemicState:
     """
-    Run the platform LangGraph pipeline.
+    Run the platform LangGraph pipeline on the problem ``description``.
 
-    Wraps circuit breaker and Guardian errors into a terminal EpistemicState
-    rather than raising HTTP exceptions — the state itself communicates the outcome.
+    Every path through the graph ends GuardianCheck → Output, so a returned state
+    carries a Guardian verdict that was written to audit_log.
+
+    Wraps circuit breaker and graph errors into a terminal EpistemicState rather
+    than raising HTTP exceptions — the state itself communicates the outcome. Such
+    a state never reached the Guardian, so it carries no recommendation: nothing
+    ungoverned is presented.
     """
     platform_state: PlatformState = {
         "epistemic": initial_state,
         "disorder_retries": 0,
+        "description": description,
+        "plan_outcome": None,
+        "escalation_reason": None,
     }
 
     try:
@@ -209,6 +217,7 @@ async def _run_graph(initial_state: EpistemicState) -> EpistemicState:
             update={
                 "requires_human_review": True,
                 "flags": [*initial_state.flags, "circuit_breaker_open"],
+                "recommendations": [],
                 "draft_explanation": (
                     f"Circuit breaker opened after {exc.cycle_count} cycles. "
                     "Escalating to human reviewer."
@@ -226,6 +235,7 @@ async def _run_graph(initial_state: EpistemicState) -> EpistemicState:
             update={
                 "requires_human_review": True,
                 "flags": [*initial_state.flags, "graph_internal_error"],
+                "recommendations": [],
                 "draft_explanation": (
                     "Internal platform error during session execution. "
                     "Escalating to human reviewer."
@@ -295,7 +305,7 @@ async def run_session(
         resumed=existing is not None,
     )
 
-    final = await _run_graph(initial_state)
+    final = await _run_graph(initial_state, body.description)
 
     # Cache for potential continuation
     _session_cache[session_id] = final
@@ -327,7 +337,8 @@ async def run_session(
         "Fast-path incident triage endpoint for the DevOps vertical. "
         "Creates an EpistemicState from the incident payload, runs IncidentTriageAgent "
         "directly, then routes to the full platform graph for GuardianCheck + Output. "
-        "CHAOTIC-domain incidents escalate immediately without AI analysis."
+        "CHAOTIC-domain incidents escalate without AI analysis; the escalation is "
+        "ruled on by the Guardian and recorded in the audit log."
     ),
 )
 async def triage_incident(
@@ -377,22 +388,11 @@ async def triage_incident(
             }
         )
 
-    # If CHAOTIC, skip the graph (already escalated by IncidentTriageAgent)
-    if triaged_state.cynefin_domain == CynefinDomain.CHAOTIC:
-        _session_cache[session_id] = triaged_state
-        await _session_store.save(triaged_state, user.get("uid"))
-        await _record_provenance(
-            initial_state,
-            triaged_state,
-            route="POST /api/v1/session/incident",
-            user=user,
-            resumed=False,
-        )
-        await _persist_incident(body, triaged_state, user)
-        return _state_to_response(triaged_state)
-
-    # Otherwise run through the full graph for GuardianCheck + Output
-    final = await _run_graph(triaged_state)
+    # Every incident goes through the graph, CHAOTIC included: the graph classifies
+    # the incident description (not the triage narrative), and every path ends in a
+    # Guardian verdict written to audit_log. CHAOTIC used to skip the graph, and so
+    # returned the triage agent's escalation with no verdict and no audit record.
+    final = await _run_graph(triaged_state, description)
     _session_cache[session_id] = final
     await _session_store.save(final, user.get("uid"))
     await _record_provenance(
