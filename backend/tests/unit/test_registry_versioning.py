@@ -51,6 +51,7 @@ sub-second precision.
 from __future__ import annotations
 
 import hashlib
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
@@ -73,9 +74,11 @@ from src.semantic_layer.models import (
     ElicitedFrom,
     EntityType,
     GraphFragment,
+    SensitivityResult,
     UserRef,
 )
 from src.semantic_layer.registry import SemanticLayerRegistry
+from src.semantic_layer.verdict import RECORD_SENSITIVITY
 from tests.conftest import migration_files, postgres_only
 
 if TYPE_CHECKING:
@@ -292,6 +295,91 @@ async def test_a_refused_review_writes_no_version(
         1,
         2,
     ]
+
+
+# ── Recording a sensitivity result is a state change too (septa-62) ──────────
+
+
+def _sensitivity(e_value: float) -> SensitivityResult:
+    return SensitivityResult(
+        e_value=e_value,
+        robust_to_unmeasured_confounding=e_value >= 2.0,
+        analysis_method="e-value (VanderWeele-Ding)",
+        computed_at=datetime.now(UTC),
+        computed_by="causal-core",
+    )
+
+
+async def test_recording_a_sensitivity_result_writes_the_edges_next_revision(
+    db_engine: AsyncEngine,
+    db_session: AsyncSession,
+    verdict_for: VerdictFactory,
+    approved_audit_entry_id: UUID,
+) -> None:
+    """record_edge_sensitivity changes a draft edge (assumption_refs, lineage): a version.
+
+    The edge advances by one revision (change RECORDED, the recorder and the
+    RECORD_SENSITIVITY verdict), its draft stays in history exactly as it was, and
+    the assumption it creates is recorded as its own revision 1. Each further
+    recording is a further revision.
+    """
+    edge = await _draft("CausalEdge", verdict_for, approved_audit_entry_id)
+    registry = SemanticLayerRegistry()
+    before = await _version_rows(db_session, "CausalEdge", edge.id)
+
+    recording = await verdict_for(edge.id, action_type=RECORD_SENSITIVITY)
+    first = await registry.record_edge_sensitivity(edge.id, _sensitivity(2.4), recording, REVIEWER)
+
+    after = await _version_rows(db_session, "CausalEdge", edge.id)
+    assert after[0] == before[0], "the draft must be exactly what it was"
+    assert [r["revision"] for r in after] == [1, 2]
+
+    versions = await registry.get_versions("CausalEdge", edge.id)
+    latest = versions[-1]
+    assert latest.change == "RECORDED"
+    assert latest.actor is not None and latest.actor.id == REVIEWER.id
+    assert str(latest.verdict_ref) == str(recording)
+    assert [str(a) for a in latest.state["assumption_refs"]] == [str(first)]
+    assert versions[0].state["assumption_refs"] == []
+
+    head = await registry.get_object("CausalEdge", edge.id)
+    assert head.revision == 2 and head.approval_status == "DRAFT"
+    assert [str(a) for a in head.assumption_refs] == [str(first)]
+    assert await registry.get_object_version("CausalEdge", edge.id, 2) == head
+
+    made = await registry.get_versions("Assumption", first)
+    assert [v.revision for v in made] == [1] and made[0].change == "PROPOSED"
+    assert str(made[0].verdict_ref) == str(recording)
+    assert made[0].state["sensitivity_verdict_id"] == str(recording)
+
+    again = await verdict_for(edge.id, action_type=RECORD_SENSITIVITY)
+    second = await registry.record_edge_sensitivity(edge.id, _sensitivity(3.1), again, REVIEWER)
+    head = await registry.get_object("CausalEdge", edge.id)
+    assert head.revision == 3
+    assert [str(a) for a in head.assumption_refs] == [str(first), str(second)]
+    rows = await _version_rows(db_session, "CausalEdge", edge.id)
+    assert [r["revision"] for r in rows] == [1, 2, 3] and rows[:2] == after
+
+
+async def test_a_refused_recording_writes_no_version(
+    db_engine: AsyncEngine,
+    db_session: AsyncSession,
+    verdict_for: VerdictFactory,
+    approved_audit_entry_id: UUID,
+) -> None:
+    edge = await _draft("CausalEdge", verdict_for, approved_audit_entry_id)
+    registry = SemanticLayerRegistry()
+    await registry.promote_to_approved(
+        edge.id, "CausalEdge", await verdict_for(edge.id, action_type="GOVERNANCE_APPROVE"),
+        REVIEWER,
+    )
+    with pytest.raises(InvalidTransitionError):
+        await registry.record_edge_sensitivity(
+            edge.id, _sensitivity(2.4),
+            await verdict_for(edge.id, action_type=RECORD_SENSITIVITY), REVIEWER,
+        )
+    rows = await _version_rows(db_session, "CausalEdge", edge.id)
+    assert [r["revision"] for r in rows] == [1, 2]
 
 
 async def test_history_is_bounded_by_domain_scope(
