@@ -47,11 +47,11 @@ These are best-effort targets, not contractual commitments:
 ## Scope
 
 In scope:
-- The backend service (`backend/src/`) and its REST + MCP surfaces
+- The backend service (`backend/src/`) and its REST surface
 - The Guardian policy engine and audit trail integrity
-- The legacy MCP server (`backend/mcp_server/`, deprecated but still shipped) and its tool wrappers
 - The frontend (`frontend/`) and any code that handles auth tokens
-- The published packages under `packages/` (`causal-core`, `causal-decision`, `causal-mcp`)
+- The published packages under `packages/` (`causal-core`, `causal-decision`, `causal-mcp`,
+  the one MCP server)
 - Build / packaging configuration (`pyproject.toml`, `package.json`, the `Dockerfile`s)
 - The Docker Compose dev stack (`docker-compose.yml`). The repository contains no production
   deployment
@@ -143,8 +143,11 @@ anything but `local`) the backend refuses to start without that key, or with one
 shorter than 32 bytes; locally, a per-process key is generated and the event is
 logged at CRITICAL. A verdict also verifies against the retired keys listed in
 `GUARDIAN_SIGNING_KEYS_PREVIOUS`, so rotating the key does not void verdicts
-issued before it. Each verdict names the object it was issued for and can be
-spent once (`verdict_consumption`).
+issued before it. Each verdict names the object it was issued for and the
+action it rules on, both inside the signed claim, and can be spent once
+(`verdict_consumption`). Approving and rejecting a draft each need an APPROVED
+verdict, for `GOVERNANCE_APPROVE` and `GOVERNANCE_REJECT` respectively; a verdict
+for one of those two actions authorises that decision and no other write.
 
 **Secrets.** Every secret (the signing keys, `DATABASE_URL`, `NEO4J_PASSWORD`,
 the LLM API keys) is read from the environment variable or from the file named
@@ -163,8 +166,8 @@ keep in mind when evaluating issues:
   In the backend (`backend/src`), `causal_entities`, `causal_edges`,
   `graph_fragments` and `assumptions` are written only by `SemanticLayerRegistry`
   (`backend/src/semantic_layer/registry.py`), which refuses a verdict that is
-  missing, not APPROVED (REJECTED for a rejection), unsigned, issued for another
-  object, or already spent. The dev seeding script `backend/scripts/seed_data.py`
+  missing, not APPROVED, unsigned, issued for another object or another review
+  action (a rejection needs one for `GOVERNANCE_REJECT`), or already spent. The dev seeding script `backend/scripts/seed_data.py`
   inserts directly; it is run by hand against a local database, and no request
   path reaches it. A path that
   writes those tables without that check, or that obtains a verdict it should
@@ -175,7 +178,7 @@ keep in mind when evaluating issues:
   `audit_log` entries is critical-severity.
 - **`EpistemicState`** is the single in-flight contract. Code that mutates it
   outside an agent boundary, or smuggles data past it, is in scope.
-- **MCP wrappers must not raise**. They return a structured `{ok: False, ...}`
-  envelope. A wrapper that crashes the server is in scope.
+- **MCP tools must not crash the server**. A `causal-mcp` tool call answers with
+  a result or a typed refusal; one that crashes the server instead is in scope.
 - **`DEV_AUTH_BYPASS=true`** is intentionally permissive in local dev. A code
   path that reaches that branch when `ENV != "local"` is in scope.

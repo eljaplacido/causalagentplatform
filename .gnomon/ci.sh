@@ -434,7 +434,7 @@ else
 fi
 
 # ── 5. Security: SAST, secrets, dependency advisories ────────────────────────
-# bandit-*       bandit over backend/src + backend/mcp_server (with backend/pyproject.toml's
+# bandit-*       bandit over backend/src (with backend/pyproject.toml's
 #                [tool.bandit]) and over every packages/*/src, through the lint ratchet:
 #                MEDIUM and HIGH findings count, held at scripts/lint-baseline.json (0).
 # secret-scan    scripts/secret_scan.py over every file git would commit from this working
@@ -498,7 +498,7 @@ audit_step npm-audit npm
 
 # ── 6. Scope, status claims, documents ───────────────────────────────────────
 # gate-scope     identity checks derived from the code: every skill module is
-#                imported by a test, every registered MCP tool and every
+#                imported by a test, every tool packages/causal-mcp registers and every
 #                state-changing route is referenced by one, every decorated route
 #                is mounted. Today's gaps are listed by name in
 #                scripts/gate-scope-floors.json; a NEW gap fails, and so does a
@@ -520,9 +520,9 @@ audit_step npm-audit npm
 header "gate scope / status claims / doc reconciliation"
 t0=$SECONDS
 if [ -z "$PYBIN" ]; then
-    record gate-scope SKIPPED "needs the backend toolchain (it loads the live MCP server and FastAPI app)" 0
+    record gate-scope SKIPPED "needs the backend toolchain (it loads the live FastAPI app)" 0
 elif indented "$PY" scripts/gate_scope.py identity-all; then
-    detail="$(grep -oE '(skills-imported|mcp-tools|kernel-mcp-tools|routes-tested|routes-mounted): [0-9]+/[0-9]+ covered(, [0-9]+ known gap\(s\) listed)?' "$LOG_DIR/.indented" \
+    detail="$(grep -oE '(skills-imported|kernel-mcp-tools|routes-tested|routes-mounted): [0-9]+/[0-9]+ covered(, [0-9]+ known gap\(s\) listed)?' "$LOG_DIR/.indented" \
         | sed -E 's/ covered//; s/, ([0-9]+) known gap\(s\) listed/ (\1 known gaps)/' | paste -sd ';' - | sed 's/;/; /g')"
     record gate-scope PASS "$detail" $((SECONDS - t0))
 else

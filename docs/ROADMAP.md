@@ -61,12 +61,12 @@ sustainability investment assurance follow, in that order.
    confidence sequences over a predictable-baseline AIPW score). Cluster-randomized designs are
    **done** (`causal_core.cluster`, pre-registered T7: CR2 intervals on t(K − 2), a refusal where
    a few clusters dominate). Switchback designs are **done** (also `causal_core.cluster`,
-   pre-registered T8: a uniform washout, block means, Welch on t(K − 2); the carryover check is
-   reported, not gated, is weak, and says so: `carryover-check-weak`). Parallel-trends
+   pre-registered T8: a uniform washout, block means, Welch on t(K − 2); since T8 v2 a
+   carryover check with gated power makes the result contested when the effect is still moving
+   after the washout, and misses a carryover too small next to the standard error). Parallel-trends
    sensitivity is **done** (intervals under a relative-magnitudes restriction and a breakdown
    multiple, T5 v3). Still to come, in the ledger's order: spillovers between randomized units
-   (`septa-7`) and a switchback carryover check with gated power as T8 v2, or a design that
-   estimates the carryover length (`septa-9`); then the DiD work the register still lists --
+   (`septa-7`); then the DiD work the register still lists --
    the full Rambachan–Roth sensitivity (`did-rambachan-roth`), and anticipation windows,
    repeated cross-sections and time-varying covariates (`did-anticipation-cross-sections`).
    Each with its own pre-registered gate and a seeded defect.
@@ -112,18 +112,23 @@ priority first, and the priorities put hardening the platform before new estimat
   SQLite, on the schema the migrations build: it found that the Guardian could not write
   `audit_log` there and that `session_state` and `incidents` had no migration, and both are
   fixed (`septa-52`, gate step `backend-pytest-postgres`). No SQL in `backend/src` is built
-  from strings, and bandit enforces it (`septa-50`). Open: rejecting a draft needs a Guardian
-  REJECTED verdict, which a classified reject request never gets (`septa-53`).
+  from strings, and bandit enforces it (`septa-50`). Rejecting a draft needs an APPROVED
+  Guardian verdict for `GOVERNANCE_REJECT` on that draft, as approving needs one for
+  `GOVERNANCE_APPROVE`, and the governance page sends the reviewer's classification with
+  both; it used to need a REJECTED verdict, which a classified reject request never got
+  (`septa-53`).
 - **p1, release and drift.** Done: the gate checks that the skills and agent docs name only
   things that exist (`septa-3`), and the MCP tools' parameters are derived from `CausalQuery`,
   with a parity test (`septa-4`; it found `causal_impact` judging every earlier answer as
   observational, and `causal_decide` dropping `treatment_levels`). Open: protect `main`
   (`septa-1`; needs a public repository or a paid plan); a first PyPI release of the three
-  packages (`septa-2`); SeptaCore's optional stages that fit (`septa-5`); deleting the legacy MCP
-  server once no external client needs it (`septa-6`).
+  packages (`septa-2`); SeptaCore's optional stages that fit (`septa-5`). Also done: the legacy
+  MCP server, `backend/mcp_server`, deleted; `packages/causal-mcp` is the one server (`septa-6`).
 - **p2, the kernel and decision layer.** Done: DiD with covariates (doubly robust) and
-  not-yet-treated comparisons, T5 v4 (`septa-8`). Open: step 3's remaining estimators (`septa-7`,
-  `septa-9`), calibration (`septa-10`), anchoring (`septa-11`), Rosenbaum bounds (`septa-12`),
+  not-yet-treated comparisons, T5 v4 (`septa-8`); a switchback carryover check with gated power
+  whose flag makes the result contested, T8 v2 (`septa-9`; a carryover too small to bias the
+  estimate materially stays undetectable at T8's sizes, and is reported). Open: step 3's
+  remaining estimator (`septa-7`), calibration (`septa-10`), anchoring (`septa-11`), Rosenbaum bounds (`septa-12`),
   Guardian PR-007 (`septa-33`), positivity detection and triangulation at moderate n (`septa-34`,
   `septa-35`), and the review queue's risk tier (`septa-36`).
 - **p3 and p4.** The rest of the register (versioned semantic objects, lineage,

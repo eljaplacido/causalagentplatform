@@ -12,11 +12,6 @@ from causal_core.bench.defects_t8 import DEFECTS
 pytestmark = pytest.mark.t8
 
 
-@pytest.fixture(scope="module")
-def cfg() -> dict[str, Any]:
-    return t8.load_prereg()[0]
-
-
 def test_every_registered_defect_has_a_catcher(cfg: dict[str, Any]) -> None:
     assert set(cfg["seeded_defects"]["required"]) == set(DEFECTS) == set(t8.CATCHER)
 

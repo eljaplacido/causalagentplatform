@@ -14,7 +14,9 @@
  * Decisions (fail-closed):
  *   - Approve: POST /api/governance/check (Guardian verdict) → POST
  *     /api/governance/approve/{id} with the returned audit_entry_id as verdict_id.
- *   - Reject:  POST /api/governance/check → POST /api/governance/reject/{id}.
+ *   - Reject:  POST /api/governance/check (APPROVED verdict for GOVERNANCE_REJECT)
+ *     → POST /api/governance/reject/{id}. Both checks carry the reviewer's
+ *     Cynefin domain: Guardian approves nothing in DISORDER (PR-006).
  *   - Success is shown only after the backend confirms. Nothing is patched
  *     locally: the review-queue and audit-log queries are invalidated and
  *     refetched, so the UI only ever shows backend state and backend audit rows.
@@ -270,12 +272,10 @@ function toBackendObjectType(objectType: string): BackendObjectType | null {
 /** Mirrors RejectRequest.reason min_length in backend/src/api/governance.py. */
 const MIN_REJECTION_REASON_LENGTH = 10;
 
+/** An approval and a rejection both carry the reviewer's classification. */
 interface DecisionVariables {
   item: ReviewQueueItem;
   reason: string;
-}
-
-interface ApproveVariables extends DecisionVariables {
   cynefinDomain: CynefinDomain;
 }
 
@@ -361,7 +361,7 @@ export default function GovernancePage() {
   }
 
   const approveMutation = useMutation({
-    mutationFn: async ({ item, reason, cynefinDomain }: ApproveVariables) => {
+    mutationFn: async ({ item, reason, cynefinDomain }: DecisionVariables) => {
       const objectType = assertDecidable(item);
       // The backend requires a Guardian APPROVED verdict (audit_log id) to
       // authorise the promotion — obtain it from /check first. The verdict must
@@ -389,19 +389,26 @@ export default function GovernancePage() {
   });
 
   const rejectMutation = useMutation({
-    mutationFn: async ({ item, reason }: DecisionVariables) => {
+    mutationFn: async ({ item, reason, cynefinDomain }: DecisionVariables) => {
       const objectType = assertDecidable(item);
       if (reason.trim().length < MIN_REJECTION_REASON_LENGTH) {
         throw new Error(
           `A rejection reason of at least ${MIN_REJECTION_REASON_LENGTH} characters is required`
         );
       }
-      // /reject requires the id of a real Guardian audit_log entry as verdict_id.
+      // /reject requires an APPROVED Guardian verdict for GOVERNANCE_REJECT on this
+      // object (septa-53), obtained exactly as an approval's is: bound to the
+      // object and carrying the reviewer's classification. It used to need a
+      // REJECTED verdict, which only an unclassified check produced.
       const check = await governanceApi.check({
         action_type: "GOVERNANCE_REJECT",
         payload: { object_id: item.id, object_type: objectType, reason },
         subject_id: item.id,
+        cynefin_domain: cynefinDomain,
       });
+      if (check.verdict !== "APPROVED") {
+        throw new Error(`Guardian verdict was ${check.verdict}: ${check.reason}`);
+      }
       await governanceApi.reject(item.id, objectType, reason, check.audit_entry_id);
     },
     onSettled: invalidateGovernanceQueries,
@@ -423,8 +430,12 @@ export default function GovernancePage() {
     await approveMutation.mutateAsync({ item: findQueueItem(id), reason, cynefinDomain });
   }
 
-  async function handleReject(id: string, reason: string): Promise<void> {
-    await rejectMutation.mutateAsync({ item: findQueueItem(id), reason });
+  async function handleReject(
+    id: string,
+    reason: string,
+    cynefinDomain: CynefinDomain
+  ): Promise<void> {
+    await rejectMutation.mutateAsync({ item: findQueueItem(id), reason, cynefinDomain });
   }
 
   const pendingCount = reviewItems.filter(

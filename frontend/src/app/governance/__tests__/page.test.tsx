@@ -276,6 +276,33 @@ describe("GovernancePage — backend failure never marks the item approved", () 
     expect(screen.queryByTestId("approval-success")).toBeNull();
   });
 
+  it("Guardian verdict other than APPROVED on a reject: reject endpoint is not called", async () => {
+    const user = userEvent.setup();
+
+    governanceApiMock.reviewQueue.mockResolvedValue([backendQueueItem]);
+    governanceApiMock.auditLog.mockResolvedValue(auditResponse([]));
+    governanceApiMock.check.mockResolvedValue({
+      verdict: "REJECTED",
+      reason: "Guardian refused the reject request.",
+      policy_rules_cited: ["PR-003"],
+      audit_entry_id: "a-8",
+      session_id: null,
+    });
+
+    renderPage();
+    await selectFirstItem(user);
+    await user.click(screen.getByTestId("reject-button"));
+    await user.selectOptions(screen.getByTestId("approval-domain"), "COMPLEX");
+    await user.type(screen.getByLabelText(/rejection reason/i), REASON);
+    await user.click(screen.getByTestId("confirm-rejection"));
+
+    const alert = await screen.findByTestId("approval-error");
+    expect(alert).toHaveTextContent(/Rejection failed: Guardian verdict was REJECTED/);
+    // A REJECTED verdict no longer authorises a rejection, so it is not sent.
+    expect(governanceApiMock.reject).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("approval-success")).toBeNull();
+  });
+
   it("reject API rejection: error shown and no success state", async () => {
     const user = userEvent.setup();
 
@@ -295,11 +322,21 @@ describe("GovernancePage — backend failure never marks the item approved", () 
     renderPage();
     await selectFirstItem(user);
     await user.click(screen.getByTestId("reject-button"));
+    await user.selectOptions(screen.getByTestId("approval-domain"), "COMPLICATED");
     await user.type(screen.getByLabelText(/rejection reason/i), REASON);
     await user.click(screen.getByTestId("confirm-rejection"));
 
     const alert = await screen.findByTestId("approval-error");
     expect(alert).toHaveTextContent(/Rejection failed: Network request failed/);
+    // The same shape as an approval's check: the object it authorises, and the
+    // reviewer's classification -- rejecting needs an APPROVED verdict for
+    // GOVERNANCE_REJECT (septa-53), which Guardian never gives in DISORDER.
+    expect(governanceApiMock.check).toHaveBeenCalledWith({
+      action_type: "GOVERNANCE_REJECT",
+      payload: { object_id: ITEM_ID, object_type: "CausalEdge", reason: REASON },
+      subject_id: ITEM_ID,
+      cynefin_domain: "COMPLICATED",
+    });
     expect(governanceApiMock.reject).toHaveBeenCalledWith(
       ITEM_ID,
       "CausalEdge",

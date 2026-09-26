@@ -32,7 +32,6 @@ COPY packages/causal-core ./causal-core
 COPY packages/causal-decision ./causal-decision
 COPY backend/pyproject.toml ./backend/pyproject.toml
 COPY backend/src ./backend/src
-COPY backend/mcp_server ./backend/mcp_server
 RUN pip install --no-cache-dir --no-deps --no-build-isolation \
         ./causal-core ./causal-decision "./backend[production]" \
     && pip check \
