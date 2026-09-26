@@ -1,7 +1,7 @@
 # Prompt template: guardian_check
 # Version: 1.0.0
 # Skill: guardian_check (AGENTS.md §3.1)
-# Reference: cynepic-guardian Rust crate, OPA policy engine
+# Reference: Governance agent, src/agents/governance.py
 
 version: "1.0.0"
 skill: guardian_check

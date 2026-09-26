@@ -10,7 +10,8 @@ Pattern from projectcarfcynepic / carfdevops (CYBERSECURITY.md §3.1):
     request, so PostgreSQL's row-level security sees the same domains the
     application does
   - Returns 401 on invalid/missing tokens for protected routes
-  - Unprotected routes (e.g. /health) are excluded via PUBLIC_PATHS
+  - Unprotected routes (e.g. /health) are excluded via PUBLIC_PATHS, matched
+    exactly (never by prefix)
 
 Usage in FastAPI:
     app.add_middleware(BaseHTTPMiddleware, dispatch=firebase_jwt_middleware)
@@ -35,7 +36,12 @@ from starlette.types import ASGIApp
 
 log = structlog.get_logger(__name__)
 
-# Paths that never require authentication
+# Paths that never require authentication. Matched EXACTLY: a prefix match made
+# every route that merely began with one of these (/healthz, /docs-admin,
+# /health/internal) public too. FastAPI's docs need nothing beyond /docs, /redoc
+# and /openapi.json -- Swagger UI and ReDoc load their assets from a CDN, and the
+# Swagger OAuth2 redirect page is only used by an "Authorize" flow this app does
+# not configure. A new public route is added here by its full path.
 PUBLIC_PATHS: frozenset[str] = frozenset({
     "/health",
     "/docs",
@@ -184,8 +190,8 @@ class FirebaseAuthMiddleware(BaseHTTPMiddleware):
             request.state.user = None
             return None
 
-        # Always allow public paths
-        if path in PUBLIC_PATHS or any(path.startswith(p) for p in PUBLIC_PATHS):
+        # Always allow public paths -- exact matches only (see PUBLIC_PATHS)
+        if path in PUBLIC_PATHS:
             request.state.user = None
             return None
 

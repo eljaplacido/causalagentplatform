@@ -92,46 +92,29 @@ enabled = true
 # args = ["-y", "@example/mcp-server@1.0.0"]
 # env = ["EXAMPLE_API_KEY"]   # env var NAMES to forward; values never in the surface
 
-# This repository's own causal skills (backend/mcp_server/server.py, 7 tools),
-# offered to a role that lists "mcp__causal". system.md requires every causal
-# number an agent states to come from a tool result; these are the tools.
+# The kernel's MCP server (packages/causal-mcp, MCP SDK v2), the repository's one MCP
+# server: identification before estimation, typed refusals, and a narrative verifier
+# that rejects numbers no tool returned. Offered to roles that list "mcp__causal_core".
+# system.md requires every causal number an agent states to come from a tool result;
+# these are the tools, and the pre-registered gates (benchmarks/*/PRE-REGISTRATION.md)
+# stand behind their numbers. A tool RESULT is still provenance, not truth.
 #
-# Pinned by the commit, not a version string: the server is code in this tree,
-# so its behaviour moves with the checkout -- still OUTSIDE the surface hash,
-# like any MCP server. Two things about the invocation, both forced by gnomon
-# 0.2.3's McpServerDef (transport, command, args, env -- there is no `cwd` key):
-#   * `python -m mcp_server.server` must run from backend/, so the command cds
-#     to the checkout root's backend/ itself rather than trusting the directory
-#     gnomon was launched from (it finds .gnomon/ by walking up, so that can be
-#     a subdirectory).
-#   * The interpreter is backend/.venv; in a git worktree, which has no venv of
-#     its own, the main checkout's -- derived from git, never written down.
-#     (`causal-mcp` is the console script pyproject declares, but it is only on
-#     PATH in an environment where the package was installed with its scripts,
-#     so it is not relied on here.)
-# gnomon passes the server only PATH/HOME/TMPDIR/LANG-type variables plus the
-# names in `env`; the server needs no secret, so `env` is empty.
+# Pinned by the commit, not a version string: the server is code in this tree, so its
+# behaviour moves with the checkout -- still OUTSIDE the surface hash, like any MCP
+# server. The invocation is shaped by gnomon 0.2.3's McpServerDef (transport, command,
+# args, env -- there is no `cwd` key): it resolves the checkout root with git rather
+# than trusting the directory gnomon was launched from (gnomon finds .gnomon/ by
+# walking up, so that can be a subdirectory), and runs the kernel venv's interpreter
+# -- in a git worktree, which has no venv of its own, the main checkout's, derived
+# from git, never written down. (`causal-mcp` is the console script pyproject declares,
+# but it is only on PATH where the package was installed with its scripts, so it is
+# not relied on here.) gnomon passes the server only PATH/HOME/TMPDIR/LANG-type
+# variables plus the names in `env`; the server needs no secret, so `env` is empty.
 #
-# LEGACY, being deprecated in favour of causal_core below. A tool RESULT is
-# provenance, not truth: two of these tools (counterfactual_reason,
-# intervention_estimate) return heuristic triage scores, not effects -- see
-# docs/CURRENT_STAGE.md.
-# Commented out 2026-09-25: no role is granted it any more (dni:legacy-mcp-server).
-# Restore these five lines only to reach a legacy tool the kernel does not replace.
-# [mcp_servers.causal]
-# transport = "stdio"
-# command = "sh"
-# args = ["-c", 'cd "$(git rev-parse --show-toplevel)/backend" || exit 1; V=.venv; test -x "$V/bin/python" || V="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")/backend/.venv"; exec "$V/bin/python" -m mcp_server.server']
-# env = []
-
-# The kernel's own MCP server (packages/causal-mcp, MCP SDK v2): identification before
-# estimation, typed refusals, and a narrative verifier that rejects numbers no tool
-# returned. Offered to roles that list "mcp__causal_core". It is the server whose
-# numbers the pre-registered gates (benchmarks/*/PRE-REGISTRATION.md) stand behind;
-# the legacy `causal` server above is commented out and granted to no role.
-# Same invocation constraints as above (no `cwd` key in gnomon 0.2.3's McpServerDef):
-# resolve the checkout root with git, and fall back to the main checkout's venv from
-# a worktree.
+# History: a second, legacy server (`causal`, the backend's own MCP server on SDK v1,
+# seven backend skills, two of them heuristic triage scores) was declared here until
+# 2026-09-25 and deleted from the repository on 2026-09-26 (septa-6; register entry
+# legacy-mcp-server, in left_the_list).
 [mcp_servers.causal_core]
 transport = "stdio"
 command = "sh"

@@ -1,4 +1,4 @@
-"""The overlap checks (contract 0.12.0), on data whose positivity structure is set by construction.
+"""The overlap checks (contract 0.13.0), on data whose positivity structure is set by construction.
 
 The gate is T10 (tests/t10); these pin the pieces: the Clopper-Pearson arithmetic behind
 ``min_region_units``, the rules a region is reported as, the ATE/ATT asymmetry, that nothing is

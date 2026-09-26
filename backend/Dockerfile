@@ -32,7 +32,6 @@ COPY packages/causal-core ./causal-core
 COPY packages/causal-decision ./causal-decision
 COPY backend/pyproject.toml ./backend/pyproject.toml
 COPY backend/src ./backend/src
-COPY backend/mcp_server ./backend/mcp_server
 RUN pip install --no-cache-dir --no-deps --no-build-isolation \
         ./causal-core ./causal-decision "./backend[production]" \
     && pip check \
@@ -60,8 +59,10 @@ ENV PATH=/opt/venv/bin:$PATH
 RUN rm -rf /usr/local/lib/python3.12/site-packages/pip /usr/local/lib/python3.12/site-packages/pip-*.dist-info \
            /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.12
 
-# Copy application source
+# Copy application source, and the versioned prompt templates the agents render
+# (src/agents/prompt_templates.py finds them at /app/prompts; PROMPTS_DIR overrides)
 COPY backend/src ./src/
+COPY prompts ./prompts/
 
 # Read-only root filesystem where possible (CYBERSECURITY.md §8.3)
 RUN chown -R causal:causal /app

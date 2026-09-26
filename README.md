@@ -4,7 +4,7 @@
 
 A governed platform for causal reasoning, decision simulation, and intervention recommendation. Built around a canonical semantic layer, a Guardian-mediated approval workflow, and a shared library of causal-inference skills that are callable both internally (LangGraph agents) and externally (Model Context Protocol).
 
-> **Status:** Pre-1.0. The causal numbers the platform serves come from the causal-core kernel, which identifies before it estimates, refuses with a typed reason, and passes pre-registered correctness and real-data benchmarks. On top of it, causal-decision rules on whether an agent may act on that evidence. Several platform features are still heuristic (and labelled so) or not built: counterfactuals, discovery, the LLM layer, and calibration evidence for the decisions (the follow-up loop exists; no real operation has been measured with it yet). [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAGE.md) lists what is implemented, each row with the test that pins it, and what is declared but not implemented. `.gnomon/ci.sh` is the gate (`scripts/verify.sh` runs it; exit 0 means every step ran and passed, 1 that a step failed, 2 that one could not be measured, 3 that a document is owed a re-read); `scripts/status_claims.py` keeps that page in step with the code.
+> **Status:** Pre-1.0. The causal numbers the platform serves come from the causal-core kernel, which identifies before it estimates, refuses with a typed reason, and passes pre-registered correctness and real-data benchmarks. On top of it, causal-decision rules on whether an agent may act on that evidence. Several platform features are still heuristic (and labelled so) or not built: counterfactuals, discovery, and calibration evidence for the decisions (the follow-up loop exists; no real operation has been measured with it yet). The LLM layer is optional and local-first (Ollama): it writes explanations only, kept when every number in them is a claim of the kernel's outcome, and the platform runs unchanged without it. [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAGE.md) lists what is implemented, each row with the test that pins it, and what is declared but not implemented. `.gnomon/ci.sh` is the gate (`scripts/verify.sh` runs it; exit 0 means every step ran and passed, 1 that a step failed, 2 that one could not be measured, 3 that a document is owed a re-read); `scripts/status_claims.py` keeps that page in step with the code.
 
 ## Start here: the causal kernel
 
@@ -61,9 +61,11 @@ runs, and failing runs are kept.
 | T6: anytime-valid monitoring ([`benchmarks/t6-sequential`](benchmarks/t6-sequential)) | A watched canary's confidence sequence contains the effect at every look in 98.2–99.4% of runs; the fixed-n interval re-read at every look manages 72.9%. v1 failed on two faults of its registration and is kept. |
 | T7: cluster-randomized designs ([`benchmarks/t7-cluster`](benchmarks/t7-cluster)) | Randomize services, measure requests: coverage 0.942–0.952 across five designs; unit-level standard errors would cover 37%. Where a few huge clusters dominate, the kernel refuses rather than under-cover. v1–v3 failed and are kept. |
 | T8: switchback designs ([`benchmarks/t8-switchback`](benchmarks/t8-switchback)) | One system switched hourly between arms: coverage 0.945–0.956 with a washout that covers the carryover. When it does not, a carryover check makes the result contested: in 91.8% of runs when the carryover biases the estimate by three standard errors, but in only 9.5% when the bias is a fraction of one (coverage 0.887) — choose the washout from knowledge of the system. |
+| T9: Rosenbaum sensitivity ([`benchmarks/t9-rosenbaum`](benchmarks/t9-rosenbaum)) | How much hidden bias would explain an effect away, on a matched design the kernel builds. With the hidden bias planted, the reported Γ* reached it in 1.9–2.9% of runs (bar 3.5%) and kept the conclusion at two-thirds of it in 91.8–96.7%; behind a full analysis with an unmeasured confounder of odds ratio 3, the median Γ* was 1.63 against a design sensitivity of 1.88, and no run claimed 3. It reproduces Rosenbaum's published table on the lead data. |
 | T10: positivity and overlap ([`benchmarks/t10-positivity`](benchmarks/t10-positivity)) | Strata where one arm never occurs, including one three covariates define jointly that every single covariate hides, refused in 99.2–100% of runs (the old check: none); false refusals at most 0.2%; coverage 0.946–0.958 where the kernel answers. Nothing is trimmed silently. IHDP's ATE is now flagged for limited overlap in 100/100 realizations. |
 | D0: the decision procedure ([`benchmarks/d0-decision-policy`](benchmarks/d0-decision-policy)) | 19/19 scenarios return the verdict the registration names (two with declared segments, two staggered rollouts); 8 properties hold over 400 seeded cases; each of 8 seeded defects makes the gate fail. |
 | A0: whether a revised graph breaks a verdict ([`benchmarks/a0-assumption-impact`](benchmarks/a0-assumption-impact)) | 800/800 revisions judged as an independent linear-Gaussian oracle judges them; 4 seeded defects caught. v1 failed its class-balance floor and is kept. |
+| C0: the calibration report, on **simulated** decision streams ([`benchmarks/c0-calibration`](benchmarks/c0-calibration)) | Not a calibration figure about real operations — there are none yet. On streams whose effects are set by construction, the report's intervals cover that truth in 95.75–100% of streams for every design and rate (bar 92.5%), and the exact coverage of its interval is never below 95.0% from 10 to 200 follow-ups. Below 10 it states no rate, and too few disagreeing pairs read "could not resolve", not "no difference". 5 seeded defects caught. |
 
 Known limits are listed, not hidden: [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAGE.md) and
 [`conformance/declared_not_implemented.json`](conformance/declared_not_implemented.json).
@@ -72,7 +74,7 @@ Known limits are listed, not hidden: [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAG
 
 - **Backend** (`backend/`): Python 3.12, FastAPI, SQLAlchemy and LangGraph. `.gnomon/ci.sh` prints the current test count and coverage.
 - **Frontend** (`frontend/`): Next.js, TypeScript and Tailwind. Persona-scoped views: workbench, governance, incidents, engineer, analyst and executive.
-- **Legacy MCP server** (`backend/mcp_server/`): **deprecated** — it warns on startup, and no gnomon role is granted it. It exposes seven backend skills (console script `causal-platform-mcp`) and is kept only for client configurations that still launch it; its retirement is tracked as `legacy-mcp-server` in `conformance/declared_not_implemented.json`. Use `packages/causal-mcp`.
+- **One MCP server**: `packages/causal-mcp`, above. The backend's legacy server (`backend/mcp_server/`, console script `causal-platform-mcp`) was deleted in September 2026; a client configuration that still launches `causal-platform-mcp` should launch `causal-mcp` instead.
 - **Docs** (`docs/`): architecture (AGENTS.md), data layer, ADRs, quickstart and testing standards.
 
 ## Quick start
@@ -105,7 +107,7 @@ Full guide: [`docs/QUICKSTART.md`](docs/QUICKSTART.md).
 
 ## Calling the kernel from an external agent
 
-In its own virtualenv — the backend pins MCP SDK v1 for the legacy server, causal-mcp needs v2:
+In its own virtualenv (causal-mcp needs MCP SDK v2):
 
 ```bash
 pip install -e 'packages/causal-core' -e 'packages/causal-decision' -e 'packages/causal-mcp[decision]'
@@ -113,7 +115,6 @@ causal-mcp                        # stdio; `causal-mcp --http --port 8765` needs
 ```
 
 Client configuration and the tool list: [`packages/causal-mcp/README.md`](packages/causal-mcp/README.md).
-The legacy server's docs remain at [`backend/mcp_server/README.md`](backend/mcp_server/README.md).
 
 ## Documentation
 

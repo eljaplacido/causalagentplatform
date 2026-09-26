@@ -64,6 +64,46 @@ from src.semantic_layer.verdict import sign as verdict_sign
 SQLITE_SCHEMA = SQLITE_DDL
 
 
+# ── No ambient LLM ───────────────────────────────────────────────────────────
+#
+# The platform calls an LLM whenever a provider is configured (src/agents/narration.py),
+# so a developer's OLLAMA_BASE_URL or cloud key would reach every agent test and make
+# its text depend on a live model. Each test starts with no provider configured; a
+# test that wants one sets it (with a fake client, tests/unit/_narration_support.py).
+#
+# The live tests (@pytest.mark.llm_live) are the exception, and run only with
+# LLM_LIVE=1. Otherwise they are DESELECTED, not skipped: the PostgreSQL gate step
+# fails on any skip, and a deselected test is not a test that failed to run but one
+# nobody asked for.
+
+_LLM_PROVIDER_ENV = (
+    "OLLAMA_BASE_URL",
+    "ANTHROPIC_API_KEY",
+    "ANTHROPIC_API_KEY_FILE",
+    "OPENAI_API_KEY",
+    "OPENAI_API_KEY_FILE",
+    "DEEPSEEK_API_KEY",
+    "DEEPSEEK_API_KEY_FILE",
+)
+
+
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    if os.environ.get("LLM_LIVE") == "1":
+        return
+    live = [item for item in items if item.get_closest_marker("llm_live")]
+    if live:
+        config.hook.pytest_deselected(items=live)
+        items[:] = [item for item in items if not item.get_closest_marker("llm_live")]
+
+
+@pytest.fixture(autouse=True)
+def _no_ambient_llm(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> None:
+    if request.node.get_closest_marker("llm_live"):
+        return
+    for name in _LLM_PROVIDER_ENV:
+        monkeypatch.delenv(name, raising=False)
+
+
 # ── Engine fixture: in-memory SQLite by default, PostgreSQL on request ────────
 #
 # The default is a fresh in-memory SQLite per test, built from SQLITE_DDL.
@@ -340,8 +380,11 @@ async def db_session(
 
 
 #: What `verdict_for` is: give it the object you are about to write, get back a
-#: verdict that authorises that write and nothing else.
-VerdictFactory = Callable[[UUID], Awaitable[UUID]]
+#: verdict that authorises that write and nothing else. The optional arguments are
+#: the verdict (default APPROVED) and the action it was issued for: an approval needs
+#: ``action_type="GOVERNANCE_APPROVE"`` (septa-60), a rejection
+#: ``action_type="GOVERNANCE_REJECT"`` (septa-53).
+VerdictFactory = Callable[..., Awaitable[UUID]]
 
 
 # ── Issuing Guardian verdicts in tests ───────────────────────────────────────
@@ -465,8 +508,12 @@ async def approved_audit_entry_id(db_session: AsyncSession) -> UUID:
 async def verdict_for(db_session: AsyncSession) -> VerdictFactory:
     """Factory: ``await verdict_for(obj.id)`` -> a verdict that authorises that write."""
 
-    async def _issue(subject_id: UUID, verdict: str = "APPROVED") -> UUID:
-        return await issue_verdict_for(db_session, subject_id, verdict=verdict)
+    async def _issue(
+        subject_id: UUID, verdict: str = "APPROVED", action_type: str = "TEST_FIXTURE"
+    ) -> UUID:
+        return await issue_verdict_for(
+            db_session, subject_id, verdict=verdict, action_type=action_type
+        )
 
     return _issue
 

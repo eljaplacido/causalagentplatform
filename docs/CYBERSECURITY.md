@@ -66,14 +66,46 @@ An adversary injects false or misleading causal edges or evidence into the graph
   review that needs a governance role, and nobody may review an edge they introduced.
 - **Partial:** the Guardian rejects a payload whose proposed edges form a cycle (PR-001). No
   other contradiction check triggers a review.
-- **Target:** sensitivity analysis on every newly approved edge. PR-007 is declared and never
-  evaluated (register `sensitivity-gate-not-enforced`).
+- **In place, narrower than "passes a sensitivity analysis":** the Guardian refuses to approve
+  an edge that has no sensitivity result the platform recorded for it (PR-007): a `/check` for
+  `GOVERNANCE_APPROVE` on an edge is REJECTED unless an assumption the edge references, not
+  rejected in review, carries a `SensitivityResult` recorded by the platform, read from the
+  database rather than the request (`backend/tests/guardian/test_pr007_sensitivity_gate.py`).
+  A result that is not robust still counts; the reviewer sees it. The platform records one on
+  a draft edge when it runs the kernel on the edge's question
+  (`POST /api/semantic/edges/{edge_id}/sensitivity`, and SimulationAgent given data): a new
+  IGNORABILITY assumption carrying the kernel's E-value (and a Rosenbaum gamma* where the
+  kernel reports one), written only under a Guardian verdict for `RECORD_SENSITIVITY` on that
+  edge, never onto an approved edge or an existing assumption
+  (`backend/tests/guardian/test_edge_sensitivity_recorded.py`). The assumption stores that
+  verdict's id (`assumptions.sensitivity_verdict_id`, migration 013, unique), and a result
+  counts only when the row it names is APPROVED, for `RECORD_SENSITIVITY`, signed by the
+  Guardian, issued for the edge being judged, and spent by that write
+  (`backend/src/semantic_layer/review_risk.py` `recorded_sensitivity`, which the review
+  queue's risk tiers read too). A result a drafter attaches to an assumption they draft is
+  stored as what they said and counts for nothing: `propose_draft` never writes the verdict
+  column. Not covered: the data the kernel analyses is the caller's, so a caller who
+  fabricates the data can still steer the E-value the platform records.
 
 #### Prompt Injection (LLM Plane)
 Crafted user input or external data attempts to override agent instructions or exfiltrate EpistemicState contents.
 
-No LLM is called anywhere in the platform today (register `llm-routing-no-callers`), so this
-plane has no live surface yet. When one exists:
+Two paths call an LLM, for language only: the SimulationAgent's draft explanation and
+`POST /api/v1/decisions` with `narrate: true` (`src/agents/narration.py`; local Ollama is the
+first provider). **Model output is untrusted text.** It never carries a number, verdict or
+decision into the platform: the model is asked for claim tokens, and its reply is kept only if
+`grounding_risk` (PR-002, `causal_core.claims.verify` against the kernel outcome) scores it 0
+before and after the tokens are rendered; otherwise it is discarded for the deterministic text and
+the reason recorded. Replies over 2000 characters, empty replies, failed calls and calls over
+`LLM_TIMEOUT_SECONDS` are discarded the same way. The decision narrative is written after the
+ledger write and is never sealed into it. The prompt is rendered from a versioned template
+(`prompts/explanation_generate.yaml`) whose id and hash are recorded on every invocation.
+What grounding does NOT stop: a reply with no numbers and no causal wording that is still wrong or
+misleading in words (for example, calling a contested result convincing), or text a prompt
+injection steered, provided it stays within the claims. The prompt's inputs are the kernel
+outcome's own fields (variable names, estimator names, warnings, assumption statements) -- data
+from the request and the graph, so a hostile column name reaches the prompt. The API returns the
+narrative as a JSON string; a client must render it as text, never as HTML.
 - Structured I/O contracts: agents accept typed inputs, never raw strings from untrusted
   sources. **In place** for the API, which validates request bodies with Pydantic.
 - **In place:** grounding-risk scoring of prose submitted to `POST /api/governance/check`
@@ -82,7 +114,8 @@ plane has no live surface yet. When one exists:
   request cannot supply the score or the cycle count (422). When a session is named, that
   session supplies the domain and cycle count. This is a deterministic grounding check, not a
   model of hallucination, and it scores only the prose it is given.
-- **Target:** input sanitization before any LLM skill call.
+- **Target:** input sanitization before any LLM skill call. Today the inputs are typed kernel
+  fields, not free text from the request body, but they are not sanitised.
 - **Target:** agent outputs validated against an output schema before any downstream action.
 
 #### Guardian Circumvention
@@ -90,9 +123,17 @@ An agent or user attempts to write to the semantic layer without a Guardian verd
 
 **Mitigations:**
 - **In place:** the registry's write methods take a verdict id and refuse it unless it exists,
-  is APPROVED (REJECTED for `reject_draft`), is signed by the Guardian, names this object, and
+  is APPROVED, is signed by the Guardian, was issued for this action, names this object, and
   is unspent (`backend/src/semantic_layer/registry.py`, `verdict.py`;
-  `backend/tests/guardian/test_verdict_binding.py`).
+  `backend/tests/guardian/test_verdict_binding.py`). The action is part of the signed claim,
+  and each review decision accepts only a verdict issued for exactly that action:
+  `promote_to_approved` one for `GOVERNANCE_APPROVE` (an APPROVED verdict from a check for any
+  other action on the object used to approve it: `septa-60`,
+  `backend/tests/guardian/test_approve_action_binding.py`), and `reject_draft` one for
+  `GOVERNANCE_REJECT` (`backend/tests/integration/test_governance_reject_verdict.py`).
+  Rejecting used to need a REJECTED verdict, which only an unclassified (DISORDER) check
+  produced, so the authority to reject depended on the Guardian declining to classify
+  (`septa-53`). A verdict for either review action authorises that decision and no other write.
 - **In place, and narrower than "row security":** the database does not evaluate verdicts.
   `causal_edges.guardian_verdict_ref` and `interventions.guardian_verdict_ref` are
   `NOT NULL REFERENCES audit_log(id)`, so a row must point at *some* audit row. The
@@ -129,7 +170,7 @@ What the middleware does:
 
 ```python
 # FirebaseAuthMiddleware.dispatch, simplified
-if request.method == "OPTIONS" or path in PUBLIC_PATHS:        # /health, /docs, /redoc, /openapi.json
+if request.method == "OPTIONS" or path in PUBLIC_PATHS:        # exact match, never a prefix
     return await call_next(request)
 token = extract_bearer_token(request)
 if ENV == "local" and DEV_AUTH_BYPASS == "true" and token == "dev-local-token":
@@ -143,6 +184,12 @@ except Exception:
     return JSONResponse(401, "Authentication failed")
 return await call_next(request)
 ```
+
+`PUBLIC_PATHS` is `/health`, `/docs`, `/redoc`, `/openapi.json` and `/favicon.ico`, matched
+exactly. It used to be matched by prefix as well, which made any future route that began with
+one of them (`/healthz`, `/docs-admin`, `/health/internal`) public;
+`backend/tests/unit/test_auth_public_paths.py` mounts such routes and requires a token for each.
+FastAPI's docs pages need no other path: Swagger UI and ReDoc load their assets from a CDN.
 
 The local-dev bypass needs all three conditions. The mock user carries the roles
 `governance_officer`, `platform_engineer`, `analyst` and `sre`, and every row of the role
@@ -192,7 +239,7 @@ granted role gets 403, a token holding a granted role does not.
 | Route | Roles |
 |---|---|
 | `GET /api/semantic/entities[/{id}]`, `/fragments[/{id}]`, `/edges/{id}[/audit-trail]` | any platform role; a `viewer` reads APPROVED objects only; bounded by domain scope (§4.2) |
-| `POST /api/semantic/drafts` | `analyst`, `graph_author`, `platform_engineer`, `agent` (`DRAFT_ROLES`); only into the user's domains |
+| `POST /api/semantic/drafts`, `POST /api/semantic/edges/{id}/sensitivity` | `analyst`, `graph_author`, `platform_engineer`, `agent` (`DRAFT_ROLES`); only into the user's domains |
 | `POST /api/governance/check` | `graph_author`, `governance_officer`, `platform_engineer`, `agent` |
 | `POST /api/governance/approve/{id}`, `/reject/{id}`, `GET /review-queue`, `GET /audit-log` | `governance_officer`, `platform_engineer` (`GOVERNANCE_ROLES`); approve, reject and the queue bounded by domain scope |
 | `POST /api/v1/models/{name}/reviews` | `GOVERNANCE_ROLES`; a reviewer is also refused on edges they introduced |
@@ -200,7 +247,7 @@ granted role gets 403, a token holding a granted role does not.
 | `POST /api/v1/decisions`, `POST /api/v1/decisions/{digest}/followup` | `analyst`, `governance_officer`, `platform_engineer`, `sre` |
 | `POST /api/v1/interventions/{id}/approve`, `/reject`, `POST /api/v1/interventions/feedback` | `governance_officer`, `platform_engineer`, `sre` (`DECISION_ROLES`) |
 | `POST /api/v1/session/run`, `/incident`, `POST /api/v1/decisions/verify-anchored`, `POST /api/v1/platform/evaluation/calibration` | any platform role |
-| `GET /api/v1/provenance/trace/{id}`, `/export/{id}`, `/invocations/{id}`, `DELETE /api/v1/provenance/session/{id}` | `GOVERNANCE_ROLES` |
+| `GET /api/v1/provenance/trace/{id}`, `/export/{id}`, `/invocations/{id}`, `POST /api/v1/provenance/session/{id}/erasure` | `GOVERNANCE_ROLES` |
 
 "Any platform role" is one of `viewer`, `analyst`, `graph_author`, `governance_officer`,
 `platform_engineer`, `agent`, `sre`: a valid token with none of them is refused. Every other
@@ -220,10 +267,20 @@ Where §4.1 does not say, these are the least-privilege choices made:
 - **`/api/governance/check`** issues the verdicts that authorise writes. §4.1 gives `agent` a
   read-only check and `graph_author` "submit"; `analyst` drafts through `/drafts`, which runs
   its own check, and gets no direct `/check`.
+- **`POST /api/semantic/drafts`** runs that check in a classified situation, as `/check` does:
+  the named reasoning session's own Cynefin domain (`session_id`; an unknown session is 404),
+  else the caller's declaration (`cynefin_domain`), else DISORDER, which PR-006 refuses;
+  CHAOTIC is escalated (PR-003). A declaration never overrules a session's classification.
+  The domain and its source (`session <id>`, `declared by <uid>`, `not declared`) are in the
+  checked payload, so the verdict's payload hash binds them, and in the audit row's `notes`,
+  where `GET /api/governance/audit-log` shows who declared what
+  (`backend/tests/integration/test_draft_submission_api.py`). Before this the route set no
+  domain, so every draft submitted through it was DISORDER and refused.
 - **Sessions** run the platform graph; §4.1 gives every role "Run".
-- **Provenance** is read like the audit log (governance roles only), and its erasure (a test
-  cleanup route) needs a governance role. It still erases: provenance is not append-only
-  (register `provenance-not-append-only`).
+- **Provenance** is read like the audit log (governance roles only), and so is its erasure.
+  Provenance is append-only (`011_provenance.sql`: no role holds UPDATE or DELETE, and a trigger
+  refuses both); an erasure writes a tombstone naming who, when and why, which hides the
+  session's earlier records from the provenance reads and deletes nothing.
 - **`graph_author` "Audit Log: Read own"** is not provided: the audit log stays governance-only.
 - **`sre`** is not in §4.1. It is the incident-commander role that decides interventions, and
   it reads all of the semantic layer.
@@ -311,8 +368,9 @@ application-only), and the tables that carry no domain.
 ## 5. Data Privacy
 
 > **Status:** target design. No pseudonymization, erasure or export control exists (register
-> `gdpr-controls`). No connector runs in the platform today (DATA_LAYER.md §4), so nothing
-> ingests operational data yet.
+> `gdpr-controls`). The provenance erasure (§4.0) hides records from the API and keeps them in
+> the database, so it is not Art. 17 erasure. No connector runs in the platform today
+> (DATA_LAYER.md §4), so nothing ingests operational data yet.
 
 ### 5.1 PII Handling in Causal Models
 
@@ -328,7 +386,7 @@ Causal inference over customer or employee data carries PII risk.
 
 The connector `mapToSemanticObjects` step is the **only place** where raw operational data touches the causal layer. Connectors must:
 - Strip fields not needed for causal analysis
-- Pseudonymize before emitting to Kafka
+- Pseudonymize before returning draft objects (connectors emit nothing to a broker; there is none)
 - Log which fields were stripped (for lineage audit)
 
 ### 5.3 Data Residency
@@ -350,7 +408,7 @@ assessment, and the Status column says how much of each control exists.
 
 | EU AI Act Requirement | Platform Control | Status |
 |---|---|---|
-| Art. 9 – Risk management system | GovernanceAgent + Guardian policy engine | Partial: rules PR-001 to PR-006 and PR-008 evaluate; PR-007 does not; PR-009 reads caller-supplied inputs; PR-002's score is computed from the prose checked |
+| Art. 9 – Risk management system | GovernanceAgent + Guardian policy engine | Partial: rules PR-001 to PR-008 and PR-010 evaluate (PR-007 on edge approvals, PR-010 on a plan with no safe action); PR-009 reads caller-supplied inputs; PR-002's score is computed from the prose checked |
 | Art. 10 – Data governance | Semantic layer lineage, PII pseudonymization | Partial lineage (`lineage-partial`); no pseudonymization (`gdpr-controls`) |
 | Art. 11 – Technical documentation | DATA_LAYER.md, AGENTS.md, assumption registries | Documents exist; the register lists where they overclaim |
 | Art. 13 – Transparency | explanation_generate skill, assumption disclosure in outputs | Partial |
@@ -397,16 +455,24 @@ Proposed Edge → CausalDiscoveryAgent → Contradiction Check
 
 ### 7.2 Sensitivity Analysis Requirement
 
-> **Status:** target design, not enforced (register `sensitivity-gate-not-enforced`). Rosenbaum
-> bounds are not implemented (register `sensitivity-analysis`). E-values are computed by
-> causal-core, when asked.
+> **Status:** partly enforced. Guardian PR-007 refuses a `GOVERNANCE_APPROVE` check for a
+> stored edge that has no sensitivity result the platform recorded for it on an assumption it
+> rests on (`septa-33`, `backend/tests/guardian/test_pr007_sensitivity_gate.py`); a result a
+> drafter attaches to their own assumption does not count. It asks for a result, not a robust
+> one: a result that says not robust still counts, and the reviewer sees it in the queue's risk
+> tier (`septa-71`). The platform records the kernel's result on a draft edge when it runs the
+> analysis, under a `RECORD_SENSITIVITY` verdict (`septa-62`, §2 above). causal-core computes
+> E-values, and Rosenbaum bounds for back-door designs with a binary treatment (T9), on every
+> analysis from data. Nothing labels an edge `REQUIRES_REVIEW` or blocks it from simulation use.
 
-Every newly approved edge must pass a sensitivity analysis before it can be used in production simulations:
+The target: every newly approved edge carries a sensitivity analysis before it is used in
+production simulations:
 - Rosenbaum sensitivity bounds
 - E-value computation for unmeasured confounders
 - Results stored in `Assumption.sensitivityResult`
 
-Edges that fail to meet minimum E-value thresholds are labeled `REQUIRES_REVIEW` and blocked from simulation use.
+and edges that fail to meet minimum E-value thresholds are labeled `REQUIRES_REVIEW` and blocked
+from simulation use.
 
 ---
 
@@ -443,7 +509,7 @@ injecting it as a variable), and access logging and rotation schedules are the m
 | `GUARDIAN_SIGNING_KEYS_PREVIOUS` | `_FILE` or env; comma- or newline-separated | Retired keys that still verify, never sign |
 | `DATABASE_URL` | `_FILE` or env | PostgreSQL, outside `ENV=local` without a Cloud SQL socket |
 | `NEO4J_PASSWORD` | `_FILE` or env | Neo4j, when `NEO4J_URI` is set |
-| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `DEEPSEEK_API_KEY` | `_FILE` or env | LLM clients (nothing calls `get_llm` today) |
+| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `DEEPSEEK_API_KEY` | `_FILE` or env | Cloud LLM clients for the narration callers (unset on a local-first deployment: Ollama needs no key) |
 | `GOOGLE_APPLICATION_CREDENTIALS` | env, already a path to a key file | Firebase Admin; or ADC with no file at all |
 
 **Start-up refusal.** Local development is `ENV` unset or `local` (case and whitespace
@@ -506,7 +572,7 @@ published since the last push surfaces without one):
   raising a floor in `backend/pyproject.toml` (transitive dependencies included) or
   upgrading in `package-lock.json`. The advisory databases are remote; when one cannot be
   reached the step is SKIPPED (not measured), which fails CI.
-- **SAST.** `bandit` over `backend/src`, `backend/mcp_server` and every `packages/*/src`,
+- **SAST.** `bandit` over `backend/src` and every `packages/*/src`,
   blocking on MEDIUM and HIGH findings, held at zero by the ratchet in
   `scripts/lint-baseline.json` (steps `bandit-backend`, `bandit-packages`). The backend's
   `[tool.bandit]` skips no rule. B608 (SQL built from strings) was skipped for the whole
@@ -541,8 +607,8 @@ published since the last push surfaces without one):
   exactly that (`scripts/sbom_check.py`), and attaches it to the tag's GitHub release.
 - **Update PRs.** `.github/dependabot.yml`: weekly, grouped, for the Python locks and ranges,
   npm, the GitHub Actions and the base images. It ignores the pins the ratchets count per
-  version (ruff, mypy, bandit, pip-audit), pyproject majors, node lines that are not LTS, and
-  majors held by an open ledger item (TESTING_CICD.md §5.4).
+  version (ruff, mypy, bandit, pip-audit), semver-majors in pyprojects and npm (ledger work), node lines that are not LTS, and
+  the specific majors whose ledger items are open (TESTING_CICD.md §5.4).
 - **Where CI runs.** Jobs run where the repository variable `CI_RUNS_ON` says: GitHub's hosted
   runners when it is unset, otherwise self-hosted runners (label `causalplatform-ci`). A
   self-hosted job executes the repository's code, including a dependency update's install

@@ -18,6 +18,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 import causal_core as cc
+import causal_decision
 import pandas as pd
 import structlog
 from causal_core.contract import AnalysisPolicy, CausalGraph, CausalQuery
@@ -43,6 +44,7 @@ from causal_decision.outcome import CalibrationReport, Realization, compare, pla
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field, create_model, model_validator
 
+from src.agents.narration import Persona, narrate_outcome
 from src.middleware.auth import get_current_user
 from src.middleware.rbac import guard
 from src.semantic_layer.decision_store import (
@@ -51,6 +53,8 @@ from src.semantic_layer.decision_store import (
     LedgerConflictError,
 )
 from src.semantic_layer.model_store import ModelStore
+from src.semantic_layer.provenance_capture import decision_records, digest
+from src.semantic_layer.provenance_store import ProvenanceStore
 
 if TYPE_CHECKING:
     from causal_decision.assumptions import ModelVersion
@@ -60,6 +64,7 @@ router = APIRouter(prefix="/api/v1/decisions", tags=["Decision Assurance"])
 
 _store = DecisionStore()
 _models = ModelStore()
+_provenance = ProvenanceStore()
 
 
 async def _model_version(selector: ModelSelector) -> ModelVersion:
@@ -152,6 +157,16 @@ class DecideRequest(BaseModel):
     units_per_day: float | None = Field(default=None, gt=0)
     analysis_policy: AnalysisPolicy | None = None
     decision_policy: DecisionPolicy | None = None
+    narrate: bool = Field(
+        default=False,
+        description="Also return `narrative`: the verdict and analysis in plain language, "
+        "written by the configured LLM (local Ollama first) and kept only if every number in "
+        "it is a claim of the analysis (PR-002 grounding); otherwise, or with no LLM "
+        "configured, the deterministic explanation. Never recorded in the ledger.",
+    )
+    persona: Persona = Field(
+        default="ANALYST", description="The reader `narrative` is written for."
+    )
 
     @model_validator(mode="after")
     def _one_graph(self) -> DecideRequest:
@@ -160,12 +175,25 @@ class DecideRequest(BaseModel):
         return self
 
 
+class Narrative(BaseModel):
+    """The plain-language account, and whether a model or the platform wrote it."""
+
+    text: str
+    source: Literal["llm", "deterministic"]
+    reason: str = Field(description="Why the deterministic text was used; empty for `llm`.")
+    template_id: str | None = None
+    model: str | None = None
+
+
 class DecideResponse(BaseModel):
     verdict: Verdict
     explanation: str
     decision: Decision
     outcome: Annotated[CausalOutcome, Field(discriminator="kind")]
     record: DecisionRecord
+    narrative: Narrative | None = Field(
+        default=None, description="Present when the request asked for `narrate`."
+    )
 
 
 class RecordList(BaseModel):
@@ -274,6 +302,47 @@ async def make_decision(
             recorded_at=record.recorded_at,
         )
 
+    # Provenance: the data and graph this verdict rested on (as digests), the
+    # analysis, and the sealed entry, under session `decision:<entry_digest>`. The
+    # entry is already sealed; a failure here fails the request rather than
+    # returning a verdict whose provenance was silently lost.
+    graph_attrs: dict[str, Any]
+    if version is not None:
+        graph_attrs = {
+            "model_name": version.name,
+            "model_version": version.version,
+            "model_digest": version.digest,
+        }
+    else:
+        graph_attrs = {
+            "graph_sha256": digest(
+                graph if isinstance(graph, str) else graph.model_dump(mode="json")
+            )
+        }
+    _, prov_records = decision_records(
+        entry_digest=record.entry_digest,
+        sequence=record.sequence,
+        verdict=str(decision.verdict),
+        decision_digest=record.decision.decision_digest,
+        outcome_kind=str(getattr(outcome, "kind", type(outcome).__name__)),
+        data={
+            "data_sha256": digest(body.data),
+            "rows": len(frame),
+            "columns": sorted(str(c) for c in frame.columns),
+        },
+        graph=graph_attrs,
+        analysis={
+            "causal_core_version": f"causal_core {cc.__version__}",
+            "causal_decision_version": f"causal_decision {causal_decision.__version__}",
+            "treatment": body.treatment,
+            "outcome": body.outcome,
+            "estimand": str(body.estimand),
+            "action": body.action,
+        },
+        user_id=user.get("uid"),
+    )
+    await _provenance.append(prov_records)
+
     log.info(
         "api.decisions.decided",
         action=body.action,
@@ -282,12 +351,40 @@ async def make_decision(
         uid=user.get("uid"),
     )
 
+    explanation = explain(decision, outcome)
+    narrative: Narrative | None = None
+    if body.narrate:
+        # After the ledger write, on purpose: the sealed record holds the verdict and the
+        # analysis, never model-written text.
+        told = await narrate_outcome(
+            outcome,
+            fallback=explanation,
+            session_id=f"decision:{record.entry_digest}",
+            agent_id="decisions-api",
+            persona=body.persona,
+            decision={
+                "action": body.action,
+                "verdict": str(decision.verdict),
+                "direction_wanted": body.direction,
+                "risk_class": str(body.risk_class),
+                "reversible": body.reversible,
+            },
+        )
+        narrative = Narrative(
+            text=told.text,
+            source=told.source,
+            reason=told.reason,
+            template_id=told.template_id,
+            model=told.model,
+        )
+
     return DecideResponse(
         verdict=decision.verdict,
-        explanation=explain(decision, outcome),
+        explanation=explanation,
         decision=decision,
         outcome=outcome,
         record=record,
+        narrative=narrative,
     )
 
 
@@ -476,10 +573,14 @@ async def calibration(
 ) -> CalibrationReport:
     """Predicted against measured, over every follow-up taken.
 
-    Every rate is null when nothing stands behind it: a report over no decidable
-    measurements says so rather than reporting a perfect score. The undecidable
-    ones are counted beside the rates, by reason, because they are not missing at
-    random.
+    Every rate carries its counts and a Clopper-Pearson interval, and states no
+    value below the report's minimum (ten follow-ups): a report over no decidable
+    measurements says so rather than reporting a perfect score, and one over three
+    does not report 67%. The undecidable ones are counted beside the rates, by
+    reason, and carried as unknowns into the all-acted bounds, because they are not
+    missing at random. "Could not resolve" is reported apart from "no difference".
+    The C0 gate proves this arithmetic on simulated streams; it proves nothing
+    about real operations.
 
     This is what separates thresholds that are *consistent* from thresholds that
     are *calibrated*, and until enough follow-ups exist the honest reading of this

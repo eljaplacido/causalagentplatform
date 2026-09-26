@@ -1,66 +1,66 @@
 # Prompt template: explanation_generate
-# Version: 1.0.0
+# Version: 2.0.0
 # Skill: explanation_generate (AGENTS.md §3.1)
+#
+# LOADED AT RUNTIME by backend/src/agents/prompt_templates.py and rendered by
+# backend/src/agents/narration.py, which the SimulationAgent and POST
+# /api/v1/decisions (narrate: true) call. The model writes language only: every
+# number in its reply must be a claim token, and the reply is checked against the
+# kernel outcome (causal_core.claims, the Guardian PR-002 grounding check) before
+# anything is shown or stored. A reply that fails is discarded for the
+# deterministic text.
+#
+# 2.0.0: the model no longer returns numbers, confidence ranges or a JSON object;
+#        it returns one plain-text narrative that cites numbers only as claim tokens.
+# 1.0.0: specification only (never loaded).
 
-version: "1.0.0"
+version: "2.0.0"
 skill: explanation_generate
 provider_capability: causal_reasoning
 
 context: |
-  You generate human-readable causal explanations for recommendations,
-  simulation results, and intervention estimates produced by the
-  Unified Enterprise Causal Platform.
+  You write short, plain-language explanations of results produced by a causal
+  inference kernel. The kernel has already done all of the statistics. You do not
+  compute, estimate, round or invent any number. You only put the kernel's result
+  into words for a reader.
 
-  Every explanation must explicitly disclose:
-  - Which assumptions it rests on
-  - What the confidence bounds are
-  - What would have to change for the recommendation to be wrong
-
-  Explanations are persona-targeted. The same result gets different
-  narrative treatment depending on the audience.
+  Numbers reach the reader through claim tokens. A claim token looks like
+  [[claim:effect]] and is replaced by the kernel's own value after you answer.
+  Write the token wherever you want a number to appear.
 
 skill_prompt: |
-  Generate an explanation for the following result:
+  Explain this kernel outcome.
 
-  Simulation/recommendation result:
+  Outcome (facts, as the kernel reported them):
   {{result}}
 
-  Assumption set:
+  Claim tokens you may use (write the token, never the digits):
+  {{claims}}
+
+  Assumptions the result rests on:
   {{assumptions}}
 
-  Target persona: {{persona}}
+  Causal wording ("caused", "leads to", "will reduce", "the effect of", "due to",
+  "because of", ...) is {{causal_language}} for this outcome.
 
-  Persona descriptions:
-  - EXECUTIVE: Non-technical, needs direction and confidence, not statistical details
-  - ANALYST: Comfortable with statistics, wants raw values alongside narrative
-  - OPERATOR: Under time pressure, needs ranked actions with clear rationale
-  - COMPLIANCE: Needs traceability, assumption disclosure, regulatory alignment
+  Target reader: {{persona}}
+  - EXECUTIVE: non-technical; direction and how much weight the result can bear
+  - ANALYST: comfortable with statistics; estimator, interval, diagnostics
+  - OPERATOR: under time pressure; lead with what to do next
+  - COMPLIANCE: traceability; which assumptions and checks the result rests on
 
 constraints: |
-  - Must cite every assumption the result depends on
-  - Must include confidence ranges, not just point estimates
-  - Must NOT fabricate citations or evidence
-  - EXECUTIVE explanations must be under 200 words
-  - OPERATOR explanations must lead with the recommended action
-  - COMPLIANCE explanations must reference Guardian verdict and audit trail
-  - If assumptions are contested, say so explicitly
+  - Do not write any digit. Every number must be a claim token from the list above,
+    copied exactly. A token not in the list is an error.
+  - If the list of claim tokens is empty, the explanation contains no numbers at all.
+  - If causal wording is not permitted, describe the result as an association or an
+    estimate, or say why the kernel refused; never use causal wording.
+  - Name the assumptions the result rests on. If the kernel refused, say why, using
+    its reason and what it says is missing.
+  - Do not fabricate evidence, citations, data sources or checks the facts do not list.
+  - At most 120 words. Plain text only: no markdown, no lists, no JSON, no preamble.
 
-output_format:
-  type: object
-  properties:
-    narrative:
-      type: string
-      description: The persona-appropriate explanation
-    assumptions_disclosed:
-      type: array
-      items: { type: string }
-    confidence_range:
-      type: object
-      properties:
-        lower: { type: number }
-        upper: { type: number }
-    caveats:
-      type: array
-      items: { type: string }
-    persona:
-      type: string
+output_format: |
+  Reply with the explanation itself and nothing else: one paragraph of plain text,
+  at most 120 words, every number written as a claim token such as [[claim:effect]].
+  Not JSON, not markdown, no heading, no quotation marks around it.

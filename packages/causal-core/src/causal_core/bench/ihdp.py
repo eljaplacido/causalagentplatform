@@ -108,7 +108,7 @@ def _one(args: tuple[int, pd.DataFrame, float, str, str]) -> dict[str, Any]:
             se=out.primary.se,
             covered=bool(ci and ci.lo <= truth <= ci.hi),
             abs_error=abs(out.primary.point - truth),
-            # v2: the limited-overlap flag (contract 0.12.0).
+            # v2: the limited-overlap flag (contract 0.13.0).
             overlap_flagged=bool(ov and ov.limited_overlap),
             limited_overlap_share=ov.limited_share if ov else None,
             violation_share=ov.violation_share if ov else None,

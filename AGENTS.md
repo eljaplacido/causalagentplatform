@@ -16,10 +16,10 @@ interval and docs marking a phase finished over them.
 |---|---|
 | `packages/causal-core` | The kernel: identification, estimation, refutation, sensitivity, segments. Typed contract, published schemas in `conformance/causal-claims/`. |
 | `packages/causal-decision` | Evidence → verdict (`act`, `act_with_approval`, `experiment`, `refuse`), a hash-chained decision ledger, outcome follow-up and calibration. |
-| `packages/causal-mcp` | The MCP server for the kernel. The one agents should use. |
-| `backend/` | FastAPI platform (governance, semantic layer, API). Its causal skills delegate to the kernel. `backend/mcp_server` is the **legacy** MCP server, being deprecated. |
+| `packages/causal-mcp` | The MCP server for the kernel: the repository's one MCP server. |
+| `backend/` | FastAPI platform (governance, semantic layer, API). Its causal skills delegate to the kernel. It serves no MCP tools (its legacy MCP server was deleted in septa-6). |
 | `frontend/` | Next.js UI. |
-| `benchmarks/` | Pre-registered correctness gates (T0, T2–T8, T10, D0, A0) and every run's result. |
+| `benchmarks/` | Pre-registered correctness gates (T0, T2–T10, D0, A0, C0) and every run's result. |
 | `conformance/` | The claim contract's schemas and the register of known-false claims. |
 | `.gnomon/` | The agent harness surface: roles, tools, skills, and the gate. |
 
@@ -28,7 +28,8 @@ interval and docs marking a phase finished over them.
 1. **Kernel first.** A new causal capability goes into `packages/causal-core` (or
    `packages/causal-decision`) with a typed contract, influence-function standard errors, a
    pre-registered benchmark and a seeded-defect negative control. Do not grow
-   `backend/src/skills/`, and do not add tools to `backend/mcp_server`.
+   `backend/src/skills/`, and do not add an MCP server to `backend/`: agent-facing tools go in
+   `packages/causal-mcp`.
 2. **Causal numbers come from tools.** Every effect, interval, identification verdict or decision
    you state comes from a tool call, test run or script in this session. With causal-mcp the flow
    is `causal_check_graph` → `causal_identify` → `causal_analyze` (or `causal_decide` when the
@@ -46,7 +47,7 @@ interval and docs marking a phase finished over them.
    being dropped.
 5. **Done is `.gnomon/ci.sh`** (or `septacore check`, which runs it). It runs the backend suite
    (on SQLite, then on PostgreSQL) and coverage floor, lint and type ratchets, the frontend, every
-   package suite (with the T0, T4–T8, T10, D0 and A0 gates, and T2/T3 when their data is cached), the
+   package suite (with the T0, T4–T10, D0, A0 and C0 gates, and T2/T3 when their data is cached), the
    security scans (bandit, secrets, dependency advisories), gate scope, status claims, contract
    parity, doc figures, skill references (`scripts/skill_refs.py`: these instructions still point
    at real paths, scripts and steps) and doc reconciliation, and prints a per-step table. Paste the

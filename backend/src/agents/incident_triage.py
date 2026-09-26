@@ -442,8 +442,8 @@ class IncidentTriageAgent(BaseAgent):
         """
         Propose root-cause causal edges for the incident.
 
-        Production: uses CausalDiscoveryAgent as a sub-agent or direct
-        cynepic-causal invocation with service dependency graph.
+        Graph-grounded heuristic over the service dependency graph; no
+        causal discovery runs (register `causal-discovery`).
         """
         domain = inputs.get("domain", CynefinDomain.COMPLICATED)
         similar = inputs.get("similar_incidents", [])

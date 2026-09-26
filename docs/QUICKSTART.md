@@ -40,7 +40,8 @@ backend/.venv/bin/python -m pip install --no-deps --no-build-isolation \
 ### Kernel virtual environment
 
 `packages/causal-core`, `packages/causal-decision` and `packages/causal-mcp` share one environment
-of their own (causal-mcp is on MCP SDK v2, the backend's legacy server on v1):
+of their own (causal-mcp is on MCP SDK v2, and the kernel suites have test dependencies the backend's
+environment does not):
 
 ```bash
 python3 -m venv packages/causal-core/.venv
@@ -110,11 +111,13 @@ DATABASE_URL=postgresql+asyncpg://causal_app:<that secret>@<host>:5432/<db>
 
 Against the compose stack (§4) that is
 `postgresql+asyncpg://causal_app:causal_app_local_dev@localhost:5432/causalplatform`: its init
-script sets that local-dev password. Migrations and seeding run as the owner (`causal`).
+script sets that local-dev password. Migrations run as the owner (`causal`); seeding (§8) runs as
+`causal_app` or the owner.
 
 The dev auth bypass works only with `ENV=local`, so a local session with the bypass is always on
-SQLite. Neo4j is used only when `NEO4J_URI` is set; otherwise the graph and experience-buffer paths
-fall back to SQL.
+SQLite. The causal graph is always in SQL. Neo4j is used only when `NEO4J_URI` is set, for the
+experience buffer and drift-alert storage; unset, the experience buffer reads SQL session
+snapshots and drift alerts are not stored.
 
 **Guardian signing key.** Every Guardian verdict is HMAC-signed with `GUARDIAN_SIGNING_KEY`.
 Locally you may leave it unset: each backend process then generates its own key and logs
@@ -134,9 +137,27 @@ setting both `NAME` and `NAME_FILE` is an error. To rotate the key, list the old
 restart; unspent verdicts signed with the old key keep working until you remove it from the list.
 `docs/CYBERSECURITY.md` §8.2 has the details.
 
-**LLM providers.** `backend/.env.example` lists them, and `src/agents/llm_factory.py` can build a
-client for each, but no agent or skill calls it today (`llm-routing-no-callers` in the register).
-Nothing needs an API key to run.
+**LLM (optional, local-first).** The platform runs without any model: every number, verdict and
+explanation has a deterministic source, and that is what you get with nothing configured. With a
+model, two paths use it for *language only* -- the SimulationAgent's draft explanation and
+`POST /api/v1/decisions` with `"narrate": true` -- and a reply is kept only if every number in it
+is a claim of the kernel's outcome (PR-002 grounding); otherwise the deterministic text is shown,
+with the reason (`docs/AGENTS.md` §7). To use a local Ollama, no API key and no cloud cost:
+
+```bash
+ollama pull qwen2.5:7b-instruct            # or any instruct model your host can run
+echo "OLLAMA_BASE_URL=http://127.0.0.1:11434" >> backend/.env
+echo "OLLAMA_CAUSAL_MODEL=qwen2.5:7b-instruct" >> backend/.env   # the default names a 122B model
+```
+
+`LLM_TIMEOUT_SECONDS` (default 60) bounds each call. `backend/.env.example` lists the cloud
+providers too; Ollama wins when both are set. The tests never need a model: the suite clears the
+provider variables and uses a fake chat model. One live test runs against your Ollama on request:
+
+```bash
+cd backend && LLM_LIVE=1 OLLAMA_BASE_URL=http://127.0.0.1:11434 \
+  OLLAMA_CAUSAL_MODEL=qwen2.5:7b-instruct pytest -m llm_live -s --no-cov tests/unit/test_llm_routing_used.py
+```
 
 > **Security:** never commit `.env` files. They are gitignored.
 
@@ -157,19 +178,17 @@ EOF
 ## 4. Optional infrastructure (Docker)
 
 Nothing is required: with `ENV=local` the backend runs on SQLite with no services.
-Earlier versions of this page listed Kafka and Redis as requirements. No code talks to either (`kafka-streaming` in the register), so `docker-compose.yml` puts them behind a `future` profile.
+Earlier versions of this page listed Kafka and Redis as requirements. No code talks to either, so they were removed from `docker-compose.yml` and the Kafka claims withdrawn (`kafka-streaming` in the register's `left_the_list`).
 
 ```bash
 docker compose up -d                        # PostgreSQL and Neo4j
-docker compose --profile future up -d       # also Kafka, Kafka UI and Redis (nothing uses them)
 docker compose down
 ```
 
 | Service | URL / port | Notes |
 |---|---|---|
 | PostgreSQL | `localhost:5432` | Owner `causal`, password `causal_local_dev`; the backend's role `causal_app`, password `causal_app_local_dev` (both plain text in `docker-compose.yml`: a local-dev stack only). Used only when `ENV` is not `local` and `DATABASE_URL` points here as `causal_app` (§3), or by the tests through `TEST_DATABASE_URL`, as `causal` (§6). The schema is `backend/src/db/migrations/*.sql`, which the container's init script (`backend/src/db/docker/initdb.sh`) applies only when its volume is first created, and then gives `causal_app` its login: on an older volume, apply the newer files by hand (`psql -f`) and run `ALTER ROLE causal_app LOGIN PASSWORD 'causal_app_local_dev'`, or `docker compose down -v` to start over. |
-| Neo4j Browser | `http://localhost:7474` | Bolt `localhost:7687`. Used when `NEO4J_URI` is set. |
-| Kafka, Kafka UI, Redis | `9092`, `8080`, `6379` | `future` profile only. |
+| Neo4j Browser | `http://localhost:7474` | Bolt `localhost:7687`. Used when `NEO4J_URI` is set: the experience buffer and drift alerts, not the causal graph. |
 
 ---
 
@@ -224,7 +243,7 @@ written here. Pieces, when iterating:
 
 ```bash
 cd backend && .venv/bin/pytest -q                          # backend suite, on SQLite
-cd packages/causal-core && .venv/bin/pytest                # kernel, incl. the T0, T4-T8 and T10 gates
+cd packages/causal-core && .venv/bin/pytest                # kernel, incl. the T0 and T4-T10 gates
 cd packages/causal-decision && ../causal-core/.venv/bin/pytest   # decision layer, incl. D0 and A0
 cd frontend && npm run type-check && npx vitest run        # frontend
 ```
@@ -248,9 +267,9 @@ bash .gnomon/ci.sh                                         # the gate, backend-p
 
 ---
 
-## 7. Try the MCP servers
+## 7. Try the MCP server
 
-**The kernel server (canonical).** `packages/causal-mcp`, console script `causal-mcp`:
+The one MCP server is `packages/causal-mcp`, console script `causal-mcp`:
 
 ```bash
 packages/causal-core/.venv/bin/causal-mcp                   # stdio
@@ -260,13 +279,8 @@ packages/causal-core/.venv/bin/causal-mcp --http --port 8765   # stateless HTTP
 Point an MCP client at it with `{"mcpServers": {"causal": {"command": "/abs/path/to/packages/causal-core/.venv/bin/causal-mcp"}}}`.
 Its tools, flow and `data_path` rules: [`packages/causal-mcp/README.md`](../packages/causal-mcp/README.md).
 
-**The legacy demo.** `backend/mcp_server/examples/client_demo.py` spawns the *legacy* server
-(`python -m mcp_server.server`, console script `causal-platform-mcp`, deprecated) and calls two of
-its tools; on its eight toy rows the estimate is a `LOW_N` refusal:
-
-```bash
-cd backend && .venv/bin/python -m mcp_server.examples.client_demo
-```
+(The backend's legacy server, console script `causal-platform-mcp`, was deleted in September 2026;
+a client configuration that still launches it should launch `causal-mcp`.)
 
 ---
 
@@ -282,6 +296,23 @@ cd backend
 .venv/bin/python -m scripts.seed_data --all          # everything
 .venv/bin/python -m scripts.seed_data --clear        # remove seeded data
 ```
+
+The seeder runs on SQLite (`ENV=local`, the default) and on PostgreSQL, where it may connect as
+`causal_app`: it writes inside a service scope, which the row-level-security policies let write
+every domain, and it needs only the `INSERT`/`UPDATE` grants `causal_app` has
+(`backend/tests/integration/test_seed_data_backends.py`). Incidents are upserted on their fixed
+ids; the rest is added anew each run, and on PostgreSQL a second `--all` without `--clear` stops
+at the first graph fragment, which is unique on (name, version, domain) there.
+
+`--clear` deletes the seeder's rows from the tables that allow a delete: graph fragments and
+entities whose `created_by` is the seeder, edges whose Guardian verdict is a seeder audit row, and
+incidents the seeder submitted. It never touches an append-only table (`audit_log`,
+`decision_records`, `decision_followups`, `causal_model_versions`, `decision_model_refs`), whose
+triggers refuse a delete: the seeder's audit rows stay, `--clear` reports how many it kept, and
+seeding again adds new ones. For a fully empty database, delete the SQLite file (`SQLITE_PATH`,
+default `backend/local_dev.db`) instead. On PostgreSQL `--clear` must run as the tables' owner;
+`causal_app` has no `DELETE` grant, and as `causal_app` it refuses before deleting anything
+(`backend/tests/integration/test_seed_data_clear.py`).
 
 With `ENV=local` and `DEV_AUTH_BYPASS=true`, the backend accepts the fixed dev token
 `dev-local-token` (`backend/src/middleware/auth.py`) — it is not a real credential and is refused
@@ -307,7 +338,7 @@ causalplatform/
 ├── packages/
 │   ├── causal-core/         # the causal kernel (identification, estimation, refutation)
 │   ├── causal-decision/     # verdicts, decision ledger, outcome follow-up
-│   ├── causal-mcp/          # the kernel's MCP server (canonical)
+│   ├── causal-mcp/          # the kernel's MCP server (the only one)
 │   └── semantic-types/      # published TypeScript contract
 ├── backend/                 # FastAPI platform
 │   ├── src/
@@ -316,14 +347,13 @@ causalplatform/
 │   │   ├── db/              # engine factories (SQLite / PostgreSQL, Neo4j)
 │   │   ├── skills/          # backend skills; causal ones delegate to the kernel
 │   │   └── semantic_layer/  # Pydantic models + registry
-│   ├── mcp_server/          # legacy MCP server (deprecated)
 │   ├── tests/               # unit, integration, guardian
 │   └── pyproject.toml
 ├── frontend/                # Next.js UI
 ├── benchmarks/              # pre-registered gates and their results
 ├── conformance/             # claim-contract schemas + the declared-not-implemented register
 ├── docs/                    # specifications, status page (CURRENT_STAGE.md), ADRs
-├── prompts/                 # prompt specifications (not loaded at runtime)
+├── prompts/                 # prompt templates (explanation_generate loaded at runtime; the rest specs)
 ├── scripts/                 # the gate's checks and ratchets
 ├── .gnomon/                 # agent harness surface; ci.sh is the gate
 ├── docker-compose.yml       # optional local services
