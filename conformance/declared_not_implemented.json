@@ -102,7 +102,7 @@
           "says": "- Rosenbaum sensitivity bounds"
         },
         {
-          "at": "docs/UIX.md:192",
+          "at": "docs/UIX.md:208",
           "says": "I want to run a one-click Rosenbaum sensitivity analysis on any approved edge"
         }
       ],
@@ -238,7 +238,7 @@
           "says": "summary=\"List pending drafts ordered by risk tier\""
         },
         {
-          "at": "docs/UIX.md:235",
+          "at": "docs/UIX.md:251",
           "says": "I want a structured review queue of all draft graph changes awaiting approval, ordered by risk tier"
         }
       ],
@@ -393,7 +393,7 @@
     },
     {
       "id": "dag-workbench",
-      "status": "planned",
+      "status": "partial",
       "capability": "Unified graph-authoring UI (DAG Workbench)",
       "claimed_in": [
         {
@@ -401,12 +401,25 @@
           "says": "Graph authoring UI (unified)"
         }
       ],
-      "reality": "Not built. The frontend has per-page components; no unified authoring surface exists.",
-      "evidence": [],
+      "reality": "/workbench composes a GraphFragment draft from existing edges and submits it, classified (a declared Cynefin domain or a session id), to POST /api/semantic/drafts, showing the Guardian's verdict or its 403 reason and whether the review queue lists the draft (pinned by frontend/src/app/workbench/__tests__/page.test.tsx). Three things keep it open: the route on main reads no classification, so PR-006 refuses every draft and no user can yet submit one for approval; new edges and entities cannot be authored here; and the e2e spec stubs the backend and no gate step runs Playwright.",
+      "evidence": [
+        {
+          "at": "frontend/src/components/graph/FragmentDraftComposer.tsx:107",
+          "says": "semanticApi.submitDraft("
+        },
+        {
+          "at": "backend/src/api/semantic.py:311",
+          "says": "governance_result = await _governance.check(action_payload, state)"
+        },
+        {
+          "at": "frontend/e2e/workbench-authoring.spec.ts:9",
+          "says": "the BACKEND IS STUBBED at the network boundary (page.route),"
+        }
+      ],
       "leaves_by": {
         "kind": "test",
         "path": "frontend/e2e/workbench-authoring.spec.ts",
-        "asserts": "a user can propose a fragment, see Guardian's verdict, and submit it for approval from one surface"
+        "asserts": "a user can propose a fragment, see Guardian's verdict, and submit it for approval from one surface -- against a live backend that accepts a classified draft, in a gate step; the spec as committed stubs the backend and is run by hand, so its passing does not close this entry"
       }
     },
     {
@@ -1047,7 +1060,7 @@
           "says": "Domain confidence > 0.7"
         },
         {
-          "at": "docs/UIX.md:141",
+          "at": "docs/UIX.md:157",
           "says": "when the Cynefin domain classification is CHAOTIC"
         }
       ],

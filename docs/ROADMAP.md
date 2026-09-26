@@ -134,7 +134,10 @@ priority first, and the priorities put hardening the platform before new estimat
 - **p3 and p4.** The rest of the register (versioned semantic objects, lineage,
   provenance, the LLM layer, Cynefin routing, frontend views and others), then the longer-range
   methods: discovery, rung-3 counterfactuals, general ID estimation, subgroup discovery. Many of
-  these end either in the capability or in its claim being withdrawn from the docs.
+  these end either in the capability or in its claim being withdrawn from the docs. Of the
+  frontend views, the decision ledger (`/decisions`) and the assumption registry (`/registry`)
+  are built (`septa-24`); the DAG Workbench proposes a fragment through the draft route but stays
+  `partial` (`dag-workbench`) while that route refuses every draft under PR-006.
 
 ## What this project will not do first
 

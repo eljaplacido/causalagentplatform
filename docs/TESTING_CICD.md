@@ -178,16 +178,23 @@ because they are not implemented (registers `scm-counterfactuals`, `causal-disco
 ### 3.3 Frontend (`frontend/`)
 
 - **Vitest + React Testing Library** (`src/**/__tests__/*.test.tsx`). Covers the
-  `ThinkingIndicator` latency contract, `ApprovalPanel`, `InterventionCard`, and the governance
-  and incidents pages. The page tests pin the fail-closed contract. They mock the API, so the governance page's
+  `ThinkingIndicator` latency contract, `ApprovalPanel`, `InterventionCard`, and the governance,
+  incidents, workbench (fragment drafting), decision-ledger and assumption-registry pages. The
+  page tests pin the fail-closed contract. The ledger and registry tests use responses the kernel
+  produced (`src/test-fixtures/kernel.ts`, from data simulated with a set effect) and check that
+  the pages show those numbers verbatim, and null rates as null. They mock the API, so the governance page's
   request bodies are also pinned against the real endpoints by a backend integration test
   (`test_the_governance_pages_own_requests_approve_an_object`). The governance page shows
   only backend-confirmed decisions and audit rows, and the incidents page leaves a decision
   unchanged and shows the error when the API call fails.
   There is no coverage threshold.
-- **Playwright** (`frontend/e2e/platform.spec.ts`, config `frontend/playwright.config.ts`). It
-  runs against a dev server on `localhost:3000` and is **not part of the gate or of CI**. Run it
-  by hand with `npx playwright test` in `frontend/`.
+- **Playwright** (`frontend/e2e/`, config `frontend/playwright.config.ts`). **Not part of the
+  gate or of CI**; run by hand with `npx playwright test` in `frontend/`. `platform.spec.ts`
+  expects a live backend. `workbench-authoring.spec.ts` drives the real frontend in Chromium with
+  the backend stubbed at the network boundary (`page.route`), so it checks the drafting surface,
+  not that the backend accepts a draft. `E2E_PORT` moves the server off 3000, and `E2E_PROD=1`
+  serves a production build (`next build` first) instead of the dev server, which fails on a host
+  at its file-watch limit.
 
 ---
 

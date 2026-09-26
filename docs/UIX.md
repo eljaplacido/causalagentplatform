@@ -2,7 +2,7 @@
 
 > **Scope:** User experience architecture, design principles, user personas, user stories, and component strategy for the Unified Enterprise Causal Platform. Every new feature must be anchored to an identified persona need before design begins.
 >
-> **Read against `frontend/src` 2026-09-25.** The personas and user stories (§3) are needs, not
+> **Read against `frontend/src` 2026-09-26.** The personas and user stories (§3) are needs, not
 > features, and many are unbuilt. The principles (§1) and the component inventory (§4.2) now
 > say which parts exist. Onboarding walkthroughs (§5) are roadmap.
 
@@ -32,10 +32,26 @@ The platform serves people who are trying to make better decisions under uncerta
 Each persona sees a **filtered, task-optimized lens** on the same underlying platform data. The platform does not build separate UIs per persona—it applies a view configuration over a shared component library.
 
 Today, `PersonaSelector` switches between five views, and there is a page per view:
-`/incidents`, `/analyst`, `/executive`, `/governance` and `/engineer`, plus `/workbench`. How much
-of each view's surface below is built varies (see §4.2). The DAG Workbench is planned (register
-`dag-workbench`). The decision ledger and the assumption registry have API routes
-(`/api/v1/decisions`, `/api/v1/models`) and no view: the frontend calls neither.
+`/incidents`, `/analyst`, `/executive`, `/governance` and `/engineer`, plus `/workbench`,
+`/decisions` and `/registry`, which link to each other (`ViewNav`). How much of each view's
+surface below is built varies (see §4.2).
+
+- **`/workbench` (DAG Workbench)** shows the fragments and their edges, and proposes a new fragment
+  from existing edges through `POST /api/semantic/drafts`. The drafter must classify the situation
+  (a declared Cynefin domain, DISORDER not offered, or a reasoning session's id). The Guardian's
+  verdict is shown as the API returns it: on success the audit entry and whether
+  `GET /api/governance/review-queue` lists the draft; on the 403 the verdict, reason and rules
+  cited. The backend on `main` ignores the classification and PR-006 refuses every draft (a fix
+  is on another branch), so today a user sees that refusal. Authoring new edges or entities is not
+  built, and the register entry `dag-workbench` stays open (`partial`).
+- **`/decisions` (decision ledger)** lists `GET /api/v1/decisions` (filter by action, limit),
+  shows a record's verdict, checks, evidence and chain digests, verifies the chain
+  (`/verify`), takes a follow-up (`POST .../{entry_digest}/followup`, once per decision) and shows
+  the calibration report (`/calibration`). Numbers are shown as the API sent them; a null rate
+  is shown as null.
+- **`/registry` (assumption registry)** lists `GET /api/v1/models` and shows a model's versions,
+  the diff between two, the impact of a version on recorded decisions, and the history check.
+  It is read-only: registering, revising and reviewing a model are API-only.
 
 | Persona View | Primary Surface | Secondary Surfaces |
 |---|---|---|
@@ -257,12 +273,14 @@ Components under `frontend/src/components/` are marked **built**. The rest are *
 
 | Group | Built | Not built | Used by |
 |---|---|---|---|
-| **Causal Graph** | `DAGCanvas`, `EdgeProposal`, `NodeDetail`, `GraphDiff`, `FragmentCard` | -- | Analyst, Platform Engineer |
+| **Causal Graph** | `DAGCanvas`, `EdgeProposal`, `NodeDetail`, `GraphDiff`, `FragmentCard`, `FragmentDraftComposer` | -- | Analyst, Platform Engineer |
+| **Decisions** | `VerdictBadge`, `DecisionDetail` (with the follow-up form), `CalibrationReportPanel` | -- | Executive, Governance Officer, Analyst |
+| **Assumption registry** | `ModelVersionView` (with `EdgeTable`), `ModelDiffView`, `ImpactReportView` | -- | Analyst, Governance Officer |
 | **Incident Response** | `IncidentBrief`, `CynefinBadge` (in `shared/`), `CausalHypothesisList`, `InterventionCard`, `EscalationBanner` | -- | SRE, Incident Commander |
 | **Simulation** | `InterventionComparison` (with `EffectEstimateBar` inside it), `AssumptionDisclosure` | `ScenarioRange` | Business Analyst, SRE |
 | **Governance** | `ReviewQueue`, `ApprovalPanel` | `AuditTrailEntry`, `SensitivityResult`, `AssumptionCard` | Governance Officer, Analyst |
 | **Evidence** | -- | `EvidenceCitation`, `DocumentSnippet`, `StatisticalTestResult`, `ConfidenceMeter` | Analyst, Governance Officer |
-| **Shared** | `EpistemicConfidenceBadge`, `ThinkingIndicator`, `PersonaSelector`, `AuditLogPanel`, `GuardianVerdictBadge` | -- | All |
+| **Shared** | `EpistemicConfidenceBadge`, `ThinkingIndicator`, `PersonaSelector`, `AuditLogPanel`, `GuardianVerdictBadge`, `ViewNav` | -- | All |
 
 The review queue shows no real risk tier or submitter (register `review-queue-risk-tier`), and
 the Evidence group has no backend to read from yet (register `agent-skills-are-stubs`).
@@ -271,6 +289,8 @@ Approving or rejecting in `ApprovalPanel` asks the reviewer to classify the situ
 and without one rule PR-006 refuses the request. A rejection needs an APPROVED verdict for
 `GOVERNANCE_REJECT` (`septa-53`), so it asks for the domain exactly as an approval does, and
 the page does not call `/reject` unless the verdict is APPROVED.
+The tests of the three analysis views are `frontend/src/app/{workbench,decisions,registry}/__tests__/page.test.tsx`;
+the ledger and registry tests use responses the kernel produced (`frontend/src/test-fixtures/kernel.ts`).
 `AssumptionDisclosure` is built but no page renders it; the analyst page imported it
 without using it, and the import was removed.
 
@@ -334,7 +354,9 @@ Each persona has a dedicated first-session walkthrough. Walkthroughs are:
 > lint: the `jsx-a11y` rules in Next's `core-web-vitals` set (valid ARIA attributes for each
 > role, `alt` text), run over `frontend/src` by the gate's `frontend-eslint` step and held at
 > zero findings. Selection in lists (connector cards, incidents, the review queue, DAG nodes,
-> fragment cards) is marked with `aria-current`; `aria-selected` is kept for tabs.
+> fragment cards, decisions, registered models and versions) is marked with `aria-current`;
+> `aria-selected` is kept for tabs. A backend refusal or error is announced with `role="alert"`,
+> a backend-confirmed result with `role="status"`.
 
 - WCAG 2.1 AA compliance on all screens
 - Keyboard navigation for all interactive elements

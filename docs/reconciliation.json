@@ -32,12 +32,12 @@
           "packages/causal-mcp": "ac8ffe5b31a7fc07dfbfaee6156a0003bc0753f30c9a3a730b99d39de085a913",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "13073839aa692e13a3fbf3a2f9ef79d8b483e8204050ee528754c2c75b1cf124"
+          "docs/CURRENT_STAGE.md": "0f9a39c4764ea8c6d1956f884e506baf1d4d35abd1a432b331beedd125a240a1"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #26 into septa-53: subjects follow main (causal-mcp replaces the deleted backend/mcp_server); reject-authority text and main's content both present)"
+        "by": "Claude (septa-24: decision ledger and assumption registry views built; workbench drafts a classified fragment, dag-workbench narrowed to partial; e2e stubbed and run by hand)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "af75c31b1c585fdd11a188a9a06b18c6f71f8b0400996343d6ebfe8e1ade15ab",
+          "conformance/declared_not_implemented.json": "fdf84da9265c2ecefad3a450941e5557cab1911aa028a3452c13e807613a1c15",
           "backend/src": "5d104e029b81eb564cc22f905604efaa2a7cfcd20482df947a211fc3b871f570",
           "backend/tests": "aa5434d14e2a7f34e9c385f15c79890c946ceee6bf5e33fc13dd2af7f1f6a8b7",
-          "frontend/src": "d357d66d238bdc673ac0c5215b914bf4a8649a1ea7ca09c9e5bb0052c0b48fcb",
+          "frontend/src": "37624d3ce5f10a2c9cd20f17debd12363b2da3ab3301c91d63efc96c45b43386",
           "packages": "f39decf6dcae81c0e60801fa80c933c6547de55348adb3fd3867119423414373",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #26 into septa-53: subjects follow main (causal-mcp replaces the deleted backend/mcp_server); reject-authority text and main's content both present)"
+        "by": "Claude (septa-24: decision ledger and assumption registry views built; workbench drafts a classified fragment, dag-workbench narrowed to partial; e2e stubbed and run by hand)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -312,7 +312,7 @@
           "backend/tests": "aa5434d14e2a7f34e9c385f15c79890c946ceee6bf5e33fc13dd2af7f1f6a8b7",
           "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
-          "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
+          "frontend/playwright.config.ts": "c488a844dd07e837e2d22c4b661f4efd3becea08b2315052affe794a0cd78fa6",
           ".gnomon/ci.sh": "a05e016e87f09e27989ffc185d06ad2b55c6d31f4e9b9cc2954b8cfdf7a40e45",
           "scripts": "b02346ce8b8bc5739d9c16f9eca354d6eb179e9d4cd40cbbaa9991a7cc3662f7",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
@@ -323,7 +323,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24-#26/#28 into septa-53: reject-authority text kept on main's updated docs; TESTING_CICD rows three-way merged)"
+        "by": "Claude (septa-24: decision ledger and assumption registry views built; workbench drafts a classified fragment, dag-workbench narrowed to partial; e2e stubbed and run by hand)"
       }
     },
     "docs/UIX.md": {
@@ -334,12 +334,12 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "frontend/src": "d357d66d238bdc673ac0c5215b914bf4a8649a1ea7ca09c9e5bb0052c0b48fcb"
+          "frontend/src": "37624d3ce5f10a2c9cd20f17debd12363b2da3ab3301c91d63efc96c45b43386"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-53: ApprovalPanel asks for the Cynefin domain on reject as on approve; the page calls /reject only on an APPROVED verdict)"
+        "by": "Claude (septa-24: decision ledger and assumption registry views built; workbench drafts a classified fragment, dag-workbench narrowed to partial; e2e stubbed and run by hand)"
       }
     },
     "docs/ROADMAP.md": {
@@ -353,13 +353,13 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "6b029f17fceb5b8a44c784ea601802c8d97c1d2ed3ce9a6a92c2600823826501",
-          "conformance/declared_not_implemented.json": "af75c31b1c585fdd11a188a9a06b18c6f71f8b0400996343d6ebfe8e1ade15ab",
-          "docs/CURRENT_STAGE.md": "13073839aa692e13a3fbf3a2f9ef79d8b483e8204050ee528754c2c75b1cf124"
+          "conformance/declared_not_implemented.json": "fdf84da9265c2ecefad3a450941e5557cab1911aa028a3452c13e807613a1c15",
+          "docs/CURRENT_STAGE.md": "0f9a39c4764ea8c6d1956f884e506baf1d4d35abd1a432b331beedd125a240a1"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24-#26/#28 into septa-53: reject-authority text kept on main's updated docs; TESTING_CICD rows three-way merged)"
+        "by": "Claude (septa-24: decision ledger and assumption registry views built; workbench drafts a classified fragment, dag-workbench narrowed to partial; e2e stubbed and run by hand)"
       }
     },
     "SECURITY.md": {

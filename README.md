@@ -70,7 +70,7 @@ Known limits are listed, not hidden: [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAG
 ## What else is in the box
 
 - **Backend** (`backend/`): Python 3.12, FastAPI, SQLAlchemy and LangGraph. `.gnomon/ci.sh` prints the current test count and coverage.
-- **Frontend** (`frontend/`): Next.js, TypeScript and Tailwind. Persona-scoped views: workbench, governance, incidents, engineer, analyst and executive.
+- **Frontend** (`frontend/`): Next.js, TypeScript and Tailwind. Persona-scoped views: governance, incidents, engineer, analyst and executive; and three analysis views over the kernel's records: `/workbench` (fragments, and proposing one through the governed draft flow, which the backend on `main` still refuses under PR-006), `/decisions` (the decision ledger, follow-ups and calibration) and `/registry` (the assumption registry: versions, diffs, impact). [docs/UIX.md](docs/UIX.md) §2 says what each one does.
 - **One MCP server**: `packages/causal-mcp`, above. The backend's legacy server (`backend/mcp_server/`, console script `causal-platform-mcp`) was deleted in September 2026; a client configuration that still launches `causal-platform-mcp` should launch `causal-mcp` instead.
 - **Docs** (`docs/`): architecture (AGENTS.md), data layer, ADRs, quickstart and testing standards.
 
