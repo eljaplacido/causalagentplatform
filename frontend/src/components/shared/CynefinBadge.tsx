@@ -78,6 +78,22 @@ const DOMAIN_CONFIG: Record<
   },
 };
 
+/**
+ * A value outside the Cynefin vocabulary (a backend string passed through
+ * unchecked) renders as itself, labelled unrecognised, rather than throwing
+ * or being dressed up as one of the five domains.
+ */
+function unrecognisedConfig(domain: string) {
+  return {
+    label: String(domain),
+    icon: "?",
+    bg: "bg-zinc-100 dark:bg-zinc-800",
+    text: "text-zinc-700 dark:text-zinc-300",
+    border: "border-dashed border-zinc-300 dark:border-zinc-600",
+    description: "Not a recognised Cynefin domain.",
+  };
+}
+
 const SIZE_CLASSES = {
   sm: {
     badge: "px-1.5 py-0.5 text-xs gap-1",
@@ -102,7 +118,8 @@ export function CynefinBadge({
   size = "md",
   className,
 }: CynefinBadgeProps) {
-  const config = DOMAIN_CONFIG[domain];
+  const known = Object.prototype.hasOwnProperty.call(DOMAIN_CONFIG, domain);
+  const config = known ? DOMAIN_CONFIG[domain] : unrecognisedConfig(domain);
   const sizes = SIZE_CLASSES[size];
 
   return (
@@ -111,7 +128,11 @@ export function CynefinBadge({
       data-domain={domain}
       title={config.description}
       role="img"
-      aria-label={`Cynefin domain: ${config.label}, confidence: ${formatConfidence(confidence)}`}
+      aria-label={
+        known
+          ? `Cynefin domain: ${config.label}, confidence: ${formatConfidence(confidence)}`
+          : `Unrecognised Cynefin domain: ${config.label}`
+      }
       className={cn(
         "inline-flex items-center rounded-full border font-medium",
         config.bg,

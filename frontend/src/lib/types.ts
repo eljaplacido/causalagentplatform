@@ -227,11 +227,6 @@ export interface Incident {
 // ─── Governance / Review queue ─────────────────────────────────────────────────
 
 export type RiskTier = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
-export type ReviewObjectType =
-  | "CAUSAL_EDGE"
-  | "GRAPH_FRAGMENT"
-  | "ASSUMPTION"
-  | "INTERVENTION";
 /**
  * How a review-queue row is presented. NOT the backend's ReviewStatus, which is
  * the Assumption review lifecycle (PENDING/ACCEPTED/CONTESTED/REJECTED): a queue
@@ -245,14 +240,24 @@ export type ReviewQueueStatus =
   | "REJECTED"
   | "ESCALATED";
 
+/**
+ * One review-queue row as the page shows it. Built from governance.py
+ * ReviewQueueItem by mapBackendItem in app/governance/page.tsx; a field the
+ * backend does not send is null, never a placeholder.
+ */
 export interface ReviewQueueItem {
   id: string;
   objectName: string;
-  objectType: ReviewObjectType;
-  domain: CynefinDomain;
-  riskTier: RiskTier;
-  submittedBy: string;
-  submittedAt: string; // ISO8601
+  /** The backend's object_type verbatim: CausalEdge | GraphFragment | CausalEntity. */
+  objectType: string;
+  /** The object's business domain (e.g. "devops", "marketing") -- not a Cynefin domain. */
+  domain: string;
+  /** The review queue endpoint sends no risk tier; null means not assessed. */
+  riskTier: RiskTier | null;
+  /** The review queue endpoint sends no submitter; null means not known. */
+  submittedBy: string | null;
+  /** ISO8601 created_at from the backend, or null when it sent none. */
+  submittedAt: string | null;
   status: ReviewQueueStatus;
   evidenceCitations: Evidence[];
   sensitivityResults: StatisticalTestResult[];

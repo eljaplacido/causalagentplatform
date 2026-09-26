@@ -30,7 +30,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { cn, formatConfidence } from "@/lib/utils";
-import { CynefinBadge } from "@/components/shared/CynefinBadge";
+import { objectTypeLabel } from "@/components/governance/ReviewQueue";
 import type {
   ReviewQueueItem,
   Evidence,
@@ -419,14 +419,16 @@ export function ApprovalPanel({
           <div>
             <h3 className="text-base font-bold text-foreground">{item.objectName}</h3>
             <p className="text-xs text-muted-foreground">
-              {item.objectType.replace("_", " ")} · Submitted by {item.submittedBy}
+              {objectTypeLabel(item.objectType)} · Submitted by {item.submittedBy ?? "—"}
             </p>
           </div>
-          <CynefinBadge
-            domain={item.domain}
-            confidence={0}
-            size="sm"
-          />
+          <span
+            data-testid="approval-item-domain"
+            title="The object's business domain"
+            className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground"
+          >
+            {item.domain || "—"}
+          </span>
         </div>
       </div>
 

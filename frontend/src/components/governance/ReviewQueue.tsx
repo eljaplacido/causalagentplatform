@@ -3,12 +3,15 @@
 /**
  * ReviewQueue — Structured review queue for Governance Officer (US-27).
  *
- * Ordered by risk tier (CRITICAL → HIGH → MEDIUM → LOW).
+ * Rows with a risk tier are ordered CRITICAL → HIGH → MEDIUM → LOW; rows
+ * without one (the live review-queue endpoint sends none) keep the backend's
+ * order (oldest first) after them. Every cell shows what the row carries, or a
+ * dash when it carries nothing. The domain column is the object's business
+ * domain as plain text, not a Cynefin badge.
  * Clicking a row calls onSelectItem for the ApprovalPanel.
  */
 
 import { cn, formatTimestamp } from "@/lib/utils";
-import { CynefinBadge } from "@/components/shared/CynefinBadge";
 import type { ReviewQueueItem, RiskTier } from "@/lib/types";
 
 export interface ReviewQueueProps {
@@ -63,12 +66,25 @@ const STATUS_CONFIG = {
   ESCALATED: { label: "Escalated", class: "text-amber-600 dark:text-amber-400" },
 };
 
-const OBJECT_TYPE_LABELS = {
-  CAUSAL_EDGE: "Causal Edge",
-  GRAPH_FRAGMENT: "Graph Fragment",
-  ASSUMPTION: "Assumption",
-  INTERVENTION: "Intervention",
+/** Keyed by the backend's object_type (registry.py _REVIEWABLE_TABLES). */
+const OBJECT_TYPE_LABELS: Partial<Record<string, string>> = {
+  CausalEdge: "Causal Edge",
+  GraphFragment: "Graph Fragment",
+  CausalEntity: "Causal Entity",
+  Assumption: "Assumption",
+  Intervention: "Intervention",
 };
+
+/** A label for an object type; an unknown one is shown as sent. */
+export function objectTypeLabel(objectType: string): string {
+  return OBJECT_TYPE_LABELS[objectType] ?? objectType;
+}
+
+const NONE = "—";
+
+function riskOrder(tier: RiskTier | null): number {
+  return tier ? RISK_TIER_ORDER[tier] : Object.keys(RISK_TIER_ORDER).length;
+}
 
 export function ReviewQueue({
   items,
@@ -79,8 +95,7 @@ export function ReviewQueue({
   const sorted = items
     .slice()
     .sort(
-      (a, b) =>
-        RISK_TIER_ORDER[a.riskTier] - RISK_TIER_ORDER[b.riskTier]
+      (a, b) => riskOrder(a.riskTier) - riskOrder(b.riskTier)
     );
 
   if (items.length === 0) {
@@ -155,8 +170,11 @@ export function ReviewQueue({
           </thead>
           <tbody>
             {sorted.map((item, index) => {
-              const riskConfig = RISK_TIER_CONFIG[item.riskTier];
-              const statusConfig = STATUS_CONFIG[item.status];
+              const riskConfig = item.riskTier ? RISK_TIER_CONFIG[item.riskTier] : null;
+              const statusConfig = STATUS_CONFIG[item.status] ?? {
+                label: item.status,
+                class: "text-muted-foreground",
+              };
               const isSelected = item.id === selectedItemId;
               const isFirst = index === 0;
 
@@ -185,32 +203,43 @@ export function ReviewQueue({
                     {item.objectName}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
-                    {OBJECT_TYPE_LABELS[item.objectType]}
+                    {objectTypeLabel(item.objectType)}
                   </td>
-                  <td className="hidden px-4 py-3 md:table-cell">
-                    <CynefinBadge
-                      domain={item.domain}
-                      confidence={0}
-                      size="sm"
-                    />
+                  <td
+                    className="hidden px-4 py-3 text-muted-foreground md:table-cell"
+                    data-testid="review-item-domain"
+                  >
+                    {item.domain || NONE}
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={cn(
-                        "rounded-full border px-2 py-0.5 text-xs font-semibold",
-                        riskConfig.bg,
-                        riskConfig.text,
-                        riskConfig.border
-                      )}
-                    >
-                      {riskConfig.label}
-                    </span>
+                    {riskConfig ? (
+                      <span
+                        className={cn(
+                          "rounded-full border px-2 py-0.5 text-xs font-semibold",
+                          riskConfig.bg,
+                          riskConfig.text,
+                          riskConfig.border
+                        )}
+                      >
+                        {riskConfig.label}
+                      </span>
+                    ) : (
+                      <span
+                        className="text-muted-foreground"
+                        title="The review queue does not assess a risk tier"
+                      >
+                        {NONE}
+                      </span>
+                    )}
                   </td>
                   <td className="hidden px-4 py-3 text-muted-foreground sm:table-cell">
-                    {item.submittedBy}
+                    {item.submittedBy ?? NONE}
                   </td>
-                  <td className="hidden px-4 py-3 text-muted-foreground lg:table-cell">
-                    {formatTimestamp(item.submittedAt)}
+                  <td
+                    className="hidden px-4 py-3 text-muted-foreground lg:table-cell"
+                    data-testid="review-item-submitted-at"
+                  >
+                    {item.submittedAt ? formatTimestamp(item.submittedAt) : NONE}
                   </td>
                   <td className="px-4 py-3">
                     <span className={cn("text-xs font-medium", statusConfig.class)}>
