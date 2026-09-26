@@ -54,18 +54,18 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "98c034273f8f22c34ee6a0f2491101e80aa8c9b62c9120701f6ebc012c611e4d",
-          "backend/src": "c06af80dee95babb1eed74ffbc5435ffe7f1cb1fdc8bf8f8489d087ad42aabe1",
+          "conformance/declared_not_implemented.json": "845993e1726f21faf65c25acef97bab860e3155e13ccb19892ebca0ec6bfd480",
+          "backend/src": "b0d52f95e7e8d49ee18c26f6092fd88f321569d8d28f3c6ff255200e5717c63e",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
-          "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
+          "backend/tests": "b5ca416b5f8cffc707abc658e368f538d54c170caeb9ada114c97b83742a3dcf",
+          "frontend/src": "53904fc3d2b9f3b1c068c10fec234755fb7191909a9f1ca24c5eb376614a3265",
           "packages": "f39decf6dcae81c0e60801fa80c933c6547de55348adb3fd3867119423414373",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
+        "by": "Claude (small-batch-1: Gates table re-measured at 11b445e; Health endpoint row re-cited to the mounted /health's test; register re-citations checked by status_claims)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -355,13 +355,13 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "6b029f17fceb5b8a44c784ea601802c8d97c1d2ed3ce9a6a92c2600823826501",
-          "conformance/declared_not_implemented.json": "98c034273f8f22c34ee6a0f2491101e80aa8c9b62c9120701f6ebc012c611e4d",
-          "docs/CURRENT_STAGE.md": "47f82f3b25daf272632ad22a9a238b8cb03587eb0cdbb17e856d8cf8105d8143"
+          "conformance/declared_not_implemented.json": "845993e1726f21faf65c25acef97bab860e3155e13ccb19892ebca0ec6bfd480",
+          "docs/CURRENT_STAGE.md": "46e75a70ec7bc324ae6d3edd6d3bcb7bbb44d15ccaa2fc06aec165fceba94c7e"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
+        "by": "Claude (small-batch-1: moved only by register re-citations and CURRENT_STAGE's Gates figures; no ROADMAP claim touches them)"
       }
     },
     "SECURITY.md": {
