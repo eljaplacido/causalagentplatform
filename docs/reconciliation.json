@@ -28,16 +28,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/pyproject.toml": "eb8981b94a831f96ab3e93b9d91d676baab95bb8020aac71fa00f19020de0319",
+          "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "667d95a48ae10b44d972c44d46e29830be14a34bc42d1cff6fb2161cd66e2cb2"
+          "docs/CURRENT_STAGE.md": "c9ea4ee09f6a3ab72d6f22c5ce33f74ee9f673a94280c92101d787378040ebde"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-47: README quotes no CURRENT_STAGE row and says nothing of RLS, roles or the database connection; unchanged)"
+        "by": "Claude (septa-8: T5 row now covers nine designs, coverage 0.932-0.958 bound to the v4 standing run, the covariate and not-yet-treated designs named; the backend's causal-core>=0.10.0 pin is not quoted here)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -54,18 +54,18 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "dcb39338bddcf03ebf0d9db8afda626dc3d0c10bf208a8427496886fee20e7ed",
+          "conformance/declared_not_implemented.json": "5736c0342602b325ad75ae9dd59b7a30f1b3a718b545a42af516f5689ed432ae",
           "backend/src": "c06af80dee95babb1eed74ffbc5435ffe7f1cb1fdc8bf8f8489d087ad42aabe1",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "backend/tests": "c610d5b607429b33c46a9854a647d9c8c0e03d3260714c2d602f103f3d083b3d",
           "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
-          "packages": "5a9c8d9bba06ef8cf6b6674cc10d367803f7a2cd8739311ba0710ebcd6a4c7b9",
+          "packages": "b6ee9e7b2337b6a02a1015e9b026ef382e06dd7afb17259c76142ad2af9e8a02",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-47: the RLS row is implemented, pinned by test_rls_domain_isolation.py, fixed in e23adea; the Governance paragraph no longer says RLS binds nothing)"
+        "by": "Claude (septa-8: Staggered-rollouts paragraph describes control_group and doubly robust covariates with the near-floor coverage under a misspecified outcome model; new implemented row pinned by test_did_extensions.py; dni rows did-rambachan-roth and did-anticipation-cross-sections replace did-extensions; package counts 204/118/40 from this branch's ci.sh)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -254,12 +254,12 @@
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
           ".github": "70e47d77822f0ef8f9f21afde256fb89ea86afdd7c46e64f093714ec830e4bab",
-          ".gnomon": "b06f519dbd3691c37f2e91dc1a4e30143d458ae2391aa679ce8881f47329be1d"
+          ".gnomon": "00b05032e10811034fd212f9fa3fba7ab19273c0bf68e32eb95042528d4781a8"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-47: the .github change is a ci.yml comment on the app role; the page cites only .github/copilot files and issue templates, still true)"
+        "by": "Claude (septa-8: the .gnomon change is using-causal-mcp.md listing covariates and control_group; the page names skills/ as a directory only, still true)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -280,7 +280,7 @@
           "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
-          "backend/pyproject.toml": "eb8981b94a831f96ab3e93b9d91d676baab95bb8020aac71fa00f19020de0319",
+          "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
           ".env.example": "f5dbf40f551d60b4b91d5bbaa9b36a2404f89536421fe51b8bcbf17a6ae1258f",
@@ -289,7 +289,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-47: new 'How the app connects' paragraph: DATABASE_URL as causal_app, refusal as owner; compose table gives causal_app's login and the init script; the PostgreSQL test note says app queries run as causal_app)"
+        "by": "Claude (septa-8: the backend pin moved to causal-core>=0.10.0; the page states no kernel version and no DiD options, unchanged)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -312,20 +312,20 @@
         "sha256": {
           ".github/workflows": "c55226ed754b0be770e6296b1113c0008013eb292ace02539ebf6dfe88ba6369",
           "backend/tests": "c610d5b607429b33c46a9854a647d9c8c0e03d3260714c2d602f103f3d083b3d",
-          "backend/pyproject.toml": "eb8981b94a831f96ab3e93b9d91d676baab95bb8020aac71fa00f19020de0319",
+          "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
           ".gnomon/ci.sh": "000eefb082364d77c90463d9b2e34a65a1c0bc4934b2d82f579f9ca0aab51eab",
-          "scripts": "c8f4ea6e5affdf2bfba0c1c942aa1a5ccee33dfcf8ff35afa2d3e3f8f0c197e0",
+          "scripts": "6d544c8f4e4ed521962a2ea639ca8b3eb9ec751cb6a868377a0651d99dc5b360",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
-          "benchmarks": "3dcea1af4dd3bbdd68778cbb91715e1663c850fb9681fe42096b50d1145550dc",
-          "packages/causal-core/tests": "b73dcfd6530b951cdacdaaaac95e7e4068843b27cbd6635fdbe7b9efe306ecb3",
+          "benchmarks": "a017cd3d799db03c83693deb1efeb7a8c2fb2e73e532f4fe5ce3895002f7be0a",
+          "packages/causal-core/tests": "be7509f8646efd6a27d3b142715e440739d17255e7ffc1ebcde5bc05aa95c2b2",
           "packages/causal-decision/tests": "61bde7786a6158cc99f269fd057908ce3959e5e812ac5d8b4c82c11c2c7200b4"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-47: 3.1 describes the owner vs causal_app engines, the per-run login role, the service scope for direct calls, and test_rls_domain_isolation.py; the integration row names it)"
+        "by": "Claude (septa-8: T5 row, the test_benchmark_results paragraph and the seeded-defect list still hold for v4 -- tests/t5/ gains test_did_extensions.py and four defects; no step, threshold or path changed)"
       }
     },
     "docs/UIX.md": {
@@ -354,14 +354,14 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "packages/causal-core/src/causal_core": "f504a91cfae574117c3accbd936ee039a34cde0bbd0579f77c4571207a366683",
-          "conformance/declared_not_implemented.json": "dcb39338bddcf03ebf0d9db8afda626dc3d0c10bf208a8427496886fee20e7ed",
-          "docs/CURRENT_STAGE.md": "667d95a48ae10b44d972c44d46e29830be14a34bc42d1cff6fb2161cd66e2cb2"
+          "packages/causal-core/src/causal_core": "b3a206babea176dd53fdebe83037e38e66922eeced1def6dbfb248262c2477a6",
+          "conformance/declared_not_implemented.json": "5736c0342602b325ad75ae9dd59b7a30f1b3a718b545a42af516f5689ed432ae",
+          "docs/CURRENT_STAGE.md": "c9ea4ee09f6a3ab72d6f22c5ce33f74ee9f673a94280c92101d787378040ebde"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-47: p0 says RLS now binds on PostgreSQL; PostgreSQL row-level security dropped from the p3/p4 remainder)"
+        "by": "Claude (septa-8: impact row and item 3 say T5 v4 covers not-yet-treated and doubly robust covariates; septa-8 leaves the to-come list, the DiD remainder is named by its two register ids)"
       }
     },
     "SECURITY.md": {
