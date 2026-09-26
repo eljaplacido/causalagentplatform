@@ -13,39 +13,23 @@
 
 ## 1. Architecture Overview
 
-> **Status:** target design. Kafka and Neo4j are not in use (registers `kafka-streaming`,
-> `neo4j-graph-store`), and no connector is called by the running platform. Today, data enters
-> through the REST API and MCP tools. The semantic layer is the SQL store of §3.2, and
-> estimation runs in `packages/causal-core`.
+What runs today:
 
 ```
-External Sources ──► Connectors ──► Ingestion Bus (Kafka)
-                                          │
-                                   ┌──────▼──────┐
-                                   │  Raw Event   │
-                                   │   Store      │
-                                   └──────┬──────┘
-                                          │ Transform + Enrich
-                                   ┌──────▼──────────────────┐
-                                   │  Causal Semantic Layer   │  ← System of Record
-                                   │  (PostgreSQL + Neo4j)    │
-                                   └──────┬──────────────────┘
-                          ┌───────────────┼───────────────┐
-                     ┌────▼────┐    ┌─────▼──────┐  ┌─────▼──────┐
-                     │  Graph  │    │ Assumption  │  │  Evidence  │
-                     │Registry │    │  Registry   │  │  Registry  │
-                     └────┬────┘    └─────┬──────┘  └─────┬──────┘
-                          └──────────────┬───────────────┘
-                                   ┌─────▼──────┐
-                                   │  Runtime   │
-                                   │  & Agents  │
-                                   └─────┬──────┘
-                          ┌──────────────┼──────────────┐
-                     ┌────▼────┐   ┌─────▼─────┐  ┌────▼────┐
-                     │CausalOps│   │Simulation │  │Vertical │
-                     │ Control │   │  Cockpit  │  │ Agents  │
-                     └─────────┘   └───────────┘  └─────────┘
+REST API / MCP tools ──► Causal Semantic Layer (PostgreSQL, SQLite locally)  ← system of record
+                                │   graph fragments, edges, entities, assumptions (§3.2)
+                                ▼
+                          Runtime & agents ──► packages/causal-core (identification, estimation)
+                                │
+                                ├──► audit_log, decision ledger (same database)
+                                └──► optional Neo4j (NEO4J_URI): experience buffer, drift alerts
 ```
+
+Connectors (§4) exist as classes, and no running code path calls one. There is no event bus.
+Earlier versions of this page drew an ingestion bus on Kafka and a semantic layer on PostgreSQL
+plus Neo4j; neither was built, and those claims were withdrawn (`kafka-streaming` and
+`neo4j-graph-store` in the register's `left_the_list`). The withdrawn text is in git history
+(`f64b2b0`).
 
 ---
 
@@ -275,41 +259,29 @@ its state today.
 
 **What runs today:** one relational database, reached through `CloudSqlFactory`
 (`backend/src/db/factory.py`). It is SQLite when `ENV=local` and PostgreSQL otherwise. The causal
-graph lives in its tables (`causal_edges`, `graph_fragments`). §3.1 (Neo4j) and §3.3 (Kafka)
-are target designs.
+graph lives in its tables (`causal_edges`, `graph_fragments`), and every graph query (acyclicity,
+d-separation, back-door and front-door identification) runs in Python over those rows, in
+`packages/causal-core`. Neo4j (§3.1) is an optional side store for two things that are not the
+graph. There is no event streaming (§3.3).
 
-### 3.1 Neo4j (Graph Store)
+### 3.1 Neo4j (optional side store)
 
-> **Status:** target design, not implemented. See register `neo4j-graph-store`. The causal graph
-> is stored in SQL. The one Neo4j code path is an optional experience-buffer backend
-> (`skills/experience_buffer_neo4j.py`, used when `NEO4J_URI` is set), and the tests exercise it
-> only with mocks.
+Neo4j is **not** the causal graph store, and no d-separation or path query runs in it; that
+claim was withdrawn (register `neo4j-graph-store`, in `left_the_list`). When `NEO4J_URI` is set,
+`Neo4jFactory` (`backend/src/db/neo4j_factory.py`) opens a driver and two optional paths use it:
 
-**Used for:**
-- Causal graph storage: nodes (CausalEntity, Treatment, Outcome, Confounder) and edges (CausalEdge)
-- GraphFragment registry
-- Experience buffer (past incidents and resolutions as graph patterns)
-- d-separation and backdoor path queries
+- **Experience buffer** (`backend/src/skills/experience_buffer_neo4j.py`): `(:Incident)` nodes
+  with a 90-day TTL (`EXPERIENCE_BUFFER_TTL_DAYS`) and a 30-day relevance half-life
+  (`EXPERIENCE_BUFFER_DECAY_HALF_LIFE`). Without Neo4j, `experience_buffer.py` reads the SQL
+  `session_state` snapshots instead, and storing an incident returns `stored: false`.
+- **Drift alerts** (`backend/src/skills/drift_detect.py`): `(:DriftAlert)` nodes with a TTL and an
+  acknowledged flag. Without Neo4j, alerts are emitted (§5.1) but not stored.
 
-**Schema conventions:**
-- Node labels: `:CausalEntity`, `:Treatment`, `:Outcome`, `:Confounder`, `:GraphFragment`
-- Relationship types: `:CAUSES`, `:CONFOUNDS`, `:MEDIATES`, `:PART_OF_FRAGMENT`, `:SIMILAR_TO`
-- All nodes carry: `id`, `domain`, `version`, `approvalStatus`, `createdAt`
-
-**Query patterns:**
-```cypher
--- Find all confounders on path between treatment T and outcome O
-MATCH path = (t:Treatment {id: $treatmentId})-[*]-(o:Outcome {id: $outcomeId})
-WHERE ALL(n IN nodes(path) WHERE n.approvalStatus = 'APPROVED')
-RETURN path
-
--- Retrieve domain-specific graph fragment
-MATCH (f:GraphFragment {domain: $domain, approvalStatus: 'APPROVED'})
-MATCH (f)-[:CONTAINS_EDGE]->(e:CausalEdge)
-RETURN f, collect(e) AS edges ORDER BY f.version DESC LIMIT 1
-```
-
-**Benchmark target (never measured):** Neo4j 5.x, 3-node cluster for production. d-separation query p95 < 50ms on graphs with ≤ 500 nodes.
+(`src/api/health.py` defines a `/neo4j` connectivity check, but its router is not mounted in
+`src/api/main.py`, so the running API does not serve it.) Both paths are tested only
+against a mocked driver (`backend/tests/unit/test_experience_buffer_neo4j.py`,
+`test_drift_detect.py`, `test_neo4j_factory.py`); no test runs them against a real Neo4j.
+`docker-compose.yml` starts a local Neo4j 5 for them.
 
 ---
 
@@ -402,32 +374,12 @@ must be such a role). This repository contains no Cloud Run deployment of it.
 
 ---
 
-### 3.3 Kafka (Event Streaming)
+### 3.3 Event streaming
 
-> **Status:** target design, not implemented. See register `kafka-streaming`. No Kafka client is a
-> dependency. `docker-compose.yml` has a broker (and a Kafka UI) behind its `future` profile, and no platform code connects to it.
-
-**Used for:**
-- Real-time operational data ingestion (metrics, alerts, change events)
-- Intervention event emission
-- Drift alert propagation
-- Cross-service decoupling
-
-**Topic naming convention:** `{domain}.{entity}.{event_type}.{version}`
-
-Examples:
-- `devops.incident.created.v1`
-- `devops.deployment.completed.v1`
-- `platform.graph.edge_proposed.v1`
-- `platform.governance.verdict_issued.v1`
-- `marketing.campaign.activated.v1`
-
-**Consumer groups:**
-- `causal-discovery-consumer` → triggers CausalDiscoveryAgent on new event patterns
-- `drift-monitor-consumer` → feeds DriftMonitorAgent with live distribution data
-- `audit-consumer` → appends all governance events to audit trail
-
-**Benchmark target (never measured):** p95 event latency < 100ms end-to-end from source connector to consumer.
+None. No message broker client is a dependency and no code publishes or consumes events. Drift
+alerts go through the in-process `AlertEmitter` (§5.1). The Kafka design that stood here (topics,
+consumer groups, a latency target) was never built and has been withdrawn (register
+`kafka-streaming`, in `left_the_list`); `docker-compose.yml` no longer defines a broker.
 
 ---
 
@@ -472,9 +424,6 @@ interface CausalConnector {
   // Fetch latest events since cursor
   fetchEvents(cursor: Cursor): Promise<DomainEvent[]>;
 
-  // Publish to a Kafka topic -- a no-op stub in BaseCausalConnector (no Kafka client exists)
-  subscribe(topic: KafkaTopic): void;
-
   // Map raw events to semantic layer objects
   mapToSemanticObjects(events: DomainEvent[]): CausalSemanticDraft[];
 
@@ -512,8 +461,8 @@ it gets no data: `drift_detect` answers `kl_divergence 0.0` with `note: no_data_
 and the other two answer `no_fragment_edges` and `no_definitions_for_comparison`. So the periodic
 sensor (`backend/src/sensors/periodic_drift.py`), which runs this agent, cannot raise a drift
 alert today. Alerts go to `AlertEmitter` (logging, callbacks, deduplication). The
-`platform.drift.alert.v1` topic name in the agent's return value is only a label: no Kafka
-producer exists (register `kafka-streaming`).
+`platform.drift.alert.v1` topic name in the agent's return value is only a label: nothing
+publishes to a broker (§3.3).
 
 ### 5.2 Drift Types
 
@@ -563,7 +512,7 @@ lineage.
 | CausalDiscoveryAgent | Semantic layer (read) | `audit_write` records (PENDING, unsigned) | Proposes; does not persist semantic objects itself |
 | GovernanceAgent | The action payload and `EpistemicState` it is given | `audit_log` (every verdict, signed) | Its verdict is what `propose_draft` / `promote_to_approved` / `reject_draft` require |
 | SimulationAgent | APPROVED graph fragments | `EpistemicState.simulation_results` (in memory; the `session_state` snapshot) | Read-only on the semantic layer |
-| DriftMonitorAgent | Whatever its skills are handed (see §5) | In-process `AlertEmitter` | No semantic-layer writes; no Kafka |
+| DriftMonitorAgent | Whatever its skills are handed (see §5) | In-process `AlertEmitter`; `(:DriftAlert)` nodes in Neo4j when `NEO4J_URI` is set | No semantic-layer writes; no message broker |
 | `GET /api/semantic/*` | Entities, edges, fragments inside the user's domain scope; APPROVED only for a `viewer` | -- | Outside the scope is 404 (CYBERSECURITY.md §4.2) |
 | `POST /api/semantic/drafts` | -- | `causal_edges` / `graph_fragments` / `causal_entities` / `assumptions` as DRAFT | A drafting role, a domain inside the user's scope, then a GovernanceAgent check; status forced to DRAFT |
 | `POST /api/governance/approve/{id}`, `/reject/{id}` | -- | Status, approver and lineage on the same row | A governance role, the object inside the reviewer's domains; see §2.2 rule 2 |

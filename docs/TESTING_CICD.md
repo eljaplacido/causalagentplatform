@@ -138,8 +138,8 @@ bash .gnomon/ci.sh                               # or the gate, with both backen
 docker rm -f causal-pg-test
 ```
 
-Neo4j code paths are tested only with mocks
-(register `neo4j-graph-store`). No backend test asserts a causal estimate against ground truth:
+The optional Neo4j code paths (experience buffer, drift-alert storage) are tested only with a
+mocked driver; Neo4j is not the causal graph store (`neo4j-graph-store` was retracted). No backend test asserts a causal estimate against ground truth:
 the backend delegates estimation to `packages/causal-core`, and that is where estimates are
 gated (§3.2).
 

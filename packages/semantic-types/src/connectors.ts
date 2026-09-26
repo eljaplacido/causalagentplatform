@@ -6,7 +6,7 @@
  * Defined in DATA_LAYER.md § 4.
  */
 
-import type { ISO8601, Cursor, KafkaTopic } from "./primitives.js";
+import type { ISO8601, Cursor } from "./primitives.js";
 import type { CausalSemanticDraft } from "./entities.js";
 
 // ─── Domain events ────────────────────────────────────────────────────────────
@@ -99,9 +99,6 @@ export interface CausalConnector {
   /** Fetch latest events since cursor. Cursor is null for full sync. */
   fetchEvents(cursor: Cursor): Promise<DomainEvent[]>;
 
-  /** Subscribe to real-time events via Kafka producer */
-  subscribe(topic: KafkaTopic): void;
-
   /**
    * Map raw events to semantic layer draft objects.
    * Outputs are always DRAFT — never APPROVED.
@@ -113,15 +110,3 @@ export interface CausalConnector {
   validate(): ConnectorHealthResult;
 }
 
-// ─── Kafka topic naming ───────────────────────────────────────────────────────
-
-export const KAFKA_TOPICS = {
-  DEVOPS_INCIDENT_CREATED: "devops.incident.created.v1",
-  DEVOPS_DEPLOYMENT_COMPLETED: "devops.deployment.completed.v1",
-  PLATFORM_GRAPH_EDGE_PROPOSED: "platform.graph.edge_proposed.v1",
-  PLATFORM_GOVERNANCE_VERDICT_ISSUED: "platform.governance.verdict_issued.v1",
-  MARKETING_CAMPAIGN_ACTIVATED: "marketing.campaign.activated.v1",
-  PLATFORM_DRIFT_DETECTED: "platform.drift.detected.v1",
-} as const;
-
-export type KafkaTopicName = (typeof KAFKA_TOPICS)[keyof typeof KAFKA_TOPICS];

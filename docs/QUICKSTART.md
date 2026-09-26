@@ -113,8 +113,9 @@ Against the compose stack (§4) that is
 script sets that local-dev password. Migrations and seeding run as the owner (`causal`).
 
 The dev auth bypass works only with `ENV=local`, so a local session with the bypass is always on
-SQLite. Neo4j is used only when `NEO4J_URI` is set; otherwise the graph and experience-buffer paths
-fall back to SQL.
+SQLite. The causal graph is always in SQL. Neo4j is used only when `NEO4J_URI` is set, for the
+experience buffer and drift-alert storage; unset, the experience buffer reads SQL session
+snapshots and drift alerts are not stored.
 
 **Guardian signing key.** Every Guardian verdict is HMAC-signed with `GUARDIAN_SIGNING_KEY`.
 Locally you may leave it unset: each backend process then generates its own key and logs
@@ -157,19 +158,17 @@ EOF
 ## 4. Optional infrastructure (Docker)
 
 Nothing is required: with `ENV=local` the backend runs on SQLite with no services.
-Earlier versions of this page listed Kafka and Redis as requirements. No code talks to either (`kafka-streaming` in the register), so `docker-compose.yml` puts them behind a `future` profile.
+Earlier versions of this page listed Kafka and Redis as requirements. No code talks to either, so they were removed from `docker-compose.yml` and the Kafka claims withdrawn (`kafka-streaming` in the register's `left_the_list`).
 
 ```bash
 docker compose up -d                        # PostgreSQL and Neo4j
-docker compose --profile future up -d       # also Kafka, Kafka UI and Redis (nothing uses them)
 docker compose down
 ```
 
 | Service | URL / port | Notes |
 |---|---|---|
 | PostgreSQL | `localhost:5432` | Owner `causal`, password `causal_local_dev`; the backend's role `causal_app`, password `causal_app_local_dev` (both plain text in `docker-compose.yml`: a local-dev stack only). Used only when `ENV` is not `local` and `DATABASE_URL` points here as `causal_app` (§3), or by the tests through `TEST_DATABASE_URL`, as `causal` (§6). The schema is `backend/src/db/migrations/*.sql`, which the container's init script (`backend/src/db/docker/initdb.sh`) applies only when its volume is first created, and then gives `causal_app` its login: on an older volume, apply the newer files by hand (`psql -f`) and run `ALTER ROLE causal_app LOGIN PASSWORD 'causal_app_local_dev'`, or `docker compose down -v` to start over. |
-| Neo4j Browser | `http://localhost:7474` | Bolt `localhost:7687`. Used when `NEO4J_URI` is set. |
-| Kafka, Kafka UI, Redis | `9092`, `8080`, `6379` | `future` profile only. |
+| Neo4j Browser | `http://localhost:7474` | Bolt `localhost:7687`. Used when `NEO4J_URI` is set: the experience buffer and drift alerts, not the causal graph. |
 
 ---
 
