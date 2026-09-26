@@ -20,7 +20,10 @@ BACKEND = REPO / "backend"
 
 
 def test_the_legacy_package_is_gone() -> None:
-    assert not (BACKEND / "mcp_server").exists()
+    # Source, not the directory: a checkout that predates the deletion keeps its
+    # ignored __pycache__ there, which ships nothing and imports nothing.
+    legacy = BACKEND / "mcp_server"
+    assert not [p for p in legacy.rglob("*") if p.is_file() and p.suffix != ".pyc"]
 
 
 def test_the_backend_ships_no_mcp_server() -> None:

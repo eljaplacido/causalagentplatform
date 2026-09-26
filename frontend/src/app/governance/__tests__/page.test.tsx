@@ -41,13 +41,19 @@ const ITEM_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
 const ITEM_NAME = "payment_latency → checkout_conversion";
 const REASON = "Evidence and sensitivity analysis support this edge.";
 
+// Shaped as SemanticLayerRegistry.list_pending_review_queue returns it: `domain`
+// is the object's business domain (the seed writes "devops" and "marketing"),
+// not a Cynefin classification.
 const backendQueueItem = {
   id: ITEM_ID,
   object_type: "CausalEdge",
-  domain: "complicated",
+  domain: "devops",
   name: ITEM_NAME,
   approval_status: "DRAFT",
   created_at: "2026-09-18T10:00:00Z",
+  risk_tier: "HIGH",
+  risk_reasons: ["no stored sensitivity result on an assumption it rests on"],
+  submitted_by: "ryo.tanaka",
 };
 
 // AuditEntry serialises camelCase (alias_generator=_camel); the AuditLogResponse
@@ -126,6 +132,24 @@ afterEach(() => {
 });
 
 // ─── Live backend ────────────────────────────────────────────────────────────────
+
+describe("GovernancePage — a review item's business domain is not a Cynefin domain", () => {
+  it("shows the business domain as a plain label and no Cynefin badge when none is classified", async () => {
+    const user = userEvent.setup();
+    governanceApiMock.reviewQueue.mockResolvedValue([backendQueueItem]);
+    governanceApiMock.auditLog.mockResolvedValue(auditResponse([]));
+
+    renderPage();
+    const row = await screen.findByTestId("first-review-item");
+    expect(within(row).getByTestId("business-domain")).toHaveTextContent("devops");
+    expect(within(row).queryByTestId("cynefin-badge")).toBeNull();
+
+    await user.click(row);
+    const panel = screen.getByTestId("approval-panel");
+    expect(within(panel).getByTestId("business-domain")).toHaveTextContent("devops");
+    expect(within(panel).queryByTestId("cynefin-badge")).toBeNull();
+  });
+});
 
 describe("GovernancePage — approve calls the backend and waits for it", () => {
   it("shows success only after check + approve succeed, then refetches queue and audit log", async () => {
@@ -401,5 +425,161 @@ describe("GovernancePage — mock fallback mode", () => {
     expect(screen.queryByTestId("mock-data-badge")).toBeNull();
     expect(screen.queryByTestId("review-queue")).toBeNull();
     expect(screen.queryByTestId("audit-log-panel")).toBeNull();
+  });
+});
+
+// ─── The queue renders what the registry sends ─────────────────────────────────
+//
+// Preconditions: GET /api/governance/review-queue returns rows shaped as
+// governance.py ReviewQueueItem (id, object_type, domain, name,
+// approval_status, created_at), with the business domains and object types
+// SemanticLayerRegistry writes ("devops", "marketing"; "CausalEdge",
+// "GraphFragment", "CausalEntity"), and created_at possibly null.
+// Postconditions: the page renders every row without throwing; the business
+// domain is shown as the text it is, never as a Cynefin classification; the
+// type is labelled; the submitted time is the backend's, or a dash when it sent
+// none. The audit log failing alone does not put the page in mock mode, and a
+// 401/403 reads as "not authorised", not as an outage.
+// Undefined, not asserted: the timestamp's locale format.
+
+describe("GovernancePage — renders registry rows as the registry sends them", () => {
+  it("renders business-domain rows (devops, marketing) without a Cynefin badge", async () => {
+    governanceApiMock.reviewQueue.mockResolvedValue([
+      backendQueueItem,
+      {
+        id: "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+        object_type: "GraphFragment",
+        domain: "marketing",
+        name: "customer_churn_model",
+        approval_status: "UNDER_REVIEW",
+        created_at: null,
+      },
+    ]);
+    governanceApiMock.auditLog.mockResolvedValue(auditResponse([]));
+
+    renderPage();
+
+    const queue = await screen.findByTestId("review-queue");
+    expect(within(queue).getByText(ITEM_NAME)).toBeInTheDocument();
+    expect(within(queue).getByText("customer_churn_model")).toBeInTheDocument();
+    expect(within(queue).getByText("devops")).toBeInTheDocument();
+    expect(within(queue).getByText("marketing")).toBeInTheDocument();
+    expect(within(queue).queryByTestId("cynefin-badge")).toBeNull();
+    expect(within(queue).getByText("Causal Edge")).toBeInTheDocument();
+    expect(within(queue).getByText("Graph Fragment")).toBeInTheDocument();
+  });
+
+  it("shows the backend's created_at, and a dash when it sent none", async () => {
+    governanceApiMock.reviewQueue.mockResolvedValue([
+      { ...backendQueueItem, created_at: null },
+    ]);
+    governanceApiMock.auditLog.mockResolvedValue(auditResponse([]));
+
+    renderPage();
+
+    const row = await screen.findByTestId("first-review-item");
+    const submittedAt = within(row).getByTestId("review-item-submitted-at");
+    expect(submittedAt).toHaveTextContent(/^—$/);
+  });
+
+  it("does not claim a submitter or a risk tier the registry does not send", async () => {
+    governanceApiMock.reviewQueue.mockResolvedValue([backendQueueItem]);
+    governanceApiMock.auditLog.mockResolvedValue(auditResponse([]));
+
+    renderPage();
+
+    const row = await screen.findByTestId("first-review-item");
+    expect(within(row).queryByText("system")).toBeNull();
+    expect(within(row).queryByText("Medium")).toBeNull();
+  });
+
+  it("stays live when only the audit log fails, even with the mock fallback enabled", async () => {
+    vi.stubEnv("NEXT_PUBLIC_ENABLE_MOCK_FALLBACK", "true");
+    const user = userEvent.setup();
+    governanceApiMock.reviewQueue.mockResolvedValue([backendQueueItem]);
+    governanceApiMock.auditLog.mockRejectedValue(
+      new CausalApiError(0, "NETWORK_ERROR", "Network request failed.")
+    );
+
+    renderPage();
+
+    expect(await screen.findByTestId("audit-log-unavailable")).toBeInTheDocument();
+    expect(screen.queryByTestId("mock-data-badge")).toBeNull();
+    await selectFirstItem(user);
+    expect(screen.queryByTestId("decisions-disabled-notice")).toBeNull();
+    expect(screen.getByTestId("approve-button")).toBeEnabled();
+  });
+
+  it.each([
+    [401, "unauthorized"],
+    [403, "forbidden"],
+  ])("a %i from the review queue reads as not authorised, not as an outage", async (status, code) => {
+    governanceApiMock.reviewQueue.mockRejectedValue(
+      new CausalApiError(status, code, "the caller may not read the review queue")
+    );
+    governanceApiMock.auditLog.mockResolvedValue(auditResponse([]));
+
+    renderPage();
+
+    expect(await screen.findByTestId("governance-not-authorised")).toHaveTextContent(
+      /not authorised/i
+    );
+    expect(screen.queryByText("Backend Unavailable")).toBeNull();
+  });
+});
+
+// ─── Review queue: the backend's risk tier and submitter (septa-36) ─────────────
+//
+// GET /review-queue returns risk_tier, risk_reasons and submitted_by for each item
+// (backend/src/semantic_layer/review_risk.py derives the tier). The page used to
+// discard them and fill riskTier "MEDIUM" and submittedBy "system" for every item.
+
+describe("GovernancePage — the queue shows the backend's risk tier and submitter", () => {
+  const lowEntity = {
+    id: "11111111-1111-4111-8111-111111111111",
+    object_type: "CausalEntity",
+    domain: "devops",
+    name: "checkout-service",
+    approval_status: "DRAFT",
+    created_at: "2026-09-01T10:00:00Z",
+    risk_tier: "LOW",
+    risk_reasons: ["an entity asserts no causal relationship"],
+    submitted_by: "ana",
+  };
+  const criticalEdge = {
+    id: "22222222-2222-4222-8222-222222222222",
+    object_type: "CausalEdge",
+    domain: "devops",
+    name: "CAUSES",
+    approval_status: "DRAFT",
+    created_at: "2026-09-20T10:00:00Z",
+    risk_tier: "CRITICAL",
+    risk_reasons: ["stated confidence 0.40 is below 0.5"],
+    submitted_by: null,
+  };
+
+  it("renders each item's tier and submitter, most at risk first", async () => {
+    // Deliberately oldest-first, the order the backend used to return.
+    governanceApiMock.reviewQueue.mockResolvedValue([lowEntity, criticalEdge]);
+    governanceApiMock.auditLog.mockResolvedValue(auditResponse([]));
+
+    renderPage();
+
+    const first = await screen.findByTestId("first-review-item");
+    expect(first).toHaveAttribute("data-item-id", criticalEdge.id);
+    expect(within(first).getByText("Critical")).toHaveAttribute(
+      "title",
+      expect.stringContaining("below 0.5")
+    );
+    expect(within(first).getByText("not recorded")).toBeInTheDocument();
+
+    const second = screen.getByTestId("review-item");
+    expect(second).toHaveAttribute("data-item-id", lowEntity.id);
+    expect(within(second).getByText("Low")).toBeInTheDocument();
+    expect(within(second).getByText("ana")).toBeInTheDocument();
+
+    const queue = screen.getByTestId("review-queue");
+    expect(within(queue).queryByText("system")).toBeNull();
+    expect(within(queue).queryByText("Medium")).toBeNull();
   });
 });

@@ -273,7 +273,7 @@ Components under `frontend/src/components/` are marked **built**. The rest are *
 
 | Group | Built | Not built | Used by |
 |---|---|---|---|
-| **Causal Graph** | `DAGCanvas`, `EdgeProposal`, `NodeDetail`, `GraphDiff`, `FragmentCard`, `FragmentDraftComposer` | -- | Analyst, Platform Engineer |
+| **Causal Graph** | `DAGCanvas`, `EdgeProposal`, `NodeDetail`, `GraphDiff`, `FragmentCard`, `FragmentDraftComposer` | -- | Workbench (`DAGCanvas`, `FragmentDraftComposer`), Analyst and Platform Engineer (`FragmentCard`) |
 | **Decisions** | `VerdictBadge`, `DecisionDetail` (with the follow-up form), `CalibrationReportPanel` | -- | Executive, Governance Officer, Analyst |
 | **Assumption registry** | `ModelVersionView` (with `EdgeTable`), `ModelDiffView`, `ImpactReportView` | -- | Analyst, Governance Officer |
 | **Incident Response** | `IncidentBrief`, `CynefinBadge` (in `shared/`), `CausalHypothesisList`, `InterventionCard`, `EscalationBanner` | -- | SRE, Incident Commander |
@@ -282,8 +282,38 @@ Components under `frontend/src/components/` are marked **built**. The rest are *
 | **Evidence** | -- | `EvidenceCitation`, `DocumentSnippet`, `StatisticalTestResult`, `ConfidenceMeter` | Analyst, Governance Officer |
 | **Shared** | `EpistemicConfidenceBadge`, `ThinkingIndicator`, `PersonaSelector`, `AuditLogPanel`, `GuardianVerdictBadge`, `ViewNav` | -- | All |
 
-The review queue shows no real risk tier or submitter (register `review-queue-risk-tier`), and
-the Evidence group has no backend to read from yet (register `agent-skills-are-stubs`).
+The review queue shows each item's risk tier and submitter from the backend, most at risk
+first (US-27). The tier is derived from stored fields by `backend/src/semantic_layer/review_risk.py`:
+an edge is Critical below stated confidence 0.5, High below 0.8 or without a sensitivity result
+the platform recorded for it that says it is robust (a drafter's own result does not count), else
+Medium; a fragment is High while it names an unapproved edge,
+else Medium; an entity is Low. The tier badge's tooltip gives the reasons, and an item whose
+submitter was never recorded (edges drafted before migration 012) says "not recorded"; a row that
+arrives without a tier shows a dash and sorts last. The
+Evidence group has no backend to read from yet (register `agent-skills-are-stubs`).
+A review item's domain is its business domain (`devops`, `marketing`), shown as a plain label in
+the queue and the panel header; a `CynefinBadge` appears only when an item carries a Cynefin
+classification, which the review-queue endpoint does not return. Until 2026-09-26 the page fed the
+business domain to `CynefinBadge`, which crashed on it; the badge now renders any value that is
+not a Cynefin domain as a neutral "Unclassified", never as a real domain.
+The type is the backend's `object_type`, labelled; the submitted time is `created_at`, or a dash
+when there is none. The page enters mock mode (with `NEXT_PUBLIC_ENABLE_MOCK_FALLBACK=true`)
+only when the review queue itself cannot be reached; an audit-log failure alone is reported in
+the audit panel and leaves decisions enabled. Across the governance, incidents and analyst pages
+a 401 or 403 (other than a Guardian block) reads "not authorised", not "backend unavailable" or
+an empty list.
+
+The incidents page speaks the backend's severity vocabulary, P0 to P3, end to end (rows the seed
+script wrote as SEV1 to SEV4 are shown as P0 to P3). No endpoint returns an effect estimate for an
+incident's interventions, so `InterventionCard` says "No effect estimate" rather than drawing an
+interval. The Guardian's verdict and a person's recorded decision are shown side by side; the
+incidents API returns the decision as `humanDecision` and leaves `guardianVerdict` as the
+Guardian issued it. A new incident's id is `INC-` and eight random hex digits.
+
+The analyst page draws no causal graph: the session API returns how many edges a run proposed
+(`proposed_edge_count`) but not the edges, so the page shows that count and the run's
+recommendations as sent. `EdgeProposal`, `NodeDetail` and `GraphDiff` are built, and no page
+renders them since the analyst page stopped drawing a graph it had made up.
 Approving or rejecting in `ApprovalPanel` asks the reviewer to classify the situation
 (Cynefin domain; required, nothing pre-selected, DISORDER not offered): Guardian reads it,
 and without one rule PR-006 refuses the request. A rejection needs an APPROVED verdict for

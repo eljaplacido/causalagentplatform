@@ -1,7 +1,7 @@
 # Prompt template: cynefin_classify
 # Version: 1.0.0
 # Skill: cynefin_classify (AGENTS.md §3.1)
-# Reference: cynepic-router Rust crate
+# Reference: IncidentTriage agent, src/agents/incident_triage.py
 
 version: "1.0.0"
 skill: cynefin_classify

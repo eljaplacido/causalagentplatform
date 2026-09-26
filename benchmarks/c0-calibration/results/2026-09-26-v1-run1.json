@@ -1,0 +1,194 @@
+{
+  "suite": "C0",
+  "prereg_sha256": "sha256:19acf4d5cb4482ee7ff87f49a428d58715ef1e3d2839a331df0859f6e01d9426",
+  "prereg_version": 1,
+  "git": "1e5b579d075c49971c1b9b3be4506b0cdf1f9a57",
+  "simulated": true,
+  "what_this_is_not": "a calibration figure about real operations -- every stream is simulated from structural models with effects set by construction",
+  "exact": {
+    "min_interval_coverage": 0.9500887606581878,
+    "worst_at_n_p": [
+      132,
+      0.065
+    ],
+    "refusal_violations": [],
+    "paired_violations": [],
+    "max_h0_difference_rate": 0.049851441616871814
+  },
+  "pool": {
+    "cells": {
+      "works/mixed": 40,
+      "works/rolled": 40,
+      "null/mixed": 40,
+      "null/rolled": 40,
+      "harms/mixed": 40,
+      "harms/rolled": 40
+    },
+    "verdicts": {
+      "act": 235,
+      "experiment": 5
+    },
+    "undecidable_reasons": {
+      "DESIGN_CHECK_FAILED": 120
+    },
+    "type_violations": []
+  },
+  "configs": {
+    "small": {
+      "reps": 400,
+      "truth": {
+        "acted_worthwhile": 0.5,
+        "acted_harmful": 0.18750000000000003,
+        "all_acted_bounds": 0.6
+      },
+      "stated": {
+        "acted_worthwhile": 120,
+        "acted_harmful": 120,
+        "all_acted_bounds": 400
+      },
+      "refused": {
+        "acted_worthwhile": 280,
+        "acted_harmful": 280,
+        "all_acted_bounds": 0
+      },
+      "coverage": {
+        "acted_worthwhile": 0.975,
+        "acted_harmful": 1.0,
+        "all_acted_bounds": 0.9925
+      },
+      "paired_status": {
+        "could_not_resolve": 356,
+        "difference": 44
+      },
+      "accounting_violations": [],
+      "refusal_violations": [],
+      "paired_violations": []
+    },
+    "medium": {
+      "reps": 400,
+      "truth": {
+        "acted_worthwhile": 0.5,
+        "acted_harmful": 0.18750000000000003,
+        "all_acted_bounds": 0.6
+      },
+      "stated": {
+        "acted_worthwhile": 400,
+        "acted_harmful": 400,
+        "all_acted_bounds": 400
+      },
+      "refused": {
+        "acted_worthwhile": 0,
+        "acted_harmful": 0,
+        "all_acted_bounds": 0
+      },
+      "coverage": {
+        "acted_worthwhile": 0.975,
+        "acted_harmful": 0.97,
+        "all_acted_bounds": 0.995
+      },
+      "paired_status": {
+        "difference": 393,
+        "could_not_resolve": 7
+      },
+      "accounting_violations": [],
+      "refusal_violations": [],
+      "paired_violations": []
+    },
+    "large": {
+      "reps": 400,
+      "truth": {
+        "acted_worthwhile": 0.5,
+        "acted_harmful": 0.18750000000000003,
+        "all_acted_bounds": 0.6
+      },
+      "stated": {
+        "acted_worthwhile": 400,
+        "acted_harmful": 400,
+        "all_acted_bounds": 400
+      },
+      "refused": {
+        "acted_worthwhile": 0,
+        "acted_harmful": 0,
+        "all_acted_bounds": 0
+      },
+      "coverage": {
+        "acted_worthwhile": 0.9625,
+        "acted_harmful": 0.9575,
+        "all_acted_bounds": 1.0
+      },
+      "paired_status": {
+        "difference": 400
+      },
+      "accounting_violations": [],
+      "refusal_violations": [],
+      "paired_violations": []
+    },
+    "high": {
+      "reps": 400,
+      "truth": {
+        "acted_worthwhile": 0.95,
+        "acted_harmful": 0.0,
+        "all_acted_bounds": 0.95
+      },
+      "stated": {
+        "acted_worthwhile": 400,
+        "acted_harmful": 400,
+        "all_acted_bounds": 400
+      },
+      "refused": {
+        "acted_worthwhile": 0,
+        "acted_harmful": 0,
+        "all_acted_bounds": 0
+      },
+      "coverage": {
+        "acted_worthwhile": 0.9925,
+        "acted_harmful": 1.0,
+        "all_acted_bounds": 0.9925
+      },
+      "paired_status": {
+        "could_not_resolve": 400
+      },
+      "accounting_violations": [],
+      "refusal_violations": [],
+      "paired_violations": []
+    }
+  },
+  "seeded_defects_caught": {
+    "drop_undecidable": true,
+    "no_minimum": true,
+    "undecidable_as_agreement": true,
+    "unresolved_reads_as_no_difference": true,
+    "wald_interval": true
+  },
+  "seeded_defects_tripped": {
+    "drop_undecidable": [
+      "accounting",
+      "coverage:all_acted_bounds"
+    ],
+    "no_minimum": [
+      "exact_refusal",
+      "floor",
+      "paired",
+      "refusal"
+    ],
+    "undecidable_as_agreement": [
+      "accounting",
+      "coverage:acted_harmful",
+      "coverage:acted_worthwhile",
+      "coverage:all_acted_bounds",
+      "floor"
+    ],
+    "unresolved_reads_as_no_difference": [
+      "exact_paired",
+      "paired"
+    ],
+    "wald_interval": [
+      "coverage:acted_harmful",
+      "coverage:acted_worthwhile",
+      "coverage:all_acted_bounds",
+      "exact_coverage"
+    ]
+  },
+  "failures": [],
+  "passed": true
+}

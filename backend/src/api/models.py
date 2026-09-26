@@ -46,7 +46,6 @@ from causal_decision.assumptions import (
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.middleware.auth import get_current_user
 from src.middleware.rbac import guard
 from src.semantic_layer.model_store import ModelConflictError, ModelStore
 
@@ -169,7 +168,7 @@ async def create_model(
 
 
 @router.get("", response_model=ModelList, summary="List registered models (their heads)")
-async def list_models(user: dict[str, Any] = Depends(get_current_user)) -> ModelList:
+async def list_models(user: dict[str, Any] = Depends(guard("GET", "/api/v1/models"))) -> ModelList:
     return ModelList(
         models=[
             ModelSummary(
@@ -186,7 +185,9 @@ async def list_models(user: dict[str, Any] = Depends(get_current_user)) -> Model
 
 
 @router.get("/{name}", response_model=ModelHistory, summary="A model's head and history")
-async def get_model(name: str, user: dict[str, Any] = Depends(get_current_user)) -> ModelHistory:
+async def get_model(
+    name: str, user: dict[str, Any] = Depends(guard("GET", "/api/v1/models/{name}"))
+) -> ModelHistory:
     history = await _store.history(name)
     if not history:
         raise HTTPException(status_code=404, detail=f"no model {name}")
@@ -197,7 +198,9 @@ async def get_model(name: str, user: dict[str, Any] = Depends(get_current_user))
     "/{name}/versions/{version}", response_model=ModelVersion, summary="One version of a model"
 )
 async def get_version(
-    name: str, version: int, user: dict[str, Any] = Depends(get_current_user)
+    name: str,
+    version: int,
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/models/{name}/versions/{version}")),
 ) -> ModelVersion:
     return await _version_or_404(name, version)
 
@@ -274,7 +277,7 @@ async def diff_versions(
     name: str,
     from_version: Annotated[int, Query(alias="from", ge=1)],
     to_version: Annotated[int, Query(alias="to", ge=1)],
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/models/{name}/diff")),
 ) -> ModelDiff:
     return diff(await _version_or_404(name, from_version), await _version_or_404(name, to_version))
 
@@ -287,7 +290,7 @@ async def diff_versions(
 async def impact_of(
     name: str,
     to_version: Annotated[int | None, Query(alias="to", ge=1)] = None,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/models/{name}/impact")),
 ) -> ImpactReport:
     target = await _version_or_404(name, to_version)
     cache: dict[int, ModelVersion] = {}
@@ -320,7 +323,7 @@ async def impact_of(
     summary="Recompute a model's history: every digest and parent link",
 )
 async def verify_model(
-    name: str, user: dict[str, Any] = Depends(get_current_user)
+    name: str, user: dict[str, Any] = Depends(guard("GET", "/api/v1/models/{name}/verify"))
 ) -> HistoryReport:
     report = await _store.verify(name)
     if report.length == 0:

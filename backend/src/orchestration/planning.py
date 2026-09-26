@@ -10,7 +10,8 @@ three-phase execution for each planning cycle:
 
 The planner integrates with the existing SimulationAgent and causal estimation
 skills. Simulated actions are labelled SIMULATED_NOT_EXECUTED and never persist
-to the semantic layer. Planning failures escalate to CHAOTIC domain (human review).
+to the semantic layer. A failure the lookahead estimated escalates to a person; a plan
+nothing could simulate goes on to the Guardian marked unsimulated (plan_unsimulated).
 
 EpistemicState constraints:
   - require_approved_fragment: Only APPROVED fragments used for simulation
@@ -379,7 +380,12 @@ async def node_plan_ahead(state: dict[str, Any]) -> dict[str, Any]:
         epistemic: EpistemicState
         disorder_retries: int
 
-    Returns updated PlatformState.
+    Returns updated PlatformState, with ``plan_outcome`` set to one of
+    ``committed``, ``uncommitted`` (nothing simulated, nothing committed: every
+    candidate goes on, marked unsimulated), ``no_safe_action`` (the lookahead
+    estimated consequences and no candidate survived: EscalateHuman) or
+    ``no_actions``. Every outcome reaches GuardianCheck; only ``no_safe_action``
+    passes through EscalateHuman on the way.
     """
     epistemic: EpistemicState = state["epistemic"]
     retries: int = state.get("disorder_retries", 0)
@@ -390,7 +396,7 @@ async def node_plan_ahead(state: dict[str, Any]) -> dict[str, Any]:
             "plan_ahead.no_actions",
             session_id=epistemic.session_id,
         )
-        return state
+        return {**state, "plan_outcome": "no_actions"}
 
     planner = FLARERecedingHorizonPlanner(
         max_plan_depth=min(10, epistemic.cycle_count + 5),
@@ -419,26 +425,26 @@ async def node_plan_ahead(state: dict[str, Any]) -> dict[str, Any]:
     )
 
     # ── Update EpistemicState with planning results ────────────────────────────
+    #
+    # Whether the planner has a finding at all. An outcome with no estimate was
+    # not simulated: the kernel refused (it is given no data -- register
+    # planning-simulation-no-data), there was no approved fragment, or the
+    # estimation raised. Its "confidence" is then the action's own number, and a
+    # commit or a "failure" decided on it is a threshold on that number, not a
+    # finding about the action's consequences. It used to be reported as one:
+    # "no safe action found" routed the session to EscalateHuman and around the
+    # Guardian, for every classified run, because the analysis halves an
+    # unevidenced edge's confidence below the commit threshold.
+    simulated = any(o.estimated_effect is not None for o in result.lookahead_outcomes)
     flags = list(epistemic.flags)
 
-    if result.committed_action:
-        flags.append("plan_ahead_committed")
-        # The recommendations list is set to [committed_action] at the end of
-        # this function, on the shared path.
-        #
-        # Surfacing the remaining lookahead outcomes as additional
-        # SIMULATED_NOT_EXECUTED recommendations was drafted here and never
-        # written: what stood here was a loop whose only statement was
-        # `continue`. Removed rather than left to read as implemented. The
-        # outcomes are still on `result.lookahead_outcomes` for whoever builds
-        # it, and the trace below reports how many were simulated.
-    else:
-        flags.append("plan_ahead_escalation")
-        # No action could be committed — escalate to human
+    if result.committed_action is None and simulated:
+        # A real finding: the lookahead estimated consequences and no candidate
+        # survived them. EscalateHuman, which the Guardian then rules on and audits.
         epistemic = epistemic.model_copy(
             update={
                 "requires_human_review": True,
-                "flags": [*flags, "no_safe_action_found"],
+                "flags": [*flags, "plan_ahead_escalation", "no_safe_action_found"],
                 "draft_explanation": (
                     epistemic.draft_explanation
                     + " [PLANNING: No safe action found after FLARE lookahead. "
@@ -448,25 +454,66 @@ async def node_plan_ahead(state: dict[str, Any]) -> dict[str, Any]:
                 ),
             }
         )
-        return {"epistemic": epistemic, "disorder_retries": retries}
+        return {
+            "epistemic": epistemic,
+            "disorder_retries": retries,
+            "plan_outcome": "no_safe_action",
+        }
 
-    # Attach planning trace to the explanation
-    trace = (
-        f" [PLANNING: Simulated {result.total_simulations} actions in "
-        f"{result.planning_duration_ms}ms. "
-    )
+    if result.committed_action is not None:
+        flags.append("plan_ahead_committed")
+        planned = [result.committed_action]
+        # Surfacing the remaining lookahead outcomes as SIMULATED_NOT_EXECUTED
+        # recommendations is not built; they stay on result.lookahead_outcomes.
+        trace = (
+            f" [PLANNING: {result.total_simulations} candidate action(s) in "
+            f"{result.planning_duration_ms}ms; one committed. "
+        )
+        outcome = "committed"
+        requires_review = epistemic.requires_human_review
+    else:
+        # Nothing simulated and nothing committed: the planner cannot say which
+        # action is safe, and does not claim that none is. Every candidate goes on
+        # to the Guardian, marked unsimulated, and a person chooses.
+        flags.append("plan_ahead_uncommitted")
+        planned = list(actions)
+        trace = (
+            f" [PLANNING: {result.total_simulations} candidate action(s); none committed. "
+        )
+        outcome = "uncommitted"
+        requires_review = True
+
     if result.failure_points:
-        trace += f"Detected failures at steps {result.failure_points}. "
-    if result.re_plan_triggered:
-        trace += "Re-plan triggered after action execution. "
+        trace += f"Below the failure threshold at steps {result.failure_points}. "
+    if not simulated:
+        flags.append("plan_unsimulated")
+        trace += (
+            "Nothing was simulated: no effect estimate was available, so the "
+            "candidates' consequences are unassessed. "
+        )
+        planned = [_mark_unsimulated(r) for r in planned]
     trace += "]"
 
     epistemic = epistemic.model_copy(
         update={
             "flags": flags,
-            "recommendations": [result.committed_action],
+            "recommendations": planned,
+            "requires_human_review": requires_review,
             "draft_explanation": epistemic.draft_explanation + trace,
         }
     )
 
-    return {"epistemic": epistemic, "disorder_retries": retries}
+    return {"epistemic": epistemic, "disorder_retries": retries, "plan_outcome": outcome}
+
+
+_UNSIMULATED_NOTE = (
+    " [Not simulated: no effect estimate was available, so planning has not "
+    "assessed this action's consequences.]"
+)
+
+
+def _mark_unsimulated(rec: Recommendation) -> Recommendation:
+    """Say on the recommendation itself that the planner did not simulate it."""
+    if rec.rationale.endswith(_UNSIMULATED_NOTE):
+        return rec
+    return rec.model_copy(update={"rationale": rec.rationale + _UNSIMULATED_NOTE})

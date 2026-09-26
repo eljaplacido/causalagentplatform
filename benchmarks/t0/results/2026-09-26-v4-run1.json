@@ -1,0 +1,325 @@
+{
+  "suite": "T0",
+  "prereg_sha256": "sha256:48952b27635beb11aa1498aedfed6ff0dde8214a2b201eac782b1efb4b9e9882",
+  "prereg_version": 4,
+  "git": "b4bddeefae65d94b0101168988e33f4f3b47dfff",
+  "passed": true,
+  "sections": {
+    "identification": {
+      "passed": true,
+      "catalog_match": 1.0,
+      "mismatches": [],
+      "y0_crosscheck": {
+        "ran": true,
+        "graphs": 200,
+        "agreement": 1.0,
+        "identified": 173,
+        "not_identified": 27,
+        "disagreements": [],
+        "reason": ""
+      }
+    },
+    "estimation": {
+      "passed": true,
+      "failures": [],
+      "pooled_coverage": 0.9491428571428572,
+      "reported_band": [
+        0.925,
+        0.975
+      ],
+      "outside_reported_band": [],
+      "cases": [
+        {
+          "id": "backdoor_binary",
+          "strategy_expected": "backdoor",
+          "strategies_seen": [
+            "backdoor"
+          ],
+          "estimator": "aipw",
+          "truth": 1.5,
+          "reps": 500,
+          "non_results": 0,
+          "mean": 1.4963312619877482,
+          "mcse": 0.00317019546986613,
+          "bias": -0.00366873801225176,
+          "bias_in_mcse": 1.1572592438303755,
+          "coverage": 0.95,
+          "coverage_p": 1.0,
+          "first_failure": ""
+        },
+        {
+          "id": "backdoor_continuous",
+          "strategy_expected": "backdoor",
+          "strategies_seen": [
+            "backdoor"
+          ],
+          "estimator": "dml_plr",
+          "truth": 1.5,
+          "reps": 500,
+          "non_results": 0,
+          "mean": 1.4983983706405315,
+          "mcse": 0.0013950807432809127,
+          "bias": -0.0016016293594685038,
+          "bias_in_mcse": 1.1480549546557683,
+          "coverage": 0.956,
+          "coverage_p": 0.608226687215931,
+          "first_failure": ""
+        },
+        {
+          "id": "randomized_binary",
+          "strategy_expected": "randomized",
+          "strategies_seen": [
+            "randomized"
+          ],
+          "estimator": "difference_in_means",
+          "truth": 0.4,
+          "reps": 500,
+          "non_results": 0,
+          "mean": 0.4017687594927187,
+          "mcse": 0.0038797842987284828,
+          "bias": 0.0017687594927186523,
+          "bias_in_mcse": 0.45589119304862535,
+          "coverage": 0.96,
+          "coverage_p": 0.35532145910241175,
+          "first_failure": ""
+        },
+        {
+          "id": "m_bias_binary",
+          "strategy_expected": "backdoor",
+          "strategies_seen": [
+            "backdoor"
+          ],
+          "estimator": "aipw",
+          "truth": 1.0,
+          "reps": 500,
+          "non_results": 0,
+          "mean": 1.0012565301786238,
+          "mcse": 0.0029168372655907805,
+          "bias": 0.0012565301786238159,
+          "bias_in_mcse": 0.4307851498768192,
+          "coverage": 0.938,
+          "coverage_p": 0.21730895659878563,
+          "first_failure": ""
+        },
+        {
+          "id": "butterfly_continuous",
+          "strategy_expected": "backdoor",
+          "strategies_seen": [
+            "backdoor"
+          ],
+          "estimator": "dml_plr",
+          "truth": 1.2,
+          "reps": 500,
+          "non_results": 0,
+          "mean": 1.2002040069010005,
+          "mcse": 0.0013539395611173097,
+          "bias": 0.00020400690100053076,
+          "bias_in_mcse": 0.15067651973488272,
+          "coverage": 0.946,
+          "coverage_p": 0.6807127507557249,
+          "first_failure": ""
+        },
+        {
+          "id": "mediated_continuous",
+          "strategy_expected": "backdoor",
+          "strategies_seen": [
+            "backdoor"
+          ],
+          "estimator": "dml_plr",
+          "truth": 1.13,
+          "reps": 500,
+          "non_results": 0,
+          "mean": 1.1320785505184046,
+          "mcse": 0.0018343283318140021,
+          "bias": 0.002078550518404665,
+          "bias_in_mcse": 1.1331398432630362,
+          "coverage": 0.966,
+          "coverage_p": 0.1222863538448488,
+          "first_failure": ""
+        },
+        {
+          "id": "long_backdoor_continuous",
+          "strategy_expected": "backdoor",
+          "strategies_seen": [
+            "backdoor"
+          ],
+          "estimator": "dml_plr",
+          "truth": 1.0,
+          "reps": 500,
+          "non_results": 0,
+          "mean": 0.999726721079056,
+          "mcse": 0.0009895315882515558,
+          "bias": -0.00027327892094397566,
+          "bias_in_mcse": 0.2761699820284095,
+          "coverage": 0.942,
+          "coverage_p": 0.4105284941638866,
+          "first_failure": ""
+        },
+        {
+          "id": "null_effect_binary",
+          "strategy_expected": "backdoor",
+          "strategies_seen": [
+            "backdoor"
+          ],
+          "estimator": "aipw",
+          "truth": 0.0,
+          "reps": 500,
+          "non_results": 0,
+          "mean": 0.003139498372345634,
+          "mcse": 0.0030909122406169863,
+          "bias": 0.003139498372345634,
+          "bias_in_mcse": 1.01571902660004,
+          "coverage": 0.952,
+          "coverage_p": 0.9184118889878683,
+          "first_failure": ""
+        },
+        {
+          "id": "frontdoor_continuous",
+          "strategy_expected": "frontdoor",
+          "strategies_seen": [
+            "frontdoor"
+          ],
+          "estimator": "frontdoor_linear",
+          "truth": 0.8800000000000001,
+          "reps": 500,
+          "non_results": 0,
+          "mean": 0.8792736932095977,
+          "mcse": 0.0017548643515962747,
+          "bias": -0.0007263067904024201,
+          "bias_in_mcse": 0.41388201301243066,
+          "coverage": 0.948,
+          "coverage_p": 0.8369951815702998,
+          "first_failure": ""
+        },
+        {
+          "id": "iv_continuous",
+          "strategy_expected": "iv",
+          "strategies_seen": [
+            "iv"
+          ],
+          "estimator": "tsls",
+          "truth": 0.7,
+          "reps": 500,
+          "non_results": 0,
+          "mean": 0.6970511619885976,
+          "mcse": 0.0020296834833887466,
+          "bias": -0.0029488380114023327,
+          "bias_in_mcse": 1.4528560908812105,
+          "coverage": 0.948,
+          "coverage_p": 0.8369951815702998,
+          "first_failure": ""
+        },
+        {
+          "id": "iv_conditional_continuous",
+          "strategy_expected": "iv",
+          "strategies_seen": [
+            "iv"
+          ],
+          "estimator": "tsls",
+          "truth": -0.6,
+          "reps": 500,
+          "non_results": 0,
+          "mean": -0.603793263358981,
+          "mcse": 0.0018188265231748808,
+          "bias": -0.0037932633589810028,
+          "bias_in_mcse": 2.085555335073745,
+          "coverage": 0.96,
+          "coverage_p": 0.35532145910241175,
+          "first_failure": ""
+        },
+        {
+          "id": "proximal_continuous",
+          "strategy_expected": "proximal",
+          "strategies_seen": [
+            "proximal"
+          ],
+          "estimator": "proximal_2sls",
+          "truth": 0.5,
+          "reps": 500,
+          "non_results": 0,
+          "mean": 0.4986223671282392,
+          "mcse": 0.002978362578210358,
+          "bias": -0.0013776328717607922,
+          "bias_in_mcse": 0.4625470659078002,
+          "coverage": 0.946,
+          "coverage_p": 0.6807127507557249,
+          "first_failure": ""
+        },
+        {
+          "id": "heterogeneous_ate_binary",
+          "strategy_expected": "backdoor",
+          "strategies_seen": [
+            "backdoor"
+          ],
+          "estimator": "aipw",
+          "truth": 1.0,
+          "reps": 500,
+          "non_results": 0,
+          "mean": 0.9978433667868245,
+          "mcse": 0.003743595114957191,
+          "bias": -0.002156633213175496,
+          "bias_in_mcse": 0.5760861276260528,
+          "coverage": 0.936,
+          "coverage_p": 0.1503660433797946,
+          "first_failure": ""
+        },
+        {
+          "id": "heterogeneous_att_binary",
+          "strategy_expected": "backdoor",
+          "strategies_seen": [
+            "backdoor"
+          ],
+          "estimator": "aipw",
+          "truth": 1.3305935426270514,
+          "reps": 500,
+          "non_results": 0,
+          "mean": 1.333631468862855,
+          "mcse": 0.004106236204919178,
+          "bias": 0.0030379262358035675,
+          "bias_in_mcse": 0.7398323146058184,
+          "coverage": 0.94,
+          "coverage_p": 0.3037052665657709,
+          "first_failure": ""
+        }
+      ]
+    },
+    "refuters": {
+      "passed": true,
+      "failures": [],
+      "false_alarms": {
+        "placebo_treatment": 0.012272727272727272,
+        "negative_control_outcome": 0.01,
+        "negative_control_outcome:N": 0.01,
+        "implied_independences": 0.009375
+      },
+      "power": {
+        "unmeasured_confounder_nco:negative_control_outcome:N": 1.0,
+        "omitted_edge:implied_independences": 1.0
+      }
+    },
+    "triangulation": {
+      "passed": true,
+      "failures": [],
+      "false_alarms": {
+        "backdoor_binary": 0.02,
+        "randomized_binary": 0.0,
+        "m_bias_binary": 0.005,
+        "null_effect_binary": 0.005,
+        "heterogeneous_ate_binary": 0.02,
+        "heterogeneous_att_binary": 0.015,
+        "pooled": 0.010833333333333334
+      },
+      "power": {
+        "nonlinear_outcome@n=50000 (gated)": 1.0,
+        "nonlinear_outcome@n=2000 (gated, disagree and contested)": 1.0
+      },
+      "reported": {
+        "nonlinear_outcome@n=2000 primary coverage": 0.975,
+        "nonlinear_outcome@n=2000 primary coverage binomial p": 0.1404769107155517,
+        "nonlinear_outcome@n=2000 pairwise contrasts alone (v3 rule)": 0.035,
+        "harmless_interaction@n=2000 flag rate": 1.0,
+        "status consistency": 1.0
+      }
+    }
+  }
+}

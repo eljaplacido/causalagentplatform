@@ -66,4 +66,5 @@ addopts = ["--tb=short", "-q"]
 markers = [
     "d0: the pre-registered decision-table gate (benchmarks/d0-decision-policy/PRE-REGISTRATION.md)",
     "a0: the pre-registered assumption-impact gate (benchmarks/a0-assumption-impact/PRE-REGISTRATION.md)",
+    "c0: the pre-registered calibration-report gate, SIMULATED streams (benchmarks/c0-calibration/PRE-REGISTRATION.md)",
 ]
