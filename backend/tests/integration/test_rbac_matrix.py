@@ -403,7 +403,7 @@ async def test_a_devops_reviewer_cannot_rule_on_another_domain(
     other = two_domains["supply_chain"]["entity"]
     from uuid import UUID
 
-    approve_verdict = await verdict_for(UUID(other))
+    approve_verdict = await verdict_for(UUID(other), action_type="GOVERNANCE_APPROVE")
     reject_verdict = await verdict_for(UUID(other), "REJECTED")
     async with _client(DEVOPS_GOVERNANCE) as client:
         approve = await client.post(
@@ -438,7 +438,10 @@ async def test_a_viewer_reads_approved_objects_only(
     approved = two_domains["devops"]["entity"]
     draft = two_domains["devops"]["fragment"]
     await registry.promote_to_approved(
-        UUID(approved), "CausalEntity", await verdict_for(UUID(approved)), make_user_ref("gov")
+        UUID(approved),
+        "CausalEntity",
+        await verdict_for(UUID(approved), action_type="GOVERNANCE_APPROVE"),
+        make_user_ref("gov"),
     )
     viewer = {"uid": "v", "roles": ["viewer"], "domains": ["devops"]}
     async with _client(viewer) as client:

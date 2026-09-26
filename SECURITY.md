@@ -143,8 +143,10 @@ anything but `local`) the backend refuses to start without that key, or with one
 shorter than 32 bytes; locally, a per-process key is generated and the event is
 logged at CRITICAL. A verdict also verifies against the retired keys listed in
 `GUARDIAN_SIGNING_KEYS_PREVIOUS`, so rotating the key does not void verdicts
-issued before it. Each verdict names the object it was issued for and can be
-spent once (`verdict_consumption`).
+issued before it. Each verdict names the object it was issued for and the
+action it rules on, both inside the signed claim, and can be spent once
+(`verdict_consumption`). Approving a draft needs an APPROVED verdict issued for
+`GOVERNANCE_APPROVE`.
 
 **Secrets.** Every secret (the signing keys, `DATABASE_URL`, `NEO4J_PASSWORD`,
 the LLM API keys) is read from the environment variable or from the file named
@@ -164,7 +166,8 @@ keep in mind when evaluating issues:
   `graph_fragments` and `assumptions` are written only by `SemanticLayerRegistry`
   (`backend/src/semantic_layer/registry.py`), which refuses a verdict that is
   missing, not APPROVED (REJECTED for a rejection), unsigned, issued for another
-  object, or already spent. The dev seeding script `backend/scripts/seed_data.py`
+  object (or, for an approval, another action than `GOVERNANCE_APPROVE`), or
+  already spent. The dev seeding script `backend/scripts/seed_data.py`
   inserts directly; it is run by hand against a local database, and no request
   path reaches it. A path that
   writes those tables without that check, or that obtains a verdict it should

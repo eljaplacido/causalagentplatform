@@ -14,6 +14,8 @@ table before proceeding.  GuardianBlockedError is raised if:
   - The verdict is not APPROVED
   - The verdict is not signed by the Guardian (a row in an append-only log is a
     record of what happened, not an authorisation)
+  - The verdict was issued for another action: a promotion needs one issued for
+    GOVERNANCE_APPROVE (septa-60)
   - The verdict was issued for a different object, or for none
   - The verdict has already been spent (see verdict_consumption)
 
@@ -49,6 +51,7 @@ from src.semantic_layer.models import (
     ReviewStatus,
     UserRef,
 )
+from src.semantic_layer.verdict import GOVERNANCE_APPROVE
 from src.semantic_layer.verdict import claim as verdict_claim
 from src.semantic_layer.verdict import verify as verdict_verify
 
@@ -70,6 +73,7 @@ async def _assert_verdict_approved(
     subject_id: UUID,
     context: str = "write",
     expected: GuardianVerdict = GuardianVerdict.APPROVED,
+    action: str | None = None,
 ) -> AuditEntry:
     """
     Assert that this verdict authorises *this* decision, then spend it.
@@ -77,6 +81,12 @@ async def _assert_verdict_approved(
     ``expected`` is APPROVED for a write. A rejection needs the same four checks
     against a REJECTED verdict: a human confirming a refusal should be acting on a
     Guardian ruling about *this* object, not on any UUID they happened to send.
+
+    ``action``, when given, is the decision the caller is carrying out, and the
+    verdict must have been issued for exactly that action: a promotion passes
+    ``GOVERNANCE_APPROVE``. The action is in the signed claim, so it is read after
+    the signature verifies. Before septa-60 it went unread, and an APPROVED verdict
+    from a check for any action on the object could approve it.
 
     Four questions, all of which used to go unasked except the first two:
 
@@ -145,6 +155,9 @@ async def _assert_verdict_approved(
             verdict_id=str(verdict_id),
         )
 
+    # After the signature, so the action read here is the one the Guardian signed.
+    _assert_action(record["action_type"], action, verdict_id, context)
+
     issued_for = record["subject_id"]
     if not issued_for:
         raise GuardianBlockedError(
@@ -203,6 +216,20 @@ async def _assert_verdict_approved(
         policy_rules_cited=_as_rule_list(record["policy_rules_cited"]),
         session_id=record["session_id"],
         created_at=record["created_at"],
+    )
+
+
+def _assert_action(issued: Any, action: str | None, verdict_id: UUID, context: str) -> None:
+    """Refuse a verdict issued for a different decision than the one being made."""
+    if action is None or str(issued) == action:
+        return
+    raise GuardianBlockedError(
+        reason=(
+            f"Guardian verdict {verdict_id} was issued for action {issued}, not "
+            f"{action} — {context} blocked. It needs an APPROVED verdict from /check "
+            f"for action {action} on this object."
+        ),
+        verdict_id=str(verdict_id),
     )
 
 
@@ -862,6 +889,7 @@ class SemanticLayerRegistry:
                 verdict_id,
                 subject_id=object_id,
                 context=f"promote_to_approved({object_type})",
+                action=GOVERNANCE_APPROVE,
             )
 
             now = datetime.now(UTC)

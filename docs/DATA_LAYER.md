@@ -255,7 +255,9 @@ its state today.
 
 1. **All writes require a Guardian `APPROVED` verdict.** Holds for the registry's write methods.
    `propose_draft` and `promote_to_approved` refuse a verdict that does not exist, is not
-   APPROVED, is unsigned, names a different object, or has already been spent. `reject_draft`
+   APPROVED, is unsigned, names a different object, or has already been spent, and
+   `promote_to_approved` also refuses one not issued for action `GOVERNANCE_APPROVE`
+   (`septa-60`, `backend/tests/guardian/test_approve_action_binding.py`). `reject_draft`
    applies the same checks to a REJECTED verdict. See
    `backend/tests/guardian/test_verdict_binding.py`.
 2. **All objects are versioned.** Does not hold. Objects carry a `version` field (default

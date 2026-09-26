@@ -27,7 +27,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, patch
-from uuid import UUID
 
 import pytest
 import pytest_asyncio
@@ -40,6 +39,7 @@ from tests.conftest import VerdictFactory, make_causal_entity
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
+    from uuid import UUID
 
     from sqlalchemy.ext.asyncio import AsyncSession
 

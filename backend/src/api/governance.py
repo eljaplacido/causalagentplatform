@@ -146,7 +146,9 @@ class ApproveRequest(BaseModel):
     )
     verdict_id: UUID = Field(
         ...,
-        description="ID of the Guardian APPROVED audit_log entry authorising this approval",
+        description="ID of the Guardian APPROVED audit_log entry from a /check for action "
+        "GOVERNANCE_APPROVE on this object: signed, bound to the object, single-use. A "
+        "verdict issued for any other action does not authorise an approval.",
     )
     notes: str | None = Field(None, description="Optional approval notes")
 
@@ -262,9 +264,10 @@ async def approve_object(
 
     Requires governance_officer or platform_engineer role.
 
-    The caller must supply a valid Guardian verdict_id (from a previous
-    /check call) that has verdict=APPROVED.  The registry validates this
-    against audit_log before making any changes.
+    The caller must supply the verdict_id of an APPROVED Guardian verdict from
+    /check for action GOVERNANCE_APPROVE with this object as subject_id. The
+    registry validates it against audit_log before making any changes, and the
+    verdict is spent on use (septa-60).
     """
     uid = user.get("uid", "unknown")
     approver = UserRef(id=uid, email=user.get("email"), name=user.get("name"))
