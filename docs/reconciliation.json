@@ -32,12 +32,12 @@
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "47f82f3b25daf272632ad22a9a238b8cb03587eb0cdbb17e856d8cf8105d8143"
+          "docs/CURRENT_STAGE.md": "46e75a70ec7bc324ae6d3edd6d3bcb7bbb44d15ccaa2fc06aec165fceba94c7e"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
+        "by": "Claude (small-batch-1: moved only by CURRENT_STAGE's Gates table; its seeding line (--all, SQLite) still holds)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -80,7 +80,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/semantic_layer": "e272da84c43185ababee3962259d2982e2cf531c26ba422c0dc3fd4be44a70f3",
+          "backend/src/semantic_layer": "ea55bd4224a1f8bfcca328b39114e95a6b6b42a8f9fe00bc57370332c01e6222",
           "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
           "packages/semantic-types/src": "fe7182fc233b307aa02d26a958898db94ead599601fe740dcfe2981bf5a1150d",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
@@ -89,7 +89,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: re-read for DB claims; its one PostgreSQL mention, 007_causal_models.sql, still holds; registry.py changed only its bind types)"
+        "by": "Claude (small-batch-1: contracts.py changed only ContractRegistry's docstring; ADR-001 says nothing about it)"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -105,7 +105,7 @@
         "on": "2026-09-26",
         "sha256": {
           "backend/src/semantic_layer/provenance.py": "02fe831e092fb8bb01d05db9fc9d871ae544e09b2adca565d0df34e3086fa474",
-          "backend/src/semantic_layer/contracts.py": "8af9432f179c0d3e8652b3b7d4a48db9edbff3f5acc1fb25c8a6e8d9af3eaaa4",
+          "backend/src/semantic_layer/contracts.py": "96357377af27b488fd82e05c2601a907cbf99afe7cd9ae71819ee37c7e284068",
           "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
           "backend/src/agents/llm_factory.py": "f7a2d5514b4002494fe1cf9edf69c5b9cc31b8d2751fe39b335ecbfce4d8014a",
           "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0"
@@ -113,7 +113,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: re-read for DB claims; governance.py now binds audit_log's rules as TEXT[] and created_at as TIMESTAMPTZ, which changes nothing this ADR says about the audit trail)"
+        "by": "Claude (small-batch-1: Redis-cache mitigation dropped; Part B's in-memory ContractRegistry description matches the new docstring)"
       }
     },
     "docs/ADR-003-hierarchical-planning-and-evaluation.md": {
@@ -148,7 +148,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/agents": "ab6334ee1a9e15e7e3a6bf4647430473456a86799863b8ce80b3110670587aa9",
+          "backend/src/agents": "8044bc0482380ad8cf9ce9ffb44d76ae94d2748975d634582aaeb584dea5d5a8",
           "backend/src/skills": "7c14f6095d38b78711081427d4f98e3f621a0a72de4b377d6fc374c346c4ecea",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "backend/src/orchestration": "026e61993e2c3e51962380e4d4e957cf5d26e650455679bd5e7cdce75c31c2f4",
@@ -157,7 +157,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: re-read the memory tiers; session memory in PostgreSQL is now true, 008_session_state.sql, and the experience buffer's session_state reads run on it too)"
+        "by": "Claude (small-batch-1: drift_monitor.py: alert_emit now emits via AlertEmitter and names no topic; the spec's Kafka line stays, pinned by register kafka-streaming)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -213,13 +213,13 @@
           "backend/src/sensors": "d38f988ccb52659ac4ecc8724e8aa775b2e6e9fca76b73dbba6576c3f3d1dcba",
           "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
           "backend/src/semantic_layer/registry.py": "91529601ce53d74c25763a017f4a43ad552c13e94d562f513165b079c16c71b7",
-          "backend/src/agents/drift_monitor.py": "9279c31636b3b663007f21e7aa671ffe738a535432f610ecb5b6de00ae6bd815",
+          "backend/src/agents/drift_monitor.py": "9e20568516281d94bb007349f8841e0ec14b008192c5d32c5eeff4131e8544fc",
           "backend/src/skills/drift_detect.py": "9432982258b155287a90701d76dc9bf331dd8c65fbc692ad37fcd124fcab7111"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-47: 3.2 lists migrations 001-010, the compose init script, the RLS row, the roles and grants, and that deployments connect as causal_app)"
+        "by": "Claude (small-batch-1: 5.1 now says the return value names the AlertEmitter channel and records the old topic label and false emitted=true)"
       }
     },
     "docs/HANDOFFS.md": {
@@ -284,12 +284,12 @@
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
           ".env.example": "f5dbf40f551d60b4b91d5bbaa9b36a2404f89536421fe51b8bcbf17a6ae1258f",
-          "backend/scripts": "36d9419c9cb543ee85703a4d4008be1c16e383c5d7567d9c7bcb6dce92ad64da"
+          "backend/scripts": "94c21c5743fcd94843eab233de5ca2e92b913b84cb7148ae0917a33a76d8b254"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
+        "by": "Claude (small-batch-1: section 8 re-read: --clear scope, owner-only on PostgreSQL, the seeder is SQLite-only today)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -311,12 +311,12 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
+          "backend/tests": "b5ca416b5f8cffc707abc658e368f538d54c170caeb9ada114c97b83742a3dcf",
           "backend/pyproject.toml": "cdabd6c6e24ab6d579d2aa1de3d0d6db5b8802e87b10489cc3df43a2d34a47ed",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
           ".gnomon/ci.sh": "8379e43234946f44d8e569a68c60d42923500ded3012d88bf2a477f5ebecf8aa",
-          "scripts": "bcb39b1862da2e64cdfcc87426508b01d8a673c22627287b339f96ae4bf32a52",
+          "scripts": "b9e15ecef4d3aa0f569d7b84a3e2578d73cf0513d186afafe31b468d8f927b85",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "2ea289c99ef957a2b22a4eed544e76c06e45eb8a2c844d384f9e05eb7f84d940",
           "packages/causal-core/tests": "ca9a8600b9bdeb81d9509afcb864900159868a7509bcc0aa13fff0fc501869f5",
@@ -325,7 +325,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
+        "by": "Claude (small-batch-1: relock's --refresh-package documented; test_health_api.py removal and new seed/drift/py_lock tests change no claim here)"
       }
     },
     "docs/UIX.md": {
@@ -334,14 +334,14 @@
         "frontend/src"
       ],
       "baseline": {
-        "on": "2026-09-25",
+        "on": "2026-09-26",
         "sha256": {
-          "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429"
+          "frontend/src": "53904fc3d2b9f3b1c068c10fec234755fb7191909a9f1ca24c5eb376614a3265"
         }
       },
       "last_read": {
-        "on": "2026-09-25",
-        "by": "Claude (septa-46: ApprovalPanel domain choice; governance persona and inventory re-read)"
+        "on": "2026-09-26",
+        "by": "Claude (small-batch-1: governance: business domain as a label, Cynefin badge only when classified, CynefinBadge renders unknown input as Unclassified)"
       }
     },
     "docs/ROADMAP.md": {

@@ -331,7 +331,9 @@ python3 scripts/py_lock.py relock --upgrade    # moves every pin to the newest t
 ```
 
 `relock` writes the four locks and `requirements/lock-inputs.json`, the fingerprint the gate's
-`python-lock` step compares. A dependency edit without a re-lock fails that step, naming the
+`python-lock` step compares. It passes uv `--refresh-package` for each local package the `.in`
+file names, so a version bump of one (causal-core 0.10 to 0.11) is resolved from the source, not
+from uv's cached build of the old version; index packages keep their cache. A dependency edit without a re-lock fails that step, naming the
 file and the command. The step also requires your local environments to equal their locks, so
 after a re-lock (or a pull that brought one), bring them back in line:
 

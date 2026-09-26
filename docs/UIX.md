@@ -266,6 +266,11 @@ Components under `frontend/src/components/` are marked **built**. The rest are *
 
 The review queue shows no real risk tier or submitter (register `review-queue-risk-tier`), and
 the Evidence group has no backend to read from yet (register `agent-skills-are-stubs`).
+A review item's domain is its business domain (`devops`, `marketing`), shown as a plain label in
+the queue and the panel header; a `CynefinBadge` appears only when an item carries a Cynefin
+classification, which the review-queue endpoint does not return. Until 2026-09-26 the page fed the
+business domain to `CynefinBadge`, which crashed on it; the badge now renders any value that is
+not a Cynefin domain as a neutral "Unclassified", never as a real domain.
 Approving in `ApprovalPanel` asks the approver to classify the situation (Cynefin domain;
 required, nothing pre-selected, DISORDER not offered): Guardian reads it, and without one
 rule PR-006 rejects every approval.
