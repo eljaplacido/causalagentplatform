@@ -28,16 +28,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/pyproject.toml": "28974685007e1ae3d255c6c8811c41027867bff2eeae81dfb9145cdce5dfc429",
-          "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
+          "backend/pyproject.toml": "aed6cbb405b21ebabf3b25620ab10ff1bc095f3860cf0c079a378b539875580a",
+          "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "e0d1c675b15a2f48c42c2a541741e392a32a8ac2e8f829b2eefd8a7a8d9a0cf9"
+          "docs/CURRENT_STAGE.md": "90f35b0cb3d745dcb87aebc32eb11730c120e0206a98bafa08d4d7f923f5bef6",
+          "packages/causal-mcp": "f86dd08d8fef8f9b09adab83770f37de1234101a5c84ff11ef0427bdab2507d1"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-10: backend pin raised; README quotes no package version floors)"
+        "by": "Claude (merge #38 into #40: gate lists name T9 and C0 together (AGENTS, skills, benchmarks README, TESTING_CICD seeded-defect list); ROADMAP keeps the train's done list with calibration evidence open; CURRENT_STAGE package counts 233/146/41 measured on this tree; README and QUICKSTART quote no version floors)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,18 +53,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "9bb2f6d221517e55380f01ddbf11b1aea2bb8d4eb0fa255e87afc402e92a230d",
-          "backend/src": "af017b3d079ed9ce4880fd228296f3dd3652f7ec054b46999e683eca071ba31b",
-          "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "0c8d80e14a71871a39ebc59c14514ef354f15334222bf0b3406b14aa4527f0a9",
-          "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
-          "packages": "72610ee7f8f2174b36506f8469534c590eb3a38b7bcde6a79fc965682d074788",
+          "conformance/declared_not_implemented.json": "516158bd388357846e2c628681da9bbd1be332da78ac45c443592794292dcef8",
+          "backend/src": "30b8ce7edfd984129ec06e2065c8cc0edb1728252a4a4bee91d3146f531a8cd9",
+          "backend/tests": "8c9ca0008cb6bea628e82494a0e3617fbcd57b26d9bb593cc6df3a3130275e40",
+          "frontend/src": "f309f78f9a388af875805eefabe52267de66468efb047a2c8e924303e5cee552",
+          "packages": "c64361259b84856ce02d9b623ea3149011f0cc6b814061ce479df6c12d66cbbc",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-10: calibration row updated, two C0 rows added; report shape changed in outcome.py and the backend test, both described)"
+        "by": "Claude (merge #38 into #40: gate lists name T9 and C0 together (AGENTS, skills, benchmarks README, TESTING_CICD seeded-defect list); ROADMAP keeps the train's done list with calibration evidence open; CURRENT_STAGE package counts 233/146/41 measured on this tree; README and QUICKSTART quote no version floors)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -251,14 +250,14 @@
         "on": "2026-09-26",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
-          "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
-          ".github": "fe510356e0b3b1a4cc1702c8b02a5faae9449c7ca170d7f06b1a83f40a2f3e90",
-          ".gnomon": "012aca86374fc7c139d9ba2ece8e0ca58cf279031d579f0008c7bda02d880b57"
+          "prompts": "664b74cd837a44513e10dc0a7a5c44a3015816f928c93d4f7831320b0231e50f",
+          ".github": "db12d364ec234ff9774297f81b08649ec310d368304c47fbfcfa04138f630ac4",
+          ".gnomon": "bb564221cb7a0339004787d342172182a5662510dfb4a6c2eded2c6a82567ac9"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-10: .gnomon change is a gate-table row and match regexes; the page lists the harness files, none of which it quotes)"
+        "by": "Claude (merge #38 into #40: gate lists name T9 and C0 together (AGENTS, skills, benchmarks README, TESTING_CICD seeded-defect list); ROADMAP keeps the train's done list with calibration evidence open; CURRENT_STAGE package counts 233/146/41 measured on this tree; README and QUICKSTART quote no version floors)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -278,17 +277,17 @@
         "sha256": {
           "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
-          "backend/pyproject.toml": "28974685007e1ae3d255c6c8811c41027867bff2eeae81dfb9145cdce5dfc429",
-          "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
+          "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
+          "backend/pyproject.toml": "aed6cbb405b21ebabf3b25620ab10ff1bc095f3860cf0c079a378b539875580a",
+          "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
-          ".env.example": "f5dbf40f551d60b4b91d5bbaa9b36a2404f89536421fe51b8bcbf17a6ae1258f",
+          ".env.example": "10b19ac63993ff640ea47936fb99d53938077413273463afe5e5661313451c97",
           "backend/scripts": "36d9419c9cb543ee85703a4d4008be1c16e383c5d7567d9c7bcb6dce92ad64da"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-10: backend pin raised to causal-decision>=0.5.0; QUICKSTART quotes no package version floors, so no text changed)"
+        "by": "Claude (merge #38 into #40: gate lists name T9 and C0 together (AGENTS, skills, benchmarks README, TESTING_CICD seeded-defect list); ROADMAP keeps the train's done list with calibration evidence open; CURRENT_STAGE package counts 233/146/41 measured on this tree; README and QUICKSTART quote no version floors)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -309,22 +308,22 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          ".github/workflows": "507210537708c484cabb55c1c2481d367609598832a89ca4a1a0e033b5e265ca",
-          "backend/tests": "0c8d80e14a71871a39ebc59c14514ef354f15334222bf0b3406b14aa4527f0a9",
-          "backend/pyproject.toml": "28974685007e1ae3d255c6c8811c41027867bff2eeae81dfb9145cdce5dfc429",
+          ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
+          "backend/tests": "8c9ca0008cb6bea628e82494a0e3617fbcd57b26d9bb593cc6df3a3130275e40",
+          "backend/pyproject.toml": "aed6cbb405b21ebabf3b25620ab10ff1bc095f3860cf0c079a378b539875580a",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
-          ".gnomon/ci.sh": "8379e43234946f44d8e569a68c60d42923500ded3012d88bf2a477f5ebecf8aa",
-          "scripts": "479d462d7dfe743b5e2122a038f38f1b157f8997405d1576d7f1da986c357939",
+          ".gnomon/ci.sh": "a05e016e87f09e27989ffc185d06ad2b55c6d31f4e9b9cc2954b8cfdf7a40e45",
+          "scripts": "04f86e2aa348b9a2355ad3bb5750f8b94b78b9d5e77fc5e38a3cc0b604dae99c",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
-          "benchmarks": "432e7d3d72e02900590fcddc7222cbf268ed918c7fb04159a5b3f444e766faf4",
-          "packages/causal-core/tests": "be7509f8646efd6a27d3b142715e440739d17255e7ffc1ebcde5bc05aa95c2b2",
+          "benchmarks": "58eaf5af920accec421ce7392b3d999aa35199d6f471c989b7fab25b3865acd0",
+          "packages/causal-core/tests": "4496d9663daa2b71e5a548c0ac79983c4ba33380ac0829eb3232292f23303ee1",
           "packages/causal-decision/tests": "811166b3dd05cfc3cbd62c7e71fcf1d62666fb738c97dcb65e34725fede4d034"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-10: the backend pin moved; the doc names no package versions)"
+        "by": "Claude (merge #38 into #40: gate lists name T9 and C0 together (AGENTS, skills, benchmarks README, TESTING_CICD seeded-defect list); ROADMAP keeps the train's done list with calibration evidence open; CURRENT_STAGE package counts 233/146/41 measured on this tree; README and QUICKSTART quote no version floors)"
       }
     },
     "docs/UIX.md": {
@@ -353,14 +352,14 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "packages/causal-core/src/causal_core": "b3a206babea176dd53fdebe83037e38e66922eeced1def6dbfb248262c2477a6",
-          "conformance/declared_not_implemented.json": "9bb2f6d221517e55380f01ddbf11b1aea2bb8d4eb0fa255e87afc402e92a230d",
-          "docs/CURRENT_STAGE.md": "e0d1c675b15a2f48c42c2a541741e392a32a8ac2e8f829b2eefd8a7a8d9a0cf9"
+          "packages/causal-core/src/causal_core": "65b5b9fe4d2bc339a536717c0fdd0f252483ac9e136b0600914ff3590a977c45",
+          "conformance/declared_not_implemented.json": "516158bd388357846e2c628681da9bbd1be332da78ac45c443592794292dcef8",
+          "docs/CURRENT_STAGE.md": "90f35b0cb3d745dcb87aebc32eb11730c120e0206a98bafa08d4d7f923f5bef6"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-10: item 5 and the p2 list say the report and its simulated C0 gate are built, real follow-ups are not)"
+        "by": "Claude (merge #38 into #40: gate lists name T9 and C0 together (AGENTS, skills, benchmarks README, TESTING_CICD seeded-defect list); ROADMAP keeps the train's done list with calibration evidence open; CURRENT_STAGE package counts 233/146/41 measured on this tree; README and QUICKSTART quote no version floors)"
       }
     },
     "SECURITY.md": {
