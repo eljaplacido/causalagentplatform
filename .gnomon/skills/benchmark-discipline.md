@@ -1,7 +1,7 @@
 +++
 name = "benchmark discipline"
 description = "Freeze the bars before the run, keep every failing run, move a bar only with a version bump and a changelog, and prove the gate can fail before trusting a pass"
-match = '\b(benchmark|benchmarks|pre-?registration|pre-?register\w*|bars?|gate|t0|t2|t3|t4|t5|t6|t7|t8|d0|a0|ihdp|lalonde|seeded[- ]defects?|negative control|coverage|power|results?)\b'
+match = '\b(benchmark|benchmarks|pre-?registration|pre-?register\w*|bars?|gate|t0|t2|t3|t4|t5|t6|t7|t8|d0|a0|c0|ihdp|lalonde|seeded[- ]defects?|negative control|coverage|power|results?)\b'
 roles = ["coordinator", "implementor", "implement", "plan", "critique", "verifier"]
 +++
 

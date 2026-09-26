@@ -17,6 +17,7 @@ the bars are fixed before the code is run against them, and the runs that failed
 | `t7-cluster/` | T7 | Cluster-randomized designs: unit-weighted effect, CR2 coverage, refusals where clusters dominate | `causal_core.cluster` via `analyze` | every PR: `pytest -m t7` |
 | `t8-switchback/` | T8 | Switchback designs: steady-state effect after a washout, coverage, carryover check (reported) | `causal_core.cluster` via `analyze` | every PR: `pytest -m t8` |
 | `a0-assumption-impact/` | A0 | Whether a revised causal graph invalidates an estimate made under the old one, against an independent linear-Gaussian oracle | `causal_decision.assumptions.impact` | every PR: `pytest -m a0` |
+| `c0-calibration/` | C0 | **Simulated.** Whether the calibration report is honest about what follow-ups can say: Clopper-Pearson coverage (exact, and over decision streams with effects set by construction), no rate below 10 follow-ups, undecidable follow-ups counted apart and bounded, "could not resolve" kept apart from "no difference". Says nothing about real operations | `causal_decision.outcome.report` | every PR: `pytest -m c0` |
 | `d0-decision-policy/` | D0 | The decision procedure on outcomes whose evidence is known by construction: a scenario table and properties | `packages/causal-decision` | every PR: `pytest -m d0` |
 
 Each directory holds a `PRE-REGISTRATION.md` and a `results/` directory. The gate code lives in the
@@ -60,7 +61,7 @@ the repository root; see `docs/QUICKSTART.md` for setting it up):
 
 ```bash
 cd packages/causal-core && .venv/bin/pytest -m t0      # or -m t4, -m t5, -m t6, -m t7, -m t8, or -m real_data (T2, T3)
-cd packages/causal-decision && ../causal-core/.venv/bin/pytest -m d0   # or -m a0
+cd packages/causal-decision && ../causal-core/.venv/bin/pytest -m d0   # or -m a0, -m c0
 ```
 
 To write a results file:
@@ -77,6 +78,7 @@ $V -m causal_core.bench.t7      --out benchmarks/t7-cluster/results/<date>-v<ver
 $V -m causal_core.bench.t6      --out benchmarks/t6-sequential/results/<date>-v<version>-run<N>.json
 $V -m causal_decision.bench.d0  --out benchmarks/d0-decision-policy/results/<date>-v<version>-run<N>.json
 $V -m causal_decision.bench.a0  --out benchmarks/a0-assumption-impact/results/<date>-v<version>-run<N>.json
+$V -m causal_decision.bench.c0  --out benchmarks/c0-calibration/results/<date>-v<version>-run<N>.json
 ```
 
 T0 needs the `crosscheck` extra (y0). T2 and T3 download their data by pinned SHA-256 into
