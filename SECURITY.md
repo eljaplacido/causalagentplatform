@@ -146,7 +146,12 @@ logged at CRITICAL. A verdict also verifies against the retired keys listed in
 issued before it. Each verdict names the object it was issued for and the
 action it rules on, both inside the signed claim, and can be spent once
 (`verdict_consumption`). Approving a draft needs an APPROVED verdict issued for
-`GOVERNANCE_APPROVE`.
+`GOVERNANCE_APPROVE`, and approving an edge needs a sensitivity result the
+platform recorded for it under a `RECORD_SENSITIVITY` verdict (PR-007; a result
+a drafter attaches to their own assumption does not count). A draft submitted
+through `POST /api/semantic/drafts` is judged in the named session's Cynefin
+domain or the one the caller declares, recorded with who declared it in the
+audit row; nothing declared is DISORDER, which PR-006 refuses.
 
 **Secrets.** Every secret (the signing keys, `DATABASE_URL`, `NEO4J_PASSWORD`,
 the LLM API keys) is read from the environment variable or from the file named

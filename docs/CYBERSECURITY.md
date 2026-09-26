@@ -67,17 +67,25 @@ An adversary injects false or misleading causal edges or evidence into the graph
 - **Partial:** the Guardian rejects a payload whose proposed edges form a cycle (PR-001). No
   other contradiction check triggers a review.
 - **In place, narrower than "passes a sensitivity analysis":** the Guardian refuses to approve
-  an edge that has no sensitivity result (PR-007): a `/check` for `GOVERNANCE_APPROVE` on an
-  edge is REJECTED unless an assumption the edge references, not rejected in review, carries a
-  stored `SensitivityResult`, read from the database rather than the request
-  (`backend/tests/guardian/test_pr007_sensitivity_gate.py`). A result that is not robust still
-  counts; the reviewer sees it. The platform records one on a draft edge when it runs the
-  kernel on the edge's question (`POST /api/semantic/edges/{edge_id}/sensitivity`, and
-  SimulationAgent given data): a new IGNORABILITY assumption carrying the kernel's E-value (and
-  a Rosenbaum gamma* where the kernel reports one), written only under a Guardian verdict for
-  `RECORD_SENSITIVITY` on that edge, never onto an approved edge or an existing assumption
-  (`backend/tests/guardian/test_edge_sensitivity_recorded.py`). A drafter can still attach a
-  result of their own to an assumption they draft.
+  an edge that has no sensitivity result the platform recorded for it (PR-007): a `/check` for
+  `GOVERNANCE_APPROVE` on an edge is REJECTED unless an assumption the edge references, not
+  rejected in review, carries a `SensitivityResult` recorded by the platform, read from the
+  database rather than the request (`backend/tests/guardian/test_pr007_sensitivity_gate.py`).
+  A result that is not robust still counts; the reviewer sees it. The platform records one on
+  a draft edge when it runs the kernel on the edge's question
+  (`POST /api/semantic/edges/{edge_id}/sensitivity`, and SimulationAgent given data): a new
+  IGNORABILITY assumption carrying the kernel's E-value (and a Rosenbaum gamma* where the
+  kernel reports one), written only under a Guardian verdict for `RECORD_SENSITIVITY` on that
+  edge, never onto an approved edge or an existing assumption
+  (`backend/tests/guardian/test_edge_sensitivity_recorded.py`). The assumption stores that
+  verdict's id (`assumptions.sensitivity_verdict_id`, migration 013, unique), and a result
+  counts only when the row it names is APPROVED, for `RECORD_SENSITIVITY`, signed by the
+  Guardian, issued for the edge being judged, and spent by that write
+  (`backend/src/semantic_layer/review_risk.py` `recorded_sensitivity`, which the review
+  queue's risk tiers read too). A result a drafter attaches to an assumption they draft is
+  stored as what they said and counts for nothing: `propose_draft` never writes the verdict
+  column. Not covered: the data the kernel analyses is the caller's, so a caller who
+  fabricates the data can still steer the E-value the platform records.
 
 #### Prompt Injection (LLM Plane)
 Crafted user input or external data attempts to override agent instructions or exfiltrate EpistemicState contents.
@@ -233,6 +241,15 @@ Where §4.1 does not say, these are the least-privilege choices made:
 - **`/api/governance/check`** issues the verdicts that authorise writes. §4.1 gives `agent` a
   read-only check and `graph_author` "submit"; `analyst` drafts through `/drafts`, which runs
   its own check, and gets no direct `/check`.
+- **`POST /api/semantic/drafts`** runs that check in a classified situation, as `/check` does:
+  the named reasoning session's own Cynefin domain (`session_id`; an unknown session is 404),
+  else the caller's declaration (`cynefin_domain`), else DISORDER, which PR-006 refuses;
+  CHAOTIC is escalated (PR-003). A declaration never overrules a session's classification.
+  The domain and its source (`session <id>`, `declared by <uid>`, `not declared`) are in the
+  checked payload, so the verdict's payload hash binds them, and in the audit row's `notes`,
+  where `GET /api/governance/audit-log` shows who declared what
+  (`backend/tests/integration/test_draft_submission_api.py`). Before this the route set no
+  domain, so every draft submitted through it was DISORDER and refused.
 - **Sessions** run the platform graph; §4.1 gives every role "Run".
 - **Provenance** is read like the audit log (governance roles only), and its erasure (a test
   cleanup route) needs a governance role. It still erases: provenance is not append-only

@@ -98,7 +98,7 @@
           "says": "Computes Rosenbaum sensitivity bounds and E-values for unmeasured confounders"
         },
         {
-          "at": "docs/CYBERSECURITY.md:418",
+          "at": "docs/CYBERSECURITY.md:435",
           "says": "- Rosenbaum sensitivity bounds"
         },
         {
@@ -311,7 +311,7 @@
       "reality": "The semantic layer (fragments, edges) is stored through SQLAlchemy (SQLite/PostgreSQL); Neo4j code exists only for the experience buffer and drift alerts, is exercised only against mocks, and no d-separation or path query runs in Neo4j.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:665",
+          "at": "backend/src/semantic_layer/registry.py:675",
           "says": "FROM graph_fragments"
         }
       ],
@@ -521,11 +521,11 @@
       "capability": "Agent evaluation endpoints (consistency, calibration, decision quality) measure the running platform",
       "claimed_in": [
         {
-          "at": "backend/src/api/platform.py:756",
+          "at": "backend/src/api/platform.py:759",
           "says": "    summary=\"Agent confidence calibration probe\","
         },
         {
-          "at": "backend/src/api/platform.py:798",
+          "at": "backend/src/api/platform.py:801",
           "says": "    summary=\"Composite decision quality index\","
         },
         {
@@ -544,7 +544,7 @@
       "reality": "None of the three observes an agent. /evaluation/consistency scores num_runs identical EMPTY recommendation lists against each other, so the variance it reports is 0 by construction whatever the platform is doing. /evaluation/calibration scores the confidences in the request body, and CalibrationProbe states it uses their variance as a proxy because there is no ground truth -- calibration needs realized outcomes, and nothing records one. /evaluation/decision-quality combines four numbers taken as query parameters, defaulting to 0.75/0.05/0.80/0.70, so its 'index' is whatever the caller passes. The module docstring claimed 'No static or mock values' until 2026-09-24; it now names these three as excluded.",
       "evidence": [
         {
-          "at": "backend/src/api/platform.py:736",
+          "at": "backend/src/api/platform.py:739",
           "says": "    mock_recommendations: list[list[Any]] = [[] for _ in range(num_runs)]"
         },
         {
@@ -552,7 +552,7 @@
           "says": "        - Variance of confidence scores as a proxy for calibration"
         },
         {
-          "at": "backend/src/api/platform.py:804",
+          "at": "backend/src/api/platform.py:807",
           "says": "    calibration_score: float = Query(default=0.70, ge=0.0, le=1.0),"
         }
       ],
@@ -668,15 +668,15 @@
       "reality": "Approval and rejection UPDATE the object's own row: promote_to_approved rewrites approval_status, approved_at, approved_by, guardian_verdict_ref and lineage, and reject_draft rewrites approval_status (to DEPRECATED) and lineage, and record_edge_sensitivity (septa-62) rewrites a draft edge's assumption_refs and lineage to add the assumption carrying the kernel's sensitivity result. The version column keeps its 1.0.0 default, because no code path increments it and no new row is written for a new version. The previous state survives only as lineage entries and audit_log rows. The interventions feedback endpoint likewise UPDATEs interventions in place.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:998",
+          "at": "backend/src/semantic_layer/registry.py:1008",
           "says": "\"status\": \"APPROVED\","
         },
         {
-          "at": "backend/src/semantic_layer/registry.py:1078",
+          "at": "backend/src/semantic_layer/registry.py:1088",
           "says": ".values(approval_status=bindparam(\"status\"), lineage=bindparam(\"lineage\")),"
         },
         {
-          "at": "backend/src/semantic_layer/registry.py:1198",
+          "at": "backend/src/semantic_layer/registry.py:1208",
           "says": "assumption_refs=bindparam(\"refs\", type_=UUID_ARRAY),"
         }
       ],
@@ -696,7 +696,7 @@
           "says": "3. All approved objects carry lineage."
         },
         {
-          "at": "backend/src/api/semantic.py:378",
+          "at": "backend/src/api/semantic.py:430",
           "says": "This satisfies EU AI Act Art. 13 lineage"
         },
         {
@@ -707,7 +707,7 @@
       "reality": "Approval and rejection each append one step (APPROVED or REJECTED: actor, time, verdict id), recording a sensitivity result appends a MODIFIED step naming the new assumption and the verdict, and an edge keeps whatever lineage list its submitter sent. Nothing records the data source, the transformation steps or the policy rules into lineage, and no platform code constructs a LineageRecord. An entity's submitted lineage is not stored (the INSERT omits the column). Fragments had no lineage column at all until 006_graph_fragment_lineage.sql, so approving or rejecting one failed outright. The Guardian verdict, its cited rules, and the evidence and assumption ids are linked by reference, so the chain can be partly rebuilt by joins. Nothing shows that this satisfies EU AI Act Art. 13.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:966",
+          "at": "backend/src/semantic_layer/registry.py:976",
           "says": "select(t.c.lineage, t.c.approval_status, t.c.domain).where("
         },
         {
@@ -812,11 +812,11 @@
       "reality": "contracts.py defines the contract, SLA and violation models and a ContractRegistry that can register, look up and remove contracts. Nothing evaluates a contract, nothing produces a ContractViolation, and only the tests instantiate the registry. PR-009 fires only when a caller sends action_type DATA_ACCESS_WITH_CONTRACT, which no code path does, and it reads the violation list from that caller's own payload. So a caller that reports no violations is never blocked.",
       "evidence": [
         {
-          "at": "backend/src/agents/governance.py:541",
+          "at": "backend/src/agents/governance.py:543",
           "says": "if action_type == \"DATA_ACCESS_WITH_CONTRACT\":"
         },
         {
-          "at": "backend/src/agents/governance.py:542",
+          "at": "backend/src/agents/governance.py:544",
           "says": "contract_violations = payload.get(\"contract_violations\", [])"
         },
         {
@@ -1048,7 +1048,7 @@
       "capability": "Dynamic application security testing (DAST): a scanner such as OWASP ZAP run against a running API, weekly",
       "claimed_in": [
         {
-          "at": "docs/CYBERSECURITY.md:603",
+          "at": "docs/CYBERSECURITY.md:620",
           "says": "DAST: OWASP ZAP against a staging API (weekly). Not built: there is no staging"
         }
       ],
@@ -1247,14 +1247,14 @@
       "was": "PR-007 is in the Guardian's rule table and nowhere in its evaluation: no check reads a sensitivity result, so an edge is approved whether or not any sensitivity analysis was run, and PR-007 is never cited on a verdict. The rules that are evaluated are PR-001 to PR-006, PR-008, and PR-009 (on one action type).",
       "fixed_in": "4d68ac5",
       "pinned_by": "backend/tests/guardian/test_pr007_sensitivity_gate.py",
-      "note": "Implemented for approvals. A /check for GOVERNANCE_APPROVE whose subject is a stored edge reads the edge's sensitivity results from the database (src/agents/governance.py edge_sensitivity) and is REJECTED citing PR-007 when there are none; evaluated after PR-001, before PR-004, and an unreadable edge fails closed. What counts as an edge's sensitivity result: CausalEdge has no field of its own, so it is a valid SensitivityResult (E-value / Rosenbaum) stored on an assumption the edge names in assumption_refs, that assumption not REJECTED in review; the checked payload cannot supply one. The write path it needs was broken too: propose_draft dropped an assumption's sensitivity_result, and the reads did not decode it; both fixed. Pinned with results from causal_core.analyze on simulated data. Limits: PR-007 asks for a result, not a robust one -- a result that says not robust still counts, and the reviewer sees it (the CYBERSECURITY.md claim, since withdrawn, said 'pass'); proposing an edge (the process() path's proposed_edges) is not approving it and is not judged; until septa-62 nothing in the platform recorded the kernel's sensitivity output on an assumption -- a result arrived only with the assumption's draft; since then POST /api/semantic/edges/{edge_id}/sensitivity and SimulationAgent record it, through a Guardian verdict for RECORD_SENSITIVITY, as a new IGNORABILITY assumption on the draft edge (backend/tests/guardian/test_edge_sensitivity_recorded.py)."
+      "note": "Implemented for approvals. A /check for GOVERNANCE_APPROVE whose subject is a stored edge reads the edge's sensitivity results from the database (src/agents/governance.py edge_sensitivity) and is REJECTED citing PR-007 when there are none; evaluated after PR-001, before PR-004, and an unreadable edge fails closed. What counts as an edge's sensitivity result: CausalEdge has no field of its own, so it is a valid SensitivityResult (E-value / Rosenbaum) stored on an assumption the edge names in assumption_refs, that assumption not REJECTED in review; the checked payload cannot supply one. The write path it needs was broken too: propose_draft dropped an assumption's sensitivity_result, and the reads did not decode it; both fixed. Pinned with results from causal_core.analyze on simulated data. Limits: PR-007 asks for a result, not a robust one -- a result that says not robust still counts, and the reviewer sees it (the CYBERSECURITY.md claim, since withdrawn, said 'pass'); proposing an edge (the process() path's proposed_edges) is not approving it and is not judged; until septa-62 nothing in the platform recorded the kernel's sensitivity output on an assumption -- a result arrived only with the assumption's draft; since then POST /api/semantic/edges/{edge_id}/sensitivity and SimulationAgent record it, through a Guardian verdict for RECORD_SENSITIVITY, as a new IGNORABILITY assumption on the draft edge (backend/tests/guardian/test_edge_sensitivity_recorded.py). Since 062f57d a result counts only when the platform recorded it: a drafter could attach one to an assumption they draft (computed_by is free text) and satisfy PR-007 with a made-up number, so record_edge_sensitivity now stores the id of the RECORD_SENSITIVITY verdict it spent (assumptions.sensitivity_verdict_id, migration 013, unique) and src/semantic_layer/review_risk.py recorded_sensitivity counts a result for an edge only when that row is APPROVED, for RECORD_SENSITIVITY, signed, names the edge and was spent by the recording; propose_draft never writes the column. The review queue's tiers read the same results."
     },
     {
       "id": "review-queue-risk-tier",
       "was": "ReviewQueueItem carries no risk tier and no submitter, the queue is not ordered by risk, and the UI fills riskTier \"MEDIUM\" and submittedBy \"system\" for every item.",
       "fixed_in": "1d1d429",
       "pinned_by": "backend/tests/integration/test_review_queue_risk.py",
-      "note": "Implemented. GET /api/governance/review-queue returns risk_tier, risk_reasons and submitted_by for each item and orders by tier (CRITICAL, HIGH, MEDIUM, LOW), oldest first within a tier. The tier is derived from stored fields only, by rules defined in backend/src/semantic_layer/review_risk.py: an edge is CRITICAL below stated confidence 0.5, HIGH below 0.8 or when no stored sensitivity result on an assumption it rests on says it is robust (the results Guardian PR-007 reads), else MEDIUM; a fragment is HIGH while it names an edge that is not APPROVED, else MEDIUM; an entity is LOW. These are this repository's own rules, not a standard: stated confidence is the proposer's number, so it can only raise a tier, never lower one on its own. submitted_by is the id in created_by; edges had no created_by, so CausalEdge gained one (migration 012_edge_created_by.sql, the SQLite DDL, propose_draft, get_edge), and edges drafted before it show null, which the UI renders as 'not recorded'. The frontend maps the three fields (frontend/src/app/governance/page.tsx) and ReviewQueue shows the reasons as the tier badge's title; pinned on that side by frontend/src/components/governance/__tests__/ReviewQueue.test.tsx and the queue test in frontend/src/app/governance/__tests__/page.test.tsx."
+      "note": "Implemented. GET /api/governance/review-queue returns risk_tier, risk_reasons and submitted_by for each item and orders by tier (CRITICAL, HIGH, MEDIUM, LOW), oldest first within a tier. The tier is derived from stored fields only, by rules defined in backend/src/semantic_layer/review_risk.py: an edge is CRITICAL below stated confidence 0.5, HIGH below 0.8 or when no stored sensitivity result on an assumption it rests on says it is robust (the results Guardian PR-007 reads: since 062f57d only those the platform recorded under a RECORD_SENSITIVITY verdict for the edge), else MEDIUM; a fragment is HIGH while it names an edge that is not APPROVED, else MEDIUM; an entity is LOW. These are this repository's own rules, not a standard: stated confidence is the proposer's number, so it can only raise a tier, never lower one on its own. submitted_by is the id in created_by; edges had no created_by, so CausalEdge gained one (migration 012_edge_created_by.sql, the SQLite DDL, propose_draft, get_edge), and edges drafted before it show null, which the UI renders as 'not recorded'. The frontend maps the three fields (frontend/src/app/governance/page.tsx) and ReviewQueue shows the reasons as the tier badge's title; pinned on that side by frontend/src/components/governance/__tests__/ReviewQueue.test.tsx and the queue test in frontend/src/app/governance/__tests__/page.test.tsx."
     }
   ]
 }

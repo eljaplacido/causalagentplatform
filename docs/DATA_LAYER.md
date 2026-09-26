@@ -324,7 +324,7 @@ grants, row-level security and most `CHECK` constraints exist only on the Postgr
 (SQLite keeps three: `audit_log.guardian_verdict`, `decision_followups.kind` and
 `causal_model_versions.version`).
 
-- **PostgreSQL**: `backend/src/db/migrations/001_initial.sql` to `012_edge_created_by.sql`, applied in
+- **PostgreSQL**: `backend/src/db/migrations/001_initial.sql` to `013_assumption_sensitivity_verdict.sql`, applied in
   filename order. Two things in this repository apply them: `docker-compose.yml`, whose init
   script (`backend/src/db/docker/initdb.sh`) runs them when the container's volume is first
   created and then gives `causal_app` its local-dev login, and the test fixtures when
