@@ -248,7 +248,7 @@ granted role does not.
 
 | Route | Roles |
 |---|---|
-| `GET /api/semantic/entities[/{id}]`, `/fragments[/{id}]`, `/edges/{id}[/audit-trail]` | any platform role; a `viewer` reads APPROVED objects only; bounded by domain scope (§4.2) |
+| `GET /api/semantic/entities[/{id}]`, `/fragments[/{id}]`, `/edges/{id}[/audit-trail]`, `/objects/{type}/{id}/versions`, `/objects/{type}/{id}/lineage` | any platform role; a `viewer` reads APPROVED objects only; bounded by domain scope (§4.2) |
 | `POST /api/semantic/drafts`, `POST /api/semantic/edges/{id}/sensitivity` | `analyst`, `graph_author`, `platform_engineer`, `agent` (`DRAFT_ROLES`); only into the user's domains |
 | `POST /api/governance/check` | `graph_author`, `governance_officer`, `platform_engineer`, `agent` |
 | `POST /api/governance/approve/{id}`, `/reject/{id}`, `GET /review-queue`, `GET /audit-log` | `governance_officer`, `platform_engineer` (`GOVERNANCE_ROLES`); approve, reject and the queue bounded by domain scope |
@@ -371,8 +371,8 @@ outside the caller's domains:
 - **Grants.** `causal_app` may select and insert on every table, update the ones that are not
   append-only, and use the sequences; it has no `DELETE` or `TRUNCATE` anywhere, and the
   append-only triggers stay. The append-only surfaces: `audit_log`, `verdict_consumption`,
-  `decision_records`, `decision_followups`, `causal_model_versions`, `decision_model_refs` and
-  `semantic_object_versions` (014). The semantic head tables are updatable only under 014's
+  `decision_records`, `decision_followups`, `causal_model_versions`, `decision_model_refs`,
+  `provenance_entries` and `provenance_erasures` (011), and `semantic_object_versions` (014). The semantic head tables are updatable only under 014's
   rule: advance `revision` by one over a recorded revision, the new one recorded by commit. `backend/tests/integration/test_rls_domain_isolation.py` pins all
   of this on PostgreSQL, including negative controls with a policy dropped, RLS disabled, and
   the owner's connection.

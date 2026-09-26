@@ -53,6 +53,15 @@ interface CausalEntity {
   approvedAt: ISO8601 | null;
   approvedBy: UserRef | null;
   lineage: LineageRecord[];
+  revision: number;                     // server-kept: 1 at the draft, +1 per recorded change (014)
+  sourceData: DataSource | null;        // the data it was drafted from; approval needs one
+}
+
+interface DataSource {                  // declared by the submitter, not checked against the data
+  kind: string;                         // "dataset" by default
+  ref: string;                          // where the data is
+  digest: string;                       // "sha256:<64 hex>": what it was
+  description: string | null;
 }
 ```
 
@@ -147,6 +156,8 @@ interface CausalEdge {
   version: string;
   lineage: LineageRecord[];
   createdBy: UserRef | null;            // who drafted it; null before migration 012
+  revision: number;                     // server-kept: 1 at the draft, +1 per recorded change (014)
+  sourceData: DataSource | null;        // the data it was drafted from; approval needs one
 }
 ```
 
@@ -168,6 +179,8 @@ interface GraphFragment {
   version: string;
   usageCount: number;
   tags: string[];
+  revision: number;                     // server-kept: 1 at the draft, +1 per recorded change (014)
+  sourceData: DataSource | null;        // the data it was drafted from; approval needs one
 }
 ```
 
@@ -187,6 +200,8 @@ interface Assumption {
   elicitedBy: UserRef;
   reviewStatus: "PENDING" | "ACCEPTED" | "CONTESTED" | "REJECTED";
   sensitivityResult: SensitivityResult | null;
+  revision: number;                     // server-kept: 1 at the draft, +1 per recorded change (014)
+  sourceData: DataSource | null;        // the data it was drafted from; approval needs one
 }
 ```
 
@@ -245,7 +260,8 @@ its state today.
    (`septa-60`, `backend/tests/guardian/test_approve_action_binding.py`). `reject_draft`
    applies the same checks, and the verdict must have been issued for action
    `GOVERNANCE_REJECT`; a verdict for `GOVERNANCE_REJECT` or `GOVERNANCE_APPROVE` authorises
-   that decision only (`septa-53`). See `backend/tests/guardian/test_verdict_binding.py`.
+   that decision only (`septa-53`). `record_edge_sensitivity` needs one issued for
+   `RECORD_SENSITIVITY` on the edge (`septa-62`). See `backend/tests/guardian/test_verdict_binding.py`.
 2. **All objects are versioned.** Holds for entities, edges, fragments and assumptions. Every
    state is an immutable row in `semantic_object_versions` (`014_semantic_object_versions.sql`):
    the object's complete row at that revision, what changed it, who, and on which verdict. The
@@ -369,14 +385,16 @@ CREATE TABLE audit_log (
 );
 ```
 
-On PostgreSQL, `audit_log`, `decision_records`, `decision_followups`, the 007 tables and the 011 tables are append-only in two
-ways: `UPDATE` and `DELETE` are revoked from the application roles, and `BEFORE UPDATE/DELETE`
-triggers raise. The SQLite schema declares the same triggers.
+On PostgreSQL, `audit_log`, `decision_records`, `decision_followups`, the 007 tables, the 011 tables
+and `semantic_object_versions` (014) are append-only in two ways: `UPDATE` and `DELETE` are revoked
+from the application roles, and `BEFORE UPDATE/DELETE` triggers raise. The semantic head tables
+are updatable only by 014's revision rule. The SQLite schema declares the same triggers.
 
 **Roles.** 001 creates `causal_app` (what the backend connects as), `causal_governance` and
 `causal_readonly`, none of them owners. `causal_app` may `SELECT` and `INSERT` on every table,
 `UPDATE` those that are not append-only, and use the sequences; it has no `DELETE` or `TRUNCATE`
-anywhere. Row-level security binds it on the three semantic tables above; the backend refuses to
+anywhere. Row-level security binds it on the three semantic tables above and on
+`semantic_object_versions`; the backend refuses to
 start on PostgreSQL as a role it does not bind (a superuser, `BYPASSRLS`, or the owner).
 
 **`interventions`** (001) has no foreign keys to treatment or user tables, because none exist.

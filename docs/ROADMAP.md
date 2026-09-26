@@ -145,8 +145,10 @@ priority first, and the priorities put hardening the platform before new estimat
 - **p3 and p4.** Done: provenance is durable and append-only, with erasure as a tombstone, and
   session runs, Guardian checks and decisions write it (`septa-48`, `septa-16`); semantic objects
   are versioned, never rewritten, and carry lineage from source data to approver (`septa-14`,
-  `septa-15`). The rest of the register (versioned interventions, lineage onward to analyses, the
-  LLM layer, Cynefin routing, frontend views and others), then the longer-range
+  `septa-15`); the LLM layer has its first callers, narration from versioned prompt templates
+  kept only when grounded (`septa-17`, `septa-37`). The rest of the register (versioned
+  interventions, lineage onward to analyses, Cynefin routing, frontend views and others), then
+  the longer-range
   methods: discovery, rung-3 counterfactuals, general ID estimation, subgroup discovery. Many of
   these end either in the capability or in its claim being withdrawn from the docs.
   Four have ended that way: EconML/PyMC backends, the `cynepic-*` Rust crates, Neo4j as the
@@ -155,8 +157,9 @@ priority first, and the priorities put hardening the platform before new estimat
   (`econml-pymc`, `rust-crates`, `neo4j-graph-store`, `kafka-streaming` in `left_the_list`).
   Of the frontend views, the decision ledger (`/decisions`) and the assumption registry
   (`/registry`) are built (`septa-24`); the DAG Workbench proposes a fragment through the governed
-  draft route but stays `partial` (`dag-workbench`): it authors no new edges, and its e2e spec
-  stubs the backend.
+  draft route but stays `partial` (`dag-workbench`): it authors no new edges, the fragments it
+  drafts declare no source data, so approval refuses them (`septa-15`), and its e2e spec stubs
+  the backend.
 
 ## What this project will not do first
 

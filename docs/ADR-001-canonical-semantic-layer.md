@@ -29,7 +29,8 @@ The authoritative definition is `backend/src/semantic_layer/models.py`:
 
 ```
 CausalEntity     → id, name, domain, attributes, ontologyVersion,
-                    createdBy, approvedAt, approvedBy, lineage
+                    createdBy, approvedAt, approvedBy, lineage,
+                    revision, sourceData
 
 Treatment        → id, name, entityRef, treatmentType, units,
                     feasibilityConstraints, costModel, ownerTeam
@@ -43,13 +44,15 @@ Confounder       → id, name, treatmentRef, outcomeRef, measuredStatus,
 CausalEdge       → id, source, target, edgeType, direction, confidence,
                     evidenceRefs, assumptionRefs, approvalStatus,
                     approvedBy, approvedAt, guardianVerdictRef, version, lineage,
-                    createdBy
+                    createdBy, revision, sourceData
 
 GraphFragment    → id, name, domain, description, edges, entryNodes,
-                    exitNodes, approvalStatus, version, usageCount, tags
+                    exitNodes, approvalStatus, version, usageCount, tags,
+                    revision, sourceData
 
 Assumption       → id, statement, assumptionType, scope, justification,
-                    elicitedFrom, elicitedBy, reviewStatus, sensitivityResult
+                    elicitedFrom, elicitedBy, reviewStatus, sensitivityResult,
+                    revision, sourceData
 
 Intervention     → id, name, treatmentRef, targetEntityRef, initiatedBy,
                     initiatedAt, approvedBy, approvalTimestamp,
@@ -112,8 +115,9 @@ Guardian integration points, as built:
   before recording the kernel's sensitivity analysis on the draft edge it estimated.
   `BaseAgent._assert_guardian_approved`, the write guard meant for every agent, has no callers.
   The persistence guard that does hold is in the registry: every semantic-layer write needs a
-  signed, subject-bound, single-use APPROVED verdict, and a review decision one issued for
-  exactly that action, `GOVERNANCE_APPROVE` or `GOVERNANCE_REJECT` (`_assert_verdict_approved`).
+  signed, subject-bound, single-use APPROVED verdict, and a review decision or a sensitivity
+  recording one issued for exactly that action, `GOVERNANCE_APPROVE`, `GOVERNANCE_REJECT` or
+  `RECORD_SENSITIVITY` (`_assert_verdict_approved`).
 - An audit trail entry is written on every verdict.
 - The circuit breaker escalates at `cycle_count >= 5` (PR-005; `MAX_CYCLES` in `agents/base.py`).
 
@@ -131,7 +135,8 @@ Guardian integration points, as built:
 - **Every state is a version.** A row of `semantic_object_versions`, keyed
   `(object_type, object_id, revision)`, holds the object's complete stored row at that revision
   (`state`), what produced it (`PROPOSED` for the draft, `APPROVED`, `REJECTED`, or `RECORDED` for
-  a state found from before versioning), who produced it (the person, the agent it came through
+  a state found from before versioning or a change the platform recorded on a draft: the kernel's
+  sensitivity result added to a draft edge), who produced it (the person, the agent it came through
   and the platform version) and the verdict that authorised it.
 - **Reads return the current version.** The row in the object's own table is the head: the
   latest version, whose `revision` it carries. The object endpoints read it.
@@ -146,7 +151,9 @@ Guardian integration points, as built:
   one whose new revision is not recorded by commit. Existing rows were migrated forward as
   `RECORDED` revision 1.
 - **Deprecate and replace.** A rejection's version is `DEPRECATED`; nothing deletes an object or a
-  version. No path edits an object's content after its draft: a changed object is a new draft.
+  version. One path changes a draft's content: `record_edge_sensitivity` adds the assumption
+  carrying the kernel's sensitivity result to a draft edge's `assumptionRefs` and lineage, as the
+  edge's next revision (septa-62). Otherwise a changed object is a new draft.
 - **`revision` counts states; `version` is the author's.** The semver `version` on edges and
   fragments is the content version an author declares, and part of `graph_fragments`' unique key;
   a state change does not touch it. "Version increments on any field change" holds as: every
@@ -179,8 +186,9 @@ Success criteria:
   base-class write guard has no callers (§3)
 - [ ] Lifecycle status transitions match canonical model. `UNDER_REVIEW` is never set, and
   rejection goes straight to `DEPRECATED` (§2)
-- [ ] Version field present on all semantic objects. Present on `CausalEdge` and `GraphFragment`
-  only, and never incremented (§4)
+- [x] Version field present on all semantic objects: `revision`, on all four, advanced by every
+  recorded change (§4). The semver `version` is the author's, on `CausalEdge` and `GraphFragment`
+  only, and a state change leaves it alone
 - [ ] TypeScript bindings aligned with `models.py`. Enumerations: `scripts/contract_parity.py`
   (two known divergences, register `frontend-vocabulary-divergence`). Fields: register
   `semantic-types-field-divergence`

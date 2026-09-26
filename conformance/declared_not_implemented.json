@@ -364,7 +364,7 @@
       "capability": "Interventions are versioned: recording an outcome writes a new version, not over the old one",
       "claimed_in": [
         {
-          "at": "docs/ADR-001-canonical-semantic-layer.md:83",
+          "at": "docs/ADR-001-canonical-semantic-layer.md:86",
           "says": "All objects are versioned \u2014 no in-place mutation (Rule #2)."
         }
       ],
