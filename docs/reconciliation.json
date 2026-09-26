@@ -28,16 +28,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
-          "packages/causal-mcp": "ac8ffe5b31a7fc07dfbfaee6156a0003bc0753f30c9a3a730b99d39de085a913",
+          "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
+          "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "905dcd913a9c23a116d1ad0d6eaa92cc5efe5aaad534a0ec73dc63ed5f772f54"
+          "docs/CURRENT_STAGE.md": "b9abdd07f41e5d9f1caf7dde1e109a3e8e508fc8d8ccd6900058950d85fb47ac"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-35: CURRENT_STAGE package count moved 211 -> 222; neither doc quotes it)"
+        "by": "Claude (merge #49 into #54: README and CURRENT_STAGE carry triangulation (T0 v4) and positivity (T10) both as done, kernel-limits bullet names only general-ID estimation as open; ROADMAP done list has both, open list calibration evidence and anchoring; TESTING_CICD merged cleanly; package counts to be re-measured on this tree)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "b4271c45bebb81d473d15be52dae3dea0486c86762049a279d663374c3b8cf8d",
-          "backend/src": "5d104e029b81eb564cc22f905604efaa2a7cfcd20482df947a211fc3b871f570",
-          "backend/tests": "aa5434d14e2a7f34e9c385f15c79890c946ceee6bf5e33fc13dd2af7f1f6a8b7",
-          "frontend/src": "d357d66d238bdc673ac0c5215b914bf4a8649a1ea7ca09c9e5bb0052c0b48fcb",
-          "packages": "a3fae7818c461f5688e2379c90dc3581dfc856f70ca071da11b10808bb5edf35",
+          "conformance/declared_not_implemented.json": "68954ef8dc0ca8f974093c98c33602cfcacf1e2c22ddb5cdf33000870c2baaa4",
+          "backend/src": "0e22c0cb440a22fdd11420432e3d2529fc4b378fac66315c8b50671cc2721648",
+          "backend/tests": "6d900b40ae73a4d2cdcd5fbf0a947a8b10a9533cac22cfa8e080a7b8f0cfc481",
+          "frontend/src": "cfe44a11e817c5d272f7125694a5cba46c438299c632f63315a8f836a9278d80",
+          "packages": "3db39091c39ce9505cd29724d44146782817a497ebf917e8ce3e3f74d1079b56",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-35: T0 v4 triangulation specification test; register entry closed, figures bound, triangulation and T0 lines re-read)"
+        "by": "Claude (merge #49 into #54: README and CURRENT_STAGE carry triangulation (T0 v4) and positivity (T10) both as done, kernel-limits bullet names only general-ID estimation as open; ROADMAP done list has both, open list calibration evidence and anchoring; TESTING_CICD merged cleanly; package counts to be re-measured on this tree)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -309,21 +309,21 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "aa5434d14e2a7f34e9c385f15c79890c946ceee6bf5e33fc13dd2af7f1f6a8b7",
-          "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
+          "backend/tests": "6d900b40ae73a4d2cdcd5fbf0a947a8b10a9533cac22cfa8e080a7b8f0cfc481",
+          "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
           ".gnomon/ci.sh": "a05e016e87f09e27989ffc185d06ad2b55c6d31f4e9b9cc2954b8cfdf7a40e45",
-          "scripts": "dcb4a50618280b1ce05daca9c62eb3512d8e7c1bcd2415e463709fc5a9869163",
+          "scripts": "f320a88d5bcd4c70f81d69f5e103b33b80568094e4e22023db2182b36f02156e",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
-          "benchmarks": "096ad2080afd2b6d17a5dfb32fcd19ea678ae9e7711240807958e149e361d8de",
-          "packages/causal-core/tests": "dd371b6b1dfa47732c7ee5c0a2631a63e797514a18b098287fcfba6f554cd6ee",
-          "packages/causal-decision/tests": "c7ccd2d2b91e1ec53a3eb456c70f670268b2ec1f8f431e161f399360b94ef7de"
+          "benchmarks": "29568520a660ee325cd3ba990a0e9ba6be64e73b9090aab26b5b4d076d85b951",
+          "packages/causal-core/tests": "d0597e531730f3655d2849ed91d39a91986fcfd027c28a484f762b14b781bec6",
+          "packages/causal-decision/tests": "811166b3dd05cfc3cbd62c7e71fcf1d62666fb738c97dcb65e34725fede4d034"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-35: T0 v4 triangulation specification test; register entry closed, figures bound, triangulation and T0 lines re-read)"
+        "by": "Claude (merge #49 into #54: README and CURRENT_STAGE carry triangulation (T0 v4) and positivity (T10) both as done, kernel-limits bullet names only general-ID estimation as open; ROADMAP done list has both, open list calibration evidence and anchoring; TESTING_CICD merged cleanly; package counts to be re-measured on this tree)"
       }
     },
     "docs/UIX.md": {
@@ -352,14 +352,14 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "packages/causal-core/src/causal_core": "76588c939c4b779161fa173e980a033cefd9b5861e80d3f794235ed50d32aa2f",
-          "conformance/declared_not_implemented.json": "b4271c45bebb81d473d15be52dae3dea0486c86762049a279d663374c3b8cf8d",
-          "docs/CURRENT_STAGE.md": "905dcd913a9c23a116d1ad0d6eaa92cc5efe5aaad534a0ec73dc63ed5f772f54"
+          "packages/causal-core/src/causal_core": "18d2aa2f2ef7931f67675a18f9e0ba170989adc9fa7cbf2a7bee4ea53c3342a3",
+          "conformance/declared_not_implemented.json": "68954ef8dc0ca8f974093c98c33602cfcacf1e2c22ddb5cdf33000870c2baaa4",
+          "docs/CURRENT_STAGE.md": "b9abdd07f41e5d9f1caf7dde1e109a3e8e508fc8d8ccd6900058950d85fb47ac"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-35: CURRENT_STAGE package count moved 211 -> 222; neither doc quotes it)"
+        "by": "Claude (merge #49 into #54: README and CURRENT_STAGE carry triangulation (T0 v4) and positivity (T10) both as done, kernel-limits bullet names only general-ID estimation as open; ROADMAP done list has both, open list calibration evidence and anchoring; TESTING_CICD merged cleanly; package counts to be re-measured on this tree)"
       }
     },
     "SECURITY.md": {

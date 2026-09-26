@@ -147,7 +147,7 @@
       "capability": "Estimation of effects identified only by the general ID algorithm (e.g. the napkin graph)",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:220",
+          "at": "packages/causal-core/README.md:248",
           "says": "Estimation for general ID functionals"
         }
       ],
@@ -170,18 +170,18 @@
       "capability": "causal-core methods beyond the current portfolio: nonparametric front-door, discovery, time series, interference between units",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:222",
+          "at": "packages/causal-core/README.md:250",
           "says": "Nonparametric front-door"
         },
         {
-          "at": "packages/causal-core/README.md:224",
+          "at": "packages/causal-core/README.md:252",
           "says": "Discovery"
         }
       ],
       "reality": "Listed as not implemented in the package README; none of these exists in the kernel. (Anytime-valid sequential tests left this entry on 2026-09-25 with T6; cluster-randomized designs, which handle dependence within clusters but not spillovers between them, arrived the same day with T7, and switchback designs with T8.)",
       "evidence": [
         {
-          "at": "packages/causal-core/README.md:217",
+          "at": "packages/causal-core/README.md:245",
           "says": "Not implemented yet"
         }
       ],
