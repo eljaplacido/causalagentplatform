@@ -115,19 +115,19 @@ async def test_verdict_is_refused_on_second_use(
     registry: SemanticLayerRegistry,
     verdict_for: VerdictFactory,
 ) -> None:
-    """Two writes need two verdicts, even to the same object."""
+    """Two writes need two verdicts, even to the same object.
+
+    The second write is the same draft again: a promotion would now be refused
+    earlier, on the action the verdict was issued for (septa-60,
+    tests/guardian/test_approve_action_binding.py pins single use for approvals).
+    """
     entity = make_causal_entity()
     verdict = await verdict_for(entity.id)
 
     await registry.propose_draft(entity, verdict)
 
     with pytest.raises(GuardianBlockedError, match="already been used"):
-        await registry.promote_to_approved(
-            object_id=entity.id,
-            object_type="CausalEntity",
-            verdict_id=verdict,
-            approver=_approver(),
-        )
+        await registry.propose_draft(entity, verdict)
 
 
 async def test_a_write_that_fails_does_not_burn_the_verdict(
@@ -292,7 +292,7 @@ async def test_a_rejected_object_cannot_be_promoted_by_a_fresh_verdict(
         "not supported by the evidence",
     )
 
-    fresh = await verdict_for(entity.id)
+    fresh = await verdict_for(entity.id, action_type="GOVERNANCE_APPROVE")
     with pytest.raises(InvalidTransitionError, match="is DEPRECATED"):
         await registry.promote_to_approved(entity.id, "CausalEntity", fresh, _approver())
 
@@ -317,7 +317,10 @@ async def test_an_approved_object_cannot_be_rejected_after_the_fact(
     entity = make_causal_entity()
     await registry.propose_draft(entity, await verdict_for(entity.id))
     await registry.promote_to_approved(
-        entity.id, "CausalEntity", await verdict_for(entity.id), _approver()
+        entity.id,
+        "CausalEntity",
+        await verdict_for(entity.id, action_type="GOVERNANCE_APPROVE"),
+        _approver(),
     )
 
     with pytest.raises(InvalidTransitionError, match="is APPROVED"):
@@ -347,7 +350,10 @@ async def test_a_graph_fragment_can_be_approved_and_its_lineage_is_kept(
     fragment = make_graph_fragment()
     await registry.propose_draft(fragment, await verdict_for(fragment.id))
     await registry.promote_to_approved(
-        fragment.id, "GraphFragment", await verdict_for(fragment.id), _approver()
+        fragment.id,
+        "GraphFragment",
+        await verdict_for(fragment.id, action_type="GOVERNANCE_APPROVE"),
+        _approver(),
     )
     row = await db_session.execute(
         text("SELECT approval_status, lineage FROM graph_fragments WHERE id = :i"),

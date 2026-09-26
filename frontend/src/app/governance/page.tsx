@@ -60,7 +60,8 @@ const MOCK_REVIEW_ITEMS: ReviewQueueItem[] = [
     id: "rev-001",
     objectName: "payment_latency → checkout_conversion",
     objectType: "CAUSAL_EDGE",
-    domain: "COMPLICATED",
+    businessDomain: "payments",
+    cynefinDomain: "COMPLICATED",
     riskTier: "HIGH",
     submittedBy: "ryo.tanaka",
     submittedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
@@ -112,7 +113,8 @@ const MOCK_REVIEW_ITEMS: ReviewQueueItem[] = [
     id: "rev-002",
     objectName: "db_connection_pool_size → api_response_time",
     objectType: "CAUSAL_EDGE",
-    domain: "CLEAR",
+    businessDomain: "devops",
+    cynefinDomain: "CLEAR",
     riskTier: "LOW",
     submittedBy: "mihail.popescu",
     submittedAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
@@ -146,7 +148,8 @@ const MOCK_REVIEW_ITEMS: ReviewQueueItem[] = [
     id: "rev-003",
     objectName: "marketing_spend_increase → customer_churn_reduction",
     objectType: "INTERVENTION",
-    domain: "COMPLEX",
+    businessDomain: "marketing",
+    cynefinDomain: "COMPLEX",
     riskTier: "CRITICAL",
     submittedBy: "priya.sharma",
     submittedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
@@ -228,9 +231,13 @@ function mapBackendItem(item: ReviewQueueItemResponse): ReviewQueueItem {
     id: item.id,
     objectName: item.name,
     objectType: item.object_type as ReviewQueueItem["objectType"],
-    domain: (item.domain?.toUpperCase() ?? "DISORDER") as ReviewQueueItem["domain"],
-    riskTier: "MEDIUM",
-    submittedBy: "system",
+    // The backend's `domain` is the business domain (causal_edges.domain, e.g.
+    // "devops"), not a Cynefin domain; the endpoint carries no Cynefin
+    // classification, so none is invented here.
+    businessDomain: item.domain ?? "",
+    riskTier: item.risk_tier,
+    riskReasons: item.risk_reasons,
+    submittedBy: item.submitted_by,
     submittedAt: item.created_at ?? new Date().toISOString(),
     status: item.approval_status === "DRAFT"
       ? "PENDING"

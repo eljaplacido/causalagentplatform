@@ -39,9 +39,9 @@ The command exits 0 for a result, 2 for a refusal and 1 for an apparatus failure
 | **Identify** | Runs the complete ID algorithm (Shpitser & Pearl 2006), cross-checked against y0 on random graphs. Back-door uses the generalized adjustment criterion and prefers the efficiency-optimal O-set. It also handles front-door, conditional IV and proximal inference. A user-chosen adjustment set is validated, never silently replaced: an invalid one is refused, with the open path named. |
 | **Check the design** | Missing data, positivity and overlap, covariate balance, sample-ratio mismatch and first-stage strength are all checked *before* estimating. Any failure produces a typed refusal that says what would fix it. |
 | **Estimate** | A portfolio of difference in means, Lin regression, Hajek IPW, cross-fitted AIPW and DML, linear front-door, 2SLS and proximal 2SLS. Every standard error comes from the estimator's influence function, and every interval is coverage-tested. |
-| **Triangulate** | Estimators that rest on different assumptions are compared, with the correlation between them taken into account. If they disagree, the result is marked *contested*. |
+| **Triangulate** | Estimators that rest on different assumptions are compared, with the correlation between them taken into account. For a binary treatment under back-door adjustment, the linear outcome model that regression adjustment rests on is also given a specification test. If either check finds a problem, the result is marked *contested*. |
 | **Refute** | A placebo treatment, negative-control outcomes and conditional independences implied by the graph. Their false-alarm rates and power are measured, not assumed. |
-| **Sensitivity** | E-values (VanderWeele & Ding) and Cinelli–Hazlett robustness values. |
+| **Sensitivity** | E-values (VanderWeele & Ding) and Cinelli–Hazlett robustness values; for back-door designs with a binary treatment, a Rosenbaum bound on a 1:1 matched design the kernel builds: Γ*, the largest hidden bias at which the matched comparison still rejects no effect. |
 | **Claims** | Every number that may appear in prose is a claim bound to a field. `cc.verify(text, out)` rejects any number that isn't one. It also rejects causal wording ("caused", "will reduce") unless the result is *supported*. |
 | **Provenance** | Digests of the graph, query, data and policy, all in RFC 8785 canonical JSON, plus a digest of the result itself. The same inputs reproduce the same `result_digest`. |
 
@@ -105,15 +105,18 @@ before any run. It runs on every change:
   200 of 200 random ADMGs.
 - **Estimation:** across 14 designs (randomized, back-door, M-bias, butterfly, front-door, IV,
   conditional IV and proximal), bias is within Monte Carlo error. Pooled 95% interval coverage is
-  94.9%, and every design lies inside 92.5–97.5% (observed 93.6–96.6%; T0 v3,
-  `benchmarks/t0/results/2026-09-19-v3-run3.json`).
+  94.9%, and every design lies inside 92.5–97.5% (observed 93.6–96.6%; T0 v4,
+  `benchmarks/t0/results/2026-09-26-v4-run1.json`, the same numbers as v3's runs).
 - **Refuters:** false-alarm rates are about 1% at α = 0.01, and power is 100% against the planted
   violations.
-- **Seeded defects:** each of seven defects makes the gate fail. The defects include:
+- **Triangulation (v4):** a planted outcome-model misspecification makes the result contested at
+  n = 2,000 (see *Triangulation at moderate n* below).
+- **Seeded defects:** each of ten defects makes the gate fail. The defects include:
   - the constant (−0.5, 0.5) interval the platform once shipped
   - halved standard errors
   - discarded adjustment sets
   - a suppressed hedge
+  - a triangulation flag that leaves the result uncontested
 
 - **T4 (segments):** per-segment interval coverage 0.93–0.97; family-wise coverage across all
   segments of one analysis 0.945–0.98; the heterogeneity test fires on 4.5% of homogeneous designs
@@ -152,6 +155,34 @@ before any run. It runs on every change:
   the standard error: at −0.085 (coverage 88.7%) it fires in 9.5% of runs, and no check on the
   minutes after the washout could do much better at these sizes.
 
+- **T9 (Rosenbaum sensitivity):** pair differences drawn from Rosenbaum's model with the hidden
+  bias planted at its worst case, and full analyses with an unmeasured confounder of known
+  strength. The reported Γ* reached the planted bias in 1.9–2.9% of runs (bar 3.5%, nominal 2.5%)
+  and kept the conclusion at two-thirds of it in 91.8–96.7%; with a confounder of odds ratio 3
+  behind a real analysis, the median Γ* was 1.63 against the design's sensitivity of 1.88, and no
+  run claimed 3. Γ* speaks to the matched comparison's test of no effect, not to the AIPW
+  estimate; Wilcoxon's statistic understates design sensitivity, and residual imbalance after
+  inexact matching is bias the bound does not cover (the result reports the largest standardized
+  difference).
+- **T10 (positivity and overlap):** nine observational designs of 4,000 units whose positivity is
+  set by construction. Strata where one arm never occurs — two binary covariates jointly, three
+  jointly (every single covariate still has both arms), a continuous threshold, and for the ATT a
+  stratum with no controls — are refused for `POSITIVITY` in 99.2–100% of runs; the main-effects
+  logistic check alone refused none. False refusals are at most 0.2% where the kernel should
+  answer, including a never-treated stratum under the ATT, which needs overlap one way only.
+  Coverage 0.946–0.958 where it answers; a violation below the 5% tolerance is answered with a
+  warning in 88% of runs. Nothing is trimmed silently.
+
+**Overlap.** For a binary treatment with an adjustment set, after the logistic check, a
+classification tree for the treatment (depth `overlap_region_depth` = 4) is grown on one half of
+the units and its leaves judged on the other half, then swapped: a leaf where the one-sided 95%
+upper bound on an arm's probability is below `overlap_region_bound` = 0.05 is a violation region.
+More than `max_extreme_propensity_share` (5%) of units in such regions (ATT: of treated units in
+regions without controls) is a `POSITIVITY` refusal that names the regions as rules; less is a
+warning. A limited-overlap flag warns when more than 5% of units have a propensity outside
+`limited_overlap_bounds` = [0.1, 0.9]. Both are in `diagnostics.overlap`. The kernel never trims:
+ask again with the narrower population stated.
+
 **Switchbacks.** `analyze(..., design="randomized", cluster=<block>, time=<minute>,
 washout=<minutes>)` drops the first `washout` minutes of every block and compares block means
 (Welch, t(K − 2)). A carryover check tests whether the effect is still moving after the washout
@@ -180,11 +211,22 @@ parallel trends may fail before the conclusion changes: intervals valid when the
 bias is at most M times the largest pre-adoption deviation, and the breakdown M at which the
 interval first reaches zero (T5 v3).
 
-**Known limit.** Triangulation does *not* reliably detect moderate outcome-model misspecification
-at moderate n. Its power was 0.04 at n = 2,000 against a bias of about 1.2 standard errors. The v1
-run that showed this is kept in `benchmarks/t0/results/`. The doubly robust primary estimator stays
-valid in that case (94.3% coverage), but do not read "estimators agree" as proof that the model is
-correct.
+**Triangulation at moderate n.** Comparing estimates cannot see moderate outcome-model
+misspecification at moderate n. Against a confounder that enters the outcome as Z², the estimator
+contrasts flag only 3.5% of runs at n = 2,000: the misfit inflates the standard error of every
+difference. So triangulation also tests the linear outcome model directly (`causal_core.specification`).
+In each arm it models, it adds the squares of the non-binary covariates and of the fitted value, and
+runs an HC2 Wald test on them, in the same Holm family as the contrasts. That design is then flagged
+in 100% of runs at n = 2,000, with false alarms of 1.1% on correctly specified designs (T0 v4).
+
+A flag makes the result `contested`. The doubly robust primary estimate is unchanged, and it still
+covers the truth (97.5% there).
+
+The cost is that the test asks whether the model fits, not whether the misfit moves the effect. It
+also flags nonlinearity that leaves the estimate unbiased: 100% of runs on T0's
+`harmless_interaction`. And "estimators agree" is still not proof that the model is right.
+Curvature outside the test's basis passes, and the test runs only for binary treatments under
+back-door adjustment.
 
 Running `pytest -m t0` needs the `crosscheck` extra (`pip install -e '.[dev,crosscheck]'`).
 
@@ -211,6 +253,8 @@ Data can be pandas, a dict of columns, pyarrow, polars, or any dataframe-interch
 - Time series
 - Interference between randomized units (spillovers from treated to untreated clusters);
   cluster and switchback designs handle dependence *within* a cluster or block only
+- Overlap violations the region tree cannot isolate: a stratum defined by four or more covariates
+  jointly, an exclusive-or pattern, or one smaller than about 118 units (T10 records each)
 - A carryover check that sees a small carryover: the T8 v2 check catches one that biases the
   estimate by several standard errors, not one that biases it by a fraction of one
 - For difference-in-differences: anticipation windows, repeated cross-sections, time-varying

@@ -501,6 +501,17 @@
           "description": "Standard deviation of the outcome on the analysed rows. Reported because sizing a follow-up experiment needs it, and because an effect is only interpretable against the outcome's spread.",
           "title": "Outcome Sd"
         },
+        "overlap": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OverlapDiagnostics"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "propensity": {
           "anyOf": [
             {
@@ -862,6 +873,85 @@
       "title": "Interval",
       "type": "object"
     },
+    "OverlapDiagnostics": {
+      "additionalProperties": false,
+      "description": "Where positivity fails or is thin beyond what one propensity model can express. The\nthresholds are the policy's (overlap_region_*, limited_overlap_bounds); the region check\nran when ``diagnostics.checks`` has its row.",
+      "properties": {
+        "limited_overlap": {
+          "description": "The share exceeds max_extreme_propensity_share: there the estimate rests on few comparable units or on the outcome model.",
+          "title": "Limited Overlap",
+          "type": "boolean"
+        },
+        "limited_share": {
+          "description": "Share of units (ATT: treated units) whose propensity is outside limited_overlap_bounds (ATT: above the upper one).",
+          "title": "Limited Share",
+          "type": "number"
+        },
+        "regions": {
+          "default": [],
+          "description": "The violation regions, largest first (at most ten).",
+          "items": {
+            "$ref": "#/$defs/OverlapRegion"
+          },
+          "title": "Regions",
+          "type": "array"
+        },
+        "violation_share": {
+          "description": "ATE: share of units in a violation region. ATT: share of treated units in a region without controls.",
+          "title": "Violation Share",
+          "type": "number"
+        }
+      },
+      "required": [
+        "violation_share",
+        "limited_share",
+        "limited_overlap"
+      ],
+      "title": "OverlapDiagnostics",
+      "type": "object"
+    },
+    "OverlapRegion": {
+      "additionalProperties": false,
+      "description": "A region of the adjustment covariates in which one arm (almost) never occurs.",
+      "properties": {
+        "missing_arm": {
+          "enum": [
+            "treated",
+            "control"
+          ],
+          "title": "Missing Arm",
+          "type": "string"
+        },
+        "n_treated": {
+          "title": "N Treated",
+          "type": "integer"
+        },
+        "n_units": {
+          "description": "Held-out units in the region: the ones that judged it.",
+          "title": "N Units",
+          "type": "integer"
+        },
+        "rule": {
+          "description": "The region, as a conjunction of conditions on the adjustment covariates as encoded (categorical ones as dummy columns).",
+          "title": "Rule",
+          "type": "string"
+        },
+        "upper_bound": {
+          "description": "One-sided upper confidence bound on the probability of the missing arm in this region, from the held-out units.",
+          "title": "Upper Bound",
+          "type": "number"
+        }
+      },
+      "required": [
+        "rule",
+        "n_units",
+        "n_treated",
+        "missing_arm",
+        "upper_bound"
+      ],
+      "title": "OverlapRegion",
+      "type": "object"
+    },
     "ParallelTrendsSensitivity": {
       "additionalProperties": false,
       "description": "How far parallel trends may fail before the conclusion changes (panel designs).",
@@ -1097,6 +1187,73 @@
       "title": "ResultStatus",
       "type": "string"
     },
+    "RosenbaumSensitivity": {
+      "additionalProperties": false,
+      "description": "How much hidden bias the matched comparison survives (back-door, binary treatment).",
+      "properties": {
+        "gamma_star": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The sensitivity value: the largest gamma >= 1 at which the test of no effect, one-sided in the direction of the primary estimate at (1 - ci_level) / 2 (the level of the primary interval and of e_value_ci), still rejects; gamma is the factor by which two units with the same covariates may differ in their odds of treatment. None when the test does not reject even at gamma = 1.",
+          "title": "Gamma Star"
+        },
+        "matched_difference": {
+          "description": "Mean treated-minus-control difference over the pairs. Its population is the matched units, not the primary estimand's.",
+          "title": "Matched Difference",
+          "type": "number"
+        },
+        "max_abs_smd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Largest absolute standardized difference of the adjustment covariates between the matched arms. Residual imbalance is bias the bound does not cover.",
+          "title": "Max Abs Smd"
+        },
+        "method": {
+          "description": "The matching and the test, in words.",
+          "title": "Method",
+          "type": "string"
+        },
+        "n_pairs": {
+          "title": "N Pairs",
+          "type": "integer"
+        },
+        "n_unmatched": {
+          "description": "Units of the smaller arm with no partner inside the caliper.",
+          "title": "N Unmatched",
+          "type": "integer"
+        },
+        "p_upper": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Upper bound on the one-sided p-value of no effect when hidden bias is at most gamma, keyed by gamma.",
+          "title": "P Upper",
+          "type": "object"
+        }
+      },
+      "required": [
+        "method",
+        "n_pairs",
+        "n_unmatched",
+        "matched_difference"
+      ],
+      "title": "RosenbaumSensitivity",
+      "type": "object"
+    },
     "Rung": {
       "description": "Pearl's ladder. A query must declare which rung it asks about.",
       "enum": [
@@ -1283,6 +1440,29 @@
           ],
           "default": null,
           "title": "Robustness Value Alpha"
+        },
+        "rosenbaum": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RosenbaumSensitivity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "rosenbaum_null_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rosenbaum Null Reason"
         }
       },
       "title": "Sensitivity",
@@ -1506,7 +1686,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:causalplatform:claims:0.11.0:causal_result",
+  "$id": "urn:causalplatform:claims:0.13.0:causal_result",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {

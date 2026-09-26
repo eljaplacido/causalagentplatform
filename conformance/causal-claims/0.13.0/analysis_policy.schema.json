@@ -1,5 +1,5 @@
 {
-  "$id": "urn:causalplatform:claims:0.11.0:analysis_policy",
+  "$id": "urn:causalplatform:claims:0.13.0:analysis_policy",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Every threshold that can change an answer. Hashed into provenance.",
@@ -61,6 +61,32 @@
       "title": "Learners",
       "type": "string"
     },
+    "limited_overlap_bounds": {
+      "default": [
+        0.1,
+        0.9
+      ],
+      "description": "Propensities outside these bounds (Crump et al. 2009) count toward the limited-overlap flag, set when their share exceeds max_extreme_propensity_share. The flag warns; it does not refuse or change the estimate.",
+      "maxItems": 2,
+      "minItems": 2,
+      "prefixItems": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "title": "Limited Overlap Bounds",
+      "type": "array"
+    },
+    "match_caliper": {
+      "default": 0.2,
+      "description": "Rosenbaum bound: the matched design's caliper, in standard deviations of the propensity-score logit (Austin 2011). Units with no partner inside it are dropped.",
+      "exclusiveMinimum": 0,
+      "title": "Match Caliper",
+      "type": "number"
+    },
     "max_ci_width": {
       "anyOf": [
         {
@@ -121,6 +147,30 @@
       ],
       "title": "Missing",
       "type": "string"
+    },
+    "overlap_region_alpha": {
+      "default": 0.05,
+      "description": "One-sided level of the Clopper-Pearson bound in the overlap-region check.",
+      "exclusiveMaximum": 0.5,
+      "exclusiveMinimum": 0,
+      "title": "Overlap Region Alpha",
+      "type": "number"
+    },
+    "overlap_region_bound": {
+      "default": 0.05,
+      "description": "Binary treatments with an adjustment set: a covariate region is a positivity violation for an arm when the upper confidence bound on that arm's probability there, from held-out units, is below this. 0 turns the region check off. A violation share above max_extreme_propensity_share refuses; a smaller one is warned about (T10).",
+      "exclusiveMaximum": 0.5,
+      "minimum": 0,
+      "title": "Overlap Region Bound",
+      "type": "number"
+    },
+    "overlap_region_depth": {
+      "default": 4,
+      "description": "Depth of the tree whose leaves are the candidate regions: the most covariates a region can be defined by jointly.",
+      "maximum": 8,
+      "minimum": 1,
+      "title": "Overlap Region Depth",
+      "type": "integer"
     },
     "propensity_bounds": {
       "default": [

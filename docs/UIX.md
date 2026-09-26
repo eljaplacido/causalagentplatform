@@ -264,13 +264,27 @@ Components under `frontend/src/components/` are marked **built**. The rest are *
 | **Evidence** | -- | `EvidenceCitation`, `DocumentSnippet`, `StatisticalTestResult`, `ConfidenceMeter` | Analyst, Governance Officer |
 | **Shared** | `EpistemicConfidenceBadge`, `ThinkingIndicator`, `PersonaSelector`, `AuditLogPanel`, `GuardianVerdictBadge` | -- | All |
 
-The review queue shows no real risk tier or submitter (register `review-queue-risk-tier`), and
-the Evidence group has no backend to read from yet (register `agent-skills-are-stubs`).
+The review queue shows each item's risk tier and submitter from the backend, most at risk
+first (US-27). The tier is derived from stored fields by `backend/src/semantic_layer/review_risk.py`:
+an edge is Critical below stated confidence 0.5, High below 0.8 or without a sensitivity result
+the platform recorded for it that says it is robust (a drafter's own result does not count), else
+Medium; a fragment is High while it names an unapproved edge,
+else Medium; an entity is Low. The tier badge's tooltip gives the reasons, and an item whose
+submitter was never recorded (edges drafted before migration 012) says "not recorded". The
+Evidence group has no backend to read from yet (register `agent-skills-are-stubs`).
+A review item's domain is its business domain (`devops`, `marketing`), shown as a plain label in
+the queue and the panel header; a `CynefinBadge` appears only when an item carries a Cynefin
+classification, which the review-queue endpoint does not return. Until 2026-09-26 the page fed the
+business domain to `CynefinBadge`, which crashed on it; the badge now renders any value that is
+not a Cynefin domain as a neutral "Unclassified", never as a real domain.
 Approving or rejecting in `ApprovalPanel` asks the reviewer to classify the situation
 (Cynefin domain; required, nothing pre-selected, DISORDER not offered): Guardian reads it,
 and without one rule PR-006 refuses the request. A rejection needs an APPROVED verdict for
 `GOVERNANCE_REJECT` (`septa-53`), so it asks for the domain exactly as an approval does, and
 the page does not call `/reject` unless the verdict is APPROVED.
+No page submits drafts (`POST /api/semantic/drafts`) yet; the client for it,
+`semanticApi.submitDraft`, requires a session id or a declared domain other than DISORDER, so
+the page that first uses it will have to ask the drafter the same way.
 `AssumptionDisclosure` is built but no page renders it; the analyst page imported it
 without using it, and the import was removed.
 

@@ -199,6 +199,33 @@ impact(v1, v3, query).status                            # invalidated: {load} no
   oracle that shares no code with the kernel: exact linear-Gaussian population algebra on the new
   graph. The first run failed its class-balance floor and is kept beside the passing one.
 
+## Scoring the decisions
+
+`causal_decision.outcome` records, with each decision, what would have to be re-measured to find
+out whether it held (`plan`), scores the later window once (`compare`), and aggregates (`report`).
+The report is written for the day real follow-ups arrive, so it is strict about what a handful of
+them can say:
+
+- **Every rate is a `RateEstimate`**: numerator, denominator and a Clopper-Pearson interval — and
+  **no rate at all below ten follow-ups** (`MIN_FOLLOWUPS`), with the reason. One follow-up used to
+  read as 100%.
+- **Undecidable follow-ups** (the kernel refused the later window — a full rollout leaves no
+  comparison group) are counted by reason and kept out of the rates, and
+  `acted_worthwhile_bounds` carries them as unknowns in worst-case bounds over every acted
+  decision: they are not missing at random.
+- **Claimed against confirmed** (`worthwhile_claimed_vs_confirmed`): an exact McNemar test of how
+  often the analysis said the effect cleared the worthwhile bar against how often the later window
+  confirmed it. With fewer than six discordant pairs no split can reach 0.05, so it says
+  `could_not_resolve` — never `no_difference_detected`, which would be a claim nothing tested.
+
+The C0 gate (`benchmarks/c0-calibration`, `pytest -m c0`) holds this to **simulated** decision
+streams whose effects are set by construction, run through the real `analyze` → `decide` → `plan`
+→ `analyze` → `compare` path: exact interval coverage at every n from 10 to 200, coverage of the
+constructed truth over 400 streams per design, the refusal rule, and five seeded defects (a Wald
+interval, undecidable follow-ups scored as agreements or dropped, no minimum, "could not resolve"
+read as "no difference"). It proves the report honest; it says nothing about how well any real
+operation's thresholds are calibrated.
+
 ## Evidence
 
 The D0 gate is pre-registered in `benchmarks/d0-decision-policy/PRE-REGISTRATION.md`, with bars
@@ -226,11 +253,10 @@ written up in the pre-registration and the failing behaviours are pinned by test
 - **Choose your thresholds.** Whether a 5-minute effect is worth acting on is a judgement for
   whoever owns the operation. The gate holds the procedure to the policy it was given; it cannot
   tell you the policy is right.
-- **Claim to be calibrated.** The outcome-capture loop exists (`causal_decision.outcome`: a
-  decision seals what would have to be re-measured, `compare` scores the later window once, and
-  `report` aggregates), but no follow-up has been taken on a real operation, so every rate is
-  null. Until a body of follow-ups exists, treat the verdicts as a discipline, not as a measured
-  success rate.
+- **Claim to be calibrated.** The outcome-capture loop exists and its report is gated (C0, on
+  simulated streams), but no follow-up has been taken on a real operation, so every rate is
+  refused for want of follow-ups. Until at least ten real ones stand behind a rate, treat the
+  verdicts as a discipline, not as a measured success rate.
 - **Cost-benefit arithmetic**, multi-arm choice, or sequential/anytime-valid monitoring. Not yet.
 
 Licence: Apache-2.0.

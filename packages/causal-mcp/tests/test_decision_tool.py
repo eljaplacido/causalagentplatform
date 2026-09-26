@@ -174,12 +174,17 @@ def test_the_server_registers_the_impact_tool_with_the_decision_layer() -> None:
 
 def test_the_tool_listing_stays_small_enough_for_line_limited_clients() -> None:
     """The stdio client reads one JSON line per message with a 64 KiB limit; a listing
-    over it fails every call. Adding causal_impact first pushed it over (62.9 KB before)."""
+    over it fails every call. Adding causal_impact first pushed it over (62.9 KB before).
+
+    The guard was 55,000 bytes until contract 0.13.0, when the Rosenbaum and overlap fields
+    together reached 56,092 and the lossless rewrites in _slim_output_schema brought it to
+    55,845. It is 57,000 now, 8.5 KB under the line limit; the structural fix (output schemas
+    that reference the published contract instead of inlining it) is ledger item septa-55."""
     import asyncio
 
     listed = asyncio.run(server.build_server().list_tools())
     size = sum(len(t.model_dump_json(exclude_none=True, by_alias=True)) for t in listed)
-    assert size < 55_000, f"tools/list is {size} bytes; the stdio line limit is 65,536"
+    assert size < 57_000, f"tools/list is {size} bytes; the stdio line limit is 65,536"
     assert all(t.input_schema for t in listed)
     decide = next(t for t in listed if t.name == "causal_decide")
     assert "segment_by" in (decide.description or ""), "the tool's own prose is untouched"
@@ -206,7 +211,8 @@ def test_a_staggered_rollout_can_be_analysed_and_decided_over_mcp() -> None:
 
 def test_a_rollout_with_covariates_and_no_never_treated_units_is_analysed_over_mcp() -> None:
     """The two panel fields of contract 0.10.0 reach the kernel over MCP, and the response
-    validates against the output schema as listed (after its type unions were merged)."""
+    validates against the output schema as listed (after its type unions were merged and its
+    implied enumeration types dropped)."""
     import asyncio
 
     import jsonschema
@@ -238,6 +244,54 @@ def test_merged_type_unions_accept_exactly_what_the_long_form_accepts() -> None:
         ).is_valid(value), value
     constrained = {"anyOf": [{"type": "string", "minLength": 1}, {"type": "null"}]}
     assert server._merge_type_unions(constrained) == constrained, "only bare types merge"
+
+
+def test_dropped_implied_types_accept_exactly_what_the_long_form_accepts() -> None:
+    from jsonschema import Draft202012Validator
+
+    cases = [
+        ({"enum": ["treated", "control"], "type": "string"}, {"enum": ["treated", "control"]}),
+        ({"const": "result", "type": "string"}, {"const": "result"}),
+        (
+            {"maxItems": 2, "minItems": 2, "prefixItems": [{"type": "number"}] * 2,
+             "type": "array"},
+            {"items": {"type": "number"}, "maxItems": 2, "minItems": 2, "type": "array"},
+        ),
+    ]
+    values = ("treated", "control", "result", "x", 1, None, [0.1, 0.9], [0.1], [0.1, 0.2, 0.3],
+              [0.1, "a"], {"a": 1})
+    for long_form, short in cases:
+        assert server._drop_implied_types(long_form) == short
+        for value in values:
+            assert Draft202012Validator(long_form).is_valid(value) == Draft202012Validator(
+                short
+            ).is_valid(value), (long_form, value)
+    kept = [
+        {"enum": ["a", 1], "type": "string"},  # not every value a string: type still excludes 1
+        {"prefixItems": [{"type": "number"}, {"type": "string"}], "minItems": 2, "maxItems": 2},
+        {"prefixItems": [{"type": "number"}] * 2, "minItems": 1, "maxItems": 2},
+    ]
+    for schema in kept:
+        assert server._drop_implied_types(schema) == schema, schema
+
+
+def test_an_enumeration_without_its_implied_type_accepts_exactly_the_same_values() -> None:
+    from jsonschema import Draft202012Validator
+
+    values = ("greater", "less", "", 0, 1.5, None, True, ["greater"], {"a": "greater"})
+    for long_form, short in (
+        ({"enum": ["greater", "less"], "type": "string"}, {"enum": ["greater", "less"]}),
+        ({"const": "result", "type": "string"}, {"const": "result"}),
+    ):
+        assert server._drop_implied_types(long_form) == short
+        for value in (*values, "result"):
+            assert Draft202012Validator(long_form).is_valid(value) == Draft202012Validator(
+                short
+            ).is_valid(value), (long_form, value)
+    mixed = {"enum": ["a", 1], "type": "string"}
+    assert server._drop_implied_types(mixed) == mixed, "only all-string enumerations"
+    named = {"properties": {"type": {"const": "x", "type": "string"}}}
+    assert server._drop_implied_types(named) == {"properties": {"type": {"const": "x"}}}
 
 
 def test_a_watched_canary_is_monitored_and_decided_over_mcp() -> None:
@@ -320,3 +374,31 @@ def test_decide_takes_treatment_levels() -> None:
     assert abs(doubled.outcome.primary.point - -6.0) < 0.6
     assert per_unit.decision.verdict.value != "act"  # 3 < 4: not worth it per unit
     assert doubled.decision.verdict.value in ("act", "act_with_approval")
+
+
+def test_a_nullable_rewrite_accepts_exactly_what_the_long_form_accepts() -> None:
+    from jsonschema import Draft202012Validator
+
+    null = {"type": "null"}
+    pair = {"items": {"type": "number"}, "maxItems": 2, "minItems": 2, "type": "array"}
+    cases = [
+        ({"anyOf": [pair, null]}, {**pair, "type": ["array", "null"]}),
+        ({"anyOf": [{"enum": ["a", "b"]}, null]}, {"enum": ["a", "b", None]}),
+        ({"anyOf": [null, {"type": "string", "minLength": 1}]},
+         {"type": ["string", "null"], "minLength": 1}),
+    ]
+    values = (None, "a", "b", "", "c", 1, 0.5, [0.1, 0.9], [0.1], ["a", "b"], {"a": 1}, True)
+    for long_form, short in cases:
+        assert server._merge_nullable(long_form) == short
+        for value in values:
+            assert Draft202012Validator(long_form).is_valid(value) == Draft202012Validator(
+                short
+            ).is_valid(value), (long_form, value)
+    kept = [
+        {"anyOf": [{"$ref": "#/$defs/X"}, null]},  # a reference is not merged
+        {"anyOf": [{"const": "x"}, null]},
+        {"anyOf": [{"type": "string", "items": {"type": "number"}}, null]},  # not type-only
+        {"anyOf": [{"type": "number"}, {"type": "string"}, null]},
+    ]
+    for schema in kept:
+        assert server._merge_nullable(schema) == schema, schema

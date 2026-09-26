@@ -18,6 +18,7 @@ import type {
   EdgeType,
   GraphFragment,
   GuardianVerdict,
+  RiskTier,
 } from "@causalplatform/semantic-types";
 import { type ApiError } from "@/lib/types";
 
@@ -254,6 +255,15 @@ export interface ReviewQueueItemResponse {
   /** DRAFT or UNDER_REVIEW -- the queue lists only objects pending review. */
   approval_status: ApprovalStatus;
   created_at: string | null;
+  /**
+   * Derived by the backend from stored fields (review_risk.py): edges by stated
+   * confidence and stored sensitivity results, fragments by whether they carry an
+   * unapproved edge, entities LOW. The queue arrives most at risk first.
+   */
+  risk_tier: RiskTier;
+  risk_reasons: string[];
+  /** The id in the object's created_by; null where none was recorded. */
+  submitted_by: string | null;
 }
 
 /**
@@ -462,6 +472,14 @@ export const interventionApi = {
   },
 };
 
+/**
+ * What a draft is judged in: a named session's classification, or the drafter's
+ * declared domain. DISORDER is not offered: PR-006 refuses every draft in it.
+ */
+export type DraftClassification =
+  | { sessionId: string }
+  | { cynefinDomain: Exclude<CynefinDomain, "DISORDER"> };
+
 /** Semantic layer — entities, fragments, drafts */
 export const semanticApi = {
   // Routes: /api/semantic/... (no v1 prefix)
@@ -475,8 +493,21 @@ export const semanticApi = {
     api.get(`/api/semantic/entities${domain ? `?domain=${domain}` : ""}`),
   entity: (id: string) => api.get(`/api/semantic/entities/${id}`),
   edge: (id: string) => api.get<CausalEdgeResponse>(`/api/semantic/edges/${id}`),
-  submitDraft: (objectType: string, payload: unknown) =>
-    api.post("/api/semantic/drafts", { object_type: objectType, payload }),
+  /**
+   * POST /api/semantic/drafts. The Guardian judges the draft in a classified
+   * situation: a reasoning session's own domain, or the domain the drafter
+   * declares (recorded, with who declared it, in the verdict's audit row). With
+   * neither it would be DISORDER, which PR-006 refuses, so one is required --
+   * ask the drafter, as ApprovalPanel asks the approver.
+   */
+  submitDraft: (objectType: string, payload: unknown, classification: DraftClassification) =>
+    api.post("/api/semantic/drafts", {
+      object_type: objectType,
+      payload,
+      ...("sessionId" in classification
+        ? { session_id: classification.sessionId }
+        : { cynefin_domain: classification.cynefinDomain }),
+    }),
   edgeAuditTrail: (edgeId: string) =>
     api.get<AuditEntry[]>(`/api/semantic/edges/${edgeId}/audit-trail`),
 };

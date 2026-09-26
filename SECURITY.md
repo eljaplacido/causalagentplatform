@@ -95,8 +95,10 @@ in its §8.4.
 
 **Authentication.** `FirebaseAuthMiddleware` (`backend/src/middleware/auth.py`)
 requires a Firebase ID token (`verify_id_token`, revocation checked) on every
-route except `/health`, `/docs`, `/redoc`, `/openapi.json` and CORS preflight. A
-missing or invalid token gets 401.
+route except `/health`, `/docs`, `/redoc`, `/openapi.json`, `/favicon.ico` and
+CORS preflight. Those paths are matched exactly, never as prefixes: `/healthz` or
+`/docs-admin` needs a token like any other route
+(`backend/tests/unit/test_auth_public_paths.py`). A missing or invalid token gets 401.
 
 **Local-dev bypass.** When `ENV=local` *and* `DEV_AUTH_BYPASS=true`, the fixed
 token `dev-local-token` is accepted as a mock user holding `governance_officer`,
@@ -146,8 +148,14 @@ logged at CRITICAL. A verdict also verifies against the retired keys listed in
 issued before it. Each verdict names the object it was issued for and the
 action it rules on, both inside the signed claim, and can be spent once
 (`verdict_consumption`). Approving and rejecting a draft each need an APPROVED
-verdict, for `GOVERNANCE_APPROVE` and `GOVERNANCE_REJECT` respectively; a verdict
-for one of those two actions authorises that decision and no other write.
+verdict, issued for `GOVERNANCE_APPROVE` and `GOVERNANCE_REJECT` respectively; a
+verdict for one of those two actions authorises that decision and no other write.
+Approving an edge also needs a sensitivity result the platform recorded for it
+under a `RECORD_SENSITIVITY` verdict (PR-007; a result a drafter attaches to their
+own assumption does not count). A draft submitted through `POST /api/semantic/drafts`
+is judged in the named session's Cynefin domain or the one the caller declares,
+recorded with who declared it in the audit row; nothing declared is DISORDER, which
+PR-006 refuses.
 
 **Secrets.** Every secret (the signing keys, `DATABASE_URL`, `NEO4J_PASSWORD`,
 the LLM API keys) is read from the environment variable or from the file named
@@ -166,8 +174,10 @@ keep in mind when evaluating issues:
   In the backend (`backend/src`), `causal_entities`, `causal_edges`,
   `graph_fragments` and `assumptions` are written only by `SemanticLayerRegistry`
   (`backend/src/semantic_layer/registry.py`), which refuses a verdict that is
-  missing, not APPROVED, unsigned, issued for another object or another review
-  action (a rejection needs one for `GOVERNANCE_REJECT`), or already spent. The dev seeding script `backend/scripts/seed_data.py`
+  missing, not APPROVED, unsigned, issued for another object or another bound
+  action (an approval needs one for `GOVERNANCE_APPROVE`, a rejection one for
+  `GOVERNANCE_REJECT`, recording a sensitivity result on a draft edge one for
+  `RECORD_SENSITIVITY`), or already spent. The dev seeding script `backend/scripts/seed_data.py`
   inserts directly; it is run by hand against a local database, and no request
   path reaches it. A path that
   writes those tables without that check, or that obtains a verdict it should
@@ -176,6 +186,10 @@ keep in mind when evaluating issues:
   their own endpoints.
 - **Audit log is append-only**. Any path that allows deletion or rewriting of
   `audit_log` entries is critical-severity.
+- **Provenance is append-only**. A path that deletes or rewrites rows of
+  `provenance_entries` or `provenance_erasures`, or that serves a record an
+  erasure tombstone hides, is in scope. An erasure hides records from the API
+  and keeps them in the database; it is not GDPR erasure.
 - **`EpistemicState`** is the single in-flight contract. Code that mutates it
   outside an agent boundary, or smuggles data past it, is in scope.
 - **MCP tools must not crash the server**. A `causal-mcp` tool call answers with

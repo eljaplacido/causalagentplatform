@@ -21,7 +21,7 @@ from typing import Any
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from src.agents.incident_triage import IncidentTriageAgent
 from src.exceptions import CircuitBreakerError
@@ -33,6 +33,8 @@ from src.semantic_layer.models import (
     EpistemicState,
     GuardianVerdict,
 )
+from src.semantic_layer.provenance_capture import session_run_records
+from src.semantic_layer.provenance_store import ProvenanceStore
 
 log = structlog.get_logger(__name__)
 router = APIRouter()
@@ -45,6 +47,28 @@ _session_cache: dict[str, EpistemicState] = {}
 #: session_id -> the uid that started it (None: saved without one), beside the cache.
 _session_owner: dict[str, str | None] = {}
 _session_store = SessionStateStore()
+_provenance = ProvenanceStore()
+
+
+async def _record_provenance(
+    initial: EpistemicState,
+    final: EpistemicState,
+    *,
+    route: str,
+    user: dict[str, Any],
+    resumed: bool,
+) -> None:
+    """Append the run's PROV records (src/semantic_layer/provenance_capture.py).
+
+    A failure raises: the session state is already saved, but a run whose
+    provenance could not be written is reported as failed rather than returned
+    as if its trace were complete.
+    """
+    await _provenance.append(
+        session_run_records(
+            initial, final, route=route, user_id=user.get("uid"), resumed=resumed
+        )
+    )
 
 
 # ── Request / Response models ─────────────────────────────────────────────────
@@ -71,14 +95,28 @@ class RunSessionRequest(BaseModel):
         min_length=1,
         max_length=2000,
     )
-    cynefin_domain: CynefinDomain | None = Field(
-        None,
-        description="Override Cynefin domain. Omit to let the agent classify.",
-    )
     active_graph_fragment_id: str | None = Field(
         None,
         description="Graph fragment to load as context for the session.",
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _no_declared_domain(cls, data: Any) -> Any:
+        # `cynefin_domain` was offered as an override and overrode nothing: the
+        # graph's CynefinClassify node always replaces the domain with its own. It
+        # is not honoured instead, because the domain is what PR-003 and PR-006
+        # judge and classifying it is the platform's (docs/AGENTS.md): /check takes
+        # a caller's domain only when no session has one, and a session run always
+        # has one. Refused loudly, as /check refuses the scores it retired, so a
+        # client still sending it learns that it does not count.
+        if isinstance(data, dict) and "cynefin_domain" in data:
+            raise ValueError(
+                "cynefin_domain is classified by the platform (CynefinClassify), not "
+                "supplied by the caller; a declared domain is judged only by "
+                "POST /api/governance/check without a session_id"
+            )
+        return data
 
 
 class IncidentSessionRequest(BaseModel):
@@ -147,16 +185,24 @@ def _state_to_response(state: EpistemicState) -> SessionStateResponse:
     )
 
 
-async def _run_graph(initial_state: EpistemicState) -> EpistemicState:
+async def _run_graph(initial_state: EpistemicState, description: str) -> EpistemicState:
     """
-    Run the platform LangGraph pipeline.
+    Run the platform LangGraph pipeline on the problem ``description``.
 
-    Wraps circuit breaker and Guardian errors into a terminal EpistemicState
-    rather than raising HTTP exceptions — the state itself communicates the outcome.
+    Every path through the graph ends GuardianCheck → Output, so a returned state
+    carries a Guardian verdict that was written to audit_log.
+
+    Wraps circuit breaker and graph errors into a terminal EpistemicState rather
+    than raising HTTP exceptions — the state itself communicates the outcome. Such
+    a state never reached the Guardian, so it carries no recommendation: nothing
+    ungoverned is presented.
     """
     platform_state: PlatformState = {
         "epistemic": initial_state,
         "disorder_retries": 0,
+        "description": description,
+        "plan_outcome": None,
+        "escalation_reason": None,
     }
 
     try:
@@ -172,6 +218,7 @@ async def _run_graph(initial_state: EpistemicState) -> EpistemicState:
             update={
                 "requires_human_review": True,
                 "flags": [*initial_state.flags, "circuit_breaker_open"],
+                "recommendations": [],
                 "draft_explanation": (
                     f"Circuit breaker opened after {exc.cycle_count} cycles. "
                     "Escalating to human reviewer."
@@ -189,6 +236,7 @@ async def _run_graph(initial_state: EpistemicState) -> EpistemicState:
             update={
                 "requires_human_review": True,
                 "flags": [*initial_state.flags, "graph_internal_error"],
+                "recommendations": [],
                 "draft_explanation": (
                     "Internal platform error during session execution. "
                     "Escalating to human reviewer."
@@ -266,7 +314,7 @@ async def run_session(
         initial_state = EpistemicState(
             session_id=session_id,
             agent_id=body.agent_id,
-            cynefin_domain=body.cynefin_domain or CynefinDomain.DISORDER,
+            cynefin_domain=CynefinDomain.DISORDER,  # CynefinClassify decides
             active_graph_fragment_id=body.active_graph_fragment_id,
             draft_explanation=body.description,
         )
@@ -279,10 +327,17 @@ async def run_session(
         resumed=existing is not None,
     )
 
-    final = await _run_graph(initial_state)
+    final = await _run_graph(initial_state, body.description)
 
     # Cache for potential continuation
     await _remember(final, user)
+    await _record_provenance(
+        initial_state,
+        final,
+        route="POST /api/v1/session/run",
+        user=user,
+        resumed=existing is not None,
+    )
 
     log.info(
         "session.run.complete",
@@ -303,7 +358,8 @@ async def run_session(
         "Fast-path incident triage endpoint for the DevOps vertical. "
         "Creates an EpistemicState from the incident payload, runs IncidentTriageAgent "
         "directly, then routes to the full platform graph for GuardianCheck + Output. "
-        "CHAOTIC-domain incidents escalate immediately without AI analysis."
+        "CHAOTIC-domain incidents escalate without AI analysis; the escalation is "
+        "ruled on by the Guardian and recorded in the audit log."
     ),
 )
 async def triage_incident(
@@ -363,15 +419,19 @@ async def triage_incident(
             }
         )
 
-    # If CHAOTIC, skip the graph (already escalated by IncidentTriageAgent)
-    if triaged_state.cynefin_domain == CynefinDomain.CHAOTIC:
-        await _remember(triaged_state, user)
-        await _persist_incident(body, triaged_state, user)
-        return _state_to_response(triaged_state)
-
-    # Otherwise run through the full graph for GuardianCheck + Output
-    final = await _run_graph(triaged_state)
+    # Every incident goes through the graph, CHAOTIC included: the graph classifies
+    # the incident description (not the triage narrative), and every path ends in a
+    # Guardian verdict written to audit_log. CHAOTIC used to skip the graph, and so
+    # returned the triage agent's escalation with no verdict and no audit record.
+    final = await _run_graph(triaged_state, description)
     await _remember(final, user)
+    await _record_provenance(
+        initial_state,
+        final,
+        route="POST /api/v1/session/incident",
+        user=user,
+        resumed=False,
+    )
     await _persist_incident(body, final, user)
 
     log.info(

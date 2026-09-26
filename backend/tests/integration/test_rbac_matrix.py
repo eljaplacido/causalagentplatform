@@ -2,8 +2,9 @@
 The role matrix, and domain isolation, over HTTP.
 
 Register entry `rbac-matrix-and-domain-isolation`: two role sets guarded seven
-routes, and every other route -- including DELETE of a session's provenance --
-needed only a valid token. `src/middleware/rbac.py` now holds one matrix,
+routes, and every other route -- including DELETE of a session's provenance (a
+route since replaced by a tombstoning POST .../erasure) -- needed only a valid
+token. `src/middleware/rbac.py` now holds one matrix,
 ROUTE_ROLES, and each guarded route depends on its row.
 
 Preconditions
@@ -43,11 +44,11 @@ from fastapi.routing import APIRoute
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
-from src.api import provenance as provenance_api
 from src.api.main import app
 from src.middleware.auth import get_current_user
 from src.middleware.rbac import ALL_ROLES, PUBLIC_ROUTES, ROUTE_ROLES, domain_scope, guard
 from src.semantic_layer.provenance import ProvenanceRecord, ProvenanceRecordType
+from src.semantic_layer.provenance_store import ProvenanceStore
 from tests.conftest import (
     make_causal_edge,
     make_causal_entity,
@@ -241,32 +242,37 @@ async def test_a_token_with_no_roles_is_refused_on_every_guarded_route(
 # ── The two routes nothing else calls ─────────────────────────────────────────
 
 
-def _seed_provenance(session_id: str) -> None:
-    provenance_api.store_provenance_record(
-        ProvenanceRecord(
-            record_type=ProvenanceRecordType.ENTITY,
-            session_id=session_id,
-            agent_id="test-agent",
-        )
+async def _seed_provenance(session_id: str) -> None:
+    await ProvenanceStore().append(
+        [
+            ProvenanceRecord(
+                record_type=ProvenanceRecordType.ENTITY,
+                session_id=session_id,
+                agent_id="test-agent",
+            )
+        ]
     )
 
 
 async def test_provenance_is_erased_only_by_a_governance_role(db_engine: object) -> None:
+    """Erasure is a tombstone (tests/integration/test_provenance_append_only.py);
+    who may write one is the matrix's business."""
     sid = f"prov-{uuid4()}"
-    _seed_provenance(sid)
-    try:
-        for role in ("analyst", "graph_author", "sre", "agent", "viewer"):
-            async with _client({"uid": role, "roles": [role]}) as client:
-                resp = await client.delete(f"/api/v1/provenance/session/{sid}")
-            assert resp.status_code == 403
-            assert sid in provenance_api._provenance_store, "a refused delete erased records"
+    await _seed_provenance(sid)
+    path = f"/api/v1/provenance/session/{sid}/erasure"
+    reason = {"reason": "Role-matrix test: hide this session."}
+    for role in ("analyst", "graph_author", "sre", "agent", "viewer"):
+        async with _client({"uid": role, "roles": [role]}) as client:
+            resp = await client.post(path, json=reason)
+        assert resp.status_code == 403
+        view = await ProvenanceStore().read(sid)
+        assert len(view.records) == 1 and not view.erasures, "a refused erasure hid records"
 
-        async with _client({"uid": "pe", "roles": ["platform_engineer"]}) as client:
-            resp = await client.delete(f"/api/v1/provenance/session/{sid}")
-        assert resp.status_code == 204
-        assert sid not in provenance_api._provenance_store
-    finally:
-        provenance_api._provenance_store.pop(sid, None)
+    async with _client({"uid": "pe", "roles": ["platform_engineer"]}) as client:
+        resp = await client.post(path, json=reason)
+    assert resp.status_code == 201
+    view = await ProvenanceStore().read(sid)
+    assert view.records == [] and [e.erased_by for e in view.erasures] == ["pe"]
 
 
 async def test_calibration_probe_needs_a_platform_role(db_engine: object) -> None:
@@ -418,7 +424,7 @@ async def test_a_devops_reviewer_cannot_rule_on_another_domain(
     other = two_domains["supply_chain"]["entity"]
     from uuid import UUID
 
-    approve_verdict = await verdict_for(UUID(other))
+    approve_verdict = await verdict_for(UUID(other), action_type="GOVERNANCE_APPROVE")
     reject_verdict = await verdict_for(UUID(other), action_type="GOVERNANCE_REJECT")
     async with _client(DEVOPS_GOVERNANCE) as client:
         approve = await client.post(
@@ -453,7 +459,10 @@ async def test_a_viewer_reads_approved_objects_only(
     approved = two_domains["devops"]["entity"]
     draft = two_domains["devops"]["fragment"]
     await registry.promote_to_approved(
-        UUID(approved), "CausalEntity", await verdict_for(UUID(approved)), make_user_ref("gov")
+        UUID(approved),
+        "CausalEntity",
+        await verdict_for(UUID(approved), action_type="GOVERNANCE_APPROVE"),
+        make_user_ref("gov"),
     )
     viewer = {"uid": "v", "roles": ["viewer"], "domains": ["devops"]}
     async with _client(viewer) as client:

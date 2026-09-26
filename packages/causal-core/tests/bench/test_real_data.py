@@ -8,35 +8,23 @@ CAUSAL_FETCH=1, so an offline run skips instead of failing.
 
 from __future__ import annotations
 
-import os
+from typing import Any
 
 import pytest
 
-from causal_core.bench import ihdp, lalonde
+from causal_core.bench import lalonde
+from tests.bench._data import need
 
 pytestmark = pytest.mark.real_data
 
 
-def _cached(names: list[str], sub: str) -> bool:
-    base = os.environ.get("CAUSAL_CORE_CACHE") or os.path.expanduser("~/.cache/causal-core")
-    return all(os.path.exists(os.path.join(base, sub, n)) for n in names)
-
-
-def _need(names: list[str], sub: str) -> None:
-    if not _cached(names, sub) and os.environ.get("CAUSAL_FETCH") != "1":
-        pytest.skip(f"{sub} data not cached; set CAUSAL_FETCH=1 to download it")
-
-
 def test_lalonde_no_confident_wrong_answer() -> None:
-    _need([f"{n}.dta" for n in lalonde.FILES], "lalonde")
+    need([f"{n}.dta" for n in lalonde.FILES], "lalonde")
     cfg, _ = lalonde.load_prereg()
     result = lalonde.run(cfg, lalonde.load(lalonde.fetch(cfg)))
     assert result["passed"], result["failures"]
     assert not result["confident_wrong"]
 
 
-def test_ihdp_att_answered_and_covered_no_confident_misses() -> None:
-    _need([f"ihdp_npci_1-100.{s}.npz" for s in ("train", "test")], "ihdp")
-    cfg, _ = lalonde.load_prereg(ihdp.prereg_path())
-    result = ihdp.run(cfg, ihdp.realizations(ihdp.fetch(cfg)))
-    assert result["passed"], result["failures"]
+def test_ihdp_att_answered_and_covered_no_confident_misses(ihdp_result: dict[str, Any]) -> None:
+    assert ihdp_result["passed"], ihdp_result["failures"]
