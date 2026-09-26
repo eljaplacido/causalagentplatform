@@ -20,10 +20,10 @@
       "why": "status line, what's in the box, quick-start commands, MCP entry point",
       "subjects": [
         "backend/pyproject.toml",
-        "backend/mcp_server",
         "frontend/package.json",
         "launch_backend.sh",
-        "docs/CURRENT_STAGE.md"
+        "docs/CURRENT_STAGE.md",
+        "packages/causal-mcp"
       ],
       "baseline": {
         "on": "2026-09-26",
@@ -45,7 +45,6 @@
       "subjects": [
         "conformance/declared_not_implemented.json",
         "backend/src",
-        "backend/mcp_server",
         "backend/tests",
         "frontend/src",
         "packages",
@@ -141,9 +140,9 @@
       "subjects": [
         "backend/src/agents",
         "backend/src/skills",
-        "backend/mcp_server",
         "backend/src/orchestration",
-        "prompts"
+        "prompts",
+        "packages/causal-mcp"
       ],
       "baseline": {
         "on": "2026-09-26",
@@ -252,14 +251,14 @@
         "on": "2026-09-26",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
-          "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
-          ".github": "0a8d8e713831ebec1cc8e44c2f719c44085c453b44baed2d4607ac2fa3df132b",
-          ".gnomon": "e9afa6dfbb985f1524e04a4ca8de7b5210e7e43e52d4106baca6d2a1b847532a"
+          "prompts": "664b74cd837a44513e10dc0a7a5c44a3015816f928c93d4f7831320b0231e50f",
+          ".github": "db12d364ec234ff9774297f81b08649ec310d368304c47fbfcfa04138f630ac4",
+          ".gnomon": "25561ccec95ea65980dc9c037b24b494f0963626b71b7eca61dfa00ec72a75f4"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: #14's workflow and dependabot changes; the page names the surface files, still true)"
+        "by": "Claude (merge of main into infra-claims: the retractions stand (mentions are history notes) and main's content -- runners, npm majors, RLS migrations, T8 v2 -- is present)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -279,17 +278,17 @@
         "sha256": {
           "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
-          "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
-          "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
+          "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
+          "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
+          "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
-          ".env.example": "f5dbf40f551d60b4b91d5bbaa9b36a2404f89536421fe51b8bcbf17a6ae1258f",
+          ".env.example": "10b19ac63993ff640ea47936fb99d53938077413273463afe5e5661313451c97",
           "backend/scripts": "36d9419c9cb543ee85703a4d4008be1c16e383c5d7567d9c7bcb6dce92ad64da"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-8: the backend pin moved to causal-core>=0.10.0; the page states no kernel version and no DiD options, unchanged)"
+        "by": "Claude (merge of main into infra-claims: the retractions stand (mentions are history notes) and main's content -- runners, npm majors, RLS migrations, T8 v2 -- is present)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -336,12 +335,12 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "frontend/src": "653e2e1dd0b61fab109dbe492e7facb12581472ba80c9aa3e550616a5d3c5902"
+          "frontend/src": "3db9b395057a637926422437995bccdc190874ad8e9a4472a83e33207b6cc1c8"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-36: governance section describes the backend risk tier, its rules, the reasons tooltip and not recorded)"
+        "by": "Claude (merge #30 into #31: read each conflict against the code; approve binds GOVERNANCE_APPROVE and reject GOVERNANCE_REJECT, stated together; migration 012 for edge created_by; CYBERSECURITY 7.2 now says PR-007 asks for a result, not a robust one)"
       }
     },
     "docs/ROADMAP.md": {

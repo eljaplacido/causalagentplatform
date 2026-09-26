@@ -12,8 +12,8 @@ It does NOT go into `backend/src/skills/` -- that directory is not to grow.
 The backend's `effect_estimate` and `identification_check` skills already
 delegate to the kernel (`backend/src/skills/_kernel.py`); a backend feature
 that needs a new method calls the kernel through that route. The agent-facing
-surface is `packages/causal-mcp`, never a new tool on the legacy
-`backend/mcp_server`.
+surface is `packages/causal-mcp`, the one MCP server; the backend serves
+no MCP tools.
 
 **An estimator is a plug-in** satisfying the `Estimator` protocol in
 `causal_core/estimators/__init__.py`: `name`, `family`, the `strategies` and

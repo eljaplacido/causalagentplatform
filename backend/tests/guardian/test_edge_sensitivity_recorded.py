@@ -393,6 +393,15 @@ async def test_recording_needs_a_verdict_issued_for_recording(
             await verdict_for(uuid4(), action_type=RECORD_SENSITIVITY),
             make_user_ref(),
         )
+    # A verdict for a review decision on this edge authorises that decision only.
+    for review_action in (GOVERNANCE_APPROVE, "GOVERNANCE_REJECT"):
+        with pytest.raises(GuardianBlockedError, match=f"issued for action {review_action}"):
+            await registry.record_edge_sensitivity(
+                edge.id,
+                _result(),
+                await verdict_for(edge.id, action_type=review_action),
+                make_user_ref(),
+            )
     assert await _count(db_session, "assumptions") == before
 
     verdict = await verdict_for(edge.id, action_type=RECORD_SENSITIVITY)

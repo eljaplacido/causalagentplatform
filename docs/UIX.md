@@ -269,11 +269,13 @@ first (US-27). The tier is derived from stored fields by `backend/src/semantic_l
 an edge is Critical below stated confidence 0.5, High below 0.8 or without a stored sensitivity
 result that says it is robust, else Medium; a fragment is High while it names an unapproved edge,
 else Medium; an entity is Low. The tier badge's tooltip gives the reasons, and an item whose
-submitter was never recorded (edges drafted before migration 011) says "not recorded". The
+submitter was never recorded (edges drafted before migration 012) says "not recorded". The
 Evidence group has no backend to read from yet (register `agent-skills-are-stubs`).
-Approving in `ApprovalPanel` asks the approver to classify the situation (Cynefin domain;
-required, nothing pre-selected, DISORDER not offered): Guardian reads it, and without one
-rule PR-006 rejects every approval.
+Approving or rejecting in `ApprovalPanel` asks the reviewer to classify the situation
+(Cynefin domain; required, nothing pre-selected, DISORDER not offered): Guardian reads it,
+and without one rule PR-006 refuses the request. A rejection needs an APPROVED verdict for
+`GOVERNANCE_REJECT` (`septa-53`), so it asks for the domain exactly as an approval does, and
+the page does not call `/reject` unless the verdict is APPROVED.
 `AssumptionDisclosure` is built but no page renders it; the analyst page imported it
 without using it, and the import was removed.
 
