@@ -133,7 +133,7 @@
           "says": "(DoWhy, PyMC)"
         },
         {
-          "at": "docs/AGENTS.md:666",
+          "at": "docs/AGENTS.md:685",
           "says": "DoWhy, EconML, statsmodels"
         },
         {
@@ -195,11 +195,11 @@
           "says": "Provider-agnostic LLM"
         },
         {
-          "at": "docs/AGENTS.md:616",
+          "at": "docs/AGENTS.md:635",
           "says": "the LLM factory resolves capability \u2192 provider at runtime"
         },
         {
-          "at": "docs/AGENTS.md:626",
+          "at": "docs/AGENTS.md:645",
           "says": "Routing is handled by `src/agents/llm_factory.py`"
         },
         {
@@ -661,7 +661,7 @@
       "capability": "Agents render their prompts from the versioned templates in prompts/",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:610",
+          "at": "docs/AGENTS.md:629",
           "says": "Prompt templates are versioned in `prompts/` alongside their schema contracts. No agent uses ad-hoc prompts at runtime."
         }
       ],
@@ -883,18 +883,18 @@
           "says": "SCM used for effect estimation when approved fragment available"
         }
       ],
-      "reality": "_simulate_single_action calls effect_estimate with data=None, and the kernel refuses without data, so no action ever gets an estimate. Under an APPROVED fragment each action's confidence is halved (action.confidence * 0.5, never a failure). Without a fragment it keeps its own confidence and fails below 0.3. The lookahead is therefore arithmetic on the recommendations' own confidences. Under an APPROVED fragment an action needs confidence >= 0.8 to clear the node's 0.4 commit threshold, while without one it needs 0.4: an approved causal model makes the planner escalate more often, not less. SIMULATED_NOT_EXECUTED outcomes are not surfaced, and planning failure sets requires_human_review, not the CHAOTIC domain. When the kernel refuses, the refusal is returned as not-a-failure and the action proceeds at half its prior confidence: a refusal is silently turned into a smaller number instead of reaching the caller.",
+      "reality": "_simulate_single_action calls effect_estimate with data=None, and the kernel refuses without data, so no action ever gets an estimate. Under an APPROVED fragment each action's confidence is halved (action.confidence * 0.5, never a failure). Without a fragment it keeps its own confidence and fails below 0.3. The lookahead is therefore arithmetic on the recommendations' own confidences. Under an APPROVED fragment an action needs confidence >= 0.8 to clear the node's 0.4 commit threshold, while without one it needs 0.4: an approved causal model makes the planner commit less often, not more. SIMULATED_NOT_EXECUTED outcomes are not surfaced. Since 2026-09-26 a plan with no estimate is flagged plan_unsimulated and goes to the Guardian with each recommendation saying it was not simulated (an uncommitted one with requires_human_review); only an estimated failure escalates, and that is not the CHAOTIC domain. When the kernel refuses, the refusal is returned as not-a-failure and the action proceeds at half its prior confidence: a refusal is silently turned into a smaller number instead of reaching the caller.",
       "evidence": [
         {
-          "at": "backend/src/orchestration/planning.py:335",
+          "at": "backend/src/orchestration/planning.py:336",
           "says": "data=None,  # no observational data here: the kernel refuses, ate is None"
         },
         {
-          "at": "backend/src/orchestration/planning.py:343",
+          "at": "backend/src/orchestration/planning.py:344",
           "says": "action.confidence * 0.5,"
         },
         {
-          "at": "backend/src/orchestration/planning.py:397",
+          "at": "backend/src/orchestration/planning.py:403",
           "says": "confidence_threshold=0.4,"
         }
       ],
@@ -1061,7 +1061,7 @@
           "says": "Cynefin domain classification with confidence"
         },
         {
-          "at": "docs/AGENTS.md:559",
+          "at": "docs/AGENTS.md:574",
           "says": "Domain confidence > 0.7"
         },
         {

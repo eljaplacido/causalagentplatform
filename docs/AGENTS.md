@@ -544,12 +544,27 @@ Intake → CynefinClassify → [Router]
     │                                  ├── Backpropagate (failure detection)
     │                                  └── CommitNext (one action only)
     │                                    ╱           ╲
-    │                          GuardianCheck    EscalateHuman
-    │                               ↓                ↓
-    │                           Output           [Human review]
-    ├── CHAOTIC      → EscalateHuman → [Human approval required]
+    │                                   │       EscalateHuman
+    │                                   ↓            ↓
+    │                               GuardianCheck ←──┘
+    │                                   ↓
+    │                               Output  [requires_human_review on every escalation]
+    ├── CHAOTIC      → EscalateHuman → GuardianCheck → Output [Human approval required]
     └── DISORDER     → DisorderProtocol → CynefinClassify [retry once, then EscalateHuman]
 ```
+
+Every path ends GuardianCheck → Output: nothing a session returns lacks a Guardian verdict, and
+every verdict is written to `audit_log` before the response. An escalation is ruled on and
+recorded like any other output (`action_type` `GRAPH_HUMAN_ESCALATION`, with the escalation's
+reason in the payload the row's hash binds): the Guardian returns REQUIRES_ESCALATION for
+CHAOTIC (PR-003) and REJECTED for DISORDER (PR-006), and the response still routes the run to a
+person. Until 2026-09-26 EscalateHuman went straight to the end of the graph, so no escalation
+left an audit record, and every classified run escalated at PlanAhead: the planner simulates
+nothing (register `planning-simulation-no-data`), and its "no safe action found" was a
+threshold on the recommendations' own confidences. A plan nothing could simulate now goes to
+the Guardian marked `plan_unsimulated`, with that said on each recommendation; only a lookahead
+that estimated consequences and found every candidate unsafe escalates. Pinned by
+`backend/tests/integration/test_session_reaches_guardian.py`, on SQLite and PostgreSQL.
 
 ### 5.2 Graph Node Responsibilities
 
@@ -560,8 +575,12 @@ Intake → CynefinClassify → [Router]
 | `CausalAnalysis` | `CausalDiscoveryAgent` | Graph fragment available |
 | `CausalDiscovery` | `CausalDiscoveryAgent` | Complex domain with low evidence |
 | `PlanAhead` | `plan_action_sequence` skill | Candidate recommendations exist |
-| `GuardianCheck` | `GovernanceAgent` | PlanAhead found safe action |
-| `EscalateHuman` | — | CHAOTIC domain, DISORDER still unresolved after one retry, Guardian REQUIRES_ESCALATION, or PlanAhead found no safe action |
+| `GuardianCheck` | `GovernanceAgent` | Every run, before `Output`: after PlanAhead, and after EscalateHuman |
+| `EscalateHuman` | — | CHAOTIC domain, DISORDER still unresolved after one retry, or PlanAhead's lookahead estimated every candidate unsafe; then `GuardianCheck` |
+
+`CynefinClassify` classifies the problem as submitted, not the latest narrative an agent wrote:
+`/incident` used to re-classify the triage agent's own summary, which carries no keyword, so
+every non-chaotic incident became DISORDER.
 
 ### 5.3 Circuit Breaker Rules (enforced by `GovernanceAgent`)
 
