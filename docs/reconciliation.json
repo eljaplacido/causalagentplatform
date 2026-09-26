@@ -28,16 +28,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
+          "backend/pyproject.toml": "25968f523349c1421cca680f16b6f6237cbfec92deaba9eef7821cc59969bdc8",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "1b5c12133f8249ee50704e27169b15dfbd5ddc933702f1706c1b77e9f641ca94",
-          "packages/causal-mcp": "ac8ffe5b31a7fc07dfbfaee6156a0003bc0753f30c9a3a730b99d39de085a913"
+          "docs/CURRENT_STAGE.md": "2c546e5254f3fe3be88f0251a1831fb0555d98eadf42d5702bd9354f43b44b97",
+          "packages/causal-mcp": "f86dd08d8fef8f9b09adab83770f37de1234101a5c84ff11ef0427bdab2507d1"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #31 into #47: read each conflict against the code; SECURITY and the registry name all three bound actions; AGENTS keeps #47's SimulationAgent note under #29's Backed-by line; DATA_LAYER keeps #47's agent rows and main's drift row; CYBERSECURITY 7.2 points at the recording path)"
+        "by": "Claude (merge #53 into #37, contract renumbered 0.12.0: README and benchmarks tables carry main's T8 v2 row and this branch's T9 row; AGENTS takes main's deleted-legacy-server text; CURRENT_STAGE sensitivity row implemented, infra rows from #29, package counts 233/118/41 from this merged tree's gate; ROADMAP septa-12 done; QUICKSTART names no kernel version)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "2b41ca2f38c6531f2d151d3ee0fa2faba39fbb42040297e21dfceb8c4d6c82c9",
-          "backend/src": "bb1844ffea0411bbf1cd36301680881f59c2f812df35f46d37493438c4e972a7",
-          "backend/tests": "e2a1ca08045eaa51defa1effded4ea567e35f4f81684566ee8943c52a06b6f72",
-          "frontend/src": "3db9b395057a637926422437995bccdc190874ad8e9a4472a83e33207b6cc1c8",
-          "packages": "9fe7e31eb9499437dbf0a75f0d9bc49a771d4dec83b05f1c570cf9cdc3a5616d",
+          "conformance/declared_not_implemented.json": "de5531248f26ab5ca5b53a637d04cdcc0542b28ae4b952f162aaaa48f862cf1d",
+          "backend/src": "3bcb56bde755405e9db09f3fbaf7383091e7145250584ce38bc3b1252f40b327",
+          "backend/tests": "25b5a9200fed6b42974c8b366844b5c30102f60ca8ce478e3a45c258fb4e28a8",
+          "frontend/src": "f309f78f9a388af875805eefabe52267de66468efb047a2c8e924303e5cee552",
+          "packages": "57d0118754020f9c65c35bfbdeb20eb3e33bd3e17de0094ee79ef5f636eea00c",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #31 into #47: read each conflict against the code; SECURITY and the registry name all three bound actions; AGENTS keeps #47's SimulationAgent note under #29's Backed-by line; DATA_LAYER keeps #47's agent rows and main's drift row; CYBERSECURITY 7.2 points at the recording path)"
+        "by": "Claude (merge #53 into #37, contract renumbered 0.12.0: README and benchmarks tables carry main's T8 v2 row and this branch's T9 row; AGENTS takes main's deleted-legacy-server text; CURRENT_STAGE sensitivity row implemented, infra rows from #29, package counts 233/118/41 from this merged tree's gate; ROADMAP septa-12 done; QUICKSTART names no kernel version)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -78,8 +78,8 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/semantic_layer": "cbaeb5815535ac1b9d134f774b04c7d68908c05af969eed5f1f61b53ecf66c08",
-          "backend/src/agents/governance.py": "176a45861f38cb34435e652bf789b27de1bfeff4054a24b0e2eebff80595ce24",
+          "backend/src/semantic_layer": "210c7146f6f389a03da2e808d1abaa4e0ebfccd0912921601c86e4020bc99634",
+          "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
           "packages/semantic-types/src": "b88502a55b3406392490bc55954f738e1c9557acaa2e273743cdb113c4bc31ce",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
           "backend/src/orchestration/graph.py": "1c42a22eed003aa1e67b1ffc70545347304a0cc5170959464f263439b727eacc"
@@ -87,7 +87,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #31 into #47: read each conflict against the code; SECURITY and the registry name all three bound actions; AGENTS keeps #47's SimulationAgent note under #29's Backed-by line; DATA_LAYER keeps #47's agent rows and main's drift row; CYBERSECURITY 7.2 points at the recording path)"
+        "by": "Claude (merge #47 into #53: read each conflict against the code; SECURITY states both review bindings with PR-007's platform-recorded rule and the drafts route; UIX keeps the reject flow and the no-draft-page note; CYBERSECURITY 7.2 says a drafter's own result does not count)"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -106,12 +106,12 @@
           "backend/src/semantic_layer/contracts.py": "8af9432f179c0d3e8652b3b7d4a48db9edbff3f5acc1fb25c8a6e8d9af3eaaa4",
           "backend/src/api/provenance.py": "55fa5a3e0153904f557da134e6e0f3a8c8c1ae0ab8b5fe4faa8a6918a70c617e",
           "backend/src/agents/llm_factory.py": "cf027815b09bfd658aa041072ebd42158e3bdf5f6e76d3f8941ed7b227fd9f1e",
-          "backend/src/agents/governance.py": "176a45861f38cb34435e652bf789b27de1bfeff4054a24b0e2eebff80595ce24"
+          "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #31 into #47: read each conflict against the code; SECURITY and the registry name all three bound actions; AGENTS keeps #47's SimulationAgent note under #29's Backed-by line; DATA_LAYER keeps #47's agent rows and main's drift row; CYBERSECURITY 7.2 points at the recording path)"
+        "by": "Claude (merge #47 into #53: read each conflict against the code; SECURITY states both review bindings with PR-007's platform-recorded rule and the drafts route; UIX keeps the reject flow and the no-draft-page note; CYBERSECURITY 7.2 says a drafter's own result does not count)"
       }
     },
     "docs/ADR-003-hierarchical-planning-and-evaluation.md": {
@@ -126,12 +126,12 @@
         "sha256": {
           "backend/src/orchestration": "026e61993e2c3e51962380e4d4e957cf5d26e650455679bd5e7cdce75c31c2f4",
           "backend/src/evaluation": "9a2708b95f3bae7f8b05075e62815c7f51cb3f6e7939a585c1c2c26e5b500b07",
-          "backend/src/api/platform.py": "c97395b781c010f3ac6a9d5fc3e1338c89635132d76be45bb1d247fbab9c1b84"
+          "backend/src/api/platform.py": "f7c4646310f0b2ef312e224c093000eb90aff0a890966cdff9482a348976781b"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (PR-010: the Guardian's side of the no-safe-action contract and when it bites; platform.py's rule table lists PR-010)"
+        "by": "Claude (drafts/PR-007: re-read; platform.py's rule table only reworded PR-007, PR-010 unchanged)"
       }
     },
     "docs/AGENTS.md": {
@@ -146,16 +146,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/agents": "4cda7b0b37e3d4205755287c9eab48459c4edda2572e15b99e40a655a657380e",
-          "backend/src/skills": "7c14f6095d38b78711081427d4f98e3f621a0a72de4b377d6fc374c346c4ecea",
+          "backend/src/agents": "d16986c9824b0a6d82372f6abefe0624f41f0dce75d36a3fc4bc712268656139",
+          "backend/src/skills": "b0bcef79c64f6b8d2f35f87f92095d54c52cec7d972a4cf1520b95fcc0d68347",
           "backend/src/orchestration": "026e61993e2c3e51962380e4d4e957cf5d26e650455679bd5e7cdce75c31c2f4",
           "prompts": "664b74cd837a44513e10dc0a7a5c44a3015816f928c93d4f7831320b0231e50f",
-          "packages/causal-mcp": "ac8ffe5b31a7fc07dfbfaee6156a0003bc0753f30c9a3a730b99d39de085a913"
+          "packages/causal-mcp": "f86dd08d8fef8f9b09adab83770f37de1234101a5c84ff11ef0427bdab2507d1"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #31 into #47: read each conflict against the code; SECURITY and the registry name all three bound actions; AGENTS keeps #47's SimulationAgent note under #29's Backed-by line; DATA_LAYER keeps #47's agent rows and main's drift row; CYBERSECURITY 7.2 points at the recording path)"
+        "by": "Claude (merge #53 into #37, contract renumbered 0.12.0: README and benchmarks tables carry main's T8 v2 row and this branch's T9 row; AGENTS takes main's deleted-legacy-server text; CURRENT_STAGE sensitivity row implemented, infra rows from #29, package counts 233/118/41 from this merged tree's gate; ROADMAP septa-12 done; QUICKSTART names no kernel version)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -176,18 +176,18 @@
         "sha256": {
           "backend/src/middleware": "2ccb514c0d866d9821835ae3e12b4643addaff0d5bbccb03fb599145231feb05",
           "backend/src/api/governance.py": "f04db4d767e8a62c4315c46635a3e93d045a0817116acb6d33bbdb0d3a230cd0",
-          "backend/src/agents/governance.py": "176a45861f38cb34435e652bf789b27de1bfeff4054a24b0e2eebff80595ce24",
-          "backend/src/semantic_layer/registry.py": "aeb93b71de0235c8d70a72e9333ec8d38cf182da27eb124a1c93ab8a860f23c4",
+          "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
+          "backend/src/semantic_layer/registry.py": "32f6f4cee20e193c4ab87d60ca5b90a9aba8e18a01feef60c166433e63c7374c",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
           "backend/src/api/provenance.py": "55fa5a3e0153904f557da134e6e0f3a8c8c1ae0ab8b5fe4faa8a6918a70c617e",
-          "backend/src/db/migrations": "e9255bf6ac878671172e70a62273fd04746d4153b0b3bbebd94a14636e59f499",
+          "backend/src/db/migrations": "0c6e574f90adda4f934a3cf66ecea153f5610294203d4c4cf1cc344c17368319",
           "backend/src/semantic_layer/verdict.py": "13e537f2b000c10f10e57b0453f1f459b5237a2d60ea009103247a8bfbcade80",
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #31 into #47: read each conflict against the code; SECURITY and the registry name all three bound actions; AGENTS keeps #47's SimulationAgent note under #29's Backed-by line; DATA_LAYER keeps #47's agent rows and main's drift row; CYBERSECURITY 7.2 points at the recording path)"
+        "by": "Claude (merge #47 into #53: read each conflict against the code; SECURITY states both review bindings with PR-007's platform-recorded rule and the drafts route; UIX keeps the reject flow and the no-draft-page note; CYBERSECURITY 7.2 says a drafter's own result does not count)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -205,19 +205,19 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/db": "b377a0f670c81ebb00990425b2176b11fd2f250f096fcc2859a8a32d6d7dd23b",
+          "backend/src/db": "918886f41d041a016e43d2e32818791a28481b49a24d7ce149b7ec71a42bf826",
           "backend/src/connectors": "2b7f65f2acc7f7732deecdad2c8c1b72e4db72caed067285d65631be65c4edfa",
           "backend/src/semantic_layer/models.py": "9d20689801ee209370c995278bfa23f58d19fd0c68a65d86e705e4fb7b1a036f",
           "backend/src/sensors": "d38f988ccb52659ac4ecc8724e8aa775b2e6e9fca76b73dbba6576c3f3d1dcba",
           "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
-          "backend/src/semantic_layer/registry.py": "aeb93b71de0235c8d70a72e9333ec8d38cf182da27eb124a1c93ab8a860f23c4",
+          "backend/src/semantic_layer/registry.py": "32f6f4cee20e193c4ab87d60ca5b90a9aba8e18a01feef60c166433e63c7374c",
           "backend/src/agents/drift_monitor.py": "d4aeecf75035c60feb196914aea340ddeadd4c1de4237734c7533dc647aeb076",
           "backend/src/skills/drift_detect.py": "9432982258b155287a90701d76dc9bf331dd8c65fbc692ad37fcd124fcab7111"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #31 into #47: read each conflict against the code; SECURITY and the registry name all three bound actions; AGENTS keeps #47's SimulationAgent note under #29's Backed-by line; DATA_LAYER keeps #47's agent rows and main's drift row; CYBERSECURITY 7.2 points at the recording path)"
+        "by": "Claude (merge #47 into #53: read each conflict against the code; SECURITY states both review bindings with PR-007's platform-recorded rule and the drafts route; UIX keeps the reject flow and the no-draft-page note; CYBERSECURITY 7.2 says a drafter's own result does not count)"
       }
     },
     "docs/HANDOFFS.md": {
@@ -252,12 +252,12 @@
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "664b74cd837a44513e10dc0a7a5c44a3015816f928c93d4f7831320b0231e50f",
           ".github": "db12d364ec234ff9774297f81b08649ec310d368304c47fbfcfa04138f630ac4",
-          ".gnomon": "25561ccec95ea65980dc9c037b24b494f0963626b71b7eca61dfa00ec72a75f4"
+          ".gnomon": "f6fac09d83a50379f74d5f7c04d12ff0127b06e01bc5f9a5b083abd202f6fd5d"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of main into infra-claims: the retractions stand (mentions are history notes) and main's content -- runners, npm majors, RLS migrations, T8 v2 -- is present)"
+        "by": "Claude (merge #53 into #37, contract renumbered 0.12.0: README and benchmarks tables carry main's T8 v2 row and this branch's T9 row; AGENTS takes main's deleted-legacy-server text; CURRENT_STAGE sensitivity row implemented, infra rows from #29, package counts 233/118/41 from this merged tree's gate; ROADMAP septa-12 done; QUICKSTART names no kernel version)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -278,7 +278,7 @@
           "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
-          "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
+          "backend/pyproject.toml": "25968f523349c1421cca680f16b6f6237cbfec92deaba9eef7821cc59969bdc8",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
           ".env.example": "10b19ac63993ff640ea47936fb99d53938077413273463afe5e5661313451c97",
@@ -287,7 +287,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of main into infra-claims: the retractions stand (mentions are history notes) and main's content -- runners, npm majors, RLS migrations, T8 v2 -- is present)"
+        "by": "Claude (merge #53 into #37, contract renumbered 0.12.0: README and benchmarks tables carry main's T8 v2 row and this branch's T9 row; AGENTS takes main's deleted-legacy-server text; CURRENT_STAGE sensitivity row implemented, infra rows from #29, package counts 233/118/41 from this merged tree's gate; ROADMAP septa-12 done; QUICKSTART names no kernel version)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -309,21 +309,21 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "e2a1ca08045eaa51defa1effded4ea567e35f4f81684566ee8943c52a06b6f72",
-          "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
+          "backend/tests": "25b5a9200fed6b42974c8b366844b5c30102f60ca8ce478e3a45c258fb4e28a8",
+          "backend/pyproject.toml": "25968f523349c1421cca680f16b6f6237cbfec92deaba9eef7821cc59969bdc8",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
           ".gnomon/ci.sh": "a05e016e87f09e27989ffc185d06ad2b55c6d31f4e9b9cc2954b8cfdf7a40e45",
-          "scripts": "9cdb277112d693b652ffd68ead5b55dd28454ea54594e20c13f10d2b5b22dd7c",
+          "scripts": "30ef17e361bc7a7866db9a41e3629c0b5982967919205d011301abbd9d18b7a9",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
-          "benchmarks": "2ea289c99ef957a2b22a4eed544e76c06e45eb8a2c844d384f9e05eb7f84d940",
-          "packages/causal-core/tests": "ca9a8600b9bdeb81d9509afcb864900159868a7509bcc0aa13fff0fc501869f5",
+          "benchmarks": "7a9590d99bb9f48cd1e369107310deda2d31874be59b1a0d142dc11f0d170348",
+          "packages/causal-core/tests": "4496d9663daa2b71e5a548c0ac79983c4ba33380ac0829eb3232292f23303ee1",
           "packages/causal-decision/tests": "c7ccd2d2b91e1ec53a3eb456c70f670268b2ec1f8f431e161f399360b94ef7de"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #31 into #47: read each conflict against the code; SECURITY and the registry name all three bound actions; AGENTS keeps #47's SimulationAgent note under #29's Backed-by line; DATA_LAYER keeps #47's agent rows and main's drift row; CYBERSECURITY 7.2 points at the recording path)"
+        "by": "Claude (merge #53 into #37, contract renumbered 0.12.0: README and benchmarks tables carry main's T8 v2 row and this branch's T9 row; AGENTS takes main's deleted-legacy-server text; CURRENT_STAGE sensitivity row implemented, infra rows from #29, package counts 233/118/41 from this merged tree's gate; ROADMAP septa-12 done; QUICKSTART names no kernel version)"
       }
     },
     "docs/UIX.md": {
@@ -334,12 +334,12 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "frontend/src": "3db9b395057a637926422437995bccdc190874ad8e9a4472a83e33207b6cc1c8"
+          "frontend/src": "f309f78f9a388af875805eefabe52267de66468efb047a2c8e924303e5cee552"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #30 into #31: read each conflict against the code; approve binds GOVERNANCE_APPROVE and reject GOVERNANCE_REJECT, stated together; migration 012 for edge created_by; CYBERSECURITY 7.2 now says PR-007 asks for a result, not a robust one)"
+        "by": "Claude (merge #47 into #53: read each conflict against the code; SECURITY states both review bindings with PR-007's platform-recorded rule and the drafts route; UIX keeps the reject flow and the no-draft-page note; CYBERSECURITY 7.2 says a drafter's own result does not count)"
       }
     },
     "docs/ROADMAP.md": {
@@ -352,14 +352,14 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "packages/causal-core/src/causal_core": "6b029f17fceb5b8a44c784ea601802c8d97c1d2ed3ce9a6a92c2600823826501",
-          "conformance/declared_not_implemented.json": "2b41ca2f38c6531f2d151d3ee0fa2faba39fbb42040297e21dfceb8c4d6c82c9",
-          "docs/CURRENT_STAGE.md": "1b5c12133f8249ee50704e27169b15dfbd5ddc933702f1706c1b77e9f641ca94"
+          "packages/causal-core/src/causal_core": "65b5b9fe4d2bc339a536717c0fdd0f252483ac9e136b0600914ff3590a977c45",
+          "conformance/declared_not_implemented.json": "de5531248f26ab5ca5b53a637d04cdcc0542b28ae4b952f162aaaa48f862cf1d",
+          "docs/CURRENT_STAGE.md": "2c546e5254f3fe3be88f0251a1831fb0555d98eadf42d5702bd9354f43b44b97"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #31 into #47: read each conflict against the code; SECURITY and the registry name all three bound actions; AGENTS keeps #47's SimulationAgent note under #29's Backed-by line; DATA_LAYER keeps #47's agent rows and main's drift row; CYBERSECURITY 7.2 points at the recording path)"
+        "by": "Claude (merge #53 into #37, contract renumbered 0.12.0: README and benchmarks tables carry main's T8 v2 row and this branch's T9 row; AGENTS takes main's deleted-legacy-server text; CURRENT_STAGE sensitivity row implemented, infra rows from #29, package counts 233/118/41 from this merged tree's gate; ROADMAP septa-12 done; QUICKSTART names no kernel version)"
       }
     },
     "SECURITY.md": {
@@ -378,14 +378,14 @@
           "backend/src/middleware": "2ccb514c0d866d9821835ae3e12b4643addaff0d5bbccb03fb599145231feb05",
           "backend/src/api/governance.py": "f04db4d767e8a62c4315c46635a3e93d045a0817116acb6d33bbdb0d3a230cd0",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
-          "backend/src/agents/governance.py": "176a45861f38cb34435e652bf789b27de1bfeff4054a24b0e2eebff80595ce24",
-          "backend/src/semantic_layer/registry.py": "aeb93b71de0235c8d70a72e9333ec8d38cf182da27eb124a1c93ab8a860f23c4",
+          "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
+          "backend/src/semantic_layer/registry.py": "32f6f4cee20e193c4ab87d60ca5b90a9aba8e18a01feef60c166433e63c7374c",
           "backend/src/semantic_layer/verdict.py": "13e537f2b000c10f10e57b0453f1f459b5237a2d60ea009103247a8bfbcade80"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #31 into #47: read each conflict against the code; SECURITY and the registry name all three bound actions; AGENTS keeps #47's SimulationAgent note under #29's Backed-by line; DATA_LAYER keeps #47's agent rows and main's drift row; CYBERSECURITY 7.2 points at the recording path)"
+        "by": "Claude (merge #47 into #53: read each conflict against the code; SECURITY states both review bindings with PR-007's platform-recorded rule and the drafts route; UIX keeps the reject flow and the no-draft-page note; CYBERSECURITY 7.2 says a drafter's own result does not count)"
       }
     }
   }

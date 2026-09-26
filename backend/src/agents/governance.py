@@ -30,7 +30,7 @@ from typing import Any
 from uuid import UUID, uuid4
 
 import structlog
-from sqlalchemy import bindparam, column, select, table, text
+from sqlalchemy import text
 
 from src.agents.base import HALLUCINATION_THRESHOLD, BaseAgent
 from src.db.factory import CloudSqlFactory
@@ -44,7 +44,7 @@ from src.semantic_layer.models import (
 )
 from src.semantic_layer.provenance_capture import guardian_check_record
 from src.semantic_layer.provenance_store import ProvenanceStore
-from src.semantic_layer.review_risk import usable_sensitivity
+from src.semantic_layer.review_risk import recorded_sensitivity
 from src.semantic_layer.verdict import GOVERNANCE_APPROVE
 from src.semantic_layer.verdict import claim as verdict_claim
 from src.semantic_layer.verdict import sign as verdict_sign
@@ -63,7 +63,10 @@ _POLICY_RULES = {
     "PR-004": "Double-rejection escalation: same payload rejected twice triggers REQUIRES_ESCALATION.",
     "PR-005": "Cycle count limit: cycle_count >= 5 requires REQUIRES_ESCALATION.",
     "PR-006": "DISORDER domain: no verdict can be APPROVED in DISORDER domain.",
-    "PR-007": "Sensitivity analysis: edges without sensitivity_result blocked from APPROVED.",
+    "PR-007": (
+        "Sensitivity analysis: an edge is not APPROVED without a sensitivity result the "
+        "platform recorded for it (RECORD_SENSITIVITY) on an assumption it rests on."
+    ),
     "PR-008": "Drift-triggered actions: Any action initiated by drift detection must include full evidence payload and cannot modify semantic layer without re-validation workflow.",
     "PR-009": "Data contract enforcement: Agent actions consuming data products with active contract violations must be blocked or warned. Violations are surfaced for human review.",
     "PR-010": (
@@ -103,19 +106,20 @@ def _subject_of(payload: dict[str, Any]) -> str | None:
 # (E-value / Rosenbaum) on an Assumption (001_initial.sql,
 # assumptions.sensitivity_result), and an edge names the assumptions it rests on in
 # assumption_refs. An edge therefore has a sensitivity result when at least one
-# assumption it references carries a valid SensitivityResult and has not been
-# REJECTED in review. It is read from the database, never from the payload being
-# checked: a caller that could attach its own result would choose it. The reading
-# is src/semantic_layer/review_risk.py usable_sensitivity, which the review queue's
-# risk tiers share.
-
-_ASSUMPTIONS = table("assumptions", column("id"), column("review_status"),
-                     column("sensitivity_result"))
+# assumption it references carries a valid SensitivityResult that the platform
+# recorded for this edge, and has not been REJECTED in review. It is read from the
+# database, never from the payload being checked: a caller that could attach its own
+# result would choose it. For the same reason a result a drafter put on an assumption
+# they drafted does not count: only one recorded by
+# SemanticLayerRegistry.record_edge_sensitivity under a signed, spent
+# RECORD_SENSITIVITY verdict for this edge, whose id the assumption stores (013). The
+# reading is src/semantic_layer/review_risk.py recorded_sensitivity, which the review
+# queue's risk tiers share.
 
 
 @dataclass(frozen=True)
 class EdgeSensitivity:
-    """The sensitivity results stored for the edge a check would approve."""
+    """The platform-recorded sensitivity results of the edge a check would approve."""
 
     edge_id: str
     assumption_count: int
@@ -123,7 +127,7 @@ class EdgeSensitivity:
 
 
 async def edge_sensitivity(payload: dict[str, Any]) -> EdgeSensitivity | None:
-    """The stored sensitivity results of the edge an approval check names, if any.
+    """The recorded sensitivity results of the edge an approval check names, if any.
 
     None when the check is not for GOVERNANCE_APPROVE, names no subject, or its
     subject is not a stored edge: PR-007 judges approving an edge and nothing else.
@@ -147,18 +151,7 @@ async def edge_sensitivity(payload: dict[str, Any]) -> EdgeSensitivity | None:
         if found is None:
             return None
         refs = [str(r) for r in (json_value(found[0], []) or [])]
-        results: list[SensitivityResult] = []
-        if refs:
-            rows = await session.execute(
-                select(
-                    _ASSUMPTIONS.c.review_status, _ASSUMPTIONS.c.sensitivity_result
-                ).where(_ASSUMPTIONS.c.id.in_(bindparam("ids", expanding=True))),
-                {"ids": refs},
-            )
-            for status, stored in rows.all():
-                result = usable_sensitivity(status, stored)
-                if result is not None:
-                    results.append(result)
+        results = (await recorded_sensitivity(session, {subject: refs}))[subject]
     return EdgeSensitivity(edge_id=subject, assumption_count=len(refs), results=results)
 
 
@@ -308,9 +301,16 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
         self,
         action_payload: dict[str, Any],
         state: EpistemicState,
+        *,
+        notes: str | None = None,
     ) -> GuardianCheckOutput:
         """
         Evaluate an action payload against platform policy rules.
+
+        ``notes`` is written in the audit row beside the verdict, for a reader of the
+        trail (GET /api/governance/audit-log): what the check was judged on that its
+        payload hash alone cannot show, such as where the Cynefin domain came from.
+        It is not part of the signed claim and changes no rule.
 
         Steps:
           1. Compute payload hash (for deduplication and audit linkage)
@@ -354,6 +354,7 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
             policy_rules_cited=rules_fired,
             session_id=state.session_id,
             subject_id=_subject_of(action_payload),
+            notes=notes,
             record_provenance=True,
         )
 
@@ -502,9 +503,10 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
                 GuardianVerdict.REJECTED,
                 f"Edge {sensitivity.edge_id} has no sensitivity result: none of the "
                 f"{sensitivity.assumption_count} assumption(s) it rests on carries one "
-                "(or each that does was rejected in review). Record a sensitivity "
-                "analysis (E-value / Rosenbaum) on an assumption the edge references "
-                "before approving it.",
+                "recorded by the platform for this edge (or each that does was "
+                "rejected in review). A result a drafter attached to an assumption does "
+                "not count. Run the kernel's sensitivity analysis on the edge (POST "
+                "/api/semantic/edges/{id}/sensitivity) before approving it.",
                 rules_fired,
             )
 

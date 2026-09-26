@@ -242,6 +242,9 @@ class SimulationAgent(BaseAgent):
             e_value = kernel_sens["e_value"]
             e_ci = kernel_sens.get("e_value_ci")
             robust = None if e_ci is None else bool(e_ci >= 2.0)
+        # Rosenbaum's sensitivity value, from the matched design the kernel built (back-door
+        # designs with a binary treatment; None elsewhere, with the kernel's reason).
+        rosenbaum_gamma = (kernel_sens.get("rosenbaum") or {}).get("gamma_star")
         ci_ok = len(ci) == 2 and None not in ci
         ci_text = f"[{ci[0]:.4f}, {ci[1]:.4f}]" if ci_ok else "unavailable"
         sensitivity_label = {True: "ROBUST", False: "SENSITIVE"}.get(robust, "UNASSESSED")
@@ -269,6 +272,7 @@ class SimulationAgent(BaseAgent):
                 rationale=(
                     f"Estimated by {estimator}. "
                     f"E-value: {e_value or 'N/A'}. "
+                    f"Rosenbaum gamma*: {rosenbaum_gamma or 'N/A'}. "
                     f"Sensitivity to unmeasured confounding: {sensitivity_label.lower()}."
                 ),
                 confidence=min(abs(ate), 1.0),
@@ -298,6 +302,7 @@ class SimulationAgent(BaseAgent):
                 "ci": ci,
                 "identification": identification_status,
                 "e_value": e_value,
+                "rosenbaum_gamma": rosenbaum_gamma,
             },
         )
 
@@ -484,9 +489,8 @@ class SimulationAgent(BaseAgent):
         self, inputs: dict[str, Any]
     ) -> dict[str, Any]:
         """
-        Run Rosenbaum / E-value sensitivity analysis.
-
-        Production: computes E-value and Rosenbaum gamma bounds.
+        Run the E-value sensitivity analysis (and Rosenbaum's bound when matched pair
+        differences are given; the kernel reports its own from the data).
         """
         try:
             return await sensitivity_analysis(

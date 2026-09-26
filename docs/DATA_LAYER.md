@@ -297,7 +297,7 @@ grants, row-level security and most `CHECK` constraints exist only on the Postgr
 (SQLite keeps three: `audit_log.guardian_verdict`, `decision_followups.kind` and
 `causal_model_versions.version`).
 
-- **PostgreSQL**: `backend/src/db/migrations/001_initial.sql` to `012_edge_created_by.sql`, applied in
+- **PostgreSQL**: `backend/src/db/migrations/001_initial.sql` to `013_assumption_sensitivity_verdict.sql`, applied in
   filename order. Two things in this repository apply them: `docker-compose.yml`, whose init
   script (`backend/src/db/docker/initdb.sh`) runs them when the container's volume is first
   created and then gives `causal_app` its local-dev login, and the test fixtures when
@@ -528,8 +528,8 @@ recorded, because no runtime path calls an LLM (register `llm-routing-no-callers
 | SimulationAgent | APPROVED graph fragments | `EpistemicState.simulation_results` (in memory; the `session_state` snapshot); given data, the kernel's sensitivity result on the fragment's draft Treatment -> Outcome edge (a new `assumptions` row, appended to the edge's `assumption_refs`) | That one write under a Guardian verdict for `RECORD_SENSITIVITY` on the edge; otherwise read-only on the semantic layer |
 | DriftMonitorAgent | Whatever its skills are handed (see §5) | In-process `AlertEmitter`; `(:DriftAlert)` nodes in Neo4j when `NEO4J_URI` is set | No semantic-layer writes; no message broker |
 | `GET /api/semantic/*` | Entities, edges, fragments inside the user's domain scope; APPROVED only for a `viewer` | -- | Outside the scope is 404 (CYBERSECURITY.md §4.2) |
-| `POST /api/semantic/drafts` | -- | `causal_edges` / `graph_fragments` / `causal_entities` / `assumptions` as DRAFT | A drafting role, a domain inside the user's scope, then a GovernanceAgent check; status forced to DRAFT |
-| `POST /api/semantic/edges/{id}/sensitivity` | The edge, inside the user's scope | A new IGNORABILITY `assumptions` row carrying the kernel's sensitivity result; the draft edge's `assumption_refs` and lineage | A drafting role; a Guardian verdict for `RECORD_SENSITIVITY` on the edge; never an APPROVED or DEPRECATED edge (409) |
+| `POST /api/semantic/drafts` | -- | `causal_edges` / `graph_fragments` / `causal_entities` / `assumptions` as DRAFT | A drafting role, a domain inside the user's scope, then a GovernanceAgent check in the named session's Cynefin domain or the caller's declared one (recorded with its source in the audit row's notes; nothing declared is DISORDER, refused by PR-006); status forced to DRAFT; an assumption's `sensitivity_verdict_id` is never written, so a drafted sensitivity result counts for nothing |
+| `POST /api/semantic/edges/{id}/sensitivity` | The edge, inside the user's scope | A new IGNORABILITY `assumptions` row carrying the kernel's sensitivity result and the id of the verdict it was recorded under (`sensitivity_verdict_id`, migration 013: what makes PR-007 count it); the draft edge's `assumption_refs` and lineage | A drafting role; a Guardian verdict for `RECORD_SENSITIVITY` on the edge; never an APPROVED or DEPRECATED edge (409) |
 | `POST /api/governance/approve/{id}`, `/reject/{id}` | -- | Status, approver and lineage on the same row | A governance role, the object inside the reviewer's domains; see §2.2 rule 2 |
 | `POST /api/v1/decisions` | A registered model version, when the request names one | `decision_records`, `decision_followups`, `decision_model_refs` when a model is named, and `provenance_entries` (session `decision:<entry_digest>`) | Append-only hash chain |
 | `POST /api/v1/session/run`, `/incident`; `GovernanceAgent.check` | -- | `provenance_entries`, beside `session_state` / `audit_log` | The Guardian's record is in the same transaction as its `audit_log` row |

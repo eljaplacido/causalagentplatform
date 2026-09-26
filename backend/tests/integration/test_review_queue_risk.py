@@ -13,9 +13,11 @@ fields only (src/semantic_layer/review_risk.py holds the rules; these are them):
   * CausalEdge -- an approved edge changes the graph every estimate over it is
     identified from.
       CRITICAL  its stated confidence is below 0.5;
-      HIGH      confidence below 0.8, or no stored sensitivity result on an
-                assumption it rests on says it is robust to unmeasured confounding
-                (the results PR-007 reads);
+      HIGH      confidence below 0.8, or no sensitivity result the platform
+                recorded on an assumption it rests on says it is robust to unmeasured
+                confounding (the results PR-007 reads: recorded by
+                record_edge_sensitivity under a RECORD_SENSITIVITY verdict for the
+                edge; a result a drafter attached does not count);
       MEDIUM    otherwise.
   * GraphFragment -- approving it makes it usable by simulations.
       HIGH      it names an edge that is not APPROVED;
@@ -61,6 +63,8 @@ from src.semantic_layer.models import (
     SensitivityResult,
     UserRef,
 )
+from src.semantic_layer.verdict import RECORD_SENSITIVITY
+from tests.conftest import issue_verdict_for
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -188,24 +192,29 @@ async def _queue(client: AsyncClient) -> dict[str, dict[str, Any]]:
     return {item["id"]: item for item in resp.json()}
 
 
+async def _record(
+    registry: SemanticLayerRegistry, db_session: AsyncSession, edge: CausalEdge, robust: bool
+) -> None:
+    """Record a sensitivity result on the edge the platform's way (septa-62)."""
+    verdict = await issue_verdict_for(db_session, edge.id, action_type=RECORD_SENSITIVITY)
+    await registry.record_edge_sensitivity(edge.id, _sensitivity(robust), verdict, _user("sim"))
+
+
 async def test_edges_are_tiered_by_confidence_and_sensitivity(
     gov_client: AsyncClient,
     registry: SemanticLayerRegistry,
     verdict_for: VerdictFactory,
+    db_session: AsyncSession,
 ) -> None:
-    robust = await _assumption(registry, verdict_for, robust=True)
-    fragile = await _assumption(registry, verdict_for, robust=False)
     doubtful = await _edge(registry, verdict_for, confidence=0.4, submitter="ana")
-    middling = await _edge(
-        registry, verdict_for, confidence=0.7, submitter="ben", assumptions=(robust,)
-    )
+    middling = await _edge(registry, verdict_for, confidence=0.7, submitter="ben")
+    await _record(registry, db_session, middling, robust=True)
     unassessed = await _edge(registry, verdict_for, confidence=0.9, submitter="cy")
-    not_robust = await _edge(
-        registry, verdict_for, confidence=0.9, submitter="di", assumptions=(fragile,)
-    )
-    solid = await _edge(
-        registry, verdict_for, confidence=0.9, submitter="ed", assumptions=(fragile, robust)
-    )
+    not_robust = await _edge(registry, verdict_for, confidence=0.9, submitter="di")
+    await _record(registry, db_session, not_robust, robust=False)
+    solid = await _edge(registry, verdict_for, confidence=0.9, submitter="ed")
+    await _record(registry, db_session, solid, robust=False)
+    await _record(registry, db_session, solid, robust=True)
 
     queue = await _queue(gov_client)
     tiers = {e.id: queue[str(e.id)]["risk_tier"] for e in
@@ -219,6 +228,21 @@ async def test_edges_are_tiered_by_confidence_and_sensitivity(
     }
     assert any("confidence" in r for r in queue[str(doubtful.id)]["risk_reasons"])
     assert any("sensitivity" in r for r in queue[str(unassessed.id)]["risk_reasons"])
+
+
+async def test_a_drafter_attached_robust_result_does_not_lower_the_tier(
+    gov_client: AsyncClient,
+    registry: SemanticLayerRegistry,
+    verdict_for: VerdictFactory,
+) -> None:
+    """The tier reads the results PR-007 reads: the drafter's own number is not one."""
+    claimed = await _assumption(registry, verdict_for, robust=True)
+    edge = await _edge(
+        registry, verdict_for, confidence=0.9, submitter="fe", assumptions=(claimed,)
+    )
+    queue = await _queue(gov_client)
+    assert queue[str(edge.id)]["risk_tier"] == "HIGH"
+    assert any("recorded" in r for r in queue[str(edge.id)]["risk_reasons"])
 
 
 async def test_fragments_and_entities_are_tiered_by_what_approval_changes(

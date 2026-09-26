@@ -103,8 +103,11 @@ def _simulate(treatment: str, outcome: str, confounder: str = "load") -> dict[st
     return {confounder: load.tolist(), treatment: playbook.tolist(), outcome: minutes.tolist()}
 
 
-def _kernel_e_value(data: dict[str, list[float]], treatment: str, outcome: str) -> float:
-    """What the kernel itself says, on the same data and graph, independently of the flow."""
+def _kernel_sensitivity(
+    data: dict[str, list[float]], treatment: str, outcome: str
+) -> tuple[float, float]:
+    """What the kernel itself says, on the same data and graph, independently of the flow:
+    the E-value and the Rosenbaum gamma* (contract 0.12.0) of the matched design it builds."""
     out = analyze(
         data,
         [("load", treatment), ("load", outcome), (treatment, outcome)],
@@ -115,7 +118,10 @@ def _kernel_e_value(data: dict[str, list[float]], treatment: str, outcome: str) 
     assert out["primary"]["point"] == pytest.approx(TRUE_EFFECT, abs=0.25)
     e_value = out["sensitivity"]["e_value"]
     assert e_value is not None and e_value > 1
-    return float(e_value)
+    rosenbaum = out["sensitivity"]["rosenbaum"]
+    assert rosenbaum is not None, out["sensitivity"].get("rosenbaum_null_reason")
+    assert rosenbaum["gamma_star"] > 1
+    return float(e_value), float(rosenbaum["gamma_star"])
 
 
 def _state() -> EpistemicState:
@@ -244,14 +250,17 @@ async def test_analysing_a_draft_edge_records_the_kernels_result_and_pr007_accep
     assert before["verdict"] == "REJECTED" and before["policy_rules_cited"] == ["PR-007"]
 
     body = _body(edge)
-    expected = _kernel_e_value(body["data"], str(edge.source.id), str(edge.target.id))
+    expected, expected_gamma = _kernel_sensitivity(
+        body["data"], str(edge.source.id), str(edge.target.id)
+    )
     resp = await _analyse(edge, body)
     assert resp.status_code == 200, resp.text
     got = resp.json()
     assert got["outcome_kind"] == "result"
     assert got["guardian_verdict"] == "APPROVED"
     assert got["sensitivity"]["eValue"] == pytest.approx(expected)
-    assert got["sensitivity"]["rosenbaumGamma"] is None  # not in this kernel's outcome
+    # The kernel's Rosenbaum gamma* is carried through, not recomputed or dropped.
+    assert got["sensitivity"]["rosenbaumGamma"] == pytest.approx(expected_gamma)
     new_id = UUID(got["assumption_id"])
 
     recorded = await registry.get_assumption(new_id)
@@ -263,6 +272,7 @@ async def test_analysing_a_draft_edge_records_the_kernels_result_and_pr007_accep
     assert recorded.domain == "devops"
     assert recorded.sensitivity_result is not None
     assert recorded.sensitivity_result.e_value == pytest.approx(expected)
+    assert recorded.sensitivity_result.rosenbaum_gamma == pytest.approx(expected_gamma)
 
     stored = await registry.get_edge(edge.id)
     assert stored.approval_status == "DRAFT"

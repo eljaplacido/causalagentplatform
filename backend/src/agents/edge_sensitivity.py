@@ -9,7 +9,7 @@ is the one path from a kernel outcome to that stored result:
 1. :func:`sensitivity_from_outcome` reads the kernel's own sensitivity analysis out of
    a ``causal_core.analyze`` outcome: the E-value, and the Rosenbaum gamma* when the
    outcome reports one (``sensitivity.rosenbaum.gamma_star``; kernels before contract
-   0.11 have no such field, and then ``rosenbaum_gamma`` is None). No analysis, no
+   0.12 have no such field, and then ``rosenbaum_gamma`` is None). No analysis, no
    result -- a refusal is relayed, never turned into a number.
 2. :func:`answering_edges` says which stored edges an estimate answers: the effect of
    treatment T on outcome Y is the question of an edge from T to Y, and of no other

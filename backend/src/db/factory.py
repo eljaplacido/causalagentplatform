@@ -196,8 +196,13 @@ CREATE TABLE IF NOT EXISTS assumptions (
     last_reviewed_at    TEXT,
     next_review_due     TEXT,
     sensitivity_result  TEXT,
-    domain              TEXT NOT NULL
+    domain              TEXT NOT NULL,
+    -- 013_assumption_sensitivity_verdict.sql: the verdict the platform recorded
+    -- sensitivity_result under; NULL for a drafted assumption.
+    sensitivity_verdict_id TEXT REFERENCES audit_log(id)
 );
+CREATE UNIQUE INDEX IF NOT EXISTS ux_assumptions_sensitivity_verdict
+    ON assumptions (sensitivity_verdict_id);
 CREATE TABLE IF NOT EXISTS causal_edges (
     id                  TEXT PRIMARY KEY,
     source_id           TEXT NOT NULL,

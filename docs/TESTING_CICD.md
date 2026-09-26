@@ -95,8 +95,8 @@ Only 0 is done. `.septacore.json` maps the same codes to `passed`, `failed`,
 | Directory | What it holds |
 |---|---|
 | `unit/` | Skills, agents, the registry, the DB factory, connectors (HTTP mocked), provenance and contract models, planning, evaluation, and negative controls for the gate's own scripts (`test_contract_parity.py`, `test_secret_scan.py`, `test_dep_audit.py`, `test_skill_refs.py`), and for the supply-chain checks outside it (`test_py_lock.py`, `test_image_scan.py`, `test_sbom_check.py`) |
-| `integration/` | FastAPI routes through `httpx`: governance approval flow, the reject authority (an APPROVED verdict for `GOVERNANCE_REJECT`, and the governance page's own reject bodies end to end, `test_governance_reject_verdict.py`), recorded reasons, the review queue's risk tiers and submitters (`test_review_queue_risk.py`), intervention roles, the role matrix and domain isolation (`test_rbac_matrix.py`: every state-changing route has a row, and is refused without a granted role), the database's own domain isolation on PostgreSQL (`test_rls_domain_isolation.py`), session API and store (a caller-declared Cynefin domain refused: `test_session_domain_not_declared.py`), the decision ledger (checkpoints and anchored verification included) and follow-ups, the assumption registry (`/api/v1/models`), provenance written by the running flows and kept append-only with erasure as a tombstone (`test_provenance_flow.py`, `test_provenance_append_only.py`), and the MCP server over stdio |
-| `guardian/` | Guardian bypass prevention, verdict binding (signed, subject-bound, single-use, and for approval bound to `GOVERNANCE_APPROVE`), drafts that cannot approve themselves, PR-007 (no edge approved without a stored sensitivity result) and the kernel's sensitivity analysis recorded where it reads it, PR-010 (no approval of a plan with no safe action), a risk score and cycle count the caller cannot supply, the `audit_write` skill, and `audit_log` refusing UPDATE and DELETE |
+| `integration/` | FastAPI routes through `httpx`: draft submission end to end (`test_draft_submission_api.py`: a declared or session domain is judged, nothing declared is PR-006, CHAOTIC is PR-003), governance approval flow, the reject authority (an APPROVED verdict for `GOVERNANCE_REJECT`, and the governance page's own reject bodies end to end, `test_governance_reject_verdict.py`), recorded reasons, the review queue's risk tiers and submitters (`test_review_queue_risk.py`), intervention roles, the role matrix and domain isolation (`test_rbac_matrix.py`: every state-changing route has a row, and is refused without a granted role), the database's own domain isolation on PostgreSQL (`test_rls_domain_isolation.py`), session API and store (a caller-declared Cynefin domain refused: `test_session_domain_not_declared.py`), the decision ledger (checkpoints and anchored verification included) and follow-ups, the assumption registry (`/api/v1/models`), provenance written by the running flows and kept append-only with erasure as a tombstone (`test_provenance_flow.py`, `test_provenance_append_only.py`), and the MCP server over stdio |
+| `guardian/` | Guardian bypass prevention, verdict binding (signed, subject-bound, single-use, and for approval bound to `GOVERNANCE_APPROVE`), drafts that cannot approve themselves, PR-007 (no edge approved without a sensitivity result the platform recorded under a `RECORD_SENSITIVITY` verdict; a drafter's own result, or a forged verdict reference, does not count) and the kernel's sensitivity analysis recorded where it reads it, PR-010 (no approval of a plan with no safe action), a risk score and cycle count the caller cannot supply, the `audit_write` skill, and `audit_log` refusing UPDATE and DELETE |
 
 The backend suite runs against one of two schemas, chosen by `TEST_DATABASE_URL`
 (`backend/tests/conftest.py`, fixture `db_engine`):
@@ -158,6 +158,7 @@ data, the metric, the pass threshold and the seeded defects the suite must catch
 | T6: anytime-valid monitoring of watched rollouts | [`benchmarks/t6-sequential/PRE-REGISTRATION.md`](../benchmarks/t6-sequential/PRE-REGISTRATION.md) | `causal_core.sequential` | Every PR (`pytest -m t6`) |
 | T7: cluster-randomized designs | [`benchmarks/t7-cluster/PRE-REGISTRATION.md`](../benchmarks/t7-cluster/PRE-REGISTRATION.md) | `causal_core.cluster` | Every PR (`pytest -m t7`) |
 | T8: switchback designs | [`benchmarks/t8-switchback/PRE-REGISTRATION.md`](../benchmarks/t8-switchback/PRE-REGISTRATION.md) | `causal_core.cluster`, through `causal_core.analyze` | Every PR (`pytest -m t8`) |
+| T9: Rosenbaum sensitivity | [`benchmarks/t9-rosenbaum/PRE-REGISTRATION.md`](../benchmarks/t9-rosenbaum/PRE-REGISTRATION.md) | `causal_core.sensitivity`, directly and through `causal_core.analyze` | Every PR (`pytest -m t9`) |
 | D0: the decision procedure | [`benchmarks/d0-decision-policy/PRE-REGISTRATION.md`](../benchmarks/d0-decision-policy/PRE-REGISTRATION.md) | `causal_decision.decide` | Every PR (`pytest -m d0` in `packages/causal-decision`) |
 | A0: whether a graph revision invalidates an estimate | [`benchmarks/a0-assumption-impact/PRE-REGISTRATION.md`](../benchmarks/a0-assumption-impact/PRE-REGISTRATION.md) | `causal_decision.assumptions.impact` | Every PR (`pytest -m a0` in `packages/causal-decision`) |
 
@@ -167,13 +168,13 @@ against that file's exact bytes (`prereg_sha256`), so a bar cannot move after th
 without a new one. Failing runs stay on file beside it.
 
 The seeded-defect tests (`tests/t0/test_seeded_defects.py`, `tests/t4/…`, `tests/t5/…`, `tests/t6/…`, `tests/t7/…`, `tests/t8/…`,
-`tests/d0/…`, `tests/a0/…`) break the system under test on purpose and assert that the gate fails. A gate that cannot see a
+`tests/t9/…`, `tests/d0/…`, `tests/a0/…`) break the system under test on purpose and assert that the gate fails. A gate that cannot see a
 known defect does not count as a gate. The benchmark results, and the limits they found, are on
 the register (for example `kernel-triangulation-moderate-n`).
 
-Counterfactuals over an SCM, causal discovery and Rosenbaum bounds have no correctness tests
-because they are not implemented (registers `scm-counterfactuals`, `causal-discovery`,
-`sensitivity-analysis`).
+Counterfactuals over an SCM and causal discovery have no correctness tests because they are not
+implemented (registers `scm-counterfactuals`, `causal-discovery`). Rosenbaum bounds are gated by
+T9 and pinned to a published example by `backend/tests/unit/test_rosenbaum_bounds.py`.
 
 ### 3.3 Frontend (`frontend/`)
 

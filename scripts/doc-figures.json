@@ -469,6 +469,114 @@
       "scale": 100
     },
     {
+      "doc": "README.md",
+      "says": "reached it in 1.9–2.9% of runs",
+      "figure": "1.9",
+      "bench": "t9-rosenbaum",
+      "path": "/designs[id=pairs_bias_2|pairs_bias_4]/exceed_truth_rate",
+      "agg": "min",
+      "scale": 100,
+      "round": "outward"
+    },
+    {
+      "doc": "README.md",
+      "says": "reached it in 1.9–2.9% of runs",
+      "figure": "2.9",
+      "bench": "t9-rosenbaum",
+      "path": "/designs[id=pairs_bias_2|pairs_bias_4]/exceed_truth_rate",
+      "agg": "max",
+      "scale": 100,
+      "round": "outward"
+    },
+    {
+      "doc": "README.md",
+      "says": "kept the conclusion at two-thirds of it in 91.8–96.7%",
+      "figure": "91.8",
+      "bench": "t9-rosenbaum",
+      "path": "/designs[id=pairs_bias_2|pairs_bias_4]/retain_rate",
+      "agg": "min",
+      "scale": 100,
+      "round": "outward"
+    },
+    {
+      "doc": "README.md",
+      "says": "kept the conclusion at two-thirds of it in 91.8–96.7%",
+      "figure": "96.7",
+      "bench": "t9-rosenbaum",
+      "path": "/designs[id=pairs_bias_2|pairs_bias_4]/retain_rate",
+      "agg": "max",
+      "scale": 100,
+      "round": "outward"
+    },
+    {
+      "doc": "README.md",
+      "says": "the median Γ* was 1.63 against a design sensitivity of 1.88",
+      "figure": "1.63",
+      "bench": "t9-rosenbaum",
+      "path": "/designs[id=e2e_hidden_bias]/median_gamma_star"
+    },
+    {
+      "doc": "README.md",
+      "says": "the median Γ* was 1.63 against a design sensitivity of 1.88",
+      "figure": "1.88",
+      "bench": "t9-rosenbaum",
+      "path": "/designs[id=e2e_hidden_bias]/design_sensitivity"
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "reached the planted bias in 1.9–2.9% of runs",
+      "figure": "1.9",
+      "bench": "t9-rosenbaum",
+      "path": "/designs[id=pairs_bias_2|pairs_bias_4]/exceed_truth_rate",
+      "agg": "min",
+      "scale": 100,
+      "round": "outward"
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "reached the planted bias in 1.9–2.9% of runs",
+      "figure": "2.9",
+      "bench": "t9-rosenbaum",
+      "path": "/designs[id=pairs_bias_2|pairs_bias_4]/exceed_truth_rate",
+      "agg": "max",
+      "scale": 100,
+      "round": "outward"
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "kept the conclusion at two-thirds of it in 91.8–96.7%",
+      "figure": "91.8",
+      "bench": "t9-rosenbaum",
+      "path": "/designs[id=pairs_bias_2|pairs_bias_4]/retain_rate",
+      "agg": "min",
+      "scale": 100,
+      "round": "outward"
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "kept the conclusion at two-thirds of it in 91.8–96.7%",
+      "figure": "96.7",
+      "bench": "t9-rosenbaum",
+      "path": "/designs[id=pairs_bias_2|pairs_bias_4]/retain_rate",
+      "agg": "max",
+      "scale": 100,
+      "round": "outward"
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "the median Γ* was 1.63 against the design's sensitivity of 1.88",
+      "figure": "1.63",
+      "bench": "t9-rosenbaum",
+      "path": "/designs[id=e2e_hidden_bias]/median_gamma_star"
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "the median Γ* was 1.63 against the design's sensitivity of 1.88",
+      "figure": "1.88",
+      "bench": "t9-rosenbaum",
+      "path": "/designs[id=e2e_hidden_bias]/design_sensitivity"
+    },
+    {
       "doc": "packages/causal-core/README.md",
       "says": "at −0.085 (coverage 88.7%) it fires in 9.5% of runs",
       "figure": "0.085",

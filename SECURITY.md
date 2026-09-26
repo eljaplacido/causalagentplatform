@@ -148,6 +148,12 @@ action it rules on, both inside the signed claim, and can be spent once
 (`verdict_consumption`). Approving and rejecting a draft each need an APPROVED
 verdict, issued for `GOVERNANCE_APPROVE` and `GOVERNANCE_REJECT` respectively; a
 verdict for one of those two actions authorises that decision and no other write.
+Approving an edge also needs a sensitivity result the platform recorded for it
+under a `RECORD_SENSITIVITY` verdict (PR-007; a result a drafter attaches to their
+own assumption does not count). A draft submitted through `POST /api/semantic/drafts`
+is judged in the named session's Cynefin domain or the one the caller declares,
+recorded with who declared it in the audit row; nothing declared is DISORDER, which
+PR-006 refuses.
 
 **Secrets.** Every secret (the signing keys, `DATABASE_URL`, `NEO4J_PASSWORD`,
 the LLM API keys) is read from the environment variable or from the file named
