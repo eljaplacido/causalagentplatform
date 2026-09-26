@@ -716,7 +716,7 @@
       "reality": "No UI runs a sensitivity analysis. The kernel reports E-values, robustness values and (for back-door designs with a binary treatment) a Rosenbaum bound on every analysis from data, but nothing in the frontend requests one for an edge; the governance page's sensitivity panel is a hard-coded example whose label conflates the two methods (\"Rosenbaum E-value\").",
       "evidence": [
         {
-          "at": "frontend/src/app/governance/page.tsx:89",
+          "at": "frontend/src/app/governance/page.tsx:95",
           "says": "testName: \"Rosenbaum E-value\","
         }
       ],

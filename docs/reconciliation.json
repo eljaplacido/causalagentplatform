@@ -28,16 +28,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
-          "packages/causal-mcp": "ac8ffe5b31a7fc07dfbfaee6156a0003bc0753f30c9a3a730b99d39de085a913",
+          "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
+          "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "e76b3185a907a3b48f8c0362622c53a915d6289fcc7cb4449fc94f6e5dca6cdd"
+          "docs/CURRENT_STAGE.md": "fe99eb82401f0e91eae8c6d10dce14698ee05487f4db5d7ee9a2230dce65f64a"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (ui-renders-what-backend-sends: re-read after CURRENT_STAGE gained three frontend rows; nothing here describes those screens, unchanged)"
+        "by": "Claude (merge of the train into #55: UIX keeps the train's risk-tier text with this branch's object-type, submitted-time, mock-mode, not-authorised, incidents and analyst paragraphs, and says a tierless row shows a dash; CURRENT_STAGE takes the implemented risk-tier row; TESTING_CICD adds this branch's incident-merge test to the unit row; README and ROADMAP re-read, nothing they quote moved)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "257308cb44ac839c8ad47ecfdda3bd5fea5f0404da9f1cdb17cf27dacd3c96a3",
-          "backend/src": "211572b1be3ced45905cff9d7e2a8113dbf97127d1332f3e49577691dad39e28",
-          "backend/tests": "5d5e8945856ad35857de34f092a9168f36009df82d3d2a587d507fde17e6dc74",
-          "frontend/src": "4410d00e4045e853a0a85dedf14b931917491d6994db3eb6f759216f762dab87",
-          "packages": "f39decf6dcae81c0e60801fa80c933c6547de55348adb3fd3867119423414373",
+          "conformance/declared_not_implemented.json": "71339a3f30e220f8424bc3daaab77e38f845be4a71a7798b464e782a8206de79",
+          "backend/src": "876804994de907af20157812e48aceac9d4e2ca5e6ba8ff4bf57082b32a8d48c",
+          "backend/tests": "52038b7b53fa52560bfe381566e0cafaae84775fc6b84b09ef4a403c918fc799",
+          "frontend/src": "386dfddb47cee6193dfe0b83d51d4eb260fe314fbafb8c900089186a4c656521",
+          "packages": "3db39091c39ce9505cd29724d44146782817a497ebf917e8ce3e3f74d1079b56",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (ui-renders-what-backend-sends: re-read after a line wrap in test_incident_decision_merge.py; three frontend rows and the re-cited review-queue-risk-tier note stand)"
+        "by": "Claude (merge of the train into #55: UIX keeps the train's risk-tier text with this branch's object-type, submitted-time, mock-mode, not-authorised, incidents and analyst paragraphs, and says a tierless row shows a dash; CURRENT_STAGE takes the implemented risk-tier row; TESTING_CICD adds this branch's incident-merge test to the unit row; README and ROADMAP re-read, nothing they quote moved)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -309,21 +309,21 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "5d5e8945856ad35857de34f092a9168f36009df82d3d2a587d507fde17e6dc74",
-          "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
+          "backend/tests": "52038b7b53fa52560bfe381566e0cafaae84775fc6b84b09ef4a403c918fc799",
+          "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
           ".gnomon/ci.sh": "a05e016e87f09e27989ffc185d06ad2b55c6d31f4e9b9cc2954b8cfdf7a40e45",
-          "scripts": "b02346ce8b8bc5739d9c16f9eca354d6eb179e9d4cd40cbbaa9991a7cc3662f7",
+          "scripts": "f320a88d5bcd4c70f81d69f5e103b33b80568094e4e22023db2182b36f02156e",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
-          "benchmarks": "2ea289c99ef957a2b22a4eed544e76c06e45eb8a2c844d384f9e05eb7f84d940",
-          "packages/causal-core/tests": "ca9a8600b9bdeb81d9509afcb864900159868a7509bcc0aa13fff0fc501869f5",
-          "packages/causal-decision/tests": "c7ccd2d2b91e1ec53a3eb456c70f670268b2ec1f8f431e161f399360b94ef7de"
+          "benchmarks": "29568520a660ee325cd3ba990a0e9ba6be64e73b9090aab26b5b4d076d85b951",
+          "packages/causal-core/tests": "d0597e531730f3655d2849ed91d39a91986fcfd027c28a484f762b14b781bec6",
+          "packages/causal-decision/tests": "811166b3dd05cfc3cbd62c7e71fcf1d62666fb738c97dcb65e34725fede4d034"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (ui-renders-what-backend-sends: re-read after a line wrap in test_incident_decision_merge.py; 3.1 and 3.3 stand)"
+        "by": "Claude (merge of the train into #55: UIX keeps the train's risk-tier text with this branch's object-type, submitted-time, mock-mode, not-authorised, incidents and analyst paragraphs, and says a tierless row shows a dash; CURRENT_STAGE takes the implemented risk-tier row; TESTING_CICD adds this branch's incident-merge test to the unit row; README and ROADMAP re-read, nothing they quote moved)"
       }
     },
     "docs/UIX.md": {
@@ -334,12 +334,12 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "frontend/src": "4410d00e4045e853a0a85dedf14b931917491d6994db3eb6f759216f762dab87"
+          "frontend/src": "386dfddb47cee6193dfe0b83d51d4eb260fe314fbafb8c900089186a4c656521"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (ui-renders-what-backend-sends: review queue shows registry rows as sent with dashes for risk tier and submitter; incidents P0-P3, no effect estimate, humanDecision beside the Guardian verdict; analyst draws no graph; 401/403 read not authorised)"
+        "by": "Claude (merge of the train into #55: UIX keeps the train's risk-tier text with this branch's object-type, submitted-time, mock-mode, not-authorised, incidents and analyst paragraphs, and says a tierless row shows a dash; CURRENT_STAGE takes the implemented risk-tier row; TESTING_CICD adds this branch's incident-merge test to the unit row; README and ROADMAP re-read, nothing they quote moved)"
       }
     },
     "docs/ROADMAP.md": {
@@ -352,14 +352,14 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "packages/causal-core/src/causal_core": "6b029f17fceb5b8a44c784ea601802c8d97c1d2ed3ce9a6a92c2600823826501",
-          "conformance/declared_not_implemented.json": "257308cb44ac839c8ad47ecfdda3bd5fea5f0404da9f1cdb17cf27dacd3c96a3",
-          "docs/CURRENT_STAGE.md": "e76b3185a907a3b48f8c0362622c53a915d6289fcc7cb4449fc94f6e5dca6cdd"
+          "packages/causal-core/src/causal_core": "18d2aa2f2ef7931f67675a18f9e0ba170989adc9fa7cbf2a7bee4ea53c3342a3",
+          "conformance/declared_not_implemented.json": "71339a3f30e220f8424bc3daaab77e38f845be4a71a7798b464e782a8206de79",
+          "docs/CURRENT_STAGE.md": "fe99eb82401f0e91eae8c6d10dce14698ee05487f4db5d7ee9a2230dce65f64a"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (ui-renders-what-backend-sends: re-read after the review-queue-risk-tier entry was re-cited; the risk tier is still open as septa-36, unchanged)"
+        "by": "Claude (merge of the train into #55: UIX keeps the train's risk-tier text with this branch's object-type, submitted-time, mock-mode, not-authorised, incidents and analyst paragraphs, and says a tierless row shows a dash; CURRENT_STAGE takes the implemented risk-tier row; TESTING_CICD adds this branch's incident-merge test to the unit row; README and ROADMAP re-read, nothing they quote moved)"
       }
     },
     "SECURITY.md": {

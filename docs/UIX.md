@@ -270,7 +270,8 @@ an edge is Critical below stated confidence 0.5, High below 0.8 or without a sen
 the platform recorded for it that says it is robust (a drafter's own result does not count), else
 Medium; a fragment is High while it names an unapproved edge,
 else Medium; an entity is Low. The tier badge's tooltip gives the reasons, and an item whose
-submitter was never recorded (edges drafted before migration 012) says "not recorded". The
+submitter was never recorded (edges drafted before migration 012) says "not recorded"; a row that
+arrives without a tier shows a dash and sorts last. The
 Evidence group has no backend to read from yet (register `agent-skills-are-stubs`).
 A review item's domain is its business domain (`devops`, `marketing`), shown as a plain label in
 the queue and the panel header; a `CynefinBadge` appears only when an item carries a Cynefin
