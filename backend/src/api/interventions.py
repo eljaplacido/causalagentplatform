@@ -229,14 +229,16 @@ async def close_feedback_loop(
         re_validation = error_severity in ("HIGH", "CRITICAL")
         drift_emitted = error_severity == "CRITICAL"
 
-        # Update the intervention
-        await session.execute(
+        # Close it only if it is still open: the check above is a read, and a
+        # concurrent closure may have passed it too. The row lock makes the loser's
+        # UPDATE re-read the flag and match nothing, and it writes no audit row.
+        closed = await session.execute(
             typed_text(
                 "UPDATE interventions SET "
                 "actual_effect = :actual, "
                 "feedback_loop_closed = TRUE, "
                 "outcome_observed_at = :now "
-                "WHERE id = :id",
+                "WHERE id = :id AND feedback_loop_closed = FALSE",
                 now=TIMESTAMP,
             ),
             {
@@ -245,6 +247,12 @@ async def close_feedback_loop(
                 "id": intervention_id,
             },
         )
+        if not closed.rowcount:  # type: ignore[attr-defined]
+            await session.rollback()
+            raise HTTPException(
+                status_code=409,
+                detail=f"Feedback loop already closed for intervention {intervention_id}",
+            )
 
         # Record the closure in the audit log -- as a record, not a ruling. This
         # route used to write guardian_verdict=APPROVED (and REQUIRES_ESCALATION for
