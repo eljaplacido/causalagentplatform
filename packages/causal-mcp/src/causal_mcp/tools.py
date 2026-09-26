@@ -139,7 +139,8 @@ def causal_analyze(
       not be told apart rather than comparing them.
     - **Staggered rollout** (panel data): `design="difference_in_differences"`, `unit`, `time`,
       `estimand="att"`. Parallel trends is not in the graph, so the certificate is tier C and a
-      failed pre-trends test makes the result `contested`.
+      failed pre-trends test makes the result `contested`. `covariates` if trends are parallel
+      only given them; `control_group="not_yet_treated"` if every unit is eventually treated.
     - **Watched canary**: `design="randomized"`, `sequence`, `expected_treated_share`. Read and
       stop on the confidence sequence as often as you like; do not re-run a fixed-sample
       analysis after every batch instead -- read that way its error rate is far above 5%.

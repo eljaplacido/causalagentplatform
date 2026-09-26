@@ -121,9 +121,13 @@ before any run. It runs on every change:
   4% of runs. Each of four seeded defects fails the specific bar it was registered against.
 
 - **T5 (difference-in-differences):** on simulated staggered rollouts with AR(1) errors, overall
-  ATT coverage 0.938–0.958 and event-time coverage 0.933–0.956 across four designs — one of them
-  built so that two-way fixed effects is biased — with bias within one Monte Carlo SE; the
-  pre-trends test fires on at most 2.2% of panels with parallel trends and on all panels without.
+  ATT coverage 0.932–0.958 and event-time coverage 0.933–0.956 across nine designs — one built so
+  that two-way fixed effects is biased, one where adoption timing follows covariates that also
+  drive trends, one each with the outcome or the propensity model misspecified, and two where every
+  unit is eventually treated — with bias within 1.6 Monte Carlo SEs; the pre-trends test fires on
+  at most 2.2% of panels with parallel trends and on all panels without. Under a misspecified
+  outcome model the doubly robust intervals sit near the band's floor (0.932 in the registered
+  run; 0.914–0.942 on development seeds, where the standard error ran 10–20% under the spread).
   v1 failed on over-coverage (the simulation fixed cohort sizes, the intervals assume sampled
   units) and is kept beside v2.
 
@@ -161,7 +165,10 @@ times the width of a fixed-sample interval at its tuning size — the price of l
 **Panel designs.** `analyze(df, graph, treatment=, outcome=, design="difference_in_differences",
 unit=, time=, estimand="att")` estimates group-time effects against never-treated units
 (Callaway & Sant'Anna), aggregated to an overall ATT and an event study, with unit-clustered
-influence-function intervals. The certificate is tier C — parallel trends is not in the graph —
+influence-function intervals. `control_group="not_yet_treated"` compares each cohort with the
+units not yet treated instead, for rollouts that reach everyone; `covariates=[...]`
+(time-invariant columns) makes each group-time effect doubly robust under conditional parallel
+trends (Sant'Anna & Zhao 2020), and refuses poor overlap (T5 v4). The certificate is tier C — parallel trends is not in the graph —
 and a failed pre-trends test makes the result `contested`. Every panel result also says how far
 parallel trends may fail before the conclusion changes: intervals valid when the post-adoption
 bias is at most M times the largest pre-adoption deviation, and the breakdown M at which the
@@ -199,9 +206,9 @@ Data can be pandas, a dict of columns, pyarrow, polars, or any dataframe-interch
 - Interference between randomized units (spillovers from treated to untreated clusters);
   cluster and switchback designs handle dependence *within* a cluster or block only
 - A carryover check with real power: the current one is reported, and weak (T8)
-- For difference-in-differences: covariate-conditional parallel trends, not-yet-treated
-  comparisons, anticipation windows, repeated cross-sections, and the full Rambachan & Roth
-  machinery (the kernel's parallel-trends sensitivity is a simplified, conservative form)
+- For difference-in-differences: anticipation windows, repeated cross-sections, time-varying
+  covariates, and the full Rambachan & Roth machinery (the kernel's parallel-trends sensitivity is
+  a simplified, conservative form)
 
 Each is listed in the repository's `conformance/declared_not_implemented.json`, and leaves that
 list only by being implemented and tested.

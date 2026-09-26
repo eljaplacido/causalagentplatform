@@ -110,10 +110,75 @@ def last_pre_period_only() -> Iterator[None]:
         yield
 
 
+@contextmanager
+def ignore_covariates() -> Iterator[None]:
+    """The covariates are dropped: every cell is the unconditional difference of mean changes.
+
+    Where selection into timing runs through covariates that also drive trends, that
+    comparison is biased however many units there are.
+    """
+
+    def fake(panel: panel_mod.Panel) -> None:
+        return None
+
+    with mock.patch.object(panel_mod, "covariate_matrix", fake):
+        yield
+
+
+@contextmanager
+def not_yet_treated_includes_treated() -> Iterator[None]:
+    """The not-yet-treated comparison is every cohort untreated at the base period.
+
+    Right for the base period, wrong for period t: cohorts adopting between g and t are
+    already treated at t, and their effects are subtracted from cohort g's.
+    """
+    real = panel_mod.controls
+
+    def fake(panel: panel_mod.Panel, g: int, t: int) -> np.ndarray:
+        if panel.control_group != panel_mod.NOT_YET_TREATED:
+            return real(panel, g, t)
+        return np.asarray((panel.cohort < 0) | ((panel.cohort > g - 1) & (panel.cohort != g)))
+
+    with mock.patch.object(panel_mod, "controls", fake):
+        yield
+
+
+@contextmanager
+def propensity_ignored() -> Iterator[None]:
+    """The propensity score is the cohort's share: regression adjustment alone remains.
+
+    Consistent only if the outcome model is right; with a misspecified one it is biased.
+    """
+
+    def fake(X: np.ndarray, d: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        return np.full_like(d, d.mean()), np.zeros_like(X)
+
+    with mock.patch.object(panel_mod, "propensity", fake):
+        yield
+
+
+@contextmanager
+def outcome_regression_ignored() -> Iterator[None]:
+    """The outcome model is zero: normalised inverse-probability weighting alone remains.
+
+    Consistent only if the propensity model is right; with a misspecified one it is biased.
+    """
+
+    def fake(X: np.ndarray, dy: np.ndarray, d: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        return np.zeros_like(dy), np.zeros_like(X)
+
+    with mock.patch.object(panel_mod, "outcome_regression", fake):
+        yield
+
+
 DEFECTS: dict[str, Callable[[], Any]] = {
     "twfe_static": twfe_static,
     "forbidden_comparisons": forbidden_comparisons,
     "cells_independent": cells_independent,
     "pretrend_blind": pretrend_blind,
     "last_pre_period_only": last_pre_period_only,
+    "ignore_covariates": ignore_covariates,
+    "not_yet_treated_includes_treated": not_yet_treated_includes_treated,
+    "propensity_ignored": propensity_ignored,
+    "outcome_regression_ignored": outcome_regression_ignored,
 }

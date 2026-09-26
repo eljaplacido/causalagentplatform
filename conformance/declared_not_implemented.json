@@ -79,7 +79,7 @@
         },
         {
           "at": "backend/src/agents/causal_discovery.py:394",
-          "says": "stub — real data required"
+          "says": "stub \u2014 real data required"
         }
       ],
       "leaves_by": {
@@ -145,7 +145,7 @@
       "evidence": [
         {
           "at": "backend/pyproject.toml:51",
-          "says": "\"causal-core>=0.9.0\","
+          "says": "\"causal-core>=0.10.0\","
         }
       ],
       "leaves_by": {
@@ -196,7 +196,7 @@
         },
         {
           "at": "docs/AGENTS.md:616",
-          "says": "the LLM factory resolves capability → provider at runtime"
+          "says": "the LLM factory resolves capability \u2192 provider at runtime"
         },
         {
           "at": "docs/AGENTS.md:626",
@@ -415,7 +415,7 @@
       "capability": "Triangulation flags outcome-model misspecification in causal-core",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:171",
+          "at": "packages/causal-core/README.md:178",
           "says": "Its power was 0.04 at n = 2,000"
         }
       ],
@@ -438,7 +438,7 @@
       "capability": "Estimation of effects identified only by the general ID algorithm (e.g. the napkin graph)",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:193",
+          "at": "packages/causal-core/README.md:200",
           "says": "Estimation for general ID functionals"
         }
       ],
@@ -461,18 +461,18 @@
       "capability": "causal-core methods beyond the current portfolio: nonparametric front-door, discovery, time series, interference between units",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:195",
+          "at": "packages/causal-core/README.md:202",
           "says": "Nonparametric front-door"
         },
         {
-          "at": "packages/causal-core/README.md:197",
+          "at": "packages/causal-core/README.md:204",
           "says": "Discovery"
         }
       ],
       "reality": "Listed as not implemented in the package README; none of these exists in the kernel. (Anytime-valid sequential tests left this entry on 2026-09-25 with T6; cluster-randomized designs, which handle dependence within clusters but not spillovers between them, arrived the same day with T7, and switchback designs with T8.)",
       "evidence": [
         {
-          "at": "packages/causal-core/README.md:190",
+          "at": "packages/causal-core/README.md:197",
           "says": "Not implemented yet"
         }
       ],
@@ -639,7 +639,7 @@
       "claimed_in": [
         {
           "at": "docs/ROADMAP.md:12",
-          "says": "> target outcome — and is that evidence strong enough to act on without asking a human?"
+          "says": "> target outcome \u2014 and is that evidence strong enough to act on without asking a human?"
         }
       ],
       "reality": "The machinery is built and pinned: every decision seals a follow-up plan carrying the prediction it used, POST /api/v1/decisions/{entry_digest}/followup re-runs that plan's own analysis over a later window, and GET /api/v1/decisions/calibration aggregates. What does not exist is the evidence: no follow-up has been taken on any real operation, so every rate in the report is null. That is the honest state and the report says so rather than reading as a perfect score. This entry leaves the list when a body of follow-ups exists and the thresholds have been moved by what it showed -- which is operational history, not code.",
@@ -685,7 +685,7 @@
       "claimed_in": [
         {
           "at": "backend/src/semantic_layer/registry.py:6",
-          "says": "2. All objects are versioned — no in-place mutation; deprecate and replace."
+          "says": "2. All objects are versioned \u2014 no in-place mutation; deprecate and replace."
         },
         {
           "at": "docs/DATA_LAYER.md@13e7d92:242",
@@ -693,7 +693,7 @@
         },
         {
           "at": "docs/ADR-001-canonical-semantic-layer.md@13e7d92:71",
-          "says": "All objects are versioned — no in-place mutation (Rule #2)"
+          "says": "All objects are versioned \u2014 no in-place mutation (Rule #2)"
         },
         {
           "at": "docs/ADR-001-canonical-semantic-layer.md@13e7d92:91",
@@ -868,7 +868,7 @@
       "claimed_in": [
         {
           "at": "backend/src/orchestration/planning.py:7",
-          "says": "1. SimulateAhead   — Forward-simulate action consequences using the approved SCM"
+          "says": "1. SimulateAhead   \u2014 Forward-simulate action consequences using the approved SCM"
         },
         {
           "at": "docs/AGENTS.md:543",
@@ -928,24 +928,6 @@
       }
     },
     {
-      "id": "dast-not-built",
-      "status": "planned",
-      "capability": "Dynamic application security testing (DAST): a scanner such as OWASP ZAP run against a running API, weekly",
-      "claimed_in": [
-        {
-          "at": "docs/CYBERSECURITY.md:590",
-          "says": "DAST: OWASP ZAP against a staging API (weekly). Not built: there is no staging"
-        }
-      ],
-      "reality": "Not built. Nothing starts the API and scans it dynamically; there is no staging environment to scan. The container images are built and scanned for known vulnerabilities in CI (job images), which is not DAST.",
-      "evidence": [],
-      "leaves_by": {
-        "kind": "ci-run",
-        "path": ".github/workflows/dast.yml",
-        "asserts": "a workflow starts the backend (the built image, or a staging deployment) and runs a DAST scanner against its API, failing on findings not in a reviewed allowlist"
-      }
-    },
-    {
       "id": "gdpr-controls",
       "status": "declared-not-implemented",
       "capability": "Privacy controls: PII pseudonymization at ingestion, logical erasure, portable export",
@@ -956,11 +938,11 @@
         },
         {
           "at": "docs/CYBERSECURITY.md@13e7d92:181",
-          "says": "| Art. 17 – Right to erasure | Pseudonymization + key deletion (logical erasure) |"
+          "says": "| Art. 17 \u2013 Right to erasure | Pseudonymization + key deletion (logical erasure) |"
         },
         {
           "at": "docs/CYBERSECURITY.md@13e7d92:182",
-          "says": "| Art. 20 – Data portability | Semantic layer export (JSON-LD format) |"
+          "says": "| Art. 20 \u2013 Data portability | Semantic layer export (JSON-LD format) |"
         }
       ],
       "reality": "No code pseudonymizes, tokenizes or strips any field, no erasure path exists, and no JSON-LD (or other) export of the semantic layer exists. No connector runs in the platform, so today PII can enter only through API request bodies, and nothing inspects them for it. The Art. 30 row (records of processing) is the one backed by something real: audit_log.",
@@ -1004,21 +986,47 @@
       }
     },
     {
-      "id": "did-extensions",
+      "id": "did-rambachan-roth",
       "status": "planned",
-      "capability": "Difference-in-differences beyond the current design: covariate-conditional parallel trends, not-yet-treated comparisons, anticipation, repeated cross-sections, and the full Rambachan-Roth sensitivity machinery",
+      "capability": "The full Rambachan-Roth sensitivity machinery for difference-in-differences: restrictions on consecutive changes in the trend difference (smoothness, relative magnitudes of period-to-period deviations) and their sharper confidence sets",
       "claimed_in": [],
-      "reality": "causal_core.panel estimates unconditional group-time effects against never-treated units on a balanced panel with an absorbing binary treatment, and refuses everything else with a typed reason. Parallel-trends sensitivity exists since T5 v3 in a simplified, conservative form (relative magnitudes on event-time levels, union-bound intervals, a breakdown multiple); Rambachan & Roth's restriction on consecutive changes and their sharper confidence sets do not.",
+      "reality": "Split from did-extensions when its covariate and not-yet-treated parts left the list (T5 v4). Parallel-trends sensitivity exists since T5 v3 in a simplified, conservative form: relative magnitudes on event-time levels, union-bound intervals, a breakdown multiple. Rambachan & Roth's restriction on consecutive changes and their confidence sets do not exist.",
       "evidence": [
         {
-          "at": "benchmarks/t5-did/PRE-REGISTRATION.md:4",
-          "says": "`packages/causal-core` (`causal_core.panel`"
+          "at": "packages/causal-core/src/causal_core/panel.py:587",
+          "says": "\"relative magnitudes on event-time deviations (after Rambachan & Roth 2023): post-adoption \""
+        },
+        {
+          "at": "benchmarks/t5-did/PRE-REGISTRATION.md:258",
+          "says": "- The full Rambachan & Roth machinery: their restriction is on consecutive changes, not levels,"
         }
       ],
       "leaves_by": {
         "kind": "test",
-        "path": "packages/causal-core/tests/t5/test_did_extensions.py",
-        "asserts": "each extension ships with its own pre-registered T5 version and seeded defect -- sensitivity first: a Rambachan-Roth style bound whose coverage is gated under planted violations"
+        "path": "packages/causal-core/tests/t5/test_rambachan_roth.py",
+        "asserts": "a pre-registered T5 version gates the coverage of Rambachan-Roth confidence sets under planted violations of a consecutive-change restriction, with a seeded defect that bounds levels instead of changes"
+      }
+    },
+    {
+      "id": "did-anticipation-cross-sections",
+      "status": "planned",
+      "capability": "Difference-in-differences with anticipation windows, repeated cross-sections (no unit observed twice) and time-varying covariates",
+      "claimed_in": [],
+      "reality": "Split from did-extensions when its covariate and not-yet-treated parts left the list (T5 v4). causal_core.panel needs a balanced panel of units observed in every period, assumes no anticipation, and accepts time-invariant covariates only: a covariate that varies within a unit is refused (INVALID_INPUT), an unbalanced panel is refused (DESIGN_CHECK_FAILED), and there is no anticipation parameter.",
+      "evidence": [
+        {
+          "at": "packages/causal-core/src/causal_core/panel.py:55",
+          "says": "Not offered in this version: time-varying covariates, anticipation windows,"
+        },
+        {
+          "at": "packages/causal-core/src/causal_core/panel.py:245",
+          "says": "\"time-invariant, pre-treatment characteristics only; a covariate that changes after \""
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "packages/causal-core/tests/t5/test_did_designs.py",
+        "asserts": "each of anticipation windows, repeated cross-sections and time-varying covariates ships with its own pre-registered T5 version and seeded defect, or is retracted from the docs that list it as planned"
       }
     },
     {
@@ -1090,6 +1098,24 @@
         "kind": "test",
         "path": "packages/causal-core/tests/t8/test_carryover_power.py",
         "asserts": "a pre-registered T8 version gates the carryover check's power at >= 0.8 against a carryover the washout does not cover, with a false-alarm bar where it does"
+      }
+    },
+    {
+      "id": "dast-not-built",
+      "status": "planned",
+      "capability": "Dynamic application security testing (DAST): a scanner such as OWASP ZAP run against a running API, weekly",
+      "claimed_in": [
+        {
+          "at": "docs/CYBERSECURITY.md:590",
+          "says": "DAST: OWASP ZAP against a staging API (weekly). Not built: there is no staging"
+        }
+      ],
+      "reality": "Not built. Nothing starts the API and scans it dynamically; there is no staging environment to scan. The container images are built and scanned for known vulnerabilities in CI (job images), which is not DAST.",
+      "evidence": [],
+      "leaves_by": {
+        "kind": "ci-run",
+        "path": ".github/workflows/dast.yml",
+        "asserts": "a workflow starts the backend (the built image, or a staging deployment) and runs a DAST scanner against its API, failing on findings not in a reviewed allowlist"
       }
     }
   ],
@@ -1259,6 +1285,13 @@
       "fixed_in": "e23adea",
       "pinned_by": "backend/tests/integration/test_rls_domain_isolation.py",
       "note": "Implemented, on PostgreSQL. Migration 010_rls_binds.sql replaces 001's two policies and gives graph_fragments one, each USING and WITH CHECK app_scope_allows(domain): the domain is in app.user_domains (now a JSON array; 001 split on commas) or no list is set and app.user_role (a JSON array of platform roles) holds governance_officer, platform_engineer or the causal_service marker -- so a present domains claim binds every role, as rbac.domain_scope says, where 001 let those two roles through regardless. src/db/scope.py keeps the scope in a context variable and opens every PostgreSQL transaction with set_config(..., true) for both settings (transaction-local, so pooled connections carry nothing over); the auth middleware binds rbac.scope_for_user(user) per request. Outside a request the scope is empty (nothing visible); code with no user declares service_scope(reason), which is unscoped on purpose (the seeder and the test fixtures' direct calls do). The app connects as causal_app, a non-owner role, rather than FORCE RLS on an owner connection, and refuses to start as a superuser, a BYPASSRLS role or the owner; docker-compose gives causal_app a local-dev login. 010 also grants causal_app USAGE on decision_followups_id_seq, created after 001's blanket grant, without which every followup insert as causal_app failed. The PostgreSQL test fixtures connect the app as causal_app (a per-run member login), so the whole suite runs under RLS. The leaves_by test asserts, over raw SQL as causal_app with the settings set as the app sets them, that a user limited to one domain selects no row of another from the three tables, and includes negative controls (policy dropped, RLS disabled, owner connection) that leak. Not changed: SQLite, the local engine, has no RLS, so there the application's filter is the only line; role checks (which route a role may call) stay in the API; tables without a domain are not scoped."
+    },
+    {
+      "id": "did-extensions",
+      "was": "Difference-in-differences beyond the current design: covariate-conditional parallel trends, not-yet-treated comparisons, anticipation, repeated cross-sections, and the full Rambachan-Roth sensitivity machinery. causal_core.panel estimated unconditional group-time effects against never-treated units only.",
+      "fixed_in": "210126e",
+      "pinned_by": "packages/causal-core/tests/t5/test_did_extensions.py",
+      "note": "Implemented in part, and the rest split rather than claimed. Covariate-conditional parallel trends (CausalQuery.covariates: each group-time effect is Sant'Anna & Zhao's doubly robust DiD, logistic propensity and linear outcome regression, with an influence function carrying both models' estimation effects) and not-yet-treated comparisons (CausalQuery.control_group) shipped in contract 0.10.0, pre-registered as T5 v4 (fbdbc1a) before the code, and passed its first registered run (benchmarks/t5-did/results/2026-09-26-v4-run1.json, 7b4ce0f): five new designs, including covariate-driven adoption timing where the unconditional estimate is biased by 0.54 and each nuisance model misspecified in turn; three new refusals (poor overlap -> POSITIVITY, time-varying covariate -> INVALID_INPUT, no comparison units -> DESIGN_CHECK_FAILED); four new seeded defects, each caught by its registered bias bar. Limits: under a misspecified outcome model the intervals sit near the coverage band's floor (0.932 in the registered run, 0.914-0.942 on development seeds); linear-index nuisance models only. The Rambachan-Roth machinery is now did-rambachan-roth; anticipation, repeated cross-sections and time-varying covariates are did-anticipation-cross-sections."
     },
     {
       "id": "supply-chain-scanning-not-in-ci",

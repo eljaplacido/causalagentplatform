@@ -104,23 +104,23 @@
     },
     {
       "doc": "README.md",
-      "says": "Coverage 0.938–0.958 across four simulated rollouts",
-      "figure": "0.938",
+      "says": "Coverage 0.932–0.958 across nine simulated rollouts",
+      "figure": "0.932",
       "bench": "t5-did",
-      "path": "/designs[id=staggered_dynamic|staggered_constant|single_cohort|null_effect]/coverage",
+      "path": "/designs[id=staggered_dynamic|staggered_constant|single_cohort|null_effect|covariate_selection|outcome_misspecified|propensity_misspecified|not_yet_treated|covariates_not_yet_treated]/coverage",
       "agg": "min"
     },
     {
       "doc": "README.md",
-      "says": "Coverage 0.938–0.958 across four simulated rollouts",
+      "says": "Coverage 0.932–0.958 across nine simulated rollouts",
       "figure": "0.958",
       "bench": "t5-did",
-      "path": "/designs[id=staggered_dynamic|staggered_constant|single_cohort|null_effect]/coverage",
+      "path": "/designs[id=staggered_dynamic|staggered_constant|single_cohort|null_effect|covariate_selection|outcome_misspecified|propensity_misspecified|not_yet_treated|covariates_not_yet_treated]/coverage",
       "agg": "max"
     },
     {
       "doc": "README.md",
-      "says": "pre-trends test power 1.00",
+      "says": "Pre-trends test power 1.00",
       "figure": "1.00",
       "bench": "t5-did",
       "path": "/designs[id=trends_violated]/pretrend_rejection_rate"
@@ -130,7 +130,7 @@
       "says": "false alarms ≤ 2.2%",
       "figure": "2.2",
       "bench": "t5-did",
-      "path": "/designs[id=staggered_dynamic|staggered_constant|single_cohort|null_effect]/pretrend_rejection_rate",
+      "path": "/designs[id=staggered_dynamic|staggered_constant|single_cohort|null_effect|covariate_selection|outcome_misspecified|propensity_misspecified|not_yet_treated|covariates_not_yet_treated]/pretrend_rejection_rate",
       "agg": "max",
       "scale": 100
     },
@@ -222,7 +222,7 @@
       "says": "event-time coverage 0.933–0.956",
       "figure": "0.933",
       "bench": "t5-did",
-      "path": "/designs[id=staggered_dynamic|staggered_constant|single_cohort|null_effect]/event_coverage",
+      "path": "/designs[id=staggered_dynamic|staggered_constant|single_cohort|null_effect|covariate_selection|outcome_misspecified|propensity_misspecified|not_yet_treated|covariates_not_yet_treated]/event_coverage",
       "agg": "min"
     },
     {
@@ -230,8 +230,47 @@
       "says": "event-time coverage 0.933–0.956",
       "figure": "0.956",
       "bench": "t5-did",
-      "path": "/designs[id=staggered_dynamic|staggered_constant|single_cohort|null_effect]/event_coverage",
+      "path": "/designs[id=staggered_dynamic|staggered_constant|single_cohort|null_effect|covariate_selection|outcome_misspecified|propensity_misspecified|not_yet_treated|covariates_not_yet_treated]/event_coverage",
       "agg": "max"
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "ATT coverage 0.932–0.958",
+      "figure": "0.932",
+      "bench": "t5-did",
+      "path": "/designs[id=staggered_dynamic|staggered_constant|single_cohort|null_effect|covariate_selection|outcome_misspecified|propensity_misspecified|not_yet_treated|covariates_not_yet_treated]/coverage",
+      "agg": "min"
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "ATT coverage 0.932–0.958",
+      "figure": "0.958",
+      "bench": "t5-did",
+      "path": "/designs[id=staggered_dynamic|staggered_constant|single_cohort|null_effect|covariate_selection|outcome_misspecified|propensity_misspecified|not_yet_treated|covariates_not_yet_treated]/coverage",
+      "agg": "max"
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "with bias within 1.6 Monte Carlo SEs",
+      "figure": "1.6",
+      "bench": "t5-did",
+      "path": "/designs[id=staggered_dynamic|staggered_constant|single_cohort|null_effect|covariate_selection|outcome_misspecified|propensity_misspecified|not_yet_treated|covariates_not_yet_treated]/bias_in_mcse",
+      "agg": "max",
+      "round": "outward"
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "(0.932 in the registered",
+      "figure": "0.932",
+      "bench": "t5-did",
+      "path": "/designs[id=outcome_misspecified]/coverage"
+    },
+    {
+      "doc": "docs/CURRENT_STAGE.md",
+      "says": "0.932 in the registered run",
+      "figure": "0.932",
+      "bench": "t5-did",
+      "path": "/designs[id=outcome_misspecified]/coverage"
     },
     {
       "doc": "packages/causal-core/README.md",

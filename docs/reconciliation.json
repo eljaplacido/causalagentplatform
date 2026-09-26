@@ -28,16 +28,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/pyproject.toml": "eb8981b94a831f96ab3e93b9d91d676baab95bb8020aac71fa00f19020de0319",
+          "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "9af8eaf690d6d9090ebac9f6af3d32841429eeffb4a7951d244cc3e1ee6ce017"
+          "docs/CURRENT_STAGE.md": "fc5b6d1b7db3a4cae3ded89459aa58661b1946eaf6e8b8807fbc5bc34e674477"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-49: the quick start installs the backend from requirements/backend.txt with --require-hashes, then the local packages --no-deps --no-build-isolation; the container line names both Dockerfiles, each built from the root; the CURRENT_STAGE change it tracks is the supply-chain row, which README does not quote)"
+        "by": "Claude (merge of #14 into septa-8: T5 row from septa-8 present; #14 changed nothing it quotes)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -54,18 +54,18 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "7178ea45663f6d89c855f23a826251be991e9e0bb709a4d3cf526c6c1917ed76",
+          "conformance/declared_not_implemented.json": "7ea978f77fdbbf32f505ad2a2fc7cd7491ce98ad43f325e868410087b50f2a6d",
           "backend/src": "c06af80dee95babb1eed74ffbc5435ffe7f1cb1fdc8bf8f8489d087ad42aabe1",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
           "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
-          "packages": "5a9c8d9bba06ef8cf6b6674cc10d367803f7a2cd8739311ba0710ebcd6a4c7b9",
+          "packages": "b6ee9e7b2337b6a02a1015e9b026ef382e06dd7afb17259c76142ad2af9e8a02",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-49: the supply-chain row is implemented, pinned by test_py_lock.py with test_image_scan.py and test_sbom_check.py, fixed in a6a864d, and says the images job and release.yml have not run on GitHub; new planned row dast-not-built; the backend/tests change is those three tests and test_dep_audit.py's lock mode)"
+        "by": "Claude (merge of #14 into septa-8: both the dast-not-built row (#14) and the did-* rows (septa-8) present)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -171,11 +171,7 @@
         "backend/src/api/provenance.py",
         "backend/src/db/migrations",
         "backend/src/semantic_layer/verdict.py",
-        ".github/workflows",
-        "requirements",
-        "backend/Dockerfile",
-        "frontend/Dockerfile",
-        ".github/dependabot.yml"
+        ".github/workflows"
       ],
       "baseline": {
         "on": "2026-09-26",
@@ -188,16 +184,12 @@
           "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
           "backend/src/db/migrations": "6b52679eb2132b16e3bb238da5d6a7bde969f409bba4bd63b431c94456db74f1",
           "backend/src/semantic_layer/verdict.py": "2807535994f0073bd9f58cc2774822d9f7bd1749aa7801d669eb2301bde3ac00",
-          ".github/workflows": "1ae0fadaa874c419905d5c24ebadf5ccca68705dc7d83057ea81682712fae31b",
-          "requirements": "bd38eddb75e794ad54781b54cc9f111bff4add78851511cd1e9c1294593db934",
-          "backend/Dockerfile": "3b1180c11b97ed0a52470f5990281c822796e2329435085658ee61379c82e735",
-          "frontend/Dockerfile": "903f92a0ae718885f6c8ad0eb77f87913e646d24af04bc10c77f01ca2ff9de59",
-          ".github/dependabot.yml": "e3f006f0b88eff986368a2993d111c8add8b5e399bfd0ecbbfeaedc57d6785f7"
+          ".github/workflows": "1ae0fadaa874c419905d5c24ebadf5ccca68705dc7d83057ea81682712fae31b"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-49: 8.3 has both images' bases pinned by digest, the lock-installed backend without pip, the rebuilt frontend Dockerfile and the Trivy job with its allowlist and the 44 unfixed Debian findings listed not gated; 8.4 has the audit over the locks, hash-pinned installs, the release SBOM and dependabot; section 10 ticks the container scan and sends DAST to dast-not-built)"
+        "by": "Claude (merge of #14 into septa-8: #14's image-scan and SBOM text present; septa-8 does not touch it)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -262,12 +254,12 @@
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
           ".github": "0a8d8e713831ebec1cc8e44c2f719c44085c453b44baed2d4607ac2fa3df132b",
-          ".gnomon": "7f350ce02013384605ccb9ebb2ef1c440d06a59156478ed67fd32b41f7b501f7"
+          ".gnomon": "e9afa6dfbb985f1524e04a4ca8de7b5210e7e43e52d4106baca6d2a1b847532a"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-49: the .github change is dependabot.yml and the two workflows, the .gnomon change is ci.sh's python-lock step and verifying-changes.md; the page's rows for .gnomon, scripts/verify.sh and the .github copilot files and issue templates are still true)"
+        "by": "Claude (merge of #14 into septa-8: #14's workflow and dependabot changes; the page names the surface files, still true)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -280,8 +272,7 @@
         "frontend/package.json",
         "package.json",
         ".env.example",
-        "backend/scripts",
-        "requirements"
+        "backend/scripts"
       ],
       "baseline": {
         "on": "2026-09-26",
@@ -289,17 +280,16 @@
           "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
-          "backend/pyproject.toml": "eb8981b94a831f96ab3e93b9d91d676baab95bb8020aac71fa00f19020de0319",
+          "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
           ".env.example": "f5dbf40f551d60b4b91d5bbaa9b36a2404f89536421fe51b8bcbf17a6ae1258f",
-          "backend/scripts": "36d9419c9cb543ee85703a4d4008be1c16e383c5d7567d9c7bcb6dce92ad64da",
-          "requirements": "bd38eddb75e794ad54781b54cc9f111bff4add78851511cd1e9c1294593db934"
+          "backend/scripts": "36d9419c9cb543ee85703a4d4008be1c16e383c5d7567d9c7bcb6dce92ad64da"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-49: both venvs install from requirements/backend.txt and kernel.txt with --require-hashes, then the local packages --no-deps --no-build-isolation; adding a dependency is edit, relock, commit both; the gate paragraph says python-lock needs a venv equal to its lock and names py_lock.py sync)"
+        "by": "Claude (septa-8: the backend pin moved to causal-core>=0.10.0; the page states no kernel version and no DiD options, unchanged)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -315,33 +305,27 @@
         "specs",
         "benchmarks",
         "packages/causal-core/tests",
-        "packages/causal-decision/tests",
-        "requirements",
-        "backend/Dockerfile",
-        "frontend/Dockerfile"
+        "packages/causal-decision/tests"
       ],
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "1ae0fadaa874c419905d5c24ebadf5ccca68705dc7d83057ea81682712fae31b",
           "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
-          "backend/pyproject.toml": "eb8981b94a831f96ab3e93b9d91d676baab95bb8020aac71fa00f19020de0319",
+          "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
           ".gnomon/ci.sh": "8379e43234946f44d8e569a68c60d42923500ded3012d88bf2a477f5ebecf8aa",
-          "scripts": "78dd74681709debcb039ced7e97f2a13cdcf6880b54dc4aad6dec6a5b663dd08",
+          "scripts": "f0b53ec6456489ff7a911dc1b94d72ee20926fb6a5b68d63badd302cc5ae9090",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
-          "benchmarks": "3dcea1af4dd3bbdd68778cbb91715e1663c850fb9681fe42096b50d1145550dc",
-          "packages/causal-core/tests": "b73dcfd6530b951cdacdaaaac95e7e4068843b27cbd6635fdbe7b9efe306ecb3",
-          "packages/causal-decision/tests": "61bde7786a6158cc99f269fd057908ce3959e5e812ac5d8b4c82c11c2c7200b4",
-          "requirements": "bd38eddb75e794ad54781b54cc9f111bff4add78851511cd1e9c1294593db934",
-          "backend/Dockerfile": "3b1180c11b97ed0a52470f5990281c822796e2329435085658ee61379c82e735",
-          "frontend/Dockerfile": "903f92a0ae718885f6c8ad0eb77f87913e646d24af04bc10c77f01ca2ff9de59"
+          "benchmarks": "a017cd3d799db03c83693deb1efeb7a8c2fb2e73e532f4fe5ce3895002f7be0a",
+          "packages/causal-core/tests": "be7509f8646efd6a27d3b142715e440739d17255e7ffc1ebcde5bc05aa95c2b2",
+          "packages/causal-decision/tests": "61bde7786a6158cc99f269fd057908ce3959e5e812ac5d8b4c82c11c2c7200b4"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-49: step table adds python-lock and pip-audit-image and says the audits read the locks; 3.1 names the three new negative-control tests; 5.1 has the lock installs and the images job, not yet run on GitHub; 5.2 the kernel-lock verify and the checked release SBOM; 5.3 DAST and unfixed image findings; 5.4 the locks, relock and sync)"
+        "by": "Claude (merge of #14 into septa-8: python-lock and images job (#14) and the T5 row (septa-8) both present)"
       }
     },
     "docs/UIX.md": {
@@ -370,14 +354,14 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "packages/causal-core/src/causal_core": "f504a91cfae574117c3accbd936ee039a34cde0bbd0579f77c4571207a366683",
-          "conformance/declared_not_implemented.json": "7178ea45663f6d89c855f23a826251be991e9e0bb709a4d3cf526c6c1917ed76",
-          "docs/CURRENT_STAGE.md": "9af8eaf690d6d9090ebac9f6af3d32841429eeffb4a7951d244cc3e1ee6ce017"
+          "packages/causal-core/src/causal_core": "b3a206babea176dd53fdebe83037e38e66922eeced1def6dbfb248262c2477a6",
+          "conformance/declared_not_implemented.json": "7ea978f77fdbbf32f505ad2a2fc7cd7491ce98ad43f325e868410087b50f2a6d",
+          "docs/CURRENT_STAGE.md": "fc5b6d1b7db3a4cae3ded89459aa58661b1946eaf6e8b8807fbc5bc34e674477"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-49: the p0 paragraph says CI installs from hash-pinned locks the gate holds current, scans both images with Trivy, attaches a CycloneDX SBOM to releases and dependabot opens PRs; DAST is dast-not-built; the register moved supply-chain-scanning-not-in-ci to left_the_list)"
+        "by": "Claude (merge of #14 into septa-8: septa-49 done (#14) and septa-8 now marked done)"
       }
     },
     "SECURITY.md": {
@@ -403,7 +387,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-49: out-of-scope paragraph says the gate audits the hash-pinned locks, CI scans both images with Trivy and dependabot opens PRs; the published packages still declare ranges)"
+        "by": "Claude (septa-47: domain isolation now enforced also by PostgreSQL RLS binding causal_app, start-up refusal as owner/superuser/BYPASSRLS; the compose passwords sentence names both logins)"
       }
     }
   }
