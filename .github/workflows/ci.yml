@@ -8,8 +8,10 @@ name: CI
 # failed partial runs, and lint/type checks against a baseline nobody had measured.
 
 on:
+  # push runs on main only: a PR already runs on pull_request, and a second run of the
+  # same commit per branch push doubled the load on a self-hosted runner.
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
     branches: [main]
   # Weekly, on main: an advisory published since the last push surfaces here (the
@@ -25,10 +27,15 @@ concurrency:
 permissions:
   contents: read
 
+# Where jobs run: the repository variable CI_RUNS_ON, a JSON runner label or list
+# (e.g. '["self-hosted","linux","ARM64","causalplatform-ci"]'). Unset, jobs run on
+# GitHub's ubuntu-latest. A self-hosted runner is how CI runs while hosted minutes are
+# unavailable; delete the variable to return to hosted runners. Nothing host-specific
+# is written here -- the label names the role, not the machine.
 jobs:
   gate:
     name: .gnomon/ci.sh
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 75
     env:
       # Real-data benchmarks (T2 IHDP, T3 LaLonde): fetched by pinned SHA-256, never
@@ -53,7 +60,11 @@ jobs:
           POSTGRES_PASSWORD: ci-only-throwaway
           POSTGRES_DB: postgres
         ports:
-          - 5432:5432
+          # Loopback only, on a port Docker picks: on a self-hosted runner a bare
+          # 5432:5432 publishes the throwaway database on every interface of the host,
+          # and several runners on one host would collide on a fixed port. The step
+          # below reads the chosen port from job.services.
+          - 127.0.0.1::5432
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 5s
@@ -123,7 +134,7 @@ jobs:
         env:
           # The service container above (CI-only credentials). Unset, the
           # backend-pytest-postgres step is SKIPPED and the gate exits 2.
-          TEST_DATABASE_URL: postgresql+asyncpg://postgres:ci-only-throwaway@localhost:5432/postgres
+          TEST_DATABASE_URL: postgresql+asyncpg://postgres:ci-only-throwaway@127.0.0.1:${{ job.services.postgres.ports['5432'] }}/postgres
         # ci.sh's exit contract: 0 passed, 1 a blocking step failed, 2 could not measure
         # (a step's toolchain is absent -- in CI that means the environment above is
         # broken -- or an advisory database could not be reached, so pip-audit or npm
@@ -160,7 +171,7 @@ jobs:
   # published since the last push surfaces without one.
   images:
     name: image ${{ matrix.image }} (build + Trivy)
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -176,7 +187,7 @@ jobs:
           python-version: "3.12"
 
       - name: Build ${{ matrix.image }}/Dockerfile
-        run: docker build -f "${{ matrix.image }}/Dockerfile" -t "causal-platform-${{ matrix.image }}:ci" .
+        run: docker build -f "${{ matrix.image }}/Dockerfile" -t "causal-platform-${{ matrix.image }}:ci-${{ github.run_id }}-${{ github.run_attempt }}" .
 
       - name: Cache the vulnerability database
         uses: actions/cache@v6
@@ -191,11 +202,11 @@ jobs:
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
             -v "$HOME/.cache/trivy:/root/.cache/trivy" -v "$PWD/scan:/out" "$TRIVY_IMAGE" \
             image --scanners vuln --severity HIGH,CRITICAL --list-all-pkgs --format json \
-            --output "/out/trivy-${{ matrix.image }}.json" "causal-platform-${{ matrix.image }}:ci"
+            --output "/out/trivy-${{ matrix.image }}.json" "causal-platform-${{ matrix.image }}:ci-${{ github.run_id }}-${{ github.run_attempt }}"
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
             -v "$HOME/.cache/trivy:/root/.cache/trivy" -v "$PWD/scan:/out" "$TRIVY_IMAGE" \
             image --skip-db-update --format cyclonedx \
-            --output "/out/sbom-${{ matrix.image }}.cdx.json" "causal-platform-${{ matrix.image }}:ci"
+            --output "/out/sbom-${{ matrix.image }}.cdx.json" "causal-platform-${{ matrix.image }}:ci-${{ github.run_id }}-${{ github.run_attempt }}"
 
       - name: Judge the report against the reviewed allowlist
         run: python3 scripts/image_scan.py "scan/trivy-${{ matrix.image }}.json" --image "${{ matrix.image }}"
@@ -206,3 +217,9 @@ jobs:
         with:
           name: image-${{ matrix.image }}
           path: scan/
+
+      - name: Remove this run's image
+        # Tags are per run (parallel runners must not scan each other's builds), so
+        # without this a self-hosted runner accumulates one image per run.
+        if: always()
+        run: docker image rm -f "causal-platform-${{ matrix.image }}:ci-${{ github.run_id }}-${{ github.run_attempt }}" || true

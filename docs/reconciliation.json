@@ -54,18 +54,18 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "d0b9e6a5c3cfeb9b8864df4e9474bcb5b54a654bfc9340f34bf9dc00e39ec53b",
+          "conformance/declared_not_implemented.json": "a01d1c37fac5b78a489703f9422e50bdb526a15937818e9af353d98ad3e47f22",
           "backend/src": "c06af80dee95babb1eed74ffbc5435ffe7f1cb1fdc8bf8f8489d087ad42aabe1",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
           "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
-          "packages": "b6ee9e7b2337b6a02a1015e9b026ef382e06dd7afb17259c76142ad2af9e8a02",
+          "packages": "e0df8dd5f27d915fc2f45eb9b1d9d01500c8d30dde637dbfd332b32abeab7016",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (deps: the register moved only the dast-not-built citation line (CYBERSECURITY 590 -> 592); no row or status changed, both pages still true)"
+        "by": "Claude (merge of #28 into deps: #28's A0 test change; row claims unchanged)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -184,12 +184,12 @@
           "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
           "backend/src/db/migrations": "6b52679eb2132b16e3bb238da5d6a7bde969f409bba4bd63b431c94456db74f1",
           "backend/src/semantic_layer/verdict.py": "2807535994f0073bd9f58cc2774822d9f7bd1749aa7801d669eb2301bde3ac00",
-          ".github/workflows": "84bcaecddea0bab4108c515e3449d0eb59ea5f8b864cb9b9a6b42b8415ebac20"
+          ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (deps: ci.yml node 20->24; the doc's node claims are about the image (24 LTS), unchanged)"
+        "by": "Claude (merge of #28 into deps: update-PR ignore rules and the where-CI-runs bullet both kept)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -253,13 +253,13 @@
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
-          ".github": "b7983107b8c81d6478b870d67aa5489a0684ea821091c94aa897172074adb76e",
+          ".github": "405abf54754d93806c64cd703261a4cac70212e22955f1dd3c651a237dbdb2cb",
           ".gnomon": "e9afa6dfbb985f1524e04a4ca8de7b5210e7e43e52d4106baca6d2a1b847532a"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (deps: ci.yml node version; the page names the workflow, not versions)"
+        "by": "Claude (merge of #28 into deps: workflow changes from both; the page names files, not runners or versions)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -310,7 +310,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          ".github/workflows": "84bcaecddea0bab4108c515e3449d0eb59ea5f8b864cb9b9a6b42b8415ebac20",
+          ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
           "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
           "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
@@ -320,12 +320,12 @@
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "a017cd3d799db03c83693deb1efeb7a8c2fb2e73e532f4fe5ce3895002f7be0a",
           "packages/causal-core/tests": "be7509f8646efd6a27d3b142715e440739d17255e7ffc1ebcde5bc05aa95c2b2",
-          "packages/causal-decision/tests": "61bde7786a6158cc99f269fd057908ce3959e5e812ac5d8b4c82c11c2c7200b4"
+          "packages/causal-decision/tests": "c7ccd2d2b91e1ec53a3eb456c70f670268b2ec1f8f431e161f399360b94ef7de"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (deps: CI's gate job now sets up Node 24 LTS; the job-steps list says so)"
+        "by": "Claude (merge of #28 into deps: both the runner section (#28) and Node 24 / Dependabot handling (deps) present)"
       }
     },
     "docs/UIX.md": {
@@ -355,13 +355,13 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "b3a206babea176dd53fdebe83037e38e66922eeced1def6dbfb248262c2477a6",
-          "conformance/declared_not_implemented.json": "d0b9e6a5c3cfeb9b8864df4e9474bcb5b54a654bfc9340f34bf9dc00e39ec53b",
+          "conformance/declared_not_implemented.json": "a01d1c37fac5b78a489703f9422e50bdb526a15937818e9af353d98ad3e47f22",
           "docs/CURRENT_STAGE.md": "fc5b6d1b7db3a4cae3ded89459aa58661b1946eaf6e8b8807fbc5bc34e674477"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (deps: the register moved only the dast-not-built citation line (CYBERSECURITY 590 -> 592); no row or status changed, both pages still true)"
+        "by": "Claude (merge of #28 into deps: register re-cite only; no roadmap claim moved)"
       }
     },
     "SECURITY.md": {

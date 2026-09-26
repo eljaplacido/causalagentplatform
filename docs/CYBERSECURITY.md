@@ -543,6 +543,11 @@ published since the last push surfaces without one):
   npm, the GitHub Actions and the base images. It ignores the pins the ratchets count per
   version (ruff, mypy, bandit, pip-audit), pyproject majors, node lines that are not LTS, and
   majors held by an open ledger item (TESTING_CICD.md §5.4).
+- **Where CI runs.** Jobs run where the repository variable `CI_RUNS_ON` says: GitHub's hosted
+  runners when it is unset, otherwise self-hosted runners (label `causalplatform-ci`). A
+  self-hosted job executes the repository's code, including a dependency update's install
+  scripts, on that host as the runner's user; the repository is private, so no outside party can
+  open a pull request that runs there. The job's database listens on loopback only.
 - The Python build tools the release uses (`build`, `twine`, `cyclonedx-bom`) are pinned by
   version, not by hash. `safety` is not run; `pip-audit` covers the same advisories.
 
