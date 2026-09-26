@@ -294,7 +294,7 @@ grants, row-level security and most `CHECK` constraints exist only on the Postgr
 (SQLite keeps three: `audit_log.guardian_verdict`, `decision_followups.kind` and
 `causal_model_versions.version`).
 
-- **PostgreSQL**: `backend/src/db/migrations/001_initial.sql` to `010_rls_binds.sql`, applied in
+- **PostgreSQL**: `backend/src/db/migrations/001_initial.sql` to `011_provenance.sql`, applied in
   filename order. Two things in this repository apply them: `docker-compose.yml`, whose init
   script (`backend/src/db/docker/initdb.sh`) runs them when the container's volume is first
   created and then gives `causal_app` its local-dev login, and the test fixtures when
@@ -318,6 +318,7 @@ grants, row-level security and most `CHECK` constraints exist only on the Postgr
 | `session_state` | 008 | yes | Latest `EpistemicState` snapshot per session (`orchestration/session_store.py`), upserted on `session_id`; also what the incident triage agent's experience buffer reads back |
 | (row-level security) | 001, replaced by 010 | no | Not a table: 010 puts a domain policy on `causal_entities`, `causal_edges` and `graph_fragments`, fed by the settings `backend/src/db/scope.py` sets on every transaction (docs/CYBERSECURITY.md §4.2), and grants `causal_app` the sequence 004 created after 001's grant |
 | `incidents` | 009 | yes | Incident records (`api/incidents.py`), upserted on `id` with `INSERT ... ON CONFLICT`, keeping the first `created_at`. Decisions on their interventions are `audit_log` rows, joined in on read |
+| `provenance_entries`, `provenance_erasures` | 011 | yes | W3C PROV records and LLM invocations per session (`semantic_layer/provenance_store.py`, §6), and the tombstones that hide a session's records from the provenance API. Append-only; `causal_readonly` gets no `SELECT` on the entries |
 
 Until 008 and 009 (septa-52) `session_state` and `incidents` existed only in the SQLite schema,
 and on PostgreSQL session persistence and the incidents API failed with a missing table. Neither
@@ -354,7 +355,7 @@ CREATE TABLE audit_log (
 );
 ```
 
-On PostgreSQL, `audit_log`, `decision_records`, `decision_followups` and the 007 tables are append-only in two
+On PostgreSQL, `audit_log`, `decision_records`, `decision_followups`, the 007 tables and the 011 tables are append-only in two
 ways: `UPDATE` and `DELETE` are revoked from the application roles, and `BEFORE UPDATE/DELETE`
 triggers raise. The SQLite schema declares the same triggers.
 
@@ -504,6 +505,15 @@ those, but no single field holds it. That is a step towards the transparency the
 for (Art. 13). It is not evidence of meeting it, and nothing here reproduces an analysis from its
 lineage.
 
+**Provenance records** (ADR-002) are a separate, per-session store: `provenance_entries` and
+`provenance_erasures` (011), read through `/api/v1/provenance/*` by governance roles. Session
+runs, Guardian checks and `POST /api/v1/decisions` write them
+(`backend/src/semantic_layer/provenance_capture.py`); what they hold about inputs is digests
+(of a description, a dataset, a reasoning step's inputs and outputs), not the content. The store
+is append-only; an erasure is a tombstone that hides a session's earlier records from the API and
+keeps the rows, so it is not GDPR erasure (register `gdpr-controls`). No LLM invocation is
+recorded, because no runtime path calls an LLM (register `llm-routing-no-callers`).
+
 ---
 
 ## 7. Data Access Patterns by Component
@@ -517,7 +527,9 @@ lineage.
 | `GET /api/semantic/*` | Entities, edges, fragments inside the user's domain scope; APPROVED only for a `viewer` | -- | Outside the scope is 404 (CYBERSECURITY.md §4.2) |
 | `POST /api/semantic/drafts` | -- | `causal_edges` / `graph_fragments` / `causal_entities` / `assumptions` as DRAFT | A drafting role, a domain inside the user's scope, then a GovernanceAgent check; status forced to DRAFT |
 | `POST /api/governance/approve/{id}`, `/reject/{id}` | -- | Status, approver and lineage on the same row | A governance role, the object inside the reviewer's domains; see §2.2 rule 2 |
-| `POST /api/v1/decisions` | A registered model version, when the request names one | `decision_records`, `decision_followups`, and `decision_model_refs` when a model is named | Append-only hash chain |
+| `POST /api/v1/decisions` | A registered model version, when the request names one | `decision_records`, `decision_followups`, `decision_model_refs` when a model is named, and `provenance_entries` (session `decision:<entry_digest>`) | Append-only hash chain |
+| `POST /api/v1/session/run`, `/incident`; `GovernanceAgent.check` | -- | `provenance_entries`, beside `session_state` / `audit_log` | The Guardian's record is in the same transaction as its `audit_log` row |
+| `GET /api/v1/provenance/*`, `POST .../session/{id}/erasure` | `provenance_entries` not hidden by a tombstone, and every tombstone | `provenance_erasures` | Governance roles only |
 | `POST /api/v1/models`, `/{name}/versions`, `/{name}/reviews` | The model's head | `causal_model_versions` | Append-only; a version is appended only to the head it was built on; proposing needs a drafting role, reviews a governance role |
 
 The DAG Workbench is planned, not built (register `dag-workbench`).

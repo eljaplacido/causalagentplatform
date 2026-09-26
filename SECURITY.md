@@ -176,6 +176,10 @@ keep in mind when evaluating issues:
   their own endpoints.
 - **Audit log is append-only**. Any path that allows deletion or rewriting of
   `audit_log` entries is critical-severity.
+- **Provenance is append-only**. A path that deletes or rewrites rows of
+  `provenance_entries` or `provenance_erasures`, or that serves a record an
+  erasure tombstone hides, is in scope. An erasure hides records from the API
+  and keeps them in the database; it is not GDPR erasure.
 - **`EpistemicState`** is the single in-flight contract. Code that mutates it
   outside an agent boundary, or smuggles data past it, is in scope.
 - **MCP tools must not crash the server**. A `causal-mcp` tool call answers with

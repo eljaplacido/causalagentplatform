@@ -572,6 +572,7 @@ Intake → CynefinClassify → [Router]
 | **Graph memory** | PostgreSQL / SQLite (`graph_fragments`, `causal_edges`) | Approved causal graph assets, edges, entities, assumptions | Platform lifetime |
 | **Experience buffer** | Durable session snapshots in SQL; Neo4j optionally, when `NEO4J_URI` is set | Past incident patterns, resolutions, outcome feedback | SQL snapshots have no soft-expiry; the Neo4j backend applies a 90-day TTL |
 | **Audit memory** | Append-only PostgreSQL | All agent actions and Guardian verdicts | Immutable, regulatory lifetime |
+| **Provenance memory** | Append-only PostgreSQL (`provenance_entries`, `provenance_erasures`) | W3C PROV records of session runs, Guardian checks and decisions (ADR-002); written by the session and decision routes and by the Guardian beside its audit row, not by the other agents | Kept; an erasure is a tombstone that hides a session's records from the API, never a deletion |
 | **Semantic registry** | PostgreSQL / SQLite | Causal semantic layer objects (entities, treatments, outcomes) | Governed lifecycle |
 
 ### 6.2 Memory Access Patterns
