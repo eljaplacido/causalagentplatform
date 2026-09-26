@@ -63,11 +63,12 @@ from src.semantic_layer.models import (
     UserRef,
 )
 from src.semantic_layer.review_risk import (
+    RECORD_SENSITIVITY_CONTEXT,
     TIER_RANK,
     edge_risk,
     entity_risk,
     fragment_risk,
-    usable_sensitivity,
+    recorded_sensitivity,
 )
 from src.semantic_layer.verdict import GOVERNANCE_APPROVE, RECORD_SENSITIVITY
 from src.semantic_layer.verdict import claim as verdict_claim
@@ -395,19 +396,27 @@ def _sv(v: Any) -> Any:
 # existence of another domain's objects by id.
 
 
-async def _insert_assumption(session: AsyncSession, draft: Assumption) -> None:
+async def _insert_assumption(
+    session: AsyncSession, draft: Assumption, recorded_under: UUID | None = None
+) -> None:
     """INSERT one assumption row, sensitivity result included. The caller holds the
-    verdict that authorises it and commits."""
+    verdict that authorises it and commits.
+
+    ``recorded_under`` is the RECORD_SENSITIVITY verdict the platform recorded the
+    result under, and only record_edge_sensitivity passes it: it is what makes the
+    result count for Guardian PR-007 and the review tiers
+    (review_risk.recorded_sensitivity). propose_draft never does, so a drafter's own
+    result is stored as what the drafter said and counts for nothing."""
     await session.execute(
         typed_text(
             "INSERT INTO assumptions ("
             "  id, statement, assumption_type, scope, justification, "
             "  elicited_from, elicited_by, elicited_at, review_status, domain, "
-            "  sensitivity_result"
+            "  sensitivity_result, sensitivity_verdict_id"
             ") VALUES ("
             "  :id, :statement, :assumption_type, :scope, :justification, "
             "  :elicited_from, :elicited_by, :elicited_at, :review_status, "
-            "  :domain, :sensitivity_result"
+            "  :domain, :sensitivity_result, :sensitivity_verdict_id"
             ")",
             elicited_at=TIMESTAMP,
         ),
@@ -422,13 +431,14 @@ async def _insert_assumption(session: AsyncSession, draft: Assumption) -> None:
             "elicited_at": draft.elicited_at,
             "review_status": _sv(draft.review_status),
             "domain": draft.domain,
-            # What Guardian PR-007 reads for the edges resting on this assumption.
-            # propose_draft used to drop it.
+            # What Guardian PR-007 reads for the edges resting on this assumption --
+            # counted only with the verdict it was recorded under, below.
             "sensitivity_result": (
                 draft.sensitivity_result.model_dump_json()
                 if draft.sensitivity_result is not None
                 else None
             ),
+            "sensitivity_verdict_id": str(recorded_under) if recorded_under else None,
         },
     )
 
@@ -1133,7 +1143,7 @@ class SemanticLayerRegistry:
                 session,
                 verdict_id,
                 subject_id=edge_id,
-                context="record_edge_sensitivity(CausalEdge)",
+                context=RECORD_SENSITIVITY_CONTEXT,
                 action=RECORD_SENSITIVITY,
             )
             current = await session.execute(
@@ -1173,7 +1183,7 @@ class SemanticLayerRegistry:
                 sensitivity_result=result,
                 domain=found["domain"],
             )
-            await _insert_assumption(session, assumption)
+            await _insert_assumption(session, assumption, recorded_under=verdict_id)
 
             refs = [str(r) for r in (json_value(found["assumption_refs"], []) or [])]
             history = _as_lineage(found["lineage"])
@@ -1226,7 +1236,7 @@ class SemanticLayerRegistry:
         Each dict has id, object_type, domain, name, approval_status, created_at,
         risk_tier, risk_reasons and submitted_by. The tier is derived from stored
         fields by src/semantic_layer/review_risk.py (edges by stated confidence and
-        stored sensitivity results, fragments by whether they carry an unapproved
+        the sensitivity results the platform recorded for them, fragments by whether they carry an unapproved
         edge, entities LOW); the queue is ordered CRITICAL, HIGH, MEDIUM, LOW and
         oldest first within a tier. submitted_by is the id in the object's
         created_by, or None where none was recorded (edges drafted before 011).
@@ -1255,14 +1265,22 @@ class SemanticLayerRegistry:
                 )
                 pending.extend({"object_type": obj_type, **dict(r)} for r in rows.mappings())
 
-            sensitivity = await self._sensitivity_by_assumption(session, pending)
+            sensitivity = await recorded_sensitivity(
+                session,
+                {
+                    str(row["id"]): [
+                        str(a) for a in (json_value(row["assumption_refs"], []) or [])
+                    ]
+                    for row in pending
+                    if row["object_type"] == "CausalEdge"
+                },
+            )
             edge_status = await self._edge_status(session, pending, domains)
 
         results: list[dict[str, Any]] = []
         for row in pending:
             if row["object_type"] == "CausalEdge":
-                refs = [str(a) for a in (json_value(row["assumption_refs"], []) or [])]
-                found = [sensitivity[a] for a in refs if a in sensitivity]
+                found = sensitivity[str(row["id"])]
                 tier, reasons = edge_risk(float(row["confidence"]), found)
             elif row["object_type"] == "GraphFragment":
                 edge_ids = [str(e) for e in (json_value(row["edge_ids"], []) or [])]
@@ -1290,35 +1308,6 @@ class SemanticLayerRegistry:
 
         results.sort(key=lambda x: (TIER_RANK[RiskTier(x["risk_tier"])], _moment(x["created_at"])))
         return results[:limit]
-
-    @staticmethod
-    async def _sensitivity_by_assumption(
-        session: AsyncSession, pending: list[dict[str, Any]]
-    ) -> dict[str, SensitivityResult]:
-        """The usable sensitivity result of every assumption a pending edge names."""
-        refs = sorted(
-            {
-                str(a)
-                for row in pending
-                if row["object_type"] == "CausalEdge"
-                for a in (json_value(row["assumption_refs"], []) or [])
-            }
-        )
-        if not refs:
-            return {}
-        t = _ASSUMPTIONS
-        rows = await session.execute(
-            select(t.c.id, t.c.review_status, t.c.sensitivity_result).where(
-                t.c.id.in_(bindparam("ids", expanding=True))
-            ),
-            {"ids": refs},
-        )
-        found: dict[str, SensitivityResult] = {}
-        for r in rows.mappings():
-            result = usable_sensitivity(r["review_status"], r["sensitivity_result"])
-            if result is not None:
-                found[str(r["id"])] = result
-        return found
 
     @staticmethod
     async def _edge_status(

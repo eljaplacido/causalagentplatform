@@ -319,8 +319,17 @@ async def test_a_forged_verdict_reference_does_not_satisfy_pr007(
     elif forgery == "other_action":
         ref = await issue_verdict_for(db_session, edge.id, action_type=GOVERNANCE_APPROVE)
     elif forgery == "other_edge":
+        # Signed and spent the way record_edge_sensitivity spends it -- for another edge.
+        # (The platform's own row for that edge cannot be reused: the column is unique.)
         other = await _edge(registry, verdict_for)
-        _, ref = await _record(registry, db_session, other.id, kernel_sensitivity)
+        ref = await issue_verdict_for(db_session, other.id, action_type=RECORD_SENSITIVITY)
+        await db_session.execute(
+            text(
+                "INSERT INTO verdict_consumption (verdict_id, subject_id, context, consumed_at) "
+                "VALUES (:v, :s, 'record_edge_sensitivity(CausalEdge)', :t)"
+            ),
+            {"v": str(ref), "s": str(other.id), "t": datetime.now(UTC)},
+        )
     elif forgery == "rejected":
         ref = await issue_verdict_for(
             db_session, edge.id, verdict="REJECTED", action_type=RECORD_SENSITIVITY
