@@ -94,7 +94,7 @@ Only 0 is done. `.septacore.json` maps the same codes to `passed`, `failed`,
 
 | Directory | What it holds |
 |---|---|
-| `unit/` | Skills, agents, the registry, the DB factory, connectors (HTTP mocked), provenance and contract models, planning, evaluation, and negative controls for the gate's own scripts (`test_contract_parity.py`, `test_secret_scan.py`, `test_dep_audit.py`, `test_skill_refs.py`), and for the supply-chain checks outside it (`test_py_lock.py`, `test_image_scan.py`, `test_sbom_check.py`) |
+| `unit/` | Skills, agents, the registry, the DB factory, connectors (HTTP mocked), provenance and contract models, planning, evaluation, the incidents API's decision merge (a human decision beside the Guardian verdict, `test_incident_decision_merge.py`), and negative controls for the gate's own scripts (`test_contract_parity.py`, `test_secret_scan.py`, `test_dep_audit.py`, `test_skill_refs.py`), and for the supply-chain checks outside it (`test_py_lock.py`, `test_image_scan.py`, `test_sbom_check.py`) |
 | `integration/` | FastAPI routes through `httpx`: governance approval flow, the reject authority (an APPROVED verdict for `GOVERNANCE_REJECT`, and the governance page's own reject bodies end to end, `test_governance_reject_verdict.py`), recorded reasons, intervention roles, the role matrix and domain isolation (`test_rbac_matrix.py`: every state-changing route has a row, and is refused without a granted role), the database's own domain isolation on PostgreSQL (`test_rls_domain_isolation.py`), session API and store, the decision ledger (checkpoints and anchored verification included) and follow-ups, the assumption registry (`/api/v1/models`), and the MCP server over stdio |
 | `guardian/` | Guardian bypass prevention, verdict binding (signed, subject-bound, single-use), drafts that cannot approve themselves, a risk score and cycle count the caller cannot supply, the `audit_write` skill, and `audit_log` refusing UPDATE and DELETE |
 
@@ -177,13 +177,18 @@ because they are not implemented (registers `scm-counterfactuals`, `causal-disco
 
 ### 3.3 Frontend (`frontend/`)
 
-- **Vitest + React Testing Library** (`src/**/__tests__/*.test.tsx`). Covers the
-  `ThinkingIndicator` latency contract, `ApprovalPanel`, `InterventionCard`, and the governance
-  and incidents pages. The page tests pin the fail-closed contract. They mock the API, so the governance page's
+- **Vitest + React Testing Library** (`src/**/__tests__/*.test.{ts,tsx}`). Covers the
+  `ThinkingIndicator` latency contract, `CynefinBadge`, `ApprovalPanel`, `InterventionCard`, the
+  API client's errors (`src/lib/__tests__/api.test.ts`: the backend's `error` code, 422 field
+  errors, 401/403 as not authorised), and the governance, incidents and analyst pages. The page
+  tests pin the fail-closed contract. They mock the API, so the governance page's
   request bodies are also pinned against the real endpoints by a backend integration test
   (`test_the_governance_pages_own_requests_approve_an_object`). The governance page shows
   only backend-confirmed decisions and audit rows, and the incidents page leaves a decision
-  unchanged and shows the error when the API call fails.
+  unchanged and shows the error when the API call fails. They also pin that each page renders
+  data shaped as the backend sends it and invents none: registry rows with a business domain,
+  stored incidents with P0–P3 or seeded SEV1–SEV4 severities and no effect estimate, and a
+  session result with only a proposed-edge count.
   There is no coverage threshold.
 - **Playwright** (`frontend/e2e/platform.spec.ts`, config `frontend/playwright.config.ts`). It
   runs against a dev server on `localhost:3000` and is **not part of the gate or of CI**. Run it

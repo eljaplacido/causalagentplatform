@@ -32,12 +32,12 @@
           "packages/causal-mcp": "ac8ffe5b31a7fc07dfbfaee6156a0003bc0753f30c9a3a730b99d39de085a913",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "13073839aa692e13a3fbf3a2f9ef79d8b483e8204050ee528754c2c75b1cf124"
+          "docs/CURRENT_STAGE.md": "e76b3185a907a3b48f8c0362622c53a915d6289fcc7cb4449fc94f6e5dca6cdd"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #26 into septa-53: subjects follow main (causal-mcp replaces the deleted backend/mcp_server); reject-authority text and main's content both present)"
+        "by": "Claude (ui-renders-what-backend-sends: re-read after CURRENT_STAGE gained three frontend rows; nothing here describes those screens, unchanged)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "af75c31b1c585fdd11a188a9a06b18c6f71f8b0400996343d6ebfe8e1ade15ab",
-          "backend/src": "5d104e029b81eb564cc22f905604efaa2a7cfcd20482df947a211fc3b871f570",
-          "backend/tests": "aa5434d14e2a7f34e9c385f15c79890c946ceee6bf5e33fc13dd2af7f1f6a8b7",
-          "frontend/src": "d357d66d238bdc673ac0c5215b914bf4a8649a1ea7ca09c9e5bb0052c0b48fcb",
+          "conformance/declared_not_implemented.json": "257308cb44ac839c8ad47ecfdda3bd5fea5f0404da9f1cdb17cf27dacd3c96a3",
+          "backend/src": "211572b1be3ced45905cff9d7e2a8113dbf97127d1332f3e49577691dad39e28",
+          "backend/tests": "2de4b7564bb4cf5f24f16d11698f18a077b3fe5591275ef187108131ee131ac6",
+          "frontend/src": "4410d00e4045e853a0a85dedf14b931917491d6994db3eb6f759216f762dab87",
           "packages": "f39decf6dcae81c0e60801fa80c933c6547de55348adb3fd3867119423414373",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #26 into septa-53: subjects follow main (causal-mcp replaces the deleted backend/mcp_server); reject-authority text and main's content both present)"
+        "by": "Claude (ui-renders-what-backend-sends: three frontend rows added with their tests; review-queue-risk-tier note re-cited to the dash the UI now shows; the gate table stays the 2026-09-25 measurement it says it is)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -309,7 +309,7 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "aa5434d14e2a7f34e9c385f15c79890c946ceee6bf5e33fc13dd2af7f1f6a8b7",
+          "backend/tests": "2de4b7564bb4cf5f24f16d11698f18a077b3fe5591275ef187108131ee131ac6",
           "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
@@ -323,7 +323,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of main into housekeeping: npm-majors text and main's content both present)"
+        "by": "Claude (ui-renders-what-backend-sends: unit/ names the incidents decision-merge test; 3.3 lists the api client, CynefinBadge and analyst tests and the render-what-the-backend-sends contract)"
       }
     },
     "docs/UIX.md": {
@@ -334,12 +334,12 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "frontend/src": "d357d66d238bdc673ac0c5215b914bf4a8649a1ea7ca09c9e5bb0052c0b48fcb"
+          "frontend/src": "4410d00e4045e853a0a85dedf14b931917491d6994db3eb6f759216f762dab87"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-53: ApprovalPanel asks for the Cynefin domain on reject as on approve; the page calls /reject only on an APPROVED verdict)"
+        "by": "Claude (ui-renders-what-backend-sends: review queue shows registry rows as sent with dashes for risk tier and submitter; incidents P0-P3, no effect estimate, humanDecision beside the Guardian verdict; analyst draws no graph; 401/403 read not authorised)"
       }
     },
     "docs/ROADMAP.md": {
@@ -353,13 +353,13 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "6b029f17fceb5b8a44c784ea601802c8d97c1d2ed3ce9a6a92c2600823826501",
-          "conformance/declared_not_implemented.json": "af75c31b1c585fdd11a188a9a06b18c6f71f8b0400996343d6ebfe8e1ade15ab",
-          "docs/CURRENT_STAGE.md": "13073839aa692e13a3fbf3a2f9ef79d8b483e8204050ee528754c2c75b1cf124"
+          "conformance/declared_not_implemented.json": "257308cb44ac839c8ad47ecfdda3bd5fea5f0404da9f1cdb17cf27dacd3c96a3",
+          "docs/CURRENT_STAGE.md": "e76b3185a907a3b48f8c0362622c53a915d6289fcc7cb4449fc94f6e5dca6cdd"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24-#26/#28 into septa-53: reject-authority text kept on main's updated docs; TESTING_CICD rows three-way merged)"
+        "by": "Claude (ui-renders-what-backend-sends: re-read after the review-queue-risk-tier entry was re-cited; the risk tier is still open as septa-36, unchanged)"
       }
     },
     "SECURITY.md": {

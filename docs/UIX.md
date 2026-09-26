@@ -2,7 +2,7 @@
 
 > **Scope:** User experience architecture, design principles, user personas, user stories, and component strategy for the Unified Enterprise Causal Platform. Every new feature must be anchored to an identified persona need before design begins.
 >
-> **Read against `frontend/src` 2026-09-25.** The personas and user stories (§3) are needs, not
+> **Read against `frontend/src` 2026-09-26.** The personas and user stories (§3) are needs, not
 > features, and many are unbuilt. The principles (§1) and the component inventory (§4.2) now
 > say which parts exist. Onboarding walkthroughs (§5) are roadmap.
 
@@ -257,15 +257,35 @@ Components under `frontend/src/components/` are marked **built**. The rest are *
 
 | Group | Built | Not built | Used by |
 |---|---|---|---|
-| **Causal Graph** | `DAGCanvas`, `EdgeProposal`, `NodeDetail`, `GraphDiff`, `FragmentCard` | -- | Analyst, Platform Engineer |
+| **Causal Graph** | `DAGCanvas`, `EdgeProposal`, `NodeDetail`, `GraphDiff`, `FragmentCard` | -- | Workbench (`DAGCanvas`), Analyst and Platform Engineer (`FragmentCard`) |
 | **Incident Response** | `IncidentBrief`, `CynefinBadge` (in `shared/`), `CausalHypothesisList`, `InterventionCard`, `EscalationBanner` | -- | SRE, Incident Commander |
 | **Simulation** | `InterventionComparison` (with `EffectEstimateBar` inside it), `AssumptionDisclosure` | `ScenarioRange` | Business Analyst, SRE |
 | **Governance** | `ReviewQueue`, `ApprovalPanel` | `AuditTrailEntry`, `SensitivityResult`, `AssumptionCard` | Governance Officer, Analyst |
 | **Evidence** | -- | `EvidenceCitation`, `DocumentSnippet`, `StatisticalTestResult`, `ConfidenceMeter` | Analyst, Governance Officer |
 | **Shared** | `EpistemicConfidenceBadge`, `ThinkingIndicator`, `PersonaSelector`, `AuditLogPanel`, `GuardianVerdictBadge` | -- | All |
 
-The review queue shows no real risk tier or submitter (register `review-queue-risk-tier`), and
-the Evidence group has no backend to read from yet (register `agent-skills-are-stubs`).
+The review queue shows no real risk tier or submitter (register `review-queue-risk-tier`): the
+endpoint sends neither, so both columns show a dash, and rows keep the backend's order (oldest
+first). Its domain column is the object's business domain (`devops`, `marketing`) as plain text,
+not a Cynefin badge; the type is the backend's `object_type`, labelled; the submitted time is
+`created_at`, or a dash when there is none. The page enters mock mode (with
+`NEXT_PUBLIC_ENABLE_MOCK_FALLBACK=true`) only when the review queue itself cannot be reached; an
+audit-log failure alone is reported in the audit panel and leaves decisions enabled. Across the
+governance, incidents and analyst pages a 401 or 403 (other than a Guardian block) reads "not
+authorised", not "backend unavailable" or an empty list.
+The Evidence group has no backend to read from yet (register `agent-skills-are-stubs`).
+
+The incidents page speaks the backend's severity vocabulary, P0 to P3, end to end (rows the seed
+script wrote as SEV1 to SEV4 are shown as P0 to P3). No endpoint returns an effect estimate for an
+incident's interventions, so `InterventionCard` says "No effect estimate" rather than drawing an
+interval. The Guardian's verdict and a person's recorded decision are shown side by side; the
+incidents API returns the decision as `humanDecision` and leaves `guardianVerdict` as the
+Guardian issued it. A new incident's id is `INC-` and eight random hex digits.
+
+The analyst page draws no causal graph: the session API returns how many edges a run proposed
+(`proposed_edge_count`) but not the edges, so the page shows that count and the run's
+recommendations as sent. `EdgeProposal`, `NodeDetail` and `GraphDiff` are built, and no page
+renders them since the analyst page stopped drawing a graph it had made up.
 Approving or rejecting in `ApprovalPanel` asks the reviewer to classify the situation
 (Cynefin domain; required, nothing pre-selected, DISORDER not offered): Guardian reads it,
 and without one rule PR-006 refuses the request. A rejection needs an APPROVED verdict for

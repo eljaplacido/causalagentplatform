@@ -242,19 +242,19 @@
           "says": "I want a structured review queue of all draft graph changes awaiting approval, ordered by risk tier"
         }
       ],
-      "reality": "ReviewQueueItem carries no risk tier and no submitter, the queue is not ordered by risk, and the UI fills riskTier \"MEDIUM\" and submittedBy \"system\" for every item.",
+      "reality": "ReviewQueueItem carries no risk tier and no submitter and the queue is not ordered by risk; the UI maps both to null and shows a dash for every item (it used to fill riskTier \"MEDIUM\" and submittedBy \"system\").",
       "evidence": [
         {
           "at": "backend/src/api/governance.py:168",
           "says": "class ReviewQueueItem(BaseModel):"
         },
         {
-          "at": "frontend/src/app/governance/page.tsx:232",
-          "says": "riskTier: \"MEDIUM\","
+          "at": "frontend/src/app/governance/page.tsx:245",
+          "says": "riskTier: null,"
         },
         {
-          "at": "frontend/src/app/governance/page.tsx:233",
-          "says": "submittedBy: \"system\","
+          "at": "frontend/src/app/governance/page.tsx:246",
+          "says": "submittedBy: null,"
         }
       ],
       "leaves_by": {
