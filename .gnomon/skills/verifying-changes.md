@@ -33,6 +33,11 @@ register entry moved to `left_the_list`.
 
 **What it runs**, in order, by the step names the table prints:
 
+- `import-origin` first: every interpreter a later step uses (the backend
+  toolchain, each package environment) must import every `packages/*/src`
+  package from THIS tree (`scripts/import_origin.py`). ci.sh exports those
+  `src/` directories first on `PYTHONPATH` (and `MYPYPATH`) for every step;
+  this step fails if something still resolves to another checkout;
 - `backend-pytest`, the backend suite on SQLite with coverage, and
   `backend-coverage`, its floor;
 - `backend-pytest-postgres`, the same suite on PostgreSQL: the test database
@@ -46,7 +51,15 @@ register entry moved to `left_the_list`.
   tools resolve inside the repo after `npm ci`;
 - one row per Python package under `packages/`, with its own mypy row
   (`causal-core` first, then causal-decision and causal-mcp -- the set is
-  derived from the directory, not listed);
+  derived from the directory, not listed). A row passes only if pytest exits
+  0 with no skips AND two identity checks on its JUnit report pass, judged
+  even when pytest failed: `gate_scope.py package-files` (every
+  `packages/<name>/tests/**/test_*.py` reported a test) and
+  `gate_scope.py gate-markers` (every gate marker of the package in the
+  table below, and every marker its `pyproject.toml` declares
+  pre-registered, has a PASSED test; `real_data` only when its data is
+  cached). The markers reach the report through the
+  `scripts/ci_pytest_plugins/junit_markers.py` plugin;
 - `python-lock`: every `requirements/*.txt` hash-pinned and current with the
   `pyproject.toml` files it was made from (a dependency edit without
   `python3 scripts/py_lock.py relock` fails), and the backend and package
@@ -97,7 +110,9 @@ upgrade that changed what it counts), never to make a red gate green.
 **More checks guard what the tree and the docs say:**
 
 - `scripts/gate_scope.py identity-all` -- every skill module imported by a
-  test, every MCP tool and state-changing route referenced by one. Today's
+  test, every MCP tool and state-changing route referenced by one. (Its
+  `pytest-files`, `package-files` and `gate-markers` modes run inside the
+  backend and package rows, on each run's JUnit report.) Today's
   gaps are named in `scripts/gate-scope-floors.json` (`known_gaps`), next to
   the `floors` each step's count must clear; closing a gap means striking it
   off in the same change, or the gate fails.
@@ -151,6 +166,19 @@ gates above are the verifier's through `.gnomon/ci.sh`, not one by one.
 
 In a git worktree there is no `backend/.venv` or `packages/causal-core/.venv`;
 ci.sh and verify.sh find the main checkout's through git on their own, or
-honour `BACKEND_VENV` / `PKG_VENV_CAUSAL_CORE`. Run by hand there, a venv
-whose editable install points at the main checkout tests THAT tree's code
-unless `PYTHONPATH` puts this tree's `src/` first -- ci.sh does that for you.
+honour `BACKEND_VENV` / `PKG_VENV_CAUSAL_CORE`. Those venvs' editable installs
+of causal_core and causal_decision point at the MAIN checkout, so anything
+that imports them tests THAT tree's code unless `PYTHONPATH` puts every one of
+this tree's `packages/*/src` first. ci.sh and verify.sh export it for all
+their steps, and `import-origin` fails the gate if it did not take. It
+did not always: until the import-origin step, the backend step set no
+PYTHONPATH and the package rows only their own `src/` and causal-core's, so a
+worktree's backend suite imported the main checkout's kernel. By hand, set it
+yourself (from the repo root), or better, make a venv in the worktree:
+
+    export PYTHONPATH="$(ls -d "$PWD"/packages/*/src | paste -sd:)"
+
+Benchmark results record the commit of the checkout the gate's code was
+imported from (`causal_core.bench.t0.git_sha`), not the working directory's;
+a result counts as from a clean tree only if that `git` is a 40-hex commit,
+with no `-dirty`, that is an ancestor of HEAD.
