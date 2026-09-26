@@ -770,19 +770,19 @@
           "says": "| **Concept drift** | Model performance degradation over time | Re-estimation trigger |"
         }
       ],
-      "reality": "The drift functions compute when called directly with data (KL/JS on histograms, a correlation-below-0.5 check labelled causal drift, Jaccard word overlap on definitions, a chi-squared test on labels). DriftMonitorAgent.process, which the periodic sensor runs, hands each skill only a fragment id, so drift_detect returns kl_divergence 0.0 with note no_data_for_comparison, the structure and semantic comparisons return no drift for want of edges and definitions, and concept_drift is passed as False. The pipeline therefore cannot raise a drift alert. Alerts go to an in-process AlertEmitter; the Kafka topic named in its return value has no producer.",
+      "reality": "The drift functions compute when called directly with data (KL/JS on histograms, a correlation-below-0.5 check labelled causal drift, Jaccard word overlap on definitions, a chi-squared test on labels). DriftMonitorAgent.process, which the periodic sensor runs, hands each skill only a fragment id, so drift_detect returns kl_divergence 0.0 with note no_data_for_comparison, the structure and semantic comparisons return no drift for want of edges and definitions, and concept_drift is passed as False. The pipeline therefore cannot raise a drift alert. Alerts go to an in-process AlertEmitter, and the agent's return value names that channel; there is no Kafka producer (until 2026-09-26 it named a platform.drift.alert.v1 topic, and the alert_emit skill claimed an emission it never made).",
       "evidence": [
         {
-          "at": "backend/src/agents/drift_monitor.py:598",
+          "at": "backend/src/agents/drift_monitor.py:607",
           "says": "\"note\": \"no_data_for_comparison\","
         },
         {
-          "at": "backend/src/agents/drift_monitor.py:186",
+          "at": "backend/src/agents/drift_monitor.py:193",
           "says": "concept_drift=False,  # Would need label data"
         },
         {
-          "at": "backend/src/agents/drift_monitor.py:546",
-          "says": "\"topic\": \"platform.drift.alert.v1\","
+          "at": "backend/src/agents/drift_monitor.py:66",
+          "says": "_ALERT_CHANNEL = \"AlertEmitter (in-process)\""
         }
       ],
       "leaves_by": {

@@ -521,7 +521,7 @@ REVIEW_FRAGMENTS = [
         "domain": "devops",
         "description": (
             "Draft: notification-service backpressure propagates to api-gateway "
-            "via shared Redis. Cycle-check pending."
+            "via their shared message queue. Cycle-check pending."
         ),
         "status": FragmentApprovalStatus.DRAFT,
         "tags": ["devops", "backpressure", "draft", "seeded"],

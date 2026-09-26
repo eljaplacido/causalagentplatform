@@ -511,9 +511,10 @@ The agent calls each skill with the fragment id only, and each skill returns "no
 it gets no data: `drift_detect` answers `kl_divergence 0.0` with `note: no_data_for_comparison`,
 and the other two answer `no_fragment_edges` and `no_definitions_for_comparison`. So the periodic
 sensor (`backend/src/sensors/periodic_drift.py`), which runs this agent, cannot raise a drift
-alert today. Alerts go to `AlertEmitter` (logging, callbacks, deduplication). The
-`platform.drift.alert.v1` topic name in the agent's return value is only a label: no Kafka
-producer exists (register `kafka-streaming`).
+alert today. Alerts go to `AlertEmitter` (logging, callbacks, deduplication), and the agent's
+return value names that channel; no Kafka producer exists (register `kafka-streaming`). Until
+2026-09-26 the `alert_emit` skill, dispatched as a skill, never received the state, answered
+`emitted: true` with a `platform.drift.alert.v1` topic name, and emitted nothing.
 
 ### 5.2 Drift Types
 
