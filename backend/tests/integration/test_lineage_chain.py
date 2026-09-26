@@ -33,8 +33,12 @@ Postconditions:
     /api/semantic/drafts, checked and approved through the governance API,
     have a chain naming the source reference and digest, the drafting person
     and agent, the draft verdict (spent on revision 1) and the approval verdict
-    (spent on revision 2) with the rules each cited, the human decision
-    record, and the approver; the chain reports no gaps;
+    (spent on the last revision) with the rules each cited, the human decision
+    record, and the approver; the chain reports no gaps. An edge is approved
+    only with a sensitivity result the platform recorded (Guardian PR-007), so
+    its chain has one more link: the kernel's analysis through POST
+    /api/semantic/edges/{id}/sensitivity, revision 2 (RECORDED), its verdict
+    spent there, and the approval is revision 3;
   - the provenance records held for the draft's session are linked;
   - an object whose draft named no source data cannot be approved (422), the
     approval verdict is not spent, and its chain names the gap;
@@ -58,6 +62,7 @@ from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
+import numpy as np
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
@@ -184,6 +189,35 @@ async def _approve(object_id: str, kind: str, verdict: str) -> Any:
         )
 
 
+async def _record_sensitivity(edge_id: str) -> str:
+    """The kernel's sensitivity analysis of the draft edge, as AUTHOR; returns its verdict.
+
+    Data simulated with a known effect (-3) confounded by `load`, in columns named
+    by the edge's source and target ids, as the route requires.
+    """
+    async with _client(GOVERNANCE) as client:
+        edge = (await client.get(f"/api/semantic/edges/{edge_id}")).json()
+    source, target = edge["source"]["id"], edge["target"]["id"]
+    rng = np.random.default_rng(15)
+    n = 2000
+    load = rng.normal(size=n)
+    treated = (rng.random(n) < 1 / (1 + np.exp(-load))).astype(float)
+    minutes = 10 + 2 * load - 3.0 * treated + rng.normal(size=n)
+    async with _client(AUTHOR) as client:
+        resp = await client.post(
+            f"/api/semantic/edges/{edge_id}/sensitivity",
+            json={
+                "data": {"load": load.tolist(), source: treated.tolist(),
+                         target: minutes.tolist()},
+                "adjust_for": ["load"],
+                "cynefin_domain": "COMPLICATED",
+            },
+        )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["assumption_id"], resp.json()
+    return str(resp.json()["audit_entry_id"])
+
+
 async def _lineage(user: dict[str, Any], kind: str, object_id: str) -> Any:
     async with _client(user) as client:
         return await client.get(f"/api/semantic/objects/{kind}/{object_id}/lineage")
@@ -200,6 +234,8 @@ async def test_an_approved_object_carries_lineage_from_source_to_approver(
     session = f"api-draft-{AUTHOR['uid']}"
     record = ProvenanceRecord(session_id=session, agent_id="api-draft-submission")
     await ProvenanceStore().append([record])
+    recorded = await _record_sensitivity(object_id) if kind == "CausalEdge" else None
+    approved_at = 3 if recorded else 2
     approve_verdict = await _check(object_id, kind)
     resp = await _approve(object_id, kind, approve_verdict)
     assert resp.status_code == 200, resp.text
@@ -209,7 +245,7 @@ async def test_an_approved_object_carries_lineage_from_source_to_approver(
     chain = LineageChain.model_validate(got.json())
 
     assert chain.object_type == kind and str(chain.object_id) == object_id
-    assert chain.approval_status == "APPROVED" and chain.revision == 2
+    assert chain.approval_status == "APPROVED" and chain.revision == approved_at
 
     # Source data, by reference and digest.
     assert chain.source_data == SOURCE
@@ -229,7 +265,10 @@ async def test_an_approved_object_carries_lineage_from_source_to_approver(
     assert drafted.action_type == "DRAFT_SUBMISSION"
     assert drafted.spent_on_revision == 1
     assert approved.action_type == "GOVERNANCE_APPROVE"
-    assert approved.spent_on_revision == 2
+    assert approved.spent_on_revision == approved_at
+    if recorded:
+        assert by_id[recorded].action_type == "RECORD_SENSITIVITY"
+        assert by_id[recorded].spent_on_revision == 2
     for verdict in (drafted, approved):
         assert verdict.guardian_verdict == "APPROVED"
         assert verdict.signed is True
@@ -244,10 +283,13 @@ async def test_an_approved_object_carries_lineage_from_source_to_approver(
     assert chain.approved_by.person is not None
     assert chain.approved_by.person.id == GOVERNANCE["uid"]
     assert str(chain.approved_by.verdict_id) == approve_verdict
-    assert chain.approved_by.revision == 2
+    assert chain.approved_by.revision == approved_at
 
     # The history it was assembled from, and the provenance it links to.
-    assert [(s.revision, s.change) for s in chain.steps] == [(1, "PROPOSED"), (2, "APPROVED")]
+    expected_steps = [(1, "PROPOSED"), (2, "RECORDED"), (3, "APPROVED")] if recorded else [
+        (1, "PROPOSED"), (2, "APPROVED")
+    ]
+    assert [(s.revision, s.change) for s in chain.steps] == expected_steps
     assert session in chain.provenance_sessions
     assert record.id in chain.provenance_records
 
@@ -258,7 +300,7 @@ async def test_an_approved_object_carries_lineage_from_source_to_approver(
         history = await client.get(f"/api/semantic/objects/{kind}/{object_id}/versions")
     assert history.status_code == 200, history.text
     versions = [SemanticObjectVersion.model_validate(v) for v in history.json()]
-    assert [v.revision for v in versions] == [1, 2]
+    assert [v.revision for v in versions] == [r for r, _ in expected_steps]
     assert versions[0].state["approval_status"] == "DRAFT"
 
 
