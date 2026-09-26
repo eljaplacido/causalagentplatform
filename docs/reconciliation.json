@@ -28,16 +28,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/pyproject.toml": "cdabd6c6e24ab6d579d2aa1de3d0d6db5b8802e87b10489cc3df43a2d34a47ed",
-          "backend/mcp_server": "5eecdddf78bd1cb465d4cbcf0709d7bdecbceacff5c49983ecad939ce2334052",
-          "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
+          "backend/pyproject.toml": "25968f523349c1421cca680f16b6f6237cbfec92deaba9eef7821cc59969bdc8",
+          "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "4e1cc7e20dc230fc6c93e5571747fdc686c7c7b721bf0890f573b36f8a82883d"
+          "docs/CURRENT_STAGE.md": "2c546e5254f3fe3be88f0251a1831fb0555d98eadf42d5702bd9354f43b44b97",
+          "packages/causal-mcp": "f86dd08d8fef8f9b09adab83770f37de1234101a5c84ff11ef0427bdab2507d1"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-12: T9 row added with figures bound in doc-figures.json; nothing else it quotes moved)"
+        "by": "Claude (merge #53 into #37, contract renumbered 0.12.0: README and benchmarks tables carry main's T8 v2 row and this branch's T9 row; AGENTS takes main's deleted-legacy-server text; CURRENT_STAGE sensitivity row implemented, infra rows from #29, package counts 233/118/41 from this merged tree's gate; ROADMAP septa-12 done; QUICKSTART names no kernel version)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,18 +53,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "a6c6b6f8b75f81f82a092850d1524f7a6d75db82896d4cebc12f45feb0bea502",
-          "backend/src": "1d2236ca27953c3b9409abd626c343668d415b40df86ed8fa1ca087f7465a3fc",
-          "backend/mcp_server": "5eecdddf78bd1cb465d4cbcf0709d7bdecbceacff5c49983ecad939ce2334052",
-          "backend/tests": "67cb75c4e8c580f5e08d87193a957eec96dccd1961bfb7b23044c5f1712bda43",
-          "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
-          "packages": "bf0a04b50df91098b2478622221cfbfbd954dd7ab23ccbd2cff47556b48cf4d7",
+          "conformance/declared_not_implemented.json": "de5531248f26ab5ca5b53a637d04cdcc0542b28ae4b952f162aaaa48f862cf1d",
+          "backend/src": "3bcb56bde755405e9db09f3fbaf7383091e7145250584ce38bc3b1252f40b327",
+          "backend/tests": "25b5a9200fed6b42974c8b366844b5c30102f60ca8ce478e3a45c258fb4e28a8",
+          "frontend/src": "f309f78f9a388af875805eefabe52267de66468efb047a2c8e924303e5cee552",
+          "packages": "57d0118754020f9c65c35bfbdeb20eb3e33bd3e17de0094ee79ef5f636eea00c",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-12: sensitivity row implemented, sensitivity-one-click-ui row added, T9 in the gates list, package counts 226/118/41 from this branch's gate)"
+        "by": "Claude (merge #53 into #37, contract renumbered 0.12.0: README and benchmarks tables carry main's T8 v2 row and this branch's T9 row; AGENTS takes main's deleted-legacy-server text; CURRENT_STAGE sensitivity row implemented, infra rows from #29, package counts 233/118/41 from this merged tree's gate; ROADMAP septa-12 done; QUICKSTART names no kernel version)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -147,16 +146,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/agents": "da5c215c5171c068c67a801a94f87cdd5f13c84adea26e83f4dea4c9b26a3005",
+          "backend/src/agents": "d16986c9824b0a6d82372f6abefe0624f41f0dce75d36a3fc4bc712268656139",
           "backend/src/skills": "b0bcef79c64f6b8d2f35f87f92095d54c52cec7d972a4cf1520b95fcc0d68347",
-          "backend/mcp_server": "5eecdddf78bd1cb465d4cbcf0709d7bdecbceacff5c49983ecad939ce2334052",
           "backend/src/orchestration": "026e61993e2c3e51962380e4d4e957cf5d26e650455679bd5e7cdce75c31c2f4",
-          "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957"
+          "prompts": "664b74cd837a44513e10dc0a7a5c44a3015816f928c93d4f7831320b0231e50f",
+          "packages/causal-mcp": "f86dd08d8fef8f9b09adab83770f37de1234101a5c84ff11ef0427bdab2507d1"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-12: the sensitivity_analysis skill now returns the kernel's Rosenbaum gamma* from matched pair differences, so line 375 is true of the skill; the legacy tool row says it takes no pairs)"
+        "by": "Claude (merge #53 into #37, contract renumbered 0.12.0: README and benchmarks tables carry main's T8 v2 row and this branch's T9 row; AGENTS takes main's deleted-legacy-server text; CURRENT_STAGE sensitivity row implemented, infra rows from #29, package counts 233/118/41 from this merged tree's gate; ROADMAP septa-12 done; QUICKSTART names no kernel version)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -251,14 +250,14 @@
         "on": "2026-09-26",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
-          "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
-          ".github": "0a8d8e713831ebec1cc8e44c2f719c44085c453b44baed2d4607ac2fa3df132b",
-          ".gnomon": "21e38593027751498a267733d67b4d384793dc71555f63880b1cb8fd1a56f2eb"
+          "prompts": "664b74cd837a44513e10dc0a7a5c44a3015816f928c93d4f7831320b0231e50f",
+          ".github": "db12d364ec234ff9774297f81b08649ec310d368304c47fbfcfa04138f630ac4",
+          ".gnomon": "f6fac09d83a50379f74d5f7c04d12ff0127b06e01bc5f9a5b083abd202f6fd5d"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-12: the .gnomon change is the T9 gate row and match patterns; the page names the surface files, still true)"
+        "by": "Claude (merge #53 into #37, contract renumbered 0.12.0: README and benchmarks tables carry main's T8 v2 row and this branch's T9 row; AGENTS takes main's deleted-legacy-server text; CURRENT_STAGE sensitivity row implemented, infra rows from #29, package counts 233/118/41 from this merged tree's gate; ROADMAP septa-12 done; QUICKSTART names no kernel version)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -278,17 +277,17 @@
         "sha256": {
           "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
-          "backend/pyproject.toml": "cdabd6c6e24ab6d579d2aa1de3d0d6db5b8802e87b10489cc3df43a2d34a47ed",
-          "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
+          "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
+          "backend/pyproject.toml": "25968f523349c1421cca680f16b6f6237cbfec92deaba9eef7821cc59969bdc8",
+          "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
-          ".env.example": "f5dbf40f551d60b4b91d5bbaa9b36a2404f89536421fe51b8bcbf17a6ae1258f",
+          ".env.example": "10b19ac63993ff640ea47936fb99d53938077413273463afe5e5661313451c97",
           "backend/scripts": "36d9419c9cb543ee85703a4d4008be1c16e383c5d7567d9c7bcb6dce92ad64da"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-12: backend pin moved to causal-core>=0.11.0; the page states no kernel version; the pytest line names T4-T9)"
+        "by": "Claude (merge #53 into #37, contract renumbered 0.12.0: README and benchmarks tables carry main's T8 v2 row and this branch's T9 row; AGENTS takes main's deleted-legacy-server text; CURRENT_STAGE sensitivity row implemented, infra rows from #29, package counts 233/118/41 from this merged tree's gate; ROADMAP septa-12 done; QUICKSTART names no kernel version)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -309,22 +308,22 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          ".github/workflows": "1ae0fadaa874c419905d5c24ebadf5ccca68705dc7d83057ea81682712fae31b",
-          "backend/tests": "67cb75c4e8c580f5e08d87193a957eec96dccd1961bfb7b23044c5f1712bda43",
-          "backend/pyproject.toml": "cdabd6c6e24ab6d579d2aa1de3d0d6db5b8802e87b10489cc3df43a2d34a47ed",
+          ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
+          "backend/tests": "25b5a9200fed6b42974c8b366844b5c30102f60ca8ce478e3a45c258fb4e28a8",
+          "backend/pyproject.toml": "25968f523349c1421cca680f16b6f6237cbfec92deaba9eef7821cc59969bdc8",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
-          ".gnomon/ci.sh": "8379e43234946f44d8e569a68c60d42923500ded3012d88bf2a477f5ebecf8aa",
-          "scripts": "4d3baafd18f8d51391b68f55f31cc316a9d334c254ddee6caddfe1d29e08dc4d",
+          ".gnomon/ci.sh": "a05e016e87f09e27989ffc185d06ad2b55c6d31f4e9b9cc2954b8cfdf7a40e45",
+          "scripts": "30ef17e361bc7a7866db9a41e3629c0b5982967919205d011301abbd9d18b7a9",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
-          "benchmarks": "9884edad5a741e949b8045474479a6541d7847f105343bcbf095b2eff90bea34",
-          "packages/causal-core/tests": "20debc74cae881c1cc0d6a7bbe0716acc1076786916834fecf6ad3fff8ba85cf",
-          "packages/causal-decision/tests": "61bde7786a6158cc99f269fd057908ce3959e5e812ac5d8b4c82c11c2c7200b4"
+          "benchmarks": "7a9590d99bb9f48cd1e369107310deda2d31874be59b1a0d142dc11f0d170348",
+          "packages/causal-core/tests": "4496d9663daa2b71e5a548c0ac79983c4ba33380ac0829eb3232292f23303ee1",
+          "packages/causal-decision/tests": "c7ccd2d2b91e1ec53a3eb456c70f670268b2ec1f8f431e161f399360b94ef7de"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-12: T9 row, tests/t9 in the seeded-defect list, the no-correctness-tests paragraph no longer names Rosenbaum bounds)"
+        "by": "Claude (merge #53 into #37, contract renumbered 0.12.0: README and benchmarks tables carry main's T8 v2 row and this branch's T9 row; AGENTS takes main's deleted-legacy-server text; CURRENT_STAGE sensitivity row implemented, infra rows from #29, package counts 233/118/41 from this merged tree's gate; ROADMAP septa-12 done; QUICKSTART names no kernel version)"
       }
     },
     "docs/UIX.md": {
@@ -353,14 +352,14 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "packages/causal-core/src/causal_core": "0751f8b9195a1a974834f8f1bed0de2dfd57cac8cc2356a0be300d5fc7c412dd",
-          "conformance/declared_not_implemented.json": "a6c6b6f8b75f81f82a092850d1524f7a6d75db82896d4cebc12f45feb0bea502",
-          "docs/CURRENT_STAGE.md": "4e1cc7e20dc230fc6c93e5571747fdc686c7c7b721bf0890f573b36f8a82883d"
+          "packages/causal-core/src/causal_core": "65b5b9fe4d2bc339a536717c0fdd0f252483ac9e136b0600914ff3590a977c45",
+          "conformance/declared_not_implemented.json": "de5531248f26ab5ca5b53a637d04cdcc0542b28ae4b952f162aaaa48f862cf1d",
+          "docs/CURRENT_STAGE.md": "2c546e5254f3fe3be88f0251a1831fb0555d98eadf42d5702bd9354f43b44b97"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-12: robustness row names Rosenbaum bounds (T9) and the missing weighted-estimator sensitivity model; septa-12 marked done)"
+        "by": "Claude (merge #53 into #37, contract renumbered 0.12.0: README and benchmarks tables carry main's T8 v2 row and this branch's T9 row; AGENTS takes main's deleted-legacy-server text; CURRENT_STAGE sensitivity row implemented, infra rows from #29, package counts 233/118/41 from this merged tree's gate; ROADMAP septa-12 done; QUICKSTART names no kernel version)"
       }
     },
     "SECURITY.md": {
