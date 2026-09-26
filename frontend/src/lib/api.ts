@@ -756,6 +756,8 @@ export interface RealizationResponse {
   intervals_overlap: boolean | null;
   cleared_worthwhile: boolean | null;
   realized_harm: boolean | null;
+  /** Did the predicted interval clear the worthwhile bar; null before causal-decision 0.5.0. */
+  claimed_worthwhile?: boolean | null;
 }
 
 /** POST /api/v1/decisions/{entry_digest}/followup (decisions.py FollowUpResponse). */
@@ -771,15 +773,60 @@ export type FollowUpColumns = Record<string, Array<number | string | boolean | n
  * GET /api/v1/decisions/calibration (causal_decision.outcome.CalibrationReport).
  * Every rate is null when nothing stands behind it.
  */
+/**
+ * causal_decision.outcome.RateEstimate: a proportion with its Clopper-Pearson
+ * interval, or the reason none is stated (`rate` and `ci` are null exactly
+ * when `refused` says why). The counts are always there.
+ */
+export interface RateEstimateResponse {
+  successes: number;
+  denominator: number;
+  rate: number | null;
+  ci: [number, number] | null;
+  level: number;
+  method: string;
+  refused: string | null;
+}
+
+/** causal_decision.outcome.RateBounds: worst-case bounds with the undecidable counted as unknowns. */
+export interface RateBoundsResponse {
+  successes: number;
+  unresolved: number;
+  denominator: number;
+  lower: number | null;
+  upper: number | null;
+  ci: [number, number] | null;
+  level: number;
+  method: string;
+  refused: string | null;
+}
+
+/** causal_decision.outcome.PairedComparison: claimed vs confirmed worthwhile (McNemar). */
+export interface PairedComparisonResponse {
+  n_pairs: number;
+  claimed_not_confirmed: number;
+  confirmed_not_claimed: number;
+  min_discordant: number;
+  alpha: number;
+  p_value: number | null;
+  status: "difference" | "no_difference_detected" | "could_not_resolve";
+  detail: string;
+}
+
+/** GET /api/v1/decisions/calibration (causal_decision.outcome.CalibrationReport). */
 export interface CalibrationReportResponse {
   n_decisions: number;
   n_acted: number;
   n_decidable: number;
   n_undecidable: number;
   undecidable_by_reason: Record<string, number>;
-  point_in_interval_rate: number | null;
-  interval_overlap_rate: number | null;
-  acted_and_worthwhile_rate: number | null;
+  min_followups: number;
+  point_in_interval_rate: RateEstimateResponse;
+  interval_overlap_rate: RateEstimateResponse;
+  acted_and_worthwhile_rate: RateEstimateResponse;
+  acted_and_harmful_rate: RateEstimateResponse;
+  acted_worthwhile_bounds: RateBoundsResponse;
+  worthwhile_claimed_vs_confirmed: PairedComparisonResponse;
   acted_and_harmful: number;
   not_acted_but_worthwhile: number;
   by_verdict: Record<string, number>;

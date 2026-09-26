@@ -48,6 +48,7 @@ import { CausalApiError } from "@/lib/api";
 import {
   CALIBRATION_EMPTY,
   CALIBRATION_ONE,
+  CALIBRATION_TWELVE,
   CHAIN_OK,
   REALIZATION,
   REALIZATION_EXPLANATION,
@@ -119,28 +120,47 @@ describe("decision ledger page", () => {
     expect(within(detail).queryByRole("button", { name: /measure the follow-up/i })).toBeNull();
   });
 
-  it("shows null rates as a dash when no follow-up stands behind them", async () => {
+  // The report's rates are RateEstimate objects (causal_decision 0.5): counts
+  // always, a rate and Clopper-Pearson interval only from min_followups (10)
+  // up, and otherwise the reason none is stated. The panel used to render each
+  // object as "[object Object]" (seen on a live backend, 2026-09-26).
+  it("shows a rate stated below the minimum as a dash, with its counts and the reason", async () => {
     renderPage();
     const panel = await screen.findByTestId("calibration-panel");
     expect(await within(panel).findByTestId("calibration-empty")).toBeInTheDocument();
-    for (const key of ["point_in_interval_rate", "interval_overlap_rate", "acted_and_worthwhile_rate"]) {
+    for (const key of ["point_in_interval_rate", "interval_overlap_rate", "acted_and_worthwhile_rate", "acted_and_harmful_rate"]) {
       const cell = within(panel).getByTestId(`calibration-${key}`);
       expect(cell).toHaveTextContent("—");
+      expect(cell).toHaveTextContent("0 of 0");
+      expect(cell).toHaveTextContent(/states none below 10/);
       expect(cell).not.toHaveTextContent("%");
-      expect(cell).not.toHaveTextContent(/\b0\b/);
+      expect(cell).not.toHaveTextContent("[object Object]");
     }
     expect(within(panel).getByTestId("calibration-n_decisions")).toHaveTextContent("0");
   });
 
-  it("shows a calibration report's rates once follow-ups exist", async () => {
+  it("states no rate from one follow-up, only its counts", async () => {
     decisionsApiMock.calibration.mockResolvedValue(CALIBRATION_ONE);
     renderPage();
     const panel = await screen.findByTestId("calibration-panel");
-    expect(await within(panel).findByTestId("calibration-point_in_interval_rate")).toHaveTextContent(
-      String(CALIBRATION_ONE.point_in_interval_rate) // 1: an integer is shown whole
-    );
+    const cell = await within(panel).findByTestId("calibration-point_in_interval_rate");
+    expect(cell).toHaveTextContent("—");
+    expect(cell).toHaveTextContent("1 of 1");
     expect(within(panel).queryByTestId("calibration-empty")).toBeNull();
     expect(within(panel).getByText(CALIBRATION_ONE.note, { exact: false })).toBeInTheDocument();
+  });
+
+  it("shows a stated rate with its counts and interval, as the kernel computed them", async () => {
+    // Known truth: 9 of the 12 follow-ups have the realized point inside the
+    // predicted interval, so 0.75; [0.4281, 0.9451] is the 95% Clopper-Pearson
+    // interval for 9/12, computed by causal_decision.outcome.report.
+    decisionsApiMock.calibration.mockResolvedValue(CALIBRATION_TWELVE);
+    renderPage();
+    const panel = await screen.findByTestId("calibration-panel");
+    const cell = await within(panel).findByTestId("calibration-point_in_interval_rate");
+    expect(cell).toHaveTextContent("0.75");
+    expect(cell).toHaveTextContent("9 of 12");
+    expect(cell).toHaveTextContent("95% CI [0.4281, 0.9451]");
   });
 
   it("shows the backend's reason when the ledger cannot be read, and no rows", async () => {

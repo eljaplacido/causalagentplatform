@@ -273,30 +273,229 @@ export const CALIBRATION_EMPTY: CalibrationReportResponse = {
   "n_decidable": 0,
   "n_undecidable": 0,
   "undecidable_by_reason": {},
-  "point_in_interval_rate": null,
-  "interval_overlap_rate": null,
-  "acted_and_worthwhile_rate": null,
+  "min_followups": 10,
+  "point_in_interval_rate": {
+    "successes": 0,
+    "denominator": 0,
+    "rate": null,
+    "ci": null,
+    "level": 0.95,
+    "method": "clopper-pearson",
+    "refused": "0 follow-ups behind this figure; the report states none below 10, because a rate from so few is mostly noise to quote"
+  },
+  "interval_overlap_rate": {
+    "successes": 0,
+    "denominator": 0,
+    "rate": null,
+    "ci": null,
+    "level": 0.95,
+    "method": "clopper-pearson",
+    "refused": "0 follow-ups behind this figure; the report states none below 10, because a rate from so few is mostly noise to quote"
+  },
+  "acted_and_worthwhile_rate": {
+    "successes": 0,
+    "denominator": 0,
+    "rate": null,
+    "ci": null,
+    "level": 0.95,
+    "method": "clopper-pearson",
+    "refused": "0 follow-ups behind this figure; the report states none below 10, because a rate from so few is mostly noise to quote"
+  },
+  "acted_and_harmful_rate": {
+    "successes": 0,
+    "denominator": 0,
+    "rate": null,
+    "ci": null,
+    "level": 0.95,
+    "method": "clopper-pearson",
+    "refused": "0 follow-ups behind this figure; the report states none below 10, because a rate from so few is mostly noise to quote"
+  },
+  "acted_worthwhile_bounds": {
+    "successes": 0,
+    "unresolved": 0,
+    "denominator": 0,
+    "lower": null,
+    "upper": null,
+    "ci": null,
+    "level": 0.95,
+    "method": "clopper-pearson worst-case bounds",
+    "refused": "0 acted decisions behind this figure; the report states none below 10, because a rate from so few is mostly noise to quote"
+  },
+  "worthwhile_claimed_vs_confirmed": {
+    "n_pairs": 0,
+    "claimed_not_confirmed": 0,
+    "confirmed_not_claimed": 0,
+    "min_discordant": 6,
+    "alpha": 0.05,
+    "p_value": null,
+    "status": "could_not_resolve",
+    "detail": "0 paired follow-ups behind this figure; the report states none below 10, because a rate from so few is mostly noise to quote"
+  },
   "acted_and_harmful": 0,
   "not_acted_but_worthwhile": 0,
   "by_verdict": {},
-  "note": "Rates are over decidable realizations only, and the undecidable ones are counted beside them because they are not missing at random: a decision that was acted on everywhere is exactly the one whose effect can no longer be measured. `point_in_interval_rate` is not interval coverage of the truth -- the realized figure is itself an estimate, with error this comparison ignores; `interval_overlap_rate` is the weaker statement that accounts for both."
+  "note": "Rates are over decidable realizations only, each with a Clopper-Pearson interval, and none is stated below `min_followups`. The undecidable ones are counted beside them because they are not missing at random: a decision that was acted on everywhere is exactly the one whose effect can no longer be measured -- `acted_worthwhile_bounds` carries them as unknowns. `point_in_interval_rate` is not interval coverage of the truth -- the realized figure is itself an estimate, with error this comparison ignores; `interval_overlap_rate` is the weaker statement that accounts for both. Follow-ups are treated as independent; decisions that share incidents or seasons would make every interval here too narrow. The report's arithmetic is gated on simulated streams (C0); no figure here is evidence about real operations until real follow-ups stand behind it."
 };
 
+/** report([REALIZATION]): one follow-up, below min_followups, so no rate is stated. */
 export const CALIBRATION_ONE: CalibrationReportResponse = {
   "n_decisions": 1,
   "n_acted": 1,
   "n_decidable": 1,
   "n_undecidable": 0,
   "undecidable_by_reason": {},
-  "point_in_interval_rate": 1.0,
-  "interval_overlap_rate": 1.0,
-  "acted_and_worthwhile_rate": 1.0,
+  "min_followups": 10,
+  "point_in_interval_rate": {
+    "successes": 1,
+    "denominator": 1,
+    "rate": null,
+    "ci": null,
+    "level": 0.95,
+    "method": "clopper-pearson",
+    "refused": "1 follow-ups behind this figure; the report states none below 10, because a rate from so few is mostly noise to quote"
+  },
+  "interval_overlap_rate": {
+    "successes": 1,
+    "denominator": 1,
+    "rate": null,
+    "ci": null,
+    "level": 0.95,
+    "method": "clopper-pearson",
+    "refused": "1 follow-ups behind this figure; the report states none below 10, because a rate from so few is mostly noise to quote"
+  },
+  "acted_and_worthwhile_rate": {
+    "successes": 1,
+    "denominator": 1,
+    "rate": null,
+    "ci": null,
+    "level": 0.95,
+    "method": "clopper-pearson",
+    "refused": "1 follow-ups behind this figure; the report states none below 10, because a rate from so few is mostly noise to quote"
+  },
+  "acted_and_harmful_rate": {
+    "successes": 0,
+    "denominator": 1,
+    "rate": null,
+    "ci": null,
+    "level": 0.95,
+    "method": "clopper-pearson",
+    "refused": "1 follow-ups behind this figure; the report states none below 10, because a rate from so few is mostly noise to quote"
+  },
+  "acted_worthwhile_bounds": {
+    "successes": 1,
+    "unresolved": 0,
+    "denominator": 1,
+    "lower": null,
+    "upper": null,
+    "ci": null,
+    "level": 0.95,
+    "method": "clopper-pearson worst-case bounds",
+    "refused": "1 acted decisions behind this figure; the report states none below 10, because a rate from so few is mostly noise to quote"
+  },
+  "worthwhile_claimed_vs_confirmed": {
+    "n_pairs": 0,
+    "claimed_not_confirmed": 0,
+    "confirmed_not_claimed": 0,
+    "min_discordant": 6,
+    "alpha": 0.05,
+    "p_value": null,
+    "status": "could_not_resolve",
+    "detail": "0 paired follow-ups behind this figure; the report states none below 10, because a rate from so few is mostly noise to quote"
+  },
   "acted_and_harmful": 0,
   "not_acted_but_worthwhile": 0,
   "by_verdict": {
     "act": 1
   },
-  "note": "Rates are over decidable realizations only, and the undecidable ones are counted beside them because they are not missing at random: a decision that was acted on everywhere is exactly the one whose effect can no longer be measured. `point_in_interval_rate` is not interval coverage of the truth -- the realized figure is itself an estimate, with error this comparison ignores; `interval_overlap_rate` is the weaker statement that accounts for both."
+  "note": "Rates are over decidable realizations only, each with a Clopper-Pearson interval, and none is stated below `min_followups`. The undecidable ones are counted beside them because they are not missing at random: a decision that was acted on everywhere is exactly the one whose effect can no longer be measured -- `acted_worthwhile_bounds` carries them as unknowns. `point_in_interval_rate` is not interval coverage of the truth -- the realized figure is itself an estimate, with error this comparison ignores; `interval_overlap_rate` is the weaker statement that accounts for both. Follow-ups are treated as independent; decisions that share incidents or seasons would make every interval here too narrow. The report's arithmetic is gated on simulated streams (C0); no figure here is evidence about real operations until real follow-ups stand behind it."
+};
+
+/** report() over twelve acted, decidable follow-ups, the realized point inside the predicted interval in 9: rates and Clopper-Pearson intervals stated. */
+export const CALIBRATION_TWELVE: CalibrationReportResponse = {
+  "n_decisions": 12,
+  "n_acted": 12,
+  "n_decidable": 12,
+  "n_undecidable": 0,
+  "undecidable_by_reason": {},
+  "min_followups": 10,
+  "point_in_interval_rate": {
+    "successes": 9,
+    "denominator": 12,
+    "rate": 0.75,
+    "ci": [
+      0.4281415381218109,
+      0.9451393554720072
+    ],
+    "level": 0.95,
+    "method": "clopper-pearson",
+    "refused": null
+  },
+  "interval_overlap_rate": {
+    "successes": 12,
+    "denominator": 12,
+    "rate": 1.0,
+    "ci": [
+      0.7353515306029488,
+      1.0
+    ],
+    "level": 0.95,
+    "method": "clopper-pearson",
+    "refused": null
+  },
+  "acted_and_worthwhile_rate": {
+    "successes": 12,
+    "denominator": 12,
+    "rate": 1.0,
+    "ci": [
+      0.7353515306029488,
+      1.0
+    ],
+    "level": 0.95,
+    "method": "clopper-pearson",
+    "refused": null
+  },
+  "acted_and_harmful_rate": {
+    "successes": 0,
+    "denominator": 12,
+    "rate": 0.0,
+    "ci": [
+      0.0,
+      0.2646484693970512
+    ],
+    "level": 0.95,
+    "method": "clopper-pearson",
+    "refused": null
+  },
+  "acted_worthwhile_bounds": {
+    "successes": 12,
+    "unresolved": 0,
+    "denominator": 12,
+    "lower": 1.0,
+    "upper": 1.0,
+    "ci": [
+      0.7353515306029488,
+      1.0
+    ],
+    "level": 0.95,
+    "method": "clopper-pearson worst-case bounds",
+    "refused": null
+  },
+  "worthwhile_claimed_vs_confirmed": {
+    "n_pairs": 0,
+    "claimed_not_confirmed": 0,
+    "confirmed_not_claimed": 0,
+    "min_discordant": 6,
+    "alpha": 0.05,
+    "p_value": null,
+    "status": "could_not_resolve",
+    "detail": "0 paired follow-ups behind this figure; the report states none below 10, because a rate from so few is mostly noise to quote"
+  },
+  "acted_and_harmful": 0,
+  "not_acted_but_worthwhile": 0,
+  "by_verdict": {
+    "act": 12
+  },
+  "note": "Rates are over decidable realizations only, each with a Clopper-Pearson interval, and none is stated below `min_followups`. The undecidable ones are counted beside them because they are not missing at random: a decision that was acted on everywhere is exactly the one whose effect can no longer be measured -- `acted_worthwhile_bounds` carries them as unknowns. `point_in_interval_rate` is not interval coverage of the truth -- the realized figure is itself an estimate, with error this comparison ignores; `interval_overlap_rate` is the weaker statement that accounts for both. Follow-ups are treated as independent; decisions that share incidents or seasons would make every interval here too narrow. The report's arithmetic is gated on simulated streams (C0); no figure here is evidence about real operations until real follow-ups stand behind it."
 };
 
 export const MODEL_V1: ModelVersionResponse = {

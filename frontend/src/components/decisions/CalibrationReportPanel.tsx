@@ -1,15 +1,16 @@
 /**
  * CalibrationReportPanel — GET /api/v1/decisions/calibration, as returned.
  *
- * Predicted against measured, over every follow-up taken. Every rate is the
- * backend's, shown in the kernel's number format with the exact value as the
- * title; a null rate is shown as "—" with the reason the backend gives for it
- * (nothing decidable stands behind it), never as 0% or 100%. The undecidable follow-ups are counted beside the rates, by reason,
- * because they are not missing at random.
+ * Predicted against measured, over every follow-up taken. Each rate is the
+ * kernel's RateEstimate: its counts always, and a rate with its Clopper-Pearson
+ * interval only from `min_followups` up. Figures are in the kernel's number
+ * format with the exact value as the title; a rate the report does not state is
+ * "—" with the reason it gives, never 0% or 100%. The undecidable follow-ups are
+ * counted beside the rates, by reason, because they are not missing at random.
  */
 
 import { AlertTriangle, RefreshCw } from "lucide-react";
-import type { CalibrationReportResponse } from "@/lib/api";
+import type { CalibrationReportResponse, RateEstimateResponse } from "@/lib/api";
 import { formatFigure, verbatim } from "@/lib/utils";
 
 export interface CalibrationReportPanelProps {
@@ -18,11 +19,37 @@ export interface CalibrationReportPanelProps {
   error: Error | null;
 }
 
-const RATES: ReadonlyArray<{ key: keyof CalibrationReportResponse; label: string }> = [
+type RateKey =
+  | "point_in_interval_rate"
+  | "interval_overlap_rate"
+  | "acted_and_worthwhile_rate"
+  | "acted_and_harmful_rate";
+
+const RATES: ReadonlyArray<{ key: RateKey; label: string }> = [
   { key: "point_in_interval_rate", label: "Realized point inside the predicted interval" },
   { key: "interval_overlap_rate", label: "Predicted and realized intervals overlap" },
   { key: "acted_and_worthwhile_rate", label: "Acted, and the realized interval cleared the worthwhile effect" },
+  { key: "acted_and_harmful_rate", label: "Acted, and the realized interval showed harm" },
 ];
+
+/** A RateEstimate: the rate and interval when stated, the counts always, else why not. */
+function RateValue({ estimate }: { estimate: RateEstimateResponse }) {
+  const counts = `${estimate.successes} of ${estimate.denominator}`;
+  return (
+    <>
+      <span title={verbatim(estimate.rate)}>{formatFigure(estimate.rate)}</span>
+      <span className="ml-2 font-sans text-muted-foreground">({counts})</span>
+      {estimate.rate !== null && estimate.ci && (
+        <span className="ml-2" title={verbatim(estimate.ci)}>
+          {formatFigure(estimate.level * 100)}% CI {formatFigure(estimate.ci)}
+        </span>
+      )}
+      {estimate.refused && (
+        <span className="block font-sans text-muted-foreground">{estimate.refused}</span>
+      )}
+    </>
+  );
+}
 
 const COUNTS: ReadonlyArray<{ key: keyof CalibrationReportResponse; label: string }> = [
   { key: "n_decisions", label: "Follow-ups" },
@@ -82,7 +109,7 @@ export function CalibrationReportPanel({ report, isLoading, error }: Calibration
         <>
           {report.n_decisions === 0 && (
             <p className="text-xs text-muted-foreground" data-testid="calibration-empty">
-              No follow-up has been measured yet, so every rate below is null (—). The honest
+              No follow-up has been measured yet, so no rate below is stated (—). The honest
               reading of this report, until follow-ups exist, is its counts.
             </p>
           )}
@@ -99,22 +126,14 @@ export function CalibrationReportPanel({ report, isLoading, error }: Calibration
           </dl>
 
           <dl className="space-y-1 text-xs">
-            {RATES.map(({ key, label }) => {
-              const value = report[key] as number | null;
-              return (
-                <div key={key} className="flex flex-wrap items-baseline justify-between gap-2 border-t border-border pt-1">
-                  <dt className="text-muted-foreground">{label}</dt>
-                  <dd className="font-mono text-foreground" data-testid={`calibration-${key}`} title={verbatim(value)}>
-                    {formatFigure(value)}
-                    {value === null && (
-                      <span className="ml-2 font-sans text-muted-foreground">
-                        (no decidable follow-up stands behind it)
-                      </span>
-                    )}
-                  </dd>
-                </div>
-              );
-            })}
+            {RATES.map(({ key, label }) => (
+              <div key={key} className="flex flex-wrap items-baseline justify-between gap-2 border-t border-border pt-1">
+                <dt className="text-muted-foreground">{label}</dt>
+                <dd className="text-right font-mono text-foreground" data-testid={`calibration-${key}`}>
+                  <RateValue estimate={report[key]} />
+                </dd>
+              </div>
+            ))}
           </dl>
 
           <div className="grid gap-3 sm:grid-cols-2">

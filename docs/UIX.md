@@ -52,7 +52,10 @@ is built varies (see §4.2).
   (`/verify`), takes a follow-up (`POST .../{entry_digest}/followup`, once per decision) and shows
   the calibration report (`/calibration`). Numbers are the API's, shown in the kernel's own
   format (four significant digits, as `causal_core.claims.format_number` writes them) with the
-  exact value as the tooltip; an absent value or a null rate is shown as "—". The rationale's
+  exact value as the tooltip; an absent value is shown as "—". Each calibration rate is the
+  kernel's `RateEstimate`: its counts ("9 of 12") always, the rate and its Clopper-Pearson
+  interval only when the report states one (from `min_followups`, ten, up), and otherwise "—"
+  with the report's reason. The rationale's
   claim markers (`⟦claim:effect⟧`, the interval's ends, its level, `n`) are filled from the
   record's own evidence, the effect read back from the stored benefit by the requested direction;
   when the record lacks a figure a marker names, the rationale is labelled as a template.
