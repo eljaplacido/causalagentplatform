@@ -98,7 +98,7 @@
           "says": "Computes Rosenbaum sensitivity bounds and E-values for unmeasured confounders"
         },
         {
-          "at": "docs/CYBERSECURITY.md:405",
+          "at": "docs/CYBERSECURITY.md:411",
           "says": "- Rosenbaum sensitivity bounds"
         },
         {
@@ -1070,7 +1070,7 @@
       "capability": "Dynamic application security testing (DAST): a scanner such as OWASP ZAP run against a running API, weekly",
       "claimed_in": [
         {
-          "at": "docs/CYBERSECURITY.md:597",
+          "at": "docs/CYBERSECURITY.md:603",
           "says": "DAST: OWASP ZAP against a staging API (weekly). Not built: there is no staging"
         }
       ],
