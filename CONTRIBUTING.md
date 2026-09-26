@@ -30,21 +30,25 @@ says so.
 Python 3.12 and Node 20, as CI uses. Two Python environments, because the kernel and the backend
 pin different MCP SDK majors (the backend's legacy server is on v1, causal-mcp on v2):
 
+Each installs from a hash-pinned lock in `requirements/` (every distribution pinned, every file
+checked against its sha256, nothing else resolved), then this checkout's own packages, which are
+not on an index and so not in the lock, with `--no-deps` (they pull in nothing) and
+`--no-build-isolation` (they build with the `hatchling` the lock installed):
+
 ```bash
 # Backend (backend/.venv) -- the kernel and decision layer are editable installs
-cd backend
-python -m venv .venv
-.venv/bin/python -m pip install --upgrade pip   # the gate's pip-audit audits pip too
-.venv/bin/pip install -e ../packages/causal-core -e ../packages/causal-decision -e ".[dev]"
-cd ..
+python -m venv backend/.venv
+backend/.venv/bin/python -m pip install --require-hashes --no-deps -r requirements/backend.txt
+backend/.venv/bin/python -m pip install --no-deps --no-build-isolation \
+  -e packages/causal-core -e packages/causal-decision -e "backend[dev]"
 
 # Kernel (packages/causal-core/.venv) -- also runs causal-decision and causal-mcp
 python -m venv packages/causal-core/.venv
-packages/causal-core/.venv/bin/python -m pip install --upgrade pip
-packages/causal-core/.venv/bin/pip install \
+packages/causal-core/.venv/bin/python -m pip install --require-hashes --no-deps -r requirements/kernel.txt
+packages/causal-core/.venv/bin/python -m pip install --no-deps --no-build-isolation \
   -e "packages/causal-core[dev,crosscheck,ml]" \
   -e "packages/causal-decision[dev]" \
-  -e "packages/causal-mcp[dev,http,decision]" httpx
+  -e "packages/causal-mcp[dev,http,decision]"
 
 # Frontend (npm workspaces, from the repo root)
 npm ci
@@ -52,6 +56,21 @@ npm ci
 
 These are the steps `.github/workflows/ci.yml` runs. Running and launching the platform:
 [`docs/QUICKSTART.md`](docs/QUICKSTART.md).
+
+### Adding or changing a Python dependency
+
+Edit the `pyproject.toml`, re-lock, and commit both in the same change:
+
+```bash
+python3 scripts/py_lock.py relock      # needs uv (python3 -m pip install uv); --upgrade moves every pin
+```
+
+`relock` rewrites `requirements/*.txt` from `requirements/*.in` and records what they were made
+from in `requirements/lock-inputs.json`. The gate's `python-lock` step fails a dependency edit
+that was not re-locked, and also requires your environments to equal their locks; after a re-lock,
+or a pull that brought one, `python3 scripts/py_lock.py sync backend --python backend/.venv/bin/python`
+(and `sync kernel --python packages/causal-core/.venv/bin/python`) brings a venv back in line.
+Details: [`docs/TESTING_CICD.md`](docs/TESTING_CICD.md) §5.4.
 
 ## The gate
 
@@ -63,7 +82,7 @@ This is the one command that decides whether a change passes, and it is what CI 
 step even after one fails and ends with a per-step table: the backend suite and its coverage floor,
 the same suite on PostgreSQL (set `TEST_DATABASE_URL`; unset, that step is skipped), the ruff and
 mypy ratchets, the frontend (tsc, vitest, eslint), each package's suite including the
-pre-registered gates, the security scans (bandit, the secret scan, pip-audit and npm audit), gate
+pre-registered gates, the Python locks, the security scans (bandit, the secret scan, pip-audit and npm audit), gate
 scope, status claims, contract parity, doc figures, skill references and doc reconciliation. The
 step names and what each checks are in
 [`.gnomon/skills/verifying-changes.md`](.gnomon/skills/verifying-changes.md) and

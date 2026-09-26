@@ -1,0 +1,11 @@
+# Inputs of requirements/image.txt: what backend/Dockerfile installs into the
+# backend image (no dev tools). Re-lock after editing this file or any
+# pyproject.toml it names:  python3 scripts/py_lock.py relock
+# The local packages are built from the checkout (not editable) with
+# --no-build-isolation, so hatchling comes from this lock. pip is locked because
+# the image's virtual environment keeps it.
+pip
+hatchling
+./packages/causal-core
+./packages/causal-decision
+./backend[production]

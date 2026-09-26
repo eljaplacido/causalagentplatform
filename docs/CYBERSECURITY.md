@@ -472,20 +472,34 @@ access inside the platform.
 ### 8.3 Container Security
 
 - **In place:** backend and frontend images run as non-root users (`USER causal`,
-  `USER nextjs`). The backend image is `python:3.12-slim`.
+  `USER nextjs`). The backend image is `python:3.12-slim`, the frontend image `node:22-alpine`,
+  each pinned by digest (Dependabot moves the digest). The backend installs its Python packages
+  from the hash-pinned lock `requirements/image.txt` (§8.4) and keeps no pip at run time; the
+  frontend installs `package-lock.json` with `npm ci` and runs Next's standalone server with npm
+  removed. Both build from the repository root; the frontend's Dockerfile did not build at all
+  until septa-49 (it built from `frontend/`, which has no lock).
+- **Image scan (CI job `images`, `.github/workflows/ci.yml`).** Every push, pull request and
+  weekly run builds both images and scans them with Trivy 0.74.0 (the `aquasec/trivy` image,
+  pinned by digest). A HIGH or CRITICAL vulnerability **with a published fix** fails the job
+  unless `scripts/image-scan-allowlist.json` excuses it with a reason and a `review_by` date
+  (`scripts/image_scan.py`; an expired or stale entry fails, and so does a scan that listed no
+  package). The allowlist is empty. A finding **with no fixed version published** is listed and
+  counted, not failed, since no upgrade can fix it. On 2026-09-26 the backend image had 44 such
+  HIGH findings, all in Debian 13 base packages (util-linux, ncurses, systemd, acl, perl-base),
+  and the frontend image none. The job also keeps a CycloneDX SBOM of each image as an artifact.
+  Negative controls: `backend/tests/unit/test_image_scan.py`.
 - **Target:** read-only root filesystem where possible.
-- **Target (register `supply-chain-scanning-not-in-ci`):** an SBOM for every release (Syft /
-  Grype), and a Trivy scan as a CI gate that blocks on HIGH/CRITICAL. No workflow builds the
-  images today, so none is scanned.
 
 ### 8.4 Dependency Security
 
 **In place** (`.gnomon/ci.sh`, on every push and weekly on a schedule, so an advisory
 published since the last push surfaces without one):
 
-- **Dependency audit.** `pip-audit` over the environments the gate tests (the backend's and
-  the kernel packages'), pip included, and `npm audit` over `package-lock.json` (steps
-  `pip-audit-backend`, `pip-audit-packages`, `npm-audit`, through `scripts/dep_audit.py`).
+- **Dependency audit.** `pip-audit` over the hash-pinned locks (`requirements/backend.txt`,
+  `kernel.txt` and `image.txt`, pip included), which the `python-lock` step holds equal to the
+  environments the gate tests, and `npm audit` over `package-lock.json` (steps
+  `pip-audit-backend`, `pip-audit-packages`, `pip-audit-image`, `npm-audit`, through
+  `scripts/dep_audit.py`).
   Any advisory fails the step unless `scripts/audit-allowlist.json` excuses it with a reason
   and a `review_by` date; an expired entry fails, and so does one whose advisory is no longer
   reported. The list is empty: every advisory found when the step was added was fixed by
@@ -513,13 +527,22 @@ published since the last push surfaces without one):
   the git history: a key that was ever committed is handled by revoking it.
 - The licence check on the published packages' runtime dependencies (a CI step before the gate).
 
-> **Status of the rest:** target design (register `supply-chain-scanning-not-in-ci`). Python
-> dependencies are ranges in `pyproject.toml`, resolved at install, with no lockfile or
-> hashes; `package-lock.json` pins npm with integrity hashes. No dependabot configuration
-> opens update PRs. `safety` is not run; `pip-audit` covers the same advisories.
-
-**Python stack (target):**
-- Pinned dependencies with hash verification (`requirements.txt` with `--hash`)
+- **Hash-pinned Python installs.** Every Python environment CI builds installs from a lock in
+  `requirements/` (`backend.txt`, `kernel.txt`, `image.txt` for the backend image, `release.txt`
+  for the published wheels), made by `uv pip compile --generate-hashes` and installed with
+  `pip install --require-hashes --no-deps`: every distribution pinned, every file checked against
+  its sha256. The repository's own packages then install from the checkout with `--no-deps
+  --no-build-isolation`, so they fetch nothing, not even a build backend. The gate's
+  `python-lock` step (`scripts/py_lock.py`) fails a lock that is not current with the
+  `pyproject.toml` files it was made from, and a tested environment that differs from its lock;
+  the `pip-audit-*` steps audit the locks. `package-lock.json` pins npm with integrity hashes.
+- **Release SBOM.** `release.yml` writes a CycloneDX 1.6 SBOM of the published packages'
+  runtime environment (the built wheels plus `requirements/release.txt`), checks that it lists
+  exactly that (`scripts/sbom_check.py`), and attaches it to the tag's GitHub release.
+- **Update PRs.** `.github/dependabot.yml`: weekly, grouped, for the Python locks and ranges,
+  npm, the GitHub Actions and the base images.
+- The Python build tools the release uses (`build`, `twine`, `cyclonedx-bom`) are pinned by
+  version, not by hash. `safety` is not run; `pip-audit` covers the same advisories.
 
 ---
 
@@ -554,16 +577,19 @@ path and response targets are in [`SECURITY.md`](../SECURITY.md).
 ## 10. Security Testing Requirements
 
 Checks every platform component must pass before promotion to any non-development environment.
-The ticked ones exist as steps or tests that `.gnomon/ci.sh` runs. The rest are not built
-(register `supply-chain-scanning-not-in-ci`).
+The ticked ones exist as steps or tests that `.gnomon/ci.sh` or a CI job runs. The rest are not
+built (DAST: register `dast-not-built`).
 
 - [x] SAST: Bandit (Python), MEDIUM+ held at zero (`bandit-backend`, `bandit-packages`)
 - [x] Dependency audit: `pip-audit` and `npm audit` against a reviewed allowlist
   (`pip-audit-backend`, `pip-audit-packages`, `npm-audit`)
 - [x] Secret scan of the working tree (`secret-scan`; controls in
   `backend/tests/unit/test_secret_scan.py`)
-- [ ] Container scan: Trivy (block on HIGH/CRITICAL)
-- [ ] DAST: OWASP ZAP against staging API (weekly)
+- [x] Container scan: Trivy over both images, blocking on HIGH/CRITICAL with a published fix
+  (CI job `images`; findings with no fix published are listed, not blocked)
+- [ ] DAST: OWASP ZAP against a staging API (weekly). Not built: there is no staging
+  environment, and nothing runs a dynamic scanner against a running API (register
+  `dast-not-built`)
 - [x] Guardian bypass test: every registry write path enforces the verdict check
   (`backend/tests/guardian/test_guardian_bypass.py`, `test_verdict_binding.py`,
   `test_draft_cannot_self_approve.py`)

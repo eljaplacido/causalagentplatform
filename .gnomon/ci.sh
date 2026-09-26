@@ -396,6 +396,43 @@ for name in $PKG_ORDER; do
     fi
 done
 
+# ── 4b. Python locks ─────────────────────────────────────────────────────────
+# python-lock    scripts/py_lock.py check: every requirements/*.txt pins each distribution
+#                `==` with its sha256 hashes; each lock is current (the fingerprint of its
+#                inputs -- the .in file and the dependency tables of the pyproject.toml
+#                files it names -- equals the one `relock` recorded, so a dependency edit
+#                without a re-lock FAILS); each satisfies its local packages' requirements;
+#                and the environments this run tests (the backend toolchain, every package
+#                environment) EQUAL their lock, with `pip check` clean. The pip-audit steps
+#                below audit the lock files, so this is what makes that audit one of the
+#                environments the tests ran in. It needs `packaging`, so the backend
+#                toolchain; an environment absent here is SKIPPED, not assumed equal.
+header "Python locks (requirements/*.txt)"
+t0=$SECONDS
+if [ -z "$PYBIN" ]; then
+    record python-lock SKIPPED "needs the backend toolchain (packaging, and the environment it compares)" 0
+else
+    LOCK_PKG_ENVS="$(for name in $PKG_ORDER; do pkg_python "$name" || true; done | awk 'NF && !seen[$0]++')"
+    first_pkg_env="$(echo "$LOCK_PKG_ENVS" | head -1)"
+    lock_rc=0
+    indented "$PY" scripts/py_lock.py check --env backend="$PY" ${first_pkg_env:+--env kernel="$first_pkg_env"} || lock_rc=$?
+    detail="$(grep -m1 -oE '(ok|FAIL) +python-lock: .*' "$LOG_DIR/.indented" | sed -E 's/^(ok|FAIL) +python-lock: //' | cut -c1-220)"
+    first_fail="$(grep -m1 FAIL "$LOG_DIR/.indented" | sed 's/^ *FAIL *//' | cut -c1-170)"
+    for env_py in $(echo "$LOCK_PKG_ENVS" | tail -n +2); do  # a second package environment, if any
+        indented "$PY" scripts/py_lock.py check kernel --env kernel="$env_py" || lock_rc=$?
+        [ -z "$first_fail" ] && first_fail="$(grep -m1 FAIL "$LOG_DIR/.indented" | sed 's/^ *FAIL *//' | cut -c1-170)"
+    done
+    if [ "$lock_rc" -eq 1 ]; then
+        record python-lock FAIL "${first_fail:-see the log above}" $((SECONDS - t0))
+    elif [ "$lock_rc" -ne 0 ]; then
+        record python-lock SKIPPED "$(grep -m1 -oE 'NOT MEASURED .*' "$LOG_DIR/.indented" | sed 's/^NOT MEASURED //' | cut -c1-170)" $((SECONDS - t0))
+    elif [ -z "$first_pkg_env" ]; then
+        record python-lock SKIPPED "no package environment to compare with requirements/kernel.txt ($detail)" $((SECONDS - t0))
+    else
+        record python-lock PASS "$detail" $((SECONDS - t0))
+    fi
+fi
+
 # ── 5. Security: SAST, secrets, dependency advisories ────────────────────────
 # bandit-*       bandit over backend/src + backend/mcp_server (with backend/pyproject.toml's
 #                [tool.bandit]) and over every packages/*/src, through the lint ratchet:
@@ -403,8 +440,9 @@ done
 # secret-scan    scripts/secret_scan.py over every file git would commit from this working
 #                tree (never the history). A finding prints a fingerprint, never the value;
 #                test fixtures go in scripts/secret-scan-allowlist.json with a reason.
-# pip-audit-*    scripts/dep_audit.py: pip-audit over the environments THIS run tests (the
-#                backend toolchain above, and each distinct package environment), and
+# pip-audit-*    scripts/dep_audit.py: pip-audit over the hash-pinned locks (backend, packages
+#                = requirements/kernel.txt, image), which python-lock above holds equal to the
+#                environments THIS run tests, and
 # npm-audit      npm audit over package-lock.json. Any advisory not excused by a reviewed,
 #                unexpired entry in scripts/audit-allowlist.json FAILS. The advisory
 #                databases are remote: unreachable is SKIPPED (not measured), never PASS.
@@ -446,21 +484,15 @@ audit_step() {  # step-name, then scripts/dep_audit.py's arguments
     fi
 }
 if [ -n "$PYBIN" ] && [ -x "$PYBIN/pip-audit" ]; then
-    audit_step pip-audit-backend pip --pip-audit "$PYBIN/pip-audit" --python "$PY" --label backend
-    # Each distinct package environment once (in CI all three packages share causal-core's).
-    PKG_ENVS="$(for name in $PKG_ORDER; do pkg_python "$name" || true; done | awk 'NF && !seen[$0]++')"
-    if [ -z "$PKG_ENVS" ]; then
-        record pip-audit-packages SKIPPED "no package environment to audit (see the package rows above)" 0
-    else
-        i=0
-        for env_py in $PKG_ENVS; do
-            i=$((i + 1)); step=pip-audit-packages; [ "$i" -gt 1 ] && step="pip-audit-packages-$i"
-            audit_step "$step" pip --pip-audit "$PYBIN/pip-audit" --python "$env_py" --label packages
-        done
-    fi
+    # The locks, not the environments: exactly what CI installs (python-lock holds the
+    # environments equal to them). The image lock is what backend/Dockerfile installs.
+    audit_step pip-audit-backend pip --pip-audit "$PYBIN/pip-audit" --requirement requirements/backend.txt --label backend
+    audit_step pip-audit-packages pip --pip-audit "$PYBIN/pip-audit" --requirement requirements/kernel.txt --label packages
+    audit_step pip-audit-image pip --pip-audit "$PYBIN/pip-audit" --requirement requirements/image.txt --label image
 else
-    record pip-audit-backend SKIPPED "pip-audit not installed in the backend toolchain (backend[dev])" 0
-    record pip-audit-packages SKIPPED "pip-audit not installed in the backend toolchain (backend[dev])" 0
+    for s in pip-audit-backend pip-audit-packages pip-audit-image; do
+        record "$s" SKIPPED "pip-audit not installed in the backend toolchain (backend[dev])" 0
+    done
 fi
 audit_step npm-audit npm
 

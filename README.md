@@ -77,10 +77,12 @@ Known limits are listed, not hidden: [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAG
 ## Quick start
 
 ```bash
-# 1. Backend
+# 1. Backend: the hash-pinned lock, then the local packages (docs/QUICKSTART.md explains)
+python -m venv backend/.venv
+backend/.venv/bin/python -m pip install --require-hashes --no-deps -r requirements/backend.txt
+backend/.venv/bin/python -m pip install --no-deps --no-build-isolation \
+  -e packages/causal-core -e packages/causal-decision -e "backend[dev]"
 cd backend
-python -m venv .venv
-.venv/bin/pip install -e ../packages/causal-core -e ../packages/causal-decision -e ".[dev]"   # local packages
 .venv/bin/python -m scripts.seed_data --all
 .venv/bin/python -m pytest        # full backend suite (coverage is judged by .gnomon/ci.sh)
 
@@ -95,7 +97,8 @@ cd frontend && NEXT_PUBLIC_API_BASE_URL=http://localhost:49234 npm run dev
 
 Then open <http://localhost:3000/workbench>.
 
-Container: `docker build -f backend/Dockerfile .` from the repository root.
+Containers: `docker build -f backend/Dockerfile .` and `docker build -f frontend/Dockerfile .`,
+both from the repository root.
 
 Full guide: [`docs/QUICKSTART.md`](docs/QUICKSTART.md).
 

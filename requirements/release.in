@@ -1,0 +1,7 @@
+# Inputs of requirements/release.txt: the runtime closure of the three packages
+# release.yml publishes -- what their built wheels are installed with, hash-pinned,
+# before the release SBOM is generated from that environment. Re-lock after editing
+# this file or any pyproject.toml it names:  python3 scripts/py_lock.py relock
+./packages/causal-core
+./packages/causal-decision
+./packages/causal-mcp
