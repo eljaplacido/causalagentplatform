@@ -66,8 +66,18 @@ An adversary injects false or misleading causal edges or evidence into the graph
   review that needs a governance role, and nobody may review an edge they introduced.
 - **Partial:** the Guardian rejects a payload whose proposed edges form a cycle (PR-001). No
   other contradiction check triggers a review.
-- **Target:** sensitivity analysis on every newly approved edge. PR-007 is declared and never
-  evaluated (register `sensitivity-gate-not-enforced`).
+- **In place, narrower than "passes a sensitivity analysis":** the Guardian refuses to approve
+  an edge that has no sensitivity result (PR-007): a `/check` for `GOVERNANCE_APPROVE` on an
+  edge is REJECTED unless an assumption the edge references, not rejected in review, carries a
+  stored `SensitivityResult`, read from the database rather than the request
+  (`backend/tests/guardian/test_pr007_sensitivity_gate.py`). A result that is not robust still
+  counts; the reviewer sees it. The platform records one on a draft edge when it runs the
+  kernel on the edge's question (`POST /api/semantic/edges/{edge_id}/sensitivity`, and
+  SimulationAgent given data): a new IGNORABILITY assumption carrying the kernel's E-value (and
+  a Rosenbaum gamma* where the kernel reports one), written only under a Guardian verdict for
+  `RECORD_SENSITIVITY` on that edge, never onto an approved edge or an existing assumption
+  (`backend/tests/guardian/test_edge_sensitivity_recorded.py`). A drafter can still attach a
+  result of their own to an assumption they draft.
 
 #### Prompt Injection (LLM Plane)
 Crafted user input or external data attempts to override agent instructions or exfiltrate EpistemicState contents.
@@ -92,14 +102,15 @@ An agent or user attempts to write to the semantic layer without a Guardian verd
 - **In place:** the registry's write methods take a verdict id and refuse it unless it exists,
   is APPROVED, is signed by the Guardian, was issued for this action, names this object, and
   is unspent (`backend/src/semantic_layer/registry.py`, `verdict.py`;
-  `backend/tests/guardian/test_verdict_binding.py`). The action is part of the signed claim:
-  `reject_draft` accepts only a verdict issued for `GOVERNANCE_REJECT`, and a verdict for
-  `GOVERNANCE_REJECT` or `GOVERNANCE_APPROVE` authorises that decision and no other write
-  (`backend/tests/integration/test_governance_reject_verdict.py`). Rejecting used to need a
-  REJECTED verdict, which only an unclassified (DISORDER) check produced, so the authority to
-  reject depended on the Guardian declining to classify (`septa-53`). `promote_to_approved`
-  still accepts an APPROVED verdict for any action other than `GOVERNANCE_REJECT`; the
-  governance page asks for `GOVERNANCE_APPROVE`.
+  `backend/tests/guardian/test_verdict_binding.py`). The action is part of the signed claim,
+  and each review decision accepts only a verdict issued for exactly that action:
+  `promote_to_approved` one for `GOVERNANCE_APPROVE` (an APPROVED verdict from a check for any
+  other action on the object used to approve it: `septa-60`,
+  `backend/tests/guardian/test_approve_action_binding.py`), and `reject_draft` one for
+  `GOVERNANCE_REJECT` (`backend/tests/integration/test_governance_reject_verdict.py`).
+  Rejecting used to need a REJECTED verdict, which only an unclassified (DISORDER) check
+  produced, so the authority to reject depended on the Guardian declining to classify
+  (`septa-53`). A verdict for either review action authorises that decision and no other write.
 - **In place, and narrower than "row security":** the database does not evaluate verdicts.
   `causal_edges.guardian_verdict_ref` and `interventions.guardian_verdict_ref` are
   `NOT NULL REFERENCES audit_log(id)`, so a row must point at *some* audit row. The
@@ -199,7 +210,7 @@ granted role gets 403, a token holding a granted role does not.
 | Route | Roles |
 |---|---|
 | `GET /api/semantic/entities[/{id}]`, `/fragments[/{id}]`, `/edges/{id}[/audit-trail]` | any platform role; a `viewer` reads APPROVED objects only; bounded by domain scope (§4.2) |
-| `POST /api/semantic/drafts` | `analyst`, `graph_author`, `platform_engineer`, `agent` (`DRAFT_ROLES`); only into the user's domains |
+| `POST /api/semantic/drafts`, `POST /api/semantic/edges/{id}/sensitivity` | `analyst`, `graph_author`, `platform_engineer`, `agent` (`DRAFT_ROLES`); only into the user's domains |
 | `POST /api/governance/check` | `graph_author`, `governance_officer`, `platform_engineer`, `agent` |
 | `POST /api/governance/approve/{id}`, `/reject/{id}`, `GET /review-queue`, `GET /audit-log` | `governance_officer`, `platform_engineer` (`GOVERNANCE_ROLES`); approve, reject and the queue bounded by domain scope |
 | `POST /api/v1/models/{name}/reviews` | `GOVERNANCE_ROLES`; a reviewer is also refused on edges they introduced |
@@ -359,7 +370,7 @@ assessment, and the Status column says how much of each control exists.
 
 | EU AI Act Requirement | Platform Control | Status |
 |---|---|---|
-| Art. 9 – Risk management system | GovernanceAgent + Guardian policy engine | Partial: rules PR-001 to PR-006 and PR-008 evaluate; PR-007 does not; PR-009 reads caller-supplied inputs; PR-002's score is computed from the prose checked |
+| Art. 9 – Risk management system | GovernanceAgent + Guardian policy engine | Partial: rules PR-001 to PR-008 and PR-010 evaluate (PR-007 on edge approvals, PR-010 on a plan with no safe action); PR-009 reads caller-supplied inputs; PR-002's score is computed from the prose checked |
 | Art. 10 – Data governance | Semantic layer lineage, PII pseudonymization | Partial lineage (`lineage-partial`); no pseudonymization (`gdpr-controls`) |
 | Art. 11 – Technical documentation | DATA_LAYER.md, AGENTS.md, assumption registries | Documents exist; the register lists where they overclaim |
 | Art. 13 – Transparency | explanation_generate skill, assumption disclosure in outputs | Partial |
@@ -406,16 +417,23 @@ Proposed Edge → CausalDiscoveryAgent → Contradiction Check
 
 ### 7.2 Sensitivity Analysis Requirement
 
-> **Status:** target design, not enforced (register `sensitivity-gate-not-enforced`). Rosenbaum
-> bounds are not implemented (register `sensitivity-analysis`). E-values are computed by
-> causal-core, when asked.
+> **Status:** partly enforced. Guardian PR-007 refuses a `GOVERNANCE_APPROVE` check for a
+> stored edge that has no sensitivity result on an assumption it rests on (`septa-33`,
+> `backend/tests/guardian/test_pr007_sensitivity_gate.py`). It asks for a result, not a robust
+> one: a result that says not robust still counts, and the reviewer sees it in the queue's risk
+> tier (`septa-71`). The platform records the kernel's result on a draft edge when it runs the
+> analysis, under a `RECORD_SENSITIVITY` verdict (`septa-62`, §2 above). Rosenbaum bounds are not implemented (register `sensitivity-analysis`).
+> E-values are computed by causal-core, when asked. Nothing labels an edge `REQUIRES_REVIEW` or
+> blocks it from simulation use.
 
-Every newly approved edge must pass a sensitivity analysis before it can be used in production simulations:
+The target: every newly approved edge carries a sensitivity analysis before it is used in
+production simulations:
 - Rosenbaum sensitivity bounds
 - E-value computation for unmeasured confounders
 - Results stored in `Assumption.sensitivityResult`
 
-Edges that fail to meet minimum E-value thresholds are labeled `REQUIRES_REVIEW` and blocked from simulation use.
+and edges that fail to meet minimum E-value thresholds are labeled `REQUIRES_REVIEW` and blocked
+from simulation use.
 
 ---
 

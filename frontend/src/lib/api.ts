@@ -18,6 +18,7 @@ import type {
   EdgeType,
   GraphFragment,
   GuardianVerdict,
+  RiskTier,
 } from "@causalplatform/semantic-types";
 import { type ApiError } from "@/lib/types";
 
@@ -254,6 +255,15 @@ export interface ReviewQueueItemResponse {
   /** DRAFT or UNDER_REVIEW -- the queue lists only objects pending review. */
   approval_status: ApprovalStatus;
   created_at: string | null;
+  /**
+   * Derived by the backend from stored fields (review_risk.py): edges by stated
+   * confidence and stored sensitivity results, fragments by whether they carry an
+   * unapproved edge, entities LOW. The queue arrives most at risk first.
+   */
+  risk_tier: RiskTier;
+  risk_reasons: string[];
+  /** The id in the object's created_by; null where none was recorded. */
+  submitted_by: string | null;
 }
 
 /**

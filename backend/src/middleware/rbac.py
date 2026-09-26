@@ -99,6 +99,9 @@ ROUTE_ROLES: dict[tuple[str, str], tuple[str, ...]] = {
     ("GET", "/api/semantic/edges/{edge_id}"): ALL_ROLES,
     ("GET", "/api/semantic/edges/{edge_id}/audit-trail"): ALL_ROLES,
     ("POST", "/api/semantic/drafts"): DRAFT_ROLES,
+    # Recording the kernel's sensitivity analysis of a draft edge adds an assumption
+    # to it: a draft write (§4.1 Graph Write), inside the user's domains.
+    ("POST", "/api/semantic/edges/{edge_id}/sensitivity"): DRAFT_ROLES,
     # Governance
     ("POST", "/api/governance/check"): CHECK_ROLES,
     ("POST", "/api/governance/approve/{object_id}"): GOVERNANCE_ROLES,

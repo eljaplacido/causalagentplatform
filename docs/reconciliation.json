@@ -20,24 +20,24 @@
       "why": "status line, what's in the box, quick-start commands, MCP entry point",
       "subjects": [
         "backend/pyproject.toml",
-        "packages/causal-mcp",
         "frontend/package.json",
         "launch_backend.sh",
-        "docs/CURRENT_STAGE.md"
+        "docs/CURRENT_STAGE.md",
+        "packages/causal-mcp"
       ],
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
           "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
-          "packages/causal-mcp": "ac8ffe5b31a7fc07dfbfaee6156a0003bc0753f30c9a3a730b99d39de085a913",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "d1300cddc47ec6b1c4f4781896984dea585f8f4a6c97330943379d7e8370d4d0"
+          "docs/CURRENT_STAGE.md": "1b5c12133f8249ee50704e27169b15dfbd5ddc933702f1706c1b77e9f641ca94",
+          "packages/causal-mcp": "ac8ffe5b31a7fc07dfbfaee6156a0003bc0753f30c9a3a730b99d39de085a913"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of main after #29 into #30: provenance statements read against 011 and provenance_store; #29's withdrawn Neo4j/Kafka/EconML/Rust text and #30's durable-provenance text agree)"
+        "by": "Claude (merge #31 into #47: read each conflict against the code; SECURITY and the registry name all three bound actions; AGENTS keeps #47's SimulationAgent note under #29's Backed-by line; DATA_LAYER keeps #47's agent rows and main's drift row; CYBERSECURITY 7.2 points at the recording path)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "c7d7a7a7829107364abf15496b7d3a4adc5533a8d52b0849e658d2b8e0ce75da",
-          "backend/src": "e5fc9fe4c58019513c74fca85ce9576b67a6dc8e27a1f173755b65369cdea68f",
-          "backend/tests": "0396fff78145d44ac4933d6cccb649b2a91336b836f7388990fab55313844be4",
-          "frontend/src": "d357d66d238bdc673ac0c5215b914bf4a8649a1ea7ca09c9e5bb0052c0b48fcb",
+          "conformance/declared_not_implemented.json": "2b41ca2f38c6531f2d151d3ee0fa2faba39fbb42040297e21dfceb8c4d6c82c9",
+          "backend/src": "bb1844ffea0411bbf1cd36301680881f59c2f812df35f46d37493438c4e972a7",
+          "backend/tests": "e2a1ca08045eaa51defa1effded4ea567e35f4f81684566ee8943c52a06b6f72",
+          "frontend/src": "3db9b395057a637926422437995bccdc190874ad8e9a4472a83e33207b6cc1c8",
           "packages": "9fe7e31eb9499437dbf0a75f0d9bc49a771d4dec83b05f1c570cf9cdc3a5616d",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of main after #29 into #30: provenance statements read against 011 and provenance_store; #29's withdrawn Neo4j/Kafka/EconML/Rust text and #30's durable-provenance text agree)"
+        "by": "Claude (merge #31 into #47: read each conflict against the code; SECURITY and the registry name all three bound actions; AGENTS keeps #47's SimulationAgent note under #29's Backed-by line; DATA_LAYER keeps #47's agent rows and main's drift row; CYBERSECURITY 7.2 points at the recording path)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -78,8 +78,8 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/semantic_layer": "53f34aaa0b9167aaa31c339b926fd0e0ec518a0c81805d75b2bda37637074105",
-          "backend/src/agents/governance.py": "00d1a222ccf9aed2cafbfe9e74146024143df409db94322027826d103632d8fd",
+          "backend/src/semantic_layer": "cbaeb5815535ac1b9d134f774b04c7d68908c05af969eed5f1f61b53ecf66c08",
+          "backend/src/agents/governance.py": "176a45861f38cb34435e652bf789b27de1bfeff4054a24b0e2eebff80595ce24",
           "packages/semantic-types/src": "b88502a55b3406392490bc55954f738e1c9557acaa2e273743cdb113c4bc31ce",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
           "backend/src/orchestration/graph.py": "1c42a22eed003aa1e67b1ffc70545347304a0cc5170959464f263439b727eacc"
@@ -87,7 +87,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of main after #29 into #30: provenance statements read against 011 and provenance_store; #29's withdrawn Neo4j/Kafka/EconML/Rust text and #30's durable-provenance text agree)"
+        "by": "Claude (merge #31 into #47: read each conflict against the code; SECURITY and the registry name all three bound actions; AGENTS keeps #47's SimulationAgent note under #29's Backed-by line; DATA_LAYER keeps #47's agent rows and main's drift row; CYBERSECURITY 7.2 points at the recording path)"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -106,12 +106,12 @@
           "backend/src/semantic_layer/contracts.py": "8af9432f179c0d3e8652b3b7d4a48db9edbff3f5acc1fb25c8a6e8d9af3eaaa4",
           "backend/src/api/provenance.py": "55fa5a3e0153904f557da134e6e0f3a8c8c1ae0ab8b5fe4faa8a6918a70c617e",
           "backend/src/agents/llm_factory.py": "cf027815b09bfd658aa041072ebd42158e3bdf5f6e76d3f8941ed7b227fd9f1e",
-          "backend/src/agents/governance.py": "00d1a222ccf9aed2cafbfe9e74146024143df409db94322027826d103632d8fd"
+          "backend/src/agents/governance.py": "176a45861f38cb34435e652bf789b27de1bfeff4054a24b0e2eebff80595ce24"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-48/septa-16: provenance durable and append-only, erasure a tombstone; writers are session runs, Guardian checks and decisions; LLM invocations unwired)"
+        "by": "Claude (merge #31 into #47: read each conflict against the code; SECURITY and the registry name all three bound actions; AGENTS keeps #47's SimulationAgent note under #29's Backed-by line; DATA_LAYER keeps #47's agent rows and main's drift row; CYBERSECURITY 7.2 points at the recording path)"
       }
     },
     "docs/ADR-003-hierarchical-planning-and-evaluation.md": {
@@ -126,12 +126,12 @@
         "sha256": {
           "backend/src/orchestration": "026e61993e2c3e51962380e4d4e957cf5d26e650455679bd5e7cdce75c31c2f4",
           "backend/src/evaluation": "9a2708b95f3bae7f8b05075e62815c7f51cb3f6e7939a585c1c2c26e5b500b07",
-          "backend/src/api/platform.py": "16dcc7dbc23c2cf627fff078cbdf4e5355833ea156073ab190f48ba60574b613"
+          "backend/src/api/platform.py": "c97395b781c010f3ac6a9d5fc3e1338c89635132d76be45bb1d247fbab9c1b84"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: re-read; platform.py's metrics now group weeks in Python instead of SQLite's strftime and the DB connector is named by dialect; the three evaluation endpoints the ADR describes are unchanged)"
+        "by": "Claude (PR-010: the Guardian's side of the no-safe-action contract and when it bites; platform.py's rule table lists PR-010)"
       }
     },
     "docs/AGENTS.md": {
@@ -139,23 +139,23 @@
       "subjects": [
         "backend/src/agents",
         "backend/src/skills",
-        "packages/causal-mcp",
         "backend/src/orchestration",
-        "prompts"
+        "prompts",
+        "packages/causal-mcp"
       ],
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/agents": "24610a72e1a5f560f1d64972e7c6d29678ee6f465e661378a126b631ce84484d",
+          "backend/src/agents": "4cda7b0b37e3d4205755287c9eab48459c4edda2572e15b99e40a655a657380e",
           "backend/src/skills": "7c14f6095d38b78711081427d4f98e3f621a0a72de4b377d6fc374c346c4ecea",
-          "packages/causal-mcp": "ac8ffe5b31a7fc07dfbfaee6156a0003bc0753f30c9a3a730b99d39de085a913",
           "backend/src/orchestration": "026e61993e2c3e51962380e4d4e957cf5d26e650455679bd5e7cdce75c31c2f4",
-          "prompts": "664b74cd837a44513e10dc0a7a5c44a3015816f928c93d4f7831320b0231e50f"
+          "prompts": "664b74cd837a44513e10dc0a7a5c44a3015816f928c93d4f7831320b0231e50f",
+          "packages/causal-mcp": "ac8ffe5b31a7fc07dfbfaee6156a0003bc0753f30c9a3a730b99d39de085a913"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of main after #29 into #30: provenance statements read against 011 and provenance_store; #29's withdrawn Neo4j/Kafka/EconML/Rust text and #30's durable-provenance text agree)"
+        "by": "Claude (merge #31 into #47: read each conflict against the code; SECURITY and the registry name all three bound actions; AGENTS keeps #47's SimulationAgent note under #29's Backed-by line; DATA_LAYER keeps #47's agent rows and main's drift row; CYBERSECURITY 7.2 points at the recording path)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -174,20 +174,20 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/middleware": "b207b9d2692cb17a5a2f92da2cd96460548d2d81b343d73c82b14ed34bf59fb3",
-          "backend/src/api/governance.py": "39899bb971fe283966cffddf41877fef67d47da6eef36944029487cbcdf74011",
-          "backend/src/agents/governance.py": "00d1a222ccf9aed2cafbfe9e74146024143df409db94322027826d103632d8fd",
-          "backend/src/semantic_layer/registry.py": "ecb30b6c847f2ceca7cdc4b54888c4d129cb8058212101b6d52f923f04c9d749",
+          "backend/src/middleware": "2ccb514c0d866d9821835ae3e12b4643addaff0d5bbccb03fb599145231feb05",
+          "backend/src/api/governance.py": "f04db4d767e8a62c4315c46635a3e93d045a0817116acb6d33bbdb0d3a230cd0",
+          "backend/src/agents/governance.py": "176a45861f38cb34435e652bf789b27de1bfeff4054a24b0e2eebff80595ce24",
+          "backend/src/semantic_layer/registry.py": "aeb93b71de0235c8d70a72e9333ec8d38cf182da27eb124a1c93ab8a860f23c4",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
           "backend/src/api/provenance.py": "55fa5a3e0153904f557da134e6e0f3a8c8c1ae0ab8b5fe4faa8a6918a70c617e",
-          "backend/src/db/migrations": "a6e3fdf45fc8af8d1a3d185565248d1e563e887bb4d2fe5064fdad472bd3c4c0",
-          "backend/src/semantic_layer/verdict.py": "12f9101110cc775c51be9a8d8040bb01b9e8e6270bfb588c111fb204abc0d4f9",
+          "backend/src/db/migrations": "e9255bf6ac878671172e70a62273fd04746d4153b0b3bbebd94a14636e59f499",
+          "backend/src/semantic_layer/verdict.py": "13e537f2b000c10f10e57b0453f1f459b5237a2d60ea009103247a8bfbcade80",
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of main after #29 into #30: provenance statements read against 011 and provenance_store; #29's withdrawn Neo4j/Kafka/EconML/Rust text and #30's durable-provenance text agree)"
+        "by": "Claude (merge #31 into #47: read each conflict against the code; SECURITY and the registry name all three bound actions; AGENTS keeps #47's SimulationAgent note under #29's Backed-by line; DATA_LAYER keeps #47's agent rows and main's drift row; CYBERSECURITY 7.2 points at the recording path)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -205,19 +205,19 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/db": "71181c6b0aea2205be3dd543a996fe7d14c5a2f886451703810f0bb0db378bb4",
+          "backend/src/db": "b377a0f670c81ebb00990425b2176b11fd2f250f096fcc2859a8a32d6d7dd23b",
           "backend/src/connectors": "2b7f65f2acc7f7732deecdad2c8c1b72e4db72caed067285d65631be65c4edfa",
-          "backend/src/semantic_layer/models.py": "f3b7a600ac8e8c4ce7beb48145a188b2394f3775b6ad7d094613cbb9798d3b05",
+          "backend/src/semantic_layer/models.py": "9d20689801ee209370c995278bfa23f58d19fd0c68a65d86e705e4fb7b1a036f",
           "backend/src/sensors": "d38f988ccb52659ac4ecc8724e8aa775b2e6e9fca76b73dbba6576c3f3d1dcba",
           "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
-          "backend/src/semantic_layer/registry.py": "ecb30b6c847f2ceca7cdc4b54888c4d129cb8058212101b6d52f923f04c9d749",
+          "backend/src/semantic_layer/registry.py": "aeb93b71de0235c8d70a72e9333ec8d38cf182da27eb124a1c93ab8a860f23c4",
           "backend/src/agents/drift_monitor.py": "d4aeecf75035c60feb196914aea340ddeadd4c1de4237734c7533dc647aeb076",
           "backend/src/skills/drift_detect.py": "9432982258b155287a90701d76dc9bf331dd8c65fbc692ad37fcd124fcab7111"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of main after #29 into #30: provenance statements read against 011 and provenance_store; #29's withdrawn Neo4j/Kafka/EconML/Rust text and #30's durable-provenance text agree)"
+        "by": "Claude (merge #31 into #47: read each conflict against the code; SECURITY and the registry name all three bound actions; AGENTS keeps #47's SimulationAgent note under #29's Backed-by line; DATA_LAYER keeps #47's agent rows and main's drift row; CYBERSECURITY 7.2 points at the recording path)"
       }
     },
     "docs/HANDOFFS.md": {
@@ -227,15 +227,15 @@
         "backend/src/semantic_layer/models.py"
       ],
       "baseline": {
-        "on": "2026-09-25",
+        "on": "2026-09-26",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
-          "backend/src/semantic_layer/models.py": "f3b7a600ac8e8c4ce7beb48145a188b2394f3775b6ad7d094613cbb9798d3b05"
+          "backend/src/semantic_layer/models.py": "9d20689801ee209370c995278bfa23f58d19fd0c68a65d86e705e4fb7b1a036f"
         }
       },
       "last_read": {
-        "on": "2026-09-25",
-        "by": "Claude (septa-25: re-read for PR-002, /check request fields, risk score and cycle count; hallucination_risk_checked constraint is spec, satisfied by /check computing it)"
+        "on": "2026-09-26",
+        "by": "Claude (septa-36: re-read; models.py gained RiskTier and CausalEdge.created_by, neither is a handoff field it describes)"
       }
     },
     "docs/ORCHESTRATION.md": {
@@ -309,7 +309,7 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "0396fff78145d44ac4933d6cccb649b2a91336b836f7388990fab55313844be4",
+          "backend/tests": "e2a1ca08045eaa51defa1effded4ea567e35f4f81684566ee8943c52a06b6f72",
           "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
@@ -323,7 +323,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of main after #29 into #30: provenance statements read against 011 and provenance_store; #29's withdrawn Neo4j/Kafka/EconML/Rust text and #30's durable-provenance text agree)"
+        "by": "Claude (merge #31 into #47: read each conflict against the code; SECURITY and the registry name all three bound actions; AGENTS keeps #47's SimulationAgent note under #29's Backed-by line; DATA_LAYER keeps #47's agent rows and main's drift row; CYBERSECURITY 7.2 points at the recording path)"
       }
     },
     "docs/UIX.md": {
@@ -334,12 +334,12 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "frontend/src": "d357d66d238bdc673ac0c5215b914bf4a8649a1ea7ca09c9e5bb0052c0b48fcb"
+          "frontend/src": "3db9b395057a637926422437995bccdc190874ad8e9a4472a83e33207b6cc1c8"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-53: ApprovalPanel asks for the Cynefin domain on reject as on approve; the page calls /reject only on an APPROVED verdict)"
+        "by": "Claude (merge #30 into #31: read each conflict against the code; approve binds GOVERNANCE_APPROVE and reject GOVERNANCE_REJECT, stated together; migration 012 for edge created_by; CYBERSECURITY 7.2 now says PR-007 asks for a result, not a robust one)"
       }
     },
     "docs/ROADMAP.md": {
@@ -353,13 +353,13 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "6b029f17fceb5b8a44c784ea601802c8d97c1d2ed3ce9a6a92c2600823826501",
-          "conformance/declared_not_implemented.json": "c7d7a7a7829107364abf15496b7d3a4adc5533a8d52b0849e658d2b8e0ce75da",
-          "docs/CURRENT_STAGE.md": "d1300cddc47ec6b1c4f4781896984dea585f8f4a6c97330943379d7e8370d4d0"
+          "conformance/declared_not_implemented.json": "2b41ca2f38c6531f2d151d3ee0fa2faba39fbb42040297e21dfceb8c4d6c82c9",
+          "docs/CURRENT_STAGE.md": "1b5c12133f8249ee50704e27169b15dfbd5ddc933702f1706c1b77e9f641ca94"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of main after #29 into #30: provenance statements read against 011 and provenance_store; #29's withdrawn Neo4j/Kafka/EconML/Rust text and #30's durable-provenance text agree)"
+        "by": "Claude (merge #31 into #47: read each conflict against the code; SECURITY and the registry name all three bound actions; AGENTS keeps #47's SimulationAgent note under #29's Backed-by line; DATA_LAYER keeps #47's agent rows and main's drift row; CYBERSECURITY 7.2 points at the recording path)"
       }
     },
     "SECURITY.md": {
@@ -375,17 +375,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/middleware": "b207b9d2692cb17a5a2f92da2cd96460548d2d81b343d73c82b14ed34bf59fb3",
-          "backend/src/api/governance.py": "39899bb971fe283966cffddf41877fef67d47da6eef36944029487cbcdf74011",
+          "backend/src/middleware": "2ccb514c0d866d9821835ae3e12b4643addaff0d5bbccb03fb599145231feb05",
+          "backend/src/api/governance.py": "f04db4d767e8a62c4315c46635a3e93d045a0817116acb6d33bbdb0d3a230cd0",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
-          "backend/src/agents/governance.py": "00d1a222ccf9aed2cafbfe9e74146024143df409db94322027826d103632d8fd",
-          "backend/src/semantic_layer/registry.py": "ecb30b6c847f2ceca7cdc4b54888c4d129cb8058212101b6d52f923f04c9d749",
-          "backend/src/semantic_layer/verdict.py": "12f9101110cc775c51be9a8d8040bb01b9e8e6270bfb588c111fb204abc0d4f9"
+          "backend/src/agents/governance.py": "176a45861f38cb34435e652bf789b27de1bfeff4054a24b0e2eebff80595ce24",
+          "backend/src/semantic_layer/registry.py": "aeb93b71de0235c8d70a72e9333ec8d38cf182da27eb124a1c93ab8a860f23c4",
+          "backend/src/semantic_layer/verdict.py": "13e537f2b000c10f10e57b0453f1f459b5237a2d60ea009103247a8bfbcade80"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of main after #29 into #30: provenance statements read against 011 and provenance_store; #29's withdrawn Neo4j/Kafka/EconML/Rust text and #30's durable-provenance text agree)"
+        "by": "Claude (merge #31 into #47: read each conflict against the code; SECURITY and the registry name all three bound actions; AGENTS keeps #47's SimulationAgent note under #29's Backed-by line; DATA_LAYER keeps #47's agent rows and main's drift row; CYBERSECURITY 7.2 points at the recording path)"
       }
     }
   }

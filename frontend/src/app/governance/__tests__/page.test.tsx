@@ -48,6 +48,9 @@ const backendQueueItem = {
   name: ITEM_NAME,
   approval_status: "DRAFT",
   created_at: "2026-09-18T10:00:00Z",
+  risk_tier: "HIGH",
+  risk_reasons: ["no stored sensitivity result on an assumption it rests on"],
+  submitted_by: "ryo.tanaka",
 };
 
 // AuditEntry serialises camelCase (alias_generator=_camel); the AuditLogResponse
@@ -401,5 +404,63 @@ describe("GovernancePage — mock fallback mode", () => {
     expect(screen.queryByTestId("mock-data-badge")).toBeNull();
     expect(screen.queryByTestId("review-queue")).toBeNull();
     expect(screen.queryByTestId("audit-log-panel")).toBeNull();
+  });
+});
+
+// ─── Review queue: the backend's risk tier and submitter (septa-36) ─────────────
+//
+// GET /review-queue returns risk_tier, risk_reasons and submitted_by for each item
+// (backend/src/semantic_layer/review_risk.py derives the tier). The page used to
+// discard them and fill riskTier "MEDIUM" and submittedBy "system" for every item.
+
+describe("GovernancePage — the queue shows the backend's risk tier and submitter", () => {
+  const lowEntity = {
+    id: "11111111-1111-4111-8111-111111111111",
+    object_type: "CausalEntity",
+    // "complicated", as backendQueueItem above: the page maps this field to a
+    // Cynefin badge, and a business domain ("devops") crashes it -- a separate bug.
+    domain: "complicated",
+    name: "checkout-service",
+    approval_status: "DRAFT",
+    created_at: "2026-09-01T10:00:00Z",
+    risk_tier: "LOW",
+    risk_reasons: ["an entity asserts no causal relationship"],
+    submitted_by: "ana",
+  };
+  const criticalEdge = {
+    id: "22222222-2222-4222-8222-222222222222",
+    object_type: "CausalEdge",
+    domain: "complicated",
+    name: "CAUSES",
+    approval_status: "DRAFT",
+    created_at: "2026-09-20T10:00:00Z",
+    risk_tier: "CRITICAL",
+    risk_reasons: ["stated confidence 0.40 is below 0.5"],
+    submitted_by: null,
+  };
+
+  it("renders each item's tier and submitter, most at risk first", async () => {
+    // Deliberately oldest-first, the order the backend used to return.
+    governanceApiMock.reviewQueue.mockResolvedValue([lowEntity, criticalEdge]);
+    governanceApiMock.auditLog.mockResolvedValue(auditResponse([]));
+
+    renderPage();
+
+    const first = await screen.findByTestId("first-review-item");
+    expect(first).toHaveAttribute("data-item-id", criticalEdge.id);
+    expect(within(first).getByText("Critical")).toHaveAttribute(
+      "title",
+      expect.stringContaining("below 0.5")
+    );
+    expect(within(first).getByText("not recorded")).toBeInTheDocument();
+
+    const second = screen.getByTestId("review-item");
+    expect(second).toHaveAttribute("data-item-id", lowEntity.id);
+    expect(within(second).getByText("Low")).toBeInTheDocument();
+    expect(within(second).getByText("ana")).toBeInTheDocument();
+
+    const queue = screen.getByTestId("review-queue");
+    expect(within(queue).queryByText("system")).toBeNull();
+    expect(within(queue).queryByText("Medium")).toBeNull();
   });
 });

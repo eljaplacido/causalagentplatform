@@ -419,7 +419,7 @@ export function ApprovalPanel({
           <div>
             <h3 className="text-base font-bold text-foreground">{item.objectName}</h3>
             <p className="text-xs text-muted-foreground">
-              {item.objectType.replace("_", " ")} · Submitted by {item.submittedBy}
+              {item.objectType.replace("_", " ")} · Submitted by {item.submittedBy ?? "not recorded"}
             </p>
           </div>
           <CynefinBadge

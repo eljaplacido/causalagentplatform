@@ -217,7 +217,8 @@ CREATE TABLE IF NOT EXISTS causal_edges (
     version             TEXT NOT NULL DEFAULT '1.0.0',
     lineage             TEXT NOT NULL DEFAULT '[]',
     domain              TEXT NOT NULL,
-    created_at          TEXT NOT NULL
+    created_at          TEXT NOT NULL,
+    created_by          TEXT
 );
 CREATE TABLE IF NOT EXISTS graph_fragments (
     id                  TEXT PRIMARY KEY,

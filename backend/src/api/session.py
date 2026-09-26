@@ -21,7 +21,7 @@ from typing import Any
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from src.agents.incident_triage import IncidentTriageAgent
 from src.exceptions import CircuitBreakerError
@@ -94,14 +94,28 @@ class RunSessionRequest(BaseModel):
         min_length=1,
         max_length=2000,
     )
-    cynefin_domain: CynefinDomain | None = Field(
-        None,
-        description="Override Cynefin domain. Omit to let the agent classify.",
-    )
     active_graph_fragment_id: str | None = Field(
         None,
         description="Graph fragment to load as context for the session.",
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _no_declared_domain(cls, data: Any) -> Any:
+        # `cynefin_domain` was offered as an override and overrode nothing: the
+        # graph's CynefinClassify node always replaces the domain with its own. It
+        # is not honoured instead, because the domain is what PR-003 and PR-006
+        # judge and classifying it is the platform's (docs/AGENTS.md): /check takes
+        # a caller's domain only when no session has one, and a session run always
+        # has one. Refused loudly, as /check refuses the scores it retired, so a
+        # client still sending it learns that it does not count.
+        if isinstance(data, dict) and "cynefin_domain" in data:
+            raise ValueError(
+                "cynefin_domain is classified by the platform (CynefinClassify), not "
+                "supplied by the caller; a declared domain is judged only by "
+                "POST /api/governance/check without a session_id"
+            )
+        return data
 
 
 class IncidentSessionRequest(BaseModel):
@@ -268,7 +282,7 @@ async def run_session(
         initial_state = EpistemicState(
             session_id=session_id,
             agent_id=body.agent_id,
-            cynefin_domain=body.cynefin_domain or CynefinDomain.DISORDER,
+            cynefin_domain=CynefinDomain.DISORDER,  # CynefinClassify decides
             active_graph_fragment_id=body.active_graph_fragment_id,
             draft_explanation=body.description,
         )

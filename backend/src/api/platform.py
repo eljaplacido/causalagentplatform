@@ -135,6 +135,10 @@ _POLICY_DESCRIPTIONS = {
     "PR-005": "Cycle count limit: cycle_count >= 5 requires REQUIRES_ESCALATION.",
     "PR-006": "DISORDER domain: no verdict can be APPROVED in DISORDER domain.",
     "PR-007": "Sensitivity analysis: edges without sensitivity_result blocked from APPROVED.",
+    "PR-010": (
+        "Planner escalation: a run whose lookahead found no safe action "
+        "(plan_outcome no_safe_action) cannot be APPROVED; it requires escalation."
+    ),
 }
 
 

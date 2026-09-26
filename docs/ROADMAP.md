@@ -112,11 +112,11 @@ priority first, and the priorities put hardening the platform before new estimat
   SQLite, on the schema the migrations build: it found that the Guardian could not write
   `audit_log` there and that `session_state` and `incidents` had no migration, and both are
   fixed (`septa-52`, gate step `backend-pytest-postgres`). No SQL in `backend/src` is built
-  from strings, and bandit enforces it (`septa-50`). Rejecting a draft needs an APPROVED
-  Guardian verdict for `GOVERNANCE_REJECT` on that draft, as approving needs one for
-  `GOVERNANCE_APPROVE`, and the governance page sends the reviewer's classification with
-  both; it used to need a REJECTED verdict, which a classified reject request never got
-  (`septa-53`).
+  from strings, and bandit enforces it (`septa-50`). Approving a draft needs an APPROVED
+  Guardian verdict issued for `GOVERNANCE_APPROVE`, not one from a check for any other action
+  (`septa-60`), and rejecting one needs an APPROVED verdict for `GOVERNANCE_REJECT` on that
+  draft; the governance page sends the reviewer's classification with both. Rejecting used to
+  need a REJECTED verdict, which a classified reject request never got (`septa-53`).
 - **p1, release and drift.** Done: the gate checks that the skills and agent docs name only
   things that exist (`septa-3`), and the MCP tools' parameters are derived from `CausalQuery`,
   with a parity test (`septa-4`; it found `causal_impact` judging every earlier answer as
@@ -127,10 +127,13 @@ priority first, and the priorities put hardening the platform before new estimat
 - **p2, the kernel and decision layer.** Done: DiD with covariates (doubly robust) and
   not-yet-treated comparisons, T5 v4 (`septa-8`); a switchback carryover check with gated power
   whose flag makes the result contested, T8 v2 (`septa-9`; a carryover too small to bias the
-  estimate materially stays undetectable at T8's sizes, and is reported). Open: step 3's
-  remaining estimator (`septa-7`), calibration (`septa-10`), anchoring (`septa-11`), Rosenbaum bounds (`septa-12`),
-  Guardian PR-007 (`septa-33`), positivity detection and triangulation at moderate n (`septa-34`,
-  `septa-35`), and the review queue's risk tier (`septa-36`).
+  estimate materially stays undetectable at T8's sizes, and is reported); Guardian PR-007, no
+  edge approved without a sensitivity result stored on an assumption it rests on (`septa-33`), and the kernel's sensitivity
+  analysis of a draft edge recorded there when the platform runs it (`septa-62`);
+  the review queue ordered by a risk tier derived from stored fields, with who submitted each
+  item (`septa-36`). Open: step 3's remaining estimator (`septa-7`), calibration (`septa-10`),
+  anchoring (`septa-11`), Rosenbaum bounds (`septa-12`), positivity detection and triangulation
+  at moderate n (`septa-34`, `septa-35`).
 - **p3 and p4.** Done: provenance is durable and append-only, with erasure as a tombstone, and
   session runs, Guardian checks and decisions write it (`septa-48`, `septa-16`). The rest of the
   register (versioned semantic objects, lineage, the LLM layer, Cynefin routing, frontend views

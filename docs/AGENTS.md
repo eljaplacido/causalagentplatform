@@ -94,6 +94,7 @@ Agents do not generate outputs directly. They generate **EpistemicState transiti
 - Cannot be bypassed or overridden by other agents
 - Escalation must route to a human reviewer, never to another agent
 - All verdicts are immutable once written
+- A run whose PlanAhead lookahead found no safe action is never approved: a check whose payload carries `plan_outcome: "no_safe_action"` is `REQUIRES_ESCALATION` (rule PR-010, `src/agents/governance.py`)
 
 **Tools available:** `guardian_check`, `sensitivity_test`, `placebo_check`, `assumption_audit`, `drift_detect`, `audit_write`
 
@@ -123,6 +124,8 @@ Agents do not generate outputs directly. They generate **EpistemicState transiti
 - If observational data is unavailable, may return a clearly labeled graph-heuristic effect estimate rather than a silent placeholder or null result
 
 **Tools available:** `counterfactual_reason`, `intervention_estimate`, `scenario_compare`, `explanation_generate`, `semantic_layer_read`
+
+**Current implementation note:** `SimulationAgent.process(state, data=...)` estimates the approved fragment's Treatment -> Outcome effect with the kernel when it is given data (one column per node id), and records the kernel's sensitivity analysis on the fragment's draft edge from that treatment to that outcome, through a Guardian verdict for `RECORD_SENSITIVITY`: a new IGNORABILITY assumption the edge rests on, which is what Guardian PR-007 reads before the edge can be approved (septa-62). No platform flow passes it data yet; `POST /api/semantic/edges/{edge_id}/sensitivity` runs the same analysis for one draft edge on the caller's data.
 
 **Backed by:** `packages/causal-core` (identification and estimation, called through `src/skills/_kernel.py`); the counterfactual skill is a labelled heuristic (`scm-counterfactuals` in the register)
 

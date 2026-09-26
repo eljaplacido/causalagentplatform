@@ -229,8 +229,9 @@ function mapBackendItem(item: ReviewQueueItemResponse): ReviewQueueItem {
     objectName: item.name,
     objectType: item.object_type as ReviewQueueItem["objectType"],
     domain: (item.domain?.toUpperCase() ?? "DISORDER") as ReviewQueueItem["domain"],
-    riskTier: "MEDIUM",
-    submittedBy: "system",
+    riskTier: item.risk_tier,
+    riskReasons: item.risk_reasons,
+    submittedBy: item.submitted_by,
     submittedAt: item.created_at ?? new Date().toISOString(),
     status: item.approval_status === "DRAFT"
       ? "PENDING"

@@ -146,6 +146,7 @@ interface CausalEdge {
   guardianVerdictRef: AuditEntry["id"];
   version: string;
   lineage: LineageRecord[];
+  createdBy: UserRef | null;            // who drafted it; null before migration 012
 }
 ```
 
@@ -239,8 +240,10 @@ its state today.
 
 1. **All writes require a Guardian `APPROVED` verdict.** Holds for the registry's write methods.
    `propose_draft` and `promote_to_approved` refuse a verdict that does not exist, is not
-   APPROVED, is unsigned, names a different object, or has already been spent. `reject_draft`
-   applies the same checks, and the verdict must also have been issued for action
+   APPROVED, is unsigned, names a different object, or has already been spent, and
+   `promote_to_approved` also refuses one not issued for action `GOVERNANCE_APPROVE`
+   (`septa-60`, `backend/tests/guardian/test_approve_action_binding.py`). `reject_draft`
+   applies the same checks, and the verdict must have been issued for action
    `GOVERNANCE_REJECT`; a verdict for `GOVERNANCE_REJECT` or `GOVERNANCE_APPROVE` authorises
    that decision only (`septa-53`). See `backend/tests/guardian/test_verdict_binding.py`.
 2. **All objects are versioned.** Does not hold. Objects carry a `version` field (default
@@ -294,7 +297,7 @@ grants, row-level security and most `CHECK` constraints exist only on the Postgr
 (SQLite keeps three: `audit_log.guardian_verdict`, `decision_followups.kind` and
 `causal_model_versions.version`).
 
-- **PostgreSQL**: `backend/src/db/migrations/001_initial.sql` to `011_provenance.sql`, applied in
+- **PostgreSQL**: `backend/src/db/migrations/001_initial.sql` to `012_edge_created_by.sql`, applied in
   filename order. Two things in this repository apply them: `docker-compose.yml`, whose init
   script (`backend/src/db/docker/initdb.sh`) runs them when the container's volume is first
   created and then gives `causal_app` its local-dev login, and the test fixtures when
@@ -310,7 +313,7 @@ grants, row-level security and most `CHECK` constraints exist only on the Postgr
 |---|---|---|---|
 | `audit_log` | 001, 002 | yes | Every Guardian verdict and agent action record. Append-only |
 | `verdict_consumption` | 002 | yes | One row per spent verdict. Its primary key is what makes a verdict single-use |
-| `causal_entities`, `causal_edges`, `graph_fragments`, `assumptions` | 001 (+002 for `causal_entities.guardian_verdict_ref`, +006 for `graph_fragments.lineage`) | yes | The semantic layer objects of §2 |
+| `causal_entities`, `causal_edges`, `graph_fragments`, `assumptions` | 001 (+002 for `causal_entities.guardian_verdict_ref`, +006 for `graph_fragments.lineage`, +011 for `causal_edges.created_by`) | yes | The semantic layer objects of §2 |
 | `interventions` | 001 | yes | Intervention log: expected vs actual effect, feedback closure |
 | `decision_records` | 003 | yes | The decision ledger's hash chain, one sealed record per row. Append-only |
 | `decision_followups` | 004, 005 | yes | The follow-up plan written at decision time, and each later realization. Append-only; 005 allows one row per decision and kind, so a decision is measured once |
@@ -521,11 +524,12 @@ recorded, because no runtime path calls an LLM (register `llm-routing-no-callers
 | Component | Read | Write | Notes |
 |---|---|---|---|
 | CausalDiscoveryAgent | Semantic layer (read) | `audit_write` records (PENDING, unsigned) | Proposes; does not persist semantic objects itself |
-| GovernanceAgent | The action payload and `EpistemicState` it is given | `audit_log` (every verdict, signed) | Its verdict is what `propose_draft` / `promote_to_approved` / `reject_draft` require |
-| SimulationAgent | APPROVED graph fragments | `EpistemicState.simulation_results` (in memory; the `session_state` snapshot) | Read-only on the semantic layer |
+| GovernanceAgent | The action payload and `EpistemicState` it is given | `audit_log` (every verdict, signed) | Its verdict is what `propose_draft` / `promote_to_approved` / `reject_draft` / `record_edge_sensitivity` require |
+| SimulationAgent | APPROVED graph fragments | `EpistemicState.simulation_results` (in memory; the `session_state` snapshot); given data, the kernel's sensitivity result on the fragment's draft Treatment -> Outcome edge (a new `assumptions` row, appended to the edge's `assumption_refs`) | That one write under a Guardian verdict for `RECORD_SENSITIVITY` on the edge; otherwise read-only on the semantic layer |
 | DriftMonitorAgent | Whatever its skills are handed (see §5) | In-process `AlertEmitter`; `(:DriftAlert)` nodes in Neo4j when `NEO4J_URI` is set | No semantic-layer writes; no message broker |
 | `GET /api/semantic/*` | Entities, edges, fragments inside the user's domain scope; APPROVED only for a `viewer` | -- | Outside the scope is 404 (CYBERSECURITY.md §4.2) |
 | `POST /api/semantic/drafts` | -- | `causal_edges` / `graph_fragments` / `causal_entities` / `assumptions` as DRAFT | A drafting role, a domain inside the user's scope, then a GovernanceAgent check; status forced to DRAFT |
+| `POST /api/semantic/edges/{id}/sensitivity` | The edge, inside the user's scope | A new IGNORABILITY `assumptions` row carrying the kernel's sensitivity result; the draft edge's `assumption_refs` and lineage | A drafting role; a Guardian verdict for `RECORD_SENSITIVITY` on the edge; never an APPROVED or DEPRECATED edge (409) |
 | `POST /api/governance/approve/{id}`, `/reject/{id}` | -- | Status, approver and lineage on the same row | A governance role, the object inside the reviewer's domains; see §2.2 rule 2 |
 | `POST /api/v1/decisions` | A registered model version, when the request names one | `decision_records`, `decision_followups`, `decision_model_refs` when a model is named, and `provenance_entries` (session `decision:<entry_digest>`) | Append-only hash chain |
 | `POST /api/v1/session/run`, `/incident`; `GovernanceAgent.check` | -- | `provenance_entries`, beside `session_state` / `audit_log` | The Guardian's record is in the same transaction as its `audit_log` row |
