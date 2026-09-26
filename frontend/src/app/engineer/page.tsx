@@ -436,8 +436,16 @@ export default function EngineerPage() {
             )}
           </>
         )}
-        <span className="ml-auto text-muted-foreground">
-          Last checked: {formatTimestamp(new Date().toISOString(), { timeStyle: "short" })}
+        {/* When the connectors were last fetched -- on the client only. It
+            rendered new Date() during the prerender, so the server's time and
+            the browser's never matched (React hydration error #418). */}
+        <span className="ml-auto text-muted-foreground" data-testid="connectors-last-checked">
+          Last checked:{" "}
+          {connectorsQuery.dataUpdatedAt > 0
+            ? formatTimestamp(new Date(connectorsQuery.dataUpdatedAt).toISOString(), {
+                timeStyle: "short",
+              })
+            : "—"}
         </span>
       </div>
 

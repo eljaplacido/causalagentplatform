@@ -691,10 +691,17 @@ async def get_drift_alerts(
                             domain="platform",
                             entity_type="Session",
                             severity="HIGH",
+                            # Only what the row records: its agent, its session
+                            # when it has one ("Session unknown" named a session
+                            # that does not exist), and the rules it cites. It
+                            # used to add "agent circuit breaker or
+                            # double-rejection detected", a cause the row does
+                            # not record (PR-003, a CHAOTIC run, escalates too).
                             message=(
-                                f"Session {row['session_id'] or 'unknown'} triggered "
-                                f"REQUIRES_ESCALATION — agent circuit breaker or "
-                                f"double-rejection detected."
+                                f"{row['agent_id']} recorded a REQUIRES_ESCALATION verdict"
+                                + (f" in session {row['session_id']}" if row["session_id"] else "")
+                                + (f", citing {', '.join(rules)}" if rules else "")
+                                + "."
                             ),
                             detected_at=timestamp_text(row["created_at"]) or "",
                             affected_fragment_ids=[],

@@ -583,6 +583,36 @@ async def test_drift_escalation_always_surfaces(
     assert len(escalation_alerts) >= 1
 
 
+async def test_drift_escalation_message_names_a_session_only_when_there_is_one(
+    client: AsyncClient, db_engine: object
+) -> None:
+    """An escalation recorded without a session (the governance API's, the seeder's)
+    read "Session unknown triggered ...". The message names the session when the row
+    has one, and otherwise names none; it says which agent and rules the row carries."""
+    now = datetime.now(UTC)
+    await _seed_audit_log(
+        db_engine,
+        [
+            {**_audit_row(now), "agent_id": "seeder", "verdict": "REQUIRES_ESCALATION",
+             "rules": ["PR-001", "PR-007"], "sid": None},
+            {**_audit_row(now), "agent_id": "guardian-check-node", "verdict": "REQUIRES_ESCALATION",
+             "rules": ["PR-003"], "sid": "sess-chaotic-1"},
+        ],
+    )
+    alerts = (await client.get("/api/v1/platform/drift")).json()
+    messages = [a["message"] for a in alerts if a["entity_type"] == "Session"]
+    assert len(messages) == 2
+    for message in messages:
+        assert "unknown" not in message
+        assert "None" not in message
+    without = next(m for m in messages if "seeder" in m)
+    assert "session" not in without.lower()
+    assert "PR-001, PR-007" in without
+    with_session = next(m for m in messages if "guardian-check-node" in m)
+    assert "sess-chaotic-1" in with_session
+    assert "PR-003" in with_session
+
+
 async def test_drift_alert_schema(client: AsyncClient, db_engine: object) -> None:
     """Drift alert objects have all required fields."""
     now = datetime.now(UTC)
