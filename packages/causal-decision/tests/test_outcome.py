@@ -25,7 +25,14 @@ from causal_decision import (
     plan,
     report,
 )
-from causal_decision.outcome import Realization
+from causal_decision.outcome import (
+    MIN_FOLLOWUPS,
+    Realization,
+    min_discordant,
+    paired_comparison,
+    rate_bounds,
+    rate_estimate,
+)
 
 GRAPH = "load -> playbook; load -> minutes; playbook -> minutes"
 NOW = datetime.now(UTC).isoformat()
@@ -190,9 +197,11 @@ def test_a_report_over_nothing_reports_nothing() -> None:
     """The rule the gates hold themselves to, applied to the number the platform is judged on."""
     empty = report([])
     assert empty.n_decisions == 0
-    assert empty.point_in_interval_rate is None, "no data must not read as perfect calibration"
-    assert empty.interval_overlap_rate is None
-    assert empty.acted_and_worthwhile_rate is None
+    assert empty.point_in_interval_rate.rate is None, "no data must not read as perfect calibration"
+    assert empty.interval_overlap_rate.rate is None
+    assert empty.acted_and_worthwhile_rate.rate is None
+    assert empty.acted_worthwhile_bounds.ci is None
+    assert empty.worthwhile_claimed_vs_confirmed.status == "could_not_resolve"
 
 
 def test_a_report_of_only_undecidable_cases_reports_no_rate() -> None:
@@ -211,7 +220,8 @@ def test_a_report_of_only_undecidable_cases_reports_no_rate() -> None:
     ]
     rep = report(entries)
     assert rep.n_undecidable == 4 and rep.n_decidable == 0
-    assert rep.point_in_interval_rate is None
+    assert rep.point_in_interval_rate.rate is None
+    assert rep.point_in_interval_rate.denominator == 0
     assert rep.undecidable_by_reason == {"DESIGN_CHECK_FAILED": 4}
 
 
@@ -228,9 +238,10 @@ def test_undecidable_cases_are_counted_beside_the_rates_not_hidden() -> None:
         )
         for _ in range(6)
     ]
-    rep = report(entries)
+    rep = report(entries, min_followups=1)
     assert rep.n_decisions == 8
-    assert rep.point_in_interval_rate == pytest.approx(0.5), "rates are over the decidable two"
+    assert rep.point_in_interval_rate.rate == pytest.approx(0.5), "rates are over the decidable two"
+    assert rep.point_in_interval_rate.denominator == 2
     assert rep.n_undecidable == 6
     assert rep.undecidable_by_reason == {"POSITIVITY": 6}
     assert "not missing at random" in rep.note
@@ -242,10 +253,11 @@ def test_harm_under_an_act_verdict_is_counted() -> None:
         _realization(verdict=Verdict.act, realized_harm=True, cleared_worthwhile=False),
         _realization(verdict=Verdict.refuse, realized_harm=True, cleared_worthwhile=False),
     ]
-    rep = report(entries)
+    rep = report(entries, min_followups=1)
     assert rep.acted_and_harmful == 1, "a refused action that would have harmed is not our harm"
     assert rep.n_acted == 2
-    assert rep.acted_and_worthwhile_rate == pytest.approx(0.5)
+    assert rep.acted_and_worthwhile_rate.rate == pytest.approx(0.5)
+    assert rep.acted_and_harmful_rate.rate == pytest.approx(0.5)
 
 
 def test_the_note_says_what_the_rate_is_not() -> None:
@@ -294,3 +306,106 @@ def test_a_free_text_horizon_is_not_passed_off_as_a_timestamp(decided) -> None:
     assert plan(exact, out, graph=GRAPH, observe_from=NOW).observe_until == (
         "2026-12-31T00:00:00+00:00"
     )
+
+
+# ── how much a rate may say ───────────────────────────────────────────────────
+
+
+def test_a_rate_from_fewer_than_the_minimum_is_refused_not_stated() -> None:
+    """The old report said 100% from one follow-up. Counts stay; the division does not."""
+    rep = report([_realization() for _ in range(MIN_FOLLOWUPS - 1)])
+    est = rep.point_in_interval_rate
+    assert est.successes == est.denominator == MIN_FOLLOWUPS - 1
+    assert est.rate is None and est.ci is None
+    assert est.refused is not None and str(MIN_FOLLOWUPS) in est.refused
+
+
+def test_at_the_minimum_a_rate_is_stated_with_its_interval() -> None:
+    rep = report([_realization() for _ in range(MIN_FOLLOWUPS)])
+    est = rep.point_in_interval_rate
+    assert est.rate == 1.0 and est.refused is None
+    assert est.ci is not None and est.ci[1] == 1.0
+
+
+def test_the_interval_is_clopper_pearson() -> None:
+    """Closed forms at the edges: k = n gives lower = (alpha/2)**(1/n), k = 0 the mirror."""
+    ten_of_ten = rate_estimate(10, 10)
+    none_of_ten = rate_estimate(0, 10)
+    assert ten_of_ten.ci == pytest.approx((0.025 ** (1 / 10), 1.0))
+    assert none_of_ten.ci == pytest.approx((0.0, 1 - 0.025 ** (1 / 10)))
+    # 10/10 cannot exclude 0.69: the reason the minimum is where it is.
+    assert ten_of_ten.ci[0] < 0.70  # type: ignore[index]
+
+
+def test_the_interval_does_not_collapse_where_wald_does() -> None:
+    est = rate_estimate(15, 15)
+    assert est.ci is not None and est.ci[0] < 0.8, "Wald would say [1, 1]"
+
+
+def test_bounds_carry_the_unmeasured_as_unknowns() -> None:
+    b = rate_bounds(6, 4, 20)
+    assert (b.lower, b.upper) == (pytest.approx(0.3), pytest.approx(0.5))
+    assert b.ci is not None
+    assert b.ci[0] == pytest.approx(rate_estimate(6, 20).ci[0])  # type: ignore[index]
+    assert b.ci[1] == pytest.approx(rate_estimate(10, 20).ci[1])  # type: ignore[index]
+
+
+def test_undecidable_acted_decisions_widen_the_bounds_not_the_rate() -> None:
+    decided_ = [_realization() for _ in range(10)]
+    rolled = [
+        _realization(decidable=False, undecidable_reason="DESIGN_CHECK_FAILED",
+                     realized_benefit=None, realized_ci=None, point_in_predicted_ci=None,
+                     intervals_overlap=None, cleared_worthwhile=None, realized_harm=None)
+        for _ in range(10)
+    ]
+    rep = report(decided_ + rolled)
+    assert rep.acted_and_worthwhile_rate.rate == 1.0
+    assert rep.acted_worthwhile_bounds.unresolved == 10
+    assert (rep.acted_worthwhile_bounds.lower, rep.acted_worthwhile_bounds.upper) == (0.5, 1.0)
+
+
+# ── claimed against confirmed ─────────────────────────────────────────────────
+
+
+def test_the_fewest_discordant_pairs_that_can_reach_significance() -> None:
+    """2 * 0.5**5 = 0.0625 > 0.05; 2 * 0.5**6 = 0.03125."""
+    assert min_discordant(0.05) == 6
+    assert min_discordant(0.01) == 8
+
+
+def test_too_few_discordant_pairs_cannot_resolve_rather_than_read_as_no_difference() -> None:
+    got = paired_comparison(5, 0, 40)
+    assert got.status == "could_not_resolve", "5 of 5 one way still has p = 0.0625"
+    assert got.p_value is None
+
+
+def test_enough_discordant_pairs_all_one_way_is_a_difference() -> None:
+    got = paired_comparison(6, 0, 40)
+    assert got.status == "difference"
+    assert got.p_value == pytest.approx(2 * 0.5**6)
+
+
+def test_a_balanced_split_that_could_have_shown_one_is_no_difference_detected() -> None:
+    got = paired_comparison(5, 5, 40)
+    assert got.status == "no_difference_detected"
+    assert got.p_value == pytest.approx(1.0)
+
+
+def test_too_few_pairs_cannot_resolve_whatever_the_split() -> None:
+    assert paired_comparison(8, 0, MIN_FOLLOWUPS - 1).status == "could_not_resolve"
+
+
+def test_compare_records_what_the_analysis_claimed(decided) -> None:
+    _, _, fu = decided
+    r = compare(fu, analyse(incidents(0.0, seed=78)))
+    assert fu.predicted_ci is not None
+    assert r.claimed_worthwhile is (fu.predicted_ci[0] > fu.minimum_worthwhile_effect)
+    assert r.claimed_worthwhile is True and r.cleared_worthwhile is False
+
+
+def test_a_realization_stored_before_the_claim_was_kept_still_loads() -> None:
+    """Payloads recorded by 0.4.x lack the field; they load, and simply do not pair."""
+    old = _realization().model_dump(exclude={"claimed_worthwhile"})
+    r = Realization.model_validate(old)
+    assert r.claimed_worthwhile is None
+    assert report([r]).worthwhile_claimed_vs_confirmed.n_pairs == 0

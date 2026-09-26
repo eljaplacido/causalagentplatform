@@ -57,13 +57,13 @@ class DataSimulationAgent(SimulationAgent):
     def __init__(self, data: pd.DataFrame | None = None) -> None:
         super().__init__()
         self._fragment = fragment()
-        self._data = scm_frame() if data is None else data
+        self._supplied = scm_frame() if data is None else data
+
+    async def process(self, state: EpistemicState, data: Any | None = None) -> EpistemicState:
+        return await super().process(state, self._supplied if data is None else data)
 
     async def _skill_semantic_layer_read(self, inputs: dict[str, Any]) -> dict[str, Any]:
         return {"fragment": self._fragment}
-
-    async def _skill_effect_estimate(self, inputs: dict[str, Any]) -> dict[str, Any]:
-        return await super()._skill_effect_estimate({**inputs, "data": self._data})
 
 
 def state(session_id: str = "narration-session") -> EpistemicState:

@@ -380,8 +380,11 @@ async def db_session(
 
 
 #: What `verdict_for` is: give it the object you are about to write, get back a
-#: verdict that authorises that write and nothing else.
-VerdictFactory = Callable[[UUID], Awaitable[UUID]]
+#: verdict that authorises that write and nothing else. The optional arguments are
+#: the verdict (default APPROVED) and the action it was issued for: an approval needs
+#: ``action_type="GOVERNANCE_APPROVE"`` (septa-60), a rejection
+#: ``action_type="GOVERNANCE_REJECT"`` (septa-53).
+VerdictFactory = Callable[..., Awaitable[UUID]]
 
 
 # ── Issuing Guardian verdicts in tests ───────────────────────────────────────
@@ -505,8 +508,12 @@ async def approved_audit_entry_id(db_session: AsyncSession) -> UUID:
 async def verdict_for(db_session: AsyncSession) -> VerdictFactory:
     """Factory: ``await verdict_for(obj.id)`` -> a verdict that authorises that write."""
 
-    async def _issue(subject_id: UUID, verdict: str = "APPROVED") -> UUID:
-        return await issue_verdict_for(db_session, subject_id, verdict=verdict)
+    async def _issue(
+        subject_id: UUID, verdict: str = "APPROVED", action_type: str = "TEST_FIXTURE"
+    ) -> UUID:
+        return await issue_verdict_for(
+            db_session, subject_id, verdict=verdict, action_type=action_type
+        )
 
     return _issue
 

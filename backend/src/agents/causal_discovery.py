@@ -309,8 +309,7 @@ class CausalDiscoveryAgent(BaseAgent):
         """
         Propose candidate directed edges using heuristic reasoning.
 
-        In production this integrates DoWhy + cynepic-causal Rust crate for
-        statistical independence tests and structural causal model discovery.
+        No statistical discovery is implemented (register `causal-discovery`).
         This stub generates plausible proposals from the graph context.
         """
         graph_context = inputs.get("graph_context", {})
@@ -353,8 +352,8 @@ class CausalDiscoveryAgent(BaseAgent):
         """
         Screen a proposed edge set for likely unmeasured confounders.
 
-        In production integrates with cynepic-causal for back-door criterion
-        checks and domain knowledge lookup.
+        A confidence heuristic, not a back-door criterion check (identification
+        runs in causal-core, through src/skills/identification_check.py).
         """
         proposed_edges = inputs.get("proposed_edges", [])
         # Heuristic: flag if confidence < 0.6 (weak statistical basis)
@@ -384,8 +383,7 @@ class CausalDiscoveryAgent(BaseAgent):
         """
         Run a conditional independence test (d-separation heuristic).
 
-        In production uses DoWhy or cynepic-causal for PC-algorithm-based
-        independence tests on the input dataset statistics.
+        No independence test is implemented (register `causal-discovery`).
         """
         # Stub: cannot determine independence without real data
         return {

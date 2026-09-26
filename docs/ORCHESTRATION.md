@@ -103,7 +103,7 @@ The external orchestration patterns are not arbitrary. They mirror the platform'
 | CLEAR | DirectAnswer → GuardianCheck → Output | `implement` — well-understood, execute directly |
 | COMPLICATED | CausalAnalysis → GuardianCheck → Output | `plan` — structured analysis by experts |
 | COMPLEX | CausalDiscovery → Expert Elicitation → GuardianCheck | `explore` + `plan` — emergent, probe first |
-| CHAOTIC | EscalateHuman → END | `govern` — stabilize, human takes command |
+| CHAOTIC | EscalateHuman → GuardianCheck (PR-003, recorded) → Output | `govern` — stabilize, human takes command |
 | DISORDER | DisorderProtocol → re-classify | Re-classify before choosing a lane |
 
 ### 3.2 Structural Parallels

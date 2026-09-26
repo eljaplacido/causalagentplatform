@@ -1,7 +1,7 @@
 # Prompt template: counterfactual_reason
 # Version: 1.0.0
 # Skill: counterfactual_reason (AGENTS.md §3.1)
-# Reference: DoWhy CausalModel, cynepic-causal Rust crate
+# Reference: src/skills/counterfactual_reason.py (a labelled heuristic)
 
 version: "1.0.0"
 skill: counterfactual_reason

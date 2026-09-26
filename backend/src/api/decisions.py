@@ -18,6 +18,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 import causal_core as cc
+import causal_decision
 import pandas as pd
 import structlog
 from causal_core.contract import AnalysisPolicy, CausalGraph, CausalQuery
@@ -52,6 +53,8 @@ from src.semantic_layer.decision_store import (
     LedgerConflictError,
 )
 from src.semantic_layer.model_store import ModelStore
+from src.semantic_layer.provenance_capture import decision_records, digest
+from src.semantic_layer.provenance_store import ProvenanceStore
 
 if TYPE_CHECKING:
     from causal_decision.assumptions import ModelVersion
@@ -61,6 +64,7 @@ router = APIRouter(prefix="/api/v1/decisions", tags=["Decision Assurance"])
 
 _store = DecisionStore()
 _models = ModelStore()
+_provenance = ProvenanceStore()
 
 
 async def _model_version(selector: ModelSelector) -> ModelVersion:
@@ -298,6 +302,47 @@ async def make_decision(
             recorded_at=record.recorded_at,
         )
 
+    # Provenance: the data and graph this verdict rested on (as digests), the
+    # analysis, and the sealed entry, under session `decision:<entry_digest>`. The
+    # entry is already sealed; a failure here fails the request rather than
+    # returning a verdict whose provenance was silently lost.
+    graph_attrs: dict[str, Any]
+    if version is not None:
+        graph_attrs = {
+            "model_name": version.name,
+            "model_version": version.version,
+            "model_digest": version.digest,
+        }
+    else:
+        graph_attrs = {
+            "graph_sha256": digest(
+                graph if isinstance(graph, str) else graph.model_dump(mode="json")
+            )
+        }
+    _, prov_records = decision_records(
+        entry_digest=record.entry_digest,
+        sequence=record.sequence,
+        verdict=str(decision.verdict),
+        decision_digest=record.decision.decision_digest,
+        outcome_kind=str(getattr(outcome, "kind", type(outcome).__name__)),
+        data={
+            "data_sha256": digest(body.data),
+            "rows": len(frame),
+            "columns": sorted(str(c) for c in frame.columns),
+        },
+        graph=graph_attrs,
+        analysis={
+            "causal_core_version": f"causal_core {cc.__version__}",
+            "causal_decision_version": f"causal_decision {causal_decision.__version__}",
+            "treatment": body.treatment,
+            "outcome": body.outcome,
+            "estimand": str(body.estimand),
+            "action": body.action,
+        },
+        user_id=user.get("uid"),
+    )
+    await _provenance.append(prov_records)
+
     log.info(
         "api.decisions.decided",
         action=body.action,
@@ -528,10 +573,14 @@ async def calibration(
 ) -> CalibrationReport:
     """Predicted against measured, over every follow-up taken.
 
-    Every rate is null when nothing stands behind it: a report over no decidable
-    measurements says so rather than reporting a perfect score. The undecidable
-    ones are counted beside the rates, by reason, because they are not missing at
-    random.
+    Every rate carries its counts and a Clopper-Pearson interval, and states no
+    value below the report's minimum (ten follow-ups): a report over no decidable
+    measurements says so rather than reporting a perfect score, and one over three
+    does not report 67%. The undecidable ones are counted beside the rates, by
+    reason, and carried as unknowns into the all-acted bounds, because they are not
+    missing at random. "Could not resolve" is reported apart from "no difference".
+    The C0 gate proves this arithmetic on simulated streams; it proves nothing
+    about real operations.
 
     This is what separates thresholds that are *consistent* from thresholds that
     are *calibrated*, and until enough follow-ups exist the honest reading of this

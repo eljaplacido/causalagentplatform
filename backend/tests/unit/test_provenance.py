@@ -6,9 +6,10 @@ Tests:
   1. LLMInvocation model validation
   2. ProvenanceRecord model validation + PROV fields
   3. ProvenanceGraph construction + gap detection
-  4. Store helpers (store_provenance_record, store_llm_invocation)
-  5. get_provenance_graph with mixed records
-  6. _build_links and _detect_gaps
+  4. build_graph over records and invocations (the durable store's round trip
+     is tests/integration/test_provenance_append_only.py)
+  5. _build_links and _detect_gaps
+  6. The records each flow writes (src/semantic_layer/provenance_capture.py)
 """
 
 from __future__ import annotations
@@ -18,10 +19,9 @@ from uuid import uuid4
 from src.api.provenance import (
     _build_links,
     _detect_gaps,
-    get_provenance_graph,
-    store_llm_invocation,
-    store_provenance_record,
+    build_graph,
 )
+from src.semantic_layer.models import EpistemicState, ReasoningStep
 from src.semantic_layer.provenance import (
     LLMCapability,
     LLMInvocation,
@@ -30,6 +30,12 @@ from src.semantic_layer.provenance import (
     ProvenanceGraph,
     ProvenanceRecord,
     ProvenanceRecordType,
+)
+from src.semantic_layer.provenance_capture import (
+    decision_records,
+    digest,
+    guardian_check_record,
+    session_run_records,
 )
 
 # ── LLMInvocation ─────────────────────────────────────────────────────────────
@@ -150,21 +156,20 @@ def test_provenance_record_gap() -> None:
 # ── Store helpers ─────────────────────────────────────────────────────────────
 
 
-def test_store_and_retrieve_provenance() -> None:
-    """Store provenance records and retrieve via get_provenance_graph."""
+def test_build_graph_keeps_records() -> None:
+    """build_graph carries the records it is given."""
     sid = "test-session-store"
     rec = ProvenanceRecord(session_id=sid, agent_id="a1")
 
-    store_provenance_record(rec)
-    graph = get_provenance_graph(sid)
+    graph = build_graph(sid, [rec], [])
 
     assert graph.session_id == sid
     assert len(graph.records) == 1
     assert graph.records[0].id == rec.id
 
 
-def test_store_and_retrieve_invocations() -> None:
-    """Store LLM invocations and retrieve via get_provenance_graph."""
+def test_build_graph_keeps_invocations() -> None:
+    """build_graph carries the invocations it is given."""
     sid = "test-session-inv"
     inv = LLMInvocation(
         session_id=sid,
@@ -174,8 +179,7 @@ def test_store_and_retrieve_invocations() -> None:
         model_name="phi4:14b",
     )
 
-    store_llm_invocation(inv)
-    graph = get_provenance_graph(sid)
+    graph = build_graph(sid, [], [inv])
 
     assert len(graph.llm_invocations) == 1
     assert graph.llm_invocations[0].model_name == "phi4:14b"
@@ -186,7 +190,7 @@ def test_store_and_retrieve_invocations() -> None:
 
 def test_provenance_graph_empty() -> None:
     """Empty provenance graph has no records and is complete."""
-    graph = get_provenance_graph("nonexistent-session")
+    graph = build_graph("nonexistent-session", [], [])
     assert len(graph.records) == 0
     assert len(graph.llm_invocations) == 0
     assert graph.is_complete is True
@@ -201,22 +205,16 @@ def test_provenance_graph_with_gaps() -> None:
         agent_id="a1",
         gap_status=ProvenanceGapStatus.PROV_GAP,
     )
-    store_provenance_record(gap_record)
-
-    # Record with dangling wasAttributedTo
-    orphan_id = uuid4()
     orphan_record = ProvenanceRecord(
         session_id=sid,
         agent_id="a1",
-        was_attributed_to=orphan_id,
+        was_attributed_to=uuid4(),
     )
-    store_provenance_record(orphan_record)
 
-    # Clear previous stores to isolate
-    graph = get_provenance_graph(sid)
+    graph = build_graph(sid, [gap_record, orphan_record], [])
 
     assert not graph.is_complete
-    assert len(graph.gap_flags) > 0
+    assert len(graph.gap_flags) == 2
 
 
 # ── _build_links ──────────────────────────────────────────────────────────────
@@ -258,7 +256,7 @@ def test_build_links_multiple_types() -> None:
     links = _build_links([record])
     assert len(links) == 4  # one per relation type
 
-    link_types = {l.relation_type for l in links}
+    link_types = {link.relation_type for link in links}
     assert "wasGeneratedBy" in link_types
     assert "wasDerivedFrom" in link_types
     assert "wasAttributedTo" in link_types
@@ -326,3 +324,84 @@ def test_provenance_graph_is_complete_property() -> None:
         gap_flags=["Gap in record X"],
     )
     assert graph_with_gaps.is_complete is False
+
+
+# ── What the flows record ─────────────────────────────────────────────────────
+
+
+def _step(node: str, outputs: dict[str, object]) -> ReasoningStep:
+    return ReasoningStep(node=node, action=node.upper(), inputs={"x": 1}, outputs=outputs)
+
+
+def test_session_run_output_cites_the_guardian_row_of_this_run() -> None:
+    """The output cites the audit row of the run's last GuardianCheck step, and the
+    steps a resumed session already had are not recorded again."""
+    audit_id = uuid4()
+    earlier = _step("GuardianCheck", {"audit_entry_id": str(uuid4())})
+    initial = EpistemicState(
+        session_id="s", agent_id="agent-x", reasoning_steps=[earlier], draft_explanation="words"
+    )
+    final = initial.model_copy(
+        update={
+            "reasoning_steps": [
+                earlier,
+                _step("CausalAnalysis", {}),
+                _step("GuardianCheck", {"audit_entry_id": str(audit_id)}),
+            ]
+        }
+    )
+
+    records = session_run_records(
+        initial, final, route="POST /api/v1/session/run", user_id="u1", resumed=True
+    )
+
+    graph = build_graph("s", records, [])
+    assert graph.is_complete, graph.gap_flags
+    output = records[-1]
+    assert output.guardian_verdict_ref == audit_id
+    steps = [r for r in records if r.attributes.get("part_of")]
+    assert [r.attributes["node"] for r in steps] == ["CausalAnalysis", "GuardianCheck"]
+    assert records[1].attributes["description_sha256"] == digest("words")
+    assert "words" not in str([r.model_dump() for r in records])
+
+
+def test_session_run_without_a_guardian_step_cites_no_row() -> None:
+    state = EpistemicState(session_id="s", agent_id="a")
+    records = session_run_records(state, state, route="r", user_id=None, resumed=False)
+    assert records[-1].guardian_verdict_ref is None
+
+
+def test_guardian_record_cites_its_audit_row() -> None:
+    audit_id = uuid4()
+    record = guardian_check_record(
+        session_id="s",
+        agent_id="guardian",
+        audit_entry_id=audit_id,
+        verdict="REJECTED",
+        policy_rules_cited=["PR-006"],
+        action_type="EDGE_PROPOSAL",
+        payload_hash="h",
+    )
+    assert record.record_type == ProvenanceRecordType.ACTIVITY
+    assert record.guardian_verdict_ref == audit_id
+    assert record.attributes["policy_rules_cited"] == ["PR-006"]
+
+
+def test_decision_records_link_data_and_graph_to_the_entry() -> None:
+    sid, records = decision_records(
+        entry_digest="e" * 64,
+        sequence=3,
+        verdict="experiment",
+        decision_digest="d",
+        outcome_kind="result",
+        data={"data_sha256": "x"},
+        graph={"graph_sha256": "y"},
+        analysis={"causal_core_version": "causal_core 0"},
+        user_id="u",
+    )
+    assert sid == "decision:" + "e" * 64
+    agent, data, graph_entity, activity, decided = records
+    assert set(activity.used) == {data.id, graph_entity.id}
+    assert decided.was_generated_by == activity.id
+    assert decided.attributes["sequence"] == 3
+    assert build_graph(sid, records, []).is_complete

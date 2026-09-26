@@ -1,0 +1,181 @@
+{
+  "$defs": {
+    "ConditionCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "detail": {
+          "default": "",
+          "title": "Detail",
+          "type": "string"
+        },
+        "holds": {
+          "title": "Holds",
+          "type": "boolean"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "holds"
+      ],
+      "title": "ConditionCheck",
+      "type": "object"
+    },
+    "IdentificationStatus": {
+      "enum": [
+        "identified",
+        "not_identified"
+      ],
+      "title": "IdentificationStatus",
+      "type": "string"
+    },
+    "Strategy": {
+      "enum": [
+        "randomized",
+        "backdoor",
+        "frontdoor",
+        "iv",
+        "proximal",
+        "id_general",
+        "difference_in_differences"
+      ],
+      "title": "Strategy",
+      "type": "string"
+    },
+    "Tier": {
+      "description": "Strength of identification.\n\nA -- identified nonparametrically from the graph alone.\nB -- identified only under additional parametric or structural assumptions\n     that the graph cannot express (e.g. effect homogeneity for IV).\nC -- reserved: identified only by an assumption outside the graph.\nD -- not identified.",
+      "enum": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "title": "Tier",
+      "type": "string"
+    }
+  },
+  "$id": "urn:causalplatform:claims:0.12.0:identification_certificate",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "adjustment_set": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Adjustment Set",
+      "type": "array"
+    },
+    "assumptions": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Assumptions",
+      "type": "array"
+    },
+    "conditions": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ConditionCheck"
+      },
+      "title": "Conditions",
+      "type": "array"
+    },
+    "engine": {
+      "title": "Engine",
+      "type": "string"
+    },
+    "estimand": {
+      "description": "The identifying functional, as a readable expression.",
+      "title": "Estimand",
+      "type": "string"
+    },
+    "general_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Result of the complete ID algorithm on the same graph: the identifying expression, or 'FAIL: hedge ...'. Every strategy above must agree with it.",
+      "title": "General Id"
+    },
+    "graph_digest": {
+      "title": "Graph Digest",
+      "type": "string"
+    },
+    "instruments": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Instruments",
+      "type": "array"
+    },
+    "mediators": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Mediators",
+      "type": "array"
+    },
+    "outcome_proxies": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Outcome Proxies",
+      "type": "array"
+    },
+    "status": {
+      "$ref": "#/$defs/IdentificationStatus"
+    },
+    "strategy": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Strategy"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "tier": {
+      "$ref": "#/$defs/Tier"
+    },
+    "treatment_proxies": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Treatment Proxies",
+      "type": "array"
+    },
+    "unreviewed_edges": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Unreviewed Edges",
+      "type": "array"
+    }
+  },
+  "required": [
+    "status",
+    "strategy",
+    "tier",
+    "estimand",
+    "engine",
+    "graph_digest"
+  ],
+  "title": "IdentificationCertificate",
+  "type": "object"
+}

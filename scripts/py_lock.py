@@ -399,7 +399,11 @@ def relock(names: list[str], upgrade: bool, root: Path) -> int:
         cmd = [uv, "pip", "compile", str(src.relative_to(root)), "-o", str(out.relative_to(root)),
                *COMPILE_OPTIONS, "--custom-compile-command", RELOCK_COMMAND, "--quiet"]
         for loc in locals_of(name, root):
-            cmd += ["--no-emit-package", loc.name]
+            # --refresh-package: uv caches the wheel it builds from a local path, and
+            # after the package's version bumps it can resolve against that stale
+            # build (causal-core 0.10 -> 0.11 did, until UV_NO_CACHE=1). Rebuild the
+            # local packages every time; index packages keep their cache.
+            cmd += ["--no-emit-package", loc.name, "--refresh-package", loc.name]
         if upgrade:
             cmd.append("--upgrade")
         print("+", " ".join(cmd[1:]))

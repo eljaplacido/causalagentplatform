@@ -41,13 +41,20 @@ const ITEM_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
 const ITEM_NAME = "payment_latency → checkout_conversion";
 const REASON = "Evidence and sensitivity analysis support this edge.";
 
+// `domain` is the semantic-layer BUSINESS domain the object belongs to
+// (causal_edges.domain, e.g. "devops") -- not a Cynefin classification. An
+// earlier fixture used "complicated" here, which hid that the page fed this
+// value to CynefinBadge and crashed on every real one.
 const backendQueueItem = {
   id: ITEM_ID,
   object_type: "CausalEdge",
-  domain: "complicated",
+  domain: "devops",
   name: ITEM_NAME,
   approval_status: "DRAFT",
   created_at: "2026-09-18T10:00:00Z",
+  risk_tier: "HIGH",
+  risk_reasons: ["no stored sensitivity result on an assumption it rests on"],
+  submitted_by: "ryo.tanaka",
 };
 
 // AuditEntry serialises camelCase (alias_generator=_camel); the AuditLogResponse
@@ -126,6 +133,24 @@ afterEach(() => {
 });
 
 // ─── Live backend ────────────────────────────────────────────────────────────────
+
+describe("GovernancePage — a review item's business domain is not a Cynefin domain", () => {
+  it("shows the business domain as a plain label and no Cynefin badge when none is classified", async () => {
+    const user = userEvent.setup();
+    governanceApiMock.reviewQueue.mockResolvedValue([backendQueueItem]);
+    governanceApiMock.auditLog.mockResolvedValue(auditResponse([]));
+
+    renderPage();
+    const row = await screen.findByTestId("first-review-item");
+    expect(within(row).getByTestId("business-domain")).toHaveTextContent("devops");
+    expect(within(row).queryByTestId("cynefin-badge")).toBeNull();
+
+    await user.click(row);
+    const panel = screen.getByTestId("approval-panel");
+    expect(within(panel).getByTestId("business-domain")).toHaveTextContent("devops");
+    expect(within(panel).queryByTestId("cynefin-badge")).toBeNull();
+  });
+});
 
 describe("GovernancePage — approve calls the backend and waits for it", () => {
   it("shows success only after check + approve succeed, then refetches queue and audit log", async () => {
@@ -276,6 +301,33 @@ describe("GovernancePage — backend failure never marks the item approved", () 
     expect(screen.queryByTestId("approval-success")).toBeNull();
   });
 
+  it("Guardian verdict other than APPROVED on a reject: reject endpoint is not called", async () => {
+    const user = userEvent.setup();
+
+    governanceApiMock.reviewQueue.mockResolvedValue([backendQueueItem]);
+    governanceApiMock.auditLog.mockResolvedValue(auditResponse([]));
+    governanceApiMock.check.mockResolvedValue({
+      verdict: "REJECTED",
+      reason: "Guardian refused the reject request.",
+      policy_rules_cited: ["PR-003"],
+      audit_entry_id: "a-8",
+      session_id: null,
+    });
+
+    renderPage();
+    await selectFirstItem(user);
+    await user.click(screen.getByTestId("reject-button"));
+    await user.selectOptions(screen.getByTestId("approval-domain"), "COMPLEX");
+    await user.type(screen.getByLabelText(/rejection reason/i), REASON);
+    await user.click(screen.getByTestId("confirm-rejection"));
+
+    const alert = await screen.findByTestId("approval-error");
+    expect(alert).toHaveTextContent(/Rejection failed: Guardian verdict was REJECTED/);
+    // A REJECTED verdict no longer authorises a rejection, so it is not sent.
+    expect(governanceApiMock.reject).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("approval-success")).toBeNull();
+  });
+
   it("reject API rejection: error shown and no success state", async () => {
     const user = userEvent.setup();
 
@@ -295,11 +347,21 @@ describe("GovernancePage — backend failure never marks the item approved", () 
     renderPage();
     await selectFirstItem(user);
     await user.click(screen.getByTestId("reject-button"));
+    await user.selectOptions(screen.getByTestId("approval-domain"), "COMPLICATED");
     await user.type(screen.getByLabelText(/rejection reason/i), REASON);
     await user.click(screen.getByTestId("confirm-rejection"));
 
     const alert = await screen.findByTestId("approval-error");
     expect(alert).toHaveTextContent(/Rejection failed: Network request failed/);
+    // The same shape as an approval's check: the object it authorises, and the
+    // reviewer's classification -- rejecting needs an APPROVED verdict for
+    // GOVERNANCE_REJECT (septa-53), which Guardian never gives in DISORDER.
+    expect(governanceApiMock.check).toHaveBeenCalledWith({
+      action_type: "GOVERNANCE_REJECT",
+      payload: { object_id: ITEM_ID, object_type: "CausalEdge", reason: REASON },
+      subject_id: ITEM_ID,
+      cynefin_domain: "COMPLICATED",
+    });
     expect(governanceApiMock.reject).toHaveBeenCalledWith(
       ITEM_ID,
       "CausalEdge",
@@ -364,5 +426,63 @@ describe("GovernancePage — mock fallback mode", () => {
     expect(screen.queryByTestId("mock-data-badge")).toBeNull();
     expect(screen.queryByTestId("review-queue")).toBeNull();
     expect(screen.queryByTestId("audit-log-panel")).toBeNull();
+  });
+});
+
+// ─── Review queue: the backend's risk tier and submitter (septa-36) ─────────────
+//
+// GET /review-queue returns risk_tier, risk_reasons and submitted_by for each item
+// (backend/src/semantic_layer/review_risk.py derives the tier). The page used to
+// discard them and fill riskTier "MEDIUM" and submittedBy "system" for every item.
+
+describe("GovernancePage — the queue shows the backend's risk tier and submitter", () => {
+  const lowEntity = {
+    id: "11111111-1111-4111-8111-111111111111",
+    object_type: "CausalEntity",
+    // "complicated", as backendQueueItem above: the page maps this field to a
+    // Cynefin badge, and a business domain ("devops") crashes it -- a separate bug.
+    domain: "complicated",
+    name: "checkout-service",
+    approval_status: "DRAFT",
+    created_at: "2026-09-01T10:00:00Z",
+    risk_tier: "LOW",
+    risk_reasons: ["an entity asserts no causal relationship"],
+    submitted_by: "ana",
+  };
+  const criticalEdge = {
+    id: "22222222-2222-4222-8222-222222222222",
+    object_type: "CausalEdge",
+    domain: "complicated",
+    name: "CAUSES",
+    approval_status: "DRAFT",
+    created_at: "2026-09-20T10:00:00Z",
+    risk_tier: "CRITICAL",
+    risk_reasons: ["stated confidence 0.40 is below 0.5"],
+    submitted_by: null,
+  };
+
+  it("renders each item's tier and submitter, most at risk first", async () => {
+    // Deliberately oldest-first, the order the backend used to return.
+    governanceApiMock.reviewQueue.mockResolvedValue([lowEntity, criticalEdge]);
+    governanceApiMock.auditLog.mockResolvedValue(auditResponse([]));
+
+    renderPage();
+
+    const first = await screen.findByTestId("first-review-item");
+    expect(first).toHaveAttribute("data-item-id", criticalEdge.id);
+    expect(within(first).getByText("Critical")).toHaveAttribute(
+      "title",
+      expect.stringContaining("below 0.5")
+    );
+    expect(within(first).getByText("not recorded")).toBeInTheDocument();
+
+    const second = screen.getByTestId("review-item");
+    expect(second).toHaveAttribute("data-item-id", lowEntity.id);
+    expect(within(second).getByText("Low")).toBeInTheDocument();
+    expect(within(second).getByText("ana")).toBeInTheDocument();
+
+    const queue = screen.getByTestId("review-queue");
+    expect(within(queue).queryByText("system")).toBeNull();
+    expect(within(queue).queryByText("Medium")).toBeNull();
   });
 });

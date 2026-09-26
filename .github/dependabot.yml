@@ -9,7 +9,8 @@
 #                   so the lock stays current, and CI proves the environment whole.
 #   pyproject.toml  the ranges themselves. increase-if-necessary: a PR only when a
 #                   release falls outside a range (a deliberate ceiling: fastapi <0.142,
-#                   mcp <2 in the backend). Such a PR is red until someone re-locks on
+#                   ruff/mypy/bandit pinned to a minor because the ratchets count
+#                   per version). Such a PR is red until someone re-locks on
 #                   its branch (python3 scripts/py_lock.py relock) -- which is the
 #                   review it needs. The ratchet-counted tools and majors are
 #                   ignored here (below).
@@ -66,9 +67,12 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
-    # Majors stay out of the groups, so each arrives as its own PR -- except these,
-    # held until their ledger items are done.
+    # npm majors are ledger work, as pyproject majors are: each needs its own
+    # migration and review, and five bot PRs at once held every CI runner (#32-#36).
+    # The next/eslint-config-next and typescript entries name their ledger items.
     ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
       # septa-57: next 16 and eslint-config-next 16 move together (eslint-config-next
       # 16 crashes eslint on next 15, #20), dropping the next-15 postcss override.
       - dependency-name: next

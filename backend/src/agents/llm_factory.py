@@ -335,6 +335,10 @@ def _build_fallback_llm(capability: Capability, temperature: float) -> tuple[Any
 
 # ── Provenance capture wrapper ─────────────────────────────────────────────────
 
+#: Captures scheduled from a synchronous call inside a running loop, held so the
+#: loop does not drop them before they finish.
+_PENDING_CAPTURES: set[Any] = set()
+
 
 def _token_counts(result: Any) -> tuple[int, int]:
     """(input, output) tokens from a LangChain message's ``usage_metadata``, 0 when absent."""
@@ -348,11 +352,12 @@ class _ProvenanceCapturingLLM:
     """
     Wraps a LangChain LLM to auto-capture LLMInvocation metadata on every call.
 
-    Each call -- successful or not -- appends one ``LLMInvocation`` through
-    ``src.api.provenance.store_llm_invocation``: session, agent, capability,
-    provider, model, the prompt template's id and hash, temperature, token counts
-    (when the provider reports them) and latency. Capture is best-effort: a failure
-    to record is logged and never fails the call.
+    Each call -- successful or not -- appends one ``LLMInvocation`` to the durable
+    provenance store (src/semantic_layer/provenance_store.py): session, agent,
+    capability, provider, model, the prompt template's id and hash, temperature,
+    token counts (when the provider reports them) and latency. Capture is
+    best-effort, as ADR-002 specifies: a failure to record is logged and never
+    fails the call.
     """
 
     def __init__(
@@ -386,7 +391,8 @@ class _ProvenanceCapturingLLM:
         try:
             result = await self._llm.ainvoke(prompt, **kwargs)
         finally:
-            self._capture((_time.perf_counter() - t0) * 1000, result)
+            duration_ms = (_time.perf_counter() - t0) * 1000
+            await self._persist(self._invocation(duration_ms, result))
         return result
 
     def invoke(self, prompt: Any, **kwargs: Any) -> Any:
@@ -397,40 +403,29 @@ class _ProvenanceCapturingLLM:
         try:
             result = self._llm.invoke(prompt, **kwargs)
         finally:
-            self._capture((_time.perf_counter() - t0) * 1000, result)
+            duration_ms = (_time.perf_counter() - t0) * 1000
+            self._persist_sync(self._invocation(duration_ms, result))
         return result
 
-    def _capture(self, duration_ms: float, result: Any) -> None:
-        """Emit LLMInvocation to the provenance store."""
+    def _invocation(self, duration_ms: float, result: Any) -> Any:
+        """The LLMInvocation for one call, or None if it cannot be built."""
         try:
-            from src.api.provenance import store_llm_invocation
             from src.semantic_layer.provenance import (
                 LLMCapability,
                 LLMInvocation,
                 LLMProvider,
             )
 
-            # Map string capability/provider to enums
-            cap_map = {
-                "causal_reasoning": LLMCapability.CAUSAL_REASONING,
-                "fast_classification": LLMCapability.FAST_CLASSIFICATION,
-                "document_extraction": LLMCapability.DOCUMENT_EXTRACTION,
-                "code_generation": LLMCapability.CODE_GENERATION,
-                "planning": LLMCapability.PLANNING,
-            }
-            prov_map = {
-                "ollama": LLMProvider.OLLAMA,
-                "anthropic": LLMProvider.ANTHROPIC,
-                "openai": LLMProvider.OPENAI,
-                "deepseek": LLMProvider.DEEPSEEK,
-            }
             tokens_in, tokens_out = _token_counts(result)
-
-            invocation = LLMInvocation(
+            return LLMInvocation(
                 session_id=self._session_id,
                 agent_id=self._agent_id,
-                capability=cap_map.get(self._capability, LLMCapability.CAUSAL_REASONING),
-                provider=prov_map.get(self._provider, LLMProvider.OLLAMA),
+                capability=LLMCapability(self._capability)
+                if self._capability in LLMCapability.__members__.values()
+                else LLMCapability.CAUSAL_REASONING,
+                provider=LLMProvider(self._provider)
+                if self._provider in LLMProvider.__members__.values()
+                else LLMProvider.OLLAMA,
                 model_name=self._model_name,
                 prompt_template_id=self._prompt_template_id,
                 prompt_template_hash=self._prompt_template_hash,
@@ -439,11 +434,41 @@ class _ProvenanceCapturingLLM:
                 output_token_count=tokens_out,
                 latency_ms=round(duration_ms, 2),
             )
-            store_llm_invocation(invocation)
-
         except Exception as exc:
-            # Provenance capture is best-effort; never block on failure
-            log.warning("llm_factory.provenance_capture.failed", error=str(exc))
+            log.warning("llm_factory.provenance_capture.build_failed", error=str(exc))
+            return None
+
+    async def _persist(self, invocation: Any) -> None:
+        """Append the invocation to the durable provenance store.
+
+        Best-effort, as ADR-002 specifies: a failure is logged, never raised,
+        so provenance cannot block a model call.
+        """
+        if invocation is None:
+            return
+        try:
+            from src.semantic_layer.provenance_store import ProvenanceStore
+
+            await ProvenanceStore().append(invocations=[invocation])
+        except Exception as exc:
+            log.warning(
+                "llm_factory.provenance_capture.failed",
+                session_id=self._session_id,
+                error=str(exc),
+            )
+
+    def _persist_sync(self, invocation: Any) -> None:
+        """`_persist` from synchronous code: run it, or schedule it on a running loop."""
+        import asyncio
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            asyncio.run(self._persist(invocation))
+            return
+        task = loop.create_task(self._persist(invocation))
+        _PENDING_CAPTURES.add(task)
+        task.add_done_callback(_PENDING_CAPTURES.discard)
 
     # Passthrough attribute access to the underlying LLM
     def __getattr__(self, name: str) -> Any:

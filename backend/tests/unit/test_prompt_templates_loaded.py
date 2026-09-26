@@ -28,6 +28,9 @@ GROUNDED = (
     "interval [[claim:effect.ci.lo]] to [[claim:effect.ci.hi]]."
 )
 
+#: The capture hook appends to the durable provenance store, so these run on a database.
+pytestmark = pytest.mark.usefixtures("db_engine")
+
 
 def _use_fake(monkeypatch: pytest.MonkeyPatch, llm: Any) -> None:
     monkeypatch.setenv("OLLAMA_BASE_URL", "http://ollama.invalid")
@@ -149,7 +152,7 @@ async def test_the_simulation_agent_prompt_is_the_rendered_template(
     assert "[[claim:effect]]" in prompt and "[[claim:e_value]]" in prompt
     assert "is permitted for this outcome" in prompt
 
-    invocations = get_provenance_graph(session).llm_invocations
+    invocations = (await get_provenance_graph(session))[0].llm_invocations
     assert len(invocations) == 1
     assert invocations[0].prompt_template_id == template.template_id
     assert invocations[0].prompt_template_hash == template.sha256
@@ -169,7 +172,7 @@ async def test_a_malformed_template_stops_the_llm_call(
     result = await DataSimulationAgent().process(state(session))
 
     assert llm.prompts == []  # no prompt was sent: there is no ad-hoc fallback prompt
-    assert get_provenance_graph(session).llm_invocations == []
+    assert (await get_provenance_graph(session))[0].llm_invocations == []
     assert result.draft_explanation.startswith("Simulation complete.")
     step = next(s for s in result.reasoning_steps if s.action == "NARRATION")
     assert step.outputs["source"] == "deterministic"

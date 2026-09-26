@@ -1,0 +1,1745 @@
+{
+  "$defs": {
+    "AbstentionReason": {
+      "enum": [
+        "NON_IDENTIFIABLE",
+        "POSITIVITY",
+        "LOW_N",
+        "UNAPPROVED_ASSUMPTION",
+        "CI_TOO_WIDE",
+        "DESIGN_CHECK_FAILED",
+        "RUNG_MISMATCH",
+        "INVALID_ADJUSTMENT_SET",
+        "WEAK_INSTRUMENT",
+        "NO_ESTIMATOR",
+        "INVALID_INPUT"
+      ],
+      "title": "AbstentionReason",
+      "type": "string"
+    },
+    "BalanceRow": {
+      "additionalProperties": false,
+      "properties": {
+        "covariate": {
+          "title": "Covariate",
+          "type": "string"
+        },
+        "smd_raw": {
+          "title": "Smd Raw",
+          "type": "number"
+        },
+        "smd_weighted": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Smd Weighted"
+        }
+      },
+      "required": [
+        "covariate",
+        "smd_raw",
+        "smd_weighted"
+      ],
+      "title": "BalanceRow",
+      "type": "object"
+    },
+    "CausalQuery": {
+      "additionalProperties": false,
+      "properties": {
+        "adjust_for": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A user-chosen adjustment set. It is validated against the graph and refused if it is not a valid adjustment set.",
+          "title": "Adjust For"
+        },
+        "cluster": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Randomized designs only: the column identifying the unit of randomization (service, region, tenant) when outcomes are measured on finer units (requests, users). Standard errors are then cluster-robust; treatment must be constant within a cluster.",
+          "title": "Cluster"
+        },
+        "control_group": {
+          "default": "never_treated",
+          "description": "Panel designs only: never_treated compares each cohort with units never treated; not_yet_treated adds cohorts not yet treated at that period, for rollouts that reach every unit.",
+          "enum": [
+            "never_treated",
+            "not_yet_treated"
+          ],
+          "title": "Control Group",
+          "type": "string"
+        },
+        "covariates": {
+          "default": [],
+          "description": "Panel designs only: time-invariant, pre-treatment columns under which parallel trends is assumed to hold; each group-time effect is then doubly robust (Sant'Anna & Zhao 2020). Covariates that vary within a unit, and poor overlap, are refused.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Covariates",
+          "type": "array"
+        },
+        "design": {
+          "$ref": "#/$defs/Design",
+          "default": "observational"
+        },
+        "estimand": {
+          "default": "ate",
+          "description": "ate: average effect over the population. att: average effect on the treated units (binary treatment only; needs overlap in one direction only).",
+          "enum": [
+            "ate",
+            "att"
+          ],
+          "title": "Estimand",
+          "type": "string"
+        },
+        "expected_treated_share": {
+          "anyOf": [
+            {
+              "exclusiveMaximum": 1,
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Treated Share"
+        },
+        "horizon": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Horizon"
+        },
+        "instruments": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Instruments"
+        },
+        "negative_control_outcomes": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Negative Control Outcomes",
+          "type": "array"
+        },
+        "outcome": {
+          "title": "Outcome",
+          "type": "string"
+        },
+        "outcome_proxies": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Outcome Proxies",
+          "type": "array"
+        },
+        "population": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Population"
+        },
+        "rung": {
+          "$ref": "#/$defs/Rung",
+          "default": "intervention"
+        },
+        "segment_by": {
+          "default": [],
+          "description": "Discrete, pre-treatment columns to estimate the effect within, declared before the answer is seen. The kernel does not search for subgroups: finding the subgroup with the largest effect is a different activity with different statistics, and reporting it as if it had been declared is how a team fools itself.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Segment By",
+          "type": "array"
+        },
+        "sequence": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Randomized designs only: the column giving each unit's arrival order. When set, the effect is reported as an anytime-valid confidence sequence at every look, so the analysis may be read -- and stopped -- as often as wanted without inflating its error rate. Needs `expected_treated_share`, the known allocation probability.",
+          "title": "Sequence"
+        },
+        "time": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Panel designs only: the column holding the period, as an integer or an ordered value. Periods are the distinct values in sorted order.",
+          "title": "Time"
+        },
+        "treatment": {
+          "title": "Treatment",
+          "type": "string"
+        },
+        "treatment_levels": {
+          "anyOf": [
+            {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "(control, treated). Defaults to (0, 1) for a binary treatment; for a continuous treatment the effect is reported per unit unless levels are given.",
+          "title": "Treatment Levels"
+        },
+        "treatment_proxies": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Treatment Proxies",
+          "type": "array"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Panel designs only: the column identifying the unit observed repeatedly.",
+          "title": "Unit"
+        },
+        "washout": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Switchback designs (cluster = the time block, time = within-block time): drop, from every block, the observations within this many time units of its start -- the settling-in after a switch. Every block, not only switched ones, so a block's retained window never depends on its neighbour's arm.",
+          "title": "Washout"
+        }
+      },
+      "required": [
+        "treatment",
+        "outcome"
+      ],
+      "title": "CausalQuery",
+      "type": "object"
+    },
+    "Claim": {
+      "additionalProperties": false,
+      "description": "A number that may appear in prose, bound to the field it came from.\n\nNarratives reference claims as ``\u27e6claim:<id>\u27e7``; the renderer substitutes\n``text`` and the verifier rejects any number in the prose that is not a claim.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "path": {
+          "description": "JSON pointer into the result that holds the value.",
+          "title": "Path",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "value": {
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "value",
+        "text",
+        "path"
+      ],
+      "title": "Claim",
+      "type": "object"
+    },
+    "ConditionCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "detail": {
+          "default": "",
+          "title": "Detail",
+          "type": "string"
+        },
+        "holds": {
+          "title": "Holds",
+          "type": "boolean"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "holds"
+      ],
+      "title": "ConditionCheck",
+      "type": "object"
+    },
+    "Design": {
+      "enum": [
+        "observational",
+        "randomized",
+        "difference_in_differences"
+      ],
+      "title": "Design",
+      "type": "string"
+    },
+    "DesignCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "detail": {
+          "default": "",
+          "title": "Detail",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "passed"
+      ],
+      "title": "DesignCheck",
+      "type": "object"
+    },
+    "Diagnostics": {
+      "additionalProperties": false,
+      "properties": {
+        "balance": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/BalanceRow"
+          },
+          "title": "Balance",
+          "type": "array"
+        },
+        "checks": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/DesignCheck"
+          },
+          "title": "Checks",
+          "type": "array"
+        },
+        "first_stage_f": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "First Stage F"
+        },
+        "icc": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Cluster-randomized designs: estimated intra-cluster correlation of the outcome within arms. With clusters of size m, units carry about 1/(1 + (m-1)\u00b7ICC) of the information independent units would.",
+          "title": "Icc"
+        },
+        "n_clusters": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "N Clusters"
+        },
+        "n_control": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "N Control"
+        },
+        "n_dropped_missing": {
+          "default": 0,
+          "title": "N Dropped Missing",
+          "type": "integer"
+        },
+        "n_rows": {
+          "title": "N Rows",
+          "type": "integer"
+        },
+        "n_treated": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "N Treated"
+        },
+        "n_used": {
+          "title": "N Used",
+          "type": "integer"
+        },
+        "outcome_sd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Standard deviation of the outcome on the analysed rows. Reported because sizing a follow-up experiment needs it, and because an effect is only interpretable against the outcome's spread.",
+          "title": "Outcome Sd"
+        },
+        "propensity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PropensityDiagnostics"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "srm_p_value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Srm P Value"
+        },
+        "treatment_kind": {
+          "enum": [
+            "binary",
+            "continuous"
+          ],
+          "title": "Treatment Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "n_rows",
+        "n_used",
+        "treatment_kind"
+      ],
+      "title": "Diagnostics",
+      "type": "object"
+    },
+    "EstimateRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "assumptions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Assumptions",
+          "type": "array"
+        },
+        "ci": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Interval"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ci_null_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ci Null Reason"
+        },
+        "details": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "title": "Details",
+          "type": "object"
+        },
+        "estimand": {
+          "title": "Estimand",
+          "type": "string"
+        },
+        "estimator": {
+          "title": "Estimator",
+          "type": "string"
+        },
+        "family": {
+          "title": "Family",
+          "type": "string"
+        },
+        "n_used": {
+          "title": "N Used",
+          "type": "integer"
+        },
+        "point": {
+          "title": "Point",
+          "type": "number"
+        },
+        "se": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Se"
+        }
+      },
+      "required": [
+        "estimator",
+        "family",
+        "estimand",
+        "point",
+        "se",
+        "ci",
+        "n_used"
+      ],
+      "title": "EstimateRecord",
+      "type": "object"
+    },
+    "EventTimeEffect": {
+      "additionalProperties": false,
+      "description": "The effect ``event_time`` periods after adoption (negative: before it).\n\nPre-adoption event times are placebo estimates -- zero in expectation under parallel\ntrends -- and period ``-1`` is the base, zero by construction, so it is not reported.",
+      "properties": {
+        "cohorts": {
+          "description": "How many adoption cohorts contribute to this event time.",
+          "title": "Cohorts",
+          "type": "integer"
+        },
+        "estimate": {
+          "$ref": "#/$defs/EstimateRecord"
+        },
+        "event_time": {
+          "title": "Event Time",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "event_time",
+        "estimate",
+        "cohorts"
+      ],
+      "title": "EventTimeEffect",
+      "type": "object"
+    },
+    "Heterogeneity": {
+      "additionalProperties": false,
+      "description": "Whether the segments differ at all, asked once, before any of them are compared.",
+      "properties": {
+        "alpha": {
+          "title": "Alpha",
+          "type": "number"
+        },
+        "df": {
+          "title": "Df",
+          "type": "integer"
+        },
+        "differs": {
+          "description": "False means the data cannot distinguish these segments from one another. Acting on the differences anyway is the error this test exists to prevent.",
+          "title": "Differs",
+          "type": "boolean"
+        },
+        "method": {
+          "const": "cochran_q",
+          "default": "cochran_q",
+          "title": "Method",
+          "type": "string"
+        },
+        "p_value": {
+          "title": "P Value",
+          "type": "number"
+        },
+        "segments_compared": {
+          "title": "Segments Compared",
+          "type": "integer"
+        },
+        "statistic": {
+          "title": "Statistic",
+          "type": "number"
+        }
+      },
+      "required": [
+        "statistic",
+        "df",
+        "p_value",
+        "alpha",
+        "differs",
+        "segments_compared"
+      ],
+      "title": "Heterogeneity",
+      "type": "object"
+    },
+    "IdentificationCertificate": {
+      "additionalProperties": false,
+      "properties": {
+        "adjustment_set": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Adjustment Set",
+          "type": "array"
+        },
+        "assumptions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Assumptions",
+          "type": "array"
+        },
+        "conditions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ConditionCheck"
+          },
+          "title": "Conditions",
+          "type": "array"
+        },
+        "engine": {
+          "title": "Engine",
+          "type": "string"
+        },
+        "estimand": {
+          "description": "The identifying functional, as a readable expression.",
+          "title": "Estimand",
+          "type": "string"
+        },
+        "general_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Result of the complete ID algorithm on the same graph: the identifying expression, or 'FAIL: hedge ...'. Every strategy above must agree with it.",
+          "title": "General Id"
+        },
+        "graph_digest": {
+          "title": "Graph Digest",
+          "type": "string"
+        },
+        "instruments": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Instruments",
+          "type": "array"
+        },
+        "mediators": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Mediators",
+          "type": "array"
+        },
+        "outcome_proxies": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Outcome Proxies",
+          "type": "array"
+        },
+        "status": {
+          "$ref": "#/$defs/IdentificationStatus"
+        },
+        "strategy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Strategy"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tier": {
+          "$ref": "#/$defs/Tier"
+        },
+        "treatment_proxies": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Treatment Proxies",
+          "type": "array"
+        },
+        "unreviewed_edges": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Unreviewed Edges",
+          "type": "array"
+        }
+      },
+      "required": [
+        "status",
+        "strategy",
+        "tier",
+        "estimand",
+        "engine",
+        "graph_digest"
+      ],
+      "title": "IdentificationCertificate",
+      "type": "object"
+    },
+    "IdentificationStatus": {
+      "enum": [
+        "identified",
+        "not_identified"
+      ],
+      "title": "IdentificationStatus",
+      "type": "string"
+    },
+    "Interval": {
+      "additionalProperties": false,
+      "properties": {
+        "hi": {
+          "title": "Hi",
+          "type": "number"
+        },
+        "level": {
+          "title": "Level",
+          "type": "number"
+        },
+        "lo": {
+          "title": "Lo",
+          "type": "number"
+        },
+        "method": {
+          "title": "Method",
+          "type": "string"
+        }
+      },
+      "required": [
+        "level",
+        "lo",
+        "hi",
+        "method"
+      ],
+      "title": "Interval",
+      "type": "object"
+    },
+    "ParallelTrendsSensitivity": {
+      "additionalProperties": false,
+      "description": "How far parallel trends may fail before the conclusion changes (panel designs).",
+      "properties": {
+        "alpha_effect": {
+          "title": "Alpha Effect",
+          "type": "number"
+        },
+        "alpha_pre": {
+          "title": "Alpha Pre",
+          "type": "number"
+        },
+        "breakdown": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The largest multiple at which the interval still excludes zero. None when it includes zero even with no violation allowed.",
+          "title": "Breakdown"
+        },
+        "method": {
+          "title": "Method",
+          "type": "string"
+        },
+        "pre_bound": {
+          "description": "Upper confidence bound on the largest absolute pre-adoption event-time effect.",
+          "title": "Pre Bound",
+          "type": "number"
+        },
+        "rows": {
+          "items": {
+            "$ref": "#/$defs/TrendSensitivityRow"
+          },
+          "title": "Rows",
+          "type": "array"
+        }
+      },
+      "required": [
+        "method",
+        "alpha_pre",
+        "alpha_effect",
+        "pre_bound",
+        "rows"
+      ],
+      "title": "ParallelTrendsSensitivity",
+      "type": "object"
+    },
+    "PropensityDiagnostics": {
+      "additionalProperties": false,
+      "properties": {
+        "ess_control": {
+          "title": "Ess Control",
+          "type": "number"
+        },
+        "ess_treated": {
+          "title": "Ess Treated",
+          "type": "number"
+        },
+        "max": {
+          "title": "Max",
+          "type": "number"
+        },
+        "min": {
+          "title": "Min",
+          "type": "number"
+        },
+        "share_outside_bounds": {
+          "title": "Share Outside Bounds",
+          "type": "number"
+        }
+      },
+      "required": [
+        "min",
+        "max",
+        "share_outside_bounds",
+        "ess_treated",
+        "ess_control"
+      ],
+      "title": "PropensityDiagnostics",
+      "type": "object"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "properties": {
+        "contract_version": {
+          "title": "Contract Version",
+          "type": "string"
+        },
+        "core_version": {
+          "title": "Core Version",
+          "type": "string"
+        },
+        "data_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data Digest"
+        },
+        "graph_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Graph Digest"
+        },
+        "policy_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Policy Digest"
+        },
+        "query_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Query Digest"
+        },
+        "seed": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Seed"
+        }
+      },
+      "required": [
+        "contract_version",
+        "core_version"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "RefutationResult": {
+      "additionalProperties": false,
+      "properties": {
+        "detail": {
+          "default": "",
+          "title": "Detail",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "p_value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "P Value"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "statistic": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Statistic"
+        },
+        "threshold": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Threshold"
+        }
+      },
+      "required": [
+        "name",
+        "passed"
+      ],
+      "title": "RefutationResult",
+      "type": "object"
+    },
+    "ResultStatus": {
+      "description": "How much weight a produced estimate can bear.\n\nsupported   -- identified, estimators agree, no falsification test failed.\nprovisional -- as supported, but the graph contains unreviewed edges.\ncontested   -- a falsification test failed, estimators disagree beyond sampling\n               noise, or a switchback's carryover outlasts its washout. The numbers\n               are reported; causal language is not.",
+      "enum": [
+        "supported",
+        "provisional",
+        "contested"
+      ],
+      "title": "ResultStatus",
+      "type": "string"
+    },
+    "RosenbaumSensitivity": {
+      "additionalProperties": false,
+      "description": "How much hidden bias the matched comparison survives (back-door, binary treatment).",
+      "properties": {
+        "gamma_star": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The sensitivity value: the largest gamma >= 1 at which the test of no effect, one-sided in the direction of the primary estimate at (1 - ci_level) / 2 (the level of the primary interval and of e_value_ci), still rejects; gamma is the factor by which two units with the same covariates may differ in their odds of treatment. None when the test does not reject even at gamma = 1.",
+          "title": "Gamma Star"
+        },
+        "matched_difference": {
+          "description": "Mean treated-minus-control difference over the pairs. Its population is the matched units, not the primary estimand's.",
+          "title": "Matched Difference",
+          "type": "number"
+        },
+        "max_abs_smd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Largest absolute standardized difference of the adjustment covariates between the matched arms. Residual imbalance is bias the bound does not cover.",
+          "title": "Max Abs Smd"
+        },
+        "method": {
+          "description": "The matching and the test, in words.",
+          "title": "Method",
+          "type": "string"
+        },
+        "n_pairs": {
+          "title": "N Pairs",
+          "type": "integer"
+        },
+        "n_unmatched": {
+          "description": "Units of the smaller arm with no partner inside the caliper.",
+          "title": "N Unmatched",
+          "type": "integer"
+        },
+        "p_upper": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Upper bound on the one-sided p-value of no effect when hidden bias is at most gamma, keyed by gamma.",
+          "title": "P Upper",
+          "type": "object"
+        }
+      },
+      "required": [
+        "method",
+        "n_pairs",
+        "n_unmatched",
+        "matched_difference"
+      ],
+      "title": "RosenbaumSensitivity",
+      "type": "object"
+    },
+    "Rung": {
+      "description": "Pearl's ladder. A query must declare which rung it asks about.",
+      "enum": [
+        "association",
+        "intervention",
+        "counterfactual"
+      ],
+      "title": "Rung",
+      "type": "string"
+    },
+    "SegmentEffect": {
+      "additionalProperties": false,
+      "description": "The effect within one declared subgroup, and what may be claimed about it.",
+      "properties": {
+        "estimate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EstimateRecord"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "None when this segment could not be estimated."
+        },
+        "family_wise_ci": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Interval"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Interval at a level corrected for the number of segments examined. Any claim about this segment uses this, not the unadjusted one: having looked at k subgroups, the unadjusted interval no longer means what it says."
+        },
+        "level": {
+          "title": "Level",
+          "type": "string"
+        },
+        "n_used": {
+          "title": "N Used",
+          "type": "integer"
+        },
+        "p_value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "P Value"
+        },
+        "refusal": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AbstentionReason"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Why this segment has no estimate, when it has none."
+        },
+        "refusal_detail": {
+          "default": "",
+          "title": "Refusal Detail",
+          "type": "string"
+        },
+        "significant_after_correction": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Holm's step-down decision across the family. None when the segment could not be estimated.",
+          "title": "Significant After Correction"
+        },
+        "variable": {
+          "title": "Variable",
+          "type": "string"
+        }
+      },
+      "required": [
+        "variable",
+        "level",
+        "n_used"
+      ],
+      "title": "SegmentEffect",
+      "type": "object"
+    },
+    "Sensitivity": {
+      "additionalProperties": false,
+      "properties": {
+        "e_value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "E Value"
+        },
+        "e_value_ci": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "E Value Ci"
+        },
+        "e_value_method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "E Value Method"
+        },
+        "parallel_trends": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ParallelTrendsSensitivity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "partial_r2_treatment": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Partial R2 Treatment"
+        },
+        "robustness_value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Robustness Value"
+        },
+        "robustness_value_alpha": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Robustness Value Alpha"
+        },
+        "rosenbaum": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RosenbaumSensitivity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "rosenbaum_null_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rosenbaum Null Reason"
+        }
+      },
+      "title": "Sensitivity",
+      "type": "object"
+    },
+    "SequentialLook": {
+      "additionalProperties": false,
+      "properties": {
+        "estimate": {
+          "title": "Estimate",
+          "type": "number"
+        },
+        "hi": {
+          "title": "Hi",
+          "type": "number"
+        },
+        "lo": {
+          "title": "Lo",
+          "type": "number"
+        },
+        "n": {
+          "title": "N",
+          "type": "integer"
+        },
+        "n_treated": {
+          "title": "N Treated",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "n",
+        "n_treated",
+        "estimate",
+        "lo",
+        "hi"
+      ],
+      "title": "SequentialLook",
+      "type": "object"
+    },
+    "SequentialSummary": {
+      "additionalProperties": false,
+      "description": "An anytime-valid reading of a randomized stream: valid at every look, jointly.",
+      "properties": {
+        "alpha": {
+          "title": "Alpha",
+          "type": "number"
+        },
+        "first_above_zero": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Units at the first look whose sequence lies wholly above zero.",
+          "title": "First Above Zero"
+        },
+        "first_below_zero": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Units at the first look whose sequence lies wholly below zero.",
+          "title": "First Below Zero"
+        },
+        "looks": {
+          "items": {
+            "$ref": "#/$defs/SequentialLook"
+          },
+          "title": "Looks",
+          "type": "array"
+        },
+        "method": {
+          "title": "Method",
+          "type": "string"
+        },
+        "rho": {
+          "description": "Mixture tuning, set from `cs_target_n`.",
+          "title": "Rho",
+          "type": "number"
+        },
+        "target_n": {
+          "title": "Target N",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "method",
+        "alpha",
+        "rho",
+        "target_n",
+        "looks"
+      ],
+      "title": "SequentialSummary",
+      "type": "object"
+    },
+    "Strategy": {
+      "enum": [
+        "randomized",
+        "backdoor",
+        "frontdoor",
+        "iv",
+        "proximal",
+        "id_general",
+        "difference_in_differences"
+      ],
+      "title": "Strategy",
+      "type": "string"
+    },
+    "Tier": {
+      "description": "Strength of identification.\n\nA -- identified nonparametrically from the graph alone.\nB -- identified only under additional parametric or structural assumptions\n     that the graph cannot express (e.g. effect homogeneity for IV).\nC -- reserved: identified only by an assumption outside the graph.\nD -- not identified.",
+      "enum": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "title": "Tier",
+      "type": "string"
+    },
+    "TrendSensitivityRow": {
+      "additionalProperties": false,
+      "properties": {
+        "hi": {
+          "title": "Hi",
+          "type": "number"
+        },
+        "lo": {
+          "title": "Lo",
+          "type": "number"
+        },
+        "m": {
+          "description": "Post-adoption bias allowed, as a multiple of the largest pre-adoption deviation.",
+          "title": "M",
+          "type": "number"
+        }
+      },
+      "required": [
+        "m",
+        "lo",
+        "hi"
+      ],
+      "title": "TrendSensitivityRow",
+      "type": "object"
+    },
+    "Triangulation": {
+      "additionalProperties": false,
+      "properties": {
+        "agree": {
+          "title": "Agree",
+          "type": "boolean"
+        },
+        "detail": {
+          "default": "",
+          "title": "Detail",
+          "type": "string"
+        },
+        "estimators": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Estimators",
+          "type": "array"
+        },
+        "pairs": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/TriangulationPair"
+          },
+          "title": "Pairs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "estimators",
+        "agree"
+      ],
+      "title": "Triangulation",
+      "type": "object"
+    },
+    "TriangulationPair": {
+      "additionalProperties": false,
+      "properties": {
+        "a": {
+          "title": "A",
+          "type": "string"
+        },
+        "b": {
+          "title": "B",
+          "type": "string"
+        },
+        "difference": {
+          "title": "Difference",
+          "type": "number"
+        },
+        "se_difference": {
+          "title": "Se Difference",
+          "type": "number"
+        },
+        "z": {
+          "title": "Z",
+          "type": "number"
+        }
+      },
+      "required": [
+        "a",
+        "b",
+        "difference",
+        "se_difference",
+        "z"
+      ],
+      "title": "TriangulationPair",
+      "type": "object"
+    }
+  },
+  "$id": "urn:causalplatform:claims:0.12.0:causal_result",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "certificate": {
+      "$ref": "#/$defs/IdentificationCertificate"
+    },
+    "claims": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Claim"
+      },
+      "title": "Claims",
+      "type": "array"
+    },
+    "diagnostics": {
+      "$ref": "#/$defs/Diagnostics"
+    },
+    "estimates": {
+      "items": {
+        "$ref": "#/$defs/EstimateRecord"
+      },
+      "title": "Estimates",
+      "type": "array"
+    },
+    "event_study": {
+      "default": [],
+      "description": "Panel designs only: the effect by periods since adoption, pre-periods included as placebos.",
+      "items": {
+        "$ref": "#/$defs/EventTimeEffect"
+      },
+      "title": "Event Study",
+      "type": "array"
+    },
+    "heterogeneity": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Heterogeneity"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "kind": {
+      "const": "result",
+      "default": "result",
+      "title": "Kind",
+      "type": "string"
+    },
+    "primary": {
+      "$ref": "#/$defs/EstimateRecord"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "query": {
+      "$ref": "#/$defs/CausalQuery"
+    },
+    "refutations": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/RefutationResult"
+      },
+      "title": "Refutations",
+      "type": "array"
+    },
+    "result_digest": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "sha256 of the JCS form of this object without this field.",
+      "title": "Result Digest"
+    },
+    "segments": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/SegmentEffect"
+      },
+      "title": "Segments",
+      "type": "array"
+    },
+    "sensitivity": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Sensitivity"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "sequential": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SequentialSummary"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Sequential designs only: the confidence sequence at every look. `primary` carries the last look, with the sequence as its interval."
+    },
+    "status": {
+      "$ref": "#/$defs/ResultStatus"
+    },
+    "triangulation": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Triangulation"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "warnings": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "status",
+    "query",
+    "certificate",
+    "primary",
+    "estimates",
+    "diagnostics",
+    "provenance"
+  ],
+  "title": "CausalResult",
+  "type": "object"
+}

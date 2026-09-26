@@ -55,6 +55,9 @@ GROUNDED_OTHER = (
     "An E-value of [[claim:e_value]] says how strong a hidden confounder would need to be."
 )
 
+#: The capture hook appends to the durable provenance store, so these run on a database.
+pytestmark = pytest.mark.usefixtures("db_engine")
+
 
 def _use_fake(monkeypatch: pytest.MonkeyPatch, llm: Any) -> list[tuple[Any, ...]]:
     """Configure Ollama and hand back the fake instead of a ChatOllama; record the build calls."""
@@ -101,7 +104,7 @@ async def test_the_agent_asks_get_llm_for_the_templates_capability(
 
     step = _narration_step(result)
     assert step["source"] == "llm" and step["model"] == "fake-narrator"
-    inv = get_provenance_graph(session).llm_invocations
+    inv = (await get_provenance_graph(session))[0].llm_invocations
     assert [(i.agent_id, i.provider.value, i.capability.value, i.model_name) for i in inv] == [
         ("simulation-agent", "ollama", "causal_reasoning", "fake-narrator")
     ]
@@ -230,7 +233,7 @@ async def test_no_provider_means_no_attempt(monkeypatch: pytest.MonkeyPatch) -> 
     result = await DataSimulationAgent().process(state("septa-17-none"))
 
     assert calls == []
-    assert get_provenance_graph("septa-17-none").llm_invocations == []
+    assert (await get_provenance_graph("septa-17-none"))[0].llm_invocations == []
     step = _narration_step(result)
     assert (step["source"], step["reason"]) == ("deterministic", "no LLM configured")
     assert result.draft_explanation.startswith("Simulation complete. ATE estimate: ")
@@ -248,7 +251,7 @@ async def test_a_failing_call_falls_back_and_is_still_captured(
         _kernel_outcome(), fallback="F", session_id="septa-17-broken", agent_id="a"
     )
     assert n.source == "deterministic" and "ConnectionError: ollama is down" in n.reason
-    assert len(get_provenance_graph("septa-17-broken").llm_invocations) == 1
+    assert len((await get_provenance_graph("septa-17-broken"))[0].llm_invocations) == 1
 
 
 async def test_a_slow_call_times_out(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -309,7 +312,7 @@ async def test_live_local_ollama_narration_is_grounded_or_refused() -> None:
     )
     print(f"\nlive narration: source={n.source} model={n.model} reason={n.reason!r}\n{n.text}")
 
-    inv = get_provenance_graph(session).llm_invocations
+    inv = (await get_provenance_graph(session))[0].llm_invocations
     assert len(inv) == 1 and inv[0].provider.value == "ollama"
     assert inv[0].model_name == n.model
     assert inv[0].prompt_template_id == "prompts/explanation_generate.yaml@2.0.0"
