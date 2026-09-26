@@ -1,9 +1,17 @@
 {
-  "$id": "urn:causalplatform:claims:0.11.0:analysis_policy",
+  "$id": "urn:causalplatform:claims:0.12.0:analysis_policy",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Every threshold that can change an answer. Hashed into provenance.",
   "properties": {
+    "carryover_alpha": {
+      "default": 0.05,
+      "description": "Switchback designs: level of the carryover check (the effect still moving after the washout, into- vs out-of-treatment switches). A failure makes the result contested. Looser than refutation_alpha on purpose: a missed carryover leaves a biased estimate supported (T8 v2).",
+      "exclusiveMaximum": 0.5,
+      "exclusiveMinimum": 0,
+      "title": "Carryover Alpha",
+      "type": "number"
+    },
     "ci_level": {
       "default": 0.95,
       "exclusiveMaximum": 1,

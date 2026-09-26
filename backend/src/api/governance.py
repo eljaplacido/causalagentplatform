@@ -42,6 +42,7 @@ from src.semantic_layer.models import (
     CynefinDomain,
     EpistemicState,
     GuardianVerdict,
+    RiskTier,
     UserRef,
 )
 from src.semantic_layer.registry import SemanticLayerRegistry
@@ -146,7 +147,9 @@ class ApproveRequest(BaseModel):
     )
     verdict_id: UUID = Field(
         ...,
-        description="ID of the Guardian APPROVED audit_log entry authorising this approval",
+        description="ID of the Guardian APPROVED audit_log entry from a /check for action "
+        "GOVERNANCE_APPROVE on this object: signed, bound to the object, single-use. A "
+        "verdict issued for any other action does not authorise an approval.",
     )
     notes: str | None = Field(None, description="Optional approval notes")
 
@@ -158,17 +161,33 @@ class RejectRequest(BaseModel):
     reason: str = Field(..., min_length=10, description="Reason for rejection")
     verdict_id: UUID = Field(
         ...,
-        description="ID of the Guardian REJECTED audit_log entry",
+        description="ID of the Guardian APPROVED audit_log entry from a /check for action "
+        "GOVERNANCE_REJECT on this object: signed, bound to the object, single-use. A "
+        "REJECTED verdict does not authorise a rejection, and neither does one issued "
+        "for any other action.",
     )
 
 
 class ReviewQueueItem(BaseModel):
+    """One pending object in GET /api/governance/review-queue.
+
+    ``risk_tier`` is derived from stored fields by src/semantic_layer/review_risk.py:
+    an edge is CRITICAL below stated confidence 0.5, HIGH below 0.8 or without a
+    stored sensitivity result that says it is robust, else MEDIUM; a fragment is HIGH
+    while it names an edge that is not APPROVED, else MEDIUM; an entity is LOW.
+    ``risk_reasons`` names the facts that decided it. ``submitted_by`` is the id in
+    the object's ``created_by``, or null where none was recorded.
+    """
+
     id: str
     object_type: str
     domain: str
     name: str
     approval_status: str
     created_at: str | None
+    risk_tier: RiskTier
+    risk_reasons: list[str]
+    submitted_by: str | None
 
 
 class AuditLogResponse(BaseModel):
@@ -262,9 +281,10 @@ async def approve_object(
 
     Requires governance_officer or platform_engineer role.
 
-    The caller must supply a valid Guardian verdict_id (from a previous
-    /check call) that has verdict=APPROVED.  The registry validates this
-    against audit_log before making any changes.
+    The caller must supply the verdict_id of an APPROVED Guardian verdict from
+    /check for action GOVERNANCE_APPROVE with this object as subject_id. The
+    registry validates it against audit_log before making any changes, and the
+    verdict is spent on use (septa-60).
     """
     uid = user.get("uid", "unknown")
     approver = UserRef(id=uid, email=user.get("email"), name=user.get("name"))
@@ -331,8 +351,11 @@ async def reject_object(
     """
     Mark a draft semantic object as REJECTED and write an audit entry.
 
-    A REJECTED object cannot be promoted without submitting a new draft.
-    The reason is stored in the audit trail.
+    Requires governance_officer or platform_engineer role, and the verdict_id of an
+    APPROVED Guardian verdict from /check for action GOVERNANCE_REJECT with this
+    object as subject_id -- the way /approve needs one for the approval. The verdict
+    is spent on use. A REJECTED object cannot be promoted without submitting a new
+    draft. The reason is stored in the audit trail.
     """
     uid = user.get("uid", "unknown")
 
@@ -400,10 +423,11 @@ async def review_queue(
     user: dict[str, Any] = Depends(guard("GET", "/api/governance/review-queue")),
 ) -> list[ReviewQueueItem]:
     """
-    Return all DRAFT / UNDER_REVIEW semantic objects pending review.
+    Return the DRAFT / UNDER_REVIEW semantic objects pending review, each with its
+    risk tier and submitter (see ReviewQueueItem).
 
-    Ordered chronologically (oldest first = highest priority).
-    Requires governance_officer or platform_engineer role.
+    Ordered by risk tier (CRITICAL, HIGH, MEDIUM, LOW), oldest first within a tier.
+    Requires governance_officer or platform_engineer role; bounded by domain scope.
     """
     log.info("api.governance.review_queue", domain=domain, limit=limit)
     items = await _registry.list_pending_review_queue(limit=limit, domains=domain_scope(user))

@@ -1337,7 +1337,7 @@
       "type": "object"
     },
     "ResultStatus": {
-      "description": "How much weight a produced estimate can bear.\n\nsupported   -- identified, estimators agree, no falsification test failed.\nprovisional -- as supported, but the graph contains unreviewed edges.\ncontested   -- a falsification test failed or estimators disagree beyond\n               sampling noise. The numbers are reported; causal language is not.",
+      "description": "How much weight a produced estimate can bear.\n\nsupported   -- identified, estimators agree, no falsification test failed.\nprovisional -- as supported, but the graph contains unreviewed edges.\ncontested   -- a falsification test failed, estimators disagree beyond sampling\n               noise, or a switchback's carryover outlasts its washout. The numbers\n               are reported; causal language is not.",
       "enum": [
         "supported",
         "provisional",
@@ -1845,7 +1845,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:causalplatform:claims:0.11.0:outcome",
+  "$id": "urn:causalplatform:claims:0.12.0:outcome",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "discriminator": {
     "mapping": {

@@ -3,16 +3,20 @@ SimulationAgent — runs causal effect estimation over approved graph fragments.
 
 Responsibilities (AGENTS.md §2.1 SimulationAgent):
   - Load APPROVED graph fragments from the semantic layer
-  - Run DoWhy identification and estimation pipelines
+  - Run causal-core identification and estimation
   - Compute ATE with confidence intervals
   - Validate identification strategy against active assumptions
   - Store results in simulation_results on EpistemicState
-  - NEVER modify graph assets — read-only access to semantic layer
+  - NEVER modify graph structure. The one semantic-layer write it makes is the
+    kernel's sensitivity analysis of the edge its estimate answers (the fragment's
+    Treatment -> Outcome edge, while that edge is a draft), recorded through a
+    Guardian verdict for RECORD_SENSITIVITY (src/agents/edge_sensitivity.py) --
+    what Guardian PR-007 reads before the edge can be approved (septa-62)
 
 Implemented skills:
   semantic_layer_read      — load approved graph fragment
-  identification_check     — validate causal effect identifiability (DoWhy)
-  effect_estimate          — compute ATE via DoWhy / PyMC
+  identification_check     — validate causal effect identifiability (causal-core)
+  effect_estimate          — compute ATE via causal-core
   sensitivity_analysis     — Rosenbaum bounds / E-value computation
 
 EpistemicState constraints enforced:
@@ -25,16 +29,23 @@ EpistemicState constraints enforced:
 from __future__ import annotations
 
 from typing import Any
+from uuid import UUID
 
 import structlog
 
 from src.agents.base import BaseAgent
+from src.agents.edge_sensitivity import (
+    answering_edges,
+    record_edge_sensitivity,
+    sensitivity_from_outcome,
+)
 from src.semantic_layer.graph_context import load_fragment_with_edges
 from src.semantic_layer.models import (
     CynefinDomain,
     EpistemicState,
     Recommendation,
     SimulationResult,
+    UserRef,
 )
 from src.skills import (
     EffectEstimationError,
@@ -66,19 +77,33 @@ class SimulationAgent(BaseAgent):
 
     def __init__(self, agent_id: str = "simulation-agent") -> None:
         super().__init__(agent_id=agent_id)
+        # The observational data of the process() call in progress, kept off the
+        # inputs so a DataFrame never lands in the state's tool_call_log. One
+        # process() at a time per instance.
+        self._data: Any | None = None
 
-    async def process(self, state: EpistemicState) -> EpistemicState:
+    async def process(self, state: EpistemicState, data: Any | None = None) -> EpistemicState:
         """
         Run simulation pipeline.
+
+        ``data``: observational data with one column per node id (a DataFrame or a
+        dict of columns). Without it the kernel refuses to estimate, and says so.
 
         Steps:
           1. Circuit breaker + hallucination checks
           2. Load approved graph fragment
           3. Identification check (backdoor criterion)
           4. Effect estimation (ATE)
-          5. Sensitivity analysis (E-value / Rosenbaum)
+          5. Sensitivity analysis (E-value / Rosenbaum), recorded on the edge it answers
           6. Generate explanation
         """
+        self._data = data
+        try:
+            return await self._process(state)
+        finally:
+            self._data = None
+
+    async def _process(self, state: EpistemicState) -> EpistemicState:
         state = self._check_circuit_breaker(state)
         state = self._check_hallucination_risk(state)
 
@@ -224,7 +249,7 @@ class SimulationAgent(BaseAgent):
         ci_text = f"[{ci[0]:.4f}, {ci[1]:.4f}]" if ci_ok else "unavailable"
         sensitivity_label = {True: "ROBUST", False: "SENSITIVE"}.get(robust, "UNASSESSED")
 
-        from uuid import UUID
+        state = await self._record_sensitivity(state, fragment, estimate_out)
 
         fragment_uuid = UUID(str(state.active_graph_fragment_id))
         treatment_id = UUID(str(estimate_out.get("treatment_id", "00000000-0000-0000-0000-000000000000")))
@@ -290,6 +315,84 @@ class SimulationAgent(BaseAgent):
         )
         return state
 
+    # ── Recording the kernel's sensitivity analysis (septa-62) ────────────────
+
+    async def _record_sensitivity(
+        self,
+        state: EpistemicState,
+        fragment: dict[str, Any],
+        estimate_out: dict[str, Any],
+    ) -> EpistemicState:
+        """Record the kernel's sensitivity analysis on the draft edge(s) it answers.
+
+        The estimate is of the fragment's Treatment -> Outcome effect, so it answers
+        the question of an edge from that treatment to that outcome and of no other
+        edge. An APPROVED edge is left as it was reviewed. A refusal by the Guardian
+        or the registry is logged and flagged, never raised: the simulation's own
+        result stands either way.
+        """
+        result = sensitivity_from_outcome(
+            estimate_out.get("outcome"), computed_by=self.agent_id
+        )
+        if result is None:
+            return state
+        edges = answering_edges(
+            fragment.get("edges", []),
+            str(estimate_out.get("treatment_id")),
+            str(estimate_out.get("outcome_id")),
+        )
+        drafts = [e for e in edges if e.get("approval_status") in ("DRAFT", "UNDER_REVIEW")]
+        if not drafts:
+            return state
+
+        from src.agents.governance import GovernanceAgent  # the Guardian, per call
+
+        guardian = GovernanceAgent(agent_id=f"{self.agent_id}-guardian")
+        frame = self._frame()
+        rows = None if frame is None else len(frame)
+        recorded: list[dict[str, Any]] = []
+        flags = list(state.flags)
+        for edge in drafts:
+            edge_id = UUID(str(edge["id"]))
+            try:
+                outcome = await record_edge_sensitivity(
+                    edge_id,
+                    result,
+                    governance=guardian,
+                    state=state,
+                    actor=UserRef(id=self.agent_id),
+                    evidence={
+                        "fragment_id": str(state.active_graph_fragment_id),
+                        "rows": rows,
+                    },
+                )
+            except Exception as exc:  # the registry refused: log, flag, carry on
+                self._log.warning(
+                    "simulation.sensitivity_not_recorded", edge_id=str(edge_id), error=str(exc)
+                )
+                flags.append("sensitivity_not_recorded")
+                continue
+            if outcome.assumption_id is None:
+                flags.append("sensitivity_not_recorded")
+            recorded.append(
+                {
+                    "edge_id": str(edge_id),
+                    "verdict": str(outcome.verdict),
+                    "assumption_id": None
+                    if outcome.assumption_id is None
+                    else str(outcome.assumption_id),
+                    "audit_entry_id": str(outcome.audit_entry_id),
+                }
+            )
+        state = state.model_copy(update={"flags": flags})
+        return self._add_reasoning_step(
+            state,
+            node="Simulation",
+            action="SENSITIVITY_RECORDED",
+            inputs={"fragment_id": str(state.active_graph_fragment_id)},
+            outputs={"sensitivity_result": result.model_dump(mode="json"), "edges": recorded},
+        )
+
     # ── Skill dispatch ────────────────────────────────────────────────────────
 
     async def _execute_skill(
@@ -309,6 +412,14 @@ class SimulationAgent(BaseAgent):
         return await super()._execute_skill(skill_name, inputs, state)
 
     # ── Skill implementations (stubs for Phase 2 integration) ─────────────────
+
+    def _frame(self) -> Any | None:
+        """The process() call's data as a DataFrame, or None."""
+        if self._data is None:
+            return None
+        import pandas as pd
+
+        return self._data if isinstance(self._data, pd.DataFrame) else pd.DataFrame(self._data)
 
     async def _skill_semantic_layer_read(
         self, inputs: dict[str, Any]
@@ -337,7 +448,7 @@ class SimulationAgent(BaseAgent):
         """
         Check if the causal effect is identified under current assumptions.
 
-        Production: integrates DoWhy identification via backdoor/frontdoor/IV.
+        Delegates to causal-core identification (src/skills/identification_check.py).
         """
         try:
             return await identification_check(
@@ -354,14 +465,14 @@ class SimulationAgent(BaseAgent):
         """
         Estimate Average Treatment Effect (ATE).
 
-        Production: DoWhy linear estimator (fast) or PyMC MCMC (complex).
+        Delegates to causal-core estimation (src/skills/effect_estimate.py).
         """
         try:
             return await effect_estimate(
                 fragment=inputs.get("fragment", {}),
                 identification_strategy=inputs.get("identification_strategy", "backdoor"),
                 assumptions=inputs.get("assumptions", []),
-                data=inputs.get("data"),  # Optional data for estimation
+                data=self._frame(),
             )
         except EffectEstimationError as e:
             self._log.error("effect_estimate.failed", error=str(e))

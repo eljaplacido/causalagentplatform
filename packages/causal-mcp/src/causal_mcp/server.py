@@ -135,7 +135,7 @@ def _drop_implied_types(node: Any) -> Any:
     An ``enum`` (or ``const``) admits exactly the values it lists (JSON Schema 2020-12, section
     6.1.2), so when every listed value is a string, ``"type": "string"`` excludes nothing more:
     the two schemas accept the same values. Every enumeration and discriminator in the
-    contract is written with both (contract 0.11.0, when the Rosenbaum fields pushed the listing
+    contract is written with both (contract 0.12.0, when the Rosenbaum fields pushed the listing
     past its budget).
     """
     if isinstance(node, dict):
@@ -176,7 +176,7 @@ def _slim_output_schema(server: MCPServer, name: str) -> None:
     agent reads to call a tool correctly. Unions of bare types are written as one type list
     (contract 0.10.0, when two panel fields pushed the listing past its budget again): the
     same schema in fewer bytes; so is a string enumeration without its implied
-    ``"type": "string"`` (contract 0.11.0).
+    ``"type": "string"`` (contract 0.12.0).
     """
     tool = server._tool_manager.get_tool(name)  # private: mcp 2.2 exposes no setter
     if tool is not None and tool.output_schema is not None:

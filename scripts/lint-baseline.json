@@ -32,10 +32,11 @@
     "2026-09-25: bandit joins at zero MEDIUM+ (LOW is reported, not counted). bandit-backend runs with backend/pyproject.toml's [tool.bandit], which skips B101 (assert) and B608 (SQL built from strings) for the whole tree -- a config decision this entry inherits, not one it made: with B608 enabled, backend/src has 13 MEDIUM findings (f-strings inside text() in src/api/governance.py, incidents.py, interventions.py and src/semantic_layer/registry.py). They were not reviewed one by one in this change, and the blanket skip stays until they are. bandit-packages runs bandit's defaults over packages/*/src. The three B310 urlopen findings (src/connectors/prometheus.py, causal_core/bench/ihdp.py and lalonde.py) were fixed in code, not annotated.",
     "2026-09-25 (septa-50): the B608 and B101 skips are gone; backend/pyproject.toml's [tool.bandit] skips no rule. The 13 B608 sites were reviewed one by one and none carried a request value into SQL text: governance.py's audit-log WHERE, and registry.py's list_entities, list_fragments and list_pending_assumptions, joined fixed condition strings whose values were bound; incidents.py built a numbered placeholder list and a fixed status clause; interventions.py a fixed incident clause; registry.py's promote_to_approved, reject_draft and list_pending_review_queue interpolated a table and column name from a closed object_type mapping. Each is now a literal statement, an expanding bind parameter, or SQLAlchemy Core over a lightweight untyped table with every value a named bindparam() given at execution, as text() binds were (a literal compared to a column takes a type from the value and asyncpg renders a ::VARCHAR cast PostgreSQL refuses against UUID and JSONB columns) -- no # nosec. backend/tests/integration/test_sql_filters_bound.py pins the queries' results on seeded rows and sends SQL-shaped values through them. B101 is LOW, so it is reported, not counted; src's one assert (api/decisions.py, a type-narrowing after a validator) became an explicit check. bandit-backend stays at 0 MEDIUM+.",
     "2026-09-25 (septa-52): ruff 415 -> 412, mypy 39 -> 38. The backend now also runs on PostgreSQL (backend-pytest-postgres); the bind types in the new src/db/types.py are clean. The gains are in code the change replaced: mypy's index error and two ruff E501s went with platform.py's SQLite-only strftime() weekly query, and an import-order finding in a test file it touched was fixed.",
-    "2026-09-26 (septa-47): ruff 412 -> 411, mypy unchanged at 38. The row-level-security change (src/db/scope.py, the per-request scope, the app role in the test fixtures) is clean; the gain is scripts/seed_data.py's main(), annotated when it was wrapped in a service scope."
+    "2026-09-26 (septa-47): ruff 412 -> 411, mypy unchanged at 38. The row-level-security change (src/db/scope.py, the per-request scope, the app role in the test fixtures) is clean; the gain is scripts/seed_data.py's main(), annotated when it was wrapped in a service scope.",
+    "2026-09-26 (septa-48, septa-16): ruff 411 -> 405, mypy unchanged at 38. The durable provenance store and its capture code are clean; the gains are in files the change rewrote: four E741 `l` loop variables and a TC003 in src/api/provenance.py's PROV-JSON export, and an E741 in tests/unit/test_provenance.py."
   ],
   "ruff": {
-    "max_findings": 411,
+    "max_findings": 405,
     "measured_with": "ruff 0.15.22",
     "cwd": "backend",
     "args": [
@@ -102,7 +103,7 @@
     ]
   },
   "bandit-backend": {
-    "_why": "backend/src and backend/mcp_server under backend/pyproject.toml's [tool.bandit]. MEDIUM and HIGH count; zero, and it stays zero.",
+    "_why": "backend/src under backend/pyproject.toml's [tool.bandit]. MEDIUM and HIGH count; zero, and it stays zero.",
     "tool": "bandit",
     "max_findings": 0,
     "measured_with": "bandit 1.9.4",
@@ -113,8 +114,7 @@
       "--severity-level",
       "medium",
       "-r",
-      "src",
-      "mcp_server"
+      "src"
     ]
   },
   "bandit-packages": {
