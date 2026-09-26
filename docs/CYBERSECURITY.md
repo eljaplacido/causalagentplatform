@@ -66,8 +66,12 @@ An adversary injects false or misleading causal edges or evidence into the graph
   review that needs a governance role, and nobody may review an edge they introduced.
 - **Partial:** the Guardian rejects a payload whose proposed edges form a cycle (PR-001). No
   other contradiction check triggers a review.
-- **Target:** sensitivity analysis on every newly approved edge. PR-007 is declared and never
-  evaluated (register `sensitivity-gate-not-enforced`).
+- **In place, narrower than "passes a sensitivity analysis":** the Guardian refuses to approve
+  an edge that has no sensitivity result (PR-007): a `/check` for `GOVERNANCE_APPROVE` on an
+  edge is REJECTED unless an assumption the edge references, not rejected in review, carries a
+  stored `SensitivityResult`, read from the database rather than the request
+  (`backend/tests/guardian/test_pr007_sensitivity_gate.py`). A result that is not robust still
+  counts; the reviewer sees it.
 
 #### Prompt Injection (LLM Plane)
 Crafted user input or external data attempts to override agent instructions or exfiltrate EpistemicState contents.
@@ -353,7 +357,7 @@ assessment, and the Status column says how much of each control exists.
 
 | EU AI Act Requirement | Platform Control | Status |
 |---|---|---|
-| Art. 9 – Risk management system | GovernanceAgent + Guardian policy engine | Partial: rules PR-001 to PR-006 and PR-008 evaluate; PR-007 does not; PR-009 reads caller-supplied inputs; PR-002's score is computed from the prose checked |
+| Art. 9 – Risk management system | GovernanceAgent + Guardian policy engine | Partial: rules PR-001 to PR-008 evaluate (PR-007 on edge approvals); PR-009 reads caller-supplied inputs; PR-002's score is computed from the prose checked |
 | Art. 10 – Data governance | Semantic layer lineage, PII pseudonymization | Partial lineage (`lineage-partial`); no pseudonymization (`gdpr-controls`) |
 | Art. 11 – Technical documentation | DATA_LAYER.md, AGENTS.md, assumption registries | Documents exist; the register lists where they overclaim |
 | Art. 13 – Transparency | explanation_generate skill, assumption disclosure in outputs | Partial |

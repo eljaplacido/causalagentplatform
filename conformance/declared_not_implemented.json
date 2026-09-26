@@ -98,7 +98,7 @@
           "says": "Computes Rosenbaum sensitivity bounds and E-values for unmeasured confounders"
         },
         {
-          "at": "docs/CYBERSECURITY.md:408",
+          "at": "docs/CYBERSECURITY.md:412",
           "says": "- Rosenbaum sensitivity bounds"
         },
         {
@@ -703,11 +703,11 @@
       "reality": "Approval and rejection UPDATE the object's own row: promote_to_approved rewrites approval_status, approved_at, approved_by, guardian_verdict_ref and lineage, and reject_draft rewrites approval_status (to DEPRECATED) and lineage. The version column keeps its 1.0.0 default, because no code path increments it and no new row is written for a new version. The previous state survives only as lineage entries and audit_log rows. The interventions feedback endpoint likewise UPDATEs interventions in place.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:942",
+          "at": "backend/src/semantic_layer/registry.py:952",
           "says": "\"status\": \"APPROVED\","
         },
         {
-          "at": "backend/src/semantic_layer/registry.py:1022",
+          "at": "backend/src/semantic_layer/registry.py:1032",
           "says": ".values(approval_status=bindparam(\"status\"), lineage=bindparam(\"lineage\")),"
         }
       ],
@@ -738,7 +738,7 @@
       "reality": "Approval and rejection each append one step (APPROVED or REJECTED: actor, time, verdict id), and an edge keeps whatever lineage list its submitter sent. Nothing records the data source, the transformation steps or the policy rules into lineage, and no platform code constructs a LineageRecord. An entity's submitted lineage is not stored (the INSERT omits the column). Fragments had no lineage column at all until 006_graph_fragment_lineage.sql, so approving or rejecting one failed outright. The Guardian verdict, its cited rules, and the evidence and assumption ids are linked by reference, so the chain can be partly rebuilt by joins. Nothing shows that this satisfies EU AI Act Art. 13.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:910",
+          "at": "backend/src/semantic_layer/registry.py:920",
           "says": "select(t.c.lineage, t.c.approval_status, t.c.domain).where("
         },
         {
@@ -843,11 +843,11 @@
       "reality": "contracts.py defines the contract, SLA and violation models and a ContractRegistry that can register, look up and remove contracts. Nothing evaluates a contract, nothing produces a ContractViolation, and only the tests instantiate the registry. PR-009 fires only when a caller sends action_type DATA_ACCESS_WITH_CONTRACT, which no code path does, and it reads the violation list from that caller's own payload. So a caller that reports no violations is never blocked.",
       "evidence": [
         {
-          "at": "backend/src/agents/governance.py:428",
+          "at": "backend/src/agents/governance.py:519",
           "says": "if action_type == \"DATA_ACCESS_WITH_CONTRACT\":"
         },
         {
-          "at": "backend/src/agents/governance.py:429",
+          "at": "backend/src/agents/governance.py:520",
           "says": "contract_violations = payload.get(\"contract_violations\", [])"
         },
         {
@@ -956,33 +956,6 @@
         "kind": "test",
         "path": "backend/tests/integration/test_privacy_controls.py",
         "asserts": "a connector run over records containing configured PII fields stores only pseudonymous tokens; deleting a subject's key makes their records unlinkable; and an export endpoint returns the semantic layer in the documented format"
-      }
-    },
-    {
-      "id": "sensitivity-gate-not-enforced",
-      "status": "declared-not-implemented",
-      "capability": "Guardian PR-007: edges without a sensitivity result are blocked from APPROVED",
-      "claimed_in": [
-        {
-          "at": "backend/src/agents/governance.py:59",
-          "says": "\"PR-007\": \"Sensitivity analysis: edges without sensitivity_result blocked from APPROVED.\","
-        },
-        {
-          "at": "docs/CYBERSECURITY.md@13e7d92:219",
-          "says": "Every newly approved edge must pass a sensitivity analysis before it can be used in production simulations"
-        }
-      ],
-      "reality": "PR-007 is in the Guardian's rule table and nowhere in its evaluation: no check reads a sensitivity result, so an edge is approved whether or not any sensitivity analysis was run, and PR-007 is never cited on a verdict. The rules that are evaluated are PR-001 to PR-006, PR-008, and PR-009 (on one action type).",
-      "evidence": [
-        {
-          "at": "backend/src/agents/governance.py:375",
-          "says": "rules_fired.append(\"PR-002\")"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/guardian/test_pr007_sensitivity_gate.py",
-        "asserts": "a check whose proposed edge has no sensitivity result is not APPROVED and cites PR-007, and the same edge with a passing result is not refused on PR-007"
       }
     },
     {
@@ -1106,7 +1079,7 @@
       "capability": "Dynamic application security testing (DAST): a scanner such as OWASP ZAP run against a running API, weekly",
       "claimed_in": [
         {
-          "at": "docs/CYBERSECURITY.md:593",
+          "at": "docs/CYBERSECURITY.md:597",
           "says": "DAST: OWASP ZAP against a staging API (weekly). Not built: there is no staging"
         }
       ],
@@ -1299,6 +1272,13 @@
       "fixed_in": "a6a864d",
       "pinned_by": "backend/tests/unit/test_py_lock.py",
       "note": "Implemented, except DAST, which did not leave: it is dast-not-built. Hash-pinned installs: every Python environment CI builds installs from a lock in requirements/ (backend.txt for backend/.venv, kernel.txt for packages/causal-core/.venv and release.yml's verify job, image.txt for backend/Dockerfile, release.txt for the published wheels), made by `uv pip compile --universal --generate-hashes` from requirements/*.in and installed with pip --require-hashes --no-deps; the repository's own packages, not on an index and so not in the lock, then install from the checkout with --no-deps --no-build-isolation (hatchling and editables come from the lock), and pip check proves the pair whole. The gate step python-lock (scripts/py_lock.py check) fails a lock whose inputs (the .in file and the dependency tables of each pyproject.toml it names) changed since `python3 scripts/py_lock.py relock` recorded them in requirements/lock-inputs.json, a lock that does not satisfy its local packages, and a tested environment that differs from its lock; the pip-audit steps audit the locks (pip-audit-image added for image.txt). Image scan: CI job `images` builds backend/Dockerfile and frontend/Dockerfile (the latter did not build at all before this change; it now builds from the repository root with output: standalone) and scans each with Trivy 0.74.0 pinned by digest; scripts/image_scan.py fails a HIGH or CRITICAL finding with a published fix not excused in scripts/image-scan-allowlist.json (empty), lists findings with no fix published without failing (44 in the backend image's Debian 13 base packages on 2026-09-26, none in the frontend's), and fails a report that lists no package. The one fixable pair it found (msgpack and setuptools copies vendored in pip 26.2.1) went by removing pip from the runtime image. SBOM: release.yml installs the built wheels with requirements/release.txt into a fresh environment, writes a CycloneDX 1.6 SBOM of it with cyclonedx-bom 7.4.0, checks it lists exactly the locked pins and the three packages (scripts/sbom_check.py), keeps it as an artifact and attaches it to the tag's GitHub release; the images job keeps a Trivy CycloneDX SBOM per image. Update PRs: .github/dependabot.yml, weekly and grouped, for the locks, the pyproject ranges, npm, GitHub Actions and the base images (pinned by digest). Negative controls: test_py_lock.py (a dependency edit without a re-lock, a pin below a floor, a pin without a hash, an environment one version, one package or one extra away from its lock), test_image_scan.py, test_sbom_check.py, and test_dep_audit.py for the lock mode. Not verified here: the images job and release.yml have not run on GitHub (their steps were run locally with the same images and tools), and Dependabot's handling of the uv-compiled locks is untested. Not changed: the release's build tools are pinned by version, not hash; HIGH findings with no fix published are not gated."
+    },
+    {
+      "id": "sensitivity-gate-not-enforced",
+      "was": "PR-007 is in the Guardian's rule table and nowhere in its evaluation: no check reads a sensitivity result, so an edge is approved whether or not any sensitivity analysis was run, and PR-007 is never cited on a verdict. The rules that are evaluated are PR-001 to PR-006, PR-008, and PR-009 (on one action type).",
+      "fixed_in": "4d68ac5",
+      "pinned_by": "backend/tests/guardian/test_pr007_sensitivity_gate.py",
+      "note": "Implemented for approvals. A /check for GOVERNANCE_APPROVE whose subject is a stored edge reads the edge's sensitivity results from the database (src/agents/governance.py edge_sensitivity) and is REJECTED citing PR-007 when there are none; evaluated after PR-001, before PR-004, and an unreadable edge fails closed. What counts as an edge's sensitivity result: CausalEdge has no field of its own, so it is a valid SensitivityResult (E-value / Rosenbaum) stored on an assumption the edge names in assumption_refs, that assumption not REJECTED in review; the checked payload cannot supply one. The write path it needs was broken too: propose_draft dropped an assumption's sensitivity_result, and the reads did not decode it; both fixed. Pinned with results from causal_core.analyze on simulated data. Limits: PR-007 asks for a result, not a robust one -- a result that says not robust still counts, and the reviewer sees it (the CYBERSECURITY.md claim, since withdrawn, said 'pass'); proposing an edge (the process() path's proposed_edges) is not approving it and is not judged; nothing in the platform yet records the kernel's sensitivity output on an assumption automatically -- a result arrives with the assumption's draft."
     }
   ]
 }
