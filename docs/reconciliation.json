@@ -175,19 +175,19 @@
         "on": "2026-09-26",
         "sha256": {
           "backend/src/middleware": "0a00dc9c734e148a08c531bcd281d3afe81a8189ef75ef669543b89cd0e4136b",
-          "backend/src/api/governance.py": "74095eefc36dc973a8dd5aae5d8bba89d44aa860c32862fa729a5c10b55bf3c3",
+          "backend/src/api/governance.py": "39899bb971fe283966cffddf41877fef67d47da6eef36944029487cbcdf74011",
           "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
-          "backend/src/semantic_layer/registry.py": "91529601ce53d74c25763a017f4a43ad552c13e94d562f513165b079c16c71b7",
+          "backend/src/semantic_layer/registry.py": "ecb30b6c847f2ceca7cdc4b54888c4d129cb8058212101b6d52f923f04c9d749",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
           "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
           "backend/src/db/migrations": "6b52679eb2132b16e3bb238da5d6a7bde969f409bba4bd63b431c94456db74f1",
-          "backend/src/semantic_layer/verdict.py": "2807535994f0073bd9f58cc2774822d9f7bd1749aa7801d669eb2301bde3ac00",
+          "backend/src/semantic_layer/verdict.py": "12f9101110cc775c51be9a8d8040bb01b9e8e6270bfb588c111fb204abc0d4f9",
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (housekeeping: update-PR bullet: npm majors ignored as pyproject majors are)"
+        "by": "Claude (merge of main into housekeeping: npm-majors text and main's content both present)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -251,13 +251,13 @@
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
-          ".github": "dc7f36f2e6fb60c5d92b10fda5a47877c6d0781ab449acd28e49a13903c89ca4",
-          ".gnomon": "ef33b01c3cfb5e5d70d83032e0bc2510e5306a54a9be8f6396daf1bf60f354bd"
+          ".github": "db12d364ec234ff9774297f81b08649ec310d368304c47fbfcfa04138f630ac4",
+          ".gnomon": "25561ccec95ea65980dc9c037b24b494f0963626b71b7eca61dfa00ec72a75f4"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (housekeeping: dependabot.yml now ignores npm majors; the page names the file, not its rules)"
+        "by": "Claude (merge of main into housekeeping: npm-majors text and main's content both present)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -309,12 +309,12 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
-          "backend/pyproject.toml": "cdabd6c6e24ab6d579d2aa1de3d0d6db5b8802e87b10489cc3df43a2d34a47ed",
+          "backend/tests": "aa5434d14e2a7f34e9c385f15c79890c946ceee6bf5e33fc13dd2af7f1f6a8b7",
+          "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
-          ".gnomon/ci.sh": "8379e43234946f44d8e569a68c60d42923500ded3012d88bf2a477f5ebecf8aa",
-          "scripts": "bcb39b1862da2e64cdfcc87426508b01d8a673c22627287b339f96ae4bf32a52",
+          ".gnomon/ci.sh": "a05e016e87f09e27989ffc185d06ad2b55c6d31f4e9b9cc2954b8cfdf7a40e45",
+          "scripts": "b02346ce8b8bc5739d9c16f9eca354d6eb179e9d4cd40cbbaa9991a7cc3662f7",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "2ea289c99ef957a2b22a4eed544e76c06e45eb8a2c844d384f9e05eb7f84d940",
           "packages/causal-core/tests": "ca9a8600b9bdeb81d9509afcb864900159868a7509bcc0aa13fff0fc501869f5",
@@ -323,7 +323,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (housekeeping: 5.4 majors bullet: npm majors ignored, septa-82)"
+        "by": "Claude (merge of main into housekeeping: npm-majors text and main's content both present)"
       }
     },
     "docs/UIX.md": {
