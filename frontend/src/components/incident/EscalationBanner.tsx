@@ -40,12 +40,12 @@ export function EscalationBanner({
       )}
     >
       {/* Icon + text */}
-      <div className="flex items-start gap-3 sm:flex-1">
+      <div className="flex min-w-0 items-start gap-3 sm:flex-1">
         <AlertTriangle
           className="mt-0.5 h-5 w-5 shrink-0 text-red-600 dark:text-red-400"
           aria-hidden="true"
         />
-        <div>
+        <div className="min-w-0 break-words">
           <p className="text-sm font-bold text-red-800 dark:text-red-200">
             Immediate human escalation required
           </p>
@@ -56,7 +56,7 @@ export function EscalationBanner({
             Commander must take direct control immediately.
           </p>
           {incidentId && (
-            <p className="mt-1 font-mono text-xs text-red-600 dark:text-red-400">
+            <p className="mt-1 break-all font-mono text-xs text-red-600 dark:text-red-400">
               Incident: {incidentId}
             </p>
           )}
@@ -68,7 +68,7 @@ export function EscalationBanner({
         onClick={handleEscalate}
         data-testid="escalate-button"
         className={cn(
-          "flex shrink-0 items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold",
+          "flex w-full shrink-0 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold sm:w-auto",
           "bg-red-600 text-white hover:bg-red-700 active:bg-red-800",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2",
           "transition-colors"

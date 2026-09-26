@@ -264,7 +264,7 @@ export default function WorkbenchPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       {/* Top nav */}
-      <header className="sticky top-0 z-10 flex items-center gap-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
+      <header className="sticky top-0 z-10 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
         <GitBranch className="h-4 w-4 text-muted-foreground" aria-hidden />
         <h1 className="text-sm font-bold text-foreground">DAG Workbench</h1>
         <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
@@ -281,7 +281,7 @@ export default function WorkbenchPage() {
             backend unavailable
           </span>
         )}
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex min-w-0 flex-wrap items-center gap-3">
           {!fragmentsLoading && (
             <button
               type="button"
@@ -293,13 +293,14 @@ export default function WorkbenchPage() {
               Refresh
             </button>
           )}
-          <PersonaSelector layout="dropdown" className="w-48" />
+          <PersonaSelector layout="dropdown" className="w-48 max-w-full" />
         </div>
       </header>
 
-      <div className="flex flex-1 gap-0 overflow-hidden">
+      {/* Below md the fragment list stacks above the canvas. */}
+      <div data-testid="workbench-layout" className="flex min-w-0 flex-1 flex-col gap-0 md:flex-row md:overflow-hidden">
         {/* ── Left: fragment list ──────────────────────────────────────────── */}
-        <aside className="flex w-72 flex-col gap-3 overflow-y-auto border-r border-border bg-muted/30 p-4">
+        <aside className="flex w-full max-h-80 flex-col gap-3 overflow-y-auto border-b border-border bg-muted/30 p-4 md:max-h-none md:w-72 md:shrink-0 md:border-b-0 md:border-r">
           <div>
             <h2 className="mb-2 text-sm font-bold text-foreground">Fragments</h2>
             <p className="mb-3 text-xs text-muted-foreground">
@@ -402,7 +403,7 @@ export default function WorkbenchPage() {
         </aside>
 
         {/* ── Right: canvas + edge detail ──────────────────────────────────── */}
-        <main className="flex flex-1 flex-col gap-4 overflow-y-auto p-4 lg:p-6">
+        <main className="flex min-w-0 flex-1 flex-col gap-4 overflow-y-auto p-4 lg:p-6">
           {!selectedFragmentId && (
             <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-border bg-muted/30 p-8 text-center">
               <div className="space-y-2">

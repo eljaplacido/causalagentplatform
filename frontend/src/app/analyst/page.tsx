@@ -232,7 +232,7 @@ export default function AnalystPage() {
         )}
 
         <div className="ml-auto">
-          <PersonaSelector layout="dropdown" className="w-48" />
+          <PersonaSelector layout="dropdown" className="w-48 max-w-full" />
         </div>
       </header>
 

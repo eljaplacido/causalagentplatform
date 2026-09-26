@@ -383,11 +383,11 @@ export default function EngineerPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-10 flex items-center gap-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
+      <header className="sticky top-0 z-10 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
         <Wrench className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
         <h1 className="text-sm font-bold text-foreground">Platform Health</h1>
         <div className="ml-auto">
-          <PersonaSelector layout="dropdown" className="w-48" />
+          <PersonaSelector layout="dropdown" className="w-48 max-w-full" />
         </div>
       </header>
 

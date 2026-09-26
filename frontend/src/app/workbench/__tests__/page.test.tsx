@@ -317,3 +317,14 @@ describe("workbench fragment authoring", () => {
     expect(within(composer).getByRole("button", { name: /submit draft for review/i })).toBeDisabled();
   });
 });
+
+describe("workbench header at phone width", () => {
+  it("wraps its header rather than widening the page (843px at 390 in the tour)", async () => {
+    renderPage();
+    const header = (await screen.findByRole("heading", { name: "DAG Workbench" })).closest("header")!;
+    expect(header.className).toMatch(/(^|\s)flex-wrap(\s|$)/);
+    const layout = screen.getByTestId("workbench-layout");
+    expect(layout.className).toMatch(/(^|\s)flex-col(\s|$)/);
+    expect(layout.className).toMatch(/(^|\s)md:flex-row(\s|$)/);
+  });
+});

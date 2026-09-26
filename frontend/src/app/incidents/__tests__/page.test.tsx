@@ -367,3 +367,24 @@ describe("IncidentsPage — a newly triaged incident", () => {
     expect(await screen.findByTestId("incident-severity")).toHaveTextContent(body.severity);
   });
 });
+
+// ─── Phone width (the tour, 2026-09-26) ───────────────────────────────────────
+//
+// At 390px the feed and the brief stayed side by side and the escalation
+// banner and its button were clipped. jsdom does no layout, so this pins the
+// responsive classes; the scrollWidth at 390px was measured in Chromium
+// (390 on every page after the change).
+describe("IncidentsPage — stacks below md", () => {
+  it("stacks the feed above the brief below md, side by side from md", async () => {
+    incidentsApiMock.list.mockResolvedValue([makeRecord({})]);
+    render(<IncidentsPage />);
+    await screen.findByTestId("incident-brief");
+
+    const layout = screen.getByTestId("incidents-layout");
+    expect(layout.className).toMatch(/(^|\s)flex-col(\s|$)/);
+    expect(layout.className).toMatch(/(^|\s)md:flex-row(\s|$)/);
+    const feed = screen.getByRole("complementary", { name: /incident feed/i });
+    expect(feed.className).toMatch(/(^|\s)w-full(\s|$)/);
+    expect(feed.className).toMatch(/(^|\s)md:w-64(\s|$)/);
+  });
+});

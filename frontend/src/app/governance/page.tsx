@@ -488,7 +488,7 @@ export default function GovernancePage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       {/* Top nav */}
-      <header className="sticky top-0 z-10 flex items-center gap-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
+      <header className="sticky top-0 z-10 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
         <ShieldCheck className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
         <h1 className="text-sm font-bold text-foreground">Governance</h1>
         {pendingCount > 0 && (
@@ -517,7 +517,7 @@ export default function GovernancePage() {
             backend unavailable
           </span>
         )}
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex min-w-0 flex-wrap items-center gap-3">
           {!queueLoading && (
             <button
               type="button"
@@ -529,7 +529,7 @@ export default function GovernancePage() {
               Refresh
             </button>
           )}
-          <PersonaSelector layout="dropdown" className="w-48" />
+          <PersonaSelector layout="dropdown" className="w-48 max-w-full" />
         </div>
       </header>
 

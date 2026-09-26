@@ -630,3 +630,13 @@ describe("GovernancePage — edge titles and the audit count", () => {
     );
   });
 });
+
+describe("governance header at phone width", () => {
+  it("wraps its header rather than widening the page (581px at 390 in the tour)", async () => {
+    governanceApiMock.reviewQueue.mockResolvedValue([]);
+    governanceApiMock.auditLog.mockResolvedValue(auditResponse([]));
+    renderPage();
+    const header = (await screen.findByRole("heading", { name: "Governance" })).closest("header")!;
+    expect(header.className).toMatch(/(^|\s)flex-wrap(\s|$)/);
+  });
+});

@@ -387,17 +387,21 @@ export default function IncidentsPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       {/* Top nav */}
-      <header className="sticky top-0 z-10 flex items-center gap-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
+      <header className="sticky top-0 z-10 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
         <Activity className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
         <h1 className="text-sm font-bold text-foreground">Incidents</h1>
-        <div className="ml-auto flex items-center gap-3">
-          <PersonaSelector layout="dropdown" className="w-48" />
+        <div className="ml-auto flex min-w-0 items-center gap-3">
+          <PersonaSelector layout="dropdown" className="w-48 max-w-full" />
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
+      {/* Below md the feed stacks above the brief; from md they sit side by side. */}
+      <div data-testid="incidents-layout" className="flex min-w-0 flex-1 flex-col md:flex-row md:overflow-hidden">
         {/* Incident feed sidebar */}
-        <aside className="flex w-64 shrink-0 flex-col border-r border-border lg:w-72">
+        <aside
+          aria-label="Incident feed"
+          className="flex w-full shrink-0 flex-col border-b border-border md:w-64 md:border-b-0 md:border-r lg:w-72"
+        >
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <h2 className="text-sm font-semibold text-foreground">
               Active Incidents
@@ -519,7 +523,7 @@ export default function IncidentsPage() {
           )}
 
           {/* Incident list */}
-          <ul className="flex-1 overflow-y-auto" role="list">
+          <ul className="max-h-72 overflow-y-auto md:max-h-none md:flex-1" role="list">
             {incidents.map((incident) => {
               const isSelected = incident.id === selectedIncidentId;
               const hasActiveStatus = incident.status === "ACTIVE";
@@ -572,7 +576,7 @@ export default function IncidentsPage() {
         </aside>
 
         {/* Incident brief main panel */}
-        <main className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
+        <main className="min-w-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
           <IncidentBrief
             incident={selectedIncident}
             isLoading={isThinking}

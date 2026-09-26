@@ -73,3 +73,12 @@ describe("ExecutivePage — approval rates and escalations", () => {
     expect(escalations).toHaveTextContent("4");
   });
 });
+
+describe("ExecutivePage — phone width", () => {
+  it("wraps its header rather than widening the page (393px at 390 in the tour)", async () => {
+    platformApiMock.metrics.mockReturnValue(new Promise(() => {}));
+    renderPage();
+    const header = screen.getByRole("heading", { name: "Manager Dashboard" }).closest("header")!;
+    expect(header.className).toMatch(/(^|\s)flex-wrap(\s|$)/);
+  });
+});
