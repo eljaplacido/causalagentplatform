@@ -287,7 +287,7 @@ async def test_a_rejected_object_cannot_be_promoted_by_a_fresh_verdict(
     await registry.reject_draft(
         entity.id,
         "CausalEntity",
-        await verdict_for(entity.id, "REJECTED"),
+        await verdict_for(entity.id, action_type="GOVERNANCE_REJECT"),
         _approver(),
         "not supported by the evidence",
     )
@@ -324,7 +324,7 @@ async def test_an_approved_object_cannot_be_rejected_after_the_fact(
         await registry.reject_draft(
             entity.id,
             "CausalEntity",
-            await verdict_for(entity.id, "REJECTED"),
+            await verdict_for(entity.id, action_type="GOVERNANCE_REJECT"),
             _approver(),
             "changed my mind",
         )
@@ -367,10 +367,83 @@ async def test_a_graph_fragment_can_be_rejected(
     fragment = make_graph_fragment()
     await registry.propose_draft(fragment, await verdict_for(fragment.id))
     await registry.reject_draft(
-        fragment.id, "GraphFragment", await verdict_for(fragment.id, "REJECTED"), _approver(),
+        fragment.id, "GraphFragment", await verdict_for(fragment.id, action_type="GOVERNANCE_REJECT"), _approver(),
         "the fragment omits the load confounder",
     )
     row = await db_session.execute(
         text("SELECT approval_status FROM graph_fragments WHERE id = :i"), {"i": str(fragment.id)}
     )
     assert row.scalar_one() == "DEPRECATED"
+
+
+# ── A verdict is issued for one action (septa-53) ────────────────────────────
+
+
+async def test_a_reject_verdict_cannot_approve_or_create(
+    db_engine: object,
+    registry: SemanticLayerRegistry,
+    db_session: AsyncSession,
+    verdict_for: VerdictFactory,
+) -> None:
+    """GOVERNANCE_REJECT is in the signed claim, and it authorises a rejection only."""
+    entity = make_causal_entity()
+    with pytest.raises(GuardianBlockedError, match="GOVERNANCE_REJECT"):
+        await registry.propose_draft(
+            entity, await verdict_for(entity.id, action_type="GOVERNANCE_REJECT")
+        )
+
+    await registry.propose_draft(entity, await verdict_for(entity.id))
+    reject_verdict = await verdict_for(entity.id, action_type="GOVERNANCE_REJECT")
+    with pytest.raises(GuardianBlockedError, match="GOVERNANCE_REJECT"):
+        await registry.promote_to_approved(entity.id, "CausalEntity", reject_verdict, _approver())
+    spent = await db_session.execute(
+        text("SELECT COUNT(*) FROM verdict_consumption WHERE verdict_id = :v"),
+        {"v": str(reject_verdict)},
+    )
+    assert spent.scalar_one() == 0, "a refused verdict is not spent"
+
+
+async def test_an_approve_verdict_cannot_reject_or_create(
+    db_engine: object,
+    registry: SemanticLayerRegistry,
+    verdict_for: VerdictFactory,
+) -> None:
+    """GOVERNANCE_APPROVE authorises a promotion only: not a rejection, not a new draft."""
+    entity = make_causal_entity()
+    with pytest.raises(GuardianBlockedError, match="GOVERNANCE_APPROVE"):
+        await registry.propose_draft(
+            entity, await verdict_for(entity.id, action_type="GOVERNANCE_APPROVE")
+        )
+    await registry.propose_draft(entity, await verdict_for(entity.id))
+    with pytest.raises(GuardianBlockedError, match="GOVERNANCE_REJECT"):
+        await registry.reject_draft(
+            entity.id,
+            "CausalEntity",
+            await verdict_for(entity.id, action_type="GOVERNANCE_APPROVE"),
+            _approver(),
+            "an approval's verdict, spent on a rejection",
+        )
+    await registry.promote_to_approved(
+        entity.id,
+        "CausalEntity",
+        await verdict_for(entity.id, action_type="GOVERNANCE_APPROVE"),
+        _approver(),
+    )
+
+
+async def test_a_rejected_verdict_for_the_reject_action_cannot_reject(
+    db_engine: object,
+    registry: SemanticLayerRegistry,
+    verdict_for: VerdictFactory,
+) -> None:
+    """What reject_draft used to require. A Guardian that declined authorises nothing."""
+    entity = make_causal_entity()
+    await registry.propose_draft(entity, await verdict_for(entity.id))
+    with pytest.raises(GuardianBlockedError, match="not APPROVED"):
+        await registry.reject_draft(
+            entity.id,
+            "CausalEntity",
+            await verdict_for(entity.id, "REJECTED", action_type="GOVERNANCE_REJECT"),
+            _approver(),
+            "declined by the Guardian",
+        )

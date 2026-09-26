@@ -404,7 +404,7 @@ async def test_a_devops_reviewer_cannot_rule_on_another_domain(
     from uuid import UUID
 
     approve_verdict = await verdict_for(UUID(other))
-    reject_verdict = await verdict_for(UUID(other), "REJECTED")
+    reject_verdict = await verdict_for(UUID(other), action_type="GOVERNANCE_REJECT")
     async with _client(DEVOPS_GOVERNANCE) as client:
         approve = await client.post(
             f"/api/governance/approve/{other}",
