@@ -43,6 +43,7 @@ it does not block on is **ADVISORY** (today only `doc-reconciliation`).
 
 | Step | What it runs | Passes when |
 |---|---|---|
+| `import-origin` | `scripts/import_origin.py`, once per interpreter the later steps use (the backend toolchain, each package environment), under the `PYTHONPATH` that step gets. The script exports every `packages/*/src` first on `PYTHONPATH` and `MYPYPATH` for every step | Every package under `packages/*/src` resolves inside this tree. In a worktree the borrowed venvs' editable installs point at the main checkout; without this, the backend and package suites tested that checkout's kernel |
 | `backend-pytest` | The full backend suite (`backend/tests`: unit, integration, guardian) once, on SQLite (`TEST_DATABASE_URL` is unset for it), with coverage | Exit 0, a non-zero pass count above its floor (`scripts/gate-scope-floors.json`), and every `backend/tests/**/test_*.py` reported a test in the JUnit report |
 | `backend-pytest-postgres` | The same full suite with `TEST_DATABASE_URL` set: the test database is built on that PostgreSQL server from `backend/src/db/migrations/*.sql` (§3.1). No coverage (judged once, above) | As `backend-pytest`, and **no test skipped**: in this run a skip is a PostgreSQL test that did not run. SKIPPED with "no TEST_DATABASE_URL" when the variable is unset, so a local run without a database exits 2, not 0 |
 | `backend-coverage` | `scripts/coverage_gate.py` on that run's coverage | Line coverage ≥ the floor in `scripts/coverage-floor.json` |
@@ -52,7 +53,7 @@ it does not block on is **ADVISORY** (today only `doc-reconciliation`).
 | `frontend-tsc` | `tsc --noEmit` in `frontend/` | Exit 0 over at least its floor of project files |
 | `frontend-vitest` | `vitest run` in `frontend/` | Exit 0, pass count above its floor, every test file reported |
 | `frontend-eslint` | The eslint ratchet over `frontend/src/` with `frontend/eslint.config.mjs` (Next's core-web-vitals and TypeScript rule sets) | Findings ≤ its `eslint` entry in `scripts/lint-baseline.json`, which is 0. Without a config file the step is SKIPPED |
-| one step per `packages/*/pyproject.toml` | That package's own `pytest`, in its own environment | Exit 0, at least one test passed, and **no test skipped**: every skip these suites can produce is a registered gate that did not run, so a skip fails the step. `causal-core` is always named in the summary, RAN or NOT RUN |
+| one step per `packages/*/pyproject.toml` | That package's own `pytest`, in its own environment, with the `junit_markers` plugin (`scripts/ci_pytest_plugins/`) writing each test's markers into the JUnit report | Exit 0, at least one test passed, and **no test skipped**: every skip these suites can produce is a registered gate that did not run, so a skip fails the step. And two identity checks on the report, run even when pytest failed: `gate_scope.py package-files` (every `packages/<name>/tests/**/test_*.py` reported a test) and `gate_scope.py gate-markers` (every pre-registered gate marker of the package, from the gate table in `.gnomon/skills/verifying-changes.md` and its `pyproject.toml`, has a passed test; `real_data` only when the T2/T3 data is cached). `causal-core` is always named in the summary, RAN or NOT RUN |
 | `<package>-mypy`, one per package | mypy with the package's own strict config, via the ratchet | Findings ≤ its `mypy-<package>` entry in `scripts/lint-baseline.json`, which is 0 for all three; a package with no entry fails |
 | `python-lock` | `scripts/py_lock.py check` over the hash-pinned locks `requirements/{backend,kernel,image,release}.txt` (§5.4), with the environments this run tests | Every lock pins each distribution `==` with its sha256 hashes; every lock is current (the fingerprint of its inputs, the `.in` file and the dependency tables of each `pyproject.toml` it names, equals the one `relock` recorded in `requirements/lock-inputs.json`, so a dependency edit without a re-lock fails); every lock satisfies its local packages' requirements; and the backend toolchain and each package environment **equal** their lock (`backend.txt`, `kernel.txt`: the same distributions at the same versions, nothing missing or extra) with `pip check` clean. SKIPPED without the backend toolchain or a package environment |
 | `bandit-backend`, `bandit-packages` | bandit via the ratchet: `backend/src` with `backend/pyproject.toml`'s `[tool.bandit]` (which skips no rule; B608, SQL built from strings, is enforced), and every `packages/*/src` with bandit's defaults | MEDIUM and HIGH findings ≤ the `bandit-*` entries in `scripts/lint-baseline.json`, which are 0. LOW is reported, not counted |
@@ -62,7 +63,7 @@ it does not block on is **ADVISORY** (today only `doc-reconciliation`).
 | `gate-scope` | `scripts/gate_scope.py identity-all` | Every skill module is imported by a test, every tool of the MCP server (`packages/causal-mcp`, read from its `TOOLS` table) and every state-changing route is referenced by one, and every route is mounted, apart from the known gaps named in `scripts/gate-scope-floors.json` |
 | `status-claims` | `scripts/status_claims.py` | `docs/CURRENT_STAGE.md` and `conformance/declared_not_implemented.json` agree with each other and with the tree; every citation quotes its line verbatim, and every `fixed_in` commit is in HEAD's history (a squash or rebase that orphaned it fails) |
 | `contract-parity` | `scripts/contract_parity.py` | The shared enumerations agree across `models.py`, `packages/semantic-types` and `frontend/src/lib/types.ts`, apart from the divergences named in `scripts/contract-parity.json` |
-| `doc-figures` | `scripts/doc_figures.py` | Every benchmark figure the docs quote, as bound in `scripts/doc-figures.json`, matches the value in that benchmark's standing run |
+| `doc-figures` | `scripts/doc_figures.py` | Every benchmark figure the docs quote, as bound in `scripts/doc-figures.json`, matches the value in that benchmark's standing run: the latest passing run against the current pre-registration whose `git` is a 40-hex commit, not `-dirty`, that is an ancestor of HEAD |
 | `skill-refs` | `scripts/skill_refs.py` over the agent-facing instructions: `.gnomon/skills/*.md`, `AGENTS.md`, `CONTRIBUTING.md`, and the prose in `.gnomon/roles.toml`, `tools.toml` and `policy.toml` | Every repository path they name resolves (in code spans, code blocks, links, and anchored paths in bare prose; globs must match something); every command they tell an agent to run resolves (the script exists, a `septacore` subcommand is in the pinned list in `scripts/skill-refs.json`, a `.venv/bin/<tool>` is installed by that directory's `pyproject.toml`, a `pytest -m` marker is declared in the package it runs in); `verifying-changes.md`'s gate table and `benchmarks/*/PRE-REGISTRATION.md` match both ways; that skill names every step `.gnomon/ci.sh` records; a list of three or more gates names all of them; every skill is listed in `AGENTS.md`; and each skill's front matter parses with a `name`, `description` and compiling `match`. Deliberate non-paths are listed in `scripts/skill-refs.json` with a reason (a stale entry fails), and zero references checked is a FAIL |
 | `doc-reconciliation` | `scripts/doc_reconciliation.py` | Its manifest is sound (FAIL otherwise). When a tracked doc is owed a re-read, because the code it describes moved or it was never read, the step is **ADVISORY** rather than PASS |
 
@@ -71,7 +72,8 @@ must resolve from `frontend/` to a copy inside the repository (`npm ci` at the r
 The script does not look for a `frontend/node_modules` directory: npm workspaces hoist what they
 can to the root `node_modules`, so after some installs that directory is never created, and a
 Vite cache can create it with no tools in it. In a git worktree, the script falls back to the
-main checkout's backend and package virtualenvs. It does not fall back for `node_modules`, so the
+main checkout's backend and package virtualenvs; `PYTHONPATH` puts this tree's `packages/*/src`
+ahead of their editable installs, and `import-origin` fails if it did not. It does not fall back for `node_modules`, so the
 frontend steps are SKIPPED there unless you install them.
 
 The exit code sums the table:
@@ -94,7 +96,7 @@ Only 0 is done. `.septacore.json` maps the same codes to `passed`, `failed`,
 
 | Directory | What it holds |
 |---|---|
-| `unit/` | Skills, agents, the registry, the DB factory, connectors (HTTP mocked), provenance and contract models, planning, evaluation, and negative controls for the gate's own scripts (`test_contract_parity.py`, `test_secret_scan.py`, `test_dep_audit.py`, `test_skill_refs.py`), and for the supply-chain checks outside it (`test_py_lock.py`, `test_image_scan.py`, `test_sbom_check.py`) |
+| `unit/` | Skills, agents, the registry, the DB factory, connectors (HTTP mocked), provenance and contract models, planning, evaluation, and negative controls for the gate's own scripts (`test_contract_parity.py`, `test_secret_scan.py`, `test_dep_audit.py`, `test_skill_refs.py`, `test_doc_figures.py`, `test_import_origin.py`, `test_gate_scope_package_rows.py`), and for the supply-chain checks outside it (`test_py_lock.py`, `test_image_scan.py`, `test_sbom_check.py`) |
 | `integration/` | FastAPI routes through `httpx`: governance approval flow, the reject authority (an APPROVED verdict for `GOVERNANCE_REJECT`, and the governance page's own reject bodies end to end, `test_governance_reject_verdict.py`), recorded reasons, intervention roles, the role matrix and domain isolation (`test_rbac_matrix.py`: every state-changing route has a row, and is refused without a granted role), the database's own domain isolation on PostgreSQL (`test_rls_domain_isolation.py`), session API and store, the decision ledger (checkpoints and anchored verification included) and follow-ups, the assumption registry (`/api/v1/models`), and the MCP server over stdio |
 | `guardian/` | Guardian bypass prevention, verdict binding (signed, subject-bound, single-use), drafts that cannot approve themselves, a risk score and cycle count the caller cannot supply, the `audit_write` skill, and `audit_log` refusing UPDATE and DELETE |
 
@@ -164,7 +166,12 @@ data, the metric, the pass threshold and the seeded defects the suite must catch
 `packages/causal-core/tests/test_benchmark_results.py` holds the registrations to their runs:
 for every `benchmarks/*/PRE-REGISTRATION.md`, a committed result must record a passing run
 against that file's exact bytes (`prereg_sha256`), so a bar cannot move after the last run
-without a new one. Failing runs stay on file beside it.
+without a new one, recorded from a clean tree: its `git` a 40-hex commit, not `-dirty`, that is
+an ancestor of HEAD (`unknown` once passed as clean; `t8-switchback` v2 run1 carries it and is
+kept, but does not stand). A result's `passed` must agree with what it stores, though the
+numeric bars are not re-judged: a pass with a failure on file, or without every seeded defect
+the registration requires recorded as caught, fails the test. Failing runs stay on file beside it. The `git` a bench module writes is the
+commit of the checkout its code was imported from, not the working directory's.
 
 The seeded-defect tests (`tests/t0/test_seeded_defects.py`, `tests/t4/…`, `tests/t5/…`, `tests/t6/…`, `tests/t7/…`, `tests/t8/…`,
 `tests/d0/…`, `tests/a0/…`) break the system under test on purpose and assert that the gate fails. A gate that cannot see a
