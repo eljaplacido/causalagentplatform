@@ -35,7 +35,7 @@ from sqlalchemy import text
 
 from src.exceptions import GuardianBlockedError
 from src.semantic_layer.models import UserRef
-from tests.conftest import VerdictFactory, make_causal_entity
+from tests.conftest import SOURCE_DATA_JSON, VerdictFactory, make_causal_entity
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -166,11 +166,13 @@ async def _seed_draft(session: AsyncSession, entity_id: UUID, name: str, domain:
     await session.execute(
         text(
             "INSERT INTO causal_entities (id, name, entity_type, domain, description, "
-            " attributes, ontology_version, approval_status, created_by, created_at) "
+            " attributes, ontology_version, approval_status, created_by, created_at, "
+            " source_data) "
             "VALUES (:id, :name, 'SERVICE', :domain, '', '{}', '1.0.0', 'DRAFT', "
-            " '{\"id\": \"test-user\"}', '2026-09-21T00:00:00+00:00')"
+            " '{\"id\": \"test-user\"}', '2026-09-21T00:00:00+00:00', :source_data)"
         ),
-        {"id": str(entity_id), "name": name, "domain": domain},
+        # Approval needs the source data on record (septa-15).
+        {"id": str(entity_id), "name": name, "domain": domain, "source_data": SOURCE_DATA_JSON},
     )
     await session.commit()
 
