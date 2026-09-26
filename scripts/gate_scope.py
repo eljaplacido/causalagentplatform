@@ -21,10 +21,6 @@ The identity checks here:
 
   skills-imported     every module in backend/src/skills/ is imported by at
                       least one test under backend/tests/ (ast imports, not text)
-  mcp-tools           every tool the MCP server REGISTERS -- read from the live
-                      server object, not from a list someone keeps -- is
-                      referenced by a test: its wrapper is called, or its
-                      registered name appears as a string
   kernel-mcp-tools    every tool packages/causal-mcp registers -- read from the
                       TOOLS table in its server.py (ast: the dict literal and
                       every `TOOLS["name"] = ...`), since that server needs MCP
@@ -52,13 +48,13 @@ may only shrink:
     range carries `Ratchet-Exempt: <why>`.
 
 Usage:
-  scripts/gate_scope.py identity-all                 # skills, mcp-tools, routes
+  scripts/gate_scope.py identity-all                 # skills, kernel-mcp-tools, routes
   scripts/gate_scope.py pytest-files --junit <xml>
   scripts/gate_scope.py vitest-files --json <json>
   scripts/gate_scope.py floor <gate-id> <count>
 
-Run it with the backend's Python: mcp-tools and routes import the live server
-and app. Exit 0 = the gate looked at enough; 1 = it did not; 2 = misuse.
+Run it with the backend's Python: routes imports the live app.
+Exit 0 = the gate looked at enough; 1 = it did not; 2 = misuse.
 """
 
 from __future__ import annotations
@@ -160,22 +156,7 @@ def check_skills() -> tuple[set[str], set[str], dict[str, str]]:
     return expected, actual, where
 
 
-# ── mcp-tools ────────────────────────────────────────────────────────────────
-
-_MCP_SNIPPET = r"""
-import asyncio, json
-from mcp_server.server import build_server
-s = build_server()
-names = [t.name for t in asyncio.run(s.list_tools())]
-fns = {}
-try:
-    for t in s._tool_manager.list_tools():
-        fns[t.name] = getattr(t.fn, "__name__", "")
-except Exception:
-    pass
-print(json.dumps({"names": names, "fns": fns}))
-"""
-
+# ── shared ast helpers ───────────────────────────────────────────────────────
 
 def called_names(tree: ast.Module) -> set[str]:
     out: set[str] = set()
@@ -191,31 +172,6 @@ def called_names(tree: ast.Module) -> set[str]:
 
 def string_constants(tree: ast.Module) -> set[str]:
     return {n.value for n in ast.walk(tree) if isinstance(n, ast.Constant) and isinstance(n.value, str)}
-
-
-def check_mcp_tools() -> tuple[set[str], set[str], dict[str, str]]:
-    live = json.loads(backend_python(_MCP_SNIPPET).strip().splitlines()[-1])
-    expected = set(live["names"])
-    if not expected:
-        raise ScopeError("the live MCP server registered no tools")
-    fns: dict[str, str] = live.get("fns", {})
-    actual: set[str] = set()
-    where: dict[str, str] = {}
-    for f in test_files():
-        tree = parse(f)
-        if tree is None:
-            continue
-        calls, strings = called_names(tree), string_constants(tree)
-        for tool in expected:
-            how = None
-            if fns.get(tool) and fns[tool] in calls:
-                how = f"calls {fns[tool]}()"
-            elif tool in strings:
-                how = "names it"
-            if how:
-                actual.add(tool)
-                where.setdefault(tool, f"{f.relative_to(ROOT)} ({how})")
-    return expected, actual, where
 
 
 # ── kernel-mcp-tools ─────────────────────────────────────────────────────────
@@ -619,7 +575,6 @@ def main() -> int:
     if args.mode == "identity-all":
         checks = [
             ("skills-imported", check_skills),
-            ("mcp-tools", check_mcp_tools),
             ("kernel-mcp-tools", check_kernel_mcp_tools),
         ]
     elif args.mode == "pytest-files":

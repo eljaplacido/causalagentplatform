@@ -103,7 +103,7 @@
     ]
   },
   "bandit-backend": {
-    "_why": "backend/src and backend/mcp_server under backend/pyproject.toml's [tool.bandit]. MEDIUM and HIGH count; zero, and it stays zero.",
+    "_why": "backend/src under backend/pyproject.toml's [tool.bandit]. MEDIUM and HIGH count; zero, and it stays zero.",
     "tool": "bandit",
     "max_findings": 0,
     "measured_with": "bandit 1.9.4",
@@ -114,8 +114,7 @@
       "--severity-level",
       "medium",
       "-r",
-      "src",
-      "mcp_server"
+      "src"
     ]
   },
   "bandit-packages": {

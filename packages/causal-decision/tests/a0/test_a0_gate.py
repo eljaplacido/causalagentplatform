@@ -55,6 +55,7 @@ def test_the_properties_hold(cfg: dict[str, Any], cases: list[a0.Case]) -> None:
 
 def test_the_cases_depend_on_the_registered_seed_and_nothing_else() -> None:
     """v2 run 1's cases depended on PYTHONHASHSEED: a set was iterated unsorted."""
+    import os
     import subprocess
     import sys
 
@@ -67,7 +68,11 @@ def test_the_cases_depend_on_the_registered_seed_and_nothing_else() -> None:
     outs = {
         subprocess.run(
             [sys.executable, "-c", probe],
-            env={"PYTHONHASHSEED": seed, "PATH": ""},
+            # Only the hash seed varies. The rest of the environment is inherited:
+            # a stripped one drops LD_LIBRARY_PATH, and a toolcache Python then loads
+            # the host's older libpython (seen on a self-hosted runner: _ctypes
+            # "undefined symbol _PyErr_SetLocaleString").
+            env={**os.environ, "PYTHONHASHSEED": seed},
             capture_output=True,
             text=True,
             check=True,
