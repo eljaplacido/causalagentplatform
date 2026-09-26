@@ -5,9 +5,9 @@ match = '\b(causal|effect|estimate|estimat\w*|ate|att|confound\w*|identif\w*|gra
 +++
 
 **The server is `mcp__causal_core__*`** (packages/causal-mcp, declared as
-`causal_core` in tools.toml). `mcp__causal__*` is the legacy backend server,
-being deprecated; its `counterfactual_reason` and `intervention_estimate`
-return triage scores, not effects. Never cite it for a causal number.
+`causal_core` in tools.toml), the repository's one MCP server. (A legacy
+backend server, `mcp__causal__*`, was deleted in septa-6; if a client still
+offers its tools, it is running an old checkout -- do not cite it.)
 
 **The flow, in order.** It is the server's own INSTRUCTIONS
 (packages/causal-mcp/src/causal_mcp/server.py):

@@ -98,7 +98,7 @@
           "says": "Computes Rosenbaum sensitivity bounds and E-values for unmeasured confounders"
         },
         {
-          "at": "docs/CYBERSECURITY.md:405",
+          "at": "docs/CYBERSECURITY.md:412",
           "says": "- Rosenbaum sensitivity bounds"
         },
         {
@@ -133,7 +133,7 @@
           "says": "(DoWhy, PyMC)"
         },
         {
-          "at": "docs/AGENTS.md:666",
+          "at": "docs/AGENTS.md:655",
           "says": "DoWhy, EconML, statsmodels"
         },
         {
@@ -195,11 +195,11 @@
           "says": "Provider-agnostic LLM"
         },
         {
-          "at": "docs/AGENTS.md:616",
+          "at": "docs/AGENTS.md:605",
           "says": "the LLM factory resolves capability \u2192 provider at runtime"
         },
         {
-          "at": "docs/AGENTS.md:626",
+          "at": "docs/AGENTS.md:615",
           "says": "Routing is handled by `src/agents/llm_factory.py`"
         },
         {
@@ -234,7 +234,7 @@
       "capability": "Review queue ordered by risk tier, showing who submitted each item",
       "claimed_in": [
         {
-          "at": "backend/src/api/governance.py:395",
+          "at": "backend/src/api/governance.py:401",
           "says": "summary=\"List pending drafts ordered by risk tier\""
         },
         {
@@ -245,15 +245,15 @@
       "reality": "ReviewQueueItem carries no risk tier and no submitter, the queue is not ordered by risk, and the UI fills riskTier \"MEDIUM\" and submittedBy \"system\" for every item.",
       "evidence": [
         {
-          "at": "backend/src/api/governance.py:165",
+          "at": "backend/src/api/governance.py:168",
           "says": "class ReviewQueueItem(BaseModel):"
         },
         {
-          "at": "frontend/src/app/governance/page.tsx:230",
+          "at": "frontend/src/app/governance/page.tsx:232",
           "says": "riskTier: \"MEDIUM\","
         },
         {
-          "at": "frontend/src/app/governance/page.tsx:231",
+          "at": "frontend/src/app/governance/page.tsx:233",
           "says": "submittedBy: \"system\","
         }
       ],
@@ -331,11 +331,11 @@
       "capability": "Neo4j as the causal graph store (d-separation and backdoor-path queries)",
       "claimed_in": [
         {
-          "at": "docs/DATA_LAYER.md:281",
+          "at": "docs/DATA_LAYER.md:282",
           "says": "3.1 Neo4j (Graph Store)"
         },
         {
-          "at": "docs/DATA_LAYER.md:312",
+          "at": "docs/DATA_LAYER.md:313",
           "says": "d-separation query p95 < 50ms"
         },
         {
@@ -346,7 +346,7 @@
       "reality": "The semantic layer (fragments, edges) is stored through SQLAlchemy (SQLite/PostgreSQL); Neo4j code exists only for the experience buffer and drift alerts, is exercised only against mocks, and no d-separation or path query runs in Neo4j.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:563",
+          "at": "backend/src/semantic_layer/registry.py:613",
           "says": "FROM graph_fragments"
         }
       ],
@@ -366,7 +366,7 @@
           "says": "Ingestion Bus (Kafka)"
         },
         {
-          "at": "docs/DATA_LAYER.md:405",
+          "at": "docs/DATA_LAYER.md:406",
           "says": "3.3 Kafka (Event Streaming)"
         },
         {
@@ -661,7 +661,7 @@
       "capability": "Agents render their prompts from the versioned templates in prompts/",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:610",
+          "at": "docs/AGENTS.md:599",
           "says": "Prompt templates are versioned in `prompts/` alongside their schema contracts. No agent uses ad-hoc prompts at runtime."
         }
       ],
@@ -703,11 +703,11 @@
       "reality": "Approval and rejection UPDATE the object's own row: promote_to_approved rewrites approval_status, approved_at, approved_by, guardian_verdict_ref and lineage, and reject_draft rewrites approval_status (to DEPRECATED) and lineage. The version column keeps its 1.0.0 default, because no code path increments it and no new row is written for a new version. The previous state survives only as lineage entries and audit_log rows. The interventions feedback endpoint likewise UPDATEs interventions in place.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:914",
+          "at": "backend/src/semantic_layer/registry.py:965",
           "says": "\"status\": \"APPROVED\","
         },
         {
-          "at": "backend/src/semantic_layer/registry.py:994",
+          "at": "backend/src/semantic_layer/registry.py:1047",
           "says": ".values(approval_status=bindparam(\"status\"), lineage=bindparam(\"lineage\")),"
         }
       ],
@@ -738,7 +738,7 @@
       "reality": "Approval and rejection each append one step (APPROVED or REJECTED: actor, time, verdict id), and an edge keeps whatever lineage list its submitter sent. Nothing records the data source, the transformation steps or the policy rules into lineage, and no platform code constructs a LineageRecord. An entity's submitted lineage is not stored (the INSERT omits the column). Fragments had no lineage column at all until 006_graph_fragment_lineage.sql, so approving or rejecting one failed outright. The Guardian verdict, its cited rules, and the evidence and assumption ids are linked by reference, so the chain can be partly rebuilt by joins. Nothing shows that this satisfies EU AI Act Art. 13.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:882",
+          "at": "backend/src/semantic_layer/registry.py:933",
           "says": "select(t.c.lineage, t.c.approval_status, t.c.domain).where("
         },
         {
@@ -797,7 +797,7 @@
       "capability": "The published TypeScript contract matches the backend models field for field",
       "claimed_in": [
         {
-          "at": "docs/ADR-001-canonical-semantic-layer.md:28",
+          "at": "docs/ADR-001-canonical-semantic-layer.md:27",
           "says": "MUST implement these core types with exact field alignment"
         },
         {
@@ -871,7 +871,7 @@
           "says": "1. SimulateAhead   \u2014 Forward-simulate action consequences using the approved SCM"
         },
         {
-          "at": "docs/AGENTS.md:543",
+          "at": "docs/AGENTS.md:532",
           "says": "SimulateAhead (SCM lookahead)"
         },
         {
@@ -1030,24 +1030,6 @@
       }
     },
     {
-      "id": "legacy-mcp-server",
-      "status": "planned",
-      "capability": "One MCP server: the legacy backend server retired in favour of packages/causal-mcp",
-      "claimed_in": [],
-      "reality": "backend/mcp_server (mcp SDK v1, seven backend skills, two of them heuristic triage scores rather than effects) still ships beside packages/causal-mcp (SDK v2, the kernel, the decision layer, causal_impact, a narrative verifier). As of 2026-09-25 no gnomon role is granted it, its gnomon declaration is commented out, and it warns on startup that it is deprecated. It is not deleted because client configurations outside this repository may still launch `causal-platform-mcp`, and scripts/gate_scope.py's mcp-tools identity check still inspects it.",
-      "evidence": [
-        {
-          "at": "backend/mcp_server/server.py:106",
-          "says": "causal-platform MCP server is DEPRECATED"
-        }
-      ],
-      "leaves_by": {
-        "kind": "retraction",
-        "path": "backend/mcp_server",
-        "asserts": "the directory, its console script and its stdio test are removed, and gate_scope's mcp-tools check inspects causal-mcp's TOOLS instead"
-      }
-    },
-    {
       "id": "cynefin-classifier-keyword-stub",
       "status": "declared-not-implemented",
       "capability": "Cynefin-domain classification that routing, human escalation and Guardian rules can rely on",
@@ -1061,7 +1043,7 @@
           "says": "Cynefin domain classification with confidence"
         },
         {
-          "at": "docs/AGENTS.md:559",
+          "at": "docs/AGENTS.md:548",
           "says": "Domain confidence > 0.7"
         },
         {
@@ -1088,7 +1070,7 @@
       "capability": "Dynamic application security testing (DAST): a scanner such as OWASP ZAP run against a running API, weekly",
       "claimed_in": [
         {
-          "at": "docs/CYBERSECURITY.md:597",
+          "at": "docs/CYBERSECURITY.md:604",
           "says": "DAST: OWASP ZAP against a staging API (weekly). Not built: there is no staging"
         }
       ],
@@ -1103,10 +1085,18 @@
   ],
   "left_the_list": [
     {
+      "id": "legacy-mcp-server",
+      "was": "backend/mcp_server (MCP SDK v1, seven backend skills, two of them heuristic triage scores rather than effects) shipped beside packages/causal-mcp; deprecated and granted to no gnomon role, it was kept for client configurations outside the repository that might still launch `causal-platform-mcp`",
+      "fixed_in": "b86ca81",
+      "pinned_by": "backend/tests/unit/test_one_mcp_server.py",
+      "note": "Left by its leaves_by kind, retraction, and by the deletion itself (septa-6, after the owner confirmed no external client needs it): the directory, its console script, its tests and the backend's mcp dependency are gone, the docs describe it only as history, and gate_scope's mcp-tools check left with it, the one server being inspected by kernel-mcp-tools. The test pins the absence: no package, no console script, no mcp dependency or import in backend/src, and gate_scope reading causal-mcp's TOOLS."
+    },
+    {
       "id": "mcp-tools-crash-and-stdout-logging",
       "was": "2 of 7 MCP tools raised TypeError (stdlib loggers called with structlog kwargs) and structlog wrote log lines to stdout, the stdio protocol channel",
       "fixed_in": "6768cc6",
-      "pinned_by": "backend/tests/integration/test_mcp_stdio.py"
+      "pinned_by": "packages/causal-mcp/tests/test_stdio_flow.py",
+      "note": "Re-pinned in septa-6. The crash was in the legacy backend server, which septa-6 deleted together with its own pin (backend/tests/integration/test_mcp_stdio.py, last at f64b2b0). The property the fix established -- every tool callable over stdio at INFO logging, and every stdout line a JSON-RPC frame -- is held on the one server that remains by this test (test_stdout_is_only_jsonrpc)."
     },
     {
       "id": "ui-fabricated-approvals",
