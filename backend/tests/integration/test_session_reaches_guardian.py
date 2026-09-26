@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -39,6 +39,9 @@ from sqlalchemy import bindparam, column, select, table
 
 from src.api.main import app
 from src.db.factory import CloudSqlFactory
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 pytestmark = pytest.mark.asyncio
 
@@ -79,7 +82,7 @@ _VERDICTS = {"APPROVED", "REJECTED", "REQUIRES_ESCALATION"}
 
 
 @pytest_asyncio.fixture
-async def client(db_engine: object):
+async def client(db_engine: object) -> AsyncGenerator[AsyncClient, None]:
     with patch(
         "src.middleware.auth._verify_firebase_token",
         new=AsyncMock(return_value=_USER),
@@ -113,7 +116,9 @@ async def _audit_rows(session_id: str) -> list[dict[str, Any]]:
 async def _graph_verdict_row(session_id: str) -> dict[str, Any]:
     """The Guardian row the session graph wrote -- the last one for the session."""
     rows = [r for r in await _audit_rows(session_id) if r["agent_id"] == "guardian-check-node"]
-    assert rows, f"no GuardianCheck audit_log row for session {session_id}: the run bypassed the Guardian"
+    assert rows, (
+        f"no GuardianCheck audit_log row for session {session_id}: the run bypassed the Guardian"
+    )
     return rows[-1]
 
 
@@ -233,6 +238,30 @@ async def test_chaotic_incident_escalates_with_an_audit_record(client: AsyncClie
     assert "PR-003" in row["policy_rules_cited"]
     escalations = [r for r in data["recommendations"] if r["action"].startswith("ESCALATE")]
     assert len(escalations) == 1, data["recommendations"]
+
+
+async def test_planner_escalation_is_ruled_on_and_recorded(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A lookahead that estimated every candidate unsafe escalates -- through the Guardian.
+
+    Unreachable through the API today (the planner is given no data and estimates
+    nothing: register planning-simulation-no-data), so the estimate is supplied here.
+    """
+    from src.orchestration import planning
+
+    async def _estimated_harm(**_: object) -> tuple[float | None, float, bool, str | None]:
+        return (-0.4, 0.1, True, "estimated harm")
+
+    monkeypatch.setattr(planning, "_simulate_single_action", _estimated_harm)
+    data = await _run(client, LATENCY_INCIDENT)
+
+    assert "escalation:planning_no_safe_action" in data["flags"]
+    assert data["requires_human_review"] is True
+    assert data["recommendations"][0]["action"].startswith("ESCALATE")
+    row = await _graph_verdict_row(data["session_id"])
+    _assert_governed(data, row)
+    assert row["action_type"] == "GRAPH_HUMAN_ESCALATION"
 
 
 # ── The invariant ─────────────────────────────────────────────────────────────
