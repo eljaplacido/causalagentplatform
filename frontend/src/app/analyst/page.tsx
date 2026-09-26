@@ -22,6 +22,15 @@
  *     (The page used to draw a two-node "Root Cause → Observable Effect"
  *     graph and edge proposals it made up from the response's confidence.)
  *   - A fragment-library failure is shown as a failure, never as "no fragments".
+ *   - One classification: the response's cynefin_domain, labelled
+ *     "Classification" in the header. The explanation and recommendations are
+ *     the backend's prose; when that prose names a different Cynefin domain the
+ *     page says so rather than letting two classifications stand side by side.
+ *     A new run clears the previous run's result, so its domain is never shown
+ *     beside the new run's progress.
+ *   - Recommendations are numbered by their position in the list (the backend's
+ *     ranks can repeat). A proposed edge's endpoints are shown as short labelled
+ *     ids: the response carries ids, not entity names.
  *
  * Data flow:
  *   1. User enters problem description
@@ -65,6 +74,59 @@ const sessionSchema = z.object({
 
 type SessionFormValues = z.infer<typeof sessionSchema>;
 
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+const CYNEFIN_DOMAINS = ["CLEAR", "COMPLICATED", "COMPLEX", "CHAOTIC", "DISORDER"] as const;
+
+/**
+ * The Cynefin domains the backend's prose names that are not the run's
+ * classification. The prose is the backend's to write; the page only says when
+ * it disagrees with the classification field.
+ */
+function domainsNamedOtherThan(
+  classification: string,
+  texts: readonly string[]
+): string[] {
+  const named = new Set<string>();
+  for (const text of texts) {
+    for (const d of CYNEFIN_DOMAINS) {
+      if (d !== classification && new RegExp(`\\b${d}\\b`).test(text)) named.add(d);
+    }
+  }
+  return CYNEFIN_DOMAINS.filter((d) => named.has(d));
+}
+
+const PROPOSE_EDGE = /^Propose edge: (\S+) → (\S+) \(([^)]+)\)$/;
+
+/** An id cut to its first 8 characters, labelled, with the full id on hover. */
+function ShortId({ id }: { id: string }) {
+  return (
+    <span title={id} className="font-mono">
+      entity id {id.length > 8 ? `${id.slice(0, 8)}…` : id}
+    </span>
+  );
+}
+
+/**
+ * A recommendation's action as sent, except that a proposed edge's endpoints
+ * (the backend sends "Propose edge: <id> → <id> (<type>)") are shown as short
+ * labelled ids: the response carries no entity names.
+ */
+function RecommendationAction({ action }: { action: string }) {
+  const edge = PROPOSE_EDGE.exec(action);
+  if (!edge) return <>{action}</>;
+  const [, source, target, edgeType] = edge;
+  return (
+    <>
+      Propose edge: <ShortId id={source!} /> → <ShortId id={target!} /> ({edgeType})
+      <span className="block text-[10px] font-normal text-muted-foreground">
+        The session response names the endpoints by id only.
+      </span>
+    </>
+  );
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function AnalystPage() {
@@ -107,6 +169,8 @@ export default function AnalystPage() {
       setIsThinking(true);
       setThinkingStage("Classifying domain...");
       setSessionError(null);
+      // The previous run's result (and its classification) is not this run's.
+      setSessionState(null);
 
       try {
         setThinkingStage("Running causal discovery...");
@@ -136,6 +200,12 @@ export default function AnalystPage() {
   );
 
   const isChaotic = sessionState?.cynefin_domain === "CHAOTIC";
+  const otherDomainsNamed = sessionState
+    ? domainsNamedOtherThan(sessionState.cynefin_domain, [
+        sessionState.draft_explanation,
+        ...recommendations.flatMap((r) => [r.action, r.rationale]),
+      ])
+    : [];
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -146,7 +216,17 @@ export default function AnalystPage() {
 
         {sessionState && (
           <div className="flex items-center gap-2 ml-2">
-            <CynefinBadge domain={sessionState.cynefin_domain} size="sm" />
+            <span
+              data-testid="session-classification"
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground"
+            >
+              Classification:
+              <CynefinBadge
+                domain={sessionState.cynefin_domain}
+                confidence={sessionState.domain_confidence}
+                size="sm"
+              />
+            </span>
             <GuardianVerdictBadge verdict={sessionState.guardian_verdict} size="sm" />
             <EpistemicConfidenceBadge score={sessionState.overall_confidence} size="sm" />
           </div>
@@ -156,6 +236,23 @@ export default function AnalystPage() {
           <PersonaSelector layout="dropdown" className="w-48" />
         </div>
       </header>
+
+      {/* The backend's prose naming another domain than the classification */}
+      {sessionState && otherDomainsNamed.length > 0 && (
+        <p
+          role="note"
+          data-testid="domain-text-mismatch"
+          className="flex items-start gap-1.5 border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
+        >
+          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
+          <span>
+            This run was classified {sessionState.cynefin_domain}, but the backend&apos;s
+            explanation or recommendations name {otherDomainsNamed.join(", ")}. The
+            classification shown is the response&apos;s cynefin_domain; the text below is
+            the backend&apos;s, as sent.
+          </span>
+        </p>
+      )}
 
       {/* ── CHAOTIC escalation banner ───────────────────────────────────────── */}
         {isChaotic && (
@@ -350,14 +447,14 @@ export default function AnalystPage() {
               </p>
             ) : (
               <ol className="space-y-2">
-                {recommendations.map((rec) => (
+                {recommendations.map((rec, index) => (
                   <li
-                    key={rec.rank}
+                    key={`${index}-${rec.action}`}
                     data-testid="session-recommendation"
                     className="rounded-md border border-border p-2.5 text-xs"
                   >
-                    <p className="font-medium text-foreground">
-                      {rec.rank}. {rec.action}
+                    <p className="break-words font-medium text-foreground">
+                      {index + 1}. <RecommendationAction action={rec.action} />
                     </p>
                     <p className="mt-1 text-muted-foreground">{rec.rationale}</p>
                     <p className="mt-1 text-[10px] text-muted-foreground">

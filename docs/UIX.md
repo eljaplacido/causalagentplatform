@@ -323,7 +323,12 @@ shows the Guardian's verdict; a draft reads "Draft · awaiting review" and a dep
 
 The analyst page draws no causal graph: the session API returns how many edges a run proposed
 (`proposed_edge_count`) but not the edges, so the page shows that count and the run's
-recommendations as sent. `EdgeProposal`, `NodeDetail` and `GraphDiff` are built, and no page
+recommendations as sent, numbered by their place in the list (the backend's ranks can repeat); a
+proposed edge's endpoints arrive as ids, and are shown as short labelled ids. The header's
+"Classification" is the response's `cynefin_domain`, the one classification on the page: when the
+backend's explanation or recommendations name another Cynefin domain, the page says so (the tour
+of 2026-09-26 met a COMPLICATED run explained as CHAOTIC, from before the backend's escalation text
+named its actual reason), and a new run clears the previous run's result. `EdgeProposal`, `NodeDetail` and `GraphDiff` are built, and no page
 renders them since the analyst page stopped drawing a graph it had made up.
 Approving or rejecting in `ApprovalPanel` asks the reviewer to classify the situation
 (Cynefin domain; required, nothing pre-selected, DISORDER not offered): Guardian reads it,

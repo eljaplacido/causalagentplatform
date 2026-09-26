@@ -149,3 +149,96 @@ describe("AnalystPage — fragment library", () => {
     expect(await screen.findByText(/No fragments yet/)).toBeInTheDocument();
   });
 });
+
+// ─── What the tour found (2026-09-26) ─────────────────────────────────────────
+//
+// A run whose response said cynefin_domain COMPLICATED carried an explanation
+// and a first recommendation written for CHAOTIC (the backend's escalation text
+// named CHAOTIC whatever the reason -- fixed in the backend by dad4cfd). The
+// header showed "Complicated" and the text said CHAOTIC, with nothing saying
+// which was the classification. Both recommendations read "1." (the backend's
+// ranks were 1 and 1), and a proposed edge was two bare UUIDs.
+describe("AnalystPage — one classification, consistent numbering, labelled ids", () => {
+  const MIXED: SessionStateResponse = {
+    ...SESSION,
+    cynefin_domain: "COMPLICATED",
+    draft_explanation:
+      "CHAOTIC domain: automated analysis suspended. Route this incident to your human incident commander now.",
+    recommendations: [
+      {
+        rank: 1,
+        action: "ESCALATE: Route to human decision-maker immediately.",
+        rationale: "CHAOTIC domain detected. Human must: Stabilise → Act → Sense.",
+        confidence: 1.0,
+        risk_tier: "CRITICAL",
+      },
+      {
+        rank: 1,
+        action:
+          "Propose edge: 7b06d720-d6d8-40fa-a89c-baafa9870425 → b2d176c5-82eb-4f27-8696-44ca294b8b2d (CAUSES)",
+        rationale: "Statistical association detected in COMPLICATED domain context.",
+        confidence: 0.38,
+        risk_tier: "HIGH",
+      },
+    ],
+    recommendation_count: 2,
+  };
+
+  it("shows the response's classification and flags backend text that names another domain", async () => {
+    const user = userEvent.setup();
+    semanticApiMock.fragments.mockResolvedValue([]);
+    sessionApiMock.run.mockResolvedValue(MIXED);
+
+    renderPage();
+    await runSession(user);
+
+    const classification = await screen.findByTestId("session-classification");
+    expect(classification).toHaveTextContent(/Classification/);
+    expect(classification).toHaveTextContent("Complicated");
+    const note = screen.getByTestId("domain-text-mismatch");
+    expect(note).toHaveTextContent(/CHAOTIC/);
+    expect(note).toHaveTextContent(/COMPLICATED/);
+  });
+
+  it("numbers the recommendations by their position in the list", async () => {
+    const user = userEvent.setup();
+    semanticApiMock.fragments.mockResolvedValue([]);
+    sessionApiMock.run.mockResolvedValue(MIXED);
+
+    renderPage();
+    await runSession(user);
+
+    const recs = await screen.findAllByTestId("session-recommendation");
+    expect(recs).toHaveLength(2);
+    expect(recs[0]).toHaveTextContent(/^1\./);
+    expect(recs[1]).toHaveTextContent(/^2\./);
+  });
+
+  it("shows a proposed edge's endpoints as short labelled ids, not bare UUIDs", async () => {
+    const user = userEvent.setup();
+    semanticApiMock.fragments.mockResolvedValue([]);
+    sessionApiMock.run.mockResolvedValue(MIXED);
+
+    renderPage();
+    await runSession(user);
+
+    const recs = await screen.findAllByTestId("session-recommendation");
+    expect(recs[1]).toHaveTextContent(/entity id 7b06d720…/);
+    expect(recs[1]).toHaveTextContent(/entity id b2d176c5…/);
+    expect(recs[1]).not.toHaveTextContent("7b06d720-d6d8-40fa-a89c-baafa9870425");
+  });
+
+  it("drops the previous run's classification while a new run is in flight", async () => {
+    const user = userEvent.setup();
+    semanticApiMock.fragments.mockResolvedValue([]);
+    sessionApiMock.run.mockResolvedValueOnce(SESSION);
+    renderPage();
+    await runSession(user);
+    await screen.findByTestId("session-classification");
+
+    sessionApiMock.run.mockReturnValueOnce(new Promise(() => {}));
+    await user.click(screen.getByTestId("run-session-button"));
+    expect(screen.queryByTestId("session-classification")).toBeNull();
+    expect(screen.queryAllByTestId("cynefin-badge")).toHaveLength(0);
+  });
+});
