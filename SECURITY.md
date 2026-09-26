@@ -108,10 +108,12 @@ combination falls through to Firebase verification.
 
 **Roles.** Roles are read from the token's `roles` (list) or `role` (string)
 custom claim. One matrix, `ROUTE_ROLES` in `backend/src/middleware/rbac.py`,
-maps every state-changing route (and the audit-log, review-queue, provenance and
-semantic-layer reads) to the roles that may call it, and each route depends on
-its row; `backend/tests/integration/test_rbac_matrix.py` fails on a mounted
-state-changing route without one. The route-by-route table, and the choices made
+maps every route but the public liveness probe, reads included, to the roles that
+may call it, and each route depends on its row;
+`backend/tests/integration/test_rbac_matrix.py` fails on a mounted route without
+one. A valid token that holds no platform role reads nothing: the decision ledger,
+intervention decisions, incidents, metrics and the assumption registry used to
+answer it. The route-by-route table, and the choices made
 where the role design is silent, are in `docs/CYBERSECURITY.md` §4.0. In short:
 
 - `GOVERNANCE_ROLES` = `governance_officer`, `platform_engineer`: approve, reject,
@@ -119,6 +121,11 @@ where the role design is silent, are in `docs/CYBERSECURITY.md` §4.0. In short:
   refused on edges they introduced), provenance reads and provenance erasure.
 - `DECISION_ROLES` = `governance_officer`, `platform_engineer`, `sre`: deciding
   an intervention and recording its outcome.
+- A session belongs to the user who started it: reading its state, resuming it
+  and citing it in a governance check need its owner or a governance role
+  (`rbac.may_use_session`; `backend/tests/integration/test_session_ownership.py`).
+  An incident id another user submitted is refused (409) rather than
+  overwritten.
 - Drafting semantic objects and proposing causal models needs `analyst`,
   `graph_author`, `platform_engineer` or `agent`; recording a decision needs
   `analyst`, `sre` or a governance role.

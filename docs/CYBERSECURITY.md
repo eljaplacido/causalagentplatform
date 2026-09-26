@@ -146,8 +146,8 @@ An agent or user attempts to write to the semantic layer without a Guardian verd
 A lower-privilege user or agent attempts to access or modify resources above their permission tier.
 
 **Mitigations:**
-- **In place:** RBAC at the API layer: one role matrix covers every state-changing route and
-  the audit, review-queue, provenance and semantic-layer reads (§4.0), and domain scope bounds
+- **In place:** RBAC at the API layer: one role matrix covers every route but the liveness
+  probe, reads included, and a session is usable only by its owner or governance (§4.0), and domain scope bounds
   what a user sees of the semantic layer (§4.2). **In place:** the same domain scope at the
   database layer on PostgreSQL: row-level security on `causal_entities`, `causal_edges` and
   `graph_fragments`, fed per request from the token and binding the role the app connects as
@@ -233,8 +233,9 @@ One matrix, `ROUTE_ROLES` in `backend/src/middleware/rbac.py`, maps each route b
 method and full path, to the roles that may call it; holding one of them is enough. Every
 state-changing route of the API is a row, and each route depends on its row through
 `guard(method, path)`. `backend/tests/integration/test_rbac_matrix.py` walks the mounted app
-and fails on a state-changing route without a row, then checks every row: a token holding no
-granted role gets 403, a token holding a granted role does not.
+and fails on any route without a row except the public liveness probe (`PUBLIC_ROUTES`), reads
+included, then checks every row: a token holding no granted role gets 403, a token holding a
+granted role does not.
 
 | Route | Roles |
 |---|---|
@@ -251,8 +252,11 @@ granted role gets 403, a token holding a granted role does not.
 
 "Any platform role" is one of `viewer`, `analyst`, `graph_author`, `governance_officer`,
 `platform_engineer`, `agent`, `sre`: a valid token with none of them is refused. Every other
-read (decisions, models, incidents, interventions, platform metrics, session state) needs only
-a valid token.
+read (decisions, models, incidents, interventions, platform metrics, session state) needs any
+platform role; until 2026-09-26 those 21 reads needed only a valid token. Session state is
+also bounded by ownership: reading, resuming or citing a session in `/check` needs the user
+who started it or a governance role (`rbac.may_use_session`), and a session with no recorded
+owner is governance's alone.
 
 Where §4.1 does not say, these are the least-privilege choices made:
 

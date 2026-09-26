@@ -32,12 +32,12 @@
           "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "b9abdd07f41e5d9f1caf7dde1e109a3e8e508fc8d8ccd6900058950d85fb47ac"
+          "docs/CURRENT_STAGE.md": "e08914c540c8c944b2d0319c4f57d059ebe7a63169bde2414b2b4c1ab10e84e4"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #49 into #54: README and CURRENT_STAGE carry triangulation (T0 v4) and positivity (T10) both as done, kernel-limits bullet names only general-ID estimation as open; ROADMAP done list has both, open list calibration evidence and anchoring; TESTING_CICD merged cleanly; package counts to be re-measured on this tree)"
+        "by": "Claude (backend integrity fixes, merged onto #54: SECURITY and CYBERSECURITY 4.0 say every route but the liveness probe has a matrix row, reads included, and sessions are owner-or-governance; CURRENT_STAGE rows for role-less reads, session ownership, incident overwrites, exact-id intervention decisions with single closure, weekly metrics; TESTING_CICD names the new tests; ADR-003, AGENTS and ROADMAP re-read after session.py and the merge, nothing they state moved)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,9 +53,9 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "68954ef8dc0ca8f974093c98c33602cfcacf1e2c22ddb5cdf33000870c2baaa4",
-          "backend/src": "0e22c0cb440a22fdd11420432e3d2529fc4b378fac66315c8b50671cc2721648",
-          "backend/tests": "6d900b40ae73a4d2cdcd5fbf0a947a8b10a9533cac22cfa8e080a7b8f0cfc481",
+          "conformance/declared_not_implemented.json": "defe0dfd9ab63157b0839944150beb414ff1e698c19b8e6f764da71f892541fd",
+          "backend/src": "bdb569d06b9f248acea76327ddfb53b3a5838ccbf1559a173d7cc2a8905862d8",
+          "backend/tests": "4b1ce4038584d1a609bbef7aa44e05bf012101ed1063f2fe85b9764bbb664a9f",
           "frontend/src": "cfe44a11e817c5d272f7125694a5cba46c438299c632f63315a8f836a9278d80",
           "packages": "3db39091c39ce9505cd29724d44146782817a497ebf917e8ce3e3f74d1079b56",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
@@ -63,7 +63,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #49 into #54: README and CURRENT_STAGE carry triangulation (T0 v4) and positivity (T10) both as done, kernel-limits bullet names only general-ID estimation as open; ROADMAP done list has both, open list calibration evidence and anchoring; TESTING_CICD merged cleanly; package counts to be re-measured on this tree)"
+        "by": "Claude (backend integrity fixes, merged onto #54: SECURITY and CYBERSECURITY 4.0 say every route but the liveness probe has a matrix row, reads included, and sessions are owner-or-governance; CURRENT_STAGE rows for role-less reads, session ownership, incident overwrites, exact-id intervention decisions with single closure, weekly metrics; TESTING_CICD names the new tests; ADR-003, AGENTS and ROADMAP re-read after session.py and the merge, nothing they state moved)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -124,14 +124,14 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/orchestration": "7776a0a563af5bda75451c4ff4bb546683ae9947207f6da8b0545c1781976c8f",
+          "backend/src/orchestration": "e2eb3496c39122094c47140ed28a932742480b35a2cbe4d2c1a11a40e9a0c6f7",
           "backend/src/evaluation": "9a2708b95f3bae7f8b05075e62815c7f51cb3f6e7939a585c1c2c26e5b500b07",
-          "backend/src/api/platform.py": "68355a7d3d4daf13952937559f743d59e1688bfd8f4b61f4b983faa1463ff5b6"
+          "backend/src/api/platform.py": "39769fc666af1350f66c73cce0aa1381556a2ed226c0807b8366e633c6013773"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #50 into #48: LLM layer has callers (this branch) and invocations go to the durable store (#30): ADR-002 status, criteria and component rows, CURRENT_STAGE LLM bullet and provenance-flow row, ADR-003 planner note all say so; grepped for 'no callers', 'in-memory' and 'No LLM is called', none stale; ORCHESTRATION merged cleanly on LF; TESTING_CICD keeps main's Neo4j text and this branch's LLM-calls paragraph)"
+        "by": "Claude (backend integrity fixes, merged onto #54: SECURITY and CYBERSECURITY 4.0 say every route but the liveness probe has a matrix row, reads included, and sessions are owner-or-governance; CURRENT_STAGE rows for role-less reads, session ownership, incident overwrites, exact-id intervention decisions with single closure, weekly metrics; TESTING_CICD names the new tests; ADR-003, AGENTS and ROADMAP re-read after session.py and the merge, nothing they state moved)"
       }
     },
     "docs/AGENTS.md": {
@@ -148,14 +148,14 @@
         "sha256": {
           "backend/src/agents": "f54499833e60481971d54deb0252ae7fe46d03ac7fd066ccfa1282a85a1b5769",
           "backend/src/skills": "b0bcef79c64f6b8d2f35f87f92095d54c52cec7d972a4cf1520b95fcc0d68347",
-          "backend/src/orchestration": "7776a0a563af5bda75451c4ff4bb546683ae9947207f6da8b0545c1781976c8f",
-          "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9",
-          "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d"
+          "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d",
+          "backend/src/orchestration": "e2eb3496c39122094c47140ed28a932742480b35a2cbe4d2c1a11a40e9a0c6f7",
+          "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #48 into #49, contract 0.13.0: gate lists name T9, T10 and C0 together (README, benchmarks README, AGENTS, skills, QUICKSTART, TESTING_CICD); ROADMAP robustness row has overlap (T10) and Rosenbaum (T9), positivity moved to done; CURRENT_STAGE gates list adds T10, the kernel-limits bullet keeps this branch's overlap text, package row restored from collected counts 256/146/43)"
+        "by": "Claude (backend integrity fixes, merged onto #54: SECURITY and CYBERSECURITY 4.0 say every route but the liveness probe has a matrix row, reads included, and sessions are owner-or-governance; CURRENT_STAGE rows for role-less reads, session ownership, incident overwrites, exact-id intervention decisions with single closure, weekly metrics; TESTING_CICD names the new tests; ADR-003, AGENTS and ROADMAP re-read after session.py and the merge, nothing they state moved)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -174,11 +174,11 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/middleware": "9085c1b32915118b1ecb76c779c5ad65c7849ac8c18f0faa7911423862db68d6",
-          "backend/src/api/governance.py": "f04db4d767e8a62c4315c46635a3e93d045a0817116acb6d33bbdb0d3a230cd0",
+          "backend/src/middleware": "9bb5ad7786171c24ca39c176e07979f3477db25f9afe00244939ec1225864bfc",
+          "backend/src/api/governance.py": "b58d5f4e83b084d6b9b2b018bf5e43a6902cd2ef1046683e03a42061305c9831",
           "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
           "backend/src/semantic_layer/registry.py": "32f6f4cee20e193c4ab87d60ca5b90a9aba8e18a01feef60c166433e63c7374c",
-          "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
+          "backend/src/api/interventions.py": "928915a5bb49c3e1d993fc0da88ca6d1ac05bb1923afc6c3a0f248194d229e43",
           "backend/src/api/provenance.py": "55fa5a3e0153904f557da134e6e0f3a8c8c1ae0ab8b5fe4faa8a6918a70c617e",
           "backend/src/db/migrations": "0c6e574f90adda4f934a3cf66ecea153f5610294203d4c4cf1cc344c17368319",
           "backend/src/semantic_layer/verdict.py": "13e537f2b000c10f10e57b0453f1f459b5237a2d60ea009103247a8bfbcade80",
@@ -187,7 +187,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
+        "by": "Claude (backend integrity fixes, merged onto #54: SECURITY and CYBERSECURITY 4.0 say every route but the liveness probe has a matrix row, reads included, and sessions are owner-or-governance; CURRENT_STAGE rows for role-less reads, session ownership, incident overwrites, exact-id intervention decisions with single closure, weekly metrics; TESTING_CICD names the new tests; ADR-003, AGENTS and ROADMAP re-read after session.py and the merge, nothing they state moved)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -309,7 +309,7 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "6d900b40ae73a4d2cdcd5fbf0a947a8b10a9533cac22cfa8e080a7b8f0cfc481",
+          "backend/tests": "4b1ce4038584d1a609bbef7aa44e05bf012101ed1063f2fe85b9764bbb664a9f",
           "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
@@ -323,7 +323,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #49 into #54: README and CURRENT_STAGE carry triangulation (T0 v4) and positivity (T10) both as done, kernel-limits bullet names only general-ID estimation as open; ROADMAP done list has both, open list calibration evidence and anchoring; TESTING_CICD merged cleanly; package counts to be re-measured on this tree)"
+        "by": "Claude (backend integrity fixes, merged onto #54: SECURITY and CYBERSECURITY 4.0 say every route but the liveness probe has a matrix row, reads included, and sessions are owner-or-governance; CURRENT_STAGE rows for role-less reads, session ownership, incident overwrites, exact-id intervention decisions with single closure, weekly metrics; TESTING_CICD names the new tests; ADR-003, AGENTS and ROADMAP re-read after session.py and the merge, nothing they state moved)"
       }
     },
     "docs/UIX.md": {
@@ -353,13 +353,13 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "18d2aa2f2ef7931f67675a18f9e0ba170989adc9fa7cbf2a7bee4ea53c3342a3",
-          "conformance/declared_not_implemented.json": "68954ef8dc0ca8f974093c98c33602cfcacf1e2c22ddb5cdf33000870c2baaa4",
-          "docs/CURRENT_STAGE.md": "b9abdd07f41e5d9f1caf7dde1e109a3e8e508fc8d8ccd6900058950d85fb47ac"
+          "conformance/declared_not_implemented.json": "defe0dfd9ab63157b0839944150beb414ff1e698c19b8e6f764da71f892541fd",
+          "docs/CURRENT_STAGE.md": "e08914c540c8c944b2d0319c4f57d059ebe7a63169bde2414b2b4c1ab10e84e4"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #49 into #54: README and CURRENT_STAGE carry triangulation (T0 v4) and positivity (T10) both as done, kernel-limits bullet names only general-ID estimation as open; ROADMAP done list has both, open list calibration evidence and anchoring; TESTING_CICD merged cleanly; package counts to be re-measured on this tree)"
+        "by": "Claude (backend integrity fixes, merged onto #54: SECURITY and CYBERSECURITY 4.0 say every route but the liveness probe has a matrix row, reads included, and sessions are owner-or-governance; CURRENT_STAGE rows for role-less reads, session ownership, incident overwrites, exact-id intervention decisions with single closure, weekly metrics; TESTING_CICD names the new tests; ADR-003, AGENTS and ROADMAP re-read after session.py and the merge, nothing they state moved)"
       }
     },
     "SECURITY.md": {
@@ -375,9 +375,9 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/middleware": "9085c1b32915118b1ecb76c779c5ad65c7849ac8c18f0faa7911423862db68d6",
-          "backend/src/api/governance.py": "f04db4d767e8a62c4315c46635a3e93d045a0817116acb6d33bbdb0d3a230cd0",
-          "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
+          "backend/src/middleware": "9bb5ad7786171c24ca39c176e07979f3477db25f9afe00244939ec1225864bfc",
+          "backend/src/api/governance.py": "b58d5f4e83b084d6b9b2b018bf5e43a6902cd2ef1046683e03a42061305c9831",
+          "backend/src/api/interventions.py": "928915a5bb49c3e1d993fc0da88ca6d1ac05bb1923afc6c3a0f248194d229e43",
           "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
           "backend/src/semantic_layer/registry.py": "32f6f4cee20e193c4ab87d60ca5b90a9aba8e18a01feef60c166433e63c7374c",
           "backend/src/semantic_layer/verdict.py": "13e537f2b000c10f10e57b0453f1f459b5237a2d60ea009103247a8bfbcade80"
@@ -385,7 +385,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
+        "by": "Claude (backend integrity fixes, merged onto #54: SECURITY and CYBERSECURITY 4.0 say every route but the liveness probe has a matrix row, reads included, and sessions are owner-or-governance; CURRENT_STAGE rows for role-less reads, session ownership, incident overwrites, exact-id intervention decisions with single closure, weekly metrics; TESTING_CICD names the new tests; ADR-003, AGENTS and ROADMAP re-read after session.py and the merge, nothing they state moved)"
       }
     }
   }
