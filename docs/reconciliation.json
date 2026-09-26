@@ -28,7 +28,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
+          "backend/pyproject.toml": "28974685007e1ae3d255c6c8811c41027867bff2eeae81dfb9145cdce5dfc429",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
@@ -37,7 +37,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-10: C0 row added with its figures bound; status line still true -- no real operation measured)"
+        "by": "Claude (septa-10: backend pin raised; README quotes no package version floors)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -289,7 +289,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-10: backend now needs causal-decision>=0.5.0 (the calibration report shape); the requirements line says so)"
+        "by": "Claude (septa-10: backend pin raised to causal-decision>=0.5.0; QUICKSTART quotes no package version floors, so no text changed)"
       }
     },
     "docs/TESTING_CICD.md": {
