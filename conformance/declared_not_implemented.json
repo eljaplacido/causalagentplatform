@@ -415,7 +415,7 @@
       "capability": "Triangulation flags outcome-model misspecification in causal-core",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:184",
+          "at": "packages/causal-core/README.md:203",
           "says": "Its power was 0.04 at n = 2,000"
         }
       ],
@@ -438,7 +438,7 @@
       "capability": "Estimation of effects identified only by the general ID algorithm (e.g. the napkin graph)",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:206",
+          "at": "packages/causal-core/README.md:225",
           "says": "Estimation for general ID functionals"
         }
       ],
@@ -461,18 +461,18 @@
       "capability": "causal-core methods beyond the current portfolio: nonparametric front-door, discovery, time series, interference between units",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:208",
+          "at": "packages/causal-core/README.md:227",
           "says": "Nonparametric front-door"
         },
         {
-          "at": "packages/causal-core/README.md:210",
+          "at": "packages/causal-core/README.md:229",
           "says": "Discovery"
         }
       ],
       "reality": "Listed as not implemented in the package README; none of these exists in the kernel. (Anytime-valid sequential tests left this entry on 2026-09-25 with T6; cluster-randomized designs, which handle dependence within clusters but not spillovers between them, arrived the same day with T7, and switchback designs with T8.)",
       "evidence": [
         {
-          "at": "packages/causal-core/README.md:203",
+          "at": "packages/causal-core/README.md:222",
           "says": "Not implemented yet"
         }
       ],
@@ -480,29 +480,6 @@
         "kind": "test",
         "path": "packages/causal-core/tests/t0/test_methods_roadmap.py",
         "asserts": "each method leaves this entry separately, with its own pre-registered T0 case and seeded defect"
-      }
-    },
-    {
-      "id": "kernel-overlap-detection-limits",
-      "status": "partial",
-      "capability": "Positivity violations detected before estimation",
-      "claimed_in": [
-        {
-          "at": "packages/causal-core/README.md:40",
-          "says": "positivity and overlap"
-        }
-      ],
-      "reality": "The check reads a logistic propensity model. IHDP's by-construction overlap violation (all treated children of non-white mothers removed) was not detected from its 25 covariates in 100/100 realizations; the ATE was answered by extrapolation (coverage stayed >= 0.97).",
-      "evidence": [
-        {
-          "at": "benchmarks/t2-ihdp/PRE-REGISTRATION.md:103",
-          "says": "a refusal needs a detectable overlap violation"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "packages/causal-core/tests/bench/test_ihdp_overlap_refusal.py",
-        "asserts": "a pre-registered IHDP bar that the ATE is refused or flagged for the overlap violation, e.g. via a flexible or covariate-profile overlap check"
       }
     },
     {
@@ -1288,6 +1265,13 @@
       "fixed_in": "c5b8251",
       "pinned_by": "packages/causal-core/tests/t8/test_carryover_power.py",
       "note": "Implemented as pre-registered in T8 v2 (46a1eae) before the code, and passed its registered runs (benchmarks/t8-switchback/results/2026-09-26-v2-run1.json, ecfa386, whose git field is 'unknown' because the gate was started outside the checkout; run2, c95af52, repeats it from the checkout, byte-identical otherwise). The check is now the least-squares slope of the outcome over the retained window of each switched block, into- minus out-of-treatment mean slope, Welch on t(K_s - 2), at a new policy level carryover_alpha = 0.05 (contract 0.11.0); a failure makes the result contested, estimate and interval unchanged. Registered run: power 0.918 in material_carryover (tau = 1.5, lambda = 30, washout 20; bias -0.424, coverage 0.122 unchecked), bar 0.8; false alarms 0.054-0.061 in the four designs the washout covers, bar 0.10; every flagged replication contested and no other. Seeded defects carryover_check_blind, check_includes_washout and flag_not_gating each caught by their bar. Limit, recorded rather than claimed away: against v1's long_carryover (tau = 0.3, bias -0.085, a fraction of a standard error) the check fires in 9.5% of runs, and no check on the minutes after the washout can do much better at T8's sizes -- an oracle GLS matched filter knowing lambda and rho has power near 0.13 on paper. The washout must still be chosen from knowledge of the system."
+    },
+    {
+      "id": "kernel-overlap-detection-limits",
+      "was": "The positivity check read one main-effects logistic propensity model (share outside propensity_bounds, or separation for the ATE). IHDP's by-construction overlap violation (treated children of non-white mothers removed) was not detected from its 25 covariates in 100/100 realizations; the ATE was answered by extrapolation (coverage stayed >= 0.97).",
+      "fixed_in": "49b97a9",
+      "pinned_by": "packages/causal-core/tests/bench/test_ihdp_overlap_refusal.py",
+      "note": "Implemented as pre-registered in T10 v1 (76c489c; contract paragraph corrected before any run in bdb42d0) and T2 v2 (same commit), before the code (contract 0.12.0). Honest overlap regions (causal_core.overlap): a depth-4 Gini tree for the treatment grown on one half of the units, its leaves judged on the other half and swapped; a leaf is a violation region for an arm when the one-sided 95% Clopper-Pearson bound on that arm's probability is below overlap_region_bound = 0.05 (n_min = 59 held-out units). A violation share above max_extreme_propensity_share refuses POSITIVITY naming the regions as rules; a smaller one warns; nothing is trimmed. A limited-overlap flag (share outside [0.1, 0.9], Crump et al. 2009) warns without refusing. Registered runs (c498b9e): T10 v1 run 1 passed -- POSITIVITY refusal 0.992-1.000 in four violation designs the old check refused in none (including a three-way stratum every single covariate hides), false refusals 0-0.002, coverage 0.946-0.958, all six seeded defects caught; T2 v2 run 1 passed -- the IHDP ATE flagged for limited overlap in 100/100 realizations, the ATT in 0/100. Not refused, and correctly so: race is not among IHDP's 25 covariates and no covariate region lacks treated units, so what the removal leaves is limited overlap. Limits, recorded rather than claimed away: a region needs about 118 units to be judged at all; a stratum defined by four or more covariates jointly is usually missed at n = 4,000 (prototype: 0-1% of replications), an exclusive-or pattern defeats the greedy tree, and violations in unmeasured variables are invisible to any check on the adjustment set."
     }
   ]
 }
