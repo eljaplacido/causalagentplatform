@@ -44,7 +44,10 @@ description there rather than guessing a value. `causal_analyze` and
 questions only); `causal_identify` and `causal_impact` take the fields
 identification reads. A bound violated over MCP (`expected_treated_share`
 outside (0, 1), a negative `washout`) is rejected by the server before the
-tool runs, as a tool error rather than a refusal.
+tool runs, as a tool error rather than a refusal. In a switchback (`cluster` the
+time block, with `time` and `washout`), an effect still moving after the washout
+makes the result `contested`; the check misses a carryover that is small next to
+the standard error, so the washout still comes from knowledge of the system.
 
 Graph syntax: `Z -> X -> Y; Z -> Y`; `X <-> Y` is an unmeasured common cause;
 `latent U` declares an unmeasured node. A graph node with no data column is

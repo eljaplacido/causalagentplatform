@@ -15,7 +15,7 @@ the bars are fixed before the code is run against them, and the runs that failed
 | `t5-did/` | T5 | Staggered difference-in-differences on simulated rollouts, with covariates (doubly robust) and not-yet-treated comparisons since v4: coverage, event-study coverage, pre-trends size and power, sensitivity, refusals | `causal_core.panel` via `analyze` | every PR: `pytest -m t5` |
 | `t6-sequential/` | T6 | Anytime-valid confidence sequences on watched randomized streams: coverage at every look, power, refusals | `causal_core.sequential` via `analyze` | every PR: `pytest -m t6` |
 | `t7-cluster/` | T7 | Cluster-randomized designs: unit-weighted effect, CR2 coverage, refusals where clusters dominate | `causal_core.cluster` via `analyze` | every PR: `pytest -m t7` |
-| `t8-switchback/` | T8 | Switchback designs: steady-state effect after a washout, coverage, carryover check (reported) | `causal_core.cluster` via `analyze` | every PR: `pytest -m t8` |
+| `t8-switchback/` | T8 | Switchback designs: steady-state effect after a washout, coverage, carryover check (power, false alarms; a flag contests the result) | `causal_core.cluster` via `analyze` | every PR: `pytest -m t8` |
 | `a0-assumption-impact/` | A0 | Whether a revised causal graph invalidates an estimate made under the old one, against an independent linear-Gaussian oracle | `causal_decision.assumptions.impact` | every PR: `pytest -m a0` |
 | `d0-decision-policy/` | D0 | The decision procedure on outcomes whose evidence is known by construction: a scenario table and properties | `packages/causal-decision` | every PR: `pytest -m d0` |
 

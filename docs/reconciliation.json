@@ -28,16 +28,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
+          "backend/pyproject.toml": "cdabd6c6e24ab6d579d2aa1de3d0d6db5b8802e87b10489cc3df43a2d34a47ed",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "fc5b6d1b7db3a4cae3ded89459aa58661b1946eaf6e8b8807fbc5bc34e674477"
+          "docs/CURRENT_STAGE.md": "47f82f3b25daf272632ad22a9a238b8cb03587eb0cdbb17e856d8cf8105d8143"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (deps: #17/#18 moved frontend/package.json versions; the page names Next.js/TypeScript/Tailwind and Node 20+ without versions, still true)"
+        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -54,18 +54,18 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "a01d1c37fac5b78a489703f9422e50bdb526a15937818e9af353d98ad3e47f22",
+          "conformance/declared_not_implemented.json": "98c034273f8f22c34ee6a0f2491101e80aa8c9b62c9120701f6ebc012c611e4d",
           "backend/src": "c06af80dee95babb1eed74ffbc5435ffe7f1cb1fdc8bf8f8489d087ad42aabe1",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
           "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
-          "packages": "e0df8dd5f27d915fc2f45eb9b1d9d01500c8d30dde637dbfd332b32abeab7016",
+          "packages": "f39decf6dcae81c0e60801fa80c933c6547de55348adb3fd3867119423414373",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #28 into deps: #28's A0 test change; row claims unchanged)"
+        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -189,7 +189,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #28 into deps: update-PR ignore rules and the where-CI-runs bullet both kept)"
+        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -254,12 +254,12 @@
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
           ".github": "405abf54754d93806c64cd703261a4cac70212e22955f1dd3c651a237dbdb2cb",
-          ".gnomon": "e9afa6dfbb985f1524e04a4ca8de7b5210e7e43e52d4106baca6d2a1b847532a"
+          ".gnomon": "ef33b01c3cfb5e5d70d83032e0bc2510e5306a54a9be8f6396daf1bf60f354bd"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #28 into deps: workflow changes from both; the page names files, not runners or versions)"
+        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -280,7 +280,7 @@
           "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
-          "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
+          "backend/pyproject.toml": "cdabd6c6e24ab6d579d2aa1de3d0d6db5b8802e87b10489cc3df43a2d34a47ed",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
           ".env.example": "f5dbf40f551d60b4b91d5bbaa9b36a2404f89536421fe51b8bcbf17a6ae1258f",
@@ -289,7 +289,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (deps: #17/#18 moved frontend/package.json versions; the page names Next.js/TypeScript/Tailwind and Node 20+ without versions, still true)"
+        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -312,20 +312,20 @@
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
           "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
-          "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
+          "backend/pyproject.toml": "cdabd6c6e24ab6d579d2aa1de3d0d6db5b8802e87b10489cc3df43a2d34a47ed",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
           ".gnomon/ci.sh": "8379e43234946f44d8e569a68c60d42923500ded3012d88bf2a477f5ebecf8aa",
-          "scripts": "f0b53ec6456489ff7a911dc1b94d72ee20926fb6a5b68d63badd302cc5ae9090",
+          "scripts": "bcb39b1862da2e64cdfcc87426508b01d8a673c22627287b339f96ae4bf32a52",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
-          "benchmarks": "a017cd3d799db03c83693deb1efeb7a8c2fb2e73e532f4fe5ce3895002f7be0a",
-          "packages/causal-core/tests": "be7509f8646efd6a27d3b142715e440739d17255e7ffc1ebcde5bc05aa95c2b2",
+          "benchmarks": "2ea289c99ef957a2b22a4eed544e76c06e45eb8a2c844d384f9e05eb7f84d940",
+          "packages/causal-core/tests": "ca9a8600b9bdeb81d9509afcb864900159868a7509bcc0aa13fff0fc501869f5",
           "packages/causal-decision/tests": "c7ccd2d2b91e1ec53a3eb456c70f670268b2ec1f8f431e161f399360b94ef7de"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #28 into deps: both the runner section (#28) and Node 24 / Dependabot handling (deps) present)"
+        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
       }
     },
     "docs/UIX.md": {
@@ -354,14 +354,14 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "packages/causal-core/src/causal_core": "b3a206babea176dd53fdebe83037e38e66922eeced1def6dbfb248262c2477a6",
-          "conformance/declared_not_implemented.json": "a01d1c37fac5b78a489703f9422e50bdb526a15937818e9af353d98ad3e47f22",
-          "docs/CURRENT_STAGE.md": "fc5b6d1b7db3a4cae3ded89459aa58661b1946eaf6e8b8807fbc5bc34e674477"
+          "packages/causal-core/src/causal_core": "6b029f17fceb5b8a44c784ea601802c8d97c1d2ed3ce9a6a92c2600823826501",
+          "conformance/declared_not_implemented.json": "98c034273f8f22c34ee6a0f2491101e80aa8c9b62c9120701f6ebc012c611e4d",
+          "docs/CURRENT_STAGE.md": "47f82f3b25daf272632ad22a9a238b8cb03587eb0cdbb17e856d8cf8105d8143"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #28 into deps: register re-cite only; no roadmap claim moved)"
+        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
       }
     },
     "SECURITY.md": {

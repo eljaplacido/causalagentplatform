@@ -26,7 +26,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
-CONTRACT_VERSION = "0.10.0"
+CONTRACT_VERSION = "0.11.0"
 
 
 class _Model(BaseModel):
@@ -127,8 +127,9 @@ class ResultStatus(StrEnum):
 
     supported   -- identified, estimators agree, no falsification test failed.
     provisional -- as supported, but the graph contains unreviewed edges.
-    contested   -- a falsification test failed or estimators disagree beyond
-                   sampling noise. The numbers are reported; causal language is not.
+    contested   -- a falsification test failed, estimators disagree beyond sampling
+                   noise, or a switchback's carryover outlasts its washout. The numbers
+                   are reported; causal language is not.
     """
 
     supported = "supported"
@@ -292,6 +293,15 @@ class AnalysisPolicy(_Model):
         ge=2,
         description="Cluster-randomized designs: fewer clusters than this in either arm and the "
         "cluster-level variance cannot be estimated; the analysis refuses.",
+    )
+    carryover_alpha: float = Field(
+        default=0.05,
+        gt=0,
+        lt=0.5,
+        description="Switchback designs: level of the carryover check (the effect still moving "
+        "after the washout, into- vs out-of-treatment switches). A failure makes the result "
+        "contested. Looser than refutation_alpha on purpose: a missed carryover leaves a biased "
+        "estimate supported (T8 v2).",
     )
     cs_target_n: int = Field(
         default=2000,

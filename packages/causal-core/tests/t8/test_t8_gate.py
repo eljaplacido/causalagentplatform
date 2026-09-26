@@ -14,19 +14,18 @@ from causal_core.bench import t8
 pytestmark = pytest.mark.t8
 
 
-@pytest.fixture(scope="module")
-def cfg() -> dict[str, Any]:
-    return t8.load_prereg()[0]
-
-
 def test_the_pre_registration_is_the_one_this_gate_runs(cfg: dict[str, Any]) -> None:
     assert cfg["meta"]["suite"] == "T8"
 
 
-def test_estimates_are_unbiased_and_intervals_cover(cfg: dict[str, Any]) -> None:
-    reports, failures = t8.check_estimation(cfg)
+def test_estimates_are_unbiased_and_intervals_cover(
+    cfg: dict[str, Any], estimation: tuple[list[t8.DesignReport], list[str]]
+) -> None:
+    reports, failures = estimation
     assert not failures, failures[:8]
-    assert {r.id for r in reports} == set(cfg["estimation"]["designs"]) | {"long_carryover"}
+    co = cfg["carryover"]
+    assert {r.id for r in reports} == (set(cfg["estimation"]["designs"]) | set(co["reported"])
+                                       | set(co["power_designs"]))
 
 
 def test_designs_the_method_cannot_answer_are_refused(cfg: dict[str, Any]) -> None:
