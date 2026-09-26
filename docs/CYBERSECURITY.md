@@ -411,16 +411,22 @@ Proposed Edge → CausalDiscoveryAgent → Contradiction Check
 
 ### 7.2 Sensitivity Analysis Requirement
 
-> **Status:** target design, not enforced (register `sensitivity-gate-not-enforced`). Rosenbaum
-> bounds are not implemented (register `sensitivity-analysis`). E-values are computed by
-> causal-core, when asked.
+> **Status:** partly enforced. Guardian PR-007 refuses a `GOVERNANCE_APPROVE` check for a
+> stored edge that has no sensitivity result on an assumption it rests on (`septa-33`,
+> `backend/tests/guardian/test_pr007_sensitivity_gate.py`). It asks for a result, not a robust
+> one: a result that says not robust still counts, and the reviewer sees it in the queue's risk
+> tier (`septa-71`). Rosenbaum bounds are not implemented (register `sensitivity-analysis`).
+> E-values are computed by causal-core, when asked. Nothing labels an edge `REQUIRES_REVIEW` or
+> blocks it from simulation use.
 
-Every newly approved edge must pass a sensitivity analysis before it can be used in production simulations:
+The target: every newly approved edge carries a sensitivity analysis before it is used in
+production simulations:
 - Rosenbaum sensitivity bounds
 - E-value computation for unmeasured confounders
 - Results stored in `Assumption.sensitivityResult`
 
-Edges that fail to meet minimum E-value thresholds are labeled `REQUIRES_REVIEW` and blocked from simulation use.
+and edges that fail to meet minimum E-value thresholds are labeled `REQUIRES_REVIEW` and blocked
+from simulation use.
 
 ---
 

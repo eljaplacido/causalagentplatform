@@ -53,18 +53,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "703a728d2f54dd528266363a620bdde06ccdc71a255998d26171ea7b27f0fb90",
-          "backend/src": "7da218504677aa33c206da1b86eeb8eb382ade9344b713b8b36fb6a21acbf191",
-          "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "ec946ae24599f8d111b7faff7336eb8d14e6469e4c5cc40896396936b30f061d",
-          "frontend/src": "653e2e1dd0b61fab109dbe492e7facb12581472ba80c9aa3e550616a5d3c5902",
-          "packages": "b6ee9e7b2337b6a02a1015e9b026ef382e06dd7afb17259c76142ad2af9e8a02",
+          "conformance/declared_not_implemented.json": "18bd0051b096312809184a471dd70cd5fe3d71fb7484d760f0332a7ff09142f5",
+          "backend/src": "db5249ae3ce9f2990263a3a7b00c64d291d91cf47ae8b0edaa0151c10deb3386",
+          "backend/tests": "dbcece1f89d2531dab2c6a69f53181ab26373b80d42e4c2c9c2d5e3e519433ac",
+          "frontend/src": "3db9b395057a637926422437995bccdc190874ad8e9a4472a83e33207b6cc1c8",
+          "packages": "9fe7e31eb9499437dbf0a75f0d9bc49a771d4dec83b05f1c570cf9cdc3a5616d",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (migration renumbered 011 -> 012_edge_created_by so it follows #30's 011_provenance; content unchanged)"
+        "by": "Claude (merge #30 into #31: read each conflict against the code; approve binds GOVERNANCE_APPROVE and reject GOVERNANCE_REJECT, stated together; migration 012 for edge created_by; CYBERSECURITY 7.2 now says PR-007 asks for a result, not a robust one)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -103,16 +102,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/semantic_layer/provenance.py": "02fe831e092fb8bb01d05db9fc9d871ae544e09b2adca565d0df34e3086fa474",
+          "backend/src/semantic_layer/provenance.py": "c912fb0af67442b984325d80528867c559ccb0332ac7725ac448e48f87164c89",
           "backend/src/semantic_layer/contracts.py": "8af9432f179c0d3e8652b3b7d4a48db9edbff3f5acc1fb25c8a6e8d9af3eaaa4",
-          "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
-          "backend/src/agents/llm_factory.py": "f7a2d5514b4002494fe1cf9edf69c5b9cc31b8d2751fe39b335ecbfce4d8014a",
-          "backend/src/agents/governance.py": "6875a1979d23e6563aa7ca3b476ffb8d634a4d13fca4d33e8e85b0567043ac86"
+          "backend/src/api/provenance.py": "55fa5a3e0153904f557da134e6e0f3a8c8c1ae0ab8b5fe4faa8a6918a70c617e",
+          "backend/src/agents/llm_factory.py": "cf027815b09bfd658aa041072ebd42158e3bdf5f6e76d3f8941ed7b227fd9f1e",
+          "backend/src/agents/governance.py": "a1317e386b8f5783a1fd17bdf864fb52a88ece0aabad93ef6cdd416d5190dff3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-36: re-read; governance.py only moved edge_sensitivity onto the shared usable_sensitivity reading, PR-009 unchanged)"
+        "by": "Claude (merge #30 into #31: re-read the governance and provenance mentions; governance.py gained PR-007 and approve binding, which neither doc describes; provenance text from #30 unchanged)"
       }
     },
     "docs/ADR-003-hierarchical-planning-and-evaluation.md": {
@@ -147,16 +146,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/agents": "e13037313fa3545f7c92bc7a96ce1a1798d3ac1e91c353758a18906b5e6a9ffd",
+          "backend/src/agents": "8873bb581da87f274832a1cd41b7f3b8e032d156a29b2180a150b2fde87591e3",
           "backend/src/skills": "7c14f6095d38b78711081427d4f98e3f621a0a72de4b377d6fc374c346c4ecea",
-          "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "backend/src/orchestration": "026e61993e2c3e51962380e4d4e957cf5d26e650455679bd5e7cdce75c31c2f4",
-          "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957"
+          "prompts": "664b74cd837a44513e10dc0a7a5c44a3015816f928c93d4f7831320b0231e50f",
+          "packages/causal-mcp": "ac8ffe5b31a7fc07dfbfaee6156a0003bc0753f30c9a3a730b99d39de085a913"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-36: re-read; its one risk-tier mention is the change-impact agent output, not the review queue; the Guardian spec is intent and nothing became false)"
+        "by": "Claude (merge #30 into #31: re-read the governance and provenance mentions; governance.py gained PR-007 and approve binding, which neither doc describes; provenance text from #30 unchanged)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -175,20 +174,20 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/middleware": "0a00dc9c734e148a08c531bcd281d3afe81a8189ef75ef669543b89cd0e4136b",
-          "backend/src/api/governance.py": "785d6bc6b0897067d92fd1e9c7e0a7619379c44b9103d04a6fa3e5ad8017f527",
-          "backend/src/agents/governance.py": "6875a1979d23e6563aa7ca3b476ffb8d634a4d13fca4d33e8e85b0567043ac86",
-          "backend/src/semantic_layer/registry.py": "7353cc8b8dbbb31cffcdfb2f7658ab802f07c58650a8dee70cd83f8650c19536",
+          "backend/src/middleware": "b207b9d2692cb17a5a2f92da2cd96460548d2d81b343d73c82b14ed34bf59fb3",
+          "backend/src/api/governance.py": "f04db4d767e8a62c4315c46635a3e93d045a0817116acb6d33bbdb0d3a230cd0",
+          "backend/src/agents/governance.py": "a1317e386b8f5783a1fd17bdf864fb52a88ece0aabad93ef6cdd416d5190dff3",
+          "backend/src/semantic_layer/registry.py": "2adb75f9f5902773e857b14bcb2d09e68d0d17fe2f7011eb03fe2fbe19212b87",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
-          "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
-          "backend/src/db/migrations": "deb8e99b8e619c145353da0566913555421eb3daa3f028d4f0f90a5eeccfd558",
-          "backend/src/semantic_layer/verdict.py": "4b32849d51f5dd4b19a0dd93d807b817eab0083210bc10180745c8454a61c230",
-          ".github/workflows": "1ae0fadaa874c419905d5c24ebadf5ccca68705dc7d83057ea81682712fae31b"
+          "backend/src/api/provenance.py": "55fa5a3e0153904f557da134e6e0f3a8c8c1ae0ab8b5fe4faa8a6918a70c617e",
+          "backend/src/db/migrations": "e9255bf6ac878671172e70a62273fd04746d4153b0b3bbebd94a14636e59f499",
+          "backend/src/semantic_layer/verdict.py": "340039954f295649d3921f8bc699c79ba3f305d6b43350feec4d5808c2130bcb",
+          ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (migration renumbered 011 -> 012_edge_created_by so it follows #30's 011_provenance; content unchanged)"
+        "by": "Claude (merge #30 into #31: read each conflict against the code; approve binds GOVERNANCE_APPROVE and reject GOVERNANCE_REJECT, stated together; migration 012 for edge created_by; CYBERSECURITY 7.2 now says PR-007 asks for a result, not a robust one)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -206,19 +205,19 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/db": "77eb64d030e31eef254341f965338dd1c8a89f2b0c416158624e8c1688441e50",
-          "backend/src/connectors": "47199e6fd213f90c59af28dda1c6469d256d6595cdd433fbbd1a2957ec723569",
+          "backend/src/db": "b377a0f670c81ebb00990425b2176b11fd2f250f096fcc2859a8a32d6d7dd23b",
+          "backend/src/connectors": "2b7f65f2acc7f7732deecdad2c8c1b72e4db72caed067285d65631be65c4edfa",
           "backend/src/semantic_layer/models.py": "9d20689801ee209370c995278bfa23f58d19fd0c68a65d86e705e4fb7b1a036f",
           "backend/src/sensors": "d38f988ccb52659ac4ecc8724e8aa775b2e6e9fca76b73dbba6576c3f3d1dcba",
-          "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
-          "backend/src/semantic_layer/registry.py": "7353cc8b8dbbb31cffcdfb2f7658ab802f07c58650a8dee70cd83f8650c19536",
-          "backend/src/agents/drift_monitor.py": "9279c31636b3b663007f21e7aa671ffe738a535432f610ecb5b6de00ae6bd815",
+          "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
+          "backend/src/semantic_layer/registry.py": "2adb75f9f5902773e857b14bcb2d09e68d0d17fe2f7011eb03fe2fbe19212b87",
+          "backend/src/agents/drift_monitor.py": "d4aeecf75035c60feb196914aea340ddeadd4c1de4237734c7533dc647aeb076",
           "backend/src/skills/drift_detect.py": "9432982258b155287a90701d76dc9bf331dd8c65fbc692ad37fcd124fcab7111"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (migration renumbered 011 -> 012_edge_created_by so it follows #30's 011_provenance; content unchanged)"
+        "by": "Claude (merge #30 into #31: read each conflict against the code; approve binds GOVERNANCE_APPROVE and reject GOVERNANCE_REJECT, stated together; migration 012 for edge created_by; CYBERSECURITY 7.2 now says PR-007 asks for a result, not a robust one)"
       }
     },
     "docs/HANDOFFS.md": {
@@ -309,22 +308,22 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          ".github/workflows": "1ae0fadaa874c419905d5c24ebadf5ccca68705dc7d83057ea81682712fae31b",
-          "backend/tests": "ec946ae24599f8d111b7faff7336eb8d14e6469e4c5cc40896396936b30f061d",
-          "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
+          ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
+          "backend/tests": "dbcece1f89d2531dab2c6a69f53181ab26373b80d42e4c2c9c2d5e3e519433ac",
+          "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
-          ".gnomon/ci.sh": "8379e43234946f44d8e569a68c60d42923500ded3012d88bf2a477f5ebecf8aa",
-          "scripts": "f0b53ec6456489ff7a911dc1b94d72ee20926fb6a5b68d63badd302cc5ae9090",
+          ".gnomon/ci.sh": "a05e016e87f09e27989ffc185d06ad2b55c6d31f4e9b9cc2954b8cfdf7a40e45",
+          "scripts": "9cdb277112d693b652ffd68ead5b55dd28454ea54594e20c13f10d2b5b22dd7c",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
-          "benchmarks": "a017cd3d799db03c83693deb1efeb7a8c2fb2e73e532f4fe5ce3895002f7be0a",
-          "packages/causal-core/tests": "be7509f8646efd6a27d3b142715e440739d17255e7ffc1ebcde5bc05aa95c2b2",
-          "packages/causal-decision/tests": "61bde7786a6158cc99f269fd057908ce3959e5e812ac5d8b4c82c11c2c7200b4"
+          "benchmarks": "2ea289c99ef957a2b22a4eed544e76c06e45eb8a2c844d384f9e05eb7f84d940",
+          "packages/causal-core/tests": "ca9a8600b9bdeb81d9509afcb864900159868a7509bcc0aa13fff0fc501869f5",
+          "packages/causal-decision/tests": "c7ccd2d2b91e1ec53a3eb456c70f670268b2ec1f8f431e161f399360b94ef7de"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-36: integration row names test_review_queue_risk.py)"
+        "by": "Claude (merge #30 into #31: read each conflict against the code; approve binds GOVERNANCE_APPROVE and reject GOVERNANCE_REJECT, stated together; migration 012 for edge created_by; CYBERSECURITY 7.2 now says PR-007 asks for a result, not a robust one)"
       }
     },
     "docs/UIX.md": {
@@ -335,12 +334,12 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "frontend/src": "653e2e1dd0b61fab109dbe492e7facb12581472ba80c9aa3e550616a5d3c5902"
+          "frontend/src": "3db9b395057a637926422437995bccdc190874ad8e9a4472a83e33207b6cc1c8"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-36: governance section describes the backend risk tier, its rules, the reasons tooltip and not recorded)"
+        "by": "Claude (merge #30 into #31: read each conflict against the code; approve binds GOVERNANCE_APPROVE and reject GOVERNANCE_REJECT, stated together; migration 012 for edge created_by; CYBERSECURITY 7.2 now says PR-007 asks for a result, not a robust one)"
       }
     },
     "docs/ROADMAP.md": {
@@ -353,14 +352,14 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "packages/causal-core/src/causal_core": "b3a206babea176dd53fdebe83037e38e66922eeced1def6dbfb248262c2477a6",
-          "conformance/declared_not_implemented.json": "703a728d2f54dd528266363a620bdde06ccdc71a255998d26171ea7b27f0fb90",
-          "docs/CURRENT_STAGE.md": "f821226daaf873e3de48ce2c45e1ad2cbe8447fcbad5353adf61245970301392"
+          "packages/causal-core/src/causal_core": "6b029f17fceb5b8a44c784ea601802c8d97c1d2ed3ce9a6a92c2600823826501",
+          "conformance/declared_not_implemented.json": "18bd0051b096312809184a471dd70cd5fe3d71fb7484d760f0332a7ff09142f5",
+          "docs/CURRENT_STAGE.md": "b1cd3c99b4f004063440c5fc0917c5486667bbbaa81a33cfa848a2c792b982fc"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (migration renumbered 011 -> 012_edge_created_by so it follows #30's 011_provenance; content unchanged)"
+        "by": "Claude (merge #30 into #31: read each conflict against the code; approve binds GOVERNANCE_APPROVE and reject GOVERNANCE_REJECT, stated together; migration 012 for edge created_by; CYBERSECURITY 7.2 now says PR-007 asks for a result, not a robust one)"
       }
     },
     "SECURITY.md": {
@@ -376,17 +375,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/middleware": "0a00dc9c734e148a08c531bcd281d3afe81a8189ef75ef669543b89cd0e4136b",
-          "backend/src/api/governance.py": "785d6bc6b0897067d92fd1e9c7e0a7619379c44b9103d04a6fa3e5ad8017f527",
+          "backend/src/middleware": "b207b9d2692cb17a5a2f92da2cd96460548d2d81b343d73c82b14ed34bf59fb3",
+          "backend/src/api/governance.py": "f04db4d767e8a62c4315c46635a3e93d045a0817116acb6d33bbdb0d3a230cd0",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
-          "backend/src/agents/governance.py": "6875a1979d23e6563aa7ca3b476ffb8d634a4d13fca4d33e8e85b0567043ac86",
-          "backend/src/semantic_layer/registry.py": "7353cc8b8dbbb31cffcdfb2f7658ab802f07c58650a8dee70cd83f8650c19536",
-          "backend/src/semantic_layer/verdict.py": "4b32849d51f5dd4b19a0dd93d807b817eab0083210bc10180745c8454a61c230"
+          "backend/src/agents/governance.py": "a1317e386b8f5783a1fd17bdf864fb52a88ece0aabad93ef6cdd416d5190dff3",
+          "backend/src/semantic_layer/registry.py": "2adb75f9f5902773e857b14bcb2d09e68d0d17fe2f7011eb03fe2fbe19212b87",
+          "backend/src/semantic_layer/verdict.py": "340039954f295649d3921f8bc699c79ba3f305d6b43350feec4d5808c2130bcb"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-36: re-read; the review queue is still role-gated and bounded by domain scope, the fragment edge lookup included)"
+        "by": "Claude (merge #30 into #31: read each conflict against the code; approve binds GOVERNANCE_APPROVE and reject GOVERNANCE_REJECT, stated together; migration 012 for edge created_by; CYBERSECURITY 7.2 now says PR-007 asks for a result, not a robust one)"
       }
     }
   }
