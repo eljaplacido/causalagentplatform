@@ -111,6 +111,26 @@ class InvalidTransitionError(SemanticLayerError):
         )
 
 
+class LineageIncompleteError(SemanticLayerError):
+    """An approval refused because the object's lineage cannot name where it came from.
+
+    Registry rule 3: every approved object carries lineage from its source data,
+    through whoever drafted it, to its approver (septa-15). The approver and the
+    verdict are supplied by the approval itself; the source data and the drafter
+    must already be on record, or there is nothing for the lineage to start from.
+    """
+
+    def __init__(self, object_id: str, object_type: str, missing: list[str]) -> None:
+        self.object_id = object_id
+        self.object_type = object_type
+        self.missing = missing
+        super().__init__(
+            f"{object_type} '{object_id}' cannot be approved: its lineage names no "
+            + " and no ".join(missing)
+            + ". Submit a new draft that declares them."
+        )
+
+
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
 

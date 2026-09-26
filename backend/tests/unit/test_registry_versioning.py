@@ -40,7 +40,7 @@ Postconditions:
     revision by exactly one, or whose prior revision is not recorded, is
     refused; on PostgreSQL an UPDATE whose new revision is not recorded fails
     at commit, and causal_app may only SELECT and INSERT version rows;
-  - on PostgreSQL, 013's backfill records every pre-existing row as revision 1
+  - on PostgreSQL, 014's backfill records every pre-existing row as revision 1
     and is idempotent.
 
 Undefined, and not asserted: the exact text of trigger errors beyond naming
@@ -314,7 +314,7 @@ async def test_history_is_bounded_by_domain_scope(
 
 
 async def _seed_unversioned_entity(session: AsyncSession, domain: str = "devops") -> UUID:
-    """A DRAFT written straight into the table: what 013 found in existing databases."""
+    """A DRAFT written straight into the table: what 014 found in existing databases."""
     entity_id = uuid4()
     await session.execute(
         text(
@@ -479,7 +479,7 @@ async def test_on_postgres_the_migration_records_existing_rows_once(
     import asyncpg
 
     entity_id = await _seed_unversioned_entity(db_session)
-    migration = next(p for p in migration_files() if p.name.startswith("013_"))
+    migration = next(p for p in migration_files() if p.name.startswith("014_"))
     dsn = postgres_test_db.owner_url.set(drivername="postgresql").render_as_string(
         hide_password=False
     )

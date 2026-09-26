@@ -234,7 +234,7 @@
       "capability": "Review queue ordered by risk tier, showing who submitted each item",
       "claimed_in": [
         {
-          "at": "backend/src/api/governance.py:401",
+          "at": "backend/src/api/governance.py:412",
           "says": "summary=\"List pending drafts ordered by risk tier\""
         },
         {
@@ -245,7 +245,7 @@
       "reality": "ReviewQueueItem carries no risk tier and no submitter, the queue is not ordered by risk, and the UI fills riskTier \"MEDIUM\" and submittedBy \"system\" for every item.",
       "evidence": [
         {
-          "at": "backend/src/api/governance.py:168",
+          "at": "backend/src/api/governance.py:173",
           "says": "class ReviewQueueItem(BaseModel):"
         },
         {
@@ -346,8 +346,8 @@
       "reality": "The semantic layer (fragments, edges) is stored through SQLAlchemy (SQLite/PostgreSQL); Neo4j code exists only for the experience buffer and drift alerts, is exercised only against mocks, and no d-separation or path query runs in Neo4j.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:613",
-          "says": "FROM graph_fragments"
+          "at": "backend/src/semantic_layer/registry.py:489",
+          "says": "_GRAPH_FRAGMENTS = _table(\"graph_fragments\", *_FRAGMENT_COLUMNS)"
         }
       ],
       "leaves_by": {
@@ -812,7 +812,7 @@
           "says": "  createdBy: UserRef;"
         },
         {
-          "at": "backend/src/semantic_layer/models.py:397",
+          "at": "backend/src/semantic_layer/models.py:419",
           "says": "class CausalEdge(BaseModel):"
         }
       ],

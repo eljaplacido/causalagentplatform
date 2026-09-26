@@ -9,6 +9,8 @@ Endpoints:
   GET  /api/semantic/edges/{id}        — get causal edge by ID
   POST /api/semantic/drafts            — submit a new draft (auth required, goes through governance)
   GET  /api/semantic/edges/{id}/audit-trail — full audit trail for an edge
+  GET  /api/semantic/objects/{type}/{id}/versions — every recorded version of an object
+  GET  /api/semantic/objects/{type}/{id}/lineage  — source data → drafter → verdicts → approver
 
 All write operations require a Guardian APPROVED verdict.  The draft submission
 endpoint runs a governance check inline before persisting.
@@ -29,6 +31,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from src.agents.governance import GovernanceAgent
+from src.api.provenance import get_provenance_graph
 from src.exceptions import ObjectNotFoundError
 from src.middleware.rbac import approved_only, domain_scope, guard, in_scope
 from src.semantic_layer.models import (
@@ -37,16 +40,23 @@ from src.semantic_layer.models import (
     AuditEntry,
     CausalEdge,
     CausalEntity,
+    CynefinDomain,
     EpistemicState,
     FragmentApprovalStatus,
     GraphFragment,
     GuardianVerdict,
+    LineageChain,
+    ReviewStatus,
+    SemanticObjectVersion,
     UserRef,
 )
 from src.semantic_layer.registry import SemanticLayerRegistry
 
 log = structlog.get_logger(__name__)
 router = APIRouter()
+
+#: The agent a draft submitted here comes through, as its lineage names it.
+_DRAFT_AGENT = "api-draft-submission"
 
 # Singletons (lazily created per request in production — here shared for simplicity)
 _registry = SemanticLayerRegistry()
@@ -65,7 +75,15 @@ class DraftSubmissionRequest(BaseModel):
     )
     payload: dict[str, Any] = Field(
         ...,
-        description="The draft object payload matching the target Pydantic model.",
+        description="The draft object payload matching the target Pydantic model. "
+        "Its `sourceData` ({kind, ref, digest}) names the data the object was drafted "
+        "from; approval requires one.",
+    )
+    cynefin_domain: CynefinDomain | None = Field(
+        None,
+        description="The Cynefin domain the submitter classifies this situation as, as "
+        "on /api/governance/check. Omitted, it is DISORDER, which rule PR-006 rejects: "
+        "an unclassified draft is refused, as it always was.",
     )
 
 
@@ -291,12 +309,14 @@ async def submit_draft(
         )
 
     # Build an EpistemicState for the governance check
+    # The submitter's classification, when given, is what the Guardian rules in.
+    # Without one the state defaults to DISORDER and PR-006 refuses every draft --
+    # which, before the field existed, was every draft this route ever received.
     state = EpistemicState(
         session_id=session_id,
-        agent_id="api-draft-submission",
-        proposed_edges=(
-            []
-        ),
+        agent_id=_DRAFT_AGENT,
+        proposed_edges=[],
+        **({"cynefin_domain": body.cynefin_domain} if body.cynefin_domain else {}),
     )
 
     # Run governance check
@@ -331,7 +351,12 @@ async def submit_draft(
         )
 
     # Persist the draft
-    object_id = await _registry.propose_draft(draft_obj, governance_result.audit_entry_id)
+    object_id = await _registry.propose_draft(
+        draft_obj,
+        governance_result.audit_entry_id,
+        submitted_by=user_ref,
+        agent_id=_DRAFT_AGENT,
+    )
 
     log.info(
         "api.semantic.draft_submitted",
@@ -376,3 +401,92 @@ async def get_edge_audit_trail(
         return list(trail)
     except ObjectNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+# ── Versions and lineage ─────────────────────────────────────────────────────
+
+#: The object types with a version history (014_semantic_object_versions.sql).
+_VERSIONED_TYPES = ("CausalEntity", "CausalEdge", "GraphFragment", "Assumption")
+
+
+async def _visible_object(object_type: str, object_id: UUID, user: dict[str, Any]) -> None:
+    """404 unless this user may read the object; 422 for a type with no history.
+
+    The same rule as the object reads: inside the user's domain scope, and for a
+    viewer only when the object is approved (an Assumption: ACCEPTED). Its
+    history includes the drafts before approval, which is the point of it.
+    """
+    if object_type not in _VERSIONED_TYPES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unknown object_type '{object_type}'. Must be one of: "
+            f"{list(_VERSIONED_TYPES)}",
+        )
+    try:
+        obj = await _registry.get_object(object_type, object_id, domains=domain_scope(user))
+    except ObjectNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    if approved_only(user):
+        status = (
+            obj.review_status == ReviewStatus.ACCEPTED
+            if isinstance(obj, Assumption)
+            else obj.approval_status == ApprovalStatus.APPROVED
+        )
+        if not status:
+            raise HTTPException(status_code=404, detail=f"{object_type} {object_id} not found")
+
+
+@router.get(
+    "/objects/{object_type}/{object_id}/versions",
+    response_model=list[SemanticObjectVersion],
+    summary="Every recorded version of a semantic object",
+)
+async def get_object_versions(
+    object_type: str,
+    object_id: UUID,
+    user: dict[str, Any] = Depends(
+        guard("GET", "/api/semantic/objects/{object_type}/{object_id}/versions")
+    ),
+) -> list[SemanticObjectVersion]:
+    """The object's history, oldest first: each version its complete state at a revision.
+
+    A state change (approval, rejection) writes a new version and never rewrites
+    an old one (ADR-001). The object's own endpoint returns the current version.
+    """
+    await _visible_object(object_type, object_id, user)
+    try:
+        return await _registry.get_versions(object_type, object_id, domains=domain_scope(user))
+    except ObjectNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get(
+    "/objects/{object_type}/{object_id}/lineage",
+    response_model=LineageChain,
+    summary="Lineage of a semantic object: source data, drafter, verdicts, approver",
+)
+async def get_object_lineage(
+    object_type: str,
+    object_id: UUID,
+    user: dict[str, Any] = Depends(
+        guard("GET", "/api/semantic/objects/{object_type}/{object_id}/lineage")
+    ),
+) -> LineageChain:
+    """The chain from the data the object was drafted from to whoever approved it.
+
+    Assembled from the version history and audit_log, with the provenance
+    records the provenance store holds for the sessions its verdicts were issued
+    in. A link never recorded is listed in ``gaps``; ``complete`` is true only
+    when there are none.
+    """
+    await _visible_object(object_type, object_id, user)
+    try:
+        chain = await _registry.get_lineage(object_type, object_id, domains=domain_scope(user))
+    except ObjectNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    records = [
+        record.id
+        for session_id in chain.provenance_sessions
+        for record in get_provenance_graph(session_id).records
+    ]
+    return chain.model_copy(update={"provenance_records": records})

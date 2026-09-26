@@ -146,10 +146,20 @@ async def seeded(db_session: AsyncSession) -> dict[str, dict[str, UUID]]:
                 "verdict": verdict,
             },
         )
+        # The entity's history (014): version rows carry the domain and its policy.
+        await db_session.execute(
+            text(
+                "INSERT INTO semantic_object_versions (object_type, object_id, revision, "
+                "change, state, domain) "
+                "VALUES ('CausalEntity', :id, 1, 'RECORDED', CAST('{}' AS JSONB), :domain)"
+            ),
+            {"id": entity, "domain": domain},
+        )
         ids[domain] = {
             "causal_entities": entity,
             "causal_edges": edge,
             "graph_fragments": fragment,
+            "semantic_object_versions": entity,
         }
     await db_session.commit()
     return ids
@@ -215,7 +225,7 @@ async def test_the_app_connects_as_causal_app_which_rls_binds(db_engine: AsyncEn
     assert await rls_bypass_reasons(db_engine) == []
 
 
-#: Tables whose rows are never revised: 001-007 revoke UPDATE and trap it.
+#: Tables whose rows are never revised: 001-007 and 014 revoke UPDATE and trap it.
 APPEND_ONLY = {
     "audit_log",
     "verdict_consumption",
@@ -223,6 +233,7 @@ APPEND_ONLY = {
     "decision_followups",
     "causal_model_versions",
     "decision_model_refs",
+    "semantic_object_versions",
 }
 
 
@@ -291,9 +302,11 @@ async def test_by_id_another_domains_row_is_not_there(
     with bind_scope(scope_for_user(ANALYST_ALPHA)):
         async with db_engine.connect() as conn:
             for table in RLS_TABLES:
+                # A version row is keyed by the object it is a version of.
+                key = "object_id" if table == "semantic_object_versions" else "id"
                 found = (
                     await conn.execute(
-                        text(f"SELECT count(*) FROM {table} WHERE id = :id"),  # noqa: S608
+                        text(f"SELECT count(*) FROM {table} WHERE {key} = :id"),  # noqa: S608
                         {"id": seeded["beta"][table]},
                     )
                 ).scalar_one()
