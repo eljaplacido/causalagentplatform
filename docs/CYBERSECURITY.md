@@ -57,9 +57,18 @@ An adversary injects false or misleading causal edges or evidence into the graph
 **Mitigations:**
 - **In place:** writing a graph object needs a signed, single-use Guardian `APPROVED` verdict
   issued for that object, and promotion to `APPROVED` needs a governance role.
-- **Partial:** CausalEdge objects carry a version and a lineage list, but approval mutates
-  the row in place and the version never changes (registers
-  `semantic-objects-mutated-in-place`, `lineage-partial`).
+- **In place:** entities, edges, fragments and assumptions are versioned (migration
+  `014_semantic_object_versions.sql`): every state is an append-only row in
+  `semantic_object_versions`, so a poisoned change cannot overwrite the state before it, and
+  each version names who made it, through which agent, on which verdict. The database refuses
+  an update of a version row, and a head update that does not advance the revision over a
+  recorded one (both engines). Interventions are not versioned (register
+  `interventions-mutated-in-place`).
+- **In place:** approval needs the object's source data (reference and sha256 digest) and its
+  drafter on record, and `GET /api/semantic/objects/{type}/{id}/lineage` shows the chain from
+  source data through verdicts to approver. The digest is declared by the submitter, not
+  checked against the data; the chain does not reach the analyses that used an object
+  (register `lineage-to-analyses`).
 - **In place, for causal models:** the assumption registry (`/api/v1/models`, migration
   `007_causal_models.sql`) keeps each model as immutable, content-addressed versions, append-only
   in the PostgreSQL schema. A revision may propose edges but not approve them; approving is a
@@ -149,8 +158,8 @@ A lower-privilege user or agent attempts to access or modify resources above the
 - **In place:** RBAC at the API layer: one role matrix covers every route but the liveness
   probe, reads included, and a session is usable only by its owner or governance (§4.0), and domain scope bounds
   what a user sees of the semantic layer (§4.2). **In place:** the same domain scope at the
-  database layer on PostgreSQL: row-level security on `causal_entities`, `causal_edges` and
-  `graph_fragments`, fed per request from the token and binding the role the app connects as
+  database layer on PostgreSQL: row-level security on `causal_entities`, `causal_edges`,
+  `graph_fragments` and `semantic_object_versions`, fed per request from the token and binding the role the app connects as
   (§4.2). Role checks (which route a role may call) remain application-only.
 - **Target:** agent identities as service accounts with scoped permissions. Agents run
   in-process today and have no identity of their own.
@@ -239,7 +248,7 @@ granted role does not.
 
 | Route | Roles |
 |---|---|
-| `GET /api/semantic/entities[/{id}]`, `/fragments[/{id}]`, `/edges/{id}[/audit-trail]` | any platform role; a `viewer` reads APPROVED objects only; bounded by domain scope (§4.2) |
+| `GET /api/semantic/entities[/{id}]`, `/fragments[/{id}]`, `/edges/{id}[/audit-trail]`, `/objects/{type}/{id}/versions`, `/objects/{type}/{id}/lineage` | any platform role; a `viewer` reads APPROVED objects only; bounded by domain scope (§4.2) |
 | `POST /api/semantic/drafts`, `POST /api/semantic/edges/{id}/sensitivity` | `analyst`, `graph_author`, `platform_engineer`, `agent` (`DRAFT_ROLES`); only into the user's domains |
 | `POST /api/governance/check` | `graph_author`, `governance_officer`, `platform_engineer`, `agent` |
 | `POST /api/governance/approve/{id}`, `/reject/{id}`, `GET /review-queue`, `GET /audit-log` | `governance_officer`, `platform_engineer` (`GOVERNANCE_ROLES`); approve, reject and the queue bounded by domain scope |
@@ -340,7 +349,8 @@ outside the caller's domains:
   marker. So the database applies the rule above itself -- a present claim binds every role --
   and a write into another domain is refused, not just hidden. (001's policies, which this
   replaces, split the list on commas and let the two governance roles through whatever their
-  claim said; `graph_fragments` had none.)
+  claim said; `graph_fragments` had none.) `014_semantic_object_versions.sql` puts the same
+  policy on the version history, whose rows carry their object's domain.
 - **Settings, per request and per transaction.** The auth middleware binds the caller's scope
   (`rbac.scope_for_user`) around the rest of the request, in a context variable;
   `backend/src/db/scope.py` opens every PostgreSQL transaction with
@@ -360,7 +370,10 @@ outside the caller's domains:
   backend refuses to start on PostgreSQL as a role the policies would not bind.
 - **Grants.** `causal_app` may select and insert on every table, update the ones that are not
   append-only, and use the sequences; it has no `DELETE` or `TRUNCATE` anywhere, and the
-  append-only triggers stay. `backend/tests/integration/test_rls_domain_isolation.py` pins all
+  append-only triggers stay. The append-only surfaces: `audit_log`, `verdict_consumption`,
+  `decision_records`, `decision_followups`, `causal_model_versions`, `decision_model_refs`,
+  `provenance_entries` and `provenance_erasures` (011), and `semantic_object_versions` (014). The semantic head tables are updatable only under 014's
+  rule: advance `revision` by one over a recorded revision, the new one recorded by commit. `backend/tests/integration/test_rls_domain_isolation.py` pins all
   of this on PostgreSQL, including negative controls with a policy dropped, RLS disabled, and
   the owner's connection.
 
@@ -413,7 +426,7 @@ assessment, and the Status column says how much of each control exists.
 | EU AI Act Requirement | Platform Control | Status |
 |---|---|---|
 | Art. 9 – Risk management system | GovernanceAgent + Guardian policy engine | Partial: rules PR-001 to PR-008 and PR-010 evaluate (PR-007 on edge approvals, PR-010 on a plan with no safe action); PR-009 reads caller-supplied inputs; PR-002's score is computed from the prose checked |
-| Art. 10 – Data governance | Semantic layer lineage, PII pseudonymization | Partial lineage (`lineage-partial`); no pseudonymization (`gdpr-controls`) |
+| Art. 10 – Data governance | Semantic layer lineage, PII pseudonymization | Partial: lineage from declared source data to approver on every approved object; not onward to analyses (`lineage-to-analyses`); no pseudonymization (`gdpr-controls`) |
 | Art. 11 – Technical documentation | DATA_LAYER.md, AGENTS.md, assumption registries | Documents exist; the register lists where they overclaim |
 | Art. 13 – Transparency | explanation_generate skill, assumption disclosure in outputs | Partial |
 | Art. 14 – Human oversight | Human-in-the-loop approval on all graph changes and interventions | In place for graph promotion and intervention decisions (role-checked) |

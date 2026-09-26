@@ -75,3 +75,19 @@ def test_the_thresholds_a_request_declared_are_allowed_but_invented_numbers_are_
     explain(d.model_copy(update={"rationale": ok}), strong)
     with pytest.raises(ValueError, match="failed verification"):
         explain(d.model_copy(update={"rationale": d.rationale + " Benefit 999.9."}), strong)
+
+
+def test_numbers_and_words_quoted_from_the_request_are_not_claims(strong: CausalResult) -> None:
+    """The request's own text is quoted into the rationale ("Act: cut price 30%."), so a
+    digit or a causal verb in it is the requester's, not the analysis's. It used to fail
+    verification, and POST /api/v1/decisions answered 500 after sealing the entry."""
+    request = BASE.model_copy(
+        update={"action": "cut the on-call page threshold 30% because it causes toil"}
+    )
+    d = decide(strong, request)
+    text = explain(d, strong)
+    assert "cut the on-call page threshold 30% because it causes toil" in text
+    # Quoting does not open a hole: a number outside the quote is still checked.
+    tampered = d.model_copy(update={"rationale": d.rationale + " It saves 30 minutes."})
+    with pytest.raises(ValueError, match="failed verification"):
+        explain(tampered, strong)

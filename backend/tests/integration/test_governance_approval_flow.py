@@ -25,7 +25,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
 from src.api.main import app
-from tests.conftest import make_causal_entity
+from tests.conftest import SOURCE_DATA_JSON, make_causal_entity
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -84,11 +84,18 @@ async def _seed_draft(session: AsyncSession, entity: CausalEntity) -> None:
     await session.execute(
         text(
             "INSERT INTO causal_entities (id, name, entity_type, domain, description, "
-            " attributes, ontology_version, approval_status, created_by, created_at) "
+            " attributes, ontology_version, approval_status, created_by, created_at, "
+            " source_data) "
             "VALUES (:id, :name, 'SERVICE', :domain, '', '{}', '1.0.0', 'DRAFT', "
-            " '{\"id\": \"test-user\"}', '2026-09-21T00:00:00+00:00')"
+            " '{\"id\": \"test-user\"}', '2026-09-21T00:00:00+00:00', :source)"
         ),
-        {"id": str(entity.id), "name": entity.name, "domain": entity.domain},
+        {
+            "id": str(entity.id),
+            "name": entity.name,
+            "domain": entity.domain,
+            # Approval needs the draft's source data on record (septa-15).
+            "source": SOURCE_DATA_JSON,
+        },
     )
     await session.commit()
 

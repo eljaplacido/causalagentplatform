@@ -34,7 +34,12 @@ from src.agents.governance import GovernanceAgent
 from src.agents.grounding_risk import grounding_risk
 from src.db.factory import CloudSqlFactory
 from src.db.types import TIMESTAMP
-from src.exceptions import GuardianBlockedError, InvalidTransitionError, ObjectNotFoundError
+from src.exceptions import (
+    GuardianBlockedError,
+    InvalidTransitionError,
+    LineageIncompleteError,
+    ObjectNotFoundError,
+)
 from src.middleware.rbac import GOVERNANCE_ROLES, domain_scope, guard, may_use_session
 from src.orchestration.session_store import SessionStateStore
 from src.semantic_layer.models import (
@@ -310,6 +315,7 @@ async def approve_object(
             verdict_id=body.verdict_id,
             approver=approver,
             domains=domain_scope(user),
+            agent_id="api-governance-approve",
         )
     except GuardianBlockedError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
@@ -317,6 +323,10 @@ async def approve_object(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except InvalidTransitionError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except LineageIncompleteError as exc:
+        # The object cannot say where it came from, so it is not approved
+        # (septa-15). The verdict was not spent.
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -386,6 +396,7 @@ async def reject_object(
             rejector=rejector,
             reason=body.reason,
             domains=domain_scope(user),
+            agent_id="api-governance-reject",
         )
     except GuardianBlockedError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc

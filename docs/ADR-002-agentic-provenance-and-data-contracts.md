@@ -6,9 +6,10 @@
 > **Trigger:** [Missing Standards for Agentic Data Engineering report](research/missing-standards-agentic-data-engineering.md) (§2 Provenance, §4 Data Contracts)
 > **Replaces:** N/A — new capability
 > **Read against the code:** 2026-09-26. Provenance is durable and append-only, and session
-> runs, Guardian checks and decisions write it. No LLM call is made, so no invocation is captured,
-> and no running flow feeds the data contracts or PR-009. See *Implementation Status*, and
-> registers `llm-routing-no-callers` and `data-contracts-not-enforced` in
+> runs, Guardian checks and decisions write it; a semantic object's lineage chain links the records
+> held for its verdicts' sessions. An LLM is called only by the narration callers, when a provider
+> is configured, and each call is captured. No running flow feeds the data contracts or PR-009. See
+> *Implementation Status*, and register `data-contracts-not-enforced` in
 > [`conformance/declared_not_implemented.json`](../conformance/declared_not_implemented.json).
 
 ## Summary

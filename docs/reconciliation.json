@@ -78,16 +78,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/semantic_layer": "2b3aee3ef98dd7c74992a44be9588d099de06c829997fe78cb6a75ddf6594e30",
+          "backend/src/semantic_layer": "0e9e212860d77e08f6455567d2f638da83fdf6a4653034345bec119580de787b",
           "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
-          "packages/semantic-types/src": "b88502a55b3406392490bc55954f738e1c9557acaa2e273743cdb113c4bc31ce",
+          "packages/semantic-types/src": "599b141c5312c6940a4479a5400b1113adfbef407f85ff016edeeade864d834c",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
           "backend/src/orchestration/graph.py": "9e75a97dcfccf2e649b77e2b52bd0bc1ae8d11aaf7a3af5c072d4bcb2e09d7e8"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
+        "by": "Claude (merge of the train into septa-14/15: rule 2 and §4 say recording a sensitivity result is the edge's next revision (RECORDED) and the one content change after a draft; §3 binds RECORD_SENSITIVITY; object listing and §6 box carry revision and sourceData)"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -104,14 +104,14 @@
         "sha256": {
           "backend/src/semantic_layer/provenance.py": "c912fb0af67442b984325d80528867c559ccb0332ac7725ac448e48f87164c89",
           "backend/src/semantic_layer/contracts.py": "96357377af27b488fd82e05c2601a907cbf99afe7cd9ae71819ee37c7e284068",
-          "backend/src/api/provenance.py": "55fa5a3e0153904f557da134e6e0f3a8c8c1ae0ab8b5fe4faa8a6918a70c617e",
+          "backend/src/api/provenance.py": "2a308e924c9fd7ea910284fa58a479bdeeb97f260764d9c09c5d7eabeb74cfec",
           "backend/src/agents/llm_factory.py": "e10b999f795c944f596ff9d2f113bc56a5f07e5b64b464fee712dc08e4a1f9ed",
           "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #50 into #48: LLM layer has callers (this branch) and invocations go to the durable store (#30): ADR-002 status, criteria and component rows, CURRENT_STAGE LLM bullet and provenance-flow row, ADR-003 planner note all say so; grepped for 'no callers', 'in-memory' and 'No LLM is called', none stale; ORCHESTRATION merged cleanly on LF; TESTING_CICD keeps main's Neo4j text and this branch's LLM-calls paragraph)"
+        "by": "Claude (merge of the train into septa-14/15: header no longer says no LLM is called; api/provenance.py docstring names the narration callers; lineage chain reads the durable store through async get_provenance_graph)"
       }
     },
     "docs/ADR-003-hierarchical-planning-and-evaluation.md": {
@@ -146,7 +146,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/agents": "f54499833e60481971d54deb0252ae7fe46d03ac7fd066ccfa1282a85a1b5769",
+          "backend/src/agents": "2b780a9415010e03ab854b5381d42cd2444ade7d982b80cd156e77853276b274",
           "backend/src/skills": "b0bcef79c64f6b8d2f35f87f92095d54c52cec7d972a4cf1520b95fcc0d68347",
           "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d",
           "backend/src/orchestration": "e2eb3496c39122094c47140ed28a932742480b35a2cbe4d2c1a11a40e9a0c6f7",
@@ -155,7 +155,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (backend integrity fixes, merged onto #54: SECURITY and CYBERSECURITY 4.0 say every route but the liveness probe has a matrix row, reads included, and sessions are owner-or-governance; CURRENT_STAGE rows for role-less reads, session ownership, incident overwrites, exact-id intervention decisions with single closure, weekly metrics; TESTING_CICD names the new tests; ADR-003, AGENTS and ROADMAP re-read after session.py and the merge, nothing they state moved)"
+        "by": "Claude (merge of the train into septa-14/15: SimulationAgent note re-read against edge_sensitivity.py, which now passes the state's agent_id; the edge's changed assumption_refs are its next revision)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -174,20 +174,20 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/middleware": "9bb5ad7786171c24ca39c176e07979f3477db25f9afe00244939ec1225864bfc",
-          "backend/src/api/governance.py": "b58d5f4e83b084d6b9b2b018bf5e43a6902cd2ef1046683e03a42061305c9831",
+          "backend/src/middleware": "2d6be39aef099981c6f52ec30674b91a209bc43763b316c33d290b3eda1ab215",
+          "backend/src/api/governance.py": "c2ab8a061fe056b835dbb9097b147f414437df0ca702708c3e923b23c8d5751c",
           "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
-          "backend/src/semantic_layer/registry.py": "32f6f4cee20e193c4ab87d60ca5b90a9aba8e18a01feef60c166433e63c7374c",
+          "backend/src/semantic_layer/registry.py": "60e4360102efad1bf2072ce0d2a0347e7375d6036e73639f4b3944c0f336950c",
           "backend/src/api/interventions.py": "928915a5bb49c3e1d993fc0da88ca6d1ac05bb1923afc6c3a0f248194d229e43",
-          "backend/src/api/provenance.py": "55fa5a3e0153904f557da134e6e0f3a8c8c1ae0ab8b5fe4faa8a6918a70c617e",
-          "backend/src/db/migrations": "0c6e574f90adda4f934a3cf66ecea153f5610294203d4c4cf1cc344c17368319",
+          "backend/src/api/provenance.py": "2a308e924c9fd7ea910284fa58a479bdeeb97f260764d9c09c5d7eabeb74cfec",
+          "backend/src/db/migrations": "0061d7048117bb0d23b2c6b9dddc771f21ab84dc5076464aa54750aa8ddb05e8",
           "backend/src/semantic_layer/verdict.py": "13e537f2b000c10f10e57b0453f1f459b5237a2d60ea009103247a8bfbcade80",
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (backend integrity fixes, merged onto #54: SECURITY and CYBERSECURITY 4.0 say every route but the liveness probe has a matrix row, reads included, and sessions are owner-or-governance; CURRENT_STAGE rows for role-less reads, session ownership, incident overwrites, exact-id intervention decisions with single closure, weekly metrics; TESTING_CICD names the new tests; ADR-003, AGENTS and ROADMAP re-read after session.py and the merge, nothing they state moved)"
+        "by": "Claude (merge of the train into septa-14/15: poisoning mitigations, route table (versions and lineage reads added), RLS and grants (011 and 014 append-only tables) re-read; Art. 9 from the train, Art. 10 from this branch)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -205,19 +205,19 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/db": "918886f41d041a016e43d2e32818791a28481b49a24d7ce149b7ec71a42bf826",
+          "backend/src/db": "a70c4bbc790ffe07c3a7405f078af38c9576dfa55d75e5ab87b4a821162a63a8",
           "backend/src/connectors": "2b7f65f2acc7f7732deecdad2c8c1b72e4db72caed067285d65631be65c4edfa",
-          "backend/src/semantic_layer/models.py": "9d20689801ee209370c995278bfa23f58d19fd0c68a65d86e705e4fb7b1a036f",
+          "backend/src/semantic_layer/models.py": "b797d8121087451bbd55dd3489732f7aeabaea2e59c10138e2759f11bbd58960",
           "backend/src/sensors": "37f0b547a27bf3617693225db822302372fe941185153afa65d9cc5296e3360c",
           "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
-          "backend/src/semantic_layer/registry.py": "32f6f4cee20e193c4ab87d60ca5b90a9aba8e18a01feef60c166433e63c7374c",
+          "backend/src/semantic_layer/registry.py": "60e4360102efad1bf2072ce0d2a0347e7375d6036e73639f4b3944c0f336950c",
           "backend/src/agents/drift_monitor.py": "3e5807b7fcc88cb7215e1126cbf5461c293020fb2153937fbbd923ca085b2c9f",
           "backend/src/skills/drift_detect.py": "9432982258b155287a90701d76dc9bf331dd8c65fbc692ad37fcd124fcab7111"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
+        "by": "Claude (merge of the train into septa-14/15: §2.1 interfaces gain revision/sourceData/DataSource; rules 1-3; §3 tables for 011-014, append-only and RLS text; §6 reads durable provenance and LLM capture; §7 rows for drafts, sensitivity (versioned) and review)"
       }
     },
     "docs/HANDOFFS.md": {
@@ -230,12 +230,12 @@
         "on": "2026-09-26",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
-          "backend/src/semantic_layer/models.py": "9d20689801ee209370c995278bfa23f58d19fd0c68a65d86e705e4fb7b1a036f"
+          "backend/src/semantic_layer/models.py": "b797d8121087451bbd55dd3489732f7aeabaea2e59c10138e2759f11bbd58960"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-36: re-read; models.py gained RiskTier and CausalEdge.created_by, neither is a handoff field it describes)"
+        "by": "Claude (merge of the train into septa-14/15: re-read after models.py gained created_by on edges and the RECORDED meaning; its EpistemicState constraints still hold)"
       }
     },
     "docs/ORCHESTRATION.md": {
@@ -375,17 +375,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/middleware": "9bb5ad7786171c24ca39c176e07979f3477db25f9afe00244939ec1225864bfc",
-          "backend/src/api/governance.py": "b58d5f4e83b084d6b9b2b018bf5e43a6902cd2ef1046683e03a42061305c9831",
+          "backend/src/middleware": "2d6be39aef099981c6f52ec30674b91a209bc43763b316c33d290b3eda1ab215",
+          "backend/src/api/governance.py": "c2ab8a061fe056b835dbb9097b147f414437df0ca702708c3e923b23c8d5751c",
           "backend/src/api/interventions.py": "928915a5bb49c3e1d993fc0da88ca6d1ac05bb1923afc6c3a0f248194d229e43",
           "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
-          "backend/src/semantic_layer/registry.py": "32f6f4cee20e193c4ab87d60ca5b90a9aba8e18a01feef60c166433e63c7374c",
+          "backend/src/semantic_layer/registry.py": "60e4360102efad1bf2072ce0d2a0347e7375d6036e73639f4b3944c0f336950c",
           "backend/src/semantic_layer/verdict.py": "13e537f2b000c10f10e57b0453f1f459b5237a2d60ea009103247a8bfbcade80"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (backend integrity fixes, merged onto #54: SECURITY and CYBERSECURITY 4.0 say every route but the liveness probe has a matrix row, reads included, and sessions are owner-or-governance; CURRENT_STAGE rows for role-less reads, session ownership, incident overwrites, exact-id intervention decisions with single closure, weekly metrics; TESTING_CICD names the new tests; ADR-003, AGENTS and ROADMAP re-read after session.py and the merge, nothing they state moved)"
+        "by": "Claude (merge of the train into septa-14/15: domain-isolation, verdict and snapshot sections re-read; kept both append-only bullets (semantic_object_versions, provenance); RECORD_SENSITIVITY binding and RLS on the version history hold)"
       }
     }
   }

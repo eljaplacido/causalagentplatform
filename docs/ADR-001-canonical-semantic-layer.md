@@ -3,8 +3,8 @@
 > **Status:** Accepted
 > **Date:** 2026-04-07 (revised 2026-05-24)
 > **Decision Owner:** Platform Architecture
-> **Read against the code:** 2026-09-25. The decision stands; the sections below now say where
-> the code does not yet hold it, with the register id from
+> **Read against the code:** 2026-09-26 (versioning and lineage, septa-14/15). The decision
+> stands; the sections below say where the code does not yet hold it, with the register id from
 > [`conformance/declared_not_implemented.json`](../conformance/declared_not_implemented.json).
 
 ## Summary
@@ -29,7 +29,8 @@ The authoritative definition is `backend/src/semantic_layer/models.py`:
 
 ```
 CausalEntity     → id, name, domain, attributes, ontologyVersion,
-                    createdBy, approvedAt, approvedBy, lineage
+                    createdBy, approvedAt, approvedBy, lineage,
+                    revision, sourceData
 
 Treatment        → id, name, entityRef, treatmentType, units,
                     feasibilityConstraints, costModel, ownerTeam
@@ -43,13 +44,15 @@ Confounder       → id, name, treatmentRef, outcomeRef, measuredStatus,
 CausalEdge       → id, source, target, edgeType, direction, confidence,
                     evidenceRefs, assumptionRefs, approvalStatus,
                     approvedBy, approvedAt, guardianVerdictRef, version, lineage,
-                    createdBy
+                    createdBy, revision, sourceData
 
 GraphFragment    → id, name, domain, description, edges, entryNodes,
-                    exitNodes, approvalStatus, version, usageCount, tags
+                    exitNodes, approvalStatus, version, usageCount, tags,
+                    revision, sourceData
 
 Assumption       → id, statement, assumptionType, scope, justification,
-                    elicitedFrom, elicitedBy, reviewStatus, sensitivityResult
+                    elicitedFrom, elicitedBy, reviewStatus, sensitivityResult,
+                    revision, sourceData
 
 Intervention     → id, name, treatmentRef, targetEntityRef, initiatedBy,
                     initiatedAt, approvedBy, approvalTimestamp,
@@ -80,12 +83,15 @@ which the governance API returns as 409.
 **Rules:**
 - Only `APPROVED` objects participate in simulations (AGENTS.md §2.1 SimulationAgent)
 - All writes require Guardian `APPROVED` verdict (DATA_LAYER.md §2.2 Registry Rule #1)
-- All objects are versioned, with no in-place mutation (Rule #2). **Not held:** approval,
-  rejection and recording a sensitivity result on a draft edge (its `assumptionRefs` and
-  lineage) update the row in place and never change `version` (register
-  `semantic-objects-mutated-in-place`)
-- All `APPROVED` objects carry lineage (Rule #3). **Partial:** one lineage step per human
-  decision, nothing from source data (register `lineage-partial`)
+- All objects are versioned — no in-place mutation (Rule #2). Held for `CausalEntity`,
+  `CausalEdge`, `GraphFragment` and `Assumption`: every state change -- approval, rejection, and
+  recording a sensitivity result on a draft edge (its `assumptionRefs` and lineage) -- is a new,
+  immutable version and the prior one is kept exactly (§4). Not held for interventions, whose
+  outcome feedback still updates the row (register `interventions-mutated-in-place`)
+- All `APPROVED` objects carry lineage (Rule #3). Held from source data to approver: approval
+  needs the object's source data and drafter on record, and the chain is served by
+  `GET /api/semantic/objects/{type}/{id}/lineage` (DATA_LAYER.md §6). The link onward, to the
+  analyses and decisions that used an object, is not recorded (register `lineage-to-analyses`)
 
 ### 3. Guardian Requirements
 
@@ -109,27 +115,54 @@ Guardian integration points, as built:
   before recording the kernel's sensitivity analysis on the draft edge it estimated.
   `BaseAgent._assert_guardian_approved`, the write guard meant for every agent, has no callers.
   The persistence guard that does hold is in the registry: every semantic-layer write needs a
-  signed, subject-bound, single-use APPROVED verdict, and a review decision one issued for
-  exactly that action, `GOVERNANCE_APPROVE` or `GOVERNANCE_REJECT` (`_assert_verdict_approved`).
+  signed, subject-bound, single-use APPROVED verdict, and a review decision or a sensitivity
+  recording one issued for exactly that action, `GOVERNANCE_APPROVE`, `GOVERNANCE_REJECT` or
+  `RECORD_SENSITIVITY` (`_assert_verdict_approved`).
 - An audit trail entry is written on every verdict.
 - The circuit breaker escalates at `cycle_count >= 5` (PR-005; `MAX_CYCLES` in `agents/base.py`).
 
 ### 4. Versioning Rules
 
-> **Status:** not implemented for the semantic objects below. See register
-> `semantic-objects-mutated-in-place`. Causal *models* are versioned by a separate mechanism, the
-> assumption registry (`causal_decision.assumptions`, `backend/src/semantic_layer/model_store.py`,
-> `/api/v1/models`): immutable, content-addressed versions, each built on its parent, append-only
-> in the PostgreSQL schema (`007_causal_models.sql`). It does not version the objects in §1.
+> **Status:** implemented for `CausalEntity`, `CausalEdge`, `GraphFragment` and `Assumption`
+> (`014_semantic_object_versions.sql`, `backend/src/semantic_layer/registry.py`; pinned by
+> `backend/tests/unit/test_registry_versioning.py` on SQLite and PostgreSQL). Not for
+> interventions (register `interventions-mutated-in-place`). Causal *models* are versioned by a
+> separate mechanism, the assumption registry (`causal_decision.assumptions`,
+> `backend/src/semantic_layer/model_store.py`, `/api/v1/models`): immutable, content-addressed
+> versions, each built on its parent, append-only in the PostgreSQL schema
+> (`007_causal_models.sql`).
 
-- Semantic objects use `version: string` (semver-style: `1.0.0`, `1.1.0`, `2.0.0`). Today only
-  `CausalEdge` and `GraphFragment` have the field (`CausalEntity` has `ontology_version`), and
-  it stays at its `1.0.0` default.
-- Version increments on any field change. Target: no code path increments it.
-- Deprecated versions retained in full, never deleted. Holds, in the sense that nothing deletes
-  a row; but there is only one row per object, so earlier versions are not retained.
-- Lineage tracks: creator, approver, evidence chain, Guardian verdict ref. Partial (register
-  `lineage-partial`).
+- **Every state is a version.** A row of `semantic_object_versions`, keyed
+  `(object_type, object_id, revision)`, holds the object's complete stored row at that revision
+  (`state`), what produced it (`PROPOSED` for the draft, `APPROVED`, `REJECTED`, or `RECORDED` for
+  a state found from before versioning or a change the platform recorded on a draft: the kernel's
+  sensitivity result added to a draft edge), who produced it (the person, the agent it came through
+  and the platform version) and the verdict that authorised it.
+- **Reads return the current version.** The row in the object's own table is the head: the
+  latest version, whose `revision` it carries. The object endpoints read it.
+- **History is queryable.** `GET /api/semantic/objects/{type}/{id}/versions` (registry
+  `get_versions`; `get_object_version` returns the object as it was at a revision), bounded by
+  domain scope like every read, and for a viewer only when the object is approved.
+- **Nothing overwrites a version.** A state change records the next revision and advances the
+  head by exactly one (`_record_change`, the registry's only head write), guarded on the
+  revision it read. Version rows are append-only: triggers refuse UPDATE and DELETE on both
+  engines, and `causal_app` may only SELECT and INSERT them. The database refuses a head UPDATE
+  that does not advance `revision` by one over a revision already recorded, and on PostgreSQL
+  one whose new revision is not recorded by commit. Existing rows were migrated forward as
+  `RECORDED` revision 1.
+- **Deprecate and replace.** A rejection's version is `DEPRECATED`; nothing deletes an object or a
+  version. One path changes a draft's content: `record_edge_sensitivity` adds the assumption
+  carrying the kernel's sensitivity result to a draft edge's `assumptionRefs` and lineage, as the
+  edge's next revision (septa-62). Otherwise a changed object is a new draft.
+- **`revision` counts states; `version` is the author's.** The semver `version` on edges and
+  fragments is the content version an author declares, and part of `graph_fragments`' unique key;
+  a state change does not touch it. "Version increments on any field change" holds as: every
+  recorded change increments `revision`.
+- **The head is a projection.** It is updated, under the rules above, rather than replaced by a
+  new row, so an object keeps one id and the queries, joins and row-level-security policies over
+  the head tables are unchanged. What the principle protects -- no state is lost or rewritten --
+  lives in the version rows.
+- **Lineage** is assembled from the versions and `audit_log`: see §2 rule 3 and DATA_LAYER.md §6.
 
 ### 5. Internal Alignment Targets
 
@@ -153,8 +186,9 @@ Success criteria:
   base-class write guard has no callers (§3)
 - [ ] Lifecycle status transitions match canonical model. `UNDER_REVIEW` is never set, and
   rejection goes straight to `DEPRECATED` (§2)
-- [ ] Version field present on all semantic objects. Present on `CausalEdge` and `GraphFragment`
-  only, and never incremented (§4)
+- [x] Version field present on all semantic objects: `revision`, on all four, advanced by every
+  recorded change (§4). The semver `version` is the author's, on `CausalEdge` and `GraphFragment`
+  only, and a state change leaves it alone
 - [ ] TypeScript bindings aligned with `models.py`. Enumerations: `scripts/contract_parity.py`
   (two known divergences, register `frontend-vocabulary-divergence`). Fields: register
   `semantic-types-field-divergence`

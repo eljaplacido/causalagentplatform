@@ -9,6 +9,8 @@ Endpoints:
   GET  /api/semantic/edges/{id}        — get causal edge by ID
   POST /api/semantic/drafts            — submit a new draft (auth required, goes through governance)
   GET  /api/semantic/edges/{id}/audit-trail — full audit trail for an edge
+  GET  /api/semantic/objects/{type}/{id}/versions — every recorded version of an object
+  GET  /api/semantic/objects/{type}/{id}/lineage  — source data → drafter → verdicts → approver
   POST /api/semantic/edges/{id}/sensitivity — run the kernel on a draft edge's question
                                              and record its sensitivity analysis (septa-62)
 
@@ -34,6 +36,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from src.agents.edge_sensitivity import record_edge_sensitivity, sensitivity_from_outcome
 from src.agents.governance import GovernanceAgent
+from src.api.provenance import get_provenance_graph
 from src.exceptions import GuardianBlockedError, InvalidTransitionError, ObjectNotFoundError
 from src.middleware.rbac import approved_only, domain_scope, guard, in_scope
 from src.orchestration.session_store import SessionStateStore
@@ -48,6 +51,9 @@ from src.semantic_layer.models import (
     FragmentApprovalStatus,
     GraphFragment,
     GuardianVerdict,
+    LineageChain,
+    ReviewStatus,
+    SemanticObjectVersion,
     SensitivityResult,
     UserRef,
 )
@@ -55,6 +61,9 @@ from src.semantic_layer.registry import SemanticLayerRegistry
 
 log = structlog.get_logger(__name__)
 router = APIRouter()
+
+#: The agent a draft submitted here comes through, as its lineage names it.
+_DRAFT_AGENT = "api-draft-submission"
 
 # Singletons (lazily created per request in production — here shared for simplicity)
 _registry = SemanticLayerRegistry()
@@ -74,7 +83,9 @@ class DraftSubmissionRequest(BaseModel):
     )
     payload: dict[str, Any] = Field(
         ...,
-        description="The draft object payload matching the target Pydantic model.",
+        description="The draft object payload matching the target Pydantic model. "
+        "Its `sourceData` ({kind, ref, digest}) names the data the object was drafted "
+        "from; approval requires one.",
     )
     cynefin_domain: CynefinDomain | None = Field(
         None,
@@ -309,7 +320,8 @@ async def submit_draft(
     # Attribution comes from the token, not from the body. `created_by` is a
     # required field on CausalEntity and GraphFragment, so the submitter has to
     # put *something* there -- and left to itself that something can be anyone.
-    # CausalEdge and Assumption have no such field and are left alone.
+    # CausalEdge's (012_edge_created_by.sql) is optional and stamped the same way;
+    # Assumption has no such field (elicited_by is the person it was elicited from).
     if "created_by" in type(draft_obj).model_fields:
         draft_obj = draft_obj.model_copy(update={"created_by": user_ref})
 
@@ -347,7 +359,7 @@ async def submit_draft(
 
     state = EpistemicState(
         session_id=body.session_id or session_id,
-        agent_id="api-draft-submission",
+        agent_id=_DRAFT_AGENT,
         cycle_count=stored.cycle_count if stored is not None else 0,
         cynefin_domain=domain,
     )
@@ -390,7 +402,12 @@ async def submit_draft(
         )
 
     # Persist the draft
-    object_id = await _registry.propose_draft(draft_obj, governance_result.audit_entry_id)
+    object_id = await _registry.propose_draft(
+        draft_obj,
+        governance_result.audit_entry_id,
+        submitted_by=user_ref,
+        agent_id=_DRAFT_AGENT,
+    )
 
     log.info(
         "api.semantic.draft_submitted",
@@ -424,11 +441,12 @@ async def get_edge_audit_trail(
     user: dict[str, Any] = Depends(guard("GET", "/api/semantic/edges/{edge_id}/audit-trail")),
 ) -> list[AuditEntry]:
     """
-    Return the full audit trail for a CausalEdge.
+    Return the audit_log entry the edge's current guardian_verdict_ref names.
 
-    The audit trail consists of all audit_log entries associated with the
-    edge's guardian_verdict_ref.  This satisfies EU AI Act Art. 13 lineage
-    requirements.
+    That is the verdict behind the edge's current version only. Every verdict
+    issued for it, with the rest of its lineage, is
+    GET /api/semantic/objects/CausalEdge/{edge_id}/lineage. Neither is evidence
+    of meeting EU AI Act Art. 13; that claim was withdrawn (septa-15).
     """
     if approved_only(user):
         await _visible_edge(edge_id, user)
@@ -437,6 +455,96 @@ async def get_edge_audit_trail(
         return list(trail)
     except ObjectNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+# ── Versions and lineage ─────────────────────────────────────────────────────
+
+#: The object types with a version history (014_semantic_object_versions.sql).
+_VERSIONED_TYPES = ("CausalEntity", "CausalEdge", "GraphFragment", "Assumption")
+
+
+async def _visible_object(object_type: str, object_id: UUID, user: dict[str, Any]) -> None:
+    """404 unless this user may read the object; 422 for a type with no history.
+
+    The same rule as the object reads: inside the user's domain scope, and for a
+    viewer only when the object is approved (an Assumption: ACCEPTED). Its
+    history includes the drafts before approval, which is the point of it.
+    """
+    if object_type not in _VERSIONED_TYPES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unknown object_type '{object_type}'. Must be one of: "
+            f"{list(_VERSIONED_TYPES)}",
+        )
+    try:
+        obj = await _registry.get_object(object_type, object_id, domains=domain_scope(user))
+    except ObjectNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    if approved_only(user):
+        status = (
+            obj.review_status == ReviewStatus.ACCEPTED
+            if isinstance(obj, Assumption)
+            else obj.approval_status == ApprovalStatus.APPROVED
+        )
+        if not status:
+            raise HTTPException(status_code=404, detail=f"{object_type} {object_id} not found")
+
+
+@router.get(
+    "/objects/{object_type}/{object_id}/versions",
+    response_model=list[SemanticObjectVersion],
+    summary="Every recorded version of a semantic object",
+)
+async def get_object_versions(
+    object_type: str,
+    object_id: UUID,
+    user: dict[str, Any] = Depends(
+        guard("GET", "/api/semantic/objects/{object_type}/{object_id}/versions")
+    ),
+) -> list[SemanticObjectVersion]:
+    """The object's history, oldest first: each version its complete state at a revision.
+
+    A state change (approval, rejection) writes a new version and never rewrites
+    an old one (ADR-001). The object's own endpoint returns the current version.
+    """
+    await _visible_object(object_type, object_id, user)
+    try:
+        return await _registry.get_versions(object_type, object_id, domains=domain_scope(user))
+    except ObjectNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get(
+    "/objects/{object_type}/{object_id}/lineage",
+    response_model=LineageChain,
+    summary="Lineage of a semantic object: source data, drafter, verdicts, approver",
+)
+async def get_object_lineage(
+    object_type: str,
+    object_id: UUID,
+    user: dict[str, Any] = Depends(
+        guard("GET", "/api/semantic/objects/{object_type}/{object_id}/lineage")
+    ),
+) -> LineageChain:
+    """The chain from the data the object was drafted from to whoever approved it.
+
+    Assembled from the version history and audit_log, with the provenance
+    records the provenance store holds for the sessions its verdicts were issued
+    in. A link never recorded is listed in ``gaps``; ``complete`` is true only
+    when there are none.
+    """
+    await _visible_object(object_type, object_id, user)
+    try:
+        chain = await _registry.get_lineage(object_type, object_id, domains=domain_scope(user))
+    except ObjectNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    # The durable provenance store (011_provenance.sql), as its API shows it: a
+    # record an erasure tombstone hides is not listed here either.
+    records = []
+    for session_id in chain.provenance_sessions:
+        graph, _erasures = await get_provenance_graph(session_id)
+        records.extend(record.id for record in graph.records)
+    return chain.model_copy(update={"provenance_records": records})
 
 
 # ── An edge's sensitivity analysis (septa-62) ─────────────────────────────────

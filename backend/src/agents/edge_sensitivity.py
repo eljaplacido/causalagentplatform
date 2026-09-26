@@ -157,7 +157,7 @@ async def record_edge_sensitivity(
             assumption_id=None,
         )
     assumption_id = await (registry or SemanticLayerRegistry()).record_edge_sensitivity(
-        edge_id, result, check.audit_entry_id, actor, domains=domains
+        edge_id, result, check.audit_entry_id, actor, domains=domains, agent_id=state.agent_id
     )
     return Recorded(
         verdict=check.verdict,
