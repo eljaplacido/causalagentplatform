@@ -505,6 +505,70 @@
       "figure": "0.095",
       "bench": "t8-switchback",
       "path": "/designs[id=long_carryover]/carryover_flag_rate"
+    },
+    {
+      "doc": "README.md",
+      "says": "contested in 100% of runs at n = 2,000",
+      "figure": "100",
+      "bench": "t0",
+      "path": "/sections/triangulation/power/nonlinear_outcome@n=2000 (gated, disagree and contested)",
+      "scale": 100
+    },
+    {
+      "doc": "README.md",
+      "says": "comparing estimates alone caught 3.5%",
+      "figure": "3.5",
+      "bench": "t0",
+      "path": "/sections/triangulation/reported/nonlinear_outcome@n=2000 pairwise contrasts alone (v3 rule)",
+      "scale": 100
+    },
+    {
+      "doc": "README.md",
+      "says": "false alarms 1.1%",
+      "figure": "1.1",
+      "bench": "t0",
+      "path": "/sections/triangulation/false_alarms/pooled",
+      "scale": 100
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "contrasts flag only 3.5% of runs",
+      "figure": "3.5",
+      "bench": "t0",
+      "path": "/sections/triangulation/reported/nonlinear_outcome@n=2000 pairwise contrasts alone (v3 rule)",
+      "scale": 100
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "in 100% of runs at n = 2,000",
+      "figure": "100",
+      "bench": "t0",
+      "path": "/sections/triangulation/power/nonlinear_outcome@n=2000 (gated, disagree and contested)",
+      "scale": 100
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "false alarms of 1.1%",
+      "figure": "1.1",
+      "bench": "t0",
+      "path": "/sections/triangulation/false_alarms/pooled",
+      "scale": 100
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "covers the truth (97.5% there)",
+      "figure": "97.5",
+      "bench": "t0",
+      "path": "/sections/triangulation/reported/nonlinear_outcome@n=2000 primary coverage",
+      "scale": 100
+    },
+    {
+      "doc": "packages/causal-core/README.md",
+      "says": "100% of runs on T0's",
+      "figure": "100",
+      "bench": "t0",
+      "path": "/sections/triangulation/reported/harmless_interaction@n=2000 flag rate",
+      "scale": 100
     }
   ]
 }

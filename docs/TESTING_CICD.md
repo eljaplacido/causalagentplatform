@@ -169,7 +169,8 @@ without a new one. Failing runs stay on file beside it.
 The seeded-defect tests (`tests/t0/test_seeded_defects.py`, `tests/t4/…`, `tests/t5/…`, `tests/t6/…`, `tests/t7/…`, `tests/t8/…`,
 `tests/d0/…`, `tests/a0/…`) break the system under test on purpose and assert that the gate fails. A gate that cannot see a
 known defect does not count as a gate. The benchmark results, and the limits they found, are on
-the register (for example `kernel-triangulation-moderate-n`).
+the register (for example `kernel-overlap-detection-limits`), and leave it only when a gate closes them
+(`kernel-triangulation-moderate-n`, closed by T0 v4).
 
 Counterfactuals over an SCM, causal discovery and Rosenbaum bounds have no correctness tests
 because they are not implemented (registers `scm-counterfactuals`, `causal-discovery`,

@@ -32,12 +32,12 @@
           "packages/causal-mcp": "ac8ffe5b31a7fc07dfbfaee6156a0003bc0753f30c9a3a730b99d39de085a913",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "13073839aa692e13a3fbf3a2f9ef79d8b483e8204050ee528754c2c75b1cf124"
+          "docs/CURRENT_STAGE.md": "77ad984cf78a1984275d3c02f8bb7097b06b860b686d2fefe1b7975b99c244e9"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #26 into septa-53: subjects follow main (causal-mcp replaces the deleted backend/mcp_server); reject-authority text and main's content both present)"
+        "by": "Claude (septa-35: T0 v4 triangulation specification test; register entry closed, figures bound, triangulation and T0 lines re-read)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "af75c31b1c585fdd11a188a9a06b18c6f71f8b0400996343d6ebfe8e1ade15ab",
+          "conformance/declared_not_implemented.json": "b4271c45bebb81d473d15be52dae3dea0486c86762049a279d663374c3b8cf8d",
           "backend/src": "5d104e029b81eb564cc22f905604efaa2a7cfcd20482df947a211fc3b871f570",
           "backend/tests": "aa5434d14e2a7f34e9c385f15c79890c946ceee6bf5e33fc13dd2af7f1f6a8b7",
           "frontend/src": "d357d66d238bdc673ac0c5215b914bf4a8649a1ea7ca09c9e5bb0052c0b48fcb",
-          "packages": "f39decf6dcae81c0e60801fa80c933c6547de55348adb3fd3867119423414373",
+          "packages": "a3fae7818c461f5688e2379c90dc3581dfc856f70ca071da11b10808bb5edf35",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #26 into septa-53: subjects follow main (causal-mcp replaces the deleted backend/mcp_server); reject-authority text and main's content both present)"
+        "by": "Claude (septa-35: T0 v4 triangulation specification test; register entry closed, figures bound, triangulation and T0 lines re-read)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -314,16 +314,16 @@
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
           ".gnomon/ci.sh": "a05e016e87f09e27989ffc185d06ad2b55c6d31f4e9b9cc2954b8cfdf7a40e45",
-          "scripts": "b02346ce8b8bc5739d9c16f9eca354d6eb179e9d4cd40cbbaa9991a7cc3662f7",
+          "scripts": "dcb4a50618280b1ce05daca9c62eb3512d8e7c1bcd2415e463709fc5a9869163",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
-          "benchmarks": "2ea289c99ef957a2b22a4eed544e76c06e45eb8a2c844d384f9e05eb7f84d940",
-          "packages/causal-core/tests": "ca9a8600b9bdeb81d9509afcb864900159868a7509bcc0aa13fff0fc501869f5",
+          "benchmarks": "096ad2080afd2b6d17a5dfb32fcd19ea678ae9e7711240807958e149e361d8de",
+          "packages/causal-core/tests": "dd371b6b1dfa47732c7ee5c0a2631a63e797514a18b098287fcfba6f554cd6ee",
           "packages/causal-decision/tests": "c7ccd2d2b91e1ec53a3eb456c70f670268b2ec1f8f431e161f399360b94ef7de"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24-#26/#28 into septa-53: reject-authority text kept on main's updated docs; TESTING_CICD rows three-way merged)"
+        "by": "Claude (septa-35: T0 v4 triangulation specification test; register entry closed, figures bound, triangulation and T0 lines re-read)"
       }
     },
     "docs/UIX.md": {
@@ -352,14 +352,14 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "packages/causal-core/src/causal_core": "6b029f17fceb5b8a44c784ea601802c8d97c1d2ed3ce9a6a92c2600823826501",
-          "conformance/declared_not_implemented.json": "af75c31b1c585fdd11a188a9a06b18c6f71f8b0400996343d6ebfe8e1ade15ab",
-          "docs/CURRENT_STAGE.md": "13073839aa692e13a3fbf3a2f9ef79d8b483e8204050ee528754c2c75b1cf124"
+          "packages/causal-core/src/causal_core": "76588c939c4b779161fa173e980a033cefd9b5861e80d3f794235ed50d32aa2f",
+          "conformance/declared_not_implemented.json": "b4271c45bebb81d473d15be52dae3dea0486c86762049a279d663374c3b8cf8d",
+          "docs/CURRENT_STAGE.md": "77ad984cf78a1984275d3c02f8bb7097b06b860b686d2fefe1b7975b99c244e9"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24-#26/#28 into septa-53: reject-authority text kept on main's updated docs; TESTING_CICD rows three-way merged)"
+        "by": "Claude (septa-35: T0 v4 triangulation specification test; register entry closed, figures bound, triangulation and T0 lines re-read)"
       }
     },
     "SECURITY.md": {

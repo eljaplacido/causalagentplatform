@@ -127,10 +127,11 @@ priority first, and the priorities put hardening the platform before new estimat
 - **p2, the kernel and decision layer.** Done: DiD with covariates (doubly robust) and
   not-yet-treated comparisons, T5 v4 (`septa-8`); a switchback carryover check with gated power
   whose flag makes the result contested, T8 v2 (`septa-9`; a carryover too small to bias the
-  estimate materially stays undetectable at T8's sizes, and is reported). Open: step 3's
+  estimate materially stays undetectable at T8's sizes, and is reported); triangulation at
+  moderate n through an outcome-model specification test, T0 v4 (`septa-35`; it also flags
+  nonlinearity that does not bias the estimate). Open: step 3's
   remaining estimator (`septa-7`), calibration (`septa-10`), anchoring (`septa-11`), Rosenbaum bounds (`septa-12`),
-  Guardian PR-007 (`septa-33`), positivity detection and triangulation at moderate n (`septa-34`,
-  `septa-35`), and the review queue's risk tier (`septa-36`).
+  Guardian PR-007 (`septa-33`), positivity detection (`septa-34`), and the review queue's risk tier (`septa-36`).
 - **p3 and p4.** The rest of the register (versioned semantic objects, lineage,
   provenance, the LLM layer, Cynefin routing, frontend views and others), then the longer-range
   methods: discovery, rung-3 counterfactuals, general ID estimation, subgroup discovery. Many of
