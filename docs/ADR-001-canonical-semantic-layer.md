@@ -81,8 +81,9 @@ which the governance API returns as 409.
 **Rules:**
 - Only `APPROVED` objects participate in simulations (AGENTS.md §2.1 SimulationAgent)
 - All writes require Guardian `APPROVED` verdict (DATA_LAYER.md §2.2 Registry Rule #1)
-- All objects are versioned, with no in-place mutation (Rule #2). **Not held:** approval and
-  rejection update the row in place and never change `version` (register
+- All objects are versioned, with no in-place mutation (Rule #2). **Not held:** approval,
+  rejection and recording a sensitivity result on a draft edge (its `assumptionRefs` and
+  lineage) update the row in place and never change `version` (register
   `semantic-objects-mutated-in-place`)
 - All `APPROVED` objects carry lineage (Rule #3). **Partial:** one lineage step per human
   decision, nothing from source data (register `lineage-partial`)
@@ -101,7 +102,9 @@ Guardian integration points, as built:
 - The session graph (`backend/src/orchestration/graph.py`) runs a `guardian_check` node on every
   CLEAR / COMPLICATED / COMPLEX path, after `plan_ahead`. CHAOTIC, and a plan with no safe
   action, go to human escalation without it.
-- Only `GovernanceAgent` and `IncidentTriageAgent` call the `guardian_check` skill themselves.
+- Only `GovernanceAgent` and `IncidentTriageAgent` call the `guardian_check` skill themselves;
+  SimulationAgent calls `GovernanceAgent.check` directly, for a `RECORD_SENSITIVITY` verdict
+  before recording the kernel's sensitivity analysis on the draft edge it estimated.
   `BaseAgent._assert_guardian_approved`, the write guard meant for every agent, has no callers.
   The persistence guard that does hold is in the registry: every semantic-layer write needs a
   signed, subject-bound, single-use APPROVED verdict (`_assert_verdict_approved`).

@@ -166,7 +166,8 @@ keep in mind when evaluating issues:
   `graph_fragments` and `assumptions` are written only by `SemanticLayerRegistry`
   (`backend/src/semantic_layer/registry.py`), which refuses a verdict that is
   missing, not APPROVED (REJECTED for a rejection), unsigned, issued for another
-  object (or, for an approval, another action than `GOVERNANCE_APPROVE`), or
+  object (or, for an approval, another action than `GOVERNANCE_APPROVE`; for recording a
+  sensitivity result on a draft edge, another action than `RECORD_SENSITIVITY`), or
   already spent. The dev seeding script `backend/scripts/seed_data.py`
   inserts directly; it is run by hand against a local database, and no request
   path reaches it. A path that
