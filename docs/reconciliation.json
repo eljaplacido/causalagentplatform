@@ -32,12 +32,12 @@
           "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "44ec75b5bca3e2f4c2e86dd5caf31e26908a83411394a02185ffaa1efffbe0fd"
+          "docs/CURRENT_STAGE.md": "50e6c1f683897165742fab5ea91a38e5f39c2774fac6dc441e7e018333413a56"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of the train into the gate fix: CURRENT_STAGE's package row states the import-origin and identity rules over the train's measured counts; TESTING_CICD's unit row lists both sides' tests; the rest merged cleanly and was re-read for gate-step claims)"
+        "by": "Claude (UIX tour fixes: README's frontend line no longer says the backend refuses every draft, and names the shared navigation; ROADMAP re-read after the CURRENT_STAGE and register re-citations: its frontend-views and calibration paragraphs still hold)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "03645e5288222fe6242ee5531df616d44d08a18b825cfeaa50ccd52c8cbfb57f",
-          "backend/src": "876804994de907af20157812e48aceac9d4e2ca5e6ba8ff4bf57082b32a8d48c",
-          "backend/tests": "b542e299135fbc8c671668ba6e04537030c668d3e1296afbaeaae3fabd7f5329",
-          "frontend/src": "b466587cba2f440aaacdd3395df8690b5c08971f869236ecd9694a646caf0b31",
+          "conformance/declared_not_implemented.json": "d653ff2044ee871c2df57396756295e9cfe133dc762fa98e1380ec4a19fe7eb6",
+          "backend/src": "3ef723ac9ea3a21270e27c9393b8795b3daf1cd1ed78d15d31719f61fbf231a3",
+          "backend/tests": "f6d1be7abeb4f3edea12638aafb5380d5d088627d69b81174be427a0e77808b7",
+          "frontend/src": "21c3f4b7b86416dae0345fe4c1c96f5bc5fbb3ff1e44d7ee31411b632e3cb8eb",
           "packages": "1384322f9b6670fbe83ad33b5f0a9893d596568ac1fa7dafa0b0c1ed58af0389",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of the train into the gate fix: CURRENT_STAGE's package row states the import-origin and identity rules over the train's measured counts; TESTING_CICD's unit row lists both sides' tests; the rest merged cleanly and was re-read for gate-step claims)"
+        "by": "Claude (UIX tour fixes: UIX §2/§4.2 re-read for SiteNav, the 404 page, the navigating persona dropdown, the workbench's classified drafts, the decisions page's number format, rationale binding and RateEstimate calibration, FragmentCard, InterventionCard, analyst, governance and mobile layout; CURRENT_STAGE's weekly-metrics, decision-ledger, incidents and analyst rows updated; TESTING_CICD's vitest paragraph names the new tests and no longer says the ledger is verbatim; ADR-003's platform.py row states only the evaluation endpoints, which this change did not touch)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -126,12 +126,12 @@
         "sha256": {
           "backend/src/orchestration": "e2eb3496c39122094c47140ed28a932742480b35a2cbe4d2c1a11a40e9a0c6f7",
           "backend/src/evaluation": "9a2708b95f3bae7f8b05075e62815c7f51cb3f6e7939a585c1c2c26e5b500b07",
-          "backend/src/api/platform.py": "39769fc666af1350f66c73cce0aa1381556a2ed226c0807b8366e633c6013773"
+          "backend/src/api/platform.py": "8f665907da4fe188cce83f5fc32f47288489fbab312b59ae667438f67131c0ea"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (backend integrity fixes, merged onto #54: SECURITY and CYBERSECURITY 4.0 say every route but the liveness probe has a matrix row, reads included, and sessions are owner-or-governance; CURRENT_STAGE rows for role-less reads, session ownership, incident overwrites, exact-id intervention decisions with single closure, weekly metrics; TESTING_CICD names the new tests; ADR-003, AGENTS and ROADMAP re-read after session.py and the merge, nothing they state moved)"
+        "by": "Claude (UIX tour fixes: UIX §2/§4.2 re-read for SiteNav, the 404 page, the navigating persona dropdown, the workbench's classified drafts, the decisions page's number format, rationale binding and RateEstimate calibration, FragmentCard, InterventionCard, analyst, governance and mobile layout; CURRENT_STAGE's weekly-metrics, decision-ledger, incidents and analyst rows updated; TESTING_CICD's vitest paragraph names the new tests and no longer says the ledger is verbatim; ADR-003's platform.py row states only the evaluation endpoints, which this change did not touch)"
       }
     },
     "docs/AGENTS.md": {
@@ -309,7 +309,7 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "b542e299135fbc8c671668ba6e04537030c668d3e1296afbaeaae3fabd7f5329",
+          "backend/tests": "f6d1be7abeb4f3edea12638aafb5380d5d088627d69b81174be427a0e77808b7",
           "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "c488a844dd07e837e2d22c4b661f4efd3becea08b2315052affe794a0cd78fa6",
@@ -323,7 +323,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of the train into the gate fix: CURRENT_STAGE's package row states the import-origin and identity rules over the train's measured counts; TESTING_CICD's unit row lists both sides' tests; the rest merged cleanly and was re-read for gate-step claims)"
+        "by": "Claude (UIX tour fixes: UIX §2/§4.2 re-read for SiteNav, the 404 page, the navigating persona dropdown, the workbench's classified drafts, the decisions page's number format, rationale binding and RateEstimate calibration, FragmentCard, InterventionCard, analyst, governance and mobile layout; CURRENT_STAGE's weekly-metrics, decision-ledger, incidents and analyst rows updated; TESTING_CICD's vitest paragraph names the new tests and no longer says the ledger is verbatim; ADR-003's platform.py row states only the evaluation endpoints, which this change did not touch)"
       }
     },
     "docs/UIX.md": {
@@ -334,12 +334,12 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "frontend/src": "b466587cba2f440aaacdd3395df8690b5c08971f869236ecd9694a646caf0b31"
+          "frontend/src": "21c3f4b7b86416dae0345fe4c1c96f5bc5fbb3ff1e44d7ee31411b632e3cb8eb"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of the train into the frontend views: the draft route classifies now (#53), so ROADMAP, CURRENT_STAGE and the dag-workbench register reality say a classified draft reaches the queue and name what keeps it partial; TESTING_CICD's vitest paragraph covers both sides' tests; UIX keeps this branch's component table and view-test note, and no 'no page submits drafts' remains)"
+        "by": "Claude (UIX tour fixes: UIX §2/§4.2 re-read for SiteNav, the 404 page, the navigating persona dropdown, the workbench's classified drafts, the decisions page's number format, rationale binding and RateEstimate calibration, FragmentCard, InterventionCard, analyst, governance and mobile layout; CURRENT_STAGE's weekly-metrics, decision-ledger, incidents and analyst rows updated; TESTING_CICD's vitest paragraph names the new tests and no longer says the ledger is verbatim; ADR-003's platform.py row states only the evaluation endpoints, which this change did not touch)"
       }
     },
     "docs/ROADMAP.md": {
@@ -353,13 +353,13 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "fee739ab430ee5145e6e125ab755d0e3d2cb6c08bdc4b45c0f58857b21fb7686",
-          "conformance/declared_not_implemented.json": "03645e5288222fe6242ee5531df616d44d08a18b825cfeaa50ccd52c8cbfb57f",
-          "docs/CURRENT_STAGE.md": "44ec75b5bca3e2f4c2e86dd5caf31e26908a83411394a02185ffaa1efffbe0fd"
+          "conformance/declared_not_implemented.json": "d653ff2044ee871c2df57396756295e9cfe133dc762fa98e1380ec4a19fe7eb6",
+          "docs/CURRENT_STAGE.md": "50e6c1f683897165742fab5ea91a38e5f39c2774fac6dc441e7e018333413a56"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of the train into the gate fix: CURRENT_STAGE's package row states the import-origin and identity rules over the train's measured counts; TESTING_CICD's unit row lists both sides' tests; the rest merged cleanly and was re-read for gate-step claims)"
+        "by": "Claude (UIX tour fixes: README's frontend line no longer says the backend refuses every draft, and names the shared navigation; ROADMAP re-read after the CURRENT_STAGE and register re-citations: its frontend-views and calibration paragraphs still hold)"
       }
     },
     "SECURITY.md": {

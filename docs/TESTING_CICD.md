@@ -203,11 +203,17 @@ T9 and pinned to a published example by `backend/tests/unit/test_rosenbaum_bound
 - **Vitest + React Testing Library** (`src/**/__tests__/*.test.{ts,tsx}`). Covers the
   `ThinkingIndicator` latency contract, `CynefinBadge`, `ApprovalPanel`, `InterventionCard`, the
   API client's errors (`src/lib/__tests__/api.test.ts`: the backend's `error` code, 422 field
-  errors, 401/403 as not authorised, a Guardian block's structured detail), and the governance,
-  incidents, analyst, workbench (fragment drafting), decision-ledger and assumption-registry pages.
+  errors, 401/403 as not authorised, a Guardian block's structured detail), `FragmentCard`'s badge,
+  `SiteNav` and the navigating persona dropdown, the 404 page, the kernel number format
+  (`src/lib/__tests__/utils.test.ts`, against `causal_core.claims.format_number`'s outputs), and
+  the governance, incidents, analyst, workbench (fragment drafting), decision-ledger,
+  assumption-registry, executive and engineer pages (the engineer test prerenders the page at one
+  time and hydrates it at another, and fails on a hydration mismatch).
   The page tests pin the fail-closed contract. The ledger and registry tests use responses the
   kernel produced (`src/test-fixtures/kernel.ts`, from data simulated with a set effect) and check
-  that the pages show those numbers verbatim, and null rates as null. They mock the API, so the governance page's
+  that the pages show those numbers: the registry verbatim, the ledger in the kernel's own
+  4-significant-digit format with the exact value as the tooltip, an absent value as "—", and a
+  calibration rate only where the report states one. They mock the API, so the governance page's
   request bodies are also pinned against the real endpoints by a backend integration test
   (`test_the_governance_pages_own_requests_approve_an_object`). The governance page shows
   only backend-confirmed decisions and audit rows, and the incidents page leaves a decision

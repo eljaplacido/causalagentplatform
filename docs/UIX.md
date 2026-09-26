@@ -34,8 +34,8 @@ Each persona sees a **filtered, task-optimized lens** on the same underlying pla
 Today there is a page per persona view, `/incidents`, `/analyst`, `/executive`, `/governance` and
 `/engineer`, plus `/workbench`, `/decisions` and `/registry`. One navigation bar (`SiteNav`, in the
 root layout) sits above every page, the 404 page (`frontend/src/app/not-found.tsx`, with a link
-home) included: the brand links home, then all eight
-pages, the current one marked. On a persona page `PersonaSelector` switches persona and goes to
+home) included: the brand links home (the role picker, which forwards a returning user to their
+persona's page), then all eight pages, the current one marked. On a persona page `PersonaSelector` switches persona and goes to
 that persona's page (it used to relabel itself and stay). How much of each view's surface below
 is built varies (see §4.2).
 
@@ -44,9 +44,10 @@ is built varies (see §4.2).
   (a declared Cynefin domain, DISORDER not offered, or a reasoning session's id). The Guardian's
   verdict is shown as the API returns it: on success the audit entry and whether
   `GET /api/governance/review-queue` lists the draft; on the 403 the verdict, reason and rules
-  cited. The backend on `main` ignores the classification and PR-006 refuses every draft (a fix
-  is on another branch), so today a user sees that refusal. Authoring new edges or entities is not
-  built, and the register entry `dag-workbench` stays open (`partial`).
+  cited. The route judges the draft in the declared or session domain
+  (`backend/tests/integration/test_draft_submission_api.py`), so a classified draft reaches the
+  review queue. Authoring new edges or entities is not built, and the register entry
+  `dag-workbench` stays open (`partial`).
 - **`/decisions` (decision ledger)** lists `GET /api/v1/decisions` (filter by action, limit),
   shows a record's verdict, checks, evidence and chain digests, verifies the chain
   (`/verify`), takes a follow-up (`POST .../{entry_digest}/followup`, once per decision) and shows
