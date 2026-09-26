@@ -55,6 +55,21 @@ function asKnownVerdict(v: string): GuardianVerdict | null {
   return (KNOWN_VERDICTS as readonly string[]).includes(v) ? (v as GuardianVerdict) : null;
 }
 
+
+/** DataSource.digest (backend/src/semantic_layer/models.py). */
+const SHA256_DIGEST = /^sha256:[0-9a-f]{64}$/;
+
+/** A file's bytes: Blob.arrayBuffer where the platform has it, else FileReader. */
+function readBytes(file: File): Promise<ArrayBuffer> {
+  if (typeof file.arrayBuffer === "function") return file.arrayBuffer();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as ArrayBuffer);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsArrayBuffer(file);
+  });
+}
+
 export function edgeCaption(e: CausalEdgeResponse): string {
   return `${e.source.id} —${e.edgeType}→ ${e.target.id}`;
 }
@@ -89,6 +104,10 @@ export function FragmentDraftComposer({
   const [mode, setMode] = useState<Mode>("declared");
   const [declared, setDeclared] = useState<Exclude<CynefinDomain, "DISORDER"> | "">("");
   const [sessionId, setSessionId] = useState("");
+  // The data the fragment was drafted from: approval requires it (septa-15).
+  const [sourceRef, setSourceRef] = useState("");
+  const [sourceDigest, setSourceDigest] = useState("");
+  const [hashing, setHashing] = useState(false);
 
   const effectiveDomain = domain ?? defaultDomain ?? "";
   const edges = useMemo(() => Object.values(draftEdges), [draftEdges]);
@@ -101,6 +120,27 @@ export function FragmentDraftComposer({
       : sessionId.trim()
         ? { sessionId: sessionId.trim() }
         : null;
+
+  const digestValid = SHA256_DIGEST.test(sourceDigest.trim());
+  const sourceData =
+    sourceRef.trim() !== "" && digestValid
+      ? { kind: "dataset", ref: sourceRef.trim(), digest: sourceDigest.trim() }
+      : null;
+
+  async function digestFromFile(file: File | undefined) {
+    if (!file) return;
+    setHashing(true);
+    try {
+      // Hashed here, in the browser; the file itself is never uploaded.
+      const bytes = await readBytes(file);
+      const hash = await crypto.subtle.digest("SHA-256", bytes);
+      const hex = Array.from(new Uint8Array(hash), (b) => b.toString(16).padStart(2, "0")).join("");
+      setSourceDigest(`sha256:${hex}`);
+      if (sourceRef.trim() === "") setSourceRef(file.name);
+    } finally {
+      setHashing(false);
+    }
+  }
 
   const submission = useMutation<DraftSubmissionResponse, Error, DraftClassification>({
     mutationFn: (cls) =>
@@ -118,6 +158,7 @@ export function FragmentDraftComposer({
           // Required by the GraphFragment model; the route replaces it with the
           // token's user before anything is stored (attribution from the token).
           createdBy: { id: userId ?? "unknown" },
+          sourceData,
         },
         cls
       ),
@@ -140,6 +181,8 @@ export function FragmentDraftComposer({
     name.trim() !== "" &&
     effectiveDomain.trim() !== "" &&
     edges.length > 0 &&
+    sourceData !== null &&
+    !hashing &&
     classification !== null;
 
   function toggle(edge: CausalEdgeResponse) {
@@ -315,6 +358,56 @@ export function FragmentDraftComposer({
               onChange={(e) => setTags(e.target.value)}
               className="rounded-md border border-input bg-background px-2 py-1.5"
             />
+          </label>
+        </fieldset>
+
+        <fieldset
+          className="grid gap-3 rounded-md border border-border p-3 sm:grid-cols-2"
+          disabled={locked}
+          data-testid="draft-source-data"
+        >
+          <legend className="px-1 text-xs font-semibold text-foreground">
+            Source data (required for approval)
+          </legend>
+          <p className="text-xs text-muted-foreground sm:col-span-2">
+            Where the data behind these edges is, and a SHA-256 digest that pins its contents. A
+            reviewer cannot approve a fragment whose lineage does not say what it came from.
+          </p>
+          <label className="flex flex-col gap-1 text-xs">
+            <span className="font-semibold text-foreground">Data reference</span>
+            <input
+              value={sourceRef}
+              onChange={(e) => setSourceRef(e.target.value)}
+              maxLength={2048}
+              placeholder="s3://bucket/path.parquet"
+              className="rounded-md border border-input bg-background px-2 py-1.5 font-mono"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs">
+            <span className="font-semibold text-foreground">SHA-256 digest</span>
+            <input
+              value={sourceDigest}
+              onChange={(e) => setSourceDigest(e.target.value)}
+              placeholder="sha256:…"
+              aria-invalid={sourceDigest.trim() !== "" && !digestValid}
+              className="rounded-md border border-input bg-background px-2 py-1.5 font-mono"
+            />
+            {sourceDigest.trim() !== "" && !digestValid && (
+              <span className="text-destructive">
+                Write it as sha256: followed by 64 hexadecimal digits.
+              </span>
+            )}
+          </label>
+          <label className="flex flex-col gap-1 text-xs sm:col-span-2">
+            <span className="font-semibold text-foreground">Or compute the digest from a file</span>
+            <input
+              type="file"
+              onChange={(e) => void digestFromFile(e.target.files?.[0])}
+              className="text-xs"
+            />
+            <span className="text-muted-foreground">
+              {hashing ? "Computing…" : "Hashed in your browser; the file is not uploaded."}
+            </span>
           </label>
         </fieldset>
 

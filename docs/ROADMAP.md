@@ -157,9 +157,8 @@ priority first, and the priorities put hardening the platform before new estimat
   (`econml-pymc`, `rust-crates`, `neo4j-graph-store`, `kafka-streaming` in `left_the_list`).
   Of the frontend views, the decision ledger (`/decisions`) and the assumption registry
   (`/registry`) are built (`septa-24`); the DAG Workbench proposes a fragment through the governed
-  draft route but stays `partial` (`dag-workbench`): it authors no new edges, the fragments it
-  drafts declare no source data, so approval refuses them (`septa-15`), and its e2e spec stubs
-  the backend.
+  draft route but stays `partial` (`dag-workbench`): it authors no new edges, and its e2e spec
+  stubs the backend.
 
 ## What this project will not do first
 

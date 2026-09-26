@@ -133,10 +133,10 @@
           "says": "Graph authoring UI (unified)"
         }
       ],
-      "reality": "/workbench composes a GraphFragment draft from existing edges and submits it, classified (a declared Cynefin domain or a session id), to POST /api/semantic/drafts, showing the Guardian's verdict or its 403 reason and whether the review queue lists the draft (pinned by frontend/src/app/workbench/__tests__/page.test.tsx). The route judges a classified draft in the declared or session domain (backend/tests/integration/test_draft_submission_api.py), so a user can submit one for approval. Three things keep it open: new edges and entities cannot be authored here; a fragment drafted here declares no source data (`sourceData`), so since septa-15 /approve refuses it (422, LineageIncompleteError) until the composer asks for one; and the e2e spec stubs the backend and no gate step runs Playwright.",
+      "reality": "/workbench composes a GraphFragment draft from existing edges and submits it, classified (a declared Cynefin domain or a session id), to POST /api/semantic/drafts, showing the Guardian's verdict or its 403 reason and whether the review queue lists the draft (pinned by frontend/src/app/workbench/__tests__/page.test.tsx). The route judges a classified draft in the declared or session domain (backend/tests/integration/test_draft_submission_api.py), so a user can submit one for approval. The composer asks for the source data approval requires (septa-15): a reference and a SHA-256 digest, typed or computed from a file in the browser (backend/tests/integration/test_draft_submission_api.py pins the wire format). Two things keep it open: new edges and entities cannot be authored here; and the e2e spec stubs the backend and no gate step runs Playwright.",
       "evidence": [
         {
-          "at": "frontend/src/components/graph/FragmentDraftComposer.tsx:107",
+          "at": "frontend/src/components/graph/FragmentDraftComposer.tsx:147",
           "says": "semanticApi.submitDraft("
         },
         {
@@ -644,7 +644,7 @@
           "says": "Domain confidence > 0.7"
         },
         {
-          "at": "docs/UIX.md:168",
+          "at": "docs/UIX.md:171",
           "says": "when the Cynefin domain classification is CHAOTIC"
         }
       ],
@@ -685,7 +685,7 @@
       "capability": "One-click Rosenbaum / E-value sensitivity analysis on an approved edge, in the UI",
       "claimed_in": [
         {
-          "at": "docs/UIX.md:219",
+          "at": "docs/UIX.md:222",
           "says": "I want to run a one-click Rosenbaum sensitivity analysis on any approved edge"
         }
       ],

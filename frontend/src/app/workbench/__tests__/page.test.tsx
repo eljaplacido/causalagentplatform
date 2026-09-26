@@ -24,7 +24,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -136,8 +136,13 @@ async function composeDraft(user: ReturnType<typeof userEvent.setup>) {
   expect(boxes).toHaveLength(2);
   for (const b of boxes) await user.click(b);
   await user.type(within(composer).getByLabelText(/fragment name/i), "latency_to_conversion");
+  await user.type(within(composer).getByLabelText(/data reference/i), SOURCE_REF);
+  await user.type(within(composer).getByLabelText(/sha-256 digest/i), SOURCE_DIGEST);
   return composer;
 }
+
+const SOURCE_REF = "s3://ops-lake/deploys/2026-09.parquet";
+const SOURCE_DIGEST = `sha256:${"ab".repeat(32)}`;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -191,6 +196,8 @@ describe("workbench fragment authoring", () => {
       name: "latency_to_conversion",
       domain: "devops",
       edges: [EDGE_A, EDGE_B],
+      // Approval requires the data the draft came from (septa-15).
+      sourceData: { kind: "dataset", ref: SOURCE_REF, digest: SOURCE_DIGEST },
     });
     expect(classification).toEqual({ cynefinDomain: "COMPLICATED" });
 
@@ -295,6 +302,31 @@ describe("workbench fragment authoring", () => {
     );
     expect(within(composer).queryByTestId("draft-blocked")).toBeNull();
     expect(within(composer).queryByTestId("draft-saved")).toBeNull();
+  });
+
+  it("needs the source data a reviewer can approve, and computes its digest from a file", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const composer = await composeDraft(user);
+    await user.selectOptions(within(composer).getByRole("combobox", { name: /cynefin domain/i }), "COMPLICATED");
+    const submit = within(composer).getByRole("button", { name: /submit draft for review/i });
+    expect(submit).toBeEnabled();
+
+    const digest = within(composer).getByLabelText(/sha-256 digest/i);
+    await user.clear(digest);
+    await user.type(digest, "sha256:not-a-digest");
+    expect(submit).toBeDisabled();
+    expect(within(composer).getByText(/64 hexadecimal digits/i)).toBeInTheDocument();
+
+    // A chosen file is hashed in the browser; the file itself is not uploaded.
+    const file = new File(["abc"], "deploys.csv", { type: "text/csv" });
+    await user.upload(within(composer).getByLabelText(/compute the digest from a file/i), file);
+    await waitFor(() =>
+      expect(digest).toHaveValue(
+        "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+      )
+    );
+    expect(submit).toBeEnabled();
   });
 
   it("removes an edge from the draft, and needs at least one to submit", async () => {

@@ -32,12 +32,12 @@
           "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "ea63561079b6366dd5f4c27e4f9e4a986fefe963b4e7d679981eeb23f0ce08ae"
+          "docs/CURRENT_STAGE.md": "e8159af191e82a1fef9f41e0566016b87e44a0bc7f6a385977b45e33027330a7"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of the decisions fix and versioned objects into the UIX fixes: CURRENT_STAGE keeps the train's dag-workbench row (no source data, so approval refuses) with this branch's decisions-view row; README, ROADMAP and TESTING_CICD re-read for both sides' claims)"
+        "by": "Claude (workbench source data: UIX, CURRENT_STAGE, ROADMAP and the dag-workbench register reality say the composer asks for a reference and SHA-256 digest; README and TESTING_CICD name no composer fields)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "11d5cc20d64732bf3697aa3d45d665d1d945db521f2d9419fda63c85e1b77360",
+          "conformance/declared_not_implemented.json": "5906ee11987d7d850993ebf3f979b25fcf2f310b248ad5026e14924655edb59d",
           "backend/src": "8e990f3fb69302d2c20296b8dde922c07365ce57f4e0e616a3472991c2f7cbb4",
-          "backend/tests": "16bb4b61de4d3b39c6843eea3fa7ec4688e5e155989621e7fc7caf37c575eeb4",
-          "frontend/src": "21c3f4b7b86416dae0345fe4c1c96f5bc5fbb3ff1e44d7ee31411b632e3cb8eb",
+          "backend/tests": "ed2f1cce5c7641c856c6fb27943f1e39f19463e03d8a9d4614c869dfa44a920e",
+          "frontend/src": "0f505690e8d04806e1f735272b7b81a8a6ed5e6c4308da5ba3536531ef21f6a0",
           "packages": "f41962f45dc02d0c7d0fed82e375a3f1c65d327fcf995cc8cf4a8753ad5d9174",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of the decisions fix and versioned objects into the UIX fixes: CURRENT_STAGE keeps the train's dag-workbench row (no source data, so approval refuses) with this branch's decisions-view row; README, ROADMAP and TESTING_CICD re-read for both sides' claims)"
+        "by": "Claude (workbench source data: UIX, CURRENT_STAGE, ROADMAP and the dag-workbench register reality say the composer asks for a reference and SHA-256 digest; README and TESTING_CICD name no composer fields)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -309,7 +309,7 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "16bb4b61de4d3b39c6843eea3fa7ec4688e5e155989621e7fc7caf37c575eeb4",
+          "backend/tests": "ed2f1cce5c7641c856c6fb27943f1e39f19463e03d8a9d4614c869dfa44a920e",
           "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "c488a844dd07e837e2d22c4b661f4efd3becea08b2315052affe794a0cd78fa6",
@@ -323,7 +323,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of the decisions fix and versioned objects into the UIX fixes: CURRENT_STAGE keeps the train's dag-workbench row (no source data, so approval refuses) with this branch's decisions-view row; README, ROADMAP and TESTING_CICD re-read for both sides' claims)"
+        "by": "Claude (workbench source data: UIX, CURRENT_STAGE, ROADMAP and the dag-workbench register reality say the composer asks for a reference and SHA-256 digest; README and TESTING_CICD name no composer fields)"
       }
     },
     "docs/UIX.md": {
@@ -334,12 +334,12 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "frontend/src": "21c3f4b7b86416dae0345fe4c1c96f5bc5fbb3ff1e44d7ee31411b632e3cb8eb"
+          "frontend/src": "0f505690e8d04806e1f735272b7b81a8a6ed5e6c4308da5ba3536531ef21f6a0"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (UIX tour fixes: UIX §2/§4.2 re-read for SiteNav, the 404 page, the navigating persona dropdown, the workbench's classified drafts, the decisions page's number format, rationale binding and RateEstimate calibration, FragmentCard, InterventionCard, analyst, governance and mobile layout; CURRENT_STAGE's weekly-metrics, decision-ledger, incidents and analyst rows updated; TESTING_CICD's vitest paragraph names the new tests and no longer says the ledger is verbatim; ADR-003's platform.py row states only the evaluation endpoints, which this change did not touch)"
+        "by": "Claude (workbench source data: UIX, CURRENT_STAGE, ROADMAP and the dag-workbench register reality say the composer asks for a reference and SHA-256 digest; README and TESTING_CICD name no composer fields)"
       }
     },
     "docs/ROADMAP.md": {
@@ -353,13 +353,13 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "fee739ab430ee5145e6e125ab755d0e3d2cb6c08bdc4b45c0f58857b21fb7686",
-          "conformance/declared_not_implemented.json": "11d5cc20d64732bf3697aa3d45d665d1d945db521f2d9419fda63c85e1b77360",
-          "docs/CURRENT_STAGE.md": "ea63561079b6366dd5f4c27e4f9e4a986fefe963b4e7d679981eeb23f0ce08ae"
+          "conformance/declared_not_implemented.json": "5906ee11987d7d850993ebf3f979b25fcf2f310b248ad5026e14924655edb59d",
+          "docs/CURRENT_STAGE.md": "e8159af191e82a1fef9f41e0566016b87e44a0bc7f6a385977b45e33027330a7"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of the decisions fix and versioned objects into the UIX fixes: CURRENT_STAGE keeps the train's dag-workbench row (no source data, so approval refuses) with this branch's decisions-view row; README, ROADMAP and TESTING_CICD re-read for both sides' claims)"
+        "by": "Claude (workbench source data: UIX, CURRENT_STAGE, ROADMAP and the dag-workbench register reality say the composer asks for a reference and SHA-256 digest; README and TESTING_CICD name no composer fields)"
       }
     },
     "SECURITY.md": {

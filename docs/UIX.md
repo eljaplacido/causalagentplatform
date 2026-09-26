@@ -41,7 +41,10 @@ is built varies (see §4.2).
 
 - **`/workbench` (DAG Workbench)** shows the fragments and their edges, and proposes a new fragment
   from existing edges through `POST /api/semantic/drafts`. The drafter must classify the situation
-  (a declared Cynefin domain, DISORDER not offered, or a reasoning session's id). The Guardian's
+  (a declared Cynefin domain, DISORDER not offered, or a reasoning session's id) and name the
+  source data: a reference and its SHA-256 digest, typed or computed in the browser from a chosen
+  file (the file is not uploaded). Approval requires source data (septa-15), so submit waits for
+  it. The Guardian's
   verdict is shown as the API returns it: on success the audit entry and whether
   `GET /api/governance/review-queue` lists the draft; on the 403 the verdict, reason and rules
   cited. The route judges the draft in the declared or session domain
