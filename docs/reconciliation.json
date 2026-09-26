@@ -28,16 +28,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
-          "packages/causal-mcp": "ac8ffe5b31a7fc07dfbfaee6156a0003bc0753f30c9a3a730b99d39de085a913",
+          "backend/pyproject.toml": "aed6cbb405b21ebabf3b25620ab10ff1bc095f3860cf0c079a378b539875580a",
+          "packages/causal-mcp": "f86dd08d8fef8f9b09adab83770f37de1234101a5c84ff11ef0427bdab2507d1",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "658bc18f9f6afbd203141430db44cd9f9b8a15be227135218e8383b877bf49fc"
+          "docs/CURRENT_STAGE.md": "e33939e8412832646c16862c468c85e456034a3a9452b8d16a5ab196c1c6872e"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (small-batch-2: re-read; CURRENT_STAGE gained a Neo4j-health row and re-took the health row, nothing README says moved)"
+        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "e1d976f1211ea4ce1bd942174cde2179cb762caafd92543112c1c8060c47750f",
-          "backend/src": "ecd0e199b7d169012637b00101b2713cafef0f0d9a6bb40f57956780fe07175e",
-          "backend/tests": "d3791420ae7c7ae857e4fe43928c0167c36312db3b6e8a4dbfa42f94f3d2fa49",
-          "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
-          "packages": "9c942abc628920542c5c6039f545006b242610fe638b2ceb7f913f34d3219a3e",
+          "conformance/declared_not_implemented.json": "06aa634fe74b3c9bfac8ec28980fe0a07de11d4a3c30ac3969d4f4d02c8cb87e",
+          "backend/src": "1e9d3dc122d2a853b6e75237687f61c563a799d77455879243a2b65d50065008",
+          "backend/tests": "b789634220d1ef99b3ab8786d15747d1e9e4920749b9acf4cea920b618b9287e",
+          "frontend/src": "cfe44a11e817c5d272f7125694a5cba46c438299c632f63315a8f836a9278d80",
+          "packages": "d2f937f66efee78148564d82fbe376b1b72ca9e6c6e60068c8e8afb85bb4fcfa",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (small-batch-2: health row takes PR #46's evidence; new row for Neo4j health on /api/v1/platform/connectors; register citations re-cited)"
+        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -78,16 +78,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/semantic_layer": "ea55bd4224a1f8bfcca328b39114e95a6b6b42a8f9fe00bc57370332c01e6222",
-          "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
-          "packages/semantic-types/src": "fe7182fc233b307aa02d26a958898db94ead599601fe740dcfe2981bf5a1150d",
+          "backend/src/semantic_layer": "2b3aee3ef98dd7c74992a44be9588d099de06c829997fe78cb6a75ddf6594e30",
+          "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
+          "packages/semantic-types/src": "b88502a55b3406392490bc55954f738e1c9557acaa2e273743cdb113c4bc31ce",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
-          "backend/src/orchestration/graph.py": "1c42a22eed003aa1e67b1ffc70545347304a0cc5170959464f263439b727eacc"
+          "backend/src/orchestration/graph.py": "9e75a97dcfccf2e649b77e2b52bd0bc1ae8d11aaf7a3af5c072d4bcb2e09d7e8"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (small-batch-1: contracts.py changed only ContractRegistry's docstring; ADR-001 says nothing about it)"
+        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -102,16 +102,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/semantic_layer/provenance.py": "02fe831e092fb8bb01d05db9fc9d871ae544e09b2adca565d0df34e3086fa474",
+          "backend/src/semantic_layer/provenance.py": "c912fb0af67442b984325d80528867c559ccb0332ac7725ac448e48f87164c89",
           "backend/src/semantic_layer/contracts.py": "96357377af27b488fd82e05c2601a907cbf99afe7cd9ae71819ee37c7e284068",
-          "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
-          "backend/src/agents/llm_factory.py": "f7a2d5514b4002494fe1cf9edf69c5b9cc31b8d2751fe39b335ecbfce4d8014a",
-          "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0"
+          "backend/src/api/provenance.py": "55fa5a3e0153904f557da134e6e0f3a8c8c1ae0ab8b5fe4faa8a6918a70c617e",
+          "backend/src/agents/llm_factory.py": "cf027815b09bfd658aa041072ebd42158e3bdf5f6e76d3f8941ed7b227fd9f1e",
+          "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (small-batch-1: Redis-cache mitigation dropped; Part B's in-memory ContractRegistry description matches the new docstring)"
+        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
       }
     },
     "docs/ADR-003-hierarchical-planning-and-evaluation.md": {
@@ -124,14 +124,14 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/orchestration": "026e61993e2c3e51962380e4d4e957cf5d26e650455679bd5e7cdce75c31c2f4",
+          "backend/src/orchestration": "7776a0a563af5bda75451c4ff4bb546683ae9947207f6da8b0545c1781976c8f",
           "backend/src/evaluation": "9a2708b95f3bae7f8b05075e62815c7f51cb3f6e7939a585c1c2c26e5b500b07",
-          "backend/src/api/platform.py": "53e44066c1dadd112ffa81bce33bb923cad04696cca70ede5904f2b01376c617"
+          "backend/src/api/platform.py": "68355a7d3d4daf13952937559f743d59e1688bfd8f4b61f4b983faa1463ff5b6"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (small-batch-2: re-read; platform.py's connectors gained a Neo4j check, the three evaluation endpoints the ADR describes are unchanged)"
+        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
       }
     },
     "docs/AGENTS.md": {
@@ -146,16 +146,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/agents": "8044bc0482380ad8cf9ce9ffb44d76ae94d2748975d634582aaeb584dea5d5a8",
-          "backend/src/skills": "7c14f6095d38b78711081427d4f98e3f621a0a72de4b377d6fc374c346c4ecea",
-          "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/src/orchestration": "026e61993e2c3e51962380e4d4e957cf5d26e650455679bd5e7cdce75c31c2f4",
-          "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957"
+          "backend/src/agents": "748c3b7f1398dfb683ac629c248d785a65c3483dbae7bf26b07f1a746798d8b3",
+          "backend/src/skills": "b0bcef79c64f6b8d2f35f87f92095d54c52cec7d972a4cf1520b95fcc0d68347",
+          "packages/causal-mcp": "f86dd08d8fef8f9b09adab83770f37de1234101a5c84ff11ef0427bdab2507d1",
+          "backend/src/orchestration": "7776a0a563af5bda75451c4ff4bb546683ae9947207f6da8b0545c1781976c8f",
+          "prompts": "664b74cd837a44513e10dc0a7a5c44a3015816f928c93d4f7831320b0231e50f"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (small-batch-1: drift_monitor.py: alert_emit now emits via AlertEmitter and names no topic; the spec's Kafka line stays, pinned by register kafka-streaming)"
+        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -174,20 +174,20 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/middleware": "e08b38ca451495d24d95778c7f15e6ebd1e6d220e41cbd0f007766549630f1cb",
-          "backend/src/api/governance.py": "74095eefc36dc973a8dd5aae5d8bba89d44aa860c32862fa729a5c10b55bf3c3",
-          "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
-          "backend/src/semantic_layer/registry.py": "91529601ce53d74c25763a017f4a43ad552c13e94d562f513165b079c16c71b7",
+          "backend/src/middleware": "9085c1b32915118b1ecb76c779c5ad65c7849ac8c18f0faa7911423862db68d6",
+          "backend/src/api/governance.py": "f04db4d767e8a62c4315c46635a3e93d045a0817116acb6d33bbdb0d3a230cd0",
+          "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
+          "backend/src/semantic_layer/registry.py": "32f6f4cee20e193c4ab87d60ca5b90a9aba8e18a01feef60c166433e63c7374c",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
-          "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
-          "backend/src/db/migrations": "6b52679eb2132b16e3bb238da5d6a7bde969f409bba4bd63b431c94456db74f1",
-          "backend/src/semantic_layer/verdict.py": "2807535994f0073bd9f58cc2774822d9f7bd1749aa7801d669eb2301bde3ac00",
+          "backend/src/api/provenance.py": "55fa5a3e0153904f557da134e6e0f3a8c8c1ae0ab8b5fe4faa8a6918a70c617e",
+          "backend/src/db/migrations": "0c6e574f90adda4f934a3cf66ecea153f5610294203d4c4cf1cc344c17368319",
+          "backend/src/semantic_layer/verdict.py": "13e537f2b000c10f10e57b0453f1f459b5237a2d60ea009103247a8bfbcade80",
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (small-batch-2: 3.1: PUBLIC_PATHS matched exactly, with the test that pins it)"
+        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -205,19 +205,19 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/db": "d43e2f0b4736735ce4661b7a43652f2469db73154a1d01578812c463dd2a8251",
-          "backend/src/connectors": "47199e6fd213f90c59af28dda1c6469d256d6595cdd433fbbd1a2957ec723569",
-          "backend/src/semantic_layer/models.py": "f3b7a600ac8e8c4ce7beb48145a188b2394f3775b6ad7d094613cbb9798d3b05",
+          "backend/src/db": "918886f41d041a016e43d2e32818791a28481b49a24d7ce149b7ec71a42bf826",
+          "backend/src/connectors": "2b7f65f2acc7f7732deecdad2c8c1b72e4db72caed067285d65631be65c4edfa",
+          "backend/src/semantic_layer/models.py": "9d20689801ee209370c995278bfa23f58d19fd0c68a65d86e705e4fb7b1a036f",
           "backend/src/sensors": "37f0b547a27bf3617693225db822302372fe941185153afa65d9cc5296e3360c",
-          "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
-          "backend/src/semantic_layer/registry.py": "91529601ce53d74c25763a017f4a43ad552c13e94d562f513165b079c16c71b7",
-          "backend/src/agents/drift_monitor.py": "9279c31636b3b663007f21e7aa671ffe738a535432f610ecb5b6de00ae6bd815",
+          "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
+          "backend/src/semantic_layer/registry.py": "32f6f4cee20e193c4ab87d60ca5b90a9aba8e18a01feef60c166433e63c7374c",
+          "backend/src/agents/drift_monitor.py": "3e5807b7fcc88cb7215e1126cbf5461c293020fb2153937fbbd923ca085b2c9f",
           "backend/src/skills/drift_detect.py": "9432982258b155287a90701d76dc9bf331dd8c65fbc692ad37fcd124fcab7111"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (small-batch-2: 5.1: DriftSensor deleted, AlertEmitter stays; 3.1: graph-neo4j connector states)"
+        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
       }
     },
     "docs/HANDOFFS.md": {
@@ -277,17 +277,17 @@
         "sha256": {
           "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
-          "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
+          "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
+          "backend/pyproject.toml": "aed6cbb405b21ebabf3b25620ab10ff1bc095f3860cf0c079a378b539875580a",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
-          ".env.example": "f5dbf40f551d60b4b91d5bbaa9b36a2404f89536421fe51b8bcbf17a6ae1258f",
-          "backend/scripts": "1b110791ba58bd29c47c02d5b83d1b36b7da24743ab35e1d190d4a5380523c00"
+          ".env.example": "10b19ac63993ff640ea47936fb99d53938077413273463afe5e5661313451c97",
+          "backend/scripts": "adfe996282f443b9f37340ccda7e0e85afae2ad77fbed2455cc8dc6a63dc987b"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (small-batch-2: seeding runs on SQLite and PostgreSQL, as causal_app or the owner)"
+        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -309,21 +309,21 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "d3791420ae7c7ae857e4fe43928c0167c36312db3b6e8a4dbfa42f94f3d2fa49",
-          "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
+          "backend/tests": "b789634220d1ef99b3ab8786d15747d1e9e4920749b9acf4cea920b618b9287e",
+          "backend/pyproject.toml": "aed6cbb405b21ebabf3b25620ab10ff1bc095f3860cf0c079a378b539875580a",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
           ".gnomon/ci.sh": "a05e016e87f09e27989ffc185d06ad2b55c6d31f4e9b9cc2954b8cfdf7a40e45",
-          "scripts": "e62c35b0e7f05ebd23c93d65634877197542c61558e8641c859d2cc5574af39a",
+          "scripts": "2edc6c26a73622247b41baf5b85f14330695253388e9b3c63c470750f339894c",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
-          "benchmarks": "2ea289c99ef957a2b22a4eed544e76c06e45eb8a2c844d384f9e05eb7f84d940",
-          "packages/causal-core/tests": "468a9bd86b2ea137c7e9173e05d84be36ab10b6a90ef66a5221034c50261386f",
-          "packages/causal-decision/tests": "c7ccd2d2b91e1ec53a3eb456c70f670268b2ec1f8f431e161f399360b94ef7de"
+          "benchmarks": "58eaf5af920accec421ce7392b3d999aa35199d6f471c989b7fab25b3865acd0",
+          "packages/causal-core/tests": "25d7a9bf81d3202afcd2359570774f2ea059d0e74d2b949146e44c6f3070042c",
+          "packages/causal-decision/tests": "811166b3dd05cfc3cbd62c7e71fcf1d62666fb738c97dcb65e34725fede4d034"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (small-batch-2: log-event list names drift_monitor.*; health/sensor tests deleted, the scale test now budgets CPU time -- neither named here)"
+        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
       }
     },
     "docs/UIX.md": {
@@ -334,12 +334,12 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "frontend/src": "53904fc3d2b9f3b1c068c10fec234755fb7191909a9f1ca24c5eb376614a3265"
+          "frontend/src": "cfe44a11e817c5d272f7125694a5cba46c438299c632f63315a8f836a9278d80"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (small-batch-1: governance: business domain as a label, Cynefin badge only when classified, CynefinBadge renders unknown input as Unclassified)"
+        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
       }
     },
     "docs/ROADMAP.md": {
@@ -352,14 +352,14 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "packages/causal-core/src/causal_core": "6b029f17fceb5b8a44c784ea601802c8d97c1d2ed3ce9a6a92c2600823826501",
-          "conformance/declared_not_implemented.json": "e1d976f1211ea4ce1bd942174cde2179cb762caafd92543112c1c8060c47750f",
-          "docs/CURRENT_STAGE.md": "658bc18f9f6afbd203141430db44cd9f9b8a15be227135218e8383b877bf49fc"
+          "packages/causal-core/src/causal_core": "65b5b9fe4d2bc339a536717c0fdd0f252483ac9e136b0600914ff3590a977c45",
+          "conformance/declared_not_implemented.json": "06aa634fe74b3c9bfac8ec28980fe0a07de11d4a3c30ac3969d4f4d02c8cb87e",
+          "docs/CURRENT_STAGE.md": "e33939e8412832646c16862c468c85e456034a3a9452b8d16a5ab196c1c6872e"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (small-batch-2: re-read; register prose for drift-monitor-no-data and CURRENT_STAGE rows changed, nothing ROADMAP states moved)"
+        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
       }
     },
     "SECURITY.md": {
@@ -375,17 +375,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/middleware": "e08b38ca451495d24d95778c7f15e6ebd1e6d220e41cbd0f007766549630f1cb",
-          "backend/src/api/governance.py": "74095eefc36dc973a8dd5aae5d8bba89d44aa860c32862fa729a5c10b55bf3c3",
+          "backend/src/middleware": "9085c1b32915118b1ecb76c779c5ad65c7849ac8c18f0faa7911423862db68d6",
+          "backend/src/api/governance.py": "f04db4d767e8a62c4315c46635a3e93d045a0817116acb6d33bbdb0d3a230cd0",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
-          "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
-          "backend/src/semantic_layer/registry.py": "91529601ce53d74c25763a017f4a43ad552c13e94d562f513165b079c16c71b7",
-          "backend/src/semantic_layer/verdict.py": "2807535994f0073bd9f58cc2774822d9f7bd1749aa7801d669eb2301bde3ac00"
+          "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
+          "backend/src/semantic_layer/registry.py": "32f6f4cee20e193c4ab87d60ca5b90a9aba8e18a01feef60c166433e63c7374c",
+          "backend/src/semantic_layer/verdict.py": "13e537f2b000c10f10e57b0453f1f459b5237a2d60ea009103247a8bfbcade80"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (small-batch-2: authentication paragraph: public paths listed with /favicon.ico and matched exactly, never by prefix)"
+        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
       }
     }
   }

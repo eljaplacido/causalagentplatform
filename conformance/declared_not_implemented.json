@@ -331,11 +331,11 @@
       "capability": "Agent evaluation endpoints (consistency, calibration, decision quality) measure the running platform",
       "claimed_in": [
         {
-          "at": "backend/src/api/platform.py:818",
+          "at": "backend/src/api/platform.py:825",
           "says": "    summary=\"Agent confidence calibration probe\","
         },
         {
-          "at": "backend/src/api/platform.py:860",
+          "at": "backend/src/api/platform.py:867",
           "says": "    summary=\"Composite decision quality index\","
         },
         {
@@ -354,7 +354,7 @@
       "reality": "None of the three observes an agent. /evaluation/consistency scores num_runs identical EMPTY recommendation lists against each other, so the variance it reports is 0 by construction whatever the platform is doing. /evaluation/calibration scores the confidences in the request body, and CalibrationProbe states it uses their variance as a proxy because there is no ground truth -- calibration needs realized outcomes, and nothing records one. /evaluation/decision-quality combines four numbers taken as query parameters, defaulting to 0.75/0.05/0.80/0.70, so its 'index' is whatever the caller passes. The module docstring claimed 'No static or mock values' until 2026-09-24; it now names these three as excluded.",
       "evidence": [
         {
-          "at": "backend/src/api/platform.py:798",
+          "at": "backend/src/api/platform.py:805",
           "says": "    mock_recommendations: list[list[Any]] = [[] for _ in range(num_runs)]"
         },
         {
@@ -362,7 +362,7 @@
           "says": "        - Variance of confidence scores as a proxy for calibration"
         },
         {
-          "at": "backend/src/api/platform.py:866",
+          "at": "backend/src/api/platform.py:873",
           "says": "    calibration_score: float = Query(default=0.70, ge=0.0, le=1.0),"
         }
       ],
@@ -803,7 +803,7 @@
       "capability": "Dynamic application security testing (DAST): a scanner such as OWASP ZAP run against a running API, weekly",
       "claimed_in": [
         {
-          "at": "docs/CYBERSECURITY.md:603",
+          "at": "docs/CYBERSECURITY.md:648",
           "says": "DAST: OWASP ZAP against a staging API (weekly). Not built: there is no staging"
         }
       ],
