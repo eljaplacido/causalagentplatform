@@ -32,12 +32,12 @@
           "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "e08914c540c8c944b2d0319c4f57d059ebe7a63169bde2414b2b4c1ab10e84e4"
+          "docs/CURRENT_STAGE.md": "efd474798cdae184e21467497cd4de20a2da265c4c12e71d4e48fdf315ab9276"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (backend integrity fixes, merged onto #54: SECURITY and CYBERSECURITY 4.0 say every route but the liveness probe has a matrix row, reads included, and sessions are owner-or-governance; CURRENT_STAGE rows for role-less reads, session ownership, incident overwrites, exact-id intervention decisions with single closure, weekly metrics; TESTING_CICD names the new tests; ADR-003, AGENTS and ROADMAP re-read after session.py and the merge, nothing they state moved)"
+        "by": "Claude (cascade of #46's re-measured Gates table: CURRENT_STAGE moved only in that table's figures, which neither README nor ROADMAP quotes)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -354,12 +354,12 @@
         "sha256": {
           "packages/causal-core/src/causal_core": "18d2aa2f2ef7931f67675a18f9e0ba170989adc9fa7cbf2a7bee4ea53c3342a3",
           "conformance/declared_not_implemented.json": "defe0dfd9ab63157b0839944150beb414ff1e698c19b8e6f764da71f892541fd",
-          "docs/CURRENT_STAGE.md": "e08914c540c8c944b2d0319c4f57d059ebe7a63169bde2414b2b4c1ab10e84e4"
+          "docs/CURRENT_STAGE.md": "efd474798cdae184e21467497cd4de20a2da265c4c12e71d4e48fdf315ab9276"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (backend integrity fixes, merged onto #54: SECURITY and CYBERSECURITY 4.0 say every route but the liveness probe has a matrix row, reads included, and sessions are owner-or-governance; CURRENT_STAGE rows for role-less reads, session ownership, incident overwrites, exact-id intervention decisions with single closure, weekly metrics; TESTING_CICD names the new tests; ADR-003, AGENTS and ROADMAP re-read after session.py and the merge, nothing they state moved)"
+        "by": "Claude (cascade of #46's re-measured Gates table: CURRENT_STAGE moved only in that table's figures, which neither README nor ROADMAP quotes)"
       }
     },
     "SECURITY.md": {
