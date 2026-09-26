@@ -32,12 +32,12 @@
           "packages/causal-mcp": "f86dd08d8fef8f9b09adab83770f37de1234101a5c84ff11ef0427bdab2507d1",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "e33939e8412832646c16862c468c85e456034a3a9452b8d16a5ab196c1c6872e"
+          "docs/CURRENT_STAGE.md": "87190ed92d95a396709dad92442b88d3b252090580fc9b66f4f7cd8d601adf45"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
+        "by": "Claude (cascade of #46's re-measured Gates table: CURRENT_STAGE moved only in that table's figures, which neither README nor ROADMAP quotes)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -354,12 +354,12 @@
         "sha256": {
           "packages/causal-core/src/causal_core": "65b5b9fe4d2bc339a536717c0fdd0f252483ac9e136b0600914ff3590a977c45",
           "conformance/declared_not_implemented.json": "06aa634fe74b3c9bfac8ec28980fe0a07de11d4a3c30ac3969d4f4d02c8cb87e",
-          "docs/CURRENT_STAGE.md": "e33939e8412832646c16862c468c85e456034a3a9452b8d16a5ab196c1c6872e"
+          "docs/CURRENT_STAGE.md": "87190ed92d95a396709dad92442b88d3b252090580fc9b66f4f7cd8d601adf45"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
+        "by": "Claude (cascade of #46's re-measured Gates table: CURRENT_STAGE moved only in that table's figures, which neither README nor ROADMAP quotes)"
       }
     },
     "SECURITY.md": {
