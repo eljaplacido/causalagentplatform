@@ -61,12 +61,12 @@ sustainability investment assurance follow, in that order.
    confidence sequences over a predictable-baseline AIPW score). Cluster-randomized designs are
    **done** (`causal_core.cluster`, pre-registered T7: CR2 intervals on t(K − 2), a refusal where
    a few clusters dominate). Switchback designs are **done** (also `causal_core.cluster`,
-   pre-registered T8: a uniform washout, block means, Welch on t(K − 2); the carryover check is
-   reported, not gated, is weak, and says so: `carryover-check-weak`). Parallel-trends
+   pre-registered T8: a uniform washout, block means, Welch on t(K − 2); since T8 v2 a
+   carryover check with gated power makes the result contested when the effect is still moving
+   after the washout, and misses a carryover too small next to the standard error). Parallel-trends
    sensitivity is **done** (intervals under a relative-magnitudes restriction and a breakdown
    multiple, T5 v3). Still to come, in the ledger's order: spillovers between randomized units
-   (`septa-7`) and a switchback carryover check with gated power as T8 v2, or a design that
-   estimates the carryover length (`septa-9`); then the DiD work the register still lists --
+   (`septa-7`); then the DiD work the register still lists --
    the full Rambachan–Roth sensitivity (`did-rambachan-roth`), and anticipation windows,
    repeated cross-sections and time-varying covariates (`did-anticipation-cross-sections`).
    Each with its own pre-registered gate and a seeded defect.
@@ -122,8 +122,10 @@ priority first, and the priorities put hardening the platform before new estimat
   packages (`septa-2`); SeptaCore's optional stages that fit (`septa-5`). Also done: the legacy
   MCP server, `backend/mcp_server`, deleted; `packages/causal-mcp` is the one server (`septa-6`).
 - **p2, the kernel and decision layer.** Done: DiD with covariates (doubly robust) and
-  not-yet-treated comparisons, T5 v4 (`septa-8`). Open: step 3's remaining estimators (`septa-7`,
-  `septa-9`), calibration (`septa-10`), anchoring (`septa-11`), Rosenbaum bounds (`septa-12`),
+  not-yet-treated comparisons, T5 v4 (`septa-8`); a switchback carryover check with gated power
+  whose flag makes the result contested, T8 v2 (`septa-9`; a carryover too small to bias the
+  estimate materially stays undetectable at T8's sizes, and is reported). Open: step 3's
+  remaining estimator (`septa-7`), calibration (`septa-10`), anchoring (`septa-11`), Rosenbaum bounds (`septa-12`),
   Guardian PR-007 (`septa-33`), positivity detection and triangulation at moderate n (`septa-34`,
   `septa-35`), and the review queue's risk tier (`septa-36`).
 - **p3 and p4.** The rest of the register (versioned semantic objects, lineage,

@@ -10,9 +10,20 @@
 #   pyproject.toml  the ranges themselves. increase-if-necessary: a PR only when a
 #                   release falls outside a range (a deliberate ceiling: fastapi <0.142,
 #                   ruff/mypy/bandit pinned to a minor because the ratchets count
-#                   per version). Such a PR is red until someone
-#                   re-locks on its branch (python3 scripts/py_lock.py relock) and
-#                   re-measures a ratchet it moves -- which is the review it needs.
+#                   per version). Such a PR is red until someone re-locks on
+#                   its branch (python3 scripts/py_lock.py relock) -- which is the
+#                   review it needs. The ratchet-counted tools and majors are
+#                   ignored here (below).
+#
+# What the bot never proposes (the ignore rules below; CONTRIBUTING.md and
+# docs/TESTING_CICD.md section 5.4 say how its PRs are handled):
+#   - a pin a ratchet depends on: ruff, mypy, bandit and pip-audit are pinned to a
+#     minor because the lint and security ratchets count findings per version;
+#     moving one is a re-measurement of its baseline, done by hand;
+#   - a semver-major in a pyproject: a major is ledger work (septacore create),
+#     not a bot PR;
+#   - a node base image off an LTS line;
+#   - a major whose ledger item is still open (next 16, typescript 7).
 version: 2
 updates:
   - package-ecosystem: pip
@@ -36,6 +47,15 @@ updates:
       day: monday
     versioning-strategy: increase-if-necessary
     open-pull-requests-limit: 5
+    ignore:
+      # Pinned to a minor on purpose: the ratchets count findings per version.
+      - dependency-name: ruff
+      - dependency-name: mypy
+      - dependency-name: bandit
+      - dependency-name: pip-audit
+      # A major (mcp <2 -> <3, say) is a ledger item, not a bot PR.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       python-ranges:
         patterns: ["*"]
@@ -47,6 +67,19 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    # Majors stay out of the groups, so each arrives as its own PR -- except these,
+    # held until their ledger items are done.
+    ignore:
+      # septa-57: next 16 and eslint-config-next 16 move together (eslint-config-next
+      # 16 crashes eslint on next 15, #20), dropping the next-15 postcss override.
+      - dependency-name: next
+        versions: [">=16"]
+      - dependency-name: eslint-config-next
+        versions: [">=16"]
+      # septa-58: TypeScript 7 (tsc TS2882 on the CSS import; next 15 cannot load
+      # next.config.ts with it, #21).
+      - dependency-name: typescript
+        versions: [">=7"]
     groups:
       npm-dev:
         dependency-type: development
@@ -72,6 +105,11 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    ignore:
+      # Node on an LTS line only (the frontend is on 24). 25 is never LTS; 26 is
+      # Current until it enters LTS in October 2026 -- then lift this (septa-59).
+      - dependency-name: node
+        versions: [">=25"]
     groups:
       base-images:
         patterns: ["*"]

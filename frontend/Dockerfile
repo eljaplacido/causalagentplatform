@@ -10,7 +10,9 @@
 # and copied a standalone output next.config.ts did not ask for.
 
 # ── Build stage ────────────────────────────────────────────────────────────
-FROM node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS builder
+# Node is kept on an LTS line (24, Active LTS); .github/dependabot.yml ignores the
+# non-LTS lines, so a bot PR only moves the digest within 24 or proposes the next LTS.
+FROM node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS builder
 WORKDIR /repo
 
 # The workspace manifests first, so the install layer is cached across source edits.
@@ -29,7 +31,7 @@ RUN npm run build --workspace=packages/semantic-types \
     && npm run build --workspace=frontend
 
 # ── Production stage ───────────────────────────────────────────────────────
-FROM node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS production
+FROM node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS production
 WORKDIR /app
 
 ENV NODE_ENV=production

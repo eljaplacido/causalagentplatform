@@ -27,7 +27,7 @@ says so.
 
 ## Setting up
 
-Python 3.12 and Node 20, as CI uses. Two Python environments, one per lock, as CI builds them: the
+Python 3.12 and Node 24 LTS, as CI uses. Two Python environments, one per lock, as CI builds them: the
 backend's, and the kernel's (the three kernel packages, with causal-mcp on MCP SDK v2 and the kernel
 suites' own test dependencies):
 
@@ -72,6 +72,16 @@ that was not re-locked, and also requires your environments to equal their locks
 or a pull that brought one, `python3 scripts/py_lock.py sync backend --python backend/.venv/bin/python`
 (and `sync kernel --python packages/causal-core/.venv/bin/python`) brings a venv back in line.
 Details: [`docs/TESTING_CICD.md`](docs/TESTING_CICD.md) §5.4.
+
+### Dependabot PRs
+
+The gate decides: a bot PR is merged only when CI is green, and only after you have read what
+moved. A semver-major is a ledger item, not a bot PR (`septacore create --provenance
+"dependabot:#<n>"`), and the bot is told to ignore it until that item is done. The pins the
+ratchets depend on (ruff, mypy, bandit, pip-audit, each pinned to a minor) are never moved by
+the bot: `.github/dependabot.yml` ignores them, and moving one means re-measuring its baseline
+by hand. How to handle a red npm PR, whose lock is often the problem rather than the update, is
+in [`docs/TESTING_CICD.md`](docs/TESTING_CICD.md) §5.4.
 
 ## The gate
 

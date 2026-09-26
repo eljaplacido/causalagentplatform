@@ -145,7 +145,7 @@
       "evidence": [
         {
           "at": "backend/pyproject.toml:51",
-          "says": "\"causal-core>=0.10.0\","
+          "says": "\"causal-core>=0.11.0\","
         }
       ],
       "leaves_by": {
@@ -415,7 +415,7 @@
       "capability": "Triangulation flags outcome-model misspecification in causal-core",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:178",
+          "at": "packages/causal-core/README.md:184",
           "says": "Its power was 0.04 at n = 2,000"
         }
       ],
@@ -438,7 +438,7 @@
       "capability": "Estimation of effects identified only by the general ID algorithm (e.g. the napkin graph)",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:200",
+          "at": "packages/causal-core/README.md:206",
           "says": "Estimation for general ID functionals"
         }
       ],
@@ -461,18 +461,18 @@
       "capability": "causal-core methods beyond the current portfolio: nonparametric front-door, discovery, time series, interference between units",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:202",
+          "at": "packages/causal-core/README.md:208",
           "says": "Nonparametric front-door"
         },
         {
-          "at": "packages/causal-core/README.md:204",
+          "at": "packages/causal-core/README.md:210",
           "says": "Discovery"
         }
       ],
       "reality": "Listed as not implemented in the package README; none of these exists in the kernel. (Anytime-valid sequential tests left this entry on 2026-09-25 with T6; cluster-randomized designs, which handle dependence within clusters but not spillovers between them, arrived the same day with T7, and switchback designs with T8.)",
       "evidence": [
         {
-          "at": "packages/causal-core/README.md:197",
+          "at": "packages/causal-core/README.md:203",
           "says": "Not implemented yet"
         }
       ],
@@ -1065,30 +1065,12 @@
       }
     },
     {
-      "id": "carryover-check-weak",
-      "status": "planned",
-      "capability": "Detecting a switchback washout too short for the system's carryover",
-      "claimed_in": [],
-      "reality": "causal_core.cluster reports a carryover check (early-minus-late effect in switched blocks, Welch test) as a design check that never changes the status. T8 v1 measured it: with a 30-minute carryover and a 20-minute washout the estimate was biased by -0.086 and covered 0.887, and the check flagged it in 2% of runs. It is not a safeguard; the washout must be chosen from knowledge of the system.",
-      "evidence": [
-        {
-          "at": "benchmarks/t8-switchback/PRE-REGISTRATION.md:51",
-          "says": "reported, not gated"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "packages/causal-core/tests/t8/test_carryover_power.py",
-        "asserts": "a pre-registered T8 version gates the carryover check's power at >= 0.8 against a carryover the washout does not cover, with a false-alarm bar where it does"
-      }
-    },
-    {
       "id": "dast-not-built",
       "status": "planned",
       "capability": "Dynamic application security testing (DAST): a scanner such as OWASP ZAP run against a running API, weekly",
       "claimed_in": [
         {
-          "at": "docs/CYBERSECURITY.md:590",
+          "at": "docs/CYBERSECURITY.md:597",
           "says": "DAST: OWASP ZAP against a staging API (weekly). Not built: there is no staging"
         }
       ],
@@ -1289,6 +1271,13 @@
       "fixed_in": "a6a864d",
       "pinned_by": "backend/tests/unit/test_py_lock.py",
       "note": "Implemented, except DAST, which did not leave: it is dast-not-built. Hash-pinned installs: every Python environment CI builds installs from a lock in requirements/ (backend.txt for backend/.venv, kernel.txt for packages/causal-core/.venv and release.yml's verify job, image.txt for backend/Dockerfile, release.txt for the published wheels), made by `uv pip compile --universal --generate-hashes` from requirements/*.in and installed with pip --require-hashes --no-deps; the repository's own packages, not on an index and so not in the lock, then install from the checkout with --no-deps --no-build-isolation (hatchling and editables come from the lock), and pip check proves the pair whole. The gate step python-lock (scripts/py_lock.py check) fails a lock whose inputs (the .in file and the dependency tables of each pyproject.toml it names) changed since `python3 scripts/py_lock.py relock` recorded them in requirements/lock-inputs.json, a lock that does not satisfy its local packages, and a tested environment that differs from its lock; the pip-audit steps audit the locks (pip-audit-image added for image.txt). Image scan: CI job `images` builds backend/Dockerfile and frontend/Dockerfile (the latter did not build at all before this change; it now builds from the repository root with output: standalone) and scans each with Trivy 0.74.0 pinned by digest; scripts/image_scan.py fails a HIGH or CRITICAL finding with a published fix not excused in scripts/image-scan-allowlist.json (empty), lists findings with no fix published without failing (44 in the backend image's Debian 13 base packages on 2026-09-26, none in the frontend's), and fails a report that lists no package. The one fixable pair it found (msgpack and setuptools copies vendored in pip 26.2.1) went by removing pip from the runtime image. SBOM: release.yml installs the built wheels with requirements/release.txt into a fresh environment, writes a CycloneDX 1.6 SBOM of it with cyclonedx-bom 7.4.0, checks it lists exactly the locked pins and the three packages (scripts/sbom_check.py), keeps it as an artifact and attaches it to the tag's GitHub release; the images job keeps a Trivy CycloneDX SBOM per image. Update PRs: .github/dependabot.yml, weekly and grouped, for the locks, the pyproject ranges, npm, GitHub Actions and the base images (pinned by digest). Negative controls: test_py_lock.py (a dependency edit without a re-lock, a pin below a floor, a pin without a hash, an environment one version, one package or one extra away from its lock), test_image_scan.py, test_sbom_check.py, and test_dep_audit.py for the lock mode. Not verified here: the images job and release.yml have not run on GitHub (their steps were run locally with the same images and tools), and Dependabot's handling of the uv-compiled locks is untested. Not changed: the release's build tools are pinned by version, not hash; HIGH findings with no fix published are not gated."
+    },
+    {
+      "id": "carryover-check-weak",
+      "was": "causal_core.cluster reports a carryover check (early-minus-late effect in switched blocks, Welch test) as a design check that never changes the status. T8 v1 measured it: with a 30-minute carryover and a 20-minute washout the estimate was biased by -0.086 and covered 0.887, and the check flagged it in 2% of runs. It is not a safeguard; the washout must be chosen from knowledge of the system.",
+      "fixed_in": "c5b8251",
+      "pinned_by": "packages/causal-core/tests/t8/test_carryover_power.py",
+      "note": "Implemented as pre-registered in T8 v2 (46a1eae) before the code, and passed its registered runs (benchmarks/t8-switchback/results/2026-09-26-v2-run1.json, ecfa386, whose git field is 'unknown' because the gate was started outside the checkout; run2, c95af52, repeats it from the checkout, byte-identical otherwise). The check is now the least-squares slope of the outcome over the retained window of each switched block, into- minus out-of-treatment mean slope, Welch on t(K_s - 2), at a new policy level carryover_alpha = 0.05 (contract 0.11.0); a failure makes the result contested, estimate and interval unchanged. Registered run: power 0.918 in material_carryover (tau = 1.5, lambda = 30, washout 20; bias -0.424, coverage 0.122 unchecked), bar 0.8; false alarms 0.054-0.061 in the four designs the washout covers, bar 0.10; every flagged replication contested and no other. Seeded defects carryover_check_blind, check_includes_washout and flag_not_gating each caught by their bar. Limit, recorded rather than claimed away: against v1's long_carryover (tau = 0.3, bias -0.085, a fraction of a standard error) the check fires in 9.5% of runs, and no check on the minutes after the washout can do much better at T8's sizes -- an oracle GLS matched filter knowing lambda and rho has power near 0.13 on paper. The washout must still be chosen from knowledge of the system."
     }
   ]
 }

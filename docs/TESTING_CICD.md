@@ -211,14 +211,25 @@ Each file's `_comment` records when, and at which commit, its numbers were measu
 
 ### 5.1 CI (`.github/workflows/ci.yml`)
 
-Two jobs, on every push, on pull requests to `main`, and weekly on a schedule (so an advisory
-or a fix published since the last push surfaces without waiting for one). The gate job:
+Two jobs, on pushes to `main`, on pull requests to `main`, and weekly on a schedule (so an
+advisory or a fix published since the last push surfaces without waiting for one). A branch push
+does not run CI on its own; its pull request does.
+
+**Where jobs run.** `runs-on` reads the repository variable `CI_RUNS_ON`, a JSON runner label or
+list; unset, jobs run on GitHub's `ubuntu-latest`. While hosted minutes are unavailable it names
+self-hosted runners (label `causalplatform-ci`), which run one job each, so several can share a
+host: the database service takes a loopback port Docker chooses, and image tags carry the run
+id. Deleting the variable returns every job to hosted runners. A job on a self-hosted runner runs
+on that host as the runner's user, dependency updates included.
+
+The gate job:
 
 1. Check out with full history. The register cites some claims at the revision where they were
    made (`file@rev:line`), and a shallow clone cannot verify those.
-2. Set up Python 3.12 and Node 20; cache the benchmark data (keyed on the pre-registrations).
+2. Set up Python 3.12 and Node 24 (LTS; 20 reached end of life in April 2026); cache the benchmark data (keyed on the pre-registrations).
    A `postgres:16-alpine` service container (health-checked with `pg_isready`, a CI-only
-   throwaway password) runs beside the job for `backend-pytest-postgres`.
+   throwaway password, listening on loopback only) runs beside the job for
+   `backend-pytest-postgres`.
 3. Build `backend/.venv` (backend plus `causal-core` and `causal-decision`) and
    `packages/causal-core/.venv` (the three packages with their test extras) from their
    hash-pinned locks (§5.4): `pip install --require-hashes --no-deps -r requirements/<lock>.txt`,
@@ -330,10 +341,31 @@ python3 scripts/py_lock.py sync kernel --python packages/causal-core/.venv/bin/p
 ```
 
 `sync` installs the lock and the local packages as above, uninstalls whatever the lock does not
-list, and re-runs the check. Dependabot (`.github/dependabot.yml`) opens weekly PRs for the locks
-(pins inside the ranges), the `pyproject.toml` ranges (only when a release falls outside one),
-npm, the GitHub Actions and the two base images. A PR that changes a range is red until someone
-re-locks on its branch.
+list, and re-runs the check.
+
+#### Dependabot PRs
+
+Dependabot (`.github/dependabot.yml`) opens weekly PRs for the locks (pins inside the ranges),
+the `pyproject.toml` ranges (only when a release falls outside one), npm, the GitHub Actions and
+the two base images. How they are handled:
+
+- **The gate decides.** A bot PR runs the same CI as any other: `.gnomon/ci.sh` and the image
+  job (build, Trivy). Green is necessary, not sufficient: read what moved. A PR that changes a
+  range is red until someone re-locks on its branch, which is the review it needs. A red npm PR
+  is often the bot's lock, not the update: re-apply the `package.json` change on a branch and
+  regenerate `package-lock.json` there (`npx npm@11 install --package-lock-only`; npm 10's
+  audit fix crashes on this workspace). Then check that `npm ls react react-dom` shows exactly
+  one copy of each.
+- **Majors are ledger items.** A semver-major in a pyproject is ignored by the bot. An npm major
+  arrives alone, outside the groups. One that needs code or a companion change gets a
+  `septacore create --provenance "dependabot:#<n>"` item that records what its CI showed, and an
+  ignore rule in `dependabot.yml` naming that id until the item is done (next and
+  eslint-config-next 16: septa-57; TypeScript 7: septa-58). The node base image stays on an LTS
+  line; the rule ignoring newer lines names septa-59.
+- **Pins the ratchets depend on are never moved by the bot.** ruff, mypy, bandit and pip-audit
+  are pinned to a minor because the lint and security ratchets (§4) count findings per version.
+  The pyproject blocks ignore them entirely. Moving one is done by hand, with the baseline
+  re-measured in the same change.
 
 ---
 
