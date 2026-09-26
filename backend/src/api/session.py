@@ -316,6 +316,16 @@ async def triage_incident(
     Severity P0 incidents pre-seed the description with an urgency signal that
     biases Cynefin classification toward CHAOTIC for immediate escalation.
     """
+    from src.api.incidents import incident_submitter  # lazy import — avoids circular dependency
+
+    submitter = _submitter(user)
+    taken_by = await incident_submitter(body.incident_id)
+    if taken_by is not None and taken_by != submitter:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Incident '{body.incident_id}' was submitted by another user.",
+        )
+
     session_id = str(uuid.uuid4())
     urgency_prefix = "CRITICAL CASCADING " if body.severity == "P0" else ""
     description = (
@@ -375,6 +385,11 @@ async def triage_incident(
     return _state_to_response(final)
 
 
+def _submitter(user: dict[str, Any]) -> str:
+    """The id an incident records as its submitter."""
+    return str(user.get("uid") or user.get("email") or "unknown")
+
+
 async def _persist_incident(
     body: IncidentSessionRequest,
     state: EpistemicState,
@@ -421,7 +436,7 @@ async def _persist_incident(
             draft_explanation=state.draft_explanation,
             causal_hypotheses=causal_hypotheses,
             proposed_interventions=proposed_interventions,
-            submitted_by=user.get("uid") or user.get("email") or "unknown",
+            submitted_by=_submitter(user),
             requires_human_review=state.requires_human_review,
         )
     except Exception as exc:

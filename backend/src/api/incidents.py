@@ -73,16 +73,20 @@ async def save_incident(
     proposed_interventions: list[dict[str, Any]],
     submitted_by: str,
     requires_human_review: bool,
-) -> None:
-    """Upsert an incident row. Idempotent on `id` (latest payload wins)."""
+) -> bool:
+    """Upsert an incident row, idempotent on `id` for its submitter.
+
+    The submitter's later payload wins; anyone else's changes nothing and
+    returns False (the route refuses it with 409 before triage, `incident_submitter`)."""
     now = datetime.now(UTC)
     status_value = "ACTIVE" if requires_human_review else "INVESTIGATING"
 
     async with CloudSqlFactory.get_session_factory()() as session:
         # An upsert on the id (incident IDs come from upstream: PagerDuty etc.). It
         # was INSERT OR REPLACE, which is SQLite-only; ON CONFLICT is both dialects'.
-        # created_at is left out of the update, so the first submission's stands.
-        await session.execute(
+        # created_at is left out of the update, so the first submission's stands, and
+        # the update applies only to the same submitter's row.
+        result = await session.execute(
             typed_text(
                 "INSERT INTO incidents "
                 "(id, title, severity, affected_services, status, session_id, "
@@ -102,7 +106,8 @@ async def save_incident(
                 "draft_explanation = excluded.draft_explanation, "
                 "causal_hypotheses = excluded.causal_hypotheses, "
                 "proposed_interventions = excluded.proposed_interventions, "
-                "submitted_by = excluded.submitted_by, updated_at = excluded.updated_at",
+                "updated_at = excluded.updated_at "
+                "WHERE incidents.submitted_by = excluded.submitted_by",
                 now=TIMESTAMP,
             ),
             {
@@ -125,12 +130,26 @@ async def save_incident(
         )
         await session.commit()
 
+    if not result.rowcount:  # type: ignore[attr-defined]
+        log.warning("incident.overwrite_refused", incident_id=incident_id, by=submitted_by)
+        return False
     log.info(
         "incident.persisted",
         incident_id=incident_id,
         severity=severity,
         verdict=guardian_verdict,
     )
+    return True
+
+
+async def incident_submitter(incident_id: str) -> str | None:
+    """Who submitted the incident `incident_id` (None when there is none)."""
+    async with CloudSqlFactory.get_session_factory()() as session:
+        row = await session.execute(
+            text("SELECT submitted_by FROM incidents WHERE id = :id"), {"id": incident_id}
+        )
+        found = row.scalar_one_or_none()
+    return None if found is None else str(found)
 
 
 # ── Read paths ────────────────────────────────────────────────────────────────
