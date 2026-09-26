@@ -55,7 +55,7 @@
         "on": "2026-09-26",
         "sha256": {
           "conformance/declared_not_implemented.json": "493cf7bf88177fa04173a1da8cd19bf403c20282c2573a70701465002717931f",
-          "backend/src": "06091001615be151f5fe547d28d776407aeeaae26f8a06b24836f47c4d2fb1c5",
+          "backend/src": "3870d2b54173c2c3ed696154c0b6d31189128a3f821571779fc1cc845659765a",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "backend/tests": "8ab63c81decd9c6cddfba614932a088c3879e81e00cf71f0236c1b8dbebf2695",
           "frontend/src": "2e54253fb58daafc0ad2c6c17b675460f53b658c3f6dbdd65d699b9e70f731a7",
@@ -65,7 +65,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (drafts/PR-007: PR-007 row says which results count; new row for drafts through the API)"
+        "by": "Claude (drafts/PR-007: re-read after the registry docstring re-wrap; no claim moved)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -80,7 +80,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/semantic_layer": "2f6ac1573bc16357014238cac3beab32e1f0f76eb44b44e70e0c870a7042c902",
+          "backend/src/semantic_layer": "2deb839ac1968c7267bc0c294b6a67be6d1618c32d8bc8c95f2bcbbcb5da8137",
           "backend/src/agents/governance.py": "de2d312858172a38cebc8a1c26274e448b34756af954202bfef81b4164783685",
           "packages/semantic-types/src": "fe7182fc233b307aa02d26a958898db94ead599601fe740dcfe2981bf5a1150d",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
@@ -89,7 +89,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (drafts/PR-007: re-read; Assumption fields and the in-place rules unchanged by the verdict column or the drafts classification)"
+        "by": "Claude (drafts/PR-007: re-read after the registry docstring re-wrap; no claim moved)"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -179,7 +179,7 @@
           "backend/src/middleware": "6ee862a87da7273046c071c42228816a60cbc9fd781f0598d447b0d9be31e3e5",
           "backend/src/api/governance.py": "785d6bc6b0897067d92fd1e9c7e0a7619379c44b9103d04a6fa3e5ad8017f527",
           "backend/src/agents/governance.py": "de2d312858172a38cebc8a1c26274e448b34756af954202bfef81b4164783685",
-          "backend/src/semantic_layer/registry.py": "549da21405b69fb9e5fd11c720a971526ac0ec26093c499289570f9192be8f0a",
+          "backend/src/semantic_layer/registry.py": "ff8c3dac1bda721adadd01b749cd692f642e3ea87b0302e53a6720d84b89389d",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
           "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
           "backend/src/db/migrations": "b9c7e40c9d31818025ecf16b4eb3bd83e857a7510e2e487205f7c91410fad557",
@@ -189,7 +189,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (drafts/PR-007: PR-007 paragraph: platform-recorded results only, verified; drafts-route classification bullet)"
+        "by": "Claude (drafts/PR-007: re-read after the registry docstring re-wrap; no claim moved)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -212,14 +212,14 @@
           "backend/src/semantic_layer/models.py": "9d20689801ee209370c995278bfa23f58d19fd0c68a65d86e705e4fb7b1a036f",
           "backend/src/sensors": "d38f988ccb52659ac4ecc8724e8aa775b2e6e9fca76b73dbba6576c3f3d1dcba",
           "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
-          "backend/src/semantic_layer/registry.py": "549da21405b69fb9e5fd11c720a971526ac0ec26093c499289570f9192be8f0a",
+          "backend/src/semantic_layer/registry.py": "ff8c3dac1bda721adadd01b749cd692f642e3ea87b0302e53a6720d84b89389d",
           "backend/src/agents/drift_monitor.py": "9279c31636b3b663007f21e7aa671ffe738a535432f610ecb5b6de00ae6bd815",
           "backend/src/skills/drift_detect.py": "9432982258b155287a90701d76dc9bf331dd8c65fbc692ad37fcd124fcab7111"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (drafts/PR-007: migrations end at 013; drafts and sensitivity rows name the classification and the verdict column)"
+        "by": "Claude (drafts/PR-007: re-read after the registry docstring re-wrap; no claim moved)"
       }
     },
     "docs/HANDOFFS.md": {
@@ -381,13 +381,13 @@
           "backend/src/api/governance.py": "785d6bc6b0897067d92fd1e9c7e0a7619379c44b9103d04a6fa3e5ad8017f527",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
           "backend/src/agents/governance.py": "de2d312858172a38cebc8a1c26274e448b34756af954202bfef81b4164783685",
-          "backend/src/semantic_layer/registry.py": "549da21405b69fb9e5fd11c720a971526ac0ec26093c499289570f9192be8f0a",
+          "backend/src/semantic_layer/registry.py": "ff8c3dac1bda721adadd01b749cd692f642e3ea87b0302e53a6720d84b89389d",
           "backend/src/semantic_layer/verdict.py": "24957a1883bc35f9e0f2611051fd5a1712dfe2945cb244dd916aa1caeb28ce6e"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (drafts/PR-007: Guardian-verdicts paragraph says PR-007 counts only platform-recorded results and how a draft's domain is judged and audited)"
+        "by": "Claude (drafts/PR-007: re-read after the registry docstring re-wrap; no claim moved)"
       }
     }
   }
