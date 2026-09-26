@@ -472,7 +472,7 @@ access inside the platform.
 ### 8.3 Container Security
 
 - **In place:** backend and frontend images run as non-root users (`USER causal`,
-  `USER nextjs`). The backend image is `python:3.12-slim`, the frontend image `node:22-alpine`,
+  `USER nextjs`). The backend image is `python:3.12-slim`, the frontend image `node:24-alpine`,
   each pinned by digest (Dependabot moves the digest). The backend installs its Python packages
   from the hash-pinned lock `requirements/image.txt` (§8.4) and keeps no pip at run time; the
   frontend installs `package-lock.json` with `npm ci` and runs Next's standalone server with npm
