@@ -121,7 +121,8 @@ priority first, and the priorities put hardening the platform before new estimat
   (`septa-1`; needs a public repository or a paid plan); a first PyPI release of the three
   packages (`septa-2`); SeptaCore's optional stages that fit (`septa-5`); deleting the legacy MCP
   server once no external client needs it (`septa-6`).
-- **p2, the kernel and decision layer.** Step 3's remaining estimators (`septa-7`, `septa-8`,
+- **p2, the kernel and decision layer.** Done: DiD with covariates (doubly robust) and
+  not-yet-treated comparisons, T5 v4 (`septa-8`). Open: step 3's remaining estimators (`septa-7`,
   `septa-9`), calibration (`septa-10`), anchoring (`septa-11`), Rosenbaum bounds (`septa-12`),
   Guardian PR-007 (`septa-33`), positivity detection and triangulation at moderate n (`septa-34`,
   `septa-35`), and the review queue's risk tier (`septa-36`).
