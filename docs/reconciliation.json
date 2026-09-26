@@ -55,7 +55,7 @@
         "on": "2026-09-26",
         "sha256": {
           "conformance/declared_not_implemented.json": "92ade83270a50fd7d1ff082c74f4c18878aded24fdb5c053c866a918e3a9865a",
-          "backend/src": "e37a72fe9135ca9ff22a2d5df24b505a3b56a7bb45f7073756c8c551134af3f3",
+          "backend/src": "a52616461cdf8f670ec8bfe0698f319a8a42a01ede3ca7c9eb4ac75f7f62924c",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "backend/tests": "564fea6f31b323d763bd46de763f91372899e2ee8c66d60b038c999e1916446d",
           "frontend/src": "653e2e1dd0b61fab109dbe492e7facb12581472ba80c9aa3e550616a5d3c5902",
@@ -65,7 +65,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-62/PR-010/session domain: rows for the recorded sensitivity result and PR-010; the session row says a declared cynefin_domain is refused)"
+        "by": "Claude (septa-62: re-read after simulation.py's row-count fix; rows unchanged)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -148,7 +148,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/agents": "68cb60de5cdb22a6ee90ae4038a6dca1ade4d850ec8c4987a1019ac29b94b527",
+          "backend/src/agents": "ad07d25007c90b195b53e3f978f37e4d131017804c832b89447a6bf4fa76c952",
           "backend/src/skills": "7c14f6095d38b78711081427d4f98e3f621a0a72de4b377d6fc374c346c4ecea",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "backend/src/orchestration": "026e61993e2c3e51962380e4d4e957cf5d26e650455679bd5e7cdce75c31c2f4",
@@ -157,7 +157,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-62/PR-010: Guardian PR-010 constraint; SimulationAgent records the kernel's sensitivity analysis on its draft Treatment -> Outcome edge)"
+        "by": "Claude (septa-62: re-read after simulation.py's row-count fix; SimulationAgent's note unchanged)"
       }
     },
     "docs/CYBERSECURITY.md": {
