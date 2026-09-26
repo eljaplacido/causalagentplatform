@@ -81,11 +81,13 @@ above `max_extreme_propensity_share` sets a limited-overlap flag and a warning: 
 on a few comparable units, or on an outcome model, for that share of the population. It does not
 change the result's status or estimate.
 
-**Contract (additive).** `Diagnostics.overlap` (new, optional) carries the method, the three
-thresholds, `n_min`, the violation share, the regions (rule, held-out units, of them treated, the
-missing arm, the upper bound), the limited-overlap bounds, share and flag. A new design check,
-`overlap regions (positivity)`, records pass or fail. `AnalysisPolicy` gains `overlap_region_bound`,
-`overlap_region_alpha`, `overlap_region_depth` and `limited_overlap_bounds`.
+**Contract (additive).** `Diagnostics.overlap` (new, optional) carries the violation share, the
+regions (rule, held-out units, of them treated, the missing arm, the upper bound), and the
+limited-overlap share and flag. A new design check, `overlap regions (positivity)`, records pass or
+fail, and is present exactly when the region check judged something. `AnalysisPolicy` gains
+`overlap_region_bound`, `overlap_region_alpha`, `overlap_region_depth` and `limited_overlap_bounds`;
+the thresholds and `n_min` are read from the policy, not repeated in the diagnostics (see the
+Changelog).
 
 ## Designs
 
@@ -240,3 +242,12 @@ development; `silent_trimming` answers every replication of `structural_stratum`
 ## Changelog
 
 - v1 (2026-09-26): initial registration.
+- v1, contract correction before any run (2026-09-26). The registration first said
+  `Diagnostics.overlap` would also repeat the method name, the three thresholds, `n_min`, the
+  limited-overlap bounds and whether the region check ran. Implementing it put the MCP server's tool
+  listing, which embeds the result schema twice, over its 55,000-byte budget (56,616; the stdio
+  transport fails every call above 65,536). Those fields repeat the policy the caller passed (and
+  whose digest is in the provenance) and the design check's presence, so they were dropped rather
+  than the budget raised; with them gone and two exact schema compactions in the server, the listing
+  is 54,970 bytes. No T10 run had been made. The method, the designs, the seed, every bar and every
+  seeded defect are unchanged; the harness reads nothing the dropped fields held.
