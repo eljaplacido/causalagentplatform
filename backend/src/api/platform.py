@@ -389,7 +389,11 @@ async def get_platform_metrics(
       - Aggregate totals
     """
     now = datetime.now(UTC)
-    four_weeks_ago = now - timedelta(weeks=4)
+    # The four weeks ending with this one, oldest first, each keyed by its Monday.
+    this_monday = (now - timedelta(days=now.weekday())).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    mondays = [this_monday - timedelta(weeks=k) for k in (3, 2, 1, 0)]
 
     weekly_sessions: list[WeeklySessionMetric] = []
     policy_patterns: list[PolicyPattern] = []
@@ -406,7 +410,9 @@ async def get_platform_metrics(
         # Grouped here, not in SQL: strftime() is SQLite's, and on PostgreSQL the
         # failed statement also aborted the transaction, so every query after it in
         # this session failed too and the endpoint returned nothing but padding.
-        # '%Y-%W' is the same week key SQLite's strftime produced.
+        weeks: dict[datetime, dict[str, Any]] = {
+            m: {"sessions": set(), "approved": 0, "total": 0, "escalated": 0} for m in mondays
+        }
         try:
             weekly_rows = await session.execute(
                 typed_text(
@@ -416,49 +422,34 @@ async def get_platform_metrics(
                     "  AND session_id IS NOT NULL",
                     cutoff=TIMESTAMP,
                 ),
-                {"cutoff": four_weeks_ago},
+                {"cutoff": mondays[0]},
             )
-            weeks: dict[str, dict[str, Any]] = {}
             for row in weekly_rows.mappings():
                 at = _as_utc(row["created_at"])
                 if at is None:
                     continue
-                week = weeks.setdefault(
-                    at.strftime("%Y-%W"),
-                    {"start": at, "sessions": set(), "approved": 0, "total": 0, "escalated": 0},
+                monday = (at - timedelta(days=at.weekday())).replace(
+                    hour=0, minute=0, second=0, microsecond=0
                 )
-                week["start"] = min(week["start"], at)
+                week = weeks.get(monday)
+                if week is None:
+                    continue
                 week["sessions"].add(row["session_id"])
                 week["total"] += 1
                 week["approved"] += row["guardian_verdict"] == "APPROVED"
                 week["escalated"] += row["guardian_verdict"] == "REQUIRES_ESCALATION"
-            for key in sorted(weeks)[:4]:
-                week = weeks[key]
-                ws = week["start"].replace(microsecond=0)
-                total_checks = max(week["total"], 1)
-                weekly_sessions.append(
-                    WeeklySessionMetric(
-                        week=_week_label(ws),
-                        week_start=ws.isoformat(),
-                        session_count=len(week["sessions"]),
-                        approval_rate=round(week["approved"] / total_checks, 3),
-                        escalation_count=week["escalated"],
-                    )
-                )
         except Exception as exc:
             log.warning("platform.metrics.weekly_query_failed", error=str(exc))
 
-        # Pad to 4 weeks if fewer
-        while len(weekly_sessions) < 4:
-            idx = len(weekly_sessions)
-            week_dt = now - timedelta(weeks=(3 - idx))
+        for monday in mondays:
+            week = weeks[monday]
             weekly_sessions.append(
                 WeeklySessionMetric(
-                    week=_week_label(week_dt),
-                    week_start=(week_dt - timedelta(days=week_dt.weekday())).isoformat(),
-                    session_count=0,
-                    approval_rate=0.0,
-                    escalation_count=0,
+                    week=_week_label(monday),
+                    week_start=monday.isoformat(),
+                    session_count=len(week["sessions"]),
+                    approval_rate=round(week["approved"] / max(week["total"], 1), 3),
+                    escalation_count=week["escalated"],
                 )
             )
 

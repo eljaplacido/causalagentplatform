@@ -248,6 +248,56 @@ async def test_metrics_weekly_sessions_padded_to_4(
     assert len(body["weekly_sessions"]) == 4
 
 
+def _monday(weeks_ago: int) -> datetime:
+    """00:00 UTC on the Monday of the week `weeks_ago` weeks before this one."""
+    today = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+    return today - timedelta(days=today.weekday(), weeks=weeks_ago)
+
+
+def _audit_row(at: datetime) -> dict[str, Any]:
+    return {
+        "id": str(uuid.uuid4()),
+        "agent_id": "a",
+        "action_type": "X",
+        "hash": "h",
+        "verdict": "APPROVED",
+        "rules": [],
+        "sid": f"s-{uuid.uuid4()}",
+        "ts": at,
+    }
+
+
+async def test_metrics_weeks_are_the_four_ending_this_week_oldest_first(
+    client: AsyncClient, db_engine: object
+) -> None:
+    """Known truth: k+1 sessions in the week k weeks ago, k = 0..3, and some five
+    weeks ago that fall outside. Before, padding was appended after the real
+    weeks (so the last entry, which the executive page reads as "this week", was
+    padding), and sorted(weeks)[:4] of a 28-day window's five week keys dropped
+    the current week."""
+    rows = [_audit_row(_monday(k) + timedelta(hours=1)) for k in range(4) for _ in range(k + 1)]
+    rows += [_audit_row(_monday(5) + timedelta(hours=1)) for _ in range(7)]
+    # The minute before the window: inside a 28-day cutoff on every day but the
+    # last minute of a Sunday, and in a fifth week key.
+    rows += [_audit_row(_monday(3) - timedelta(minutes=1)) for _ in range(5)]
+    await _seed_audit_log(db_engine, rows)
+    weeks = (await client.get("/api/v1/platform/metrics")).json()["weekly_sessions"]
+    assert [w["session_count"] for w in weeks] == [4, 3, 2, 1]
+    assert [w["week_start"][:10] for w in weeks] == [
+        _monday(k).date().isoformat() for k in (3, 2, 1, 0)
+    ]
+
+
+async def test_metrics_this_weeks_sessions_are_the_last_entry(
+    client: AsyncClient, db_engine: object
+) -> None:
+    now = datetime.now(UTC)
+    await _seed_audit_log(db_engine, [_audit_row(now - timedelta(seconds=5)) for _ in range(3)])
+    weeks = (await client.get("/api/v1/platform/metrics")).json()["weekly_sessions"]
+    assert [w["session_count"] for w in weeks] == [0, 0, 0, 3]
+    assert weeks[-1]["week_start"][:10] == _monday(0).date().isoformat()
+
+
 async def test_metrics_weekly_session_fields(
     client: AsyncClient, db_engine: object
 ) -> None:
