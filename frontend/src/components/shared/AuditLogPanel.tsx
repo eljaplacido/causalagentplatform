@@ -15,6 +15,11 @@ import type { AuditLogRow } from "@/lib/types";
 
 export interface AuditLogPanelProps {
   entries: AuditLogRow[];
+  /**
+   * How many rows the audit log holds (GET /api/governance/audit-log `total`)
+   * when `entries` is one page of them. Without it the badge counts `entries`.
+   */
+  total?: number;
   /** Initially expanded */
   defaultOpen?: boolean;
   className?: string;
@@ -22,6 +27,7 @@ export interface AuditLogPanelProps {
 
 export function AuditLogPanel({
   entries,
+  total,
   defaultOpen = false,
   className,
 }: AuditLogPanelProps) {
@@ -52,8 +58,13 @@ export function AuditLogPanel({
         <span className="text-sm font-semibold text-foreground">
           Audit Trail
         </span>
-        <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-          {entries.length}
+        <span
+          data-testid="audit-log-count"
+          className="ml-auto rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+        >
+          {total !== undefined && total > entries.length
+            ? `latest ${entries.length} of ${total}`
+            : entries.length}
         </span>
       </button>
 

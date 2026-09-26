@@ -420,6 +420,9 @@ export function ApprovalPanel({
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <h3 className="text-base font-bold text-foreground">{item.objectName}</h3>
+            {item.objectNameNote && (
+              <p className="text-xs text-muted-foreground">{item.objectNameNote}</p>
+            )}
             <p className="text-xs text-muted-foreground">
               {objectTypeLabel(item.objectType)} ·{" "}
               <span data-testid="business-domain">{item.businessDomain || "—"}</span>{" "}

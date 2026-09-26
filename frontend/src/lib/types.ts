@@ -266,6 +266,11 @@ export type ReviewQueueStatus =
 export interface ReviewQueueItem {
   id: string;
   objectName: string;
+  /**
+   * Set when the name does not identify the object: the review queue sends an
+   * edge's relation type ("CAUSES") as its name and no endpoints.
+   */
+  objectNameNote?: string;
   /** The backend's object_type verbatim: CausalEdge | GraphFragment | CausalEntity. */
   objectType: string;
   /**

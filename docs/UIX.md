@@ -297,7 +297,10 @@ classification, which the review-queue endpoint does not return. Until 2026-09-2
 business domain to `CynefinBadge`, which crashed on it; the badge now renders any value that is
 not a Cynefin domain as a neutral "Unclassified", never as a real domain.
 The type is the backend's `object_type`, labelled; the submitted time is `created_at`, or a dash
-when there is none. The page enters mock mode (with `NEXT_PUBLIC_ENABLE_MOCK_FALLBACK=true`)
+when there is none. The queue sends an edge's relation type as its name and not its endpoints, so
+an edge row reads "CAUSES edge" and says its endpoints are not in the review queue. The audit
+panel's badge shows the log's `total` beside the rows fetched ("latest 50 of 267"), not the page
+size. The page enters mock mode (with `NEXT_PUBLIC_ENABLE_MOCK_FALLBACK=true`)
 only when the review queue itself cannot be reached; an audit-log failure alone is reported in
 the audit panel and leaves decisions enabled. Across the governance, incidents and analyst pages
 a 401 or 403 (other than a Guardian block) reads "not authorised", not "backend unavailable" or

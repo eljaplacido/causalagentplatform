@@ -583,3 +583,50 @@ describe("GovernancePage — the queue shows the backend's risk tier and submitt
     expect(within(queue).queryByText("Medium")).toBeNull();
   });
 });
+
+// ─── What the tour found (2026-09-26) ─────────────────────────────────────────
+//
+// Every edge row was titled "CAUSES": the review queue sends an edge's relation
+// type as its `name` (registry.py _REVIEWABLE_TABLES: causal_edges.edge_type)
+// and no endpoints. The audit badge read "50": the page asks for page_size 50,
+// and the badge counted the rows on the page, not the log's `total`.
+describe("GovernancePage — edge titles and the audit count", () => {
+  it("says an edge row names its relation type only, not its endpoints", async () => {
+    governanceApiMock.reviewQueue.mockResolvedValue([
+      { ...backendQueueItem, name: "CAUSES" },
+    ]);
+    governanceApiMock.auditLog.mockResolvedValue(auditResponse([]));
+
+    renderPage();
+
+    const row = await screen.findByTestId("first-review-item");
+    expect(row).toHaveTextContent("CAUSES edge");
+    expect(within(row).getByTestId("review-item-name-note")).toHaveTextContent(
+      /endpoints are not in the review queue/i
+    );
+  });
+
+  it("keeps a name that carries source → target as sent", async () => {
+    governanceApiMock.reviewQueue.mockResolvedValue([backendQueueItem]);
+    governanceApiMock.auditLog.mockResolvedValue(auditResponse([]));
+
+    renderPage();
+
+    const row = await screen.findByTestId("first-review-item");
+    expect(row).toHaveTextContent(ITEM_NAME);
+    expect(within(row).queryByTestId("review-item-name-note")).toBeNull();
+  });
+
+  it("shows the audit log's total, and says the rows are the latest page", async () => {
+    governanceApiMock.reviewQueue.mockResolvedValue([]);
+    const rows = Array.from({ length: 50 }, (_, i) => auditRow(`a-${i}`, "GOVERNANCE_APPROVE"));
+    governanceApiMock.auditLog.mockResolvedValue({ entries: rows, total: 267, page: 1, page_size: 50 });
+
+    renderPage();
+
+    const panel = await screen.findByTestId("audit-log-panel");
+    await waitFor(() =>
+      expect(within(panel).getByTestId("audit-log-count")).toHaveTextContent("latest 50 of 267")
+    );
+  });
+});

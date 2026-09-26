@@ -202,6 +202,14 @@ export function ReviewQueue({
                 >
                   <td className="px-4 py-3 font-medium text-foreground">
                     {item.objectName}
+                    {item.objectNameNote && (
+                      <span
+                        data-testid="review-item-name-note"
+                        className="block text-xs font-normal text-muted-foreground"
+                      >
+                        {item.objectNameNote}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {objectTypeLabel(item.objectType)}

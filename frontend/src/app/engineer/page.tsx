@@ -327,14 +327,14 @@ export default function EngineerPage() {
     queryKey: ["governance-audit-log"],
     queryFn: async () => {
       const page = await governanceApi.auditLog({ page_size: 100 });
-      return page.entries.map(toAuditLogRow);
+      return { rows: page.entries.map(toAuditLogRow), total: page.total };
     },
   });
 
   const connectors = connectorsQuery.data ?? [];
   const fragments = fragmentsQuery.data ?? [];
   const driftAlerts = driftQuery.data ?? [];
-  const allAuditEntries = auditQuery.data ?? [];
+  const allAuditEntries = auditQuery.data?.rows ?? [];
 
   const healthyCount = connectors.filter((c) => c.healthy).length;
 
@@ -696,7 +696,11 @@ export default function EngineerPage() {
                     "Recent Audit Entries"
                   )}
                 </h2>
-                <AuditLogPanel entries={auditEntries} defaultOpen />
+                <AuditLogPanel
+                  entries={auditEntries}
+                  total={selectedFragmentId ? undefined : auditQuery.data?.total}
+                  defaultOpen
+                />
               </section>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-12">

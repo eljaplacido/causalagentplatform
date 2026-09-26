@@ -232,6 +232,9 @@ const MOCK_AUDIT_ENTRIES: AuditLogRow[] = [
 
 // ─── Backend response → frontend type mapper ──────────────────────────────────
 
+const EDGE_NAME_NOTE =
+  "Relation type only: this edge's endpoints are not in the review queue.";
+
 /**
  * governance.py ReviewQueueItem → the row the page shows. Only what the backend
  * sends is carried: it sends no risk tier and no submitter, so those are null
@@ -240,9 +243,13 @@ const MOCK_AUDIT_ENTRIES: AuditLogRow[] = [
  * "marketing"), kept as text: it is not a Cynefin classification.
  */
 function mapBackendItem(item: ReviewQueueItemResponse): ReviewQueueItem {
+  // An edge's `name` is its relation type (causal_edges.edge_type) and the item
+  // carries no endpoints: every edge row read "CAUSES". Say what the name is.
+  const edgeTypeOnly = item.object_type === "CausalEdge" && !item.name.includes("→");
   return {
     id: item.id,
-    objectName: item.name,
+    objectName: edgeTypeOnly ? `${item.name} edge` : item.name,
+    ...(edgeTypeOnly ? { objectNameNote: EDGE_NAME_NOTE } : {}),
     objectType: item.object_type,
     // The backend's `domain` is the business domain (causal_edges.domain, e.g.
     // "devops"), not a Cynefin domain; the endpoint carries no Cynefin
@@ -323,11 +330,12 @@ export default function GovernancePage() {
     data: backendAuditLog,
     isError: auditError,
     error: auditErrorValue,
-  } = useQuery<AuditLogRow[]>({
+  } = useQuery<{ rows: AuditLogRow[]; total: number }>({
     queryKey: AUDIT_LOG_QUERY_KEY,
     queryFn: async () => {
+      // The latest 50 rows; `total` is how many the log holds.
       const page = await governanceApi.auditLog({ page_size: 50 });
-      return page.entries.map(toAuditLogRow);
+      return { rows: page.entries.map(toAuditLogRow), total: page.total };
     },
     retry: 1,
     staleTime: 30_000,
@@ -357,7 +365,7 @@ export default function GovernancePage() {
   // mock set). Nothing is synthesized client-side.
   const auditEntries: AuditLogRow[] = auditIsMock
     ? MOCK_AUDIT_ENTRIES
-    : (backendAuditLog ?? []);
+    : (backendAuditLog?.rows ?? []);
   const auditUnavailable = auditError && !auditIsMock && !backendAuditLog;
 
   const dataSource = isMockMode
@@ -607,7 +615,11 @@ export default function GovernancePage() {
                   : "The audit log could not be loaded from the governance backend."}
               </div>
             ) : (
-              <AuditLogPanel entries={auditEntries} defaultOpen={false} />
+              <AuditLogPanel
+                entries={auditEntries}
+                total={auditIsMock ? undefined : backendAuditLog?.total}
+                defaultOpen={false}
+              />
             ))}
         </div>
 
