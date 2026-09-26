@@ -119,8 +119,8 @@ priority first, and the priorities put hardening the platform before new estimat
   with a parity test (`septa-4`; it found `causal_impact` judging every earlier answer as
   observational, and `causal_decide` dropping `treatment_levels`). Open: protect `main`
   (`septa-1`; needs a public repository or a paid plan); a first PyPI release of the three
-  packages (`septa-2`); SeptaCore's optional stages that fit (`septa-5`); deleting the legacy MCP
-  server once no external client needs it (`septa-6`).
+  packages (`septa-2`); SeptaCore's optional stages that fit (`septa-5`). Also done: the legacy
+  MCP server, `backend/mcp_server`, deleted; `packages/causal-mcp` is the one server (`septa-6`).
 - **p2, the kernel and decision layer.** Done: DiD with covariates (doubly robust) and
   not-yet-treated comparisons, T5 v4 (`septa-8`); a switchback carryover check with gated power
   whose flag makes the result contested, T8 v2 (`septa-9`; a carryover too small to bias the

@@ -20,7 +20,7 @@
       "why": "status line, what's in the box, quick-start commands, MCP entry point",
       "subjects": [
         "backend/pyproject.toml",
-        "backend/mcp_server",
+        "packages/causal-mcp",
         "frontend/package.json",
         "launch_backend.sh",
         "docs/CURRENT_STAGE.md"
@@ -28,16 +28,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/pyproject.toml": "cdabd6c6e24ab6d579d2aa1de3d0d6db5b8802e87b10489cc3df43a2d34a47ed",
-          "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
+          "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
+          "packages/causal-mcp": "ac8ffe5b31a7fc07dfbfaee6156a0003bc0753f30c9a3a730b99d39de085a913",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "47f82f3b25daf272632ad22a9a238b8cb03587eb0cdbb17e856d8cf8105d8143"
+          "docs/CURRENT_STAGE.md": "d88a341f9cdffe82914dfccd7141763c0951cd9374b632b9414c1256fade4fb7"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
+        "by": "Claude (merge of #24/#25/#28 into septa-6: both sides' content present -- legacy server described only as history; T8 v2, Node 24, runner text from main)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -45,7 +45,6 @@
       "subjects": [
         "conformance/declared_not_implemented.json",
         "backend/src",
-        "backend/mcp_server",
         "backend/tests",
         "frontend/src",
         "packages",
@@ -54,10 +53,9 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "98c034273f8f22c34ee6a0f2491101e80aa8c9b62c9120701f6ebc012c611e4d",
+          "conformance/declared_not_implemented.json": "6b574e51ad3b3a62ef58c782f8ec68592326cb4488fedf826bf32115b243907a",
           "backend/src": "c06af80dee95babb1eed74ffbc5435ffe7f1cb1fdc8bf8f8489d087ad42aabe1",
-          "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
+          "backend/tests": "bd98daa5d7f1ec988d20ce624d1615e642ec8ca412d2e0a4fd7d75baabdd1aca",
           "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
           "packages": "f39decf6dcae81c0e60801fa80c933c6547de55348adb3fd3867119423414373",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
@@ -65,7 +63,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
+        "by": "Claude (merge of #24/#25/#28 into septa-6: both sides' content present -- legacy server described only as history; T8 v2, Node 24, runner text from main)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -141,7 +139,7 @@
       "subjects": [
         "backend/src/agents",
         "backend/src/skills",
-        "backend/mcp_server",
+        "packages/causal-mcp",
         "backend/src/orchestration",
         "prompts"
       ],
@@ -150,14 +148,14 @@
         "sha256": {
           "backend/src/agents": "ab6334ee1a9e15e7e3a6bf4647430473456a86799863b8ce80b3110670587aa9",
           "backend/src/skills": "7c14f6095d38b78711081427d4f98e3f621a0a72de4b377d6fc374c346c4ecea",
-          "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
+          "packages/causal-mcp": "ac8ffe5b31a7fc07dfbfaee6156a0003bc0753f30c9a3a730b99d39de085a913",
           "backend/src/orchestration": "026e61993e2c3e51962380e4d4e957cf5d26e650455679bd5e7cdce75c31c2f4",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: re-read the memory tiers; session memory in PostgreSQL is now true, 008_session_state.sql, and the experience buffer's session_state reads run on it too)"
+        "by": "Claude (merge of #24/#25/#28 into septa-6: both sides' content present -- legacy server described only as history; T8 v2, Node 24, runner text from main)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -189,7 +187,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
+        "by": "Claude (merge of #24/#25/#28 into septa-6: both sides' content present -- legacy server described only as history; T8 v2, Node 24, runner text from main)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -253,13 +251,13 @@
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
-          ".github": "405abf54754d93806c64cd703261a4cac70212e22955f1dd3c651a237dbdb2cb",
-          ".gnomon": "ef33b01c3cfb5e5d70d83032e0bc2510e5306a54a9be8f6396daf1bf60f354bd"
+          ".github": "a9782837c71d18b904bb5e7188bdf665d0c614cc841aa872adae9b2d305e29ff",
+          ".gnomon": "25561ccec95ea65980dc9c037b24b494f0963626b71b7eca61dfa00ec72a75f4"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
+        "by": "Claude (merge of #24/#25/#28 into septa-6: both sides' content present -- legacy server described only as history; T8 v2, Node 24, runner text from main)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -280,7 +278,7 @@
           "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
-          "backend/pyproject.toml": "cdabd6c6e24ab6d579d2aa1de3d0d6db5b8802e87b10489cc3df43a2d34a47ed",
+          "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
           ".env.example": "f5dbf40f551d60b4b91d5bbaa9b36a2404f89536421fe51b8bcbf17a6ae1258f",
@@ -289,7 +287,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
+        "by": "Claude (merge of #24/#25/#28 into septa-6: both sides' content present -- legacy server described only as history; T8 v2, Node 24, runner text from main)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -311,12 +309,12 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
-          "backend/pyproject.toml": "cdabd6c6e24ab6d579d2aa1de3d0d6db5b8802e87b10489cc3df43a2d34a47ed",
+          "backend/tests": "bd98daa5d7f1ec988d20ce624d1615e642ec8ca412d2e0a4fd7d75baabdd1aca",
+          "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
-          ".gnomon/ci.sh": "8379e43234946f44d8e569a68c60d42923500ded3012d88bf2a477f5ebecf8aa",
-          "scripts": "bcb39b1862da2e64cdfcc87426508b01d8a673c22627287b339f96ae4bf32a52",
+          ".gnomon/ci.sh": "a05e016e87f09e27989ffc185d06ad2b55c6d31f4e9b9cc2954b8cfdf7a40e45",
+          "scripts": "b02346ce8b8bc5739d9c16f9eca354d6eb179e9d4cd40cbbaa9991a7cc3662f7",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "2ea289c99ef957a2b22a4eed544e76c06e45eb8a2c844d384f9e05eb7f84d940",
           "packages/causal-core/tests": "ca9a8600b9bdeb81d9509afcb864900159868a7509bcc0aa13fff0fc501869f5",
@@ -325,7 +323,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
+        "by": "Claude (merge of #24/#25/#28 into septa-6: both sides' content present -- legacy server described only as history; T8 v2, Node 24, runner text from main)"
       }
     },
     "docs/UIX.md": {
@@ -355,13 +353,13 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "6b029f17fceb5b8a44c784ea601802c8d97c1d2ed3ce9a6a92c2600823826501",
-          "conformance/declared_not_implemented.json": "98c034273f8f22c34ee6a0f2491101e80aa8c9b62c9120701f6ebc012c611e4d",
-          "docs/CURRENT_STAGE.md": "47f82f3b25daf272632ad22a9a238b8cb03587eb0cdbb17e856d8cf8105d8143"
+          "conformance/declared_not_implemented.json": "6b574e51ad3b3a62ef58c782f8ec68592326cb4488fedf826bf32115b243907a",
+          "docs/CURRENT_STAGE.md": "d88a341f9cdffe82914dfccd7141763c0951cd9374b632b9414c1256fade4fb7"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
+        "by": "Claude (merge of #24/#25/#28 into septa-6: both sides' content present -- legacy server described only as history; T8 v2, Node 24, runner text from main)"
       }
     },
     "SECURITY.md": {

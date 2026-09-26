@@ -440,9 +440,9 @@ Negotiates semantic alignment between two domain ontologies at runtime. Determin
 
 ### 3.4 MCP Skill Exposure
 
-External agents (Claude Desktop, custom MCP clients, IDE plugins, gnomon) reach the platform's causal reasoning through a Model Context Protocol server. Internal LangGraph workflows still invoke skills directly.
+External agents (Claude Desktop, custom MCP clients, IDE plugins, gnomon) reach the platform's causal reasoning through its one Model Context Protocol server. Internal LangGraph workflows still invoke skills directly.
 
-**Canonical server: `packages/causal-mcp`** (console script `causal-mcp`; MCP SDK v2; stdio, or stateless HTTP with `--http`). It serves the `packages/causal-core` kernel: typed structured output whose `outputSchema` is the claim contract, every tool annotated read-only, and the contract's JSON Schemas as resources. Setup and tool reference: [`packages/causal-mcp/README.md`](../packages/causal-mcp/README.md). Tests: `packages/causal-mcp/tests/`.
+**The server: `packages/causal-mcp`** (console script `causal-mcp`; MCP SDK v2; stdio, or stateless HTTP with `--http`). It serves the `packages/causal-core` kernel: typed structured output whose `outputSchema` is the claim contract, every tool annotated read-only, and the contract's JSON Schemas as resources. Setup and tool reference: [`packages/causal-mcp/README.md`](../packages/causal-mcp/README.md). Tests: `packages/causal-mcp/tests/`.
 
 | MCP tool name | Purpose |
 |---|---|
@@ -455,20 +455,9 @@ External agents (Claude Desktop, custom MCP clients, IDE plugins, gnomon) reach 
 
 **Recommended call order:** `causal_check_graph` → `causal_identify` → `causal_analyze` (or `causal_decide` when the question is whether to act) → `causal_verify_narrative`, and `causal_impact` when the graph behind an earlier answer is revised. A refusal is relayed with its `missing_information`; the verdict is the tool's, not the calling agent's. Governance actions (approving an edge, acting on a result) are deliberately not tools: an agent must never be able to grant itself an approval.
 
-#### Legacy server: `backend/mcp_server` (deprecated)
+#### History: the legacy backend server
 
-**Entry point:** `backend/mcp_server/server.py` (console script `causal-platform-mcp`; MCP SDK v1). **Wrappers:** `backend/mcp_server/tools.py`. **Tests:** `backend/tests/unit/test_mcp_tools.py`, `backend/tests/integration/test_mcp_stdio.py`. **Demo client:** `backend/mcp_server/examples/client_demo.py`.
-
-It predates the kernel and is deprecated: it warns on startup, no gnomon role is granted it, and it is kept only for client configurations outside this repository that still launch `causal-platform-mcp` (register `legacy-mcp-server`). Do not add tools to it. Its seven tools, for existing callers:
-
-| MCP tool name | Status |
-|---|---|
-| `causal_effect_estimate`, `causal_identification_check` | Delegate to causal-core; without observational data they return no estimate and say why |
-| `causal_sensitivity_analysis` | E-value robustness check (see `sensitivity-analysis` in the register) |
-| `causal_counterfactual_reason`, `causal_intervention_estimate` | Heuristic triage scores, not effects; labelled as such |
-| `causal_drift_detect`, `causal_structure_compare` | Data drift and structural drift against fresh data |
-
-On skill failure a legacy wrapper returns `{ "ok": false, "error": "...", "error_type": "...", "tool": "..." }` rather than raising across the transport (`_error` in `tools.py`).
+Until September 2026 a second server, `backend/mcp_server` (console script `causal-platform-mcp`, MCP SDK v1), served seven backend skills beside the kernel's server, two of them heuristic triage scores rather than effects. It was deprecated on 2026-09-25 and deleted on 2026-09-26 (register entry `legacy-mcp-server`, now in `left_the_list`); `backend/tests/unit/test_one_mcp_server.py` keeps it deleted. A client configuration that still launches `causal-platform-mcp` should launch `causal-mcp`.
 
 #### Adding a causal capability
 
@@ -478,7 +467,7 @@ Not here, and not in `src/skills/`. A new method goes into the kernel with a typ
 
 **Data.** Inline as `{"column": [values]}`, or as `data_path` (CSV, Parquet, JSON). A `data_path` must lie under a directory in `CAUSAL_MCP_DATA_ROOTS` (`os.pathsep`-separated; default: the server's working directory); a path outside is refused as `INVALID_INPUT`.
 
-**Wiring.** `.gnomon/tools.toml` declares `causal_core` (the kernel; a role reaches it by listing `mcp__causal_core`); the legacy `causal` declaration is commented out and no role lists `mcp__causal`. `.gnomon/system.md` requires every causal number an agent states to come from an `mcp__causal_core__*` call, a test run or a script.
+**Wiring.** `.gnomon/tools.toml` declares `causal_core` (the kernel's server, its only MCP server; a role reaches it by listing `mcp__causal_core`). `.gnomon/system.md` requires every causal number an agent states to come from an `mcp__causal_core__*` call, a test run or a script.
 
 **Evidence.** `packages/causal-mcp/tests/test_stdio_flow.py` runs the recommended flow over the real stdio transport and validates each outcome against the published schema; `test_http.py` runs the tools over stateless HTTP; `test_decision_tool.py` covers `causal_decide` and `causal_impact`; `test_query_parity.py` holds every tool's analysis parameters to the kernel's `CausalQuery`, from which they are derived.
 
@@ -657,7 +646,7 @@ Before any new agent or skill is merged into the platform, it must satisfy:
 | EpistemicState schema | `src/semantic_layer/models.py` |
 | Grounding-risk gating (PR-002) | `src/agents/grounding_risk.py` |
 | LLM capability routing | `src/agents/llm_factory.py` |
-| MCP skill exposure | `packages/causal-mcp/` (canonical); `backend/mcp_server/` is legacy (see §3.4) |
+| MCP skill exposure | `packages/causal-mcp/`, the one MCP server (see §3.4) |
 
 ### 9.2 External libraries
 
