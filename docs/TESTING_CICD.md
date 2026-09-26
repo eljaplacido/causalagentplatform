@@ -55,11 +55,11 @@ it does not block on is **ADVISORY** (today only `doc-reconciliation`).
 | one step per `packages/*/pyproject.toml` | That package's own `pytest`, in its own environment | Exit 0, at least one test passed, and **no test skipped**: every skip these suites can produce is a registered gate that did not run, so a skip fails the step. `causal-core` is always named in the summary, RAN or NOT RUN |
 | `<package>-mypy`, one per package | mypy with the package's own strict config, via the ratchet | Findings ≤ its `mypy-<package>` entry in `scripts/lint-baseline.json`, which is 0 for all three; a package with no entry fails |
 | `python-lock` | `scripts/py_lock.py check` over the hash-pinned locks `requirements/{backend,kernel,image,release}.txt` (§5.4), with the environments this run tests | Every lock pins each distribution `==` with its sha256 hashes; every lock is current (the fingerprint of its inputs, the `.in` file and the dependency tables of each `pyproject.toml` it names, equals the one `relock` recorded in `requirements/lock-inputs.json`, so a dependency edit without a re-lock fails); every lock satisfies its local packages' requirements; and the backend toolchain and each package environment **equal** their lock (`backend.txt`, `kernel.txt`: the same distributions at the same versions, nothing missing or extra) with `pip check` clean. SKIPPED without the backend toolchain or a package environment |
-| `bandit-backend`, `bandit-packages` | bandit via the ratchet: `backend/src` and `backend/mcp_server` with `backend/pyproject.toml`'s `[tool.bandit]` (which skips no rule; B608, SQL built from strings, is enforced), and every `packages/*/src` with bandit's defaults | MEDIUM and HIGH findings ≤ the `bandit-*` entries in `scripts/lint-baseline.json`, which are 0. LOW is reported, not counted |
+| `bandit-backend`, `bandit-packages` | bandit via the ratchet: `backend/src` with `backend/pyproject.toml`'s `[tool.bandit]` (which skips no rule; B608, SQL built from strings, is enforced), and every `packages/*/src` with bandit's defaults | MEDIUM and HIGH findings ≤ the `bandit-*` entries in `scripts/lint-baseline.json`, which are 0. LOW is reported, not counted |
 | `secret-scan` | `scripts/secret_scan.py` over every file git would commit from the working tree (tracked, plus untracked and not ignored; never the history) | No private key, provider token or high-entropy credential assignment outside `scripts/secret-scan-allowlist.json`, no stale allowlist entry, and at least its floor of files scanned. Findings print a fingerprint, never the value |
 | `pip-audit-backend`, `pip-audit-packages`, `pip-audit-image` | `scripts/dep_audit.py pip --requirement`: pip-audit over the locks `requirements/backend.txt`, `kernel.txt` and `image.txt` as written (`--require-hashes --disable-pip`: nothing resolved), the pins whose markers hold here. `python-lock` holds the tested environments equal to the first two, so this audits what the tests ran on; the third is what `backend/Dockerfile` installs | No advisory outside `scripts/audit-allowlist.json`, whose entries carry a reason and a `review_by` date; an expired or stale entry fails. SKIPPED when PyPI's advisory service cannot be reached |
 | `npm-audit` | `scripts/dep_audit.py npm`: `npm audit` over `package-lock.json` (every workspace) | As above, for npm. SKIPPED when the registry cannot be reached |
-| `gate-scope` | `scripts/gate_scope.py identity-all` | Every skill module is imported by a test, every tool of both MCP servers (the legacy one live, causal-mcp's from its `TOOLS` table) and every state-changing route is referenced by one, and every route is mounted, apart from the known gaps named in `scripts/gate-scope-floors.json` |
+| `gate-scope` | `scripts/gate_scope.py identity-all` | Every skill module is imported by a test, every tool of the MCP server (`packages/causal-mcp`, read from its `TOOLS` table) and every state-changing route is referenced by one, and every route is mounted, apart from the known gaps named in `scripts/gate-scope-floors.json` |
 | `status-claims` | `scripts/status_claims.py` | `docs/CURRENT_STAGE.md` and `conformance/declared_not_implemented.json` agree with each other and with the tree; every citation quotes its line verbatim, and every `fixed_in` commit is in HEAD's history (a squash or rebase that orphaned it fails) |
 | `contract-parity` | `scripts/contract_parity.py` | The shared enumerations agree across `models.py`, `packages/semantic-types` and `frontend/src/lib/types.ts`, apart from the divergences named in `scripts/contract-parity.json` |
 | `doc-figures` | `scripts/doc_figures.py` | Every benchmark figure the docs quote, as bound in `scripts/doc-figures.json`, matches the value in that benchmark's standing run |
@@ -94,7 +94,7 @@ Only 0 is done. `.septacore.json` maps the same codes to `passed`, `failed`,
 
 | Directory | What it holds |
 |---|---|
-| `unit/` | Skills, agents, the registry, the DB factory, connectors (HTTP mocked), MCP tool wrappers, provenance and contract models, planning, evaluation, and negative controls for the gate's own scripts (`test_contract_parity.py`, `test_secret_scan.py`, `test_dep_audit.py`, `test_skill_refs.py`), and for the supply-chain checks outside it (`test_py_lock.py`, `test_image_scan.py`, `test_sbom_check.py`) |
+| `unit/` | Skills, agents, the registry, the DB factory, connectors (HTTP mocked), provenance and contract models, planning, evaluation, and negative controls for the gate's own scripts (`test_contract_parity.py`, `test_secret_scan.py`, `test_dep_audit.py`, `test_skill_refs.py`), and for the supply-chain checks outside it (`test_py_lock.py`, `test_image_scan.py`, `test_sbom_check.py`) |
 | `integration/` | FastAPI routes through `httpx`: governance approval flow, the reject authority (an APPROVED verdict for `GOVERNANCE_REJECT`, and the governance page's own reject bodies end to end, `test_governance_reject_verdict.py`), recorded reasons, intervention roles, the role matrix and domain isolation (`test_rbac_matrix.py`: every state-changing route has a row, and is refused without a granted role), the database's own domain isolation on PostgreSQL (`test_rls_domain_isolation.py`), session API and store, the decision ledger (checkpoints and anchored verification included) and follow-ups, the assumption registry (`/api/v1/models`), and the MCP server over stdio |
 | `guardian/` | Guardian bypass prevention, verdict binding (signed, subject-bound, single-use), drafts that cannot approve themselves, a risk score and cycle count the caller cannot supply, the `audit_write` skill, and `audit_log` refusing UPDATE and DELETE |
 
@@ -211,14 +211,25 @@ Each file's `_comment` records when, and at which commit, its numbers were measu
 
 ### 5.1 CI (`.github/workflows/ci.yml`)
 
-Two jobs, on every push, on pull requests to `main`, and weekly on a schedule (so an advisory
-or a fix published since the last push surfaces without waiting for one). The gate job:
+Two jobs, on pushes to `main`, on pull requests to `main`, and weekly on a schedule (so an
+advisory or a fix published since the last push surfaces without waiting for one). A branch push
+does not run CI on its own; its pull request does.
+
+**Where jobs run.** `runs-on` reads the repository variable `CI_RUNS_ON`, a JSON runner label or
+list; unset, jobs run on GitHub's `ubuntu-latest`. While hosted minutes are unavailable it names
+self-hosted runners (label `causalplatform-ci`), which run one job each, so several can share a
+host: the database service takes a loopback port Docker chooses, and image tags carry the run
+id. Deleting the variable returns every job to hosted runners. A job on a self-hosted runner runs
+on that host as the runner's user, dependency updates included.
+
+The gate job:
 
 1. Check out with full history. The register cites some claims at the revision where they were
    made (`file@rev:line`), and a shallow clone cannot verify those.
-2. Set up Python 3.12 and Node 20; cache the benchmark data (keyed on the pre-registrations).
+2. Set up Python 3.12 and Node 24 (LTS; 20 reached end of life in April 2026); cache the benchmark data (keyed on the pre-registrations).
    A `postgres:16-alpine` service container (health-checked with `pg_isready`, a CI-only
-   throwaway password) runs beside the job for `backend-pytest-postgres`.
+   throwaway password, listening on loopback only) runs beside the job for
+   `backend-pytest-postgres`.
 3. Build `backend/.venv` (backend plus `causal-core` and `causal-decision`) and
    `packages/causal-core/.venv` (the three packages with their test extras) from their
    hash-pinned locks (§5.4): `pip install --require-hashes --no-deps -r requirements/<lock>.txt`,
@@ -330,10 +341,31 @@ python3 scripts/py_lock.py sync kernel --python packages/causal-core/.venv/bin/p
 ```
 
 `sync` installs the lock and the local packages as above, uninstalls whatever the lock does not
-list, and re-runs the check. Dependabot (`.github/dependabot.yml`) opens weekly PRs for the locks
-(pins inside the ranges), the `pyproject.toml` ranges (only when a release falls outside one),
-npm, the GitHub Actions and the two base images. A PR that changes a range is red until someone
-re-locks on its branch.
+list, and re-runs the check.
+
+#### Dependabot PRs
+
+Dependabot (`.github/dependabot.yml`) opens weekly PRs for the locks (pins inside the ranges),
+the `pyproject.toml` ranges (only when a release falls outside one), npm, the GitHub Actions and
+the two base images. How they are handled:
+
+- **The gate decides.** A bot PR runs the same CI as any other: `.gnomon/ci.sh` and the image
+  job (build, Trivy). Green is necessary, not sufficient: read what moved. A PR that changes a
+  range is red until someone re-locks on its branch, which is the review it needs. A red npm PR
+  is often the bot's lock, not the update: re-apply the `package.json` change on a branch and
+  regenerate `package-lock.json` there (`npx npm@11 install --package-lock-only`; npm 10's
+  audit fix crashes on this workspace). Then check that `npm ls react react-dom` shows exactly
+  one copy of each.
+- **Majors are ledger items.** A semver-major in a pyproject is ignored by the bot. An npm major
+  arrives alone, outside the groups. One that needs code or a companion change gets a
+  `septacore create --provenance "dependabot:#<n>"` item that records what its CI showed, and an
+  ignore rule in `dependabot.yml` naming that id until the item is done (next and
+  eslint-config-next 16: septa-57; TypeScript 7: septa-58). The node base image stays on an LTS
+  line; the rule ignoring newer lines names septa-59.
+- **Pins the ratchets depend on are never moved by the bot.** ruff, mypy, bandit and pip-audit
+  are pinned to a minor because the lint and security ratchets (§4) count findings per version.
+  The pyproject blocks ignore them entirely. Moving one is done by hand, with the baseline
+  re-measured in the same change.
 
 ---
 

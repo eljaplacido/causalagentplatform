@@ -1,7 +1,7 @@
 # Quickstart — Causal Platform
 
 > **Target:** developers and coding agents setting up a local checkout.
-> **Assumption:** Linux or macOS with Python 3.12+ and Node 20+. Docker is optional.
+> **Assumption:** Linux or macOS with Python 3.12+ and Node 24+ (the LTS line CI uses). Docker is optional.
 > Coding agents: read the root [`AGENTS.md`](../AGENTS.md) first.
 
 ---
@@ -40,7 +40,8 @@ backend/.venv/bin/python -m pip install --no-deps --no-build-isolation \
 ### Kernel virtual environment
 
 `packages/causal-core`, `packages/causal-decision` and `packages/causal-mcp` share one environment
-of their own (causal-mcp is on MCP SDK v2, the backend's legacy server on v1):
+of their own (causal-mcp is on MCP SDK v2, and the kernel suites have test dependencies the backend's
+environment does not):
 
 ```bash
 python3 -m venv packages/causal-core/.venv
@@ -248,9 +249,9 @@ bash .gnomon/ci.sh                                         # the gate, backend-p
 
 ---
 
-## 7. Try the MCP servers
+## 7. Try the MCP server
 
-**The kernel server (canonical).** `packages/causal-mcp`, console script `causal-mcp`:
+The one MCP server is `packages/causal-mcp`, console script `causal-mcp`:
 
 ```bash
 packages/causal-core/.venv/bin/causal-mcp                   # stdio
@@ -260,13 +261,8 @@ packages/causal-core/.venv/bin/causal-mcp --http --port 8765   # stateless HTTP
 Point an MCP client at it with `{"mcpServers": {"causal": {"command": "/abs/path/to/packages/causal-core/.venv/bin/causal-mcp"}}}`.
 Its tools, flow and `data_path` rules: [`packages/causal-mcp/README.md`](../packages/causal-mcp/README.md).
 
-**The legacy demo.** `backend/mcp_server/examples/client_demo.py` spawns the *legacy* server
-(`python -m mcp_server.server`, console script `causal-platform-mcp`, deprecated) and calls two of
-its tools; on its eight toy rows the estimate is a `LOW_N` refusal:
-
-```bash
-cd backend && .venv/bin/python -m mcp_server.examples.client_demo
-```
+(The backend's legacy server, console script `causal-platform-mcp`, was deleted in September 2026;
+a client configuration that still launches it should launch `causal-mcp`.)
 
 ---
 
@@ -307,7 +303,7 @@ causalplatform/
 ├── packages/
 │   ├── causal-core/         # the causal kernel (identification, estimation, refutation)
 │   ├── causal-decision/     # verdicts, decision ledger, outcome follow-up
-│   ├── causal-mcp/          # the kernel's MCP server (canonical)
+│   ├── causal-mcp/          # the kernel's MCP server (the only one)
 │   └── semantic-types/      # published TypeScript contract
 ├── backend/                 # FastAPI platform
 │   ├── src/
@@ -316,7 +312,6 @@ causalplatform/
 │   │   ├── db/              # engine factories (SQLite / PostgreSQL, Neo4j)
 │   │   ├── skills/          # backend skills; causal ones delegate to the kernel
 │   │   └── semantic_layer/  # Pydantic models + registry
-│   ├── mcp_server/          # legacy MCP server (deprecated)
 │   ├── tests/               # unit, integration, guardian
 │   └── pyproject.toml
 ├── frontend/                # Next.js UI
