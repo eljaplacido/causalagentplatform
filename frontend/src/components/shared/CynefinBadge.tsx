@@ -142,7 +142,11 @@ export function CynefinBadge({
       data-domain={known ?? "UNKNOWN"}
       title={config.description}
       role="img"
-      aria-label={`Cynefin domain: ${config.label}, confidence: ${formatConfidence(confidence)}`}
+      aria-label={
+        known
+          ? `Cynefin domain: ${config.label}, confidence: ${formatConfidence(confidence)}`
+          : `Unrecognised Cynefin domain: ${config.label}`
+      }
       className={cn(
         "inline-flex items-center rounded-full border font-medium",
         config.bg,

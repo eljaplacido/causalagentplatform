@@ -8,7 +8,7 @@ the bars are fixed before the code is run against them, and the runs that failed
 
 | Directory | Gate | What it tests | System under test | Runs |
 |---|---|---|---|---|
-| `t0/` | T0 | Analytic structural causal models with closed-form truth: identification against the literature and y0, estimator bias and coverage, refuter false-alarm rate and power | `packages/causal-core` | every PR: `pytest -m t0` |
+| `t0/` | T0 | Analytic structural causal models with closed-form truth: identification against the literature and y0, estimator bias and coverage, refuter and triangulation false-alarm rate and power (v4: triangulation power at n = 2,000) | `packages/causal-core` | every PR: `pytest -m t0` |
 | `t2-ihdp/` | T2 | Semi-synthetic: real IHDP covariates with simulated potential outcomes | `causal_core.analyze` | CI, and on demand; needs the data cached or `CAUSAL_FETCH=1` |
 | `t3-lalonde/` | T3 | Real observational data against an experimental benchmark (LaLonde / NSW) | `causal_core.analyze` | CI, and on demand; needs the data cached or `CAUSAL_FETCH=1` |
 | `t4-segments/` | T4 | Effects within declared segments: per-segment and family-wise coverage, heterogeneity test, Holm | `causal_core.segments` via `analyze` | every PR: `pytest -m t4` |
@@ -36,7 +36,7 @@ packages: `packages/causal-core/src/causal_core/bench/` and
    there is exactly one copy of each.
 2. **Keep failing runs.** Every run is committed, pass or fail, and none is deleted or overwritten.
    `t0/results/2026-09-19-v1-run1.json` and `t2-ihdp/results/2026-09-19-v1-run1.json` failed; they
-   are why T0 is at version 3 and why the AIPW solver changed.
+   are why T0 went to version 2 and why the AIPW solver changed.
 3. **Bars change only with a version bump and a changelog.** Increment `[meta] version` and add a
    dated entry to the pre-registration's `## Changelog` saying what changed, why, and which run
    prompted it. Runs under an old version stay, named with their version.

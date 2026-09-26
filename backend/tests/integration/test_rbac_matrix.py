@@ -13,8 +13,9 @@ Preconditions
   - The SQLite test engine (`db_engine`) is live for every request.
 
 Postconditions (from CYBERSECURITY.md §4.0-§4.2 and the register's `leaves_by`)
-  1. Every mounted state-changing route (POST/PUT/PATCH/DELETE) has a matrix row
-     and depends on that row's guard. A matrix row names a mounted route.
+  1. Every mounted route but PUBLIC_ROUTES (the liveness probe) has a matrix
+     row and depends on that row's guard -- reads included, so a token holding
+     no platform role reads nothing. A matrix row names a mounted route.
   2. For every matrix row, a token holding no role the row grants gets 403; a
      token holding a granted role does not get 403.
   3. A user whose `domains` claim is one domain reads no semantic object of
@@ -45,7 +46,7 @@ from sqlalchemy import text
 
 from src.api.main import app
 from src.middleware.auth import get_current_user
-from src.middleware.rbac import ALL_ROLES, ROUTE_ROLES, domain_scope, guard
+from src.middleware.rbac import ALL_ROLES, PUBLIC_ROUTES, ROUTE_ROLES, domain_scope, guard
 from src.semantic_layer.provenance import ProvenanceRecord, ProvenanceRecordType
 from src.semantic_layer.provenance_store import ProvenanceStore
 from tests.conftest import (
@@ -103,21 +104,23 @@ def depends_on(route: APIRoute, dependency: Any) -> bool:
 
 
 def unguarded(application: FastAPI) -> list[str]:
-    """State-changing routes without a matrix row, or not depending on their row."""
+    """Non-public routes without a matrix row, or not depending on their row."""
     out = []
     for method, path, route in mounted_routes(application):
-        if method not in STATE_CHANGING:
-            continue
         key = (method, path)
+        if key in PUBLIC_ROUTES:
+            continue
         if key not in ROUTE_ROLES or not depends_on(route, guard(method, path)):
             out.append(f"{method} {path}")
     return out
 
 
-def test_every_state_changing_route_is_guarded_by_its_matrix_row() -> None:
+def test_every_route_but_the_public_ones_is_guarded_by_its_matrix_row() -> None:
     assert unguarded(app) == []
     served = {(m, p) for m, p, _ in mounted_routes(app)}
     assert sum(1 for m, _ in served if m in STATE_CHANGING) >= 17
+    assert sum(1 for m, _ in served if m == "GET") >= 30
+    assert served >= PUBLIC_ROUTES
 
 
 def test_every_matrix_row_is_a_mounted_route_that_depends_on_it() -> None:
@@ -129,7 +132,7 @@ def test_every_matrix_row_is_a_mounted_route_that_depends_on_it() -> None:
 
 
 def test_the_coverage_check_bites_on_an_unguarded_route() -> None:
-    """Negative control: a POST route on get_current_user alone is reported."""
+    """Negative control: routes on get_current_user alone are reported, reads too."""
     probe = FastAPI()
 
     @probe.post("/api/semantic/drafts")
@@ -138,7 +141,17 @@ def test_the_coverage_check_bites_on_an_unguarded_route() -> None:
     @probe.post("/api/v1/not-in-the-matrix")
     async def unknown(user: dict[str, Any] = Depends(get_current_user)) -> None: ...
 
-    assert unguarded(probe) == ["POST /api/semantic/drafts", "POST /api/v1/not-in-the-matrix"]
+    @probe.get("/api/v1/incidents/")
+    async def open_read(user: dict[str, Any] = Depends(get_current_user)) -> None: ...
+
+    @probe.get("/health")
+    async def health() -> None: ...
+
+    assert unguarded(probe) == [
+        "POST /api/semantic/drafts",
+        "POST /api/v1/not-in-the-matrix",
+        "GET /api/v1/incidents/",
+    ]
 
 
 def test_guard_refuses_a_key_the_matrix_does_not_hold() -> None:
@@ -214,14 +227,16 @@ async def test_each_granted_role_is_admitted(
         assert resp.status_code != 403, f"{method} {path} as {role}: {resp.text[:200]}"
 
 
-async def test_a_token_with_no_roles_is_refused_on_every_state_changing_route(
+async def test_a_token_with_no_roles_is_refused_on_every_guarded_route(
     db_engine: object,
 ) -> None:
-    async with _client({"uid": "nobody"}) as client:
+    """Reads included: the incidents list, the intervention decisions (reason and
+    decided_by), the decision ledger and the metrics all answered a role-less
+    token with 200 before they had matrix rows."""
+    async with _client({"uid": "nobody", "roles": []}) as client:
         for method, path in ROUTE_ROLES:
-            if method in STATE_CHANGING:
-                resp = await _call(client, method, path)
-                assert resp.status_code == 403, f"{method} {path}"
+            resp = await _call(client, method, path)
+            assert resp.status_code == 403, f"{method} {path}: {resp.status_code}"
 
 
 # ── The two routes nothing else calls ─────────────────────────────────────────

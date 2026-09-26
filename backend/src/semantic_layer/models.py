@@ -222,6 +222,24 @@ class LineageRecord(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
+class DataSource(BaseModel):
+    """The data a semantic object was drafted from: where it is, and what it was.
+
+    Declared by whoever submits the draft, and carried in the object's version
+    history from revision 1. ``digest`` pins the content -- a reference alone
+    names a location whose contents can change under it. Approval requires one
+    (septa-15): an object whose lineage cannot say what it came from is not
+    promoted.
+    """
+
+    model_config = _SHARED_CONFIG
+
+    kind: str = Field("dataset", min_length=1, max_length=64)
+    ref: str = Field(..., min_length=1, max_length=2048)
+    digest: str = Field(..., pattern=r"^sha256:[0-9a-f]{64}$")
+    description: str | None = Field(None, max_length=2000)
+
+
 class Constraint(BaseModel):
     """Feasibility constraint on a Treatment."""
 
@@ -320,6 +338,10 @@ class CausalEntity(BaseModel):
     approved_by: UserRef | None = None
     lineage: list[LineageRecord] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
+    #: Server-kept: 1 at the draft, +1 per recorded state change. Every revision is
+    #: a row in semantic_object_versions; this row is the current one.
+    revision: int = Field(1, ge=1)
+    source_data: DataSource | None = None
 
     @field_validator("approved_at", mode="before")
     @classmethod
@@ -435,8 +457,12 @@ class CausalEdge(BaseModel):
     lineage: list[LineageRecord] = Field(default_factory=list)
     domain: str
     #: Who drafted the edge. POST /api/semantic/drafts stamps it from the token, as
-    #: it does for entities and fragments; None for edges drafted before 011.
+    #: it does for entities and fragments; None for edges drafted before 012.
     created_by: UserRef | None = None
+    #: Server-kept: 1 at the draft, +1 per recorded state change. Every revision is
+    #: a row in semantic_object_versions; this row is the current one.
+    revision: int = Field(1, ge=1)
+    source_data: DataSource | None = None
 
     @model_validator(mode="after")
     def validate_no_self_edge(self) -> CausalEdge:
@@ -479,6 +505,10 @@ class GraphFragment(BaseModel):
     guardian_verdict_ref: UUID | None = None
     created_by: UserRef
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    #: Server-kept: 1 at the draft, +1 per recorded state change. Every revision is
+    #: a row in semantic_object_versions; this row is the current one.
+    revision: int = Field(1, ge=1)
+    source_data: DataSource | None = None
 
     @model_validator(mode="after")
     def validate_approved_has_verdict(self) -> GraphFragment:
@@ -514,6 +544,10 @@ class Assumption(BaseModel):
     next_review_due: datetime | None = None
     sensitivity_result: SensitivityResult | None = None
     domain: str
+    #: Server-kept: 1 at the draft, +1 per recorded state change. Every revision is
+    #: a row in semantic_object_versions; this row is the current one.
+    revision: int = Field(1, ge=1)
+    source_data: DataSource | None = None
 
 
 class Intervention(BaseModel):
@@ -599,6 +633,130 @@ class AuditEntry(BaseModel):
         from_attributes=True,
         frozen=True,  # AuditEntry is immutable after creation
     )
+
+
+# ── Versions and lineage (septa-14, septa-15) ────────────────────────────────
+
+
+class VersionChange(StrEnum):
+    """What produced a version of a semantic object."""
+
+    PROPOSED = "PROPOSED"   # the draft, revision 1
+    APPROVED = "APPROVED"   # promote_to_approved
+    REJECTED = "REJECTED"   # reject_draft (stored status DEPRECATED)
+    #: a state that existed before versioning, recorded as found; or a change the
+    #: platform recorded on a draft (record_edge_sensitivity: a sensitivity result)
+    RECORDED = "RECORDED"
+
+
+class SemanticObjectVersion(BaseModel):
+    """One immutable version of a semantic object: its complete stored state at a revision.
+
+    A row of the append-only ``semantic_object_versions`` table. ``state`` is the
+    object's row, column for column, as it stood at ``revision``.
+    """
+
+    model_config = _SHARED_CONFIG
+
+    object_type: str
+    object_id: UUID
+    revision: int = Field(..., ge=1)
+    change: VersionChange
+    state: dict[str, Any]
+    domain: str
+    actor: UserRef | None = None
+    agent_id: str | None = None
+    agent_version: str | None = None
+    verdict_ref: UUID | None = None
+    recorded_at: datetime
+
+
+class LineageActor(BaseModel):
+    """Who drafted an object: the person, the agent it came through, and how that is known."""
+
+    model_config = _SHARED_CONFIG
+
+    person: UserRef | None = None
+    agent_id: str | None = None
+    agent_version: str | None = None
+    at: datetime | None = None
+    revision: int | None = None
+    #: "version" when revision 1 recorded it; "created_by" when only the row says so.
+    attributed_from: str
+
+
+class LineageApproval(BaseModel):
+    """Who approved an object, when, and on which verdict."""
+
+    model_config = _SHARED_CONFIG
+
+    person: UserRef | None = None
+    at: datetime | None = None
+    verdict_id: UUID | None = None
+    revision: int | None = None
+    attributed_from: str
+
+
+class LineageVerdict(BaseModel):
+    """A Guardian verdict, or a recorded human decision, issued for an object."""
+
+    model_config = _SHARED_CONFIG
+
+    id: UUID
+    action_type: str
+    guardian_verdict: str
+    policy_rules_cited: list[str] = Field(default_factory=list)
+    agent_id: str
+    session_id: str | None = None
+    created_at: datetime | None = None
+    #: Whether the Guardian's signature verifies. A decision record is unsigned by
+    #: design: it records what a person decided and authorises nothing.
+    signed: bool
+    #: The revision this verdict authorised, when it was spent on one.
+    spent_on_revision: int | None = None
+    notes: str | None = None
+
+
+class LineageStep(BaseModel):
+    """A version, without its state: what changed, who changed it, on what authority."""
+
+    model_config = _SHARED_CONFIG
+
+    revision: int
+    change: VersionChange
+    actor: UserRef | None = None
+    agent_id: str | None = None
+    agent_version: str | None = None
+    verdict_ref: UUID | None = None
+    recorded_at: datetime
+
+
+class LineageChain(BaseModel):
+    """An object's lineage from its source data, through the agents, to its approver.
+
+    Assembled from what the platform recorded -- the version history and
+    audit_log -- not from the ``lineage`` list a submitter sent. A link that was
+    never recorded is named in ``gaps`` rather than inferred.
+    """
+
+    model_config = _SHARED_CONFIG
+
+    object_type: str
+    object_id: UUID
+    domain: str
+    revision: int
+    approval_status: str
+    source_data: DataSource | None = None
+    drafted_by: LineageActor | None = None
+    verdicts: list[LineageVerdict] = Field(default_factory=list)
+    approved_by: LineageApproval | None = None
+    steps: list[LineageStep] = Field(default_factory=list)
+    #: The sessions the object's verdicts were issued in: the key the provenance
+    #: store is read by.
+    provenance_sessions: list[str] = Field(default_factory=list)
+    provenance_records: list[UUID] = Field(default_factory=list)
+    gaps: list[str] = Field(default_factory=list)
+    complete: bool = False
 
 
 # ── EpistemicState ────────────────────────────────────────────────────────────

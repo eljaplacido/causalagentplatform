@@ -132,24 +132,33 @@ priority first, and the priorities put hardening the platform before new estimat
   estimate materially stays undetectable at T8's sizes, and is reported); Guardian PR-007, no
   edge approved without a sensitivity result stored on an assumption it rests on (`septa-33`; since `062f57d` only one the
   platform recorded for the edge counts, not a drafter's own), and the kernel's sensitivity
-  analysis of a draft edge recorded there when the platform runs it (`septa-62`); Rosenbaum bounds on
+  analysis of a draft edge recorded there when the platform runs it (`septa-70`); Rosenbaum bounds on
   a matched design, T9 (`septa-12`); positivity detection by honest overlap regions and a
   limited-overlap flag, T10 and T2 v2 (`septa-34`; four-way strata and exclusive-or patterns stay
-  undetected, and are recorded);
+  undetected, and are recorded); triangulation at moderate n through an outcome-model
+  specification test, T0 v4 (`septa-35`; it also flags nonlinearity that does not bias the
+  estimate);
   the review queue ordered by a risk tier derived from stored fields, with who submitted each
   item (`septa-36`). Open: step 3's remaining estimator (`septa-7`), calibration evidence (`septa-10`: the report
   and its simulated C0 gate are built; real follow-ups are not),
-  anchoring (`septa-11`), and triangulation at moderate n (`septa-35`).
+  and anchoring (`septa-11`).
 - **p3 and p4.** Done: provenance is durable and append-only, with erasure as a tombstone, and
-  session runs, Guardian checks and decisions write it (`septa-48`, `septa-16`). The rest of the
-  register (versioned semantic objects, lineage, the LLM layer, Cynefin routing, frontend views
-  and others), then the longer-range
+  session runs, Guardian checks and decisions write it (`septa-48`, `septa-16`); semantic objects
+  are versioned, never rewritten, and carry lineage from source data to approver (`septa-14`,
+  `septa-15`); the LLM layer has its first callers, narration from versioned prompt templates
+  kept only when grounded (`septa-17`, `septa-37`). The rest of the register (versioned
+  interventions, lineage onward to analyses, Cynefin routing, frontend views and others), then
+  the longer-range
   methods: discovery, rung-3 counterfactuals, general ID estimation, subgroup discovery. Many of
   these end either in the capability or in its claim being withdrawn from the docs.
   Four have ended that way: EconML/PyMC backends, the `cynepic-*` Rust crates, Neo4j as the
   causal graph store and Kafka streaming were claimed and never built, and are not needed by the
   product, so the claims were withdrawn and the idle Kafka and Redis services removed
   (`econml-pymc`, `rust-crates`, `neo4j-graph-store`, `kafka-streaming` in `left_the_list`).
+  Of the frontend views, the decision ledger (`/decisions`) and the assumption registry
+  (`/registry`) are built (`septa-24`); the DAG Workbench proposes a fragment through the governed
+  draft route but stays `partial` (`dag-workbench`): it authors no new edges, and its e2e spec
+  stubs the backend.
 
 ## What this project will not do first
 

@@ -75,7 +75,7 @@ test("submit incident calls backend and shows result", async ({ page }) => {
   // Fill in the form
   await page.getByLabel("Title").fill("High p99 latency on payment-api after deployment");
   await page.getByLabel("Affected Services").fill("payment-api, checkout-service");
-  await page.getByLabel("Severity").selectOption("SEV2");
+  await page.getByLabel("Severity").selectOption("P1");
 
   // Submit — ThinkingIndicator should appear within 150ms (UX contract)
   await page.getByRole("button", { name: "Submit Incident" }).click();
@@ -208,7 +208,7 @@ test("approving an intervention from the UI hits the backend", async ({ page }) 
   await page.getByTestId("submit-incident").click();
   await page.getByLabel("Title").fill("Approve-flow smoke: cart abandonment after rollout");
   await page.getByLabel("Affected Services").fill("checkout-service, payment-api");
-  await page.getByLabel("Severity").selectOption("SEV2");
+  await page.getByLabel("Severity").selectOption("P1");
   await page.getByRole("button", { name: "Submit Incident" }).click();
 
   // Wait until at least one InterventionCard renders (backend pipeline returned recommendations)

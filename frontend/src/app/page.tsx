@@ -9,16 +9,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePersonaStore } from "@/lib/store";
-import { PersonaSelector } from "@/components/shared/PersonaSelector";
+import { PERSONA_ROUTES, PersonaSelector } from "@/components/shared/PersonaSelector";
 import type { Persona } from "@/lib/types";
-
-const PERSONA_ROUTES: Record<Persona, string> = {
-  OPERATOR: "/incidents",
-  ANALYST: "/analyst",
-  EXECUTIVE: "/executive",
-  GOVERNANCE: "/governance",
-  ENGINEER: "/engineer",
-};
 
 export default function RootPage() {
   const router = useRouter();

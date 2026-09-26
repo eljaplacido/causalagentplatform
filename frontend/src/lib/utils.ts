@@ -52,3 +52,51 @@ export function truncate(str: string, maxLength: number): string {
   if (str.length <= maxLength) return str;
   return `${str.slice(0, maxLength - 1)}…`;
 }
+
+/**
+ * A number, interval or flag from a backend or kernel response, as sent.
+ * Causal numbers are shown verbatim -- never rounded, rescaled or recomputed in
+ * the UI -- and an absent value is said to be absent (`null`), not shown as 0.
+ */
+export function verbatim(
+  value: number | boolean | string | readonly (number | null)[] | null | undefined
+): string {
+  if (value === null || value === undefined) return "null";
+  if (Array.isArray(value)) return `[${value.map((v) => (v === null ? "null" : String(v))).join(", ")}]`;
+  return String(value);
+}
+
+/**
+ * A number as the kernel writes it in a rendered narrative:
+ * causal_core.claims.format_number (4 significant digits, "%.4g", integers
+ * whole, "e+4" rather than "e+04"). Rounding for display only; the value
+ * itself is the backend's.
+ */
+export function formatKernelNumber(x: number, sig = 4): string {
+  if (!Number.isFinite(x)) return String(x);
+  if (x === 0) return "0";
+  if (Number.isInteger(x) && Math.abs(x) < 1e15) return String(x);
+  const [mantissa, expText] = x.toExponential(sig - 1).split("e");
+  const exp = Number(expText);
+  const trim = (s: string) => (s.includes(".") ? s.replace(/\.?0+$/, "") : s);
+  if (exp < -4 || exp >= sig) {
+    return `${trim(mantissa!)}e${exp < 0 ? "-" : "+"}${Math.abs(exp)}`;
+  }
+  return trim(x.toFixed(sig - 1 - exp));
+}
+
+/**
+ * A figure from a backend response for reading: numbers in the kernel's format
+ * (formatKernelNumber), an interval as "[lo, hi]", an absent value as "—".
+ * Pair it with `verbatim` (e.g. in a title) where the exact value matters.
+ */
+export function formatFigure(
+  value: number | boolean | string | readonly (number | null)[] | null | undefined
+): string {
+  if (value === null || value === undefined) return "—";
+  if (Array.isArray(value)) {
+    return `[${value.map((v) => (v === null ? "—" : formatKernelNumber(v))).join(", ")}]`;
+  }
+  if (typeof value === "number") return formatKernelNumber(value);
+  return String(value);
+}

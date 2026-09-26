@@ -12,7 +12,10 @@ scripts/doc-figures.json binds each quoted figure to the value it came from:
     figure  the number as written ("94.9", "1,794", "-15,205", "800")
     bench   the benchmarks/ directory whose STANDING run it comes from -- the latest
             passing run, from a clean tree, recorded against the current
-            PRE-REGISTRATION.md's exact bytes (the run test_benchmark_results requires)
+            PRE-REGISTRATION.md's exact bytes (the run test_benchmark_results requires).
+            "From a clean tree" means its `git` is a full 40-hex commit, no `-dirty`,
+            that is an ancestor of HEAD: `unknown`, a short sha or a commit this history
+            does not contain cannot be traced to code, so it never stands.
     path    where in that run's JSON: "/a/b/*/c", with `*` over dict values or list items
             and `name[key=v1|v2]` keeping only the list items whose `key` is listed;
             `~1` stands for a `/` inside a key (RFC 6901)
@@ -31,13 +34,26 @@ import hashlib
 import json
 import math
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "scripts" / "doc-figures.json"
+SHA = re.compile(r"^[0-9a-f]{40}$")
 FILTER = re.compile(r"^(?P<name>[^\[]+)\[(?P<key>[^=\]]+)=(?P<vals>[^\]]+)\]$")
+
+
+def traceable_commit(git: object) -> bool:
+    """A run's `git` names a committed tree this history contains (40-hex, no -dirty, an
+    ancestor of HEAD). Not merely "no -dirty suffix": `unknown` passed that for a day."""
+    sha = str(git or "")
+    if not SHA.match(sha):
+        return False
+    proc = subprocess.run(["git", "-C", str(ROOT), "merge-base", "--is-ancestor", sha, "HEAD"],
+                          capture_output=True, check=False)
+    return proc.returncode == 0
 
 
 def standing_run(bench: str) -> tuple[Path, dict[str, Any]]:
@@ -47,8 +63,8 @@ def standing_run(bench: str) -> tuple[Path, dict[str, Any]]:
     runs = []
     for p in sorted((root / "results").glob("*.json")):
         doc = json.loads(p.read_text())
-        clean = not str(doc.get("git", "")).endswith("-dirty")
-        if doc.get("prereg_sha256") == current and doc.get("passed") is True and clean:
+        if (doc.get("prereg_sha256") == current and doc.get("passed") is True
+                and traceable_commit(doc.get("git"))):
             runs.append((p, doc))
     if not runs:
         raise LookupError(f"{bench}: no passing clean run against the current registration")

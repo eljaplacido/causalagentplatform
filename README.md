@@ -53,7 +53,7 @@ runs, and failing runs are kept.
 
 | Benchmark | Result |
 |---|---|
-| T0: 29 identification cases, 14 estimation designs, 7 seeded defects ([`benchmarks/t0`](benchmarks/t0)) | Identification agrees with y0 on 200/200 random graphs. Pooled 95% coverage is 94.9%. Every seeded defect is caught. |
+| T0: 29 identification cases, 14 estimation designs, 10 seeded defects ([`benchmarks/t0`](benchmarks/t0)) | Identification agrees with y0 on 200/200 random graphs. Pooled 95% coverage is 94.9%. Triangulation makes a result with a misspecified outcome model contested in 100% of runs at n = 2,000, where comparing estimates alone caught 3.5%; false alarms 1.1%. Every seeded defect is caught. |
 | T3: LaLonde, real data with an experimental benchmark ([`benchmarks/t3-lalonde`](benchmarks/t3-lalonde)) | No confident wrong answer. Naive estimates are off by up to −$15,205; every kernel interval covers the experimental $1,794. |
 | T2: IHDP-100, semi-synthetic ([`benchmarks/t2-ihdp`](benchmarks/t2-ihdp)) | ATT coverage 0.99 / 0.98; supported results miss the truth 1.5% of the time. Against rivals (reported, not gated): OLS with covariates matches the kernel's ATT error (0.247 vs 0.252) but its ATE intervals cover only 73%; the kernel's ATE point error is worse than a naive difference in means (0.88 vs 0.29) — its advantage is honest intervals, not sharper points. |
 | T4: segment effects ([`benchmarks/t4-segments`](benchmarks/t4-segments)) | Per-segment coverage 0.93–0.97, family-wise coverage 0.945–0.98, 4% false discovery with every segment null. Bars registered before the code was written. |
@@ -73,7 +73,7 @@ Known limits are listed, not hidden: [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAG
 ## What else is in the box
 
 - **Backend** (`backend/`): Python 3.12, FastAPI, SQLAlchemy and LangGraph. `.gnomon/ci.sh` prints the current test count and coverage.
-- **Frontend** (`frontend/`): Next.js, TypeScript and Tailwind. Persona-scoped views: workbench, governance, incidents, engineer, analyst and executive.
+- **Frontend** (`frontend/`): Next.js, TypeScript and Tailwind. Persona-scoped views: governance, incidents, engineer, analyst and executive; and three analysis views over the kernel's records: `/workbench` (fragments, and proposing one through the governed draft flow, which judges the draft in the domain the drafter classified), `/decisions` (the decision ledger, follow-ups and calibration) and `/registry` (the assumption registry: versions, diffs, impact). One navigation bar above every page links them all. [docs/UIX.md](docs/UIX.md) §2 says what each one does.
 - **One MCP server**: `packages/causal-mcp`, above. The backend's legacy server (`backend/mcp_server/`, console script `causal-platform-mcp`) was deleted in September 2026; a client configuration that still launches `causal-platform-mcp` should launch `causal-mcp` instead.
 - **Docs** (`docs/`): architecture (AGENTS.md), data layer, ADRs, quickstart and testing standards.
 

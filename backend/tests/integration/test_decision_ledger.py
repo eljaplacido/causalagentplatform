@@ -259,6 +259,34 @@ async def test_bad_input_is_refused_before_anything_is_recorded(
     assert count.scalar() == 0
 
 
+async def test_an_action_with_its_own_numbers_is_decided_and_kept(
+    client: AsyncClient, db_session: AsyncSession, db_engine: object
+) -> None:
+    """The action is the requester's text; "30%" in it is quoted, not a claim. It used to
+    fail the rationale check after the entry was sealed: 500, with the entry written."""
+    resp = await client.post("/api/v1/decisions", json=body(action="cut paging by 30%"))
+    assert resp.status_code == 200, resp.text
+    assert "cut paging by 30%" in resp.json()["explanation"]
+    count = await db_session.execute(text("SELECT COUNT(*) FROM decision_records"))
+    assert count.scalar() == 1
+
+
+async def test_an_explanation_that_cannot_be_written_records_nothing(
+    client: AsyncClient, db_session: AsyncSession, db_engine: object
+) -> None:
+    """The explanation is written before the entry is sealed, so a failure there leaves no
+    entry behind an error: a caller who sees a failure can ask again."""
+
+    def _refuse(*_: object, **__: object) -> str:
+        raise ValueError("decision rationale failed verification: test")
+
+    with patch("src.api.decisions.explain", _refuse):
+        resp = await client.post("/api/v1/decisions", json=body())
+    assert resp.status_code == 500
+    count = await db_session.execute(text("SELECT COUNT(*) FROM decision_records"))
+    assert count.scalar() == 0
+
+
 async def test_the_endpoint_requires_authentication(db_engine: object) -> None:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         resp = await ac.post("/api/v1/decisions", json=body())

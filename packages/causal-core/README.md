@@ -39,7 +39,7 @@ The command exits 0 for a result, 2 for a refusal and 1 for an apparatus failure
 | **Identify** | Runs the complete ID algorithm (Shpitser & Pearl 2006), cross-checked against y0 on random graphs. Back-door uses the generalized adjustment criterion and prefers the efficiency-optimal O-set. It also handles front-door, conditional IV and proximal inference. A user-chosen adjustment set is validated, never silently replaced: an invalid one is refused, with the open path named. |
 | **Check the design** | Missing data, positivity and overlap, covariate balance, sample-ratio mismatch and first-stage strength are all checked *before* estimating. Any failure produces a typed refusal that says what would fix it. |
 | **Estimate** | A portfolio of difference in means, Lin regression, Hajek IPW, cross-fitted AIPW and DML, linear front-door, 2SLS and proximal 2SLS. Every standard error comes from the estimator's influence function, and every interval is coverage-tested. |
-| **Triangulate** | Estimators that rest on different assumptions are compared, with the correlation between them taken into account. If they disagree, the result is marked *contested*. |
+| **Triangulate** | Estimators that rest on different assumptions are compared, with the correlation between them taken into account. For a binary treatment under back-door adjustment, the linear outcome model that regression adjustment rests on is also given a specification test. If either check finds a problem, the result is marked *contested*. |
 | **Refute** | A placebo treatment, negative-control outcomes and conditional independences implied by the graph. Their false-alarm rates and power are measured, not assumed. |
 | **Sensitivity** | E-values (VanderWeele & Ding) and Cinelli–Hazlett robustness values; for back-door designs with a binary treatment, a Rosenbaum bound on a 1:1 matched design the kernel builds: Γ*, the largest hidden bias at which the matched comparison still rejects no effect. |
 | **Claims** | Every number that may appear in prose is a claim bound to a field. `cc.verify(text, out)` rejects any number that isn't one. It also rejects causal wording ("caused", "will reduce") unless the result is *supported*. |
@@ -105,15 +105,18 @@ before any run. It runs on every change:
   200 of 200 random ADMGs.
 - **Estimation:** across 14 designs (randomized, back-door, M-bias, butterfly, front-door, IV,
   conditional IV and proximal), bias is within Monte Carlo error. Pooled 95% interval coverage is
-  94.9%, and every design lies inside 92.5–97.5% (observed 93.6–96.6%; T0 v3,
-  `benchmarks/t0/results/2026-09-19-v3-run3.json`).
+  94.9%, and every design lies inside 92.5–97.5% (observed 93.6–96.6%; T0 v4,
+  `benchmarks/t0/results/2026-09-26-v4-run1.json`, the same numbers as v3's runs).
 - **Refuters:** false-alarm rates are about 1% at α = 0.01, and power is 100% against the planted
   violations.
-- **Seeded defects:** each of seven defects makes the gate fail. The defects include:
+- **Triangulation (v4):** a planted outcome-model misspecification makes the result contested at
+  n = 2,000 (see *Triangulation at moderate n* below).
+- **Seeded defects:** each of ten defects makes the gate fail. The defects include:
   - the constant (−0.5, 0.5) interval the platform once shipped
   - halved standard errors
   - discarded adjustment sets
   - a suppressed hedge
+  - a triangulation flag that leaves the result uncontested
 
 - **T4 (segments):** per-segment interval coverage 0.93–0.97; family-wise coverage across all
   segments of one analysis 0.945–0.98; the heterogeneity test fires on 4.5% of homogeneous designs
@@ -208,11 +211,22 @@ parallel trends may fail before the conclusion changes: intervals valid when the
 bias is at most M times the largest pre-adoption deviation, and the breakdown M at which the
 interval first reaches zero (T5 v3).
 
-**Known limit.** Triangulation does *not* reliably detect moderate outcome-model misspecification
-at moderate n. Its power was 0.04 at n = 2,000 against a bias of about 1.2 standard errors. The v1
-run that showed this is kept in `benchmarks/t0/results/`. The doubly robust primary estimator stays
-valid in that case (94.3% coverage), but do not read "estimators agree" as proof that the model is
-correct.
+**Triangulation at moderate n.** Comparing estimates cannot see moderate outcome-model
+misspecification at moderate n. Against a confounder that enters the outcome as Z², the estimator
+contrasts flag only 3.5% of runs at n = 2,000: the misfit inflates the standard error of every
+difference. So triangulation also tests the linear outcome model directly (`causal_core.specification`).
+In each arm it models, it adds the squares of the non-binary covariates and of the fitted value, and
+runs an HC2 Wald test on them, in the same Holm family as the contrasts. That design is then flagged
+in 100% of runs at n = 2,000, with false alarms of 1.1% on correctly specified designs (T0 v4).
+
+A flag makes the result `contested`. The doubly robust primary estimate is unchanged, and it still
+covers the truth (97.5% there).
+
+The cost is that the test asks whether the model fits, not whether the misfit moves the effect. It
+also flags nonlinearity that leaves the estimate unbiased: 100% of runs on T0's
+`harmless_interaction`. And "estimators agree" is still not proof that the model is right.
+Curvature outside the test's basis passes, and the test runs only for binary treatments under
+back-door adjustment.
 
 Running `pytest -m t0` needs the `crosscheck` extra (`pip install -e '.[dev,crosscheck]'`).
 

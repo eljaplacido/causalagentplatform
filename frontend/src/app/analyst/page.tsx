@@ -7,7 +7,7 @@
  *   ┌────────────────────────────────────────────────────────────┐
  *   │  Header: title, persona switcher, session status           │
  *   ├────────────┬────────────────────────┬──────────────────────┤
- *   │ Fragment   │      DAG Canvas        │  Proposals / Detail  │
+ *   │ Fragment   │   Session result       │  Recommendations     │
  *   │ Library    │   (centre panel)       │  (right panel)       │
  *   │ (left)     │                        │                      │
  *   └────────────┴────────────────────────┴──────────────────────┘
@@ -16,13 +16,27 @@
  *   - ThinkingIndicator must render synchronously before any await
  *     (setIsThinking(true) called before the API call)
  *   - CHAOTIC domain immediately shows EscalationBanner, suppresses AI analysis
- *   - Selecting a node opens NodeDetail in the right panel
- *   - Edge proposals listed with approve/reject for governance_officer role
+ *   - Only what the backend returned is shown. SessionStateResponse carries
+ *     the NUMBER of proposed edges, not the edges, so no graph is drawn: the
+ *     centre panel says how many edges were proposed and why none is drawn.
+ *     (The page used to draw a two-node "Root Cause → Observable Effect"
+ *     graph and edge proposals it made up from the response's confidence.)
+ *   - A fragment-library failure is shown as a failure, never as "no fragments".
+ *   - One classification: the response's cynefin_domain, labelled
+ *     "Classification" in the header. The explanation and recommendations are
+ *     the backend's prose; when that prose names a different Cynefin domain the
+ *     page says so rather than letting two classifications stand side by side.
+ *     A new run clears the previous run's result, so its domain is never shown
+ *     beside the new run's progress.
+ *   - Recommendations are numbered by their position in the list (the backend's
+ *     ranks can repeat). A proposed edge's endpoints are shown as short labelled
+ *     ids: the response carries ids, not entity names.
  *
  * Data flow:
  *   1. User enters problem description
  *   2. POST /api/v1/session/run → backend LangGraph pipeline
- *   3. Result EpistemicState → populates canvas + proposals + explanation
+ *   3. SessionStateResponse → classification, verdict, confidence, explanation,
+ *      proposed-edge count and recommendations
  */
 
 import { useCallback, useState } from "react";
@@ -30,9 +44,15 @@ import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Play, RefreshCw, GitBranch, Layers, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { CausalApiError, semanticApi, sessionApi, type SessionStateResponse } from "@/lib/api";
+import { Play, RefreshCw, GitBranch, Layers, Loader2, AlertTriangle } from "lucide-react";
+import { cn, formatConfidence } from "@/lib/utils";
+import {
+  CausalApiError,
+  isNotAuthorised,
+  semanticApi,
+  sessionApi,
+  type SessionStateResponse,
+} from "@/lib/api";
 import { toFragmentCardData } from "@/lib/mappers";
 import { ThinkingIndicator } from "@/components/shared/ThinkingIndicator";
 import { PersonaSelector } from "@/components/shared/PersonaSelector";
@@ -40,13 +60,7 @@ import { CynefinBadge } from "@/components/shared/CynefinBadge";
 import { GuardianVerdictBadge } from "@/components/shared/GuardianVerdictBadge";
 import { EpistemicConfidenceBadge } from "@/components/shared/EpistemicConfidenceBadge";
 import { EscalationBanner } from "@/components/incident/EscalationBanner";
-import { DAGCanvas } from "@/components/graph/DAGCanvas";
-import { EdgeProposal } from "@/components/graph/EdgeProposal";
-import { NodeDetail } from "@/components/graph/NodeDetail";
 import { FragmentCard } from "@/components/graph/FragmentCard";
-import { GraphDiff } from "@/components/graph/GraphDiff";
-import type { DAGNode, DAGEdge } from "@/components/graph/DAGCanvas";
-import type { EdgeProposalData } from "@/components/graph/EdgeProposal";
 
 // ── Form schema ───────────────────────────────────────────────────────────────
 
@@ -60,15 +74,66 @@ const sessionSchema = z.object({
 
 type SessionFormValues = z.infer<typeof sessionSchema>;
 
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+const CYNEFIN_DOMAINS = ["CLEAR", "COMPLICATED", "COMPLEX", "CHAOTIC", "DISORDER"] as const;
+
+/**
+ * The Cynefin domains the backend's prose names that are not the run's
+ * classification. The prose is the backend's to write; the page only says when
+ * it disagrees with the classification field.
+ */
+function domainsNamedOtherThan(
+  classification: string,
+  texts: readonly string[]
+): string[] {
+  const named = new Set<string>();
+  for (const text of texts) {
+    for (const d of CYNEFIN_DOMAINS) {
+      if (d !== classification && new RegExp(`\\b${d}\\b`).test(text)) named.add(d);
+    }
+  }
+  return CYNEFIN_DOMAINS.filter((d) => named.has(d));
+}
+
+const PROPOSE_EDGE = /^Propose edge: (\S+) → (\S+) \(([^)]+)\)$/;
+
+/** An id cut to its first 8 characters, labelled, with the full id on hover. */
+function ShortId({ id }: { id: string }) {
+  return (
+    <span title={id} className="font-mono">
+      entity id {id.length > 8 ? `${id.slice(0, 8)}…` : id}
+    </span>
+  );
+}
+
+/**
+ * A recommendation's action as sent, except that a proposed edge's endpoints
+ * (the backend sends "Propose edge: <id> → <id> (<type>)") are shown as short
+ * labelled ids: the response carries no entity names.
+ */
+function RecommendationAction({ action }: { action: string }) {
+  const edge = PROPOSE_EDGE.exec(action);
+  if (!edge) return <>{action}</>;
+  const [, source, target, edgeType] = edge;
+  return (
+    <>
+      Propose edge: <ShortId id={source!} /> → <ShortId id={target!} /> ({edgeType})
+      <span className="block text-[10px] font-normal text-muted-foreground">
+        The session response names the endpoints by id only.
+      </span>
+    </>
+  );
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function AnalystPage() {
   const [isThinking, setIsThinking] = useState(false);
   const [thinkingStage, setThinkingStage] = useState<string>("Initialising...");
   const [sessionState, setSessionState] = useState<SessionStateResponse | null>(null);
-  const [selectedNode, setSelectedNode] = useState<DAGNode | null>(null);
   const [activeFragment, setActiveFragment] = useState<string | null>(null);
-  const [rightTab, setRightTab] = useState<"proposals" | "detail" | "diff">("proposals");
   const [sessionError, setSessionError] = useState<string | null>(null);
 
   const { register, handleSubmit, formState: { errors } } = useForm<SessionFormValues>({
@@ -86,61 +151,15 @@ export default function AnalystPage() {
 
   const fragments = fragmentsQuery.data ?? [];
 
-  // ── Mock canvas data derived from session state ───────────────────────────
+  const fragmentsError = fragmentsQuery.isError
+    ? isNotAuthorised(fragmentsQuery.error)
+      ? `Not authorised to read graph fragments: ${fragmentsQuery.error.message}`
+      : `Graph fragments could not be loaded: ${
+          fragmentsQuery.error instanceof Error ? fragmentsQuery.error.message : "unknown error"
+        }`
+    : null;
 
-  const dagNodes: DAGNode[] = sessionState
-    ? [
-        {
-          id: "src-1",
-          label: "Root Cause",
-          nodeType: "CausalEntity",
-          domain: "devops",
-          approvalStatus: "DRAFT",
-          confidence: sessionState.overall_confidence,
-          x: 0.1,
-          y: 0.5,
-        },
-        {
-          id: "tgt-1",
-          label: "Observable Effect",
-          nodeType: "Outcome",
-          domain: "devops",
-          approvalStatus: "DRAFT",
-          confidence: sessionState.overall_confidence * 0.9,
-          x: 0.7,
-          y: 0.5,
-        },
-      ]
-    : [];
-
-  const dagEdges: DAGEdge[] = sessionState
-    ? [
-        {
-          id: "edge-1",
-          sourceId: "src-1",
-          targetId: "tgt-1",
-          edgeType: "CAUSES",
-          confidence: sessionState.overall_confidence,
-          approvalStatus: "DRAFT",
-        },
-      ]
-    : [];
-
-  const edgeProposals: EdgeProposalData[] = (sessionState?.recommendations ?? []).map(
-    (rec, i) => ({
-      id: `proposal-${i}`,
-      sourceLabel: "Root Cause Candidate",
-      targetLabel: "Observed Outcome",
-      edgeType: "CAUSES",
-      confidence: rec.confidence,
-      rationale: rec.rationale,
-      evidenceCitations: [],
-      proposedBy: sessionState?.session_id ?? "agent",
-      proposedAt: new Date().toISOString(),
-      guardianVerdict: sessionState?.guardian_verdict ?? "PENDING",
-      policyRulesCited: sessionState?.policy_rules_cited ?? [],
-    })
-  );
+  const recommendations = sessionState?.recommendations ?? [];
 
   // ── Session run ───────────────────────────────────────────────────────────
 
@@ -150,7 +169,8 @@ export default function AnalystPage() {
       setIsThinking(true);
       setThinkingStage("Classifying domain...");
       setSessionError(null);
-      setSelectedNode(null);
+      // The previous run's result (and its classification) is not this run's.
+      setSessionState(null);
 
       try {
         setThinkingStage("Running causal discovery...");
@@ -162,14 +182,11 @@ export default function AnalystPage() {
 
         setThinkingStage("Guardian check...");
         setSessionState(data);
-
-        // Auto-switch right panel to proposals if we got recommendations
-        if (data.recommendation_count > 0) {
-          setRightTab("proposals");
-        }
       } catch (err) {
         setSessionError(
-          err instanceof CausalApiError
+          isNotAuthorised(err)
+            ? `Not authorised to run a session: ${(err as CausalApiError).message}`
+            : err instanceof CausalApiError
             ? `API error ${err.status}: ${err.message}`
             : err instanceof Error
             ? err.message
@@ -183,26 +200,58 @@ export default function AnalystPage() {
   );
 
   const isChaotic = sessionState?.cynefin_domain === "CHAOTIC";
+  const otherDomainsNamed = sessionState
+    ? domainsNamedOtherThan(sessionState.cynefin_domain, [
+        sessionState.draft_explanation,
+        ...recommendations.flatMap((r) => [r.action, r.rationale]),
+      ])
+    : [];
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-20 flex items-center gap-4 border-b border-border bg-background/95 px-4 py-2.5 backdrop-blur-sm">
-        <span className="font-bold text-sm text-foreground">Causal Platform</span>
-        <span className="text-sm text-muted-foreground">Analyst Workbench</span>
+        <h1 className="text-sm font-bold text-foreground">Analyst Workbench</h1>
 
         {sessionState && (
           <div className="flex items-center gap-2 ml-2">
-            <CynefinBadge domain={sessionState.cynefin_domain} size="sm" />
+            <span
+              data-testid="session-classification"
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground"
+            >
+              Classification:
+              <CynefinBadge
+                domain={sessionState.cynefin_domain}
+                confidence={sessionState.domain_confidence}
+                size="sm"
+              />
+            </span>
             <GuardianVerdictBadge verdict={sessionState.guardian_verdict} size="sm" />
             <EpistemicConfidenceBadge score={sessionState.overall_confidence} size="sm" />
           </div>
         )}
 
         <div className="ml-auto">
-          <PersonaSelector layout="dropdown" className="w-48" />
+          <PersonaSelector layout="dropdown" className="w-48 max-w-full" />
         </div>
       </header>
+
+      {/* The backend's prose naming another domain than the classification */}
+      {sessionState && otherDomainsNamed.length > 0 && (
+        <p
+          role="note"
+          data-testid="domain-text-mismatch"
+          className="flex items-start gap-1.5 border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
+        >
+          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
+          <span>
+            This run was classified {sessionState.cynefin_domain}, but the backend&apos;s
+            explanation or recommendations name {otherDomainsNamed.join(", ")}. The
+            classification shown is the response&apos;s cynefin_domain; the text below is
+            the backend&apos;s, as sent.
+          </span>
+        </p>
+      )}
 
       {/* ── CHAOTIC escalation banner ───────────────────────────────────────── */}
         {isChaotic && (
@@ -229,6 +278,15 @@ export default function AnalystPage() {
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="text-xs">Loading…</span>
               </div>
+            ) : fragmentsError ? (
+              <p
+                role="alert"
+                data-testid="fragments-error"
+                className="flex items-start gap-1.5 rounded-md border border-red-200 bg-red-50 p-2 text-xs text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200"
+              >
+                <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
+                <span>{fragmentsError}</span>
+              </p>
             ) : fragments.length === 0 ? (
               <p className="text-xs text-muted-foreground text-center py-6 px-2">
                 No fragments yet. Run a session to generate causal models.
@@ -317,26 +375,32 @@ export default function AnalystPage() {
             )}
           </div>
 
-          {/* DAG Canvas */}
+          {/* Session result. SessionStateResponse carries how many edges were
+              proposed, not the edges, so no graph is drawn from it. */}
           <div className="flex-1 overflow-auto p-4">
             {sessionState && !isChaotic ? (
-              <DAGCanvas
-                nodes={dagNodes}
-                edges={dagEdges}
-                cynefinDomain={sessionState.cynefin_domain}
-                onNodeSelect={(node) => {
-                  setSelectedNode(node);
-                  setRightTab("detail");
-                }}
-                width={700}
-                height={400}
-              />
+              <div className="flex h-full items-center justify-center text-center">
+                <div
+                  className="max-w-md space-y-2"
+                  data-testid="proposed-edges-summary"
+                >
+                  <GitBranch className="mx-auto h-8 w-8 text-muted-foreground/40" />
+                  <p className="text-sm text-foreground">
+                    This session proposed {sessionState.proposed_edge_count} candidate
+                    edge{sessionState.proposed_edge_count === 1 ? "" : "s"}.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    The session API returns only the number of proposed edges, not
+                    their endpoints, so no causal graph is drawn here.
+                  </p>
+                </div>
+              </div>
             ) : !sessionState ? (
               <div className="flex h-full items-center justify-center text-center">
                 <div className="space-y-2">
                   <GitBranch className="mx-auto h-8 w-8 text-muted-foreground/40" />
                   <p className="text-sm text-muted-foreground">
-                    Enter a problem description above and click Analyse to build a causal graph.
+                    Enter a problem description above and click Analyse to run a session.
                   </p>
                   {activeFragment && (
                     <p className="text-xs text-muted-foreground">
@@ -359,104 +423,45 @@ export default function AnalystPage() {
           )}
         </main>
 
-        {/* ── Right: Proposals / Node detail / Diff ───────────────────────── */}
+        {/* ── Right: Recommendations, as the backend sent them ──────────── */}
         <aside
           className="w-80 shrink-0 flex flex-col border-l border-border bg-background overflow-hidden"
-          aria-label="Edge proposals and details"
+          aria-label="Session recommendations"
         >
-          {/* Tab bar */}
-          <div className="flex items-center border-b border-border px-2 pt-1">
-            {(
-              [
-                { key: "proposals", label: "Proposals", count: edgeProposals.length },
-                { key: "detail", label: "Node", count: undefined },
-                { key: "diff", label: "Diff", count: undefined },
-              ] as const
-            ).map(({ key, label, count }) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setRightTab(key)}
-                className={cn(
-                  "px-3 py-2 text-xs font-medium transition-colors",
-                  "border-b-2 -mb-px",
-                  rightTab === key
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-                aria-selected={rightTab === key}
-                role="tab"
-              >
-                {label}
-                {count !== undefined && count > 0 && (
-                  <span className="ml-1 rounded-full bg-primary/10 text-primary px-1.5 py-0.5 text-[10px]">
-                    {count}
-                  </span>
-                )}
-              </button>
-            ))}
+          <div className="flex items-center gap-1.5 border-b border-border px-3 py-2.5">
+            <span className="text-xs font-semibold text-foreground">Recommendations</span>
+            {recommendations.length > 0 && (
+              <span className="rounded-full bg-primary/10 text-primary px-1.5 py-0.5 text-[10px]">
+                {recommendations.length}
+              </span>
+            )}
           </div>
 
           <div className="flex-1 overflow-y-auto p-3">
-            {/* Proposals tab */}
-            {rightTab === "proposals" && (
-              <div className="space-y-2">
-                {edgeProposals.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center pt-8">
-                    No edge proposals yet. Run an analysis to generate candidates.
-                  </p>
-                ) : (
-                  edgeProposals.map((proposal) => (
-                    <EdgeProposal
-                      key={proposal.id}
-                      proposal={proposal}
-                      canApprove={false}
-                      onViewDetails={() => setRightTab("detail")}
-                    />
-                  ))
-                )}
-              </div>
-            )}
-
-            {/* Node detail tab */}
-            {rightTab === "detail" && (
-              selectedNode ? (
-                <NodeDetail
-                  node={selectedNode}
-                  allEdges={dagEdges}
-                  allNodes={dagNodes}
-                  guardianVerdict={sessionState?.guardian_verdict ?? "PENDING"}
-                  description={`Root cause candidate identified by CausalDiscoveryAgent in ${selectedNode.domain} domain.`}
-                  onClose={() => {
-                    setSelectedNode(null);
-                    setRightTab("proposals");
-                  }}
-                  onNavigateTo={(nodeId) => {
-                    const node = dagNodes.find(n => n.id === nodeId);
-                    if (node) setSelectedNode(node);
-                  }}
-                />
-              ) : (
-                <p className="text-xs text-muted-foreground text-center pt-8">
-                  Select a node in the DAG canvas to view its details.
-                </p>
-              )
-            )}
-
-            {/* Diff tab */}
-            {rightTab === "diff" && (
-              sessionState ? (
-                <GraphDiff
-                  nodes={dagNodes.map(n => ({ ...n, diffStatus: "added" as const }))}
-                  edges={dagEdges.map(e => ({ ...e, diffStatus: "added" as const }))}
-                  fromLabel="Previous"
-                  toLabel="Current session"
-                />
-              ) : (
-                <p className="text-xs text-muted-foreground text-center pt-8">
-                  Run an analysis to see the graph diff.
-                </p>
-              )
+            {recommendations.length === 0 || isChaotic ? (
+              <p className="text-xs text-muted-foreground text-center pt-8">
+                {sessionState
+                  ? "This session returned no recommendations."
+                  : "Run an analysis to see its recommendations."}
+              </p>
+            ) : (
+              <ol className="space-y-2">
+                {recommendations.map((rec, index) => (
+                  <li
+                    key={`${index}-${rec.action}`}
+                    data-testid="session-recommendation"
+                    className="rounded-md border border-border p-2.5 text-xs"
+                  >
+                    <p className="break-words font-medium text-foreground">
+                      {index + 1}. <RecommendationAction action={rec.action} />
+                    </p>
+                    <p className="mt-1 text-muted-foreground">{rec.rationale}</p>
+                    <p className="mt-1 text-[10px] text-muted-foreground">
+                      Confidence {formatConfidence(rec.confidence)} · Risk {rec.risk_tier}
+                    </p>
+                  </li>
+                ))}
+              </ol>
             )}
           </div>
 

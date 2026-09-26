@@ -327,14 +327,14 @@ export default function EngineerPage() {
     queryKey: ["governance-audit-log"],
     queryFn: async () => {
       const page = await governanceApi.auditLog({ page_size: 100 });
-      return page.entries.map(toAuditLogRow);
+      return { rows: page.entries.map(toAuditLogRow), total: page.total };
     },
   });
 
   const connectors = connectorsQuery.data ?? [];
   const fragments = fragmentsQuery.data ?? [];
   const driftAlerts = driftQuery.data ?? [];
-  const allAuditEntries = auditQuery.data ?? [];
+  const allAuditEntries = auditQuery.data?.rows ?? [];
 
   const healthyCount = connectors.filter((c) => c.healthy).length;
 
@@ -383,12 +383,11 @@ export default function EngineerPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-10 flex items-center gap-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
-        <h1 className="text-sm font-bold text-foreground">Causal Platform</h1>
+      <header className="sticky top-0 z-10 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
         <Wrench className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-        <span className="text-sm text-muted-foreground">Platform Health</span>
+        <h1 className="text-sm font-bold text-foreground">Platform Health</h1>
         <div className="ml-auto">
-          <PersonaSelector layout="dropdown" className="w-48" />
+          <PersonaSelector layout="dropdown" className="w-48 max-w-full" />
         </div>
       </header>
 
@@ -436,8 +435,16 @@ export default function EngineerPage() {
             )}
           </>
         )}
-        <span className="ml-auto text-muted-foreground">
-          Last checked: {formatTimestamp(new Date().toISOString(), { timeStyle: "short" })}
+        {/* When the connectors were last fetched -- on the client only. It
+            rendered new Date() during the prerender, so the server's time and
+            the browser's never matched (React hydration error #418). */}
+        <span className="ml-auto text-muted-foreground" data-testid="connectors-last-checked">
+          Last checked:{" "}
+          {connectorsQuery.dataUpdatedAt > 0
+            ? formatTimestamp(new Date(connectorsQuery.dataUpdatedAt).toISOString(), {
+                timeStyle: "short",
+              })
+            : "—"}
         </span>
       </div>
 
@@ -688,7 +695,11 @@ export default function EngineerPage() {
                     "Recent Audit Entries"
                   )}
                 </h2>
-                <AuditLogPanel entries={auditEntries} defaultOpen />
+                <AuditLogPanel
+                  entries={auditEntries}
+                  total={selectedFragmentId ? undefined : auditQuery.data?.total}
+                  defaultOpen
+                />
               </section>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-12">

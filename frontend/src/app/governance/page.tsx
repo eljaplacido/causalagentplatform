@@ -4,7 +4,7 @@
  * Governance Review Page — GOVERNANCE persona (US-27, US-28).
  *
  * Shows:
- *   - ReviewQueue (all draft objects awaiting approval, ordered by risk tier)
+ *   - ReviewQueue (all draft objects awaiting approval, oldest first)
  *   - ApprovalPanel (for the selected item)
  *   - AuditLogPanel (progressive disclosure Level 3)
  *
@@ -22,9 +22,11 @@
  *     refetched, so the UI only ever shows backend state and backend audit rows.
  *
  * Failure mode:
- *   - If the backend is unreachable and NEXT_PUBLIC_ENABLE_MOCK_FALLBACK is set,
- *     mock data is shown with an explicit badge and approve/reject are disabled
- *     (a mock item cannot be approved).
+ *   - If the review queue is unreachable and NEXT_PUBLIC_ENABLE_MOCK_FALLBACK is
+ *     set, mock data is shown with an explicit badge and approve/reject are
+ *     disabled (a mock item cannot be approved). The audit log failing alone
+ *     never switches the page to mock mode.
+ *   - A 401/403 is shown as "not authorised", never as an outage or mock data.
  *   - Otherwise, a degraded-state message is shown (no silent mock substitution).
  */
 
@@ -35,7 +37,11 @@ import { AuditLogPanel } from "@/components/shared/AuditLogPanel";
 import { PersonaSelector } from "@/components/shared/PersonaSelector";
 import { ReviewQueue } from "@/components/governance/ReviewQueue";
 import { ApprovalPanel } from "@/components/governance/ApprovalPanel";
-import { governanceApi, type ReviewQueueItemResponse } from "@/lib/api";
+import {
+  governanceApi,
+  isNotAuthorised,
+  type ReviewQueueItemResponse,
+} from "@/lib/api";
 import { toAuditLogRow } from "@/lib/mappers";
 import type { ReviewQueueItem, AuditLogRow, CynefinDomain } from "@/lib/types";
 
@@ -59,7 +65,7 @@ const MOCK_REVIEW_ITEMS: ReviewQueueItem[] = [
   {
     id: "rev-001",
     objectName: "payment_latency → checkout_conversion",
-    objectType: "CAUSAL_EDGE",
+    objectType: "CausalEdge",
     businessDomain: "payments",
     cynefinDomain: "COMPLICATED",
     riskTier: "HIGH",
@@ -112,7 +118,7 @@ const MOCK_REVIEW_ITEMS: ReviewQueueItem[] = [
   {
     id: "rev-002",
     objectName: "db_connection_pool_size → api_response_time",
-    objectType: "CAUSAL_EDGE",
+    objectType: "CausalEdge",
     businessDomain: "devops",
     cynefinDomain: "CLEAR",
     riskTier: "LOW",
@@ -147,7 +153,7 @@ const MOCK_REVIEW_ITEMS: ReviewQueueItem[] = [
   {
     id: "rev-003",
     objectName: "marketing_spend_increase → customer_churn_reduction",
-    objectType: "INTERVENTION",
+    objectType: "Intervention",
     businessDomain: "marketing",
     cynefinDomain: "COMPLEX",
     riskTier: "CRITICAL",
@@ -226,11 +232,25 @@ const MOCK_AUDIT_ENTRIES: AuditLogRow[] = [
 
 // ─── Backend response → frontend type mapper ──────────────────────────────────
 
+const EDGE_NAME_NOTE =
+  "Relation type only: this edge's endpoints are not in the review queue.";
+
+/**
+ * governance.py ReviewQueueItem → the row the page shows. Only what the backend
+ * sends is carried: it sends no risk tier and no submitter, so those are null
+ * (rendered as a dash), and a missing created_at stays null rather than
+ * becoming "now". `domain` is the object's business domain ("devops",
+ * "marketing"), kept as text: it is not a Cynefin classification.
+ */
 function mapBackendItem(item: ReviewQueueItemResponse): ReviewQueueItem {
+  // An edge's `name` is its relation type (causal_edges.edge_type) and the item
+  // carries no endpoints: every edge row read "CAUSES". Say what the name is.
+  const edgeTypeOnly = item.object_type === "CausalEdge" && !item.name.includes("→");
   return {
     id: item.id,
-    objectName: item.name,
-    objectType: item.object_type as ReviewQueueItem["objectType"],
+    objectName: edgeTypeOnly ? `${item.name} edge` : item.name,
+    ...(edgeTypeOnly ? { objectNameNote: EDGE_NAME_NOTE } : {}),
+    objectType: item.object_type,
     // The backend's `domain` is the business domain (causal_edges.domain, e.g.
     // "devops"), not a Cynefin domain; the endpoint carries no Cynefin
     // classification, so none is invented here.
@@ -238,7 +258,7 @@ function mapBackendItem(item: ReviewQueueItemResponse): ReviewQueueItem {
     riskTier: item.risk_tier,
     riskReasons: item.risk_reasons,
     submittedBy: item.submitted_by,
-    submittedAt: item.created_at ?? new Date().toISOString(),
+    submittedAt: item.created_at ?? null,
     status: item.approval_status === "DRAFT"
       ? "PENDING"
       : item.approval_status === "UNDER_REVIEW"
@@ -259,21 +279,16 @@ function mapBackendItem(item: ReviewQueueItemResponse): ReviewQueueItem {
 const BACKEND_OBJECT_TYPES = ["CausalEdge", "GraphFragment", "CausalEntity"] as const;
 type BackendObjectType = (typeof BACKEND_OBJECT_TYPES)[number];
 
-const FRONTEND_TO_BACKEND_OBJECT_TYPE: Partial<Record<string, BackendObjectType>> = {
-  CAUSAL_EDGE: "CausalEdge",
-  GRAPH_FRAGMENT: "GraphFragment",
-};
-
 /**
- * Resolve the backend object_type for a queue item. Live items carry the
- * backend value verbatim (see mapBackendItem); returns null for types the
- * governance API cannot approve/reject (ASSUMPTION, INTERVENTION).
+ * Resolve the backend object_type for a queue item. Items carry the backend
+ * value verbatim (see mapBackendItem); returns null for types the governance
+ * API cannot approve/reject (the mock set's Intervention).
  */
 function toBackendObjectType(objectType: string): BackendObjectType | null {
   if ((BACKEND_OBJECT_TYPES as readonly string[]).includes(objectType)) {
     return objectType as BackendObjectType;
   }
-  return FRONTEND_TO_BACKEND_OBJECT_TYPE[objectType] ?? null;
+  return null;
 }
 
 /** Mirrors RejectRequest.reason min_length in backend/src/api/governance.py. */
@@ -298,6 +313,7 @@ export default function GovernancePage() {
     data: backendItems,
     isLoading: queueLoading,
     isError: queueError,
+    error: queueErrorValue,
     refetch: refetchQueue,
   } = useQuery<ReviewQueueItem[]>({
     queryKey: REVIEW_QUEUE_QUERY_KEY,
@@ -310,20 +326,34 @@ export default function GovernancePage() {
   });
 
   // ── React Query: audit log ──────────────────────────────────────────────────
-  const { data: backendAuditLog, isError: auditError } = useQuery<AuditLogRow[]>({
+  const {
+    data: backendAuditLog,
+    isError: auditError,
+    error: auditErrorValue,
+  } = useQuery<{ rows: AuditLogRow[]; total: number }>({
     queryKey: AUDIT_LOG_QUERY_KEY,
     queryFn: async () => {
+      // The latest 50 rows; `total` is how many the log holds.
       const page = await governanceApi.auditLog({ page_size: 50 });
-      return page.entries.map(toAuditLogRow);
+      return { rows: page.entries.map(toAuditLogRow), total: page.total };
     },
     retry: 1,
     staleTime: 30_000,
   });
 
-  // Mock fallback only when explicitly enabled AND the backend gave us nothing.
-  const queueIsMock = enableMock && queueError && !backendItems;
-  const auditIsMock = enableMock && auditError && !backendAuditLog;
-  const isMockMode = queueIsMock || auditIsMock;
+  // A 401/403 is the backend answering "no", not an outage: it is said as
+  // such, and never papered over with mock data.
+  const queueNotAuthorised = queueError && isNotAuthorised(queueErrorValue);
+  const auditNotAuthorised = auditError && isNotAuthorised(auditErrorValue);
+
+  // Mock fallback only when explicitly enabled AND the review queue could not
+  // be reached. The audit log failing on its own does not switch the page to
+  // mock mode: the live queue stays live (and decidable), and the audit panel
+  // says it could not be loaded.
+  const queueIsMock =
+    enableMock && queueError && !backendItems && !queueNotAuthorised;
+  const auditIsMock = queueIsMock && auditError && !backendAuditLog;
+  const isMockMode = queueIsMock;
 
   // Fail-closed: no silent mock substitution in production, and no locally
   // patched statuses — the queue is exactly what the backend returned.
@@ -335,10 +365,16 @@ export default function GovernancePage() {
   // mock set). Nothing is synthesized client-side.
   const auditEntries: AuditLogRow[] = auditIsMock
     ? MOCK_AUDIT_ENTRIES
-    : (backendAuditLog ?? []);
+    : (backendAuditLog?.rows ?? []);
   const auditUnavailable = auditError && !auditIsMock && !backendAuditLog;
 
-  const dataSource = isMockMode ? "mock" : backendItems ? "live" : "error";
+  const dataSource = isMockMode
+    ? "mock"
+    : backendItems
+    ? "live"
+    : queueNotAuthorised
+    ? "unauthorised"
+    : "error";
 
   const selectedItem =
     reviewItems.find((item) => item.id === selectedItemId) ?? null;
@@ -452,10 +488,9 @@ export default function GovernancePage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       {/* Top nav */}
-      <header className="sticky top-0 z-10 flex items-center gap-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
-        <h1 className="text-sm font-bold text-foreground">Causal Platform</h1>
+      <header className="sticky top-0 z-10 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
         <ShieldCheck className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-        <span className="text-sm text-muted-foreground">Governance</span>
+        <h1 className="text-sm font-bold text-foreground">Governance</h1>
         {pendingCount > 0 && (
           <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700 dark:bg-amber-950 dark:text-amber-300">
             {pendingCount} pending
@@ -470,13 +505,19 @@ export default function GovernancePage() {
             mock data — decisions disabled
           </span>
         )}
+        {dataSource === "unauthorised" && (
+          <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700 dark:bg-red-950 dark:text-red-300 flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3" aria-hidden />
+            not authorised
+          </span>
+        )}
         {dataSource === "error" && (
           <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700 dark:bg-red-950 dark:text-red-300 flex items-center gap-1">
             <AlertTriangle className="h-3 w-3" aria-hidden />
             backend unavailable
           </span>
         )}
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex min-w-0 flex-wrap items-center gap-3">
           {!queueLoading && (
             <button
               type="button"
@@ -488,7 +529,7 @@ export default function GovernancePage() {
               Refresh
             </button>
           )}
-          <PersonaSelector layout="dropdown" className="w-48" />
+          <PersonaSelector layout="dropdown" className="w-48 max-w-full" />
         </div>
       </header>
 
@@ -500,7 +541,7 @@ export default function GovernancePage() {
               Review Queue
             </h2>
             <p className="mb-3 text-sm text-muted-foreground">
-              All draft graph changes awaiting approval, ordered by risk tier.
+              All draft graph changes awaiting approval, oldest first.
               Click a row to review.
             </p>
 
@@ -524,13 +565,32 @@ export default function GovernancePage() {
               </div>
             )}
 
+            {dataSource === "unauthorised" && !queueLoading && (
+              <div
+                role="alert"
+                data-testid="governance-not-authorised"
+                className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200"
+              >
+                <div className="flex items-center gap-2 font-semibold mb-1">
+                  <AlertTriangle className="h-4 w-4" aria-hidden />
+                  Not authorised
+                </div>
+                <p>
+                  You are not authorised to view the review queue
+                  {queueErrorValue instanceof Error && queueErrorValue.message
+                    ? `: ${queueErrorValue.message}`
+                    : "."}
+                </p>
+              </div>
+            )}
+
             {queueLoading ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground py-8">
                 <RefreshCw className="h-4 w-4 animate-spin" aria-hidden />
                 Loading review queue…
               </div>
             ) : (
-              dataSource !== "error" && (
+              (dataSource === "live" || dataSource === "mock") && (
                 <ReviewQueue
                   items={reviewItems}
                   selectedItemId={selectedItem?.id}
@@ -541,7 +601,7 @@ export default function GovernancePage() {
           </div>
 
           {/* Audit log — progressive disclosure Level 3 (backend rows only) */}
-          {dataSource !== "error" &&
+          {(dataSource === "live" || dataSource === "mock") &&
             (auditUnavailable ? (
               <div
                 role="alert"
@@ -549,10 +609,16 @@ export default function GovernancePage() {
                 className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200"
               >
                 <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
-                The audit log could not be loaded from the governance backend.
+                {auditNotAuthorised
+                  ? "You are not authorised to read the audit log."
+                  : "The audit log could not be loaded from the governance backend."}
               </div>
             ) : (
-              <AuditLogPanel entries={auditEntries} defaultOpen={false} />
+              <AuditLogPanel
+                entries={auditEntries}
+                total={auditIsMock ? undefined : backendAuditLog?.total}
+                defaultOpen={false}
+              />
             ))}
         </div>
 

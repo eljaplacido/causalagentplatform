@@ -201,20 +201,38 @@ export interface Intervention {
   id: string;
   title: string;
   description: string;
-  estimatedEffect: EffectEstimate;
+  /**
+   * Absent when no estimate was computed -- which today is always, for
+   * incident interventions: neither the triage endpoint nor the incidents API
+   * returns one. Absent is rendered as "No effect estimate", never as zeros.
+   */
+  estimatedEffect?: EffectEstimate;
   confidence: number;
   assumptions: Assumption[];
   cost?: string;
   riskTier: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  /** The Guardian's own verdict. A human decision never overwrites it. */
   guardianVerdict: GuardianVerdict;
+  /** The human decision recorded by the interventions API, if any. */
+  humanDecision?: "APPROVED" | "REJECTED";
   approvalReason?: string;
 }
+
+/**
+ * Incident severity, in the backend's vocabulary (IncidentSessionRequest in
+ * backend/src/api/session.py: P0 | P1 | P2 | P3). P0 is the most severe.
+ */
+export type IncidentSeverity = "P0" | "P1" | "P2" | "P3";
 
 export interface Incident {
   id: string;
   title: string;
   affectedServices: string[];
-  severity: "SEV1" | "SEV2" | "SEV3" | "SEV4";
+  /**
+   * An IncidentSeverity when recognised; a stored value outside that
+   * vocabulary is kept as sent so the page can show it rather than guess.
+   */
+  severity: IncidentSeverity | (string & {});
   status: "ACTIVE" | "INVESTIGATING" | "RESOLVED";
   acknowledgedAt: string; // ISO8601
   cynefinDomain?: CynefinDomain;
@@ -227,11 +245,6 @@ export interface Incident {
 // ─── Governance / Review queue ─────────────────────────────────────────────────
 
 export type RiskTier = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
-export type ReviewObjectType =
-  | "CAUSAL_EDGE"
-  | "GRAPH_FRAGMENT"
-  | "ASSUMPTION"
-  | "INTERVENTION";
 /**
  * How a review-queue row is presented. NOT the backend's ReviewStatus, which is
  * the Assumption review lifecycle (PENDING/ACCEPTED/CONTESTED/REJECTED): a queue
@@ -245,10 +258,21 @@ export type ReviewQueueStatus =
   | "REJECTED"
   | "ESCALATED";
 
+/**
+ * One review-queue row as the page shows it. Built from governance.py
+ * ReviewQueueItem by mapBackendItem in app/governance/page.tsx; a field the
+ * backend does not send is null, never a placeholder.
+ */
 export interface ReviewQueueItem {
   id: string;
   objectName: string;
-  objectType: ReviewObjectType;
+  /**
+   * Set when the name does not identify the object: the review queue sends an
+   * edge's relation type ("CAUSES") as its name and no endpoints.
+   */
+  objectNameNote?: string;
+  /** The backend's object_type verbatim: CausalEdge | GraphFragment | CausalEntity. */
+  objectType: string;
   /**
    * The semantic-layer business domain the object belongs to (the backend's
    * review-queue `domain`, e.g. "devops"). A plain label: it is NOT a Cynefin
@@ -266,7 +290,8 @@ export interface ReviewQueueItem {
   riskReasons?: string[];
   /** Who drafted the object; null when the backend has no record of it. */
   submittedBy: string | null;
-  submittedAt: string; // ISO8601
+  /** ISO8601 created_at from the backend, or null when it sent none. */
+  submittedAt: string | null;
   status: ReviewQueueStatus;
   evidenceCitations: Evidence[];
   sensitivityResults: StatisticalTestResult[];

@@ -45,7 +45,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field, create_model, model_validator
 
 from src.agents.narration import Persona, narrate_outcome
-from src.middleware.auth import get_current_user
 from src.middleware.rbac import guard
 from src.semantic_layer.decision_store import (
     DecisionStore,
@@ -255,6 +254,16 @@ async def make_decision(
         frame, graph, query=query, policy=body.analysis_policy or AnalysisPolicy()
     )
     decision = decide(outcome, request, policy)
+    # Written before the entry is sealed: an explanation that fails its own
+    # verification is a bug in this layer, and it must not leave a sealed entry
+    # behind an error the caller would retry (it used to, answering 500 after the
+    # write).
+    try:
+        explanation = explain(decision, outcome)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=500, detail=f"the decision's explanation failed verification: {exc}"
+        ) from exc
 
     try:
         record = await _store.record(
@@ -351,7 +360,6 @@ async def make_decision(
         uid=user.get("uid"),
     )
 
-    explanation = explain(decision, outcome)
     narrative: Narrative | None = None
     if body.narrate:
         # After the ledger write, on purpose: the sealed record holds the verdict and the
@@ -392,7 +400,7 @@ async def make_decision(
 async def list_decisions(
     action: Annotated[str | None, Query(description="Filter to one action")] = None,
     limit: Annotated[int, Query(ge=1, le=500)] = 50,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/decisions")),
 ) -> RecordList:
     records = (
         await _store.for_subject(action, limit=limit)
@@ -407,7 +415,9 @@ async def list_decisions(
     response_model=ChainReport,
     summary="Verify the decision chain by recomputing it",
 )
-async def verify_ledger(user: dict[str, Any] = Depends(get_current_user)) -> ChainReport:
+async def verify_ledger(
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/decisions/verify")),
+) -> ChainReport:
     """Recompute every digest and link from the stored records.
 
     A pass means the chain is *internally* consistent. It cannot mean more than
@@ -431,7 +441,9 @@ class AnchorRequest(BaseModel):
     response_model=Checkpoint,
     summary="The chain's head, to publish outside this database",
 )
-async def get_checkpoint(user: dict[str, Any] = Depends(get_current_user)) -> Checkpoint:
+async def get_checkpoint(
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/decisions/checkpoint")),
+) -> Checkpoint:
     """What to publish so that a later rewrite of this chain can be shown, not just suspected.
 
     Put it somewhere this database's owner cannot edit -- a transparency log, another
@@ -569,7 +581,7 @@ async def record_followup(
 )
 async def calibration(
     limit: Annotated[int | None, Query(ge=1, le=5000)] = None,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/decisions/calibration")),
 ) -> CalibrationReport:
     """Predicted against measured, over every follow-up taken.
 

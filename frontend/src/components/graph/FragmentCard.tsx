@@ -8,7 +8,8 @@
  *   - Approval status (colour-coded)
  *   - Edge count, usage count
  *   - Tags
- *   - Guardian verdict badge
+ *   - Guardian verdict badge -- only on an APPROVED fragment; a draft or
+ *     deprecated one says what it is instead
  *   - Action: View, Use in Session, Request Review
  *
  * Used in the GraphFragment browser on the /analyst and /governance pages.
@@ -213,11 +214,27 @@ export function FragmentCard({
 
       {/* Guardian verdict */}
       <div className="flex items-center justify-between pt-1 border-t border-zinc-100 dark:border-zinc-800">
-        <GuardianVerdictBadge
-          verdict={guardianVerdict}
-          policyRulesCited={policyRulesCited}
-          size="sm"
-        />
+        {/* The badge follows approvalStatus: only an APPROVED fragment shows the
+            Guardian's verdict. A draft or deprecated fragment never reads as
+            approved, whatever verdict ref it still carries. */}
+        <span data-testid="fragment-approval-badge" data-status={approvalStatus}>
+          {isApproved ? (
+            <GuardianVerdictBadge
+              verdict={guardianVerdict}
+              policyRulesCited={policyRulesCited}
+              size="sm"
+            />
+          ) : (
+            <span
+              className={cn(
+                "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+                statusColours.badge
+              )}
+            >
+              {isDeprecated ? "Deprecated" : "Draft · awaiting review"}
+            </span>
+          )}
+        </span>
 
         {/* Actions */}
         <div className="flex items-center gap-1.5">

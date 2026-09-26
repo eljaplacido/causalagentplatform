@@ -8,6 +8,14 @@ Rules (from DATA_LAYER.md §2.2):
   4. Draft objects cannot participate in simulations.
   5. Deprecated objects are retained (filtered from active surfaces).
 
+How rules 2 and 3 hold (ADR-001 "Versioning"; septa-14, septa-15): every state of
+an object is a row in the append-only semantic_object_versions table, and the
+row in the object's own table is the current version, changed only by
+_record_change, which records the next revision and never rewrites one.
+Approval requires the object's source data and drafter on record, and
+get_lineage assembles the chain from source data to approver out of the
+version history and audit_log.
+
 Every write method validates the guardian_verdict_ref against the audit_log
 table before proceeding.  GuardianBlockedError is raised if:
   - The verdict_id does not exist in audit_log
@@ -17,7 +25,7 @@ table before proceeding.  GuardianBlockedError is raised if:
   - The verdict was issued for another action: a promotion needs one issued for
     GOVERNANCE_APPROVE (septa-60), a rejection one issued for GOVERNANCE_REJECT
     (septa-53), recording an edge's sensitivity result one issued for
-    RECORD_SENSITIVITY (septa-62), and a verdict for any of those decisions
+    RECORD_SENSITIVITY (septa-70), and a verdict for any of those decisions
     authorises only that decision
   - The verdict was issued for a different object, or for none
   - The verdict has already been spent (see verdict_consumption)
@@ -32,7 +40,10 @@ from __future__ import annotations
 import hashlib
 import json
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any
+from decimal import Decimal
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _pkg_version
+from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 
 import structlog
@@ -48,7 +59,12 @@ from src.db.types import (
     timestamp_text,
     typed_text,
 )
-from src.exceptions import GuardianBlockedError, InvalidTransitionError, ObjectNotFoundError
+from src.exceptions import (
+    GuardianBlockedError,
+    InvalidTransitionError,
+    LineageIncompleteError,
+    ObjectNotFoundError,
+)
 from src.semantic_layer.models import (
     ApprovalStatus,
     Assumption,
@@ -61,9 +77,16 @@ from src.semantic_layer.models import (
     FragmentApprovalStatus,
     GraphFragment,
     GuardianVerdict,
+    LineageActor,
+    LineageApproval,
+    LineageChain,
+    LineageStep,
+    LineageVerdict,
     ReviewStatus,
     RiskTier,
+    SemanticObjectVersion,
     UserRef,
+    VersionChange,
 )
 from src.semantic_layer.review_risk import (
     RECORD_SENSITIVITY_CONTEXT,
@@ -259,7 +282,7 @@ def _assert_action(issued: Any, action: str | None, verdict_id: UUID, context: s
 
     A bound decision accepts only a verdict issued for exactly that action: a
     promotion GOVERNANCE_APPROVE (septa-60), a rejection GOVERNANCE_REJECT
-    (septa-53), recording a sensitivity result RECORD_SENSITIVITY (septa-62). A
+    (septa-53), recording a sensitivity result RECORD_SENSITIVITY (septa-70). A
     write that names no action (a new draft) accepts none of them.
     """
     issued = str(issued)
@@ -437,17 +460,20 @@ async def _insert_assumption(
     result under, and only record_edge_sensitivity passes it: it is what makes the
     result count for Guardian PR-007 and the review tiers
     (review_risk.recorded_sensitivity). propose_draft never does, so a drafter's own
-    result is stored as what the drafter said and counts for nothing."""
+    result is stored as what the drafter said and counts for nothing.
+
+    The row is revision 1 with the draft's declared ``source_data``; the caller
+    records that revision in the version history (014)."""
     await session.execute(
         typed_text(
             "INSERT INTO assumptions ("
             "  id, statement, assumption_type, scope, justification, "
             "  elicited_from, elicited_by, elicited_at, review_status, domain, "
-            "  sensitivity_result, sensitivity_verdict_id"
+            "  sensitivity_result, sensitivity_verdict_id, revision, source_data"
             ") VALUES ("
             "  :id, :statement, :assumption_type, :scope, :justification, "
             "  :elicited_from, :elicited_by, :elicited_at, :review_status, "
-            "  :domain, :sensitivity_result, :sensitivity_verdict_id"
+            "  :domain, :sensitivity_result, :sensitivity_verdict_id, 1, :source_data"
             ")",
             elicited_at=TIMESTAMP,
         ),
@@ -470,6 +496,9 @@ async def _insert_assumption(
                 else None
             ),
             "sensitivity_verdict_id": str(recorded_under) if recorded_under else None,
+            "source_data": (
+                draft.source_data.model_dump_json() if draft.source_data is not None else None
+            ),
         },
     )
 
@@ -508,27 +537,68 @@ def _table(name: str, *columns: str) -> TableClause:
 _ENTITY_COLUMNS = (
     "id", "name", "entity_type", "domain", "description", "attributes",
     "ontology_version", "approval_status", "created_by", "created_at",
-    "approved_at", "approved_by", "lineage", "tags",
+    "approved_at", "approved_by", "guardian_verdict_ref", "lineage", "tags",
+    "revision", "source_data",
+)
+_EDGE_COLUMNS = (
+    "id", "source_id", "source_type", "target_id", "target_type", "edge_type",
+    "direction", "confidence", "evidence_refs", "assumption_refs", "approval_status",
+    "approved_by", "approved_at", "guardian_verdict_ref", "version", "lineage",
+    "domain", "created_at", "created_by", "revision", "source_data",
 )
 _FRAGMENT_COLUMNS = (
     "id", "name", "domain", "description", "edge_ids", "entry_nodes",
     "exit_nodes", "approval_status", "version", "usage_count", "tags",
     "guardian_verdict_ref", "created_by", "created_at", "approved_at", "approved_by",
+    "lineage", "revision", "source_data",
 )
 _ASSUMPTION_COLUMNS = (
     "id", "statement", "assumption_type", "scope", "justification",
     "elicited_from", "elicited_by", "elicited_at", "review_status",
     "last_reviewed_at", "next_review_due", "sensitivity_result", "domain",
+    "sensitivity_verdict_id", "revision", "source_data",
 )
 
-_CAUSAL_ENTITIES = _table("causal_entities", *_ENTITY_COLUMNS, "guardian_verdict_ref")
-_GRAPH_FRAGMENTS = _table("graph_fragments", *_FRAGMENT_COLUMNS, "lineage")
+_CAUSAL_ENTITIES = _table("causal_entities", *_ENTITY_COLUMNS)
+_CAUSAL_EDGES = _table("causal_edges", *_EDGE_COLUMNS)
+_GRAPH_FRAGMENTS = _table("graph_fragments", *_FRAGMENT_COLUMNS)
 _ASSUMPTIONS = _table("assumptions", *_ASSUMPTION_COLUMNS)
-_CAUSAL_EDGES = _table(
-    "causal_edges", "id", "edge_type", "domain", "approval_status", "created_at",
-    "approved_at", "approved_by", "guardian_verdict_ref", "lineage", "confidence",
-    "assumption_refs", "created_by",
+_VERSIONS = _table(
+    "semantic_object_versions", "object_type", "object_id", "revision", "change",
+    "state", "domain", "actor", "agent_id", "agent_version", "verdict_ref", "recorded_at",
 )
+
+#: Every versioned object type: its table, every column of it (a version's
+#: `state` is the row, column for column), and the columns stored as JSON -- JSONB
+#: or an array on PostgreSQL, JSON text on SQLite -- which a read decodes.
+_HEADS: dict[str, tuple[TableClause, tuple[str, ...], frozenset[str]]] = {
+    "CausalEntity": (
+        _CAUSAL_ENTITIES,
+        _ENTITY_COLUMNS,
+        frozenset({"attributes", "created_by", "approved_by", "lineage", "tags", "source_data"}),
+    ),
+    "CausalEdge": (
+        _CAUSAL_EDGES,
+        _EDGE_COLUMNS,
+        frozenset(
+            {"evidence_refs", "assumption_refs", "approved_by", "created_by", "lineage",
+             "source_data"}
+        ),
+    ),
+    "GraphFragment": (
+        _GRAPH_FRAGMENTS,
+        _FRAGMENT_COLUMNS,
+        frozenset(
+            {"edge_ids", "entry_nodes", "exit_nodes", "tags", "created_by", "approved_by",
+             "lineage", "source_data"}
+        ),
+    ),
+    "Assumption": (
+        _ASSUMPTIONS,
+        _ASSUMPTION_COLUMNS,
+        frozenset({"scope", "elicited_by", "sensitivity_result", "source_data"}),
+    ),
+}
 
 #: The object types a review may approve or reject: their table, and the column
 #: the review queue shows as the object's name. A closed mapping; an object_type
@@ -538,6 +608,91 @@ _REVIEWABLE_TABLES: dict[str, tuple[TableClause, str]] = {
     "GraphFragment": (_GRAPH_FRAGMENTS, "name"),
     "CausalEntity": (_CAUSAL_ENTITIES, "name"),
 }
+
+SemanticObject = CausalEdge | GraphFragment | CausalEntity | Assumption
+
+#: The platform build that recorded a version: the "which version of the agent"
+#: half of a lineage step.
+try:
+    PLATFORM_VERSION = f"causal-platform-backend {_pkg_version('causal-platform-backend')}"
+except PackageNotFoundError:  # pragma: no cover - only outside an installed checkout
+    PLATFORM_VERSION = "causal-platform-backend (not installed)"
+
+
+def _json_safe(value: Any) -> Any:
+    """A stored value as JSON: times as ISO text in UTC, ids as text, numbers as numbers."""
+    if isinstance(value, datetime):
+        return timestamp_text(value)
+    if isinstance(value, UUID):
+        return str(value)
+    if isinstance(value, Decimal):
+        return float(value)
+    if isinstance(value, list | tuple):
+        return [_json_safe(v) for v in value]
+    if isinstance(value, dict):
+        return {str(k): _json_safe(v) for k, v in value.items()}
+    return value
+
+
+def _row_state(object_type: str, row: Any) -> dict[str, Any]:
+    """A head row as the JSON a version stores: every column, JSON columns decoded."""
+    _, columns, json_columns = _HEADS[object_type]
+    raw = dict(row)
+    state = _parse_json_fields({c: raw.get(c) for c in columns}, sorted(json_columns))
+    return {k: _json_safe(v) for k, v in state.items()}
+
+
+def _to_model(object_type: str, row: Any) -> SemanticObject:
+    """A head row, or a version's state, as its model."""
+    _, columns, json_columns = _HEADS[object_type]
+    raw = _parse_json_fields({c: dict(row).get(c) for c in columns}, sorted(json_columns))
+    if raw.get("revision") is None:
+        raw["revision"] = 1
+    if object_type == "CausalEdge":
+        raw["source"] = {"id": raw.pop("source_id"), "object_type": raw.pop("source_type")}
+        raw["target"] = {"id": raw.pop("target_id"), "object_type": raw.pop("target_type")}
+        return CausalEdge.model_validate(raw)
+    if object_type == "GraphFragment":
+        raw["edges"] = raw.pop("edge_ids", []) or []
+        return GraphFragment.model_validate(raw)
+    if object_type == "CausalEntity":
+        return CausalEntity.model_validate(raw)
+    return Assumption.model_validate(raw)
+
+
+def _object_type_of(obj: SemanticObject) -> str:
+    return type(obj).__name__
+
+
+def _versioned_type(object_type: str, context: str) -> None:
+    if object_type not in _HEADS:
+        raise ValueError(f"{context}: unknown object_type '{object_type}'")
+
+
+def _user_ref(value: Any) -> UserRef | None:
+    """A stored UserRef (JSON text or a decoded dict), or None."""
+    decoded = json_value(value) if isinstance(value, str | bytes) else value
+    if not isinstance(decoded, dict) or not decoded.get("id"):
+        return None
+    return UserRef.model_validate(decoded)
+
+
+def _as_version(row: Any) -> SemanticObjectVersion:
+    raw = dict(row)
+    return SemanticObjectVersion(
+        object_type=raw["object_type"],
+        object_id=UUID(str(raw["object_id"])),
+        revision=int(raw["revision"]),
+        change=VersionChange(raw["change"]),
+        state=json_value(raw["state"], {}),
+        domain=raw["domain"],
+        actor=_user_ref(raw["actor"]),
+        agent_id=raw["agent_id"],
+        agent_version=raw["agent_version"],
+        verdict_ref=UUID(str(raw["verdict_ref"])) if raw["verdict_ref"] else None,
+        recorded_at=raw["recorded_at"],
+    )
+
 
 #: What the review queue reads from each reviewable table beyond the common columns:
 #: the fields its risk tier is derived from, and who created the object.
@@ -560,6 +715,281 @@ def _outside(domains: Collection[str] | None, domain: Any) -> bool:
     return domains is not None and domain not in domains
 
 
+# ── Versions ──────────────────────────────────────────────────────────────────
+#
+# ADR-001: "All objects are versioned -- no in-place mutation; deprecate and
+# replace." Every state of a semantic object is a row in semantic_object_versions
+# (014_semantic_object_versions.sql), holding the object's complete row at that
+# revision. The row in the object's own table is the head: the current version.
+# A state change goes through _record_change and nothing else: it records the
+# state being replaced if history does not hold it yet, advances the head by one
+# revision (guarded on the revision it read, so a concurrent change cannot be
+# overwritten), reads the new head back and records it. The version rows are
+# append-only, and the database refuses a head UPDATE that does not follow this
+# (the triggers in 014 and in SQLITE_DDL).
+
+
+async def _read_head(
+    session: AsyncSession, object_type: str, object_id: UUID
+) -> dict[str, Any] | None:
+    """The head row of an object, every column, or None."""
+    t, columns, _ = _HEADS[object_type]
+    row = await session.execute(
+        select(*(t.c[c] for c in columns)).where(t.c.id == bindparam("oid")),
+        {"oid": str(object_id)},
+    )
+    found = row.mappings().one_or_none()
+    return dict(found) if found is not None else None
+
+
+async def _read_versions(
+    session: AsyncSession, object_type: str, object_id: UUID
+) -> list[SemanticObjectVersion]:
+    v = _VERSIONS
+    rows = await session.execute(
+        select(*v.c)
+        .where(v.c.object_type == bindparam("otype"), v.c.object_id == bindparam("oid"))
+        .order_by(v.c.revision.asc()),
+        {"otype": object_type, "oid": str(object_id)},
+    )
+    return [_as_version(r) for r in rows.mappings()]
+
+
+async def _insert_version(
+    session: AsyncSession,
+    object_type: str,
+    state: dict[str, Any],
+    change: VersionChange,
+    *,
+    actor: UserRef | None,
+    agent_id: str | None,
+    verdict_ref: UUID | None,
+) -> None:
+    """Record one version. The primary key refuses a revision recorded twice."""
+    await session.execute(
+        typed_text(
+            "INSERT INTO semantic_object_versions (object_type, object_id, revision, change, "
+            " state, domain, actor, agent_id, agent_version, verdict_ref, recorded_at) "
+            "VALUES (:otype, :oid, :rev, :change, :state, :domain, :actor, :agent, "
+            " :agent_version, :verdict, :ts)",
+            ts=TIMESTAMP,
+        ),
+        {
+            "otype": object_type,
+            "oid": str(state["id"]),
+            "rev": int(state["revision"]),
+            "change": change.value,
+            "state": json.dumps(state, sort_keys=True),
+            "domain": state["domain"],
+            "actor": actor.model_dump_json() if actor is not None else None,
+            "agent": agent_id,
+            "agent_version": PLATFORM_VERSION,
+            "verdict": str(verdict_ref) if verdict_ref else None,
+            "ts": datetime.now(UTC),
+        },
+    )
+
+
+async def _record_if_missing(
+    session: AsyncSession, object_type: str, head: dict[str, Any]
+) -> None:
+    """Record the head's current state if history lacks it: a row older than 014.
+
+    It is recorded as found (change RECORDED), before anything replaces it, so the
+    first change to an object written before versioning loses nothing.
+    """
+    v = _VERSIONS
+    exists = await session.execute(
+        select(v.c.revision).where(
+            v.c.object_type == bindparam("otype"),
+            v.c.object_id == bindparam("oid"),
+            v.c.revision == bindparam("rev"),
+        ),
+        {"otype": object_type, "oid": str(head["id"]), "rev": int(head["revision"] or 1)},
+    )
+    if exists.first() is None:
+        await _insert_version(
+            session,
+            object_type,
+            _row_state(object_type, head),
+            VersionChange.RECORDED,
+            actor=None,
+            agent_id="registry:recorded-before-first-change",
+            verdict_ref=None,
+        )
+
+
+async def _record_change(
+    session: AsyncSession,
+    object_type: str,
+    head: dict[str, Any],
+    changes: dict[str, tuple[Any, Any]],
+    *,
+    change: VersionChange,
+    actor: UserRef | None,
+    agent_id: str | None,
+    verdict_ref: UUID | None,
+    attempted: str,
+) -> dict[str, Any]:
+    """Advance an object to a new version: the only way a head row changes.
+
+    ``changes`` maps a column to (value, bind type or None). The UPDATE matches the
+    revision ``head`` was read at, so a change made in between is not overwritten:
+    nothing matches, and the caller's transaction (with its spent verdict) rolls
+    back. Returns the new head's state, which is what was recorded.
+    """
+    t, _, _ = _HEADS[object_type]
+    await _record_if_missing(session, object_type, head)
+    current = int(head["revision"] or 1)
+    params: dict[str, Any] = {"oid": str(head["id"]), "cur": current, "next": current + 1}
+    values: dict[str, Any] = {"revision": bindparam("next")}
+    for name, (value, type_) in changes.items():
+        values[name] = (
+            bindparam(f"v_{name}", type_=type_) if type_ else bindparam(f"v_{name}")
+        )
+        params[f"v_{name}"] = value
+    result = await session.execute(
+        update(t)
+        .where(t.c.id == bindparam("oid"), t.c.revision == bindparam("cur"))
+        .values(**values),
+        params,
+    )
+    if getattr(result, "rowcount", 1) != 1:
+        raise InvalidTransitionError(
+            str(head["id"]), object_type, f"no longer at revision {current}", attempted
+        )
+    after = await _read_head(session, object_type, UUID(str(head["id"])))
+    if after is None:  # pragma: no cover - the UPDATE above matched it
+        raise ObjectNotFoundError(str(head["id"]), object_type)
+    state = _row_state(object_type, after)
+    await _insert_version(
+        session, object_type, state, change, actor=actor, agent_id=agent_id,
+        verdict_ref=verdict_ref,
+    )
+    return state
+
+
+# ── Lineage ───────────────────────────────────────────────────────────────────
+#
+# Registry rule 3: every approved object carries lineage from its source data,
+# through whoever drafted it, to its approver (septa-15). The chain is assembled
+# from what the platform recorded -- the version history and audit_log -- not
+# from the `lineage` list the submitter sent, which is the submitter's claim.
+
+
+def _drafter_of(object_type: str, state: dict[str, Any]) -> UserRef | None:
+    """Who the object's own row says drafted it (created_by, elicited_by), if anyone."""
+    return _user_ref(state.get("elicited_by" if object_type == "Assumption" else "created_by"))
+
+
+def _lineage_missing(
+    object_type: str, head: dict[str, Any], first: SemanticObjectVersion | None
+) -> list[str]:
+    """What an approval needs on record before it: the source data and the drafter."""
+    state = _row_state(object_type, head)
+    missing: list[str] = []
+    if not state.get("source_data"):
+        missing.append("source data (source_data)")
+    drafted = first is not None and first.revision == 1 and (
+        first.actor is not None or first.agent_id
+    ) and first.change == VersionChange.PROPOSED
+    if not drafted and _drafter_of(object_type, state) is None:
+        missing.append("drafter")
+    return missing
+
+
+def _signed(record: dict[str, Any]) -> bool:
+    """Whether an audit_log row's Guardian signature verifies."""
+    if not record.get("signature"):
+        return False
+    statement = verdict_claim(
+        verdict_id=record["id"],
+        subject_id=record["subject_id"],
+        payload_hash=record["payload_hash"],
+        verdict=str(record["guardian_verdict"]),
+        action_type=record["action_type"],
+        agent_id=record["agent_id"],
+        created_at=timestamp_text(record["created_at"]) or "",
+    )
+    return verdict_verify(statement, record["signature"])
+
+
+def _verdict_ids(state: dict[str, Any], versions: Sequence[SemanticObjectVersion]) -> set[str]:
+    ids = {str(v.verdict_ref) for v in versions if v.verdict_ref}
+    ids |= {str(v.state["guardian_verdict_ref"]) for v in versions
+            if v.state.get("guardian_verdict_ref")}
+    if state.get("guardian_verdict_ref"):
+        ids.add(str(state["guardian_verdict_ref"]))
+    return ids
+
+
+def _approval_of(
+    state: dict[str, Any], versions: Sequence[SemanticObjectVersion]
+) -> LineageApproval | None:
+    if state.get("approval_status") != "APPROVED":
+        return None
+    approvals = [v for v in versions if v.change == VersionChange.APPROVED]
+    if approvals:
+        last = approvals[-1]
+        return LineageApproval(
+            person=last.actor, at=last.recorded_at, verdict_id=last.verdict_ref,
+            revision=last.revision, attributed_from="version",
+        )
+    # Approved before versioning: the row says who, and cannot say on what verdict.
+    return LineageApproval(
+        person=_user_ref(state.get("approved_by")),
+        at=state.get("approved_at"),
+        verdict_id=None,
+        revision=None,
+        attributed_from="approved_by",
+    )
+
+
+def _drafting_of(
+    object_type: str, state: dict[str, Any], versions: Sequence[SemanticObjectVersion]
+) -> LineageActor | None:
+    first = versions[0] if versions else None
+    if first is not None and first.revision == 1 and first.change == VersionChange.PROPOSED:
+        return LineageActor(
+            person=first.actor, agent_id=first.agent_id, agent_version=first.agent_version,
+            at=first.recorded_at, revision=1, attributed_from="version",
+        )
+    person = _drafter_of(object_type, state)
+    if person is None:
+        return None
+    at = state.get("elicited_at" if object_type == "Assumption" else "created_at")
+    return LineageActor(person=person, at=at, attributed_from="created_by")
+
+
+def _gaps(
+    state: dict[str, Any],
+    versions: Sequence[SemanticObjectVersion],
+    drafted: LineageActor | None,
+    approved: LineageApproval | None,
+) -> list[str]:
+    gaps: list[str] = []
+    if not versions:
+        gaps.append(
+            "no version history: the object predates versioning (014) and has not "
+            "changed since, so its draft and any review are not recorded"
+        )
+    elif versions[0].change == VersionChange.RECORDED:
+        gaps.append(
+            "history starts at a state recorded as found: the draft and any change "
+            "before versioning (014) are not in it"
+        )
+    if not state.get("source_data"):
+        gaps.append("no source data declared")
+    if drafted is None:
+        gaps.append("no drafter recorded")
+    if approved is not None:
+        if approved.person is None:
+            gaps.append("no approver recorded")
+        if approved.verdict_id is None:
+            gaps.append("no verdict recorded for the approval")
+    return gaps
+
+
 # ── Registry ──────────────────────────────────────────────────────────────────
 
 
@@ -574,29 +1004,41 @@ class SemanticLayerRegistry:
     The registry object itself is stateless and can be shared freely.
     """
 
+    # ── Reads: the head, which is the current version ─────────────────────────
+
+    async def get_object(
+        self, object_type: str, object_id: UUID, domains: Collection[str] | None = None
+    ) -> SemanticObject:
+        """The current version of any versioned object, if it is inside `domains`."""
+        _versioned_type(object_type, "get_object")
+        async with CloudSqlFactory.get_session_factory()() as session:
+            head = await _read_head(session, object_type, object_id)
+        if head is None or _outside(domains, head["domain"]):
+            raise ObjectNotFoundError(str(object_id), object_type)
+        return _to_model(object_type, head)
+
+    async def _list(
+        self,
+        object_type: str,
+        filters: list[Any],
+        params: dict[str, Any],
+        order_by: Any,
+    ) -> list[Any]:
+        t, columns, _ = _HEADS[object_type]
+        async with CloudSqlFactory.get_session_factory()() as session:
+            rows = await session.execute(
+                select(*(t.c[c] for c in columns)).where(*filters).order_by(order_by), params
+            )
+            return [_to_model(object_type, r) for r in rows.mappings()]
+
     # ── Entity ────────────────────────────────────────────────────────────────
 
     async def get_entity(
         self, entity_id: UUID, domains: Collection[str] | None = None
     ) -> CausalEntity:
         """Fetch a CausalEntity by ID, if it is inside `domains`."""
-        async with CloudSqlFactory.get_session_factory()() as session:
-            row = await session.execute(
-                text(
-                    "SELECT id, name, entity_type, domain, description, attributes, "
-                    "ontology_version, approval_status, created_by, created_at, "
-                    "approved_at, approved_by, lineage, tags "
-                    "FROM causal_entities WHERE id = :eid"
-                ),
-                {"eid": str(entity_id)},
-            )
-            record = row.mappings().one_or_none()
-        if record is None or _outside(domains, record["domain"]):
-            raise ObjectNotFoundError(str(entity_id), "CausalEntity")
-        raw = _parse_json_fields(
-            dict(record), ["attributes", "lineage", "tags", "created_by", "approved_by"]
-        )
-        return CausalEntity.model_validate(raw)
+        entity = await self.get_object("CausalEntity", entity_id, domains)
+        return cast("CausalEntity", entity)
 
     async def list_entities(
         self,
@@ -614,22 +1056,7 @@ class SemanticLayerRegistry:
         if status:
             filters.append(t.c.approval_status == bindparam("status"))
             params["status"] = status.value
-
-        async with CloudSqlFactory.get_session_factory()() as session:
-            rows = await session.execute(
-                select(*(t.c[c] for c in _ENTITY_COLUMNS))
-                .where(*filters)
-                .order_by(t.c.created_at.desc()),
-                params,
-            )
-            return [
-                CausalEntity.model_validate(
-                    _parse_json_fields(
-                        dict(r), ["attributes", "lineage", "tags", "created_by", "approved_by"]
-                    )
-                )
-                for r in rows.mappings()
-            ]
+        return await self._list("CausalEntity", filters, params, t.c.created_at.desc())
 
     # ── Edge ─────────────────────────────────────────────────────────────────
 
@@ -637,29 +1064,8 @@ class SemanticLayerRegistry:
         self, edge_id: UUID, domains: Collection[str] | None = None
     ) -> CausalEdge:
         """Fetch a CausalEdge by ID, if it is inside `domains`."""
-        async with CloudSqlFactory.get_session_factory()() as session:
-            row = await session.execute(
-                text(
-                    "SELECT id, source_id, source_type, target_id, target_type, "
-                    "edge_type, direction, confidence, evidence_refs, assumption_refs, "
-                    "approval_status, approved_by, approved_at, guardian_verdict_ref, "
-                    "version, lineage, domain, created_at, created_by "
-                    "FROM causal_edges WHERE id = :eid"
-                ),
-                {"eid": str(edge_id)},
-            )
-            record = row.mappings().one_or_none()
-        if record is None or _outside(domains, record["domain"]):
-            raise ObjectNotFoundError(str(edge_id), "CausalEdge")
-        # Reconstruct nested objects and parse JSON fields
-        raw = dict(record)
-        raw["source"] = {"id": raw.pop("source_id"), "object_type": raw.pop("source_type")}
-        raw["target"] = {"id": raw.pop("target_id"), "object_type": raw.pop("target_type")}
-        raw = _parse_json_fields(
-            raw,
-            ["evidence_refs", "assumption_refs", "lineage", "approved_by", "created_by"],
-        )
-        return CausalEdge.model_validate(raw)
+        edge = await self.get_object("CausalEdge", edge_id, domains)
+        return cast("CausalEdge", edge)
 
     async def get_edge_audit_trail(
         self, edge_id: UUID, domains: Collection[str] | None = None
@@ -697,25 +1103,8 @@ class SemanticLayerRegistry:
         self, fragment_id: UUID, domains: Collection[str] | None = None
     ) -> GraphFragment:
         """Fetch a GraphFragment by ID, if it is inside `domains`."""
-        async with CloudSqlFactory.get_session_factory()() as session:
-            row = await session.execute(
-                text(
-                    "SELECT id, name, domain, description, edge_ids, entry_nodes, "
-                    "exit_nodes, approval_status, version, usage_count, tags, "
-                    "guardian_verdict_ref, created_by, created_at, approved_at, approved_by "
-                    "FROM graph_fragments WHERE id = :fid"
-                ),
-                {"fid": str(fragment_id)},
-            )
-            record = row.mappings().one_or_none()
-        if record is None or _outside(domains, record["domain"]):
-            raise ObjectNotFoundError(str(fragment_id), "GraphFragment")
-        raw = dict(record)
-        raw["edges"] = raw.pop("edge_ids", []) or []
-        raw = _parse_json_fields(
-            raw, ["edges", "entry_nodes", "exit_nodes", "tags", "created_by", "approved_by"]
-        )
-        return GraphFragment.model_validate(raw)
+        fragment = await self.get_object("GraphFragment", fragment_id, domains)
+        return cast("GraphFragment", fragment)
 
     async def list_fragments(
         self,
@@ -733,44 +1122,14 @@ class SemanticLayerRegistry:
         if status:
             filters.append(t.c.approval_status == bindparam("status"))
             params["status"] = status.value
-
-        async with CloudSqlFactory.get_session_factory()() as session:
-            rows = await session.execute(
-                select(*(t.c[c] for c in _FRAGMENT_COLUMNS))
-                .where(*filters)
-                .order_by(t.c.created_at.desc()),
-                params,
-            )
-            results = []
-            for r in rows.mappings():
-                raw = dict(r)
-                raw["edges"] = raw.pop("edge_ids", []) or []
-                raw = _parse_json_fields(
-                    raw,
-                    ["edges", "entry_nodes", "exit_nodes", "tags", "created_by", "approved_by"],
-                )
-                results.append(GraphFragment.model_validate(raw))
-        return results
+        return await self._list("GraphFragment", filters, params, t.c.created_at.desc())
 
     # ── Assumption ────────────────────────────────────────────────────────────
 
     async def get_assumption(self, assumption_id: UUID) -> Assumption:
         """Fetch an Assumption by ID."""
-        async with CloudSqlFactory.get_session_factory()() as session:
-            row = await session.execute(
-                text(
-                    "SELECT id, statement, assumption_type, scope, justification, "
-                    "elicited_from, elicited_by, elicited_at, review_status, "
-                    "last_reviewed_at, next_review_due, sensitivity_result, domain "
-                    "FROM assumptions WHERE id = :aid"
-                ),
-                {"aid": str(assumption_id)},
-            )
-            record = row.mappings().one_or_none()
-        if record is None:
-            raise ObjectNotFoundError(str(assumption_id), "Assumption")
-        raw = _parse_json_fields(dict(record), ["scope", "elicited_by", "sensitivity_result"])
-        return Assumption.model_validate(raw)
+        assumption = await self.get_object("Assumption", assumption_id)
+        return cast("Assumption", assumption)
 
     async def list_pending_assumptions(self, domain: str | None = None) -> Sequence[Assumption]:
         """List assumptions in PENDING review status, for governance queue."""
@@ -780,19 +1139,120 @@ class SemanticLayerRegistry:
         if domain:
             filters.append(t.c.domain == bindparam("domain"))
             params["domain"] = domain
+        return await self._list("Assumption", filters, params, t.c.elicited_at.asc())
+
+    # ── History and lineage ───────────────────────────────────────────────────
+
+    async def get_versions(
+        self, object_type: str, object_id: UUID, domains: Collection[str] | None = None
+    ) -> list[SemanticObjectVersion]:
+        """Every recorded version of an object, oldest first, if it is inside `domains`.
+
+        An object written before versioning (014) that has not changed since has no
+        recorded version yet: its history is empty, and its head is its only state.
+        """
+        _versioned_type(object_type, "get_versions")
         async with CloudSqlFactory.get_session_factory()() as session:
-            rows = await session.execute(
-                select(*(t.c[c] for c in _ASSUMPTION_COLUMNS))
-                .where(*filters)
-                .order_by(t.c.elicited_at.asc()),
-                params,
-            )
-            return [
-                Assumption.model_validate(
-                    _parse_json_fields(dict(r), ["scope", "elicited_by", "sensitivity_result"])
+            head = await _read_head(session, object_type, object_id)
+            if head is None or _outside(domains, head["domain"]):
+                raise ObjectNotFoundError(str(object_id), object_type)
+            versions = await _read_versions(session, object_type, object_id)
+        return [v for v in versions if not _outside(domains, v.domain)]
+
+    async def get_object_version(
+        self,
+        object_type: str,
+        object_id: UUID,
+        revision: int,
+        domains: Collection[str] | None = None,
+    ) -> SemanticObject:
+        """The object as it was at `revision`."""
+        for version in await self.get_versions(object_type, object_id, domains):
+            if version.revision == revision:
+                return _to_model(object_type, version.state)
+        raise ObjectNotFoundError(f"{object_id}@{revision}", object_type)
+
+    async def get_lineage(
+        self, object_type: str, object_id: UUID, domains: Collection[str] | None = None
+    ) -> LineageChain:
+        """The object's lineage: source data, drafter, verdicts, approver, and its history.
+
+        Built from the version history and audit_log. A link that was never
+        recorded is named in ``gaps``, never inferred. ``provenance_records`` is
+        left for the caller to fill from the provenance store, which is keyed by
+        the sessions in ``provenance_sessions``.
+        """
+        _versioned_type(object_type, "get_lineage")
+        async with CloudSqlFactory.get_session_factory()() as session:
+            head = await _read_head(session, object_type, object_id)
+            if head is None or _outside(domains, head["domain"]):
+                raise ObjectNotFoundError(str(object_id), object_type)
+            versions = await _read_versions(session, object_type, object_id)
+            state = _row_state(object_type, head)
+            ids = sorted(_verdict_ids(state, versions))
+            # Every verdict spent on a version, and every row issued for the object:
+            # checks that were never spent, and the unsigned decision records.
+            # (An empty IN renders as a typed NULL that PostgreSQL will not compare
+            # with a uuid, hence the second form.)
+            params: dict[str, Any] = {"oid": str(object_id)}
+            if ids:
+                statement = text(
+                    "SELECT id, agent_id, action_type, payload_hash, guardian_verdict, "
+                    "policy_rules_cited, session_id, created_at, subject_id, signature, notes "
+                    "FROM audit_log WHERE subject_id = :oid OR id IN :ids "
+                    "ORDER BY created_at ASC"
+                ).bindparams(bindparam("ids", expanding=True))
+                params["ids"] = ids
+            else:
+                statement = text(
+                    "SELECT id, agent_id, action_type, payload_hash, guardian_verdict, "
+                    "policy_rules_cited, session_id, created_at, subject_id, signature, notes "
+                    "FROM audit_log WHERE subject_id = :oid ORDER BY created_at ASC"
                 )
-                for r in rows.mappings()
-            ]
+            records = [dict(r) for r in (await session.execute(statement, params)).mappings()]
+
+        spent = {str(v.verdict_ref): v.revision for v in versions if v.verdict_ref}
+        verdicts = [
+            LineageVerdict(
+                id=UUID(str(r["id"])),
+                action_type=r["action_type"],
+                guardian_verdict=str(r["guardian_verdict"]),
+                policy_rules_cited=_as_rule_list(r["policy_rules_cited"]),
+                agent_id=r["agent_id"],
+                session_id=r["session_id"],
+                created_at=r["created_at"],
+                signed=_signed(r),
+                spent_on_revision=spent.get(str(r["id"])),
+                notes=r["notes"],
+            )
+            for r in records
+        ]
+        drafted = _drafting_of(object_type, state, versions)
+        approved = _approval_of(state, versions)
+        gaps = _gaps(state, versions, drafted, approved)
+        status_column = "review_status" if object_type == "Assumption" else "approval_status"
+        return LineageChain(
+            object_type=object_type,
+            object_id=object_id,
+            domain=state["domain"],
+            revision=int(state.get("revision") or 1),
+            approval_status=str(state[status_column]),
+            source_data=state.get("source_data"),
+            drafted_by=drafted,
+            verdicts=verdicts,
+            approved_by=approved,
+            steps=[
+                LineageStep(
+                    revision=v.revision, change=v.change, actor=v.actor, agent_id=v.agent_id,
+                    agent_version=v.agent_version, verdict_ref=v.verdict_ref,
+                    recorded_at=v.recorded_at,
+                )
+                for v in versions
+            ],
+            provenance_sessions=sorted({v.session_id for v in verdicts if v.session_id}),
+            gaps=gaps,
+            complete=not gaps,
+        )
 
     # ── Draft proposal ────────────────────────────────────────────────────────
 
@@ -800,9 +1260,18 @@ class SemanticLayerRegistry:
         self,
         draft: CausalEdge | GraphFragment | CausalEntity | Assumption,
         verdict_id: UUID,
+        *,
+        submitted_by: UserRef | None = None,
+        agent_id: str | None = None,
     ) -> UUID:
         """
         Persist a draft semantic object after verifying the Guardian verdict.
+
+        The draft is revision 1, and is recorded as such in the object's version
+        history (change PROPOSED) with the person who submitted it -- or, when
+        the caller names nobody, the object's own created_by / elicited_by --
+        the agent it came through, and the verdict. Its ``source_data`` is
+        stored with it; approval later requires one (septa-15).
 
         The verdict must be APPROVED.  The object is persisted as a DRAFT
         whatever status it arrived with — promotion is a *separate*
@@ -819,6 +1288,8 @@ class SemanticLayerRegistry:
         Returns the UUID of the newly created object.
         """
         draft = _force_draft_status(draft)
+        declared = getattr(draft, "source_data", None)
+        source_data = declared.model_dump_json() if declared is not None else None
 
         async with CloudSqlFactory.get_session_factory()() as session:
             # Verify verdict
@@ -838,12 +1309,12 @@ class SemanticLayerRegistry:
                         "  id, source_id, source_type, target_id, target_type, "
                         "  edge_type, direction, confidence, evidence_refs, "
                         "  assumption_refs, approval_status, guardian_verdict_ref, "
-                        "  version, lineage, domain, created_at, created_by"
+                        "  version, lineage, domain, created_at, created_by, revision, source_data"
                         ") VALUES ("
                         "  :id, :source_id, :source_type, :target_id, :target_type, "
                         "  :edge_type, :direction, :confidence, :evidence_refs, "
                         "  :assumption_refs, :approval_status, :verdict_ref, "
-                        "  :version, :lineage, :domain, :created_at, :created_by"
+                        "  :version, :lineage, :domain, :created_at, :created_by, 1, :source_data"
                         ")",
                         evidence_refs=UUID_ARRAY,
                         assumption_refs=UUID_ARRAY,
@@ -871,6 +1342,7 @@ class SemanticLayerRegistry:
                             if draft.created_by is not None
                             else None
                         ),
+                        "source_data": source_data,
                     },
                 )
 
@@ -880,11 +1352,11 @@ class SemanticLayerRegistry:
                         "INSERT INTO graph_fragments ("
                         "  id, name, domain, description, edge_ids, entry_nodes, "
                         "  exit_nodes, approval_status, version, usage_count, tags, "
-                        "  guardian_verdict_ref, created_by, created_at"
+                        "  guardian_verdict_ref, created_by, created_at, revision, source_data"
                         ") VALUES ("
                         "  :id, :name, :domain, :description, :edge_ids, :entry_nodes, "
                         "  :exit_nodes, :approval_status, :version, 0, :tags, "
-                        "  :verdict_ref, :created_by, :created_at"
+                        "  :verdict_ref, :created_by, :created_at, 1, :source_data"
                         ")",
                         edge_ids=UUID_ARRAY,
                         tags=TEXT_ARRAY,
@@ -908,6 +1380,7 @@ class SemanticLayerRegistry:
                         "verdict_ref": str(verdict_id) if verdict_id else None,
                         "created_by": draft.created_by.model_dump_json(),
                         "created_at": draft.created_at,
+                        "source_data": source_data,
                     },
                 )
 
@@ -916,11 +1389,12 @@ class SemanticLayerRegistry:
                     typed_text(
                         "INSERT INTO causal_entities ("
                         "  id, name, entity_type, domain, description, attributes, "
-                        "  ontology_version, approval_status, created_by, created_at, tags"
+                        "  ontology_version, approval_status, created_by, created_at, tags, "
+                        "  lineage, revision, source_data"
                         ") VALUES ("
                         "  :id, :name, :entity_type, :domain, :description, "
                         "  :attributes, :ontology_version, :approval_status, "
-                        "  :created_by, :created_at, :tags"
+                        "  :created_by, :created_at, :tags, :lineage, 1, :source_data"
                         ")",
                         created_at=TIMESTAMP,
                         tags=TEXT_ARRAY,
@@ -940,6 +1414,12 @@ class SemanticLayerRegistry:
                         "created_by": draft.created_by.model_dump_json(),
                         "created_at": draft.created_at,
                         "tags": list(draft.tags),
+                        # The submitter's own lineage claim, stored as for an edge; it
+                        # used to be dropped. The platform's record is the history.
+                        "lineage": json.dumps(
+                            [r.model_dump() for r in draft.lineage], default=str
+                        ),
+                        "source_data": source_data,
                     },
                 )
 
@@ -948,6 +1428,21 @@ class SemanticLayerRegistry:
 
             else:
                 raise TypeError(f"Unsupported draft type: {type(draft).__name__}")
+
+            # Revision 1, as stored: read back so the version is the row itself.
+            object_type = _object_type_of(draft)
+            head = await _read_head(session, object_type, obj_id)
+            if head is None:  # pragma: no cover - inserted above, same transaction
+                raise ObjectNotFoundError(str(obj_id), object_type)
+            await _insert_version(
+                session,
+                object_type,
+                _row_state(object_type, head),
+                VersionChange.PROPOSED,
+                actor=submitted_by or _drafter_of(object_type, _row_state(object_type, head)),
+                agent_id=agent_id,
+                verdict_ref=verdict_id,
+            )
 
             await session.commit()
 
@@ -966,19 +1461,26 @@ class SemanticLayerRegistry:
         verdict_id: UUID,
         approver: UserRef,
         domains: Collection[str] | None = None,
+        *,
+        agent_id: str | None = None,
     ) -> None:
         """
-        Promote a DRAFT / UNDER_REVIEW object to APPROVED status.
+        Promote a DRAFT / UNDER_REVIEW object to APPROVED: a new version, not an edit.
 
-        Verifies the Guardian verdict before making any changes.
-        Records an approval lineage entry on the object.
+        Verifies the Guardian verdict before making any changes. The approved state
+        is the next revision -- recorded in the version history with the approver
+        and the verdict -- and the state it replaces stays in the history exactly
+        as it was (ADR-001; septa-14). An APPROVED lineage step is appended to the
+        object's ``lineage`` list as before.
+
+        The object's lineage must already name its source data and its drafter,
+        or the approval is refused with LineageIncompleteError (septa-15); the
+        verdict is then not spent.
 
         object_type must be one of: "CausalEdge", "GraphFragment", "CausalEntity".
         """
         if object_type not in _REVIEWABLE_TABLES:
             raise ValueError(f"promote_to_approved: unknown object_type '{object_type}'")
-
-        t, _ = _REVIEWABLE_TABLES[object_type]
 
         async with CloudSqlFactory.get_session_factory()() as session:
             await _assert_verdict_approved(
@@ -989,59 +1491,45 @@ class SemanticLayerRegistry:
                 action=GOVERNANCE_APPROVE,
             )
 
+            # Checked inside the session that spent the verdict, so raising rolls the
+            # spend back too.
+            head = await _read_head(session, object_type, object_id)
+            if head is None or _outside(domains, head["domain"]):
+                raise ObjectNotFoundError(str(object_id), object_type)
+            # A rejected (DEPRECATED) object could once be re-promoted by any fresh
+            # APPROVED verdict issued for it.
+            _assert_reviewable(head["approval_status"], object_id, object_type, "approved")
+            versions = await _read_versions(session, object_type, object_id)
+            missing = _lineage_missing(object_type, head, versions[0] if versions else None)
+            if missing:
+                raise LineageIncompleteError(str(object_id), object_type, missing)
+
             now = datetime.now(UTC)
-            lineage_entry = json.dumps(
+            history = _as_lineage(head["lineage"])
+            history.append(
                 {
                     "step_type": "APPROVED",
                     "actor_id": approver.id,
                     "timestamp": now.isoformat(),
                     "description": f"Promoted to APPROVED via verdict {verdict_id}",
-                },
-                default=str,
+                }
             )
-
-            # Read, append, write. `lineage || :entry` concatenates arrays on
-            # Postgres but *strings* on SQLite, where it produced '[][{...}]' --
-            # not JSON, and nothing read it closely enough to notice.
-            current = await session.execute(
-                select(t.c.lineage, t.c.approval_status, t.c.domain).where(
-                    t.c.id == bindparam("oid")
-                ),
-                {"oid": str(object_id)},
-            )
-            found = current.mappings().one_or_none()
-            if found is None or _outside(domains, found["domain"]):
-                raise ObjectNotFoundError(str(object_id), object_type)
-            # Checked here, inside the session that spent the verdict, so raising
-            # rolls the spend back too. The UPDATE below used to match on id alone,
-            # so a rejected (DEPRECATED) object could be re-promoted by any fresh
-            # APPROVED verdict issued for it.
-            _assert_reviewable(found["approval_status"], object_id, object_type, "approved")
-            history = _as_lineage(found["lineage"])
-            history.append(json.loads(lineage_entry))
-
-            await session.execute(
-                update(t)
-                .where(
-                    t.c.id == bindparam("oid"),
-                    t.c.approval_status.in_(bindparam("reviewable", expanding=True)),
-                )
-                .values(
-                    approval_status=bindparam("status"),
-                    approved_at=bindparam("approved_at", type_=TIMESTAMP),
-                    approved_by=bindparam("approved_by"),
-                    guardian_verdict_ref=bindparam("verdict_ref"),
-                    lineage=bindparam("lineage"),
-                ),
+            await _record_change(
+                session,
+                object_type,
+                head,
                 {
-                    "oid": str(object_id),
-                    "reviewable": list(_REVIEWABLE),
-                    "status": "APPROVED",
-                    "approved_at": now,
-                    "approved_by": approver.model_dump_json(),
-                    "verdict_ref": str(verdict_id),
-                    "lineage": json.dumps(history),
+                    "approval_status": ("APPROVED", None),
+                    "approved_at": (now, TIMESTAMP),
+                    "approved_by": (approver.model_dump_json(), None),
+                    "guardian_verdict_ref": (str(verdict_id), None),
+                    "lineage": (json.dumps(history), None),
                 },
+                change=VersionChange.APPROVED,
+                actor=approver,
+                agent_id=agent_id,
+                verdict_ref=verdict_id,
+                attempted="approved",
             )
             await session.commit()
 
@@ -1064,6 +1552,8 @@ class SemanticLayerRegistry:
         rejector: UserRef,
         reason: str,
         domains: Collection[str] | None = None,
+        *,
+        agent_id: str | None = None,
     ) -> None:
         """Mark a draft REJECTED (stored as DEPRECATED), against a Guardian verdict.
 
@@ -1074,11 +1564,12 @@ class SemanticLayerRegistry:
         this object, not already spent. It used to need a REJECTED verdict, which only
         an unclassified (DISORDER) check produced, so a reviewer who classified the
         situation could not reject at all (septa-53).
+
+        Like approval, the rejected state is a new revision (change REJECTED); the
+        draft stays in the history as it was.
         """
         if object_type not in _REVIEWABLE_TABLES:
             raise ValueError(f"reject_draft: unknown object_type '{object_type}'")
-
-        t, _ = _REVIEWABLE_TABLES[object_type]
 
         async with CloudSqlFactory.get_session_factory()() as session:
             await _assert_verdict_approved(
@@ -1089,20 +1580,14 @@ class SemanticLayerRegistry:
                 action=GOVERNANCE_REJECT,
             )
 
-            now = datetime.now(UTC)
-            current = await session.execute(
-                select(t.c.lineage, t.c.approval_status, t.c.domain).where(
-                    t.c.id == bindparam("oid")
-                ),
-                {"oid": str(object_id)},
-            )
-            found = current.mappings().one_or_none()
-            if found is None or _outside(domains, found["domain"]):
+            head = await _read_head(session, object_type, object_id)
+            if head is None or _outside(domains, head["domain"]):
                 raise ObjectNotFoundError(str(object_id), object_type)
-            # Without this the guarded UPDATE below matched nothing on an APPROVED
-            # object, yet the verdict was spent and the rejection logged as done.
-            _assert_reviewable(found["approval_status"], object_id, object_type, "rejected")
-            history = _as_lineage(found["lineage"])
+            # Without this an APPROVED object's verdict was spent and the rejection
+            # logged as done while nothing changed.
+            _assert_reviewable(head["approval_status"], object_id, object_type, "rejected")
+            now = datetime.now(UTC)
+            history = _as_lineage(head["lineage"])
             history.append(
                 {
                     "step_type": "REJECTED",
@@ -1111,20 +1596,19 @@ class SemanticLayerRegistry:
                     "description": f"Rejected via verdict {verdict_id}: {reason}",
                 }
             )
-
-            await session.execute(
-                update(t)
-                .where(
-                    t.c.id == bindparam("oid"),
-                    t.c.approval_status.in_(bindparam("reviewable", expanding=True)),
-                )
-                .values(approval_status=bindparam("status"), lineage=bindparam("lineage")),
+            await _record_change(
+                session,
+                object_type,
+                head,
                 {
-                    "oid": str(object_id),
-                    "reviewable": list(_REVIEWABLE),
-                    "status": "DEPRECATED",
-                    "lineage": json.dumps(history),
+                    "approval_status": ("DEPRECATED", None),
+                    "lineage": (json.dumps(history), None),
                 },
+                change=VersionChange.REJECTED,
+                actor=rejector,
+                agent_id=agent_id,
+                verdict_ref=verdict_id,
+                attempted="rejected",
             )
             await session.commit()
 
@@ -1136,7 +1620,7 @@ class SemanticLayerRegistry:
             verdict_id=str(verdict_id),
         )
 
-    # ── The kernel's sensitivity analysis of a draft edge (septa-62) ──────────
+    # ── The kernel's sensitivity analysis of a draft edge (septa-70) ──────────
 
     async def record_edge_sensitivity(
         self,
@@ -1145,6 +1629,8 @@ class SemanticLayerRegistry:
         verdict_id: UUID,
         actor: UserRef,
         domains: Collection[str] | None = None,
+        *,
+        agent_id: str | None = None,
     ) -> UUID:
         """Record a sensitivity analysis of a DRAFT / UNDER_REVIEW edge; return the new
         assumption's id.
@@ -1169,8 +1655,14 @@ class SemanticLayerRegistry:
         The write needs a Guardian APPROVED verdict issued for
         :data:`RECORD_SENSITIVITY` on this edge: signed, bound to the edge and the
         action, spent here in the same transaction as the insert and the update.
+
+        Both writes are versioned (014): the new assumption is recorded as its
+        revision 1 (PROPOSED, by ``actor`` through ``agent_id``, on the verdict), and
+        the edge's new ``assumption_refs`` and lineage are its next revision (change
+        RECORDED, the same actor, agent and verdict), the state they replace kept
+        in its history as it was. Its UPDATE is guarded on the revision read here,
+        so an approval or rejection in between is not overwritten.
         """
-        t = _CAUSAL_EDGES
         async with CloudSqlFactory.get_session_factory()() as session:
             await _assert_verdict_approved(
                 session,
@@ -1179,15 +1671,7 @@ class SemanticLayerRegistry:
                 context=RECORD_SENSITIVITY_CONTEXT,
                 action=RECORD_SENSITIVITY,
             )
-            current = await session.execute(
-                text(
-                    "SELECT source_id, source_type, target_id, target_type, "
-                    "assumption_refs, approval_status, lineage, domain "
-                    "FROM causal_edges WHERE id = :eid"
-                ),
-                {"eid": str(edge_id)},
-            )
-            found = current.mappings().one_or_none()
+            found = await _read_head(session, "CausalEdge", edge_id)
             if found is None or _outside(domains, found["domain"]):
                 raise ObjectNotFoundError(str(edge_id), "CausalEdge")
             _assert_reviewable(
@@ -1217,6 +1701,18 @@ class SemanticLayerRegistry:
                 domain=found["domain"],
             )
             await _insert_assumption(session, assumption, recorded_under=verdict_id)
+            made = await _read_head(session, "Assumption", assumption.id)
+            if made is None:  # pragma: no cover - inserted above, same transaction
+                raise ObjectNotFoundError(str(assumption.id), "Assumption")
+            await _insert_version(
+                session,
+                "Assumption",
+                _row_state("Assumption", made),
+                VersionChange.PROPOSED,
+                actor=actor,
+                agent_id=agent_id,
+                verdict_ref=verdict_id,
+            )
 
             refs = [str(r) for r in (json_value(found["assumption_refs"], []) or [])]
             history = _as_lineage(found["lineage"])
@@ -1231,22 +1727,19 @@ class SemanticLayerRegistry:
                     ),
                 }
             )
-            await session.execute(
-                update(t)
-                .where(
-                    t.c.id == bindparam("oid"),
-                    t.c.approval_status.in_(bindparam("reviewable", expanding=True)),
-                )
-                .values(
-                    assumption_refs=bindparam("refs", type_=UUID_ARRAY),
-                    lineage=bindparam("lineage"),
-                ),
+            await _record_change(
+                session,
+                "CausalEdge",
+                found,
                 {
-                    "oid": str(edge_id),
-                    "reviewable": list(_REVIEWABLE),
-                    "refs": [*refs, str(assumption.id)],
-                    "lineage": json.dumps(history),
+                    "assumption_refs": ([*refs, str(assumption.id)], UUID_ARRAY),
+                    "lineage": (json.dumps(history), None),
                 },
+                change=VersionChange.RECORDED,
+                actor=actor,
+                agent_id=agent_id,
+                verdict_ref=verdict_id,
+                attempted="given a sensitivity result",
             )
             await session.commit()
 
@@ -1273,7 +1766,7 @@ class SemanticLayerRegistry:
         whether they carry an unapproved edge, entities LOW); the queue is ordered
         CRITICAL, HIGH, MEDIUM, LOW and oldest first within a tier. submitted_by is
         the id in the object's created_by, or None where none was recorded (edges
-        drafted before 011).
+        drafted before 012).
 
         Every pending object is read before the cut to `limit`: a tier depends on the
         row, so cutting each table first could drop a CRITICAL item for a LOW one.

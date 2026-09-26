@@ -36,6 +36,13 @@ The identity checks here:
                       a gap the live app cannot show
   pytest-files        every backend/tests/**/test_*.py reported >= 1 test in the
                       run (from its JUnit XML)
+  package-files       the same for one package: every packages/<name>/tests/**/test_*.py
+                      reported >= 1 test in that package's run
+  gate-markers        every pre-registered gate marker of a package (the skill's gate
+                      table, and the markers its pyproject.toml declares pre-registered)
+                      has >= 1 PASSED test in the run's JUnit XML; real_data only when
+                      its data is cached. ci.sh loads scripts/ci_pytest_plugins/junit_markers
+                      so the report carries each test's markers.
   vitest-files        every frontend/src/**/*.{test,spec}.ts(x) reported >= 1
                       test in the run (from vitest's JSON report)
 
@@ -50,6 +57,8 @@ may only shrink:
 Usage:
   scripts/gate_scope.py identity-all                 # skills, kernel-mcp-tools, routes
   scripts/gate_scope.py pytest-files --junit <xml>
+  scripts/gate_scope.py package-files --package <name> --junit <xml>
+  scripts/gate_scope.py gate-markers --package <name> --junit <xml>
   scripts/gate_scope.py vitest-files --json <json>
   scripts/gate_scope.py floor <gate-id> <count>
 
@@ -62,9 +71,12 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import os
 import re
 import subprocess
 import sys
+import tomllib
+import xml.etree.ElementTree as ET  # nosec B405 -- our own pytest's report
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -442,10 +454,12 @@ def check_routes() -> tuple[set[str], set[str], dict[str, str], set[str], set[st
 # ── run-report identities ────────────────────────────────────────────────────
 
 
-def check_pytest_files(junit: Path) -> tuple[set[str], set[str], dict[str, str]]:
-    expected = {str(p.relative_to(BACKEND)) for p in TESTS.rglob("test_*.py")}
+def _files_reported(base: Path, junit: Path) -> tuple[set[str], set[str]]:
+    """(every <base>/tests/**/test_*.py, those the JUnit report shows >= 1 test for),
+    as paths relative to <base> -- pytest's classname is the dotted path from its rootdir."""
+    expected = {str(p.relative_to(base)) for p in (base / "tests").rglob("test_*.py")}
     if not expected:
-        raise ScopeError("found no backend/tests/**/test_*.py files")
+        raise ScopeError(f"found no {base.relative_to(ROOT)}/tests/**/test_*.py files")
     try:
         text = junit.read_text(encoding="utf-8")
     except OSError as exc:
@@ -458,7 +472,145 @@ def check_pytest_files(junit: Path) -> tuple[set[str], set[str], dict[str, str]]
             if cand in expected:
                 actual.add(cand)
                 break
+    return expected, actual
+
+
+def check_pytest_files(junit: Path) -> tuple[set[str], set[str], dict[str, str]]:
+    expected, actual = _files_reported(BACKEND, junit)
     return expected, actual, {}
+
+
+def package_base(name: str) -> Path:
+    base = ROOT / "packages" / name
+    if not (base / "pyproject.toml").is_file():
+        raise ScopeError(f"packages/{name}/pyproject.toml does not exist")
+    return base
+
+
+def check_package_files(name: str, junit: Path) -> tuple[set[str], set[str], dict[str, str]]:
+    """pytest-files for a package suite: every packages/<name>/tests/**/test_*.py reported a test."""
+    expected, actual = _files_reported(package_base(name), junit)
+    return expected, actual, {}
+
+
+# ── gate-markers ─────────────────────────────────────────────────────────────
+# The pre-registered gates run inside the package rows, each selected by a pytest
+# marker. A row that is green while one gate's tests all stopped being collected
+# has not run that gate. The expected set is derived twice over, so neither source
+# can shrink it alone: the gate table in the verifying-changes skill (Where =
+# packages/<name>, Marker = ...), which skill_refs holds to benchmarks/*/PRE-REGISTRATION.md,
+# and every marker the package's pyproject.toml declares as pre-registered.
+
+GATE_SKILL = ROOT / ".gnomon" / "skills" / "verifying-changes.md"
+
+
+def _real_data_cached() -> bool:
+    """T2/T3 run only when their data is cached (or CAUSAL_FETCH=1): see tests/bench/test_real_data.py."""
+    if os.environ.get("CAUSAL_FETCH") == "1":
+        return True
+    base = Path(os.environ.get("CAUSAL_CORE_CACHE") or Path.home() / ".cache" / "causal-core")
+    return all((base / sub).is_dir() and any((base / sub).iterdir()) for sub in ("ihdp", "lalonde"))
+
+
+#: Gate markers whose tests may legitimately not run: marker -> (is it due?, why not).
+CONDITIONAL_MARKERS = {
+    "real_data": (_real_data_cached, "T2/T3 data not cached in ~/.cache/causal-core and CAUSAL_FETCH unset"),
+}
+
+
+def gate_table_markers() -> dict[str, set[str]]:
+    """{'packages/<name>': {marker, ...}} from the skill's Gate | Where | Marker table."""
+    try:
+        lines = GATE_SKILL.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        raise ScopeError(f"cannot read the gate table: {exc}") from exc
+    out: dict[str, set[str]] = {}
+    cols: list[str] | None = None
+    for line in lines:
+        if not line.lstrip().startswith("|"):
+            cols = None
+            continue
+        cells = [c.strip().strip("`").strip() for c in line.strip().strip("|").split("|")]
+        if cols is None:
+            cols = cells if {"Gate", "Where", "Marker"} <= set(cells) else []
+            continue
+        if not cols or set("".join(cells)) <= set("-: "):
+            continue
+        row = dict(zip(cols, cells, strict=False))
+        where, marker = row.get("Where", ""), row.get("Marker", "")
+        if where and marker:
+            out.setdefault(where, set()).add(marker)
+    if not out:
+        raise ScopeError(f"no Gate | Where | Marker rows in {GATE_SKILL.relative_to(ROOT)}")
+    return out
+
+
+def declared_gate_markers(base: Path) -> set[str]:
+    """Markers pyproject.toml declares with 'pre-registered' in their description."""
+    data = tomllib.loads((base / "pyproject.toml").read_text(encoding="utf-8"))
+    decl = data.get("tool", {}).get("pytest", {}).get("ini_options", {}).get("markers", [])
+    return {m.split(":", 1)[0].strip() for m in decl if "pre-registered" in m.lower()}
+
+
+def passed_by_marker(junit: Path) -> tuple[dict[str, int], dict[str, int]]:
+    """({marker: tests passed}, {marker: tests reported}) from the `markers` property the
+    ci_pytest_plugins/junit_markers plugin writes. No such property at all = the plugin
+    did not run, and nothing can be said."""
+    try:
+        root = ET.parse(junit).getroot()
+    except (OSError, ET.ParseError) as exc:
+        raise ScopeError(f"no readable JUnit report at {junit}: {exc}") from exc
+    passed: dict[str, int] = {}
+    seen: dict[str, int] = {}
+    tagged = 0
+    for case in root.iter("testcase"):
+        prop = case.find("properties/property[@name='markers']")
+        if prop is None:
+            continue
+        tagged += 1
+        ok_ = not any(case.find(t) is not None for t in ("failure", "error", "skipped"))
+        for m in filter(None, (prop.get("value") or "").split(",")):
+            seen[m] = seen.get(m, 0) + 1
+            if ok_:
+                passed[m] = passed.get(m, 0) + 1
+    if not tagged:
+        raise ScopeError(f"{junit.name} carries no `markers` properties -- the run was not made "
+                         "with `-p junit_markers` (scripts/ci_pytest_plugins on PYTHONPATH)")
+    return passed, seen
+
+
+def check_gate_markers(name: str, junit: Path) -> bool:
+    base = package_base(name)
+    label = f"gate-markers[{name}]"
+    try:
+        required = gate_table_markers().get(f"packages/{name}", set()) | declared_gate_markers(base)
+        if not required:
+            ok(f"{label}: no pre-registered gate runs in this package")
+            return True
+        passed, seen = passed_by_marker(junit)
+    except ScopeError as exc:
+        bad(f"{label}: could not derive the sets it compares, so this check proves nothing -- {exc}")
+        return False
+    missing, waived = [], []
+    for m in sorted(required):
+        if passed.get(m, 0) > 0:
+            continue
+        due, why = CONDITIONAL_MARKERS.get(m, (lambda: True, ""))
+        if due():
+            missing.append(f"{m}: {passed.get(m, 0)} passed of {seen.get(m, 0)} reported")
+        else:
+            waived.append(f"{m} ({why})")
+    for w in waived:
+        warn(f"{label}: not due -- {w}")
+    if missing:
+        bad(f"{label}: {len(missing)} pre-registered gate(s) had no passing test in this run -- "
+            "the row would have been green without running them:")
+        for line in missing:
+            print(f"       {line}")
+        return False
+    ran = ", ".join(f"{m} {passed[m]}" for m in sorted(required) if m in passed)
+    ok(f"{label}: every gate marker has passing tests ({ran})")
+    return True
 
 
 def check_vitest_files(report: Path) -> tuple[set[str], set[str], dict[str, str]]:
@@ -543,6 +695,10 @@ def main() -> int:
     sub.add_parser("identity-all")
     pj = sub.add_parser("pytest-files")
     pj.add_argument("--junit", required=True, type=Path)
+    for mode in ("package-files", "gate-markers"):
+        pk = sub.add_parser(mode)
+        pk.add_argument("--package", required=True)
+        pk.add_argument("--junit", required=True, type=Path)
     vj = sub.add_parser("vitest-files")
     vj.add_argument("--json", required=True, type=Path)
     fl = sub.add_parser("floor")
@@ -570,6 +726,9 @@ def main() -> int:
         ok(f"scope: {args.gate_id} inspected {actual} (floor {spec['floor']})")
         return 0
 
+    if args.mode == "gate-markers":
+        return 0 if check_gate_markers(args.package, args.junit) else 1
+
     base = base_floors()
     checks: list[tuple[str, object]] = []
     if args.mode == "identity-all":
@@ -579,6 +738,9 @@ def main() -> int:
         ]
     elif args.mode == "pytest-files":
         checks = [("pytest-files", lambda: check_pytest_files(args.junit))]
+    elif args.mode == "package-files":
+        checks = [(f"package-files[{args.package}]",
+                   lambda: check_package_files(args.package, args.junit))]
     elif args.mode == "vitest-files":
         checks = [("vitest-files", lambda: check_vitest_files(args.json))]
 

@@ -74,13 +74,16 @@ from src.semantic_layer.models import (
     ElicitedFrom,
     EpistemicState,
     SensitivityResult,
+    VersionChange,
 )
+from src.semantic_layer.registry import _read_head, _record_change
 from src.semantic_layer.verdict import RECORD_SENSITIVITY
 from tests.conftest import (
     VerdictFactory,
     insert_raw_audit_entry,
     issue_verdict_for,
     make_causal_entity,
+    make_data_source,
     make_user_ref,
 )
 
@@ -163,9 +166,36 @@ async def _edge(
         assumption_refs=[a.id for a in assumptions],
         guardian_verdict_ref=uuid4(),
         domain="devops",
+        source_data=make_data_source(),
     )
-    await registry.propose_draft(edge, await verdict_for(edge_id))
+    # Source data and a drafter on record: approval needs both (septa-15).
+    await registry.propose_draft(edge, await verdict_for(edge_id), submitted_by=make_user_ref())
     return edge
+
+
+async def _write_directly(
+    db_session: AsyncSession, assumption_id: UUID, **columns: Any
+) -> None:
+    """Change an assumption row the way a writer with database access could.
+
+    Not through the registry's review paths, but by the one rule the database holds
+    for whoever connects (014): the head advances one revision and the new state is
+    recorded. An in-place UPDATE is refused before any reading sees it, so a forgery
+    worth testing is one that follows the rule. The caller commits.
+    """
+    head = await _read_head(db_session, "Assumption", assumption_id)
+    assert head is not None
+    await _record_change(
+        db_session,
+        "Assumption",
+        head,
+        {name: (value, None) for name, value in columns.items()},
+        change=VersionChange.RECORDED,
+        actor=None,
+        agent_id="test:direct-write",
+        verdict_ref=None,
+        attempted="written directly",
+    )
 
 
 async def _record(
@@ -307,8 +337,9 @@ async def test_a_forged_verdict_reference_does_not_satisfy_pr007(
 ) -> None:
     """A drafter's result pointed at a verdict the platform did not record it under.
 
-    Written into the column directly: the API offers no way to set it, so this is the
-    database-level attempt, and the reading must still refuse it.
+    Written into the row directly (by the revision rule 014 holds, see _write_directly):
+    the API offers no way to set it, so this is the database-level attempt, and the
+    reading must still refuse it.
     """
     drafted = _assumption(kernel_sensitivity)
     edge = await _edge(registry, verdict_for, drafted)
@@ -336,10 +367,7 @@ async def test_a_forged_verdict_reference_does_not_satisfy_pr007(
         )
     else:  # a real APPROVED RECORD_SENSITIVITY verdict for this edge, never spent
         ref = await issue_verdict_for(db_session, edge.id, action_type=RECORD_SENSITIVITY)
-    await db_session.execute(
-        text("UPDATE assumptions SET sensitivity_verdict_id = :v WHERE id = :i"),
-        {"v": str(ref), "i": str(drafted.id)},
-    )
+    await _write_directly(db_session, drafted.id, sensitivity_verdict_id=str(ref))
     await db_session.commit()
 
     result = await governance.check(_approve_payload(edge.id), _state())
@@ -358,11 +386,8 @@ async def test_a_verdict_records_one_result(
     drafted = _assumption(kernel_sensitivity)
     edge = await _edge(registry, verdict_for, drafted)
     _, spent = await _record(registry, db_session, edge.id, kernel_sensitivity)
-    with pytest.raises(IntegrityError):
-        await db_session.execute(
-            text("UPDATE assumptions SET sensitivity_verdict_id = :v WHERE id = :i"),
-            {"v": str(spent), "i": str(drafted.id)},
-        )
+    with pytest.raises(IntegrityError, match="(?i)unique|sensitivity_verdict"):
+        await _write_directly(db_session, drafted.id, sensitivity_verdict_id=str(spent))
         await db_session.commit()
     await db_session.rollback()
 
@@ -394,10 +419,7 @@ async def test_a_result_on_a_rejected_assumption_does_not_count(
 ) -> None:
     edge = await _edge(registry, verdict_for)
     rejected, _ = await _record(registry, db_session, edge.id, kernel_sensitivity)
-    await db_session.execute(
-        text("UPDATE assumptions SET review_status = 'REJECTED' WHERE id = :i"),
-        {"i": str(rejected)},
-    )
+    await _write_directly(db_session, rejected, review_status="REJECTED")
     await db_session.commit()
 
     result = await governance.check(_approve_payload(edge.id), _state())

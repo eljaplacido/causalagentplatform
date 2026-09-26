@@ -108,10 +108,12 @@ combination falls through to Firebase verification.
 
 **Roles.** Roles are read from the token's `roles` (list) or `role` (string)
 custom claim. One matrix, `ROUTE_ROLES` in `backend/src/middleware/rbac.py`,
-maps every state-changing route (and the audit-log, review-queue, provenance and
-semantic-layer reads) to the roles that may call it, and each route depends on
-its row; `backend/tests/integration/test_rbac_matrix.py` fails on a mounted
-state-changing route without one. The route-by-route table, and the choices made
+maps every route but the public liveness probe, reads included, to the roles that
+may call it, and each route depends on its row;
+`backend/tests/integration/test_rbac_matrix.py` fails on a mounted route without
+one. A valid token that holds no platform role reads nothing: the decision ledger,
+intervention decisions, incidents, metrics and the assumption registry used to
+answer it. The route-by-route table, and the choices made
 where the role design is silent, are in `docs/CYBERSECURITY.md` §4.0. In short:
 
 - `GOVERNANCE_ROLES` = `governance_officer`, `platform_engineer`: approve, reject,
@@ -119,6 +121,11 @@ where the role design is silent, are in `docs/CYBERSECURITY.md` §4.0. In short:
   refused on edges they introduced), provenance reads and provenance erasure.
 - `DECISION_ROLES` = `governance_officer`, `platform_engineer`, `sre`: deciding
   an intervention and recording its outcome.
+- A session belongs to the user who started it: reading its state, resuming it
+  and citing it in a governance check need its owner or a governance role
+  (`rbac.may_use_session`; `backend/tests/integration/test_session_ownership.py`).
+  An incident id another user submitted is refused (409) rather than
+  overwritten.
 - Drafting semantic objects and proposing causal models needs `analyst`,
   `graph_author`, `platform_engineer` or `agent`; recording a decision needs
   `analyst`, `sre` or a governance role.
@@ -132,8 +139,8 @@ objects a user lists, reads, drafts into, and reviews; an object outside it is
 not found. Without the claim, `governance_officer` and `platform_engineer` see
 every domain and every other role sees none. This is enforced in the
 application and, on PostgreSQL, again by the database: row-level security on
-`causal_entities`, `causal_edges` and `graph_fragments` reads the caller's
-scope, which the backend sets on every transaction, and binds `causal_app`, the
+`causal_entities`, `causal_edges`, `graph_fragments` and their version history
+(`semantic_object_versions`) reads the caller's scope, which the backend sets on every transaction, and binds `causal_app`, the
 role the backend connects as. The backend refuses to start on PostgreSQL as a
 superuser, a `BYPASSRLS` role or the tables' owner. Details in
 `docs/CYBERSECURITY.md` §4.2.
@@ -186,6 +193,12 @@ keep in mind when evaluating issues:
   their own endpoints.
 - **Audit log is append-only**. Any path that allows deletion or rewriting of
   `audit_log` entries is critical-severity.
+- **Semantic-object history is append-only.** Every state of an entity, edge,
+  fragment or assumption is a row of `semantic_object_versions`, and the
+  object's own row changes only by advancing its revision over a recorded one
+  (`014_semantic_object_versions.sql`; the database enforces both). A path that
+  rewrites or deletes a version, or changes an object without recording the
+  new version, is critical-severity. Interventions are not versioned.
 - **Provenance is append-only**. A path that deletes or rewrites rows of
   `provenance_entries` or `provenance_erasures`, or that serves a record an
   erasure tombstone hides, is in scope. An erasure hides records from the API

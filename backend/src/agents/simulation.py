@@ -11,7 +11,7 @@ Responsibilities (AGENTS.md §2.1 SimulationAgent):
     kernel's sensitivity analysis of the edge its estimate answers (the fragment's
     Treatment -> Outcome edge, while that edge is a draft), recorded through a
     Guardian verdict for RECORD_SENSITIVITY (src/agents/edge_sensitivity.py) --
-    what Guardian PR-007 reads before the edge can be approved (septa-62)
+    what Guardian PR-007 reads before the edge can be approved (septa-70)
 
 Implemented skills:
   semantic_layer_read      — load approved graph fragment
@@ -356,7 +356,7 @@ class SimulationAgent(BaseAgent):
             },
         )
 
-    # ── Recording the kernel's sensitivity analysis (septa-62) ────────────────
+    # ── Recording the kernel's sensitivity analysis (septa-70) ────────────────
 
     async def _record_sensitivity(
         self,

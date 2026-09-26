@@ -4,6 +4,9 @@
  * Executive / Engineering Manager persona page (US-16 – US-18).
  *
  * US-16: Weekly trend view — session volume and approval rate from real audit data.
+ *   Each rate says its window: the tile is this week's, the footer all time; both
+ *   are the APPROVED share of audit_log verdicts (every row, as platform.py counts
+ *   them), so they differ only by window.
  * US-17: Top recurring Guardian policy rule citations over the platform lifetime.
  * US-18: Fragment library health overview (totals by status).
  *
@@ -84,6 +87,7 @@ interface KPICardProps {
   trend?: "up" | "down" | "flat";
   trendGoodDirection?: "up" | "down";
   className?: string;
+  testId?: string;
 }
 
 function KPICard({
@@ -93,6 +97,7 @@ function KPICard({
   trend,
   trendGoodDirection = "down",
   className,
+  testId,
 }: KPICardProps) {
   const isGood =
     trend !== undefined &&
@@ -113,7 +118,7 @@ function KPICard({
     trend === "down" ? TrendingDown : trend === "up" ? TrendingUp : Minus;
 
   return (
-    <div className={cn("rounded-lg border border-border bg-card p-4 space-y-1", className)}>
+    <div data-testid={testId} className={cn("min-w-0 rounded-lg border border-border bg-card p-4 space-y-1", className)}>
       <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
         {label}
       </p>
@@ -273,12 +278,11 @@ export default function ExecutivePage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-10 flex items-center gap-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
-        <h1 className="text-sm font-bold text-foreground">Causal Platform</h1>
+      <header className="sticky top-0 z-10 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
         <Briefcase className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-        <span className="text-sm text-muted-foreground">Manager Dashboard</span>
+        <h1 className="text-sm font-bold text-foreground">Manager Dashboard</h1>
         <div className="ml-auto">
-          <PersonaSelector layout="dropdown" className="w-48" />
+          <PersonaSelector layout="dropdown" className="w-48 max-w-full" />
         </div>
       </header>
 
@@ -312,9 +316,10 @@ export default function ExecutivePage() {
                   trendGoodDirection="up"
                 />
                 <KPICard
-                  label="Approval rate"
+                  testId="kpi-approval-rate"
+                  label="Approval rate · this week"
                   value={`${Math.round((latest?.approvalRate ?? 0) * 100)}%`}
-                  subvalue="Guardian approved verdicts"
+                  subvalue="APPROVED share of this week's audit-log verdicts"
                   trend={approvTrendDir}
                   trendGoodDirection="up"
                 />
@@ -324,9 +329,10 @@ export default function ExecutivePage() {
                   subvalue="all time"
                 />
                 <KPICard
+                  testId="kpi-escalations"
                   label="Escalations (4w)"
                   value={String(totalEscalations)}
-                  subvalue="requires human review"
+                  subvalue="REQUIRES_ESCALATION verdicts, last 4 weeks"
                   trend={totalEscalations > 0 ? "up" : "flat"}
                   trendGoodDirection="down"
                 />
@@ -469,8 +475,8 @@ export default function ExecutivePage() {
               {data?.overall_approval_rate !== undefined && data.overall_approval_rate > 0 && (
                 <div className="mt-3 flex items-center gap-2">
                   <BookOpen className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
-                  <p className="text-xs text-muted-foreground">
-                    Platform-wide approval rate:{" "}
+                  <p className="text-xs text-muted-foreground" data-testid="overall-approval-rate">
+                    Approval rate, all time (APPROVED share of every audit-log verdict):{" "}
                     <strong className="text-foreground">
                       {Math.round(data.overall_approval_rate * 100)}%
                     </strong>{" "}

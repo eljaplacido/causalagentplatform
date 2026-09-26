@@ -5,10 +5,12 @@
  *
  * Persists selection in localStorage via Zustand persist middleware.
  * Supports two layouts:
- *   "dropdown"  — compact dropdown for nav bars
- *   "card-grid" — full card grid for the landing page
+ *   "dropdown"  — compact dropdown for page headers; choosing a persona goes to
+ *                 that persona's page (it used to relabel the dropdown and stay)
+ *   "card-grid" — full card grid for the landing page, whose onSelect navigates
  */
 
+import { useRouter } from "next/navigation";
 import { usePersonaStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import type { Persona } from "@/lib/types";
@@ -68,6 +70,15 @@ const PERSONA_META: Record<
   },
 };
 
+/** Each persona's page. */
+export const PERSONA_ROUTES: Readonly<Record<Persona, string>> = {
+  OPERATOR: PERSONA_META.OPERATOR.primarySurface,
+  ANALYST: PERSONA_META.ANALYST.primarySurface,
+  EXECUTIVE: PERSONA_META.EXECUTIVE.primarySurface,
+  GOVERNANCE: PERSONA_META.GOVERNANCE.primarySurface,
+  ENGINEER: PERSONA_META.ENGINEER.primarySurface,
+};
+
 const PERSONA_ORDER: Persona[] = [
   "OPERATOR",
   "ANALYST",
@@ -82,10 +93,16 @@ export function PersonaSelector({
   className,
 }: PersonaSelectorProps) {
   const { currentPersona, setPersona } = usePersonaStore();
+  const router = useRouter();
 
   function handleSelect(persona: Persona) {
     setPersona(persona);
     onSelect?.(persona);
+  }
+
+  function handleDropdownSelect(persona: Persona) {
+    handleSelect(persona);
+    router.push(PERSONA_ROUTES[persona]);
   }
 
   if (layout === "card-grid") {
@@ -156,7 +173,7 @@ export function PersonaSelector({
     <div data-testid="persona-selector" className={cn("relative", className)}>
       <select
         value={currentPersona}
-        onChange={(e) => handleSelect(e.target.value as Persona)}
+        onChange={(e) => handleDropdownSelect(e.target.value as Persona)}
         aria-label="Switch persona view"
         className={cn(
           "flex h-9 w-full cursor-pointer appearance-none items-center rounded-md border border-input",

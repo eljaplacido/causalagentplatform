@@ -48,6 +48,21 @@ export interface CausalEntity {
   approvedBy: UserRef | null;
   lineage: LineageRecord[];
   tags: string[];
+  /** Server-kept: 1 at the draft, +1 per recorded state change (014_semantic_object_versions.sql). */
+  revision?: number;
+  /** The data the object was drafted from; approval requires one. */
+  sourceData?: DataSource | null;
+}
+
+/**
+ * The data a semantic object was drafted from: a reference and a digest that pins
+ * its content. Mirrors backend DataSource.
+ */
+export interface DataSource {
+  kind: string;
+  ref: string;
+  digest: string;  // "sha256:<64 hex>"
+  description?: string | null;
 }
 
 // ─── Treatment ───────────────────────────────────────────────────────────────
@@ -179,6 +194,10 @@ export interface Assumption {
   nextReviewDue: ISO8601 | null;  // 90-day review cycle
   sensitivityResult: SensitivityResult | null;
   domain: string;
+  /** Server-kept: 1 at the draft, +1 per recorded state change (014_semantic_object_versions.sql). */
+  revision?: number;
+  /** The data the object was drafted from; approval requires one. */
+  sourceData?: DataSource | null;
 }
 
 // ─── CausalEdge ──────────────────────────────────────────────────────────────
@@ -205,6 +224,10 @@ export interface CausalEdge {
   lineage: LineageRecord[];
   createdBy: UserRef;
   createdAt: ISO8601;
+  /** Server-kept: 1 at the draft, +1 per recorded state change (014_semantic_object_versions.sql). */
+  revision?: number;
+  /** The data the object was drafted from; approval requires one. */
+  sourceData?: DataSource | null;
 }
 
 // ─── GraphFragment ───────────────────────────────────────────────────────────
@@ -235,6 +258,10 @@ export interface GraphFragment {
   approvedBy?: UserRef | null;
   approvedAt?: ISO8601 | null;
   lineage?: LineageRecord[];
+  /** Server-kept: 1 at the draft, +1 per recorded state change (014_semantic_object_versions.sql). */
+  revision?: number;
+  /** The data the object was drafted from; approval requires one. */
+  sourceData?: DataSource | null;
 }
 
 // ─── Intervention ────────────────────────────────────────────────────────────

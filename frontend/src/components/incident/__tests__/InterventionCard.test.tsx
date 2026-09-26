@@ -420,3 +420,90 @@ describe("InterventionCard — assumptions progressive disclosure", () => {
     ).toBeDefined();
   });
 });
+
+// Preconditions: an Intervention whose estimatedEffect is absent -- which is
+// every incident intervention today, since neither the triage endpoint nor the
+// incidents API returns an estimate.
+// Postconditions: the card says there is no estimate and renders no interval
+// or point estimate.
+describe("InterventionCard — no estimate is not a zero estimate", () => {
+  it("renders 'No effect estimate' and no interval when estimatedEffect is absent", () => {
+    const withoutEffect: Intervention = makeIntervention();
+    delete withoutEffect.estimatedEffect;
+    render(
+      <InterventionCard intervention={withoutEffect} onApprove={vi.fn()} onReject={vi.fn()} />
+    );
+    expect(screen.getByTestId("no-effect-estimate")).toHaveTextContent("No effect estimate");
+    expect(screen.queryByTestId("effect-estimate-bar")).toBeNull();
+    expect(document.body.textContent).not.toMatch(/95% CI/);
+  });
+
+  it("shows a human decision beside the Guardian verdict, not instead of it", () => {
+    render(
+      <InterventionCard
+        intervention={makeIntervention({ guardianVerdict: "REQUIRES_ESCALATION", humanDecision: "APPROVED" })}
+        onApprove={vi.fn()}
+        onReject={vi.fn()}
+      />
+    );
+    expect(screen.getByTestId("guardian-verdict-badge").getAttribute("data-verdict")).toBe(
+      "REQUIRES_ESCALATION"
+    );
+    expect(screen.getByTestId("human-decision").getAttribute("data-decision")).toBe("APPROVED");
+  });
+});
+
+// ─── What the tour found (2026-09-26) ─────────────────────────────────────────
+//
+// A decided intervention still offered Approve/Reject beside "Requires
+// Escalation" as if undecided; the triage agent's ESCALATE directive was drawn
+// as an approvable intervention with a green "High Confidence 100%" bar; and an
+// intervention with no effect estimate showed a large "High Confidence NN%"
+// meter. That number is Recommendation.confidence, which the triage agent sets
+// to its heuristic triage score (incident_triage.py: confidence=heuristic_score,
+// "a ranking aid, not an effect estimate").
+describe("InterventionCard — decided, escalation and score states", () => {
+  it("after a human decision offers no approve/reject and labels both facts", () => {
+    render(
+      <InterventionCard
+        intervention={makeIntervention({ guardianVerdict: "REQUIRES_ESCALATION", humanDecision: "APPROVED" })}
+        onApprove={vi.fn()}
+        onReject={vi.fn()}
+      />
+    );
+    expect(screen.queryByTestId("approve-button")).toBeNull();
+    expect(screen.queryByTestId("reject-button")).toBeNull();
+    expect(screen.getByTestId("guardian-verdict-fact")).toHaveTextContent(/Guardian verdict/);
+    expect(screen.getByTestId("guardian-verdict-fact")).toHaveTextContent(/Requires Escalation/);
+    expect(screen.getByTestId("human-decision")).toHaveTextContent(/Human decision/);
+    expect(screen.getByTestId("decision-recorded")).toHaveTextContent(/Approved/);
+  });
+
+  it("renders an ESCALATE recommendation as an escalation notice, not an approvable intervention", () => {
+    const escalate = makeIntervention({
+      title: "ESCALATE: Route to human incident commander immediately.",
+      confidence: 1.0,
+      riskTier: "CRITICAL",
+      guardianVerdict: "REQUIRES_ESCALATION",
+    });
+    delete escalate.estimatedEffect;
+    render(<InterventionCard intervention={escalate} onApprove={vi.fn()} onReject={vi.fn()} />);
+    expect(screen.getByTestId("escalation-notice")).toHaveTextContent(/Route to human incident commander/);
+    expect(screen.queryByTestId("approve-button")).toBeNull();
+    expect(screen.queryByTestId("reject-button")).toBeNull();
+    expect(document.body.textContent).not.toMatch(/High Confidence/);
+    expect(document.body.textContent).not.toMatch(/100%/);
+  });
+
+  it("labels the score of an intervention without an estimate as a triage score, not confidence", () => {
+    const noEffect = makeIntervention({ confidence: 0.83 });
+    delete noEffect.estimatedEffect;
+    render(<InterventionCard intervention={noEffect} onApprove={vi.fn()} onReject={vi.fn()} />);
+    expect(screen.getByTestId("no-effect-estimate")).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/High Confidence/);
+    const score = screen.getByTestId("recommendation-score");
+    expect(score).toHaveTextContent(/Triage score/);
+    expect(score).toHaveTextContent("83%");
+    expect(score).toHaveTextContent(/not an effect estimate/);
+  });
+});

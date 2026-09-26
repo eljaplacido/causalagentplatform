@@ -4,8 +4,18 @@
  * InterventionCard — Card for a proposed intervention.
  *
  * UX contract (US-11, US-12):
- *   ALWAYS shows approve + reject buttons regardless of Guardian verdict state.
- *   Human agency must always be one click away.
+ *   An undecided intervention ALWAYS shows approve + reject, whatever the
+ *   Guardian's verdict: human agency is one click away. Once a person's
+ *   decision is recorded (humanDecision) the buttons give way to that
+ *   decision; the endpoint would only return the earlier decision anyway.
+ *   The Guardian's verdict and a recorded human decision are shown side by
+ *   side as two labelled facts; neither replaces the other.
+ *   An ESCALATE recommendation is advice to hand the incident to a person,
+ *   not an intervention to approve: it is shown as an escalation notice.
+ *   An intervention without an effect estimate says "No effect estimate".
+ *   `confidence` is Recommendation.confidence, which the triage agent sets to
+ *   its heuristic triage score (a ranking aid, not an effect estimate or a
+ *   confidence in one): it is labelled as that, never as "High Confidence".
  *
  * Progressive disclosure:
  *   Level 0: recommendation + confidence + approve/reject
@@ -19,11 +29,11 @@ import {
   ChevronDown,
   ChevronRight,
   AlertCircle,
+  AlertTriangle,
   DollarSign,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatConfidence } from "@/lib/utils";
 import { GuardianVerdictBadge } from "@/components/shared/GuardianVerdictBadge";
-import { EpistemicConfidenceBadge } from "@/components/shared/EpistemicConfidenceBadge";
 import type { Intervention } from "@/lib/types";
 
 export interface InterventionCardProps {
@@ -46,8 +56,36 @@ const RISK_TIER_CONFIG = {
   CRITICAL: { label: "Critical risk", class: "text-red-700 dark:text-red-300 font-bold" },
 };
 
+/** The triage agent's escalation directive ("ESCALATE: ..."), not an action to approve. */
+export function isEscalationDirective(intervention: Intervention): boolean {
+  return /^\s*ESCALATE\b/i.test(intervention.title);
+}
+
+/** Recommendation.confidence, named for what it is. */
+function RecommendationScore({ score }: { score: number }) {
+  return (
+    <p data-testid="recommendation-score" className="text-xs text-muted-foreground">
+      <span className="font-semibold text-foreground">Triage score {formatConfidence(score)}</span>
+      {" "}— the triage agent&apos;s heuristic ranking score, not an effect estimate or a
+      confidence in one.
+    </p>
+  );
+}
+
 function EffectEstimateBar({ intervention }: { intervention: Intervention }) {
   const { estimatedEffect } = intervention;
+  if (!estimatedEffect) {
+    // Nothing computed an estimate for this intervention: say so. Never
+    // render placeholder numbers as if they were an interval.
+    return (
+      <div className="space-y-1" data-testid="no-effect-estimate">
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Estimated Effect
+        </span>
+        <p className="text-xs text-muted-foreground">No effect estimate</p>
+      </div>
+    );
+  }
   const isPositive = estimatedEffect.direction === "POSITIVE";
   const isUncertain = estimatedEffect.direction === "UNCERTAIN";
 
@@ -167,6 +205,38 @@ export function InterventionCard({
   }
 
   const actionDisabled = isSubmitting || isActionInFlight;
+  const decided = intervention.humanDecision !== undefined;
+
+  if (isEscalationDirective(intervention)) {
+    return (
+      <article
+        data-testid="escalation-notice"
+        data-intervention-id={intervention.id}
+        role="note"
+        className={cn(
+          "flex items-start gap-3 rounded-xl border-2 border-amber-400 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-950/40",
+          className
+        )}
+      >
+        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+        <div className="min-w-0 space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">
+            Escalation advised — not an intervention to approve
+          </p>
+          <h3 className="break-words text-sm font-semibold text-foreground">{intervention.title}</h3>
+          {intervention.description && (
+            <p className="break-words text-sm text-foreground">{intervention.description}</p>
+          )}
+          <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-muted-foreground">
+            <span data-testid="guardian-verdict-fact" className="inline-flex items-center gap-1">
+              Guardian verdict:
+              <GuardianVerdictBadge verdict={intervention.guardianVerdict} size="sm" />
+            </span>
+          </div>
+        </div>
+      </article>
+    );
+  }
 
   return (
     <article
@@ -180,14 +250,35 @@ export function InterventionCard({
       {/* Header */}
       <div className="flex items-start gap-3 border-b border-border p-4">
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-base font-semibold text-foreground">
+          <h3 className="break-words text-base font-semibold text-foreground">
             {intervention.title}
           </h3>
           <div className="mt-1 flex flex-wrap items-center gap-2">
-            <GuardianVerdictBadge
-              verdict={intervention.guardianVerdict}
-              size="sm"
-            />
+            <span
+              data-testid="guardian-verdict-fact"
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground"
+            >
+              Guardian verdict:
+              <GuardianVerdictBadge
+                verdict={intervention.guardianVerdict}
+                size="sm"
+              />
+            </span>
+            {intervention.humanDecision && (
+              <span
+                data-testid="human-decision"
+                data-decision={intervention.humanDecision}
+                className={cn(
+                  "rounded-full border px-2 py-0.5 text-xs font-medium",
+                  intervention.humanDecision === "APPROVED"
+                    ? "border-green-300 text-green-700 dark:border-green-800 dark:text-green-300"
+                    : "border-red-300 text-red-700 dark:border-red-800 dark:text-red-300"
+                )}
+              >
+                Human decision:{" "}
+                {intervention.humanDecision === "APPROVED" ? "Approved" : "Rejected"}
+              </span>
+            )}
             <span className={cn("text-xs", riskConfig.class)}>
               {riskConfig.label}
             </span>
@@ -208,11 +299,8 @@ export function InterventionCard({
         {/* Effect estimate */}
         <EffectEstimateBar intervention={intervention} />
 
-        {/* Confidence */}
-        <EpistemicConfidenceBadge
-          overallConfidence={intervention.confidence}
-          showMeter={true}
-        />
+        {/* Recommendation.confidence: the triage score, labelled as such */}
+        <RecommendationScore score={intervention.confidence} />
 
         {/* Assumptions count */}
         <button
@@ -296,7 +384,21 @@ export function InterventionCard({
         )}
       </div>
 
-      {/* Action footer — ALWAYS visible per UX contract */}
+      {/* Action footer: approve/reject while undecided; the recorded decision after */}
+      {decided ? (
+        <p
+          data-testid="decision-recorded"
+          role="status"
+          className="border-t border-border p-4 text-sm text-muted-foreground"
+        >
+          Decision recorded:{" "}
+          <span className="font-semibold text-foreground">
+            {intervention.humanDecision === "APPROVED" ? "Approved" : "Rejected"}
+          </span>
+          {intervention.approvalReason ? ` — ${intervention.approvalReason}` : ""}. The
+          interventions API keeps the first decision; approve and reject are closed.
+        </p>
+      ) : (
       <div className="flex items-center gap-2 border-t border-border p-4">
         {/* APPROVE button */}
         <button
@@ -347,6 +449,7 @@ export function InterventionCard({
           </button>
         )}
       </div>
+      )}
     </article>
   );
 }

@@ -74,8 +74,14 @@ log = structlog.get_logger(__name__)
 #: carry it into the database.
 SERVICE_ROLE = "causal_service"
 
-#: The tables 010_rls_binds.sql puts under a domain policy.
-RLS_TABLES: tuple[str, ...] = ("causal_entities", "causal_edges", "graph_fragments")
+#: The tables 010_rls_binds.sql (and 014 for the version history) put under a domain policy.
+RLS_TABLES: tuple[str, ...] = (
+    "causal_entities",
+    "causal_edges",
+    "graph_fragments",
+    # 014: the version history carries each object's domain, and the same policy.
+    "semantic_object_versions",
+)
 
 
 @dataclass(frozen=True)

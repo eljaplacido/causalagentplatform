@@ -64,7 +64,7 @@ from src.semantic_layer.models import (
     UserRef,
 )
 from src.semantic_layer.verdict import RECORD_SENSITIVITY
-from tests.conftest import issue_verdict_for
+from tests.conftest import issue_verdict_for, make_data_source
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -148,6 +148,7 @@ async def _edge(
         assumption_refs=[a.id for a in assumptions],
         guardian_verdict_ref=uuid4(),
         domain="devops",
+        source_data=make_data_source(),
         **({"created_by": _user(submitter)} if submitter else {}),
     )
     await registry.propose_draft(edge, await verdict_for(edge.id))
@@ -164,6 +165,7 @@ async def _entity(
         ontology_version="1.0.0",
         created_by=_user(submitter),
         created_at=T0 - timedelta(days=age),
+        source_data=make_data_source(),
     )
     await registry.propose_draft(entity, await verdict_for(entity.id))
     return entity
@@ -181,6 +183,7 @@ async def _fragment(
         edges=[e.id for e in edges],
         created_by=_user(submitter),
         created_at=T0,
+        source_data=make_data_source(),
     )
     await registry.propose_draft(fragment, await verdict_for(fragment.id))
     return fragment
@@ -195,7 +198,7 @@ async def _queue(client: AsyncClient) -> dict[str, dict[str, Any]]:
 async def _record(
     registry: SemanticLayerRegistry, db_session: AsyncSession, edge: CausalEdge, robust: bool
 ) -> None:
-    """Record a sensitivity result on the edge the platform's way (septa-62)."""
+    """Record a sensitivity result on the edge the platform's way (septa-70)."""
     verdict = await issue_verdict_for(db_session, edge.id, action_type=RECORD_SENSITIVITY)
     await registry.record_edge_sensitivity(edge.id, _sensitivity(robust), verdict, _user("sim"))
 

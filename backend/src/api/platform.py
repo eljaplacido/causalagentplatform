@@ -37,7 +37,6 @@ from sqlalchemy import text
 from src.db.factory import CloudSqlFactory
 from src.db.neo4j_factory import Neo4jFactory
 from src.db.types import TIMESTAMP, timestamp_text, typed_text
-from src.middleware.auth import get_current_user
 from src.middleware.rbac import guard
 from src.orchestration.graph import compile_platform_graph
 from src.semantic_layer.registry import SemanticLayerRegistry
@@ -184,7 +183,7 @@ def _week_label(dt: datetime) -> str:
     summary="Real-time health of all backend components",
 )
 async def get_connector_health(
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/platform/connectors")),
 ) -> list[ConnectorStatus]:
     """
     Check the health of every backend component and return current status.
@@ -451,7 +450,7 @@ async def _neo4j_status() -> ConnectorStatus:
     summary="Operational metrics computed from live session and audit data",
 )
 async def get_platform_metrics(
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/platform/metrics")),
 ) -> PlatformMetricsResponse:
     """
     Compute real platform metrics from audit_log and semantic layer.
@@ -463,7 +462,11 @@ async def get_platform_metrics(
       - Aggregate totals
     """
     now = datetime.now(UTC)
-    four_weeks_ago = now - timedelta(weeks=4)
+    # The four weeks ending with this one, oldest first, each keyed by its Monday.
+    this_monday = (now - timedelta(days=now.weekday())).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    mondays = [this_monday - timedelta(weeks=k) for k in (3, 2, 1, 0)]
 
     weekly_sessions: list[WeeklySessionMetric] = []
     policy_patterns: list[PolicyPattern] = []
@@ -475,64 +478,56 @@ async def get_platform_metrics(
 
     async with CloudSqlFactory.get_session_factory()() as session:
         # ── Weekly session metrics ───────────────────────────────────────────
-        # Group audit_log entries by week (each session produces at least one entry)
-        # We approximate "sessions" as unique session_ids in audit_log
+        # Group audit_log entries by week. "Sessions" are the distinct session_ids
+        # among them; the verdict figures (approval rate, escalations) count every
+        # row, as overall_approval_rate does. They used to count only rows with a
+        # session_id, so this week's rate and the overall one were over different
+        # rows (the executive page showed 76% beside 74%), and escalations recorded
+        # without a session -- the seeder's, the governance API's -- were never
+        # counted ("Escalations (4w) 0" beside an audit trail listing them).
         # Grouped here, not in SQL: strftime() is SQLite's, and on PostgreSQL the
         # failed statement also aborted the transaction, so every query after it in
         # this session failed too and the endpoint returned nothing but padding.
-        # '%Y-%W' is the same week key SQLite's strftime produced.
+        weeks: dict[datetime, dict[str, Any]] = {
+            m: {"sessions": set(), "approved": 0, "total": 0, "escalated": 0} for m in mondays
+        }
         try:
             weekly_rows = await session.execute(
                 typed_text(
                     "SELECT created_at, session_id, guardian_verdict "
                     "FROM audit_log "
-                    "WHERE created_at >= :cutoff "
-                    "  AND session_id IS NOT NULL",
+                    "WHERE created_at >= :cutoff",
                     cutoff=TIMESTAMP,
                 ),
-                {"cutoff": four_weeks_ago},
+                {"cutoff": mondays[0]},
             )
-            weeks: dict[str, dict[str, Any]] = {}
             for row in weekly_rows.mappings():
                 at = _as_utc(row["created_at"])
                 if at is None:
                     continue
-                week = weeks.setdefault(
-                    at.strftime("%Y-%W"),
-                    {"start": at, "sessions": set(), "approved": 0, "total": 0, "escalated": 0},
+                monday = (at - timedelta(days=at.weekday())).replace(
+                    hour=0, minute=0, second=0, microsecond=0
                 )
-                week["start"] = min(week["start"], at)
-                week["sessions"].add(row["session_id"])
+                week = weeks.get(monday)
+                if week is None:
+                    continue
+                if row["session_id"] is not None:
+                    week["sessions"].add(row["session_id"])
                 week["total"] += 1
                 week["approved"] += row["guardian_verdict"] == "APPROVED"
                 week["escalated"] += row["guardian_verdict"] == "REQUIRES_ESCALATION"
-            for key in sorted(weeks)[:4]:
-                week = weeks[key]
-                ws = week["start"].replace(microsecond=0)
-                total_checks = max(week["total"], 1)
-                weekly_sessions.append(
-                    WeeklySessionMetric(
-                        week=_week_label(ws),
-                        week_start=ws.isoformat(),
-                        session_count=len(week["sessions"]),
-                        approval_rate=round(week["approved"] / total_checks, 3),
-                        escalation_count=week["escalated"],
-                    )
-                )
         except Exception as exc:
             log.warning("platform.metrics.weekly_query_failed", error=str(exc))
 
-        # Pad to 4 weeks if fewer
-        while len(weekly_sessions) < 4:
-            idx = len(weekly_sessions)
-            week_dt = now - timedelta(weeks=(3 - idx))
+        for monday in mondays:
+            week = weeks[monday]
             weekly_sessions.append(
                 WeeklySessionMetric(
-                    week=_week_label(week_dt),
-                    week_start=(week_dt - timedelta(days=week_dt.weekday())).isoformat(),
-                    session_count=0,
-                    approval_rate=0.0,
-                    escalation_count=0,
+                    week=_week_label(monday),
+                    week_start=monday.isoformat(),
+                    session_count=len(week["sessions"]),
+                    approval_rate=round(week["approved"] / max(week["total"], 1), 3),
+                    escalation_count=week["escalated"],
                 )
             )
 
@@ -642,7 +637,7 @@ async def get_platform_metrics(
     summary="Drift alerts derived from recent rejected Guardian verdicts",
 )
 async def get_drift_alerts(
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/platform/drift")),
 ) -> list[DriftAlert]:
     """
     Compute drift alerts from recent audit_log activity.
@@ -696,10 +691,17 @@ async def get_drift_alerts(
                             domain="platform",
                             entity_type="Session",
                             severity="HIGH",
+                            # Only what the row records: its agent, its session
+                            # when it has one ("Session unknown" named a session
+                            # that does not exist), and the rules it cites. It
+                            # used to add "agent circuit breaker or
+                            # double-rejection detected", a cause the row does
+                            # not record (PR-003, a CHAOTIC run, escalates too).
                             message=(
-                                f"Session {row['session_id'] or 'unknown'} triggered "
-                                f"REQUIRES_ESCALATION — agent circuit breaker or "
-                                f"double-rejection detected."
+                                f"{row['agent_id']} recorded a REQUIRES_ESCALATION verdict"
+                                + (f" in session {row['session_id']}" if row["session_id"] else "")
+                                + (f", citing {', '.join(rules)}" if rules else "")
+                                + "."
                             ),
                             detected_at=timestamp_text(row["created_at"]) or "",
                             affected_fragment_ids=[],
@@ -790,7 +792,7 @@ class CalibrationRequest(BaseModel):
 async def get_consistency(
     session_id: str = "test",
     num_runs: int = Query(default=8, ge=2, le=100),
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/platform/evaluation/consistency")),
 ) -> ConsistencyResponse:
     """
     Measure agent output variance across N consecutive runs.
@@ -872,7 +874,7 @@ async def get_decision_quality(
     consistency_score: float = Query(default=0.80, ge=0.0, le=1.0),
     calibration_score: float = Query(default=0.70, ge=0.0, le=1.0),
     period_days: int = Query(default=30, ge=1, le=365),
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/platform/evaluation/decision-quality")),
 ) -> DecisionQualityResponse:
     """
     Compute a composite decision quality index from platform metrics.

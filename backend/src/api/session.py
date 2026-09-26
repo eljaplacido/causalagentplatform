@@ -25,8 +25,7 @@ from pydantic import BaseModel, Field, model_validator
 
 from src.agents.incident_triage import IncidentTriageAgent
 from src.exceptions import CircuitBreakerError
-from src.middleware.auth import get_current_user
-from src.middleware.rbac import guard
+from src.middleware.rbac import guard, may_use_session
 from src.orchestration.graph import PlatformState, compile_platform_graph
 from src.orchestration.session_store import SessionStateStore
 from src.semantic_layer.models import (
@@ -45,6 +44,8 @@ _graph = compile_platform_graph()
 
 # In-process hot cache (session_id → last EpistemicState)
 _session_cache: dict[str, EpistemicState] = {}
+#: session_id -> the uid that started it (None: saved without one), beside the cache.
+_session_owner: dict[str, str | None] = {}
 _session_store = SessionStateStore()
 _provenance = ProvenanceStore()
 
@@ -247,6 +248,31 @@ async def _run_graph(initial_state: EpistemicState, description: str) -> Epistem
     return final
 
 
+async def _owned_session(session_id: str, user: dict[str, Any]) -> EpistemicState | None:
+    """The session's state, or None when there is none; 403 when it is another user's."""
+    state = _session_cache.get(session_id)
+    if state is None or session_id not in _session_owner:
+        found = await _session_store.load_with_owner(session_id)
+        if found is None:
+            return None
+        state, _session_owner[session_id] = found
+        _session_cache[session_id] = state
+    if not may_use_session(user, _session_owner[session_id]):
+        log.warning("session.access_refused", session_id=session_id, uid=user.get("uid"))
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Session '{session_id}' belongs to another user.",
+        )
+    return state
+
+
+async def _remember(state: EpistemicState, user: dict[str, Any]) -> None:
+    """Cache and persist `state`; a new session's owner is `user`."""
+    _session_cache[state.session_id] = state
+    _session_owner.setdefault(state.session_id, user.get("uid"))
+    await _session_store.save(state, user.get("uid"))
+
+
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 
@@ -275,11 +301,7 @@ async def run_session(
     session_id = body.session_id or str(uuid.uuid4())
 
     # Resume existing session if available
-    existing = _session_cache.get(session_id)
-    if existing is None:
-        existing = await _session_store.load(session_id)
-        if existing is not None:
-            _session_cache[session_id] = existing
+    existing = await _owned_session(session_id, user)
 
     if existing:
         initial_state = existing.model_copy(
@@ -308,8 +330,7 @@ async def run_session(
     final = await _run_graph(initial_state, body.description)
 
     # Cache for potential continuation
-    _session_cache[session_id] = final
-    await _session_store.save(final, user.get("uid"))
+    await _remember(final, user)
     await _record_provenance(
         initial_state,
         final,
@@ -351,6 +372,16 @@ async def triage_incident(
     Severity P0 incidents pre-seed the description with an urgency signal that
     biases Cynefin classification toward CHAOTIC for immediate escalation.
     """
+    from src.api.incidents import incident_submitter  # lazy import — avoids circular dependency
+
+    submitter = _submitter(user)
+    taken_by = await incident_submitter(body.incident_id)
+    if taken_by is not None and taken_by != submitter:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Incident '{body.incident_id}' was submitted by another user.",
+        )
+
     session_id = str(uuid.uuid4())
     urgency_prefix = "CRITICAL CASCADING " if body.severity == "P0" else ""
     description = (
@@ -393,8 +424,7 @@ async def triage_incident(
     # Guardian verdict written to audit_log. CHAOTIC used to skip the graph, and so
     # returned the triage agent's escalation with no verdict and no audit record.
     final = await _run_graph(triaged_state, description)
-    _session_cache[session_id] = final
-    await _session_store.save(final, user.get("uid"))
+    await _remember(final, user)
     await _record_provenance(
         initial_state,
         final,
@@ -413,6 +443,11 @@ async def triage_incident(
     )
 
     return _state_to_response(final)
+
+
+def _submitter(user: dict[str, Any]) -> str:
+    """The id an incident records as its submitter."""
+    return str(user.get("uid") or user.get("email") or "unknown")
 
 
 async def _persist_incident(
@@ -461,7 +496,7 @@ async def _persist_incident(
             draft_explanation=state.draft_explanation,
             causal_hypotheses=causal_hypotheses,
             proposed_interventions=proposed_interventions,
-            submitted_by=user.get("uid") or user.get("email") or "unknown",
+            submitted_by=_submitter(user),
             requires_human_review=state.requires_human_review,
         )
     except Exception as exc:
@@ -480,14 +515,12 @@ async def _persist_incident(
 )
 async def get_session_state(
     session_id: str,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/session/{session_id}/state")),
 ) -> SessionStateResponse:
-    """Return the cached or durably persisted EpistemicState for a session_id."""
-    state = _session_cache.get(session_id)
-    if state is None:
-        state = await _session_store.load(session_id)
-        if state is not None:
-            _session_cache[session_id] = state
+    """Return the cached or durably persisted EpistemicState for a session_id.
+
+    Its owner and governance roles only (403 for anyone else)."""
+    state = await _owned_session(session_id, user)
     if state is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

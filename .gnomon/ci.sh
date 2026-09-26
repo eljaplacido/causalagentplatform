@@ -74,6 +74,23 @@ print(*tot)
 PYEOF
 }
 
+# ── This tree's code first ───────────────────────────────────────────────────
+# Every Python step imports THIS tree's packages. In a git worktree the gate borrows
+# the main checkout's venvs (below), and their editable installs of causal_core and
+# causal_decision point at the MAIN checkout: with nothing ahead of them on sys.path
+# the backend suite and the package suites tested that checkout's kernel, and a
+# `raise` planted in this tree's causal_core.pipeline.analyze went unseen. So every
+# packages/*/src goes first on PYTHONPATH (and MYPYPATH, for the typecheckers), for
+# every step, and the import-origin step below checks it took, per interpreter.
+PKG_SRC_PATH="$(for d in "$ROOT"/packages/*/src; do [ -d "$d" ] && printf '%s:' "$d"; done)"
+PKG_SRC_PATH="${PKG_SRC_PATH%:}"
+export PYTHONPATH="${PKG_SRC_PATH}${PYTHONPATH:+:$PYTHONPATH}"
+export MYPYPATH="${PKG_SRC_PATH}${MYPYPATH:+:$MYPYPATH}"
+# The backend steps add backend/ (its tests import `src.`); the package rows add the
+# plugin that writes each test's markers into the JUnit report (gate-markers reads it).
+BACKEND_PYTHONPATH="$ROOT/backend:$PYTHONPATH"
+PKG_PYTHONPATH="$ROOT/scripts/ci_pytest_plugins:$PYTHONPATH"
+
 # ── Toolchains ───────────────────────────────────────────────────────────────
 # Backend: a bin/ directory holding python, pytest, ruff and mypy. BACKEND_VENV
 # wins; then backend/.venv; then, in a git worktree (which has no venv of its
@@ -111,6 +128,49 @@ frontend_toolchain() {
 echo "frontend toolchain: $(frontend_toolchain && echo "typescript, vitest, eslint, next resolve inside the repo" || echo ABSENT)"
 echo "logs: $LOG_DIR"
 
+# Package environments, used by the preflight below and by the package rows (4.).
+pkg_python() {  # name -> path to a python for that package, or nothing
+    local name="$1" var c common
+    var="PKG_VENV_$(echo "$name" | tr 'a-z-' 'A-Z_')"
+    common="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+    for c in "${!var:-}" "packages/$name/.venv" "${common:+$(dirname "$common")/packages/$name/.venv}" \
+             "packages/causal-core/.venv" "${common:+$(dirname "$common")/packages/causal-core/.venv}"; do
+        if [ -n "$c" ] && [ -x "$c/bin/python" ]; then echo "$(cd "$c/bin" && pwd)/python"; return 0; fi
+    done
+    return 1
+}
+# causal-core first: the others depend on it.
+PKG_ORDER="$( { [ -f packages/causal-core/pyproject.toml ] && echo causal-core
+               for f in packages/*/pyproject.toml; do [ -f "$f" ] && basename "$(dirname "$f")"; done
+             } | awk '!seen[$0]++' )"
+
+# ── 0. Preflight: the code under test is this tree's ─────────────────────────
+# import-origin  scripts/import_origin.py, run by every interpreter a later step uses
+#                (the backend toolchain, each package environment) under the PYTHONPATH
+#                that step gets: every packages/*/src package must resolve inside THIS
+#                tree. A FAIL here means the suites below would test another checkout.
+header "preflight: every step imports this tree's packages"
+t0=$SECONDS
+origin_envs="$( { [ -n "$PYBIN" ] && echo "backend=$PY"
+                  for name in $PKG_ORDER; do p="$(pkg_python "$name" || true)"; [ -n "$p" ] && echo "$name=$p"; done
+                } | awk -F= '!seen[$2]++' )"
+origin_rc=0; origin_n=0; origin_first=""
+for pair in $origin_envs; do
+    label="${pair%%=*}"; py="${pair#*=}"
+    pp="$PKG_PYTHONPATH"; [ "$label" = "backend" ] && pp="$BACKEND_PYTHONPATH"
+    ( cd "$ROOT" && PYTHONPATH="$pp" "$py" scripts/import_origin.py --label "$label" ) > "$LOG_DIR/.origin" 2>&1 || origin_rc=1
+    sed 's/^/   /' "$LOG_DIR/.origin"
+    [ -z "$origin_first" ] && origin_first="$(grep -m1 '^FAIL' "$LOG_DIR/.origin" | sed 's/^FAIL *//' | cut -c1-170)"
+    origin_n=$((origin_n + 1))
+done
+if [ "$origin_n" -eq 0 ]; then
+    record import-origin SKIPPED "no Python toolchain or package environment to check" 0
+elif [ "$origin_rc" -ne 0 ]; then
+    record import-origin FAIL "${origin_first:-see the log above}" $((SECONDS - t0))
+else
+    record import-origin PASS "$origin_n interpreter(s): every packages/*/src package loads from this tree" $((SECONDS - t0))
+fi
+
 # ── 1. Backend test suite + coverage floor ───────────────────────────────────
 # The FULL suite (unit + integration + guardian) on SQLite, once, with coverage
 # measured on that run. Coverage is judged on the full suite only -- see
@@ -124,27 +184,29 @@ else
     t0=$SECONDS
     # SQLite, always: TEST_DATABASE_URL would move this run to PostgreSQL, which is
     # the next step's job (1b), and then nothing would run the SQLite schema.
-    ( cd backend && env -u TEST_DATABASE_URL "$PYBIN/pytest" -q -p no:cacheprovider --cov=src \
+    ( cd backend && env -u TEST_DATABASE_URL PYTHONPATH="$BACKEND_PYTHONPATH" "$PYBIN/pytest" -q -p no:cacheprovider --cov=src \
         --cov-report="json:$COV_JSON" --junitxml="$LOG_DIR/pytest-junit.xml" ) \
         > "$LOG_DIR/backend-pytest.log" 2>&1
     rc=$?
     summary="$(grep -E '^=+ .*(passed|failed|error).* in [0-9.]+s' "$LOG_DIR/backend-pytest.log" | tail -1 | sed -E 's/=+//g; s/^ +| +$//g')"
     passed="$(echo "$summary" | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || true)"
     passed="${passed:-0}"
-    if [ "$rc" -eq 0 ] && [ "$passed" -gt 0 ]; then
-        # Scope: the count must clear its floor, and EVERY backend/tests/**/test_*.py
-        # must have reported a test (identity, read from the JUnit report) -- so a
-        # test file that stops being collected fails here instead of vanishing.
-        if scope_floor backend-tests "$passed" \
-           && indented "$PY" scripts/gate_scope.py pytest-files --junit "$LOG_DIR/pytest-junit.xml"; then
-            files="$(grep -oE 'pytest-files: [0-9]+/[0-9]+' "$LOG_DIR/.indented" | cut -d' ' -f2)"
-            record backend-pytest PASS "$passed passed, ${files:-?} test files reported -- $summary" $((SECONDS - t0))
-        else
-            record backend-pytest FAIL "$passed passed, but the run's scope check failed (above)" $((SECONDS - t0))
-        fi
+    # Scope: the count must clear its floor, and EVERY backend/tests/**/test_*.py
+    # must have reported a test (identity, read from the JUnit report) -- so a
+    # test file that stops being collected fails here instead of vanishing. Judged
+    # even when pytest failed, so one failure does not hide another.
+    scope_ok=1
+    scope_floor backend-tests "$passed" || scope_ok=0
+    indented "$PY" scripts/gate_scope.py pytest-files --junit "$LOG_DIR/pytest-junit.xml" || scope_ok=0
+    files="$(grep -oE 'pytest-files: [0-9]+/[0-9]+' "$LOG_DIR/.indented" | cut -d' ' -f2)"
+    if [ "$rc" -eq 0 ] && [ "$passed" -gt 0 ] && [ "$scope_ok" -eq 1 ]; then
+        record backend-pytest PASS "$passed passed, ${files:-?} test files reported -- $summary" $((SECONDS - t0))
+    elif [ "$rc" -eq 0 ] && [ "$passed" -gt 0 ]; then
+        record backend-pytest FAIL "$passed passed, but the run's scope check failed (above)" $((SECONDS - t0))
     else
         show_tail "$LOG_DIR/backend-pytest.log" 40
-        record backend-pytest FAIL "exit $rc, ${passed} passed -- ${summary:-no pytest summary line}" $((SECONDS - t0))
+        scope_note=""; [ "$scope_ok" -eq 0 ] && scope_note="; and its scope check failed (above)"
+        record backend-pytest FAIL "exit $rc, ${passed} passed -- ${summary:-no pytest summary line}${scope_note}" $((SECONDS - t0))
     fi
 
     t0=$SECONDS
@@ -181,26 +243,27 @@ elif [ -z "${TEST_DATABASE_URL:-}" ]; then
     record backend-pytest-postgres SKIPPED "no TEST_DATABASE_URL" 0
 else
     t0=$SECONDS
-    ( cd backend && "$PYBIN/pytest" -q -p no:cacheprovider --no-cov -rs \
+    ( cd backend && PYTHONPATH="$BACKEND_PYTHONPATH" "$PYBIN/pytest" -q -p no:cacheprovider --no-cov -rs \
         --junitxml="$LOG_DIR/pytest-postgres-junit.xml" ) \
         > "$LOG_DIR/backend-pytest-postgres.log" 2>&1
     rc=$?
     read -r n_tests n_fail n_err n_skip < <(junit_counts "$PY" "$LOG_DIR/pytest-postgres-junit.xml")
     n_pass=$(( n_tests - n_fail - n_err - n_skip ))
-    if [ "$rc" -eq 0 ] && [ "$n_pass" -gt 0 ] && [ "$n_skip" -eq 0 ]; then
-        if scope_floor backend-tests "$n_pass" \
-           && indented "$PY" scripts/gate_scope.py pytest-files --junit "$LOG_DIR/pytest-postgres-junit.xml"; then
-            files="$(grep -oE 'pytest-files: [0-9]+/[0-9]+' "$LOG_DIR/.indented" | cut -d' ' -f2)"
-            record backend-pytest-postgres PASS "$n_pass passed, 0 skipped, ${files:-?} test files reported -- schema from the migrations" $((SECONDS - t0))
-        else
-            record backend-pytest-postgres FAIL "$n_pass passed, but the run's scope check failed (above)" $((SECONDS - t0))
-        fi
+    scope_ok=1  # judged whatever pytest's exit, as above
+    scope_floor backend-tests "$n_pass" || scope_ok=0
+    indented "$PY" scripts/gate_scope.py pytest-files --junit "$LOG_DIR/pytest-postgres-junit.xml" || scope_ok=0
+    files="$(grep -oE 'pytest-files: [0-9]+/[0-9]+' "$LOG_DIR/.indented" | cut -d' ' -f2)"
+    scope_note=""; [ "$scope_ok" -eq 0 ] && scope_note="; and its scope check failed (above)"
+    if [ "$rc" -eq 0 ] && [ "$n_pass" -gt 0 ] && [ "$n_skip" -eq 0 ] && [ "$scope_ok" -eq 1 ]; then
+        record backend-pytest-postgres PASS "$n_pass passed, 0 skipped, ${files:-?} test files reported -- schema from the migrations" $((SECONDS - t0))
+    elif [ "$rc" -eq 0 ] && [ "$n_pass" -gt 0 ] && [ "$n_skip" -eq 0 ]; then
+        record backend-pytest-postgres FAIL "$n_pass passed, but the run's scope check failed (above)" $((SECONDS - t0))
     elif [ "$rc" -eq 0 ] && [ "$n_pass" -gt 0 ]; then
         grep -E '^SKIPPED' "$LOG_DIR/backend-pytest-postgres.log" | head -5 | sed 's/^/   | /'
-        record backend-pytest-postgres FAIL "$n_pass passed but $n_skip skipped -- a skip on PostgreSQL is a test that did not run" $((SECONDS - t0))
+        record backend-pytest-postgres FAIL "$n_pass passed but $n_skip skipped -- a skip on PostgreSQL is a test that did not run${scope_note}" $((SECONDS - t0))
     else
         show_tail "$LOG_DIR/backend-pytest-postgres.log" 40
-        record backend-pytest-postgres FAIL "exit $rc -- $n_pass passed, $n_fail failed, $n_err errors, $n_skip skipped" $((SECONDS - t0))
+        record backend-pytest-postgres FAIL "exit $rc -- $n_pass passed, $n_fail failed, $n_err errors, $n_skip skipped${scope_note}" $((SECONDS - t0))
     fi
 fi
 
@@ -328,31 +391,27 @@ fi
 # venv is where its dependents (causal-mcp) are installed. The backend's venv is
 # deliberately not a fallback: it lacks the suites' test dependencies
 # (hypothesis, ...), so it would report a missing module as a failing package.
-# PYTHONPATH puts THIS tree's src/ first (the package's, then causal-core's), so
-# a venv whose editable install targets another checkout still tests the code
-# here.
+# PYTHONPATH puts EVERY packages/*/src of THIS tree first (exported at the top), so
+# a venv whose editable install targets another checkout still tests the code here;
+# the import-origin step checked that for each of these environments.
 #
 # Counts come from the JUnit report (tests, failures, errors, skipped), not from
 # scraping the summary line: causal-core's addopts set -q, and pytest's quiet
 # levels drop that line (junit_counts, with the helpers at the top).
-pkg_python() {  # name -> path to a python for that package, or nothing
-    local name="$1" var c common
-    var="PKG_VENV_$(echo "$name" | tr 'a-z-' 'A-Z_')"
-    common="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
-    for c in "${!var:-}" "packages/$name/.venv" "${common:+$(dirname "$common")/packages/$name/.venv}" \
-             "packages/causal-core/.venv" "${common:+$(dirname "$common")/packages/causal-core/.venv}"; do
-        if [ -n "$c" ] && [ -x "$c/bin/python" ]; then echo "$(cd "$c/bin" && pwd)/python"; return 0; fi
-    done
-    return 1
-}
+#
+# rc == 0 with tests passed is not enough: two identity checks read the same report,
+# and run whatever pytest's exit, so one failure does not hide another --
+#   package-files  every packages/<name>/tests/**/test_*.py reported a test, so a test
+#                  file that stops being collected fails the row;
+#   gate-markers   every pre-registered gate marker of the package (the gate table in
+#                  .gnomon/skills/verifying-changes.md, and the markers its pyproject.toml
+#                  declares pre-registered) has a PASSED test, so a gate whose tests all
+#                  stopped being collected fails the row. The junit_markers plugin
+#                  (scripts/ci_pytest_plugins/) writes each test's markers into the report.
 header "Python packages under packages/"
 if [ ! -f packages/causal-core/pyproject.toml ]; then
     record causal-core SKIPPED "NOT RUN: packages/causal-core/pyproject.toml is not in this tree" 0
 fi
-# causal-core first: the others depend on it.
-PKG_ORDER="$( { [ -f packages/causal-core/pyproject.toml ] && echo causal-core
-               for f in packages/*/pyproject.toml; do [ -f "$f" ] && basename "$(dirname "$f")"; done
-             } | awk '!seen[$0]++' )"
 for name in $PKG_ORDER; do
     t0=$SECONDS
     if [ ! -d "packages/$name/tests" ]; then
@@ -364,14 +423,22 @@ for name in $PKG_ORDER; do
         record "$name" SKIPPED "NOT RUN: no environment for packages/$name -- python -m venv packages/$name/.venv && pip install -e 'packages/$name[dev]'" 0
         continue
     fi
-    ( cd "packages/$name" && PYTHONPATH="$ROOT/packages/$name/src:$ROOT/packages/causal-core/src" \
-        "$PKG_PY" -m pytest -p no:cacheprovider --junitxml="$LOG_DIR/$name-junit.xml" ) \
+    ( cd "packages/$name" && PYTHONPATH="$PKG_PYTHONPATH" \
+        "$PKG_PY" -m pytest -p no:cacheprovider -p junit_markers --junitxml="$LOG_DIR/$name-junit.xml" ) \
         > "$LOG_DIR/$name.log" 2>&1
     rc=$?
     read -r n_tests n_fail n_err n_skip < <(junit_counts "$PKG_PY" "$LOG_DIR/$name-junit.xml")
     n_pass=$(( n_tests - n_fail - n_err - n_skip ))
-    extra=""; [ "$name" = "causal-core" ] && extra=", incl. the T0 gate"
-    if [ "$rc" -eq 0 ] && [ "$n_pass" -gt 0 ] && [ "$n_skip" -gt 0 ]; then
+    scope_ok=1
+    indented "$PY" scripts/gate_scope.py package-files --package "$name" --junit "$LOG_DIR/$name-junit.xml" || scope_ok=0
+    files="$(grep -oE "package-files\[$name\]: [0-9]+/[0-9]+" "$LOG_DIR/.indented" | awk '{print $2}')"
+    indented "$PY" scripts/gate_scope.py gate-markers --package "$name" --junit "$LOG_DIR/$name-junit.xml" || scope_ok=0
+    gates="$(grep -oE 'every gate marker has passing tests \([^)]*\)' "$LOG_DIR/.indented" | sed -E 's/.*\((.*)\)/\1/')"
+    scope_detail=", ${files:-?} test files reported${gates:+, gates passed: $gates}"
+    if [ "$scope_ok" -eq 0 ]; then
+        show_tail "$LOG_DIR/$name.log" 15
+        record "$name" FAIL "RAN: exit $rc, ${n_pass} passed, ${n_skip} skipped -- but a test file or a pre-registered gate reported no test (above)" $((SECONDS - t0))
+    elif [ "$rc" -eq 0 ] && [ "$n_pass" -gt 0 ] && [ "$n_skip" -gt 0 ]; then
         # Every skip these suites can produce is an absent input to a registered
         # gate -- y0 for T0's cross-check, the T2/T3 data, the decision extra --
         # so a skipped test here is a gate that did not run, and green would say
@@ -379,7 +446,7 @@ for name in $PKG_ORDER; do
         grep -E '^SKIPPED|SKIPPED \[' "$LOG_DIR/$name.log" | head -5 | sed 's/^/   | /'
         record "$name" FAIL "RAN: ${n_pass} passed but ${n_skip} skipped -- a skipped test here is a gate that did not run (pytest -rs for reasons)" $((SECONDS - t0))
     elif [ "$rc" -eq 0 ] && [ "$n_pass" -gt 0 ]; then
-        record "$name" PASS "RAN: ${n_pass} passed, 0 skipped${extra} (env: ${PKG_PY%/bin/python})" $((SECONDS - t0))
+        record "$name" PASS "RAN: ${n_pass} passed, 0 skipped${scope_detail} (env: ${PKG_PY%/bin/python})" $((SECONDS - t0))
     else
         show_tail "$LOG_DIR/$name.log" 30
         record "$name" FAIL "RAN: exit $rc -- ${n_pass} passed, ${n_fail} failed, ${n_err} errors, ${n_skip} skipped" $((SECONDS - t0))

@@ -29,16 +29,64 @@ import {
   interventionApi,
   incidentsApi,
   CausalApiError,
+  isNotAuthorised,
   type IncidentRecord,
   type InterventionDecisionResponse,
 } from "@/lib/api";
-import type { Incident, ThinkingStage } from "@/lib/types";
+import type {
+  EffectEstimate,
+  Incident,
+  IncidentSeverity,
+  Intervention,
+  ThinkingStage,
+} from "@/lib/types";
 
+
+/** The backend's severity vocabulary, most severe first. */
+const SEVERITIES: readonly IncidentSeverity[] = ["P0", "P1", "P2", "P3"];
+
+/**
+ * Rows written by backend/scripts/seed_data.py carry SEV1-SEV4; the triage
+ * endpoint stores P0-P3. Both are shown as P0-P3 (the same mapping the page
+ * used to apply when sending), so the feed speaks one vocabulary.
+ */
+const SEED_SEVERITY: Readonly<Record<string, IncidentSeverity>> = {
+  SEV1: "P0",
+  SEV2: "P1",
+  SEV3: "P2",
+  SEV4: "P3",
+};
+
+/** A stored severity in P0-P3, or the stored value as sent when unrecognised. */
+function normalizeSeverity(raw: string): Incident["severity"] {
+  const key = raw.trim().toUpperCase();
+  if ((SEVERITIES as readonly string[]).includes(key)) return key as IncidentSeverity;
+  return SEED_SEVERITY[key] ?? raw;
+}
+
+/** An effect estimate only when the stored object really is one. */
+function storedEffect(value: unknown): EffectEstimate | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const e = value as Record<string, unknown>;
+  const numeric = ["pointEstimate", "lowerBound", "upperBound"].every(
+    (k) => typeof e[k] === "number" && Number.isFinite(e[k])
+  );
+  if (!numeric || typeof e["unit"] !== "string") return undefined;
+  const direction = e["direction"];
+  if (direction !== "POSITIVE" && direction !== "NEGATIVE" && direction !== "UNCERTAIN") {
+    return undefined;
+  }
+  return value as EffectEstimate;
+}
 
 function recordToIncident(record: IncidentRecord): Incident {
   const interventions = record.proposed_interventions.map((raw) => {
     const obj = raw as Record<string, unknown>;
     const partial = obj as Partial<Incident["proposedInterventions"][number]>;
+    const effect = storedEffect(obj["estimatedEffect"]);
+    const human = obj["humanDecision"];
+    const humanDecision: Intervention["humanDecision"] =
+      human === "APPROVED" || human === "REJECTED" ? human : undefined;
     return {
       id: String(obj["id"] ?? ""),
       title: String(obj["title"] ?? ""),
@@ -47,13 +95,9 @@ function recordToIncident(record: IncidentRecord): Incident {
       riskTier: (obj["riskTier"] as Incident["proposedInterventions"][number]["riskTier"]) ?? "LOW",
       // Fail-closed: a missing verdict is PENDING, never an implied approval.
       guardianVerdict: (obj["guardianVerdict"] as Incident["proposedInterventions"][number]["guardianVerdict"]) ?? "PENDING",
-      estimatedEffect: partial.estimatedEffect ?? {
-        pointEstimate: 0,
-        lowerBound: 0,
-        upperBound: 0,
-        unit: "% improvement",
-        direction: "UNCERTAIN" as const,
-      },
+      // No backend stores an estimate for these today; absent stays absent.
+      ...(effect ? { estimatedEffect: effect } : {}),
+      ...(humanDecision ? { humanDecision } : {}),
       assumptions: partial.assumptions ?? [],
       ...(typeof obj["approvalReason"] === "string" ? { approvalReason: obj["approvalReason"] as string } : {}),
     };
@@ -75,7 +119,7 @@ function recordToIncident(record: IncidentRecord): Incident {
     id: record.id,
     title: record.title,
     affectedServices: record.affected_services,
-    severity: record.severity as Incident["severity"],
+    severity: normalizeSeverity(record.severity),
     status: record.status as Incident["status"],
     acknowledgedAt: record.created_at,
     cynefinDomain: (record.cynefin_domain ?? "DISORDER") as Incident["cynefinDomain"],
@@ -85,13 +129,29 @@ function recordToIncident(record: IncidentRecord): Incident {
   };
 }
 
+/**
+ * A new incident id: INC- and 8 random hex digits, re-drawn if it names an
+ * incident already listed. It used to be INC-{count+1}, which named an existing
+ * incident as soon as the feed was not exactly INC-001..INC-n, and the save
+ * then overwrote it. getRandomValues rather than randomUUID: randomUUID exists
+ * only in secure contexts (https or localhost). The backend accepts any string
+ * id (IncidentSessionRequest.incident_id).
+ */
+function newIncidentId(taken: ReadonlySet<string>): string {
+  for (;;) {
+    const bytes = new Uint8Array(4);
+    crypto.getRandomValues(bytes);
+    const id = `INC-${Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")}`;
+    if (!taken.has(id)) return id;
+  }
+}
 
 // ─── Submit form schema ────────────────────────────────────────────────────────
 
 const submitIncidentSchema = z.object({
   title: z.string().min(10, "Title must be at least 10 characters"),
   affectedServices: z.string().min(1, "Enter at least one service"),
-  severity: z.enum(["SEV1", "SEV2", "SEV3", "SEV4"]),
+  severity: z.enum(["P0", "P1", "P2", "P3"]),
 });
 
 type SubmitIncidentForm = z.infer<typeof submitIncidentSchema>;
@@ -107,6 +167,7 @@ export default function IncidentsPage() {
   );
   const [isSubmitOpen, setIsSubmitOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const {
     register,
@@ -115,7 +176,7 @@ export default function IncidentsPage() {
     formState: { errors },
   } = useForm<SubmitIncidentForm>({
     resolver: zodResolver(submitIncidentSchema),
-    defaultValues: { severity: "SEV2" },
+    defaultValues: { severity: "P1" },
   });
 
   const selectedIncident =
@@ -133,9 +194,15 @@ export default function IncidentsPage() {
           setSelectedIncidentId(mapped[0]!.id);
         }
       } catch (err) {
-        // Non-fatal: dashboard still works with in-memory state if the list endpoint is unreachable
+        // Non-fatal (a new incident can still be triaged), but said: an empty
+        // feed must not stand in for "could not load".
+        if (cancelled) return;
         const msg = err instanceof CausalApiError ? err.message : err instanceof Error ? err.message : String(err);
-        console.warn("incidentsApi.list failed", msg);
+        setLoadError(
+          isNotAuthorised(err)
+            ? `Not authorised to list incidents: ${msg}`
+            : `Stored incidents could not be loaded: ${msg}`
+        );
       }
     }
     void loadIncidents();
@@ -159,12 +226,7 @@ export default function IncidentsPage() {
     reset();
 
     const affectedServices = data.affectedServices.split(",").map((s) => s.trim());
-    const incidentId = `INC-${String(incidents.length + 1).padStart(3, "0")}`;
-
-    // Map frontend severity (SEV1-4) → backend severity (P0-P3)
-    const severityMap: Record<string, string> = {
-      SEV1: "P0", SEV2: "P1", SEV3: "P2", SEV4: "P3",
-    };
+    const incidentId = newIncidentId(new Set(incidents.map((i) => i.id)));
 
     try {
       setThinkingStage("Analyzing causal paths...");
@@ -172,7 +234,7 @@ export default function IncidentsPage() {
       const result = await sessionApi.incident({
         incident_id: incidentId,
         title: data.title,
-        severity: severityMap[data.severity] ?? "P2",
+        severity: data.severity,
         affected_services: affectedServices,
         metrics_snapshot: {},
       });
@@ -205,13 +267,7 @@ export default function IncidentsPage() {
           id: `int-${rec.rank}-${result.session_id}`,
           title: rec.action,
           description: rec.rationale,
-          estimatedEffect: {
-            pointEstimate: 0,
-            lowerBound: 0,
-            upperBound: 0,
-            unit: "% improvement",
-            direction: "UNCERTAIN" as const,
-          },
+          // SessionStateResponse carries no effect estimate: none is shown.
           confidence: rec.confidence,
           assumptions: [],
           riskTier: rec.risk_tier as "LOW" | "MEDIUM" | "HIGH" | "CRITICAL",
@@ -240,7 +296,11 @@ export default function IncidentsPage() {
     }
   }
 
-  /** Reflect a decision in local state — only ever called with a backend-confirmed decision. */
+  /**
+   * Reflect a decision in local state — only ever called with a
+   * backend-confirmed decision. It is the human decision, kept beside the
+   * Guardian's verdict, which it never replaces.
+   */
   function applyConfirmedDecision(
     incidentId: string,
     interventionId: string,
@@ -258,7 +318,7 @@ export default function IncidentsPage() {
                   ? int
                   : {
                       ...int,
-                      guardianVerdict: decision,
+                      humanDecision: decision,
                       ...(reason !== undefined ? { approvalReason: reason } : {}),
                     }
               ),
@@ -327,18 +387,21 @@ export default function IncidentsPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       {/* Top nav */}
-      <header className="sticky top-0 z-10 flex items-center gap-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
-        <h1 className="text-sm font-bold text-foreground">Causal Platform</h1>
+      <header className="sticky top-0 z-10 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
         <Activity className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-        <span className="text-sm text-muted-foreground">Incidents</span>
-        <div className="ml-auto flex items-center gap-3">
-          <PersonaSelector layout="dropdown" className="w-48" />
+        <h1 className="text-sm font-bold text-foreground">Incidents</h1>
+        <div className="ml-auto flex min-w-0 items-center gap-3">
+          <PersonaSelector layout="dropdown" className="w-48 max-w-full" />
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
+      {/* Below md the feed stacks above the brief; from md they sit side by side. */}
+      <div data-testid="incidents-layout" className="flex min-w-0 flex-1 flex-col md:flex-row md:overflow-hidden">
         {/* Incident feed sidebar */}
-        <aside className="flex w-64 shrink-0 flex-col border-r border-border lg:w-72">
+        <aside
+          aria-label="Incident feed"
+          className="flex w-full shrink-0 flex-col border-b border-border md:w-64 md:border-b-0 md:border-r lg:w-72"
+        >
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <h2 className="text-sm font-semibold text-foreground">
               Active Incidents
@@ -409,10 +472,10 @@ export default function IncidentsPage() {
                   {...register("severity")}
                   className="w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 >
-                  <option value="SEV1">SEV-1 (Critical)</option>
-                  <option value="SEV2">SEV-2 (High)</option>
-                  <option value="SEV3">SEV-3 (Medium)</option>
-                  <option value="SEV4">SEV-4 (Low)</option>
+                  <option value="P0">P0 (Critical)</option>
+                  <option value="P1">P1 (High)</option>
+                  <option value="P2">P2 (Medium)</option>
+                  <option value="P3">P3 (Low)</option>
                 </select>
               </div>
 
@@ -448,8 +511,19 @@ export default function IncidentsPage() {
             </div>
           )}
 
+          {loadError && (
+            <div
+              role="alert"
+              data-testid="incidents-load-error"
+              className="flex items-start gap-2 border-b border-red-200 bg-red-50 p-3 text-xs text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200"
+            >
+              <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
+              <span>{loadError}</span>
+            </div>
+          )}
+
           {/* Incident list */}
-          <ul className="flex-1 overflow-y-auto" role="list">
+          <ul className="max-h-72 overflow-y-auto md:max-h-none md:flex-1" role="list">
             {incidents.map((incident) => {
               const isSelected = incident.id === selectedIncidentId;
               const hasActiveStatus = incident.status === "ACTIVE";
@@ -478,9 +552,9 @@ export default function IncidentsPage() {
                       <span
                         className={cn(
                           "ml-auto rounded-full px-1.5 py-0.5 text-xs font-bold",
-                          incident.severity === "SEV1"
+                          incident.severity === "P0"
                             ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300"
-                            : incident.severity === "SEV2"
+                            : incident.severity === "P1"
                             ? "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300"
                             : "bg-muted text-muted-foreground"
                         )}
@@ -502,7 +576,7 @@ export default function IncidentsPage() {
         </aside>
 
         {/* Incident brief main panel */}
-        <main className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
+        <main className="min-w-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
           <IncidentBrief
             incident={selectedIncident}
             isLoading={isThinking}

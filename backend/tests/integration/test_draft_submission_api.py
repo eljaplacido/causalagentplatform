@@ -257,3 +257,35 @@ async def test_a_session_that_does_not_exist_is_not_found(
     )
     assert resp.status_code == 404, resp.text
     assert await _audit_count(db_session) == before
+
+
+async def test_declared_source_data_is_stored_with_the_draft(
+    client: AsyncClient, registry: SemanticLayerRegistry
+) -> None:
+    """The workbench sends `sourceData` (camelCase, as the models' aliases read it); the
+    draft keeps it, so its lineage can say what it came from and approval can proceed."""
+    payload = _entity_payload()
+    payload["sourceData"] = {
+        "kind": "dataset",
+        "ref": "s3://ops-lake/deploys/2026-09.parquet",
+        "digest": "sha256:" + "ab" * 32,
+    }
+    resp = await client.post(
+        "/api/semantic/drafts",
+        json={"object_type": "CausalEntity", "payload": payload, "cynefin_domain": "COMPLICATED"},
+    )
+    assert resp.status_code == 201, resp.text
+    stored = await registry.get_entity(UUID(resp.json()["object_id"]))
+    assert stored.source_data is not None
+    assert stored.source_data.ref == "s3://ops-lake/deploys/2026-09.parquet"
+    assert stored.source_data.digest == "sha256:" + "ab" * 32
+
+
+async def test_a_malformed_source_digest_is_refused(client: AsyncClient) -> None:
+    payload = _entity_payload()
+    payload["sourceData"] = {"kind": "dataset", "ref": "x", "digest": "sha256:not-hex"}
+    resp = await client.post(
+        "/api/semantic/drafts",
+        json={"object_type": "CausalEntity", "payload": payload, "cynefin_domain": "COMPLICATED"},
+    )
+    assert resp.status_code == 422, resp.text

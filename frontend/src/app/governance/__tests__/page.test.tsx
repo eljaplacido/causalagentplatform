@@ -41,10 +41,9 @@ const ITEM_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
 const ITEM_NAME = "payment_latency → checkout_conversion";
 const REASON = "Evidence and sensitivity analysis support this edge.";
 
-// `domain` is the semantic-layer BUSINESS domain the object belongs to
-// (causal_edges.domain, e.g. "devops") -- not a Cynefin classification. An
-// earlier fixture used "complicated" here, which hid that the page fed this
-// value to CynefinBadge and crashed on every real one.
+// Shaped as SemanticLayerRegistry.list_pending_review_queue returns it: `domain`
+// is the object's business domain (the seed writes "devops" and "marketing"),
+// not a Cynefin classification.
 const backendQueueItem = {
   id: ITEM_ID,
   object_type: "CausalEdge",
@@ -429,6 +428,106 @@ describe("GovernancePage — mock fallback mode", () => {
   });
 });
 
+// ─── The queue renders what the registry sends ─────────────────────────────────
+//
+// Preconditions: GET /api/governance/review-queue returns rows shaped as
+// governance.py ReviewQueueItem (id, object_type, domain, name,
+// approval_status, created_at), with the business domains and object types
+// SemanticLayerRegistry writes ("devops", "marketing"; "CausalEdge",
+// "GraphFragment", "CausalEntity"), and created_at possibly null.
+// Postconditions: the page renders every row without throwing; the business
+// domain is shown as the text it is, never as a Cynefin classification; the
+// type is labelled; the submitted time is the backend's, or a dash when it sent
+// none. The audit log failing alone does not put the page in mock mode, and a
+// 401/403 reads as "not authorised", not as an outage.
+// Undefined, not asserted: the timestamp's locale format.
+
+describe("GovernancePage — renders registry rows as the registry sends them", () => {
+  it("renders business-domain rows (devops, marketing) without a Cynefin badge", async () => {
+    governanceApiMock.reviewQueue.mockResolvedValue([
+      backendQueueItem,
+      {
+        id: "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+        object_type: "GraphFragment",
+        domain: "marketing",
+        name: "customer_churn_model",
+        approval_status: "UNDER_REVIEW",
+        created_at: null,
+      },
+    ]);
+    governanceApiMock.auditLog.mockResolvedValue(auditResponse([]));
+
+    renderPage();
+
+    const queue = await screen.findByTestId("review-queue");
+    expect(within(queue).getByText(ITEM_NAME)).toBeInTheDocument();
+    expect(within(queue).getByText("customer_churn_model")).toBeInTheDocument();
+    expect(within(queue).getByText("devops")).toBeInTheDocument();
+    expect(within(queue).getByText("marketing")).toBeInTheDocument();
+    expect(within(queue).queryByTestId("cynefin-badge")).toBeNull();
+    expect(within(queue).getByText("Causal Edge")).toBeInTheDocument();
+    expect(within(queue).getByText("Graph Fragment")).toBeInTheDocument();
+  });
+
+  it("shows the backend's created_at, and a dash when it sent none", async () => {
+    governanceApiMock.reviewQueue.mockResolvedValue([
+      { ...backendQueueItem, created_at: null },
+    ]);
+    governanceApiMock.auditLog.mockResolvedValue(auditResponse([]));
+
+    renderPage();
+
+    const row = await screen.findByTestId("first-review-item");
+    const submittedAt = within(row).getByTestId("review-item-submitted-at");
+    expect(submittedAt).toHaveTextContent(/^—$/);
+  });
+
+  it("does not claim a submitter or a risk tier the registry does not send", async () => {
+    governanceApiMock.reviewQueue.mockResolvedValue([backendQueueItem]);
+    governanceApiMock.auditLog.mockResolvedValue(auditResponse([]));
+
+    renderPage();
+
+    const row = await screen.findByTestId("first-review-item");
+    expect(within(row).queryByText("system")).toBeNull();
+    expect(within(row).queryByText("Medium")).toBeNull();
+  });
+
+  it("stays live when only the audit log fails, even with the mock fallback enabled", async () => {
+    vi.stubEnv("NEXT_PUBLIC_ENABLE_MOCK_FALLBACK", "true");
+    const user = userEvent.setup();
+    governanceApiMock.reviewQueue.mockResolvedValue([backendQueueItem]);
+    governanceApiMock.auditLog.mockRejectedValue(
+      new CausalApiError(0, "NETWORK_ERROR", "Network request failed.")
+    );
+
+    renderPage();
+
+    expect(await screen.findByTestId("audit-log-unavailable")).toBeInTheDocument();
+    expect(screen.queryByTestId("mock-data-badge")).toBeNull();
+    await selectFirstItem(user);
+    expect(screen.queryByTestId("decisions-disabled-notice")).toBeNull();
+    expect(screen.getByTestId("approve-button")).toBeEnabled();
+  });
+
+  it.each([
+    [401, "unauthorized"],
+    [403, "forbidden"],
+  ])("a %i from the review queue reads as not authorised, not as an outage", async (status, code) => {
+    governanceApiMock.reviewQueue.mockRejectedValue(
+      new CausalApiError(status, code, "the caller may not read the review queue")
+    );
+    governanceApiMock.auditLog.mockResolvedValue(auditResponse([]));
+
+    renderPage();
+
+    expect(await screen.findByTestId("governance-not-authorised")).toHaveTextContent(
+      /not authorised/i
+    );
+    expect(screen.queryByText("Backend Unavailable")).toBeNull();
+  });
+});
+
 // ─── Review queue: the backend's risk tier and submitter (septa-36) ─────────────
 //
 // GET /review-queue returns risk_tier, risk_reasons and submitted_by for each item
@@ -439,9 +538,7 @@ describe("GovernancePage — the queue shows the backend's risk tier and submitt
   const lowEntity = {
     id: "11111111-1111-4111-8111-111111111111",
     object_type: "CausalEntity",
-    // "complicated", as backendQueueItem above: the page maps this field to a
-    // Cynefin badge, and a business domain ("devops") crashes it -- a separate bug.
-    domain: "complicated",
+    domain: "devops",
     name: "checkout-service",
     approval_status: "DRAFT",
     created_at: "2026-09-01T10:00:00Z",
@@ -452,7 +549,7 @@ describe("GovernancePage — the queue shows the backend's risk tier and submitt
   const criticalEdge = {
     id: "22222222-2222-4222-8222-222222222222",
     object_type: "CausalEdge",
-    domain: "complicated",
+    domain: "devops",
     name: "CAUSES",
     approval_status: "DRAFT",
     created_at: "2026-09-20T10:00:00Z",
@@ -484,5 +581,62 @@ describe("GovernancePage — the queue shows the backend's risk tier and submitt
     const queue = screen.getByTestId("review-queue");
     expect(within(queue).queryByText("system")).toBeNull();
     expect(within(queue).queryByText("Medium")).toBeNull();
+  });
+});
+
+// ─── What the tour found (2026-09-26) ─────────────────────────────────────────
+//
+// Every edge row was titled "CAUSES": the review queue sends an edge's relation
+// type as its `name` (registry.py _REVIEWABLE_TABLES: causal_edges.edge_type)
+// and no endpoints. The audit badge read "50": the page asks for page_size 50,
+// and the badge counted the rows on the page, not the log's `total`.
+describe("GovernancePage — edge titles and the audit count", () => {
+  it("says an edge row names its relation type only, not its endpoints", async () => {
+    governanceApiMock.reviewQueue.mockResolvedValue([
+      { ...backendQueueItem, name: "CAUSES" },
+    ]);
+    governanceApiMock.auditLog.mockResolvedValue(auditResponse([]));
+
+    renderPage();
+
+    const row = await screen.findByTestId("first-review-item");
+    expect(row).toHaveTextContent("CAUSES edge");
+    expect(within(row).getByTestId("review-item-name-note")).toHaveTextContent(
+      /endpoints are not in the review queue/i
+    );
+  });
+
+  it("keeps a name that carries source → target as sent", async () => {
+    governanceApiMock.reviewQueue.mockResolvedValue([backendQueueItem]);
+    governanceApiMock.auditLog.mockResolvedValue(auditResponse([]));
+
+    renderPage();
+
+    const row = await screen.findByTestId("first-review-item");
+    expect(row).toHaveTextContent(ITEM_NAME);
+    expect(within(row).queryByTestId("review-item-name-note")).toBeNull();
+  });
+
+  it("shows the audit log's total, and says the rows are the latest page", async () => {
+    governanceApiMock.reviewQueue.mockResolvedValue([]);
+    const rows = Array.from({ length: 50 }, (_, i) => auditRow(`a-${i}`, "GOVERNANCE_APPROVE"));
+    governanceApiMock.auditLog.mockResolvedValue({ entries: rows, total: 267, page: 1, page_size: 50 });
+
+    renderPage();
+
+    const panel = await screen.findByTestId("audit-log-panel");
+    await waitFor(() =>
+      expect(within(panel).getByTestId("audit-log-count")).toHaveTextContent("latest 50 of 267")
+    );
+  });
+});
+
+describe("governance header at phone width", () => {
+  it("wraps its header rather than widening the page (581px at 390 in the tour)", async () => {
+    governanceApiMock.reviewQueue.mockResolvedValue([]);
+    governanceApiMock.auditLog.mockResolvedValue(auditResponse([]));
+    renderPage();
+    const header = (await screen.findByRole("heading", { name: "Governance" })).closest("header")!;
+    expect(header.className).toMatch(/(^|\s)flex-wrap(\s|$)/);
   });
 });

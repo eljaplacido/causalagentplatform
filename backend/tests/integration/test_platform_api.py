@@ -251,6 +251,56 @@ async def test_metrics_weekly_sessions_padded_to_4(
     assert len(body["weekly_sessions"]) == 4
 
 
+def _monday(weeks_ago: int) -> datetime:
+    """00:00 UTC on the Monday of the week `weeks_ago` weeks before this one."""
+    today = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+    return today - timedelta(days=today.weekday(), weeks=weeks_ago)
+
+
+def _audit_row(at: datetime) -> dict[str, Any]:
+    return {
+        "id": str(uuid.uuid4()),
+        "agent_id": "a",
+        "action_type": "X",
+        "hash": "h",
+        "verdict": "APPROVED",
+        "rules": [],
+        "sid": f"s-{uuid.uuid4()}",
+        "ts": at,
+    }
+
+
+async def test_metrics_weeks_are_the_four_ending_this_week_oldest_first(
+    client: AsyncClient, db_engine: object
+) -> None:
+    """Known truth: k+1 sessions in the week k weeks ago, k = 0..3, and some five
+    weeks ago that fall outside. Before, padding was appended after the real
+    weeks (so the last entry, which the executive page reads as "this week", was
+    padding), and sorted(weeks)[:4] of a 28-day window's five week keys dropped
+    the current week."""
+    rows = [_audit_row(_monday(k) + timedelta(hours=1)) for k in range(4) for _ in range(k + 1)]
+    rows += [_audit_row(_monday(5) + timedelta(hours=1)) for _ in range(7)]
+    # The minute before the window: inside a 28-day cutoff on every day but the
+    # last minute of a Sunday, and in a fifth week key.
+    rows += [_audit_row(_monday(3) - timedelta(minutes=1)) for _ in range(5)]
+    await _seed_audit_log(db_engine, rows)
+    weeks = (await client.get("/api/v1/platform/metrics")).json()["weekly_sessions"]
+    assert [w["session_count"] for w in weeks] == [4, 3, 2, 1]
+    assert [w["week_start"][:10] for w in weeks] == [
+        _monday(k).date().isoformat() for k in (3, 2, 1, 0)
+    ]
+
+
+async def test_metrics_this_weeks_sessions_are_the_last_entry(
+    client: AsyncClient, db_engine: object
+) -> None:
+    now = datetime.now(UTC)
+    await _seed_audit_log(db_engine, [_audit_row(now - timedelta(seconds=5)) for _ in range(3)])
+    weeks = (await client.get("/api/v1/platform/metrics")).json()["weekly_sessions"]
+    assert [w["session_count"] for w in weeks] == [0, 0, 0, 3]
+    assert weeks[-1]["week_start"][:10] == _monday(0).date().isoformat()
+
+
 async def test_metrics_weekly_session_fields(
     client: AsyncClient, db_engine: object
 ) -> None:
@@ -391,6 +441,35 @@ async def test_metrics_approval_rate_calculation(
     assert abs(body["overall_approval_rate"] - 0.75) < 0.001
 
 
+async def test_metrics_weekly_verdicts_count_every_audit_row_as_the_overall_rate_does(
+    client: AsyncClient, db_engine: object
+) -> None:
+    """Known truth, from seeded rows all in this week: 2 APPROVED rows of two
+    sessions, and 1 REQUIRES_ESCALATION and 1 REJECTED row that carry no session
+    (as the seeder's and the governance API's rows do). Verdicts: 2 approved of 4,
+    1 escalation; sessions: 2.
+
+    The weekly figures used to count only rows with a session_id while the
+    overall rate counted every row, so the executive page showed 76% beside 74%
+    and "Escalations (4w) 0" while the audit trail listed escalations.
+    """
+    now = datetime.now(UTC) - timedelta(seconds=5)
+    rows = [
+        {**_audit_row(now), "verdict": "APPROVED", "sid": "sess-a"},
+        {**_audit_row(now), "verdict": "APPROVED", "sid": "sess-b"},
+        {**_audit_row(now), "verdict": "REQUIRES_ESCALATION", "sid": None},
+        {**_audit_row(now), "verdict": "REJECTED", "sid": None},
+    ]
+    await _seed_audit_log(db_engine, rows)
+    body = (await client.get("/api/v1/platform/metrics")).json()
+    this_week = body["weekly_sessions"][-1]
+    assert this_week["session_count"] == 2
+    assert this_week["approval_rate"] == 0.5
+    assert this_week["escalation_count"] == 1
+    # Every row is in this week, so the two rates are over the same rows.
+    assert body["overall_approval_rate"] == this_week["approval_rate"]
+
+
 async def test_metrics_requires_auth(db_engine: object) -> None:
     """Metrics endpoint returns 401 without auth token."""
     async with AsyncClient(
@@ -502,6 +581,36 @@ async def test_drift_escalation_always_surfaces(
     alerts = resp.json()
     escalation_alerts = [a for a in alerts if a["severity"] == "HIGH" and "REQUIRES_ESCALATION" in a["message"]]
     assert len(escalation_alerts) >= 1
+
+
+async def test_drift_escalation_message_names_a_session_only_when_there_is_one(
+    client: AsyncClient, db_engine: object
+) -> None:
+    """An escalation recorded without a session (the governance API's, the seeder's)
+    read "Session unknown triggered ...". The message names the session when the row
+    has one, and otherwise names none; it says which agent and rules the row carries."""
+    now = datetime.now(UTC)
+    await _seed_audit_log(
+        db_engine,
+        [
+            {**_audit_row(now), "agent_id": "seeder", "verdict": "REQUIRES_ESCALATION",
+             "rules": ["PR-001", "PR-007"], "sid": None},
+            {**_audit_row(now), "agent_id": "guardian-check-node", "verdict": "REQUIRES_ESCALATION",
+             "rules": ["PR-003"], "sid": "sess-chaotic-1"},
+        ],
+    )
+    alerts = (await client.get("/api/v1/platform/drift")).json()
+    messages = [a["message"] for a in alerts if a["entity_type"] == "Session"]
+    assert len(messages) == 2
+    for message in messages:
+        assert "unknown" not in message
+        assert "None" not in message
+    without = next(m for m in messages if "seeder" in m)
+    assert "session" not in without.lower()
+    assert "PR-001, PR-007" in without
+    with_session = next(m for m in messages if "guardian-check-node" in m)
+    assert "sess-chaotic-1" in with_session
+    assert "PR-003" in with_session
 
 
 async def test_drift_alert_schema(client: AsyncClient, db_engine: object) -> None:

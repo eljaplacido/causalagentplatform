@@ -25,7 +25,10 @@ write_allow excludes it.
 **2. Keep every run, especially the failing ones.** Results go in
 `benchmarks/<gate>/results/<YYYY-MM-DD>-v<prereg version>-run<N>.json`,
 written by the gate's `--out` and carrying `prereg_sha256`, `prereg_version`
-and the `git` commit it ran on (`-dirty` if the tree was). A failing run is
+and the `git` commit of the checkout the gate's code was imported from, not
+the working directory's (`-dirty` if that tree was). Only a 40-hex commit with
+no `-dirty` that is an ancestor of HEAD counts as a clean run; `unknown` never
+stands (t8-switchback v2 run1 is kept on file under that rule). A failing run is
 committed and never deleted or overwritten: `t0/results/2026-09-19-v1-run1.json`
 and `t2-ihdp/results/2026-09-19-v1-run1.json` failed, and they are why v2 and
 the pinv fix exist. A results directory with only passes is a finding.

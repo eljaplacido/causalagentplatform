@@ -50,7 +50,7 @@ from src.semantic_layer.models import (
     UserRef,
 )
 from src.semantic_layer.registry import SemanticLayerRegistry, _object_hash, _sv
-from tests.conftest import VerdictFactory
+from tests.conftest import VerdictFactory, make_data_source
 
 pytestmark = pytest.mark.asyncio
 
@@ -104,6 +104,7 @@ def _edge(verdict_id: UUID, domain: str = "devops") -> CausalEdge:
         confidence=0.80,
         guardian_verdict_ref=verdict_id,
         domain=domain,
+        source_data=make_data_source(),
     )
 
 
@@ -610,7 +611,9 @@ async def test_promote_to_approved_updates_edge_status(
     """
     registry = SemanticLayerRegistry()
     edge = _edge(verdict_id=approved_audit_entry_id)
-    await registry.propose_draft(edge, await verdict_for(edge.id))
+    # An edge has no created_by: its drafter is whoever submitted it, which approval
+    # requires on record along with its source data (septa-15).
+    await registry.propose_draft(edge, await verdict_for(edge.id), submitted_by=_user())
 
     approving = await verdict_for(edge.id, action_type="GOVERNANCE_APPROVE")
     await registry.promote_to_approved(
