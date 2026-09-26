@@ -250,8 +250,8 @@ async def test_analysing_a_draft_edge_records_the_kernels_result_and_pr007_accep
     got = resp.json()
     assert got["outcome_kind"] == "result"
     assert got["guardian_verdict"] == "APPROVED"
-    assert got["sensitivity"]["e_value"] == pytest.approx(expected)
-    assert got["sensitivity"]["rosenbaum_gamma"] is None  # not in this kernel's outcome
+    assert got["sensitivity"]["eValue"] == pytest.approx(expected)
+    assert got["sensitivity"]["rosenbaumGamma"] is None  # not in this kernel's outcome
     new_id = UUID(got["assumption_id"])
 
     recorded = await registry.get_assumption(new_id)

@@ -49,9 +49,12 @@ from src.exceptions import GuardianBlockedError, InvalidTransitionError, ObjectN
 from src.semantic_layer.models import (
     ApprovalStatus,
     Assumption,
+    AssumptionType,
     AuditEntry,
     CausalEdge,
     CausalEntity,
+    CausalObjectRef,
+    ElicitedFrom,
     FragmentApprovalStatus,
     GraphFragment,
     GuardianVerdict,
@@ -66,7 +69,7 @@ from src.semantic_layer.review_risk import (
     fragment_risk,
     usable_sensitivity,
 )
-from src.semantic_layer.verdict import GOVERNANCE_APPROVE
+from src.semantic_layer.verdict import GOVERNANCE_APPROVE, RECORD_SENSITIVITY
 from src.semantic_layer.verdict import claim as verdict_claim
 from src.semantic_layer.verdict import verify as verdict_verify
 
@@ -390,6 +393,44 @@ def _sv(v: Any) -> Any:
 # None reads every domain, a set reads only those. An object outside the scope is
 # reported as not found, never as forbidden, so a scoped user cannot probe for the
 # existence of another domain's objects by id.
+
+
+async def _insert_assumption(session: AsyncSession, draft: Assumption) -> None:
+    """INSERT one assumption row, sensitivity result included. The caller holds the
+    verdict that authorises it and commits."""
+    await session.execute(
+        typed_text(
+            "INSERT INTO assumptions ("
+            "  id, statement, assumption_type, scope, justification, "
+            "  elicited_from, elicited_by, elicited_at, review_status, domain, "
+            "  sensitivity_result"
+            ") VALUES ("
+            "  :id, :statement, :assumption_type, :scope, :justification, "
+            "  :elicited_from, :elicited_by, :elicited_at, :review_status, "
+            "  :domain, :sensitivity_result"
+            ")",
+            elicited_at=TIMESTAMP,
+        ),
+        {
+            "id": str(draft.id),
+            "statement": draft.statement,
+            "assumption_type": _sv(draft.assumption_type),
+            "scope": json.dumps([ref.model_dump() for ref in draft.scope], default=str),
+            "justification": draft.justification,
+            "elicited_from": _sv(draft.elicited_from),
+            "elicited_by": draft.elicited_by.model_dump_json(),
+            "elicited_at": draft.elicited_at,
+            "review_status": _sv(draft.review_status),
+            "domain": draft.domain,
+            # What Guardian PR-007 reads for the edges resting on this assumption.
+            # propose_draft used to drop it.
+            "sensitivity_result": (
+                draft.sensitivity_result.model_dump_json()
+                if draft.sensitivity_result is not None
+                else None
+            ),
+        },
+    )
 
 
 def _domain_filter(
@@ -862,41 +903,7 @@ class SemanticLayerRegistry:
                 )
 
             elif isinstance(draft, Assumption):
-                await session.execute(
-                    typed_text(
-                        "INSERT INTO assumptions ("
-                        "  id, statement, assumption_type, scope, justification, "
-                        "  elicited_from, elicited_by, elicited_at, review_status, domain, "
-                        "  sensitivity_result"
-                        ") VALUES ("
-                        "  :id, :statement, :assumption_type, :scope, :justification, "
-                        "  :elicited_from, :elicited_by, :elicited_at, :review_status, "
-                        "  :domain, :sensitivity_result"
-                        ")",
-                        elicited_at=TIMESTAMP,
-                    ),
-                    {
-                        "id": str(obj_id),
-                        "statement": draft.statement,
-                        "assumption_type": _sv(draft.assumption_type),
-                        "scope": json.dumps(
-                            [s.model_dump() for s in draft.scope], default=str
-                        ),
-                        "justification": draft.justification,
-                        "elicited_from": _sv(draft.elicited_from),
-                        "elicited_by": draft.elicited_by.model_dump_json(),
-                        "elicited_at": draft.elicited_at,
-                        "review_status": _sv(draft.review_status),
-                        "domain": draft.domain,
-                        # What Guardian PR-007 reads for the edges resting on this
-                        # assumption. It used to be dropped here.
-                        "sensitivity_result": (
-                            draft.sensitivity_result.model_dump_json()
-                            if draft.sensitivity_result is not None
-                            else None
-                        ),
-                    },
-                )
+                await _insert_assumption(session, draft)
 
             else:
                 raise TypeError(f"Unsupported draft type: {type(draft).__name__}")
@@ -1085,6 +1092,130 @@ class SemanticLayerRegistry:
             rejector_id=rejector.id,
             verdict_id=str(verdict_id),
         )
+
+    # ── The kernel's sensitivity analysis of a draft edge (septa-62) ──────────
+
+    async def record_edge_sensitivity(
+        self,
+        edge_id: UUID,
+        result: SensitivityResult,
+        verdict_id: UUID,
+        actor: UserRef,
+        domains: Collection[str] | None = None,
+    ) -> UUID:
+        """Record a sensitivity analysis of a DRAFT / UNDER_REVIEW edge; return the new
+        assumption's id.
+
+        **Which assumption it attaches to.** An E-value or a Rosenbaum gamma* says how
+        strong unmeasured confounding of the edge's source and target would have to be
+        to explain the estimated effect away. That is evidence about the edge's
+        IGNORABILITY assumption as tested by this analysis, so it is recorded as a
+        *new* Assumption: IGNORABILITY, PENDING review, elicited from AGENT by
+        ``actor``, scoped to the edge's source and target, in the edge's domain,
+        carrying ``result``. Its id is appended to the edge's ``assumption_refs``,
+        which is where Guardian PR-007 looks (src/agents/governance.py
+        edge_sensitivity), and the edge's lineage gains a MODIFIED entry naming it.
+
+        Nothing is rewritten in place. An existing assumption is never updated -- the
+        drafter's stay what the drafter said, and an ACCEPTED one is an approved
+        object -- and an APPROVED or DEPRECATED edge is refused
+        (InvalidTransitionError): approval is decided on what the edge rested on when
+        it was reviewed. A reviewer who REJECTS the new assumption removes the result
+        from PR-007's count, as for any other.
+
+        The write needs a Guardian APPROVED verdict issued for
+        :data:`RECORD_SENSITIVITY` on this edge: signed, bound to the edge and the
+        action, spent here in the same transaction as the insert and the update.
+        """
+        t = _CAUSAL_EDGES
+        async with CloudSqlFactory.get_session_factory()() as session:
+            await _assert_verdict_approved(
+                session,
+                verdict_id,
+                subject_id=edge_id,
+                context="record_edge_sensitivity(CausalEdge)",
+                action=RECORD_SENSITIVITY,
+            )
+            current = await session.execute(
+                text(
+                    "SELECT source_id, source_type, target_id, target_type, "
+                    "assumption_refs, approval_status, lineage, domain "
+                    "FROM causal_edges WHERE id = :eid"
+                ),
+                {"eid": str(edge_id)},
+            )
+            found = current.mappings().one_or_none()
+            if found is None or _outside(domains, found["domain"]):
+                raise ObjectNotFoundError(str(edge_id), "CausalEdge")
+            _assert_reviewable(
+                found["approval_status"], edge_id, "CausalEdge", "given a sensitivity result"
+            )
+
+            source = CausalObjectRef(id=found["source_id"], object_type=found["source_type"])
+            target = CausalObjectRef(id=found["target_id"], object_type=found["target_type"])
+            assumption = Assumption(
+                statement=(
+                    f"No unmeasured common cause of {source.object_type} {source.id} and "
+                    f"{target.object_type} {target.id} strong enough to explain away the "
+                    "effect this analysis estimated"
+                ),
+                assumption_type=AssumptionType.IGNORABILITY,
+                scope=[source, target],
+                justification=(
+                    f"Sensitivity analysis of edge {edge_id} ({result.analysis_method}): "
+                    f"E-value {result.e_value}, Rosenbaum gamma* {result.rosenbaum_gamma}, "
+                    "robust to unmeasured confounding: "
+                    f"{result.robust_to_unmeasured_confounding}"
+                ),
+                elicited_from=ElicitedFrom.AGENT,
+                elicited_by=actor,
+                review_status=ReviewStatus.PENDING,
+                sensitivity_result=result,
+                domain=found["domain"],
+            )
+            await _insert_assumption(session, assumption)
+
+            refs = [str(r) for r in (json_value(found["assumption_refs"], []) or [])]
+            history = _as_lineage(found["lineage"])
+            history.append(
+                {
+                    "step_type": "MODIFIED",
+                    "actor_id": actor.id,
+                    "timestamp": datetime.now(UTC).isoformat(),
+                    "description": (
+                        f"Sensitivity result recorded on assumption {assumption.id} "
+                        f"via verdict {verdict_id}"
+                    ),
+                }
+            )
+            await session.execute(
+                update(t)
+                .where(
+                    t.c.id == bindparam("oid"),
+                    t.c.approval_status.in_(bindparam("reviewable", expanding=True)),
+                )
+                .values(
+                    assumption_refs=bindparam("refs", type_=UUID_ARRAY),
+                    lineage=bindparam("lineage"),
+                ),
+                {
+                    "oid": str(edge_id),
+                    "reviewable": list(_REVIEWABLE),
+                    "refs": [*refs, str(assumption.id)],
+                    "lineage": json.dumps(history),
+                },
+            )
+            await session.commit()
+
+        log.info(
+            "registry.edge.sensitivity_recorded",
+            edge_id=str(edge_id),
+            assumption_id=str(assumption.id),
+            e_value=result.e_value,
+            rosenbaum_gamma=result.rosenbaum_gamma,
+            verdict_id=str(verdict_id),
+        )
+        return assumption.id
 
     async def list_pending_review_queue(
         self, limit: int = 50, domains: Collection[str] | None = None

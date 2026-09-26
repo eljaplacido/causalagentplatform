@@ -63,6 +63,10 @@ SIGNATURE_VERSION = 1
 #: review page's reject check names.
 GOVERNANCE_APPROVE = "GOVERNANCE_APPROVE"
 GOVERNANCE_REJECT = "GOVERNANCE_REJECT"
+#: The action a verdict authorising the platform to record the kernel's sensitivity
+#: analysis of a draft edge is issued for (septa-62,
+#: SemanticLayerRegistry.record_edge_sensitivity). Its subject is the edge.
+RECORD_SENSITIVITY = "RECORD_SENSITIVITY"
 
 _EPHEMERAL_KEY: bytes | None = None
 

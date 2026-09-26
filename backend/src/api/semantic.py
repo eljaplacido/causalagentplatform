@@ -9,6 +9,8 @@ Endpoints:
   GET  /api/semantic/edges/{id}        — get causal edge by ID
   POST /api/semantic/drafts            — submit a new draft (auth required, goes through governance)
   GET  /api/semantic/edges/{id}/audit-trail — full audit trail for an edge
+  POST /api/semantic/edges/{id}/sensitivity — run the kernel on a draft edge's question
+                                             and record its sensitivity analysis (septa-62)
 
 All write operations require a Guardian APPROVED verdict.  The draft submission
 endpoint runs a governance check inline before persisting.
@@ -24,23 +26,29 @@ from __future__ import annotations
 from typing import Annotated, Any
 from uuid import UUID
 
+import pandas as pd
 import structlog
+from causal_core import analyze
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
+from src.agents.edge_sensitivity import record_edge_sensitivity, sensitivity_from_outcome
 from src.agents.governance import GovernanceAgent
-from src.exceptions import ObjectNotFoundError
+from src.exceptions import GuardianBlockedError, InvalidTransitionError, ObjectNotFoundError
 from src.middleware.rbac import approved_only, domain_scope, guard, in_scope
+from src.orchestration.session_store import SessionStateStore
 from src.semantic_layer.models import (
     ApprovalStatus,
     Assumption,
     AuditEntry,
     CausalEdge,
     CausalEntity,
+    CynefinDomain,
     EpistemicState,
     FragmentApprovalStatus,
     GraphFragment,
     GuardianVerdict,
+    SensitivityResult,
     UserRef,
 )
 from src.semantic_layer.registry import SemanticLayerRegistry
@@ -51,6 +59,7 @@ router = APIRouter()
 # Singletons (lazily created per request in production — here shared for simplicity)
 _registry = SemanticLayerRegistry()
 _governance = GovernanceAgent(agent_id="governance-agent-api")
+_sessions = SessionStateStore()
 
 
 # ── Request / Response schemas ────────────────────────────────────────────────
@@ -376,3 +385,167 @@ async def get_edge_audit_trail(
         return list(trail)
     except ObjectNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+# ── An edge's sensitivity analysis (septa-62) ─────────────────────────────────
+
+Cell = float | int | str | bool | None
+
+
+class EdgeSensitivityRequest(BaseModel):
+    """What the kernel analyses: the edge's own question, on the caller's data."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    data: dict[str, list[Cell]] = Field(
+        ...,
+        description="Columns as lists. The edge's source and target ids name two of them "
+        "(node ids are used in full, as everywhere the kernel reads a fragment).",
+    )
+    adjust_for: list[str] = Field(
+        default_factory=list,
+        description="Measured common causes of the edge's source and target (columns). The "
+        "analysis graph is the edge plus an edge from each of these into its source and its "
+        "target; the E-value then says how strong confounding *beyond* them would have to be.",
+    )
+    cynefin_domain: CynefinDomain | None = Field(
+        None,
+        description="The situation's domain, as for POST /api/governance/check: the "
+        "caller's declaration when no session is named; omitted, DISORDER, which PR-006 "
+        "refuses. Ignored when `session_id` names a session.",
+    )
+    session_id: str | None = Field(
+        None,
+        description="A reasoning session whose classified domain and cycle count the "
+        "Guardian reads instead.",
+    )
+
+
+class EdgeSensitivityResponse(BaseModel):
+    edge_id: str
+    outcome_kind: str = Field(description="result | abstention | apparatus_failure")
+    detail: str | None = Field(
+        None, description="Why there is no sensitivity result, when there is none."
+    )
+    sensitivity: SensitivityResult | None
+    assumption_id: str | None = Field(
+        None, description="The IGNORABILITY assumption the result was recorded on."
+    )
+    guardian_verdict: str | None
+    audit_entry_id: str | None
+
+
+@router.post(
+    "/edges/{edge_id}/sensitivity",
+    response_model=EdgeSensitivityResponse,
+    summary="Run the kernel on a draft edge's question and record its sensitivity analysis",
+)
+async def analyse_edge_sensitivity(
+    edge_id: UUID,
+    body: EdgeSensitivityRequest,
+    user: dict[str, Any] = Depends(guard("POST", "/api/semantic/edges/{edge_id}/sensitivity")),
+) -> EdgeSensitivityResponse:
+    """Estimate the effect of the edge's source on its target and record how robust it is.
+
+    The platform runs ``causal_core.analyze`` for source -> target on the supplied data,
+    over the edge and the declared common causes. When the kernel returns a sensitivity
+    analysis (the E-value; a Rosenbaum gamma* where the kernel reports one), the Guardian
+    is asked for a verdict for RECORD_SENSITIVITY on the edge and, if it approves, the
+    registry records the result as a new IGNORABILITY assumption the edge rests on --
+    what Guardian PR-007 reads before an edge can be approved.
+
+    A kernel refusal is a result: 200 with its reason, nothing written. 403 when the
+    Guardian does not approve the recording, 404 for an edge outside the caller's
+    scope, 409 for an edge that is APPROVED or DEPRECATED (never changed in place), 422
+    for data that lack the edge's columns.
+    """
+    uid = str(user.get("uid", "unknown"))
+    scope = domain_scope(user)
+    edge = await _visible_edge(edge_id, user)
+    if str(edge.approval_status) not in ("DRAFT", "UNDER_REVIEW"):
+        raise HTTPException(
+            status_code=409,
+            detail=f"CausalEdge {edge_id} is {edge.approval_status}: a sensitivity result is "
+            "recorded on a draft under review, never on an approved or deprecated edge",
+        )
+
+    source, target = str(edge.source.id), str(edge.target.id)
+    if edge.direction == "BACKWARD":
+        source, target = target, source
+    needed = [source, target, *body.adjust_for]
+    missing = [c for c in needed if c not in body.data]
+    if missing:
+        raise HTTPException(status_code=422, detail=f"data has no column for {missing}")
+    try:
+        frame = pd.DataFrame(body.data)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=f"data: {exc}") from exc
+
+    graph = [(source, target)]
+    for c in body.adjust_for:
+        graph += [(c, source), (c, target)]
+    outcome = analyze(frame, graph, treatment=source, outcome=target).model_dump(mode="json")
+    result = sensitivity_from_outcome(outcome, computed_by=uid)
+    log.info(
+        "api.semantic.edge_sensitivity",
+        edge_id=str(edge_id),
+        kind=outcome.get("kind"),
+        has_result=result is not None,
+        uid=uid,
+    )
+    if result is None:
+        detail = outcome.get("detail") or "the kernel ran no sensitivity analysis"
+        return EdgeSensitivityResponse(
+            edge_id=str(edge_id),
+            outcome_kind=str(outcome.get("kind")),
+            detail=str(detail),
+            sensitivity=None,
+            guardian_verdict=None,
+            audit_entry_id=None,
+        )
+
+    stored = await _sessions.load(body.session_id) if body.session_id else None
+    domain = stored.cynefin_domain if stored is not None else body.cynefin_domain
+    state = EpistemicState(
+        session_id=body.session_id or f"api-sensitivity-{uid}",
+        agent_id=f"api-user-{uid}",
+        cycle_count=stored.cycle_count if stored is not None else 0,
+        **({"cynefin_domain": domain} if domain else {}),
+    )
+    try:
+        recorded = await record_edge_sensitivity(
+            edge_id,
+            result,
+            governance=_governance,
+            state=state,
+            actor=UserRef(id=uid, email=user.get("email"), name=user.get("name")),
+            evidence={"rows": len(frame), "adjust_for": list(body.adjust_for)},
+            registry=_registry,
+            domains=scope,
+        )
+    except ObjectNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except InvalidTransitionError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except GuardianBlockedError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+    if recorded.assumption_id is None:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "guardian_blocked",
+                "verdict": str(recorded.verdict),
+                "reason": recorded.reason,
+                "policy_rules_cited": recorded.policy_rules_cited,
+                "audit_entry_id": str(recorded.audit_entry_id),
+            },
+        )
+    return EdgeSensitivityResponse(
+        edge_id=str(edge_id),
+        outcome_kind=str(outcome.get("kind")),
+        sensitivity=result,
+        assumption_id=str(recorded.assumption_id),
+        guardian_verdict=str(recorded.verdict),
+        audit_entry_id=str(recorded.audit_entry_id),
+    )
