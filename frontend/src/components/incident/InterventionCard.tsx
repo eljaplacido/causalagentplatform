@@ -6,6 +6,9 @@
  * UX contract (US-11, US-12):
  *   ALWAYS shows approve + reject buttons regardless of Guardian verdict state.
  *   Human agency must always be one click away.
+ *   The Guardian's verdict and a recorded human decision are shown side by
+ *   side; neither replaces the other.
+ *   An intervention without an effect estimate says "No effect estimate".
  *
  * Progressive disclosure:
  *   Level 0: recommendation + confidence + approve/reject
@@ -48,6 +51,18 @@ const RISK_TIER_CONFIG = {
 
 function EffectEstimateBar({ intervention }: { intervention: Intervention }) {
   const { estimatedEffect } = intervention;
+  if (!estimatedEffect) {
+    // Nothing computed an estimate for this intervention: say so. Never
+    // render placeholder numbers as if they were an interval.
+    return (
+      <div className="space-y-1" data-testid="no-effect-estimate">
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Estimated Effect
+        </span>
+        <p className="text-xs text-muted-foreground">No effect estimate</p>
+      </div>
+    );
+  }
   const isPositive = estimatedEffect.direction === "POSITIVE";
   const isUncertain = estimatedEffect.direction === "UNCERTAIN";
 
@@ -188,6 +203,21 @@ export function InterventionCard({
               verdict={intervention.guardianVerdict}
               size="sm"
             />
+            {intervention.humanDecision && (
+              <span
+                data-testid="human-decision"
+                data-decision={intervention.humanDecision}
+                className={cn(
+                  "rounded-full border px-2 py-0.5 text-xs font-medium",
+                  intervention.humanDecision === "APPROVED"
+                    ? "border-green-300 text-green-700 dark:border-green-800 dark:text-green-300"
+                    : "border-red-300 text-red-700 dark:border-red-800 dark:text-red-300"
+                )}
+              >
+                Human decision:{" "}
+                {intervention.humanDecision === "APPROVED" ? "Approved" : "Rejected"}
+              </span>
+            )}
             <span className={cn("text-xs", riskConfig.class)}>
               {riskConfig.label}
             </span>

@@ -201,20 +201,38 @@ export interface Intervention {
   id: string;
   title: string;
   description: string;
-  estimatedEffect: EffectEstimate;
+  /**
+   * Absent when no estimate was computed -- which today is always, for
+   * incident interventions: neither the triage endpoint nor the incidents API
+   * returns one. Absent is rendered as "No effect estimate", never as zeros.
+   */
+  estimatedEffect?: EffectEstimate;
   confidence: number;
   assumptions: Assumption[];
   cost?: string;
   riskTier: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  /** The Guardian's own verdict. A human decision never overwrites it. */
   guardianVerdict: GuardianVerdict;
+  /** The human decision recorded by the interventions API, if any. */
+  humanDecision?: "APPROVED" | "REJECTED";
   approvalReason?: string;
 }
+
+/**
+ * Incident severity, in the backend's vocabulary (IncidentSessionRequest in
+ * backend/src/api/session.py: P0 | P1 | P2 | P3). P0 is the most severe.
+ */
+export type IncidentSeverity = "P0" | "P1" | "P2" | "P3";
 
 export interface Incident {
   id: string;
   title: string;
   affectedServices: string[];
-  severity: "SEV1" | "SEV2" | "SEV3" | "SEV4";
+  /**
+   * An IncidentSeverity when recognised; a stored value outside that
+   * vocabulary is kept as sent so the page can show it rather than guess.
+   */
+  severity: IncidentSeverity | (string & {});
   status: "ACTIVE" | "INVESTIGATING" | "RESOLVED";
   acknowledgedAt: string; // ISO8601
   cynefinDomain?: CynefinDomain;

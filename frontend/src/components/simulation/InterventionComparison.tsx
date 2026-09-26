@@ -9,11 +9,14 @@
 
 import { cn } from "@/lib/utils";
 import { EpistemicConfidenceBadge } from "@/components/shared/EpistemicConfidenceBadge";
-import type { Intervention } from "@/lib/types";
+import type { EffectEstimate, Intervention } from "@/lib/types";
+
+/** A comparison needs both estimates; an intervention without one cannot be compared. */
+type EstimatedIntervention = Intervention & { estimatedEffect: EffectEstimate };
 
 export interface InterventionComparisonProps {
-  interventionA: Intervention;
-  interventionB: Intervention;
+  interventionA: EstimatedIntervention;
+  interventionB: EstimatedIntervention;
   className?: string;
 }
 
@@ -21,7 +24,7 @@ function EffectEstimateBar({
   intervention,
   label,
 }: {
-  intervention: Intervention;
+  intervention: EstimatedIntervention;
   label: "A" | "B";
 }) {
   const { estimatedEffect } = intervention;
@@ -90,7 +93,7 @@ function ComparisonColumn({
   label,
   isWinner,
 }: {
-  intervention: Intervention;
+  intervention: EstimatedIntervention;
   label: "A" | "B";
   isWinner: boolean;
 }) {

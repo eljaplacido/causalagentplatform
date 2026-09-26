@@ -22,7 +22,7 @@ import { EpistemicConfidenceBadge } from "@/components/shared/EpistemicConfidenc
 import { CausalHypothesisList } from "./CausalHypothesisList";
 import { InterventionCard } from "./InterventionCard";
 import { EscalationBanner } from "./EscalationBanner";
-import type { Incident } from "@/lib/types";
+import type { Incident, IncidentSeverity } from "@/lib/types";
 
 export interface IncidentBriefProps {
   incident: Incident | null;
@@ -43,12 +43,22 @@ export interface IncidentBriefProps {
   className?: string;
 }
 
-const SEVERITY_CONFIG = {
-  SEV1: { label: "SEV-1", class: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 border-red-300 dark:border-red-800" },
-  SEV2: { label: "SEV-2", class: "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300 border-orange-300 dark:border-orange-800" },
-  SEV3: { label: "SEV-3", class: "bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300 border-yellow-300 dark:border-yellow-800" },
-  SEV4: { label: "SEV-4", class: "bg-zinc-100 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 border-zinc-300 dark:border-zinc-700" },
+const SEVERITY_CONFIG: Record<IncidentSeverity, { label: string; class: string }> = {
+  P0: { label: "P0", class: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 border-red-300 dark:border-red-800" },
+  P1: { label: "P1", class: "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300 border-orange-300 dark:border-orange-800" },
+  P2: { label: "P2", class: "bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300 border-yellow-300 dark:border-yellow-800" },
+  P3: { label: "P3", class: "bg-zinc-100 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 border-zinc-300 dark:border-zinc-700" },
 };
+
+/** A severity outside P0-P3 is shown as sent, neutrally styled. */
+function severityConfig(severity: string): { label: string; class: string } {
+  return Object.prototype.hasOwnProperty.call(SEVERITY_CONFIG, severity)
+    ? SEVERITY_CONFIG[severity as IncidentSeverity]
+    : {
+        label: severity || "—",
+        class: "bg-muted text-muted-foreground border-border",
+      };
+}
 
 export function IncidentBrief({
   incident,
@@ -112,12 +122,13 @@ export function IncidentBrief({
             <div className="min-w-0">
               <div className="mb-1 flex flex-wrap items-center gap-2">
                 <span
+                  data-testid="incident-severity"
                   className={cn(
                     "rounded-full border px-2 py-0.5 text-xs font-bold",
-                    SEVERITY_CONFIG[incident.severity].class
+                    severityConfig(incident.severity).class
                   )}
                 >
-                  {SEVERITY_CONFIG[incident.severity].label}
+                  {severityConfig(incident.severity).label}
                 </span>
                 <span
                   className={cn(
