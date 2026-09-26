@@ -548,8 +548,8 @@ published since the last push surfaces without one):
   exactly that (`scripts/sbom_check.py`), and attaches it to the tag's GitHub release.
 - **Update PRs.** `.github/dependabot.yml`: weekly, grouped, for the Python locks and ranges,
   npm, the GitHub Actions and the base images. It ignores the pins the ratchets count per
-  version (ruff, mypy, bandit, pip-audit), pyproject majors, node lines that are not LTS, and
-  majors held by an open ledger item (TESTING_CICD.md §5.4).
+  version (ruff, mypy, bandit, pip-audit), semver-majors in pyprojects and npm (ledger work), node lines that are not LTS, and
+  the specific majors whose ledger items are open (TESTING_CICD.md §5.4).
 - **Where CI runs.** Jobs run where the repository variable `CI_RUNS_ON` says: GitHub's hosted
   runners when it is unset, otherwise self-hosted runners (label `causalplatform-ci`). A
   self-hosted job executes the repository's code, including a dependency update's install

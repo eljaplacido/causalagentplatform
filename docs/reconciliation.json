@@ -187,7 +187,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24-#26/#28 into septa-53: reject-authority text kept on main's updated docs; TESTING_CICD rows three-way merged)"
+        "by": "Claude (merge of main into housekeeping: npm-majors text and main's content both present)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -251,13 +251,13 @@
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
-          ".github": "a9782837c71d18b904bb5e7188bdf665d0c614cc841aa872adae9b2d305e29ff",
+          ".github": "db12d364ec234ff9774297f81b08649ec310d368304c47fbfcfa04138f630ac4",
           ".gnomon": "25561ccec95ea65980dc9c037b24b494f0963626b71b7eca61dfa00ec72a75f4"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24-#26/#28 into septa-53: reject-authority text kept on main's updated docs; TESTING_CICD rows three-way merged)"
+        "by": "Claude (merge of main into housekeeping: npm-majors text and main's content both present)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -323,7 +323,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #24-#26/#28 into septa-53: reject-authority text kept on main's updated docs; TESTING_CICD rows three-way merged)"
+        "by": "Claude (merge of main into housekeeping: npm-majors text and main's content both present)"
       }
     },
     "docs/UIX.md": {

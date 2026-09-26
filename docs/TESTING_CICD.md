@@ -356,11 +356,10 @@ the two base images. How they are handled:
   regenerate `package-lock.json` there (`npx npm@11 install --package-lock-only`; npm 10's
   audit fix crashes on this workspace). Then check that `npm ls react react-dom` shows exactly
   one copy of each.
-- **Majors are ledger items.** A semver-major in a pyproject is ignored by the bot. An npm major
-  arrives alone, outside the groups. One that needs code or a companion change gets a
-  `septacore create --provenance "dependabot:#<n>"` item that records what its CI showed, and an
-  ignore rule in `dependabot.yml` naming that id until the item is done (next and
-  eslint-config-next 16: septa-57; TypeScript 7: septa-58). The node base image stays on an LTS
+- **Majors are ledger items.** A semver-major is ignored by the bot, in pyprojects and in npm
+  alike: each needs its own migration and review, and a round of npm majors once held every CI
+  runner (#32-#36). A major is taken as a ledger item that records what it needs (next and
+  eslint-config-next 16: septa-57; TypeScript 7: septa-58; the npm majors round: septa-82). The node base image stays on an LTS
   line; the rule ignoring newer lines names septa-59.
 - **Pins the ratchets depend on are never moved by the bot.** ruff, mypy, bandit and pip-audit
   are pinned to a minor because the lint and security ratchets (§4) count findings per version.
