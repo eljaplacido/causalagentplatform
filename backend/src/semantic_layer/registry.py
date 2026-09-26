@@ -83,8 +83,8 @@ from src.semantic_layer.models import (
     LineageStep,
     LineageVerdict,
     ReviewStatus,
-    SemanticObjectVersion,
     RiskTier,
+    SemanticObjectVersion,
     UserRef,
     VersionChange,
 )
