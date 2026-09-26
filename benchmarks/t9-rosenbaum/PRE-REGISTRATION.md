@@ -34,7 +34,8 @@ without a partner inside the caliper are dropped and counted. The treated-minus-
 differences of the pairs are tested for no effect with Wilcoxon's signed-rank statistic, and
 Rosenbaum's upper bound on its one-sided p-value at each `Γ` uses the large-sample normal
 approximation (Rosenbaum 2002, §4.3.3): with `π = Γ/(1+Γ)`, ranks `r_i` of the nonzero `|D_i|`
-(average ranks for ties, zero differences dropped) and `T = Σ r_i·1[D_i > 0]`,
+(average ranks for ties; a zero difference is ranked with the others and scores zero — see the
+Changelog) and `T = Σ r_i·1[D_i > 0]`,
 `p⁺(Γ) = 1 − Φ((T − π Σ r_i) / sqrt(π(1−π) Σ r_i²))`. The test's direction is the sign of the
 primary estimate (differences are negated for a negative one).
 
@@ -226,3 +227,12 @@ Bar by bar, with `Γ*` the reported sensitivity value (`null` counts as below ev
 ## Changelog
 
 - v1 (2026-09-26): initial registration.
+- v1, method clarification before any run (2026-09-26). The registration said zero differences
+  are "dropped", which reads as Wilcoxon's convention (drop, then rank). Checking the pair-level
+  bound against the published matched-pairs example it must reproduce — Rosenbaum (2002, §4.3.3)
+  on the lead data of Morton et al. (1982), 33 pairs, one with a zero difference — gave 0.0131 and
+  0.0367 at `Γ = 3, 4` where the book has 0.0136 and 0.0388: the book (and DOS2::senWilcox) ranks
+  a zero with the others and then scores it zero (Pratt's treatment), which raises the ranks above
+  it. The method text now says so, and the kernel follows the book. No design here produces a zero
+  difference (the outcomes are continuous), so no bar, design or defect is affected, and no T9
+  run has been made.
