@@ -191,11 +191,21 @@ export function ReviewQueue({
                     {OBJECT_TYPE_LABELS[item.objectType]}
                   </td>
                   <td className="hidden px-4 py-3 md:table-cell">
-                    <CynefinBadge
-                      domain={item.domain}
-                      confidence={0}
-                      size="sm"
-                    />
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span
+                        data-testid="business-domain"
+                        className="text-muted-foreground"
+                      >
+                        {item.businessDomain || "—"}
+                      </span>
+                      {item.cynefinDomain && (
+                        <CynefinBadge
+                          domain={item.cynefinDomain}
+                          confidence={0}
+                          size="sm"
+                        />
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <span

@@ -143,7 +143,8 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 | Session orchestration API (`/api/v1/session/run`, `/incident`) | `implemented` | [backend/tests/integration/test_session_api.py](../backend/tests/integration/test_session_api.py) | Agents are rule-based code. The Cynefin domain is the platform's: a `/run` body carrying `cynefin_domain` (once an "override" that CynefinClassify always replaced) is refused with 422 ([test_session_domain_not_declared.py](../backend/tests/integration/test_session_domain_not_declared.py)). Failed on PostgreSQL until septa-52 (the suite ran only on SQLite); the `backend-pytest-postgres` gate step now also runs it on the schema the migrations build. |
 | Every session run ends in a Guardian verdict written to `audit_log`, escalations included | `implemented` | [backend/tests/integration/test_session_reaches_guardian.py](../backend/tests/integration/test_session_reaches_guardian.py) | Classified runs reach GuardianCheck; CHAOTIC (PR-003) and DISORDER (PR-006) escalations are ruled on and recorded; a plan nothing simulated is marked `plan_unsimulated` and goes to a person. Until 2026-09-26 no session run reached the Guardian: classified runs escalated at PlanAhead on a confidence threshold and escalations ended the graph unrecorded. Run on SQLite and PostgreSQL. |
 | Intervention feedback endpoint | `implemented` | [backend/tests/unit/test_interventions.py](../backend/tests/unit/test_interventions.py) |Failed on PostgreSQL until septa-52 (the suite ran only on SQLite); the `backend-pytest-postgres` gate step now also runs it on the schema the migrations build. The intervention id is a uuid; any other string is a 422 (septa-54). |
-| Health endpoint | `implemented` | [backend/tests/unit/test_health_api.py](../backend/tests/unit/test_health_api.py) | |
+| Health endpoint (`GET /health`, public liveness) | `implemented` | [backend/tests/integration/test_governance_api.py](../backend/tests/integration/test_governance_api.py) | Liveness only: it says the process answers, not that PostgreSQL or Neo4j do (`GET /api/v1/platform/connectors` checks the database, registry, audit log and agent graph, and Neo4j when `NEO4J_URI` is set). The evidence here used to be the tests of `src/api/health.py`, a `/health/{neo4j,sensors,alerts,drift-monitor}` router the app never mounted; it was deleted on 2026-09-26 (see the commit that removed it) |
+| Neo4j health: configured, reachable or unreachable, behind authentication | `implemented` | [backend/tests/integration/test_platform_api.py](../backend/tests/integration/test_platform_api.py) | Connector `graph-neo4j` on `GET /api/v1/platform/connectors`; the driver's error text goes to the server log, never the response. Tested with a mocked driver only (register `neo4j-graph-store` is about the graph store, which remains SQL) |
 | Agent evaluation endpoints (consistency, calibration, decision quality) measure the platform | `declared-not-implemented` | [dni:evaluation-endpoints-not-measured](../conformance/declared_not_implemented.json) | Each scores its own inputs; `calibration` here is confidence spread, not calibration |
 | FLARE planning simulates each action with the approved causal model | `declared-not-implemented` | [dni:planning-simulation-no-data](../conformance/declared_not_implemented.json) | Kernel refuses without data; lookahead rescales the action's own confidence |
 
@@ -180,19 +181,19 @@ may the agent act? Separate package, separate gate, and it executes nothing -- i
 
 `.gnomon/ci.sh` is the command that decides whether a change passes. It prints PASS, FAIL, SKIPPED or ADVISORY for each step, with a count of what the step inspected, and exits 0, 1, 2 or 3 accordingly (see Summary). The numbers it holds are ratchets. Each file records when and against which commit its number was measured:
 
-| Gate | Committed baseline | Measured 2026-09-25 (at `db89e78`, the role matrix) |
+| Gate | Committed baseline | Measured 2026-09-26 (at `6208759`, small-batch-1 on the merge train; fresh venvs, `.gnomon/ci.sh`) |
 |---|---|---|
-| Backend tests (unit, integration, guardian) | at least 500 tests; every test file reports ([`scripts/gate-scope-floors.json`](../scripts/gate-scope-floors.json)) | 741 passed, 49 of 49 files |
-| Backend line coverage, full suite | floor 84.0%, may only rise ([`scripts/coverage-floor.json`](../scripts/coverage-floor.json)) | 84.30% at 2386e15 (the SQLite suite; the PostgreSQL step runs the same tests). Local and CI agree since both build fresh venvs: 84.08% in each on #8 |
-| ruff (backend/) | at most 417 findings, may only fall ([`scripts/lint-baseline.json`](../scripts/lint-baseline.json)) | 417 |
-| ruff (scripts/) | zero | 0 |
-| mypy --strict (backend/src) | at most 39 errors, may only fall | 39 |
-| mypy --strict (each package's src) | zero, per package | 0 for causal-core, causal-decision and causal-mcp |
-| Frontend tsc / vitest | must pass | 50 files typecheck; 62 tests in 8 files |
-| Frontend eslint (`frontend/src`, Next's core-web-vitals and TypeScript rules) | zero findings, may not rise ([`scripts/lint-baseline.json`](../scripts/lint-baseline.json)) | 0 over 44 files |
-| Every Python package under `packages/` | its suite must pass in the package's environment, and a skipped test fails it | causal-core 233 passed (T0, T4, T5, T6, T7, T8 and T9 gates, and T2/T3 with their data cached); causal-decision 146 (D0, A0 and C0); causal-mcp 41 |
+| Backend tests (unit, integration, guardian) | at least 500 tests; every test file reports ([`scripts/gate-scope-floors.json`](../scripts/gate-scope-floors.json)) | 1007 passed on SQLite (37 skipped: the PostgreSQL-only tests), 73 of 73 files; 1044 passed, 0 skipped on PostgreSQL |
+| Backend line coverage, full suite | floor 84.0%, may only rise ([`scripts/coverage-floor.json`](../scripts/coverage-floor.json)) | 85.87% (5745/6690 statements, the SQLite suite; the PostgreSQL step runs the same tests) |
+| ruff (backend/) | at most 405 findings, may only fall ([`scripts/lint-baseline.json`](../scripts/lint-baseline.json)) | 387 over 153 files |
+| ruff (scripts/) | zero | 0 over 14 files |
+| mypy --strict (backend/src) | at most 37 errors, may only fall | 37 over 74 files |
+| mypy --strict (each package's src) | zero, per package | 0 for causal-core (40 files), causal-decision (15) and causal-mcp (5) |
+| Frontend tsc / vitest | must pass | 52 files typecheck; 76 tests in 10 files |
+| Frontend eslint (`frontend/src`, Next's core-web-vitals and TypeScript rules) | zero findings, may not rise ([`scripts/lint-baseline.json`](../scripts/lint-baseline.json)) | 0 over 46 files |
+| Every Python package under `packages/` | its suite must pass in the package's environment, and a skipped test fails it | causal-core 234 passed (T0, T4, T5, T6, T7, T8 and T9 gates, and T2/T3 with their data cached); causal-decision 146 (D0, A0 and C0); causal-mcp 41 |
 | Skill modules imported by a test | 2 known gaps, may only shrink | 9 of 11 |
-| State-changing routes called by a test | no gaps allowed | 17 of 17 |
+| State-changing routes called by a test | no gaps allowed | 18 of 18 (and 18 of 18 mounted) |
 | MCP tools referenced by a test (`packages/causal-mcp`) | no gaps allowed | 6 of 6 |
 
 `scripts/doc_reconciliation.py` reports which documents in `docs/` are owed a re-read because the code they describe has changed. It is an advisory step: it fails nothing, but while any document is owed a re-read the gate exits 3, not 0. Only this page and the root README had been read against the code when tracking began.

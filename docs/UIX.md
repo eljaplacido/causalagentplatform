@@ -272,6 +272,11 @@ Medium; a fragment is High while it names an unapproved edge,
 else Medium; an entity is Low. The tier badge's tooltip gives the reasons, and an item whose
 submitter was never recorded (edges drafted before migration 012) says "not recorded". The
 Evidence group has no backend to read from yet (register `agent-skills-are-stubs`).
+A review item's domain is its business domain (`devops`, `marketing`), shown as a plain label in
+the queue and the panel header; a `CynefinBadge` appears only when an item carries a Cynefin
+classification, which the review-queue endpoint does not return. Until 2026-09-26 the page fed the
+business domain to `CynefinBadge`, which crashed on it; the badge now renders any value that is
+not a Cynefin domain as a neutral "Unclassified", never as a real domain.
 Approving or rejecting in `ApprovalPanel` asks the reviewer to classify the situation
 (Cynefin domain; required, nothing pre-selected, DISORDER not offered): Guardian reads it,
 and without one rule PR-006 refuses the request. A rejection needs an APPROVED verdict for

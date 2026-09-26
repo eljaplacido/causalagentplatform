@@ -249,7 +249,18 @@ export interface ReviewQueueItem {
   id: string;
   objectName: string;
   objectType: ReviewObjectType;
-  domain: CynefinDomain;
+  /**
+   * The semantic-layer business domain the object belongs to (the backend's
+   * review-queue `domain`, e.g. "devops"). A plain label: it is NOT a Cynefin
+   * classification and must never be passed to CynefinBadge.
+   */
+  businessDomain: string;
+  /**
+   * A Cynefin classification of the item, present only when one was actually
+   * made. The review-queue endpoint returns none, so live items leave it unset;
+   * the approver classifies the situation in ApprovalPanel at decision time.
+   */
+  cynefinDomain?: CynefinDomain;
   riskTier: RiskTier;
   /** The facts that decided riskTier (backend/src/semantic_layer/review_risk.py). */
   riskReasons?: string[];

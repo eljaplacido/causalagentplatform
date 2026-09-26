@@ -95,8 +95,10 @@ in its §8.4.
 
 **Authentication.** `FirebaseAuthMiddleware` (`backend/src/middleware/auth.py`)
 requires a Firebase ID token (`verify_id_token`, revocation checked) on every
-route except `/health`, `/docs`, `/redoc`, `/openapi.json` and CORS preflight. A
-missing or invalid token gets 401.
+route except `/health`, `/docs`, `/redoc`, `/openapi.json`, `/favicon.ico` and
+CORS preflight. Those paths are matched exactly, never as prefixes: `/healthz` or
+`/docs-admin` needs a token like any other route
+(`backend/tests/unit/test_auth_public_paths.py`). A missing or invalid token gets 401.
 
 **Local-dev bypass.** When `ENV=local` *and* `DEV_AUTH_BYPASS=true`, the fixed
 token `dev-local-token` is accepted as a mock user holding `governance_officer`,

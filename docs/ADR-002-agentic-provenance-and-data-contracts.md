@@ -121,7 +121,7 @@ The Status column was PASS on every row when the ADR was written. As read agains
 | Risk | Severity | Mitigation |
 |------|----------|------------|
 | Provenance graph size explosion | MEDIUM | Not built. The mitigation first proposed, TTL-based expiry and pruning, would delete rows the store keeps append-only; retention has to be designed against that rule |
-| Contract enforcement latency | LOW | Contract checks are O(1) in-memory lookups; Redis cache for production |
+| Contract enforcement latency | LOW | Contract checks are O(1) in-memory lookups (`ContractRegistry` holds contracts in process; nothing persists or caches them elsewhere) |
 | PROV-AGENT spec divergence | MEDIUM | Track upstream changes; abstract via internal model layer |
 | Agent blocking on stale data | MEDIUM | DEGRADED mode allows read with warning; BLOCK mode only for PR-009 critical paths |
 

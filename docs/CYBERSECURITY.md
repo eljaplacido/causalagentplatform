@@ -155,7 +155,7 @@ What the middleware does:
 
 ```python
 # FirebaseAuthMiddleware.dispatch, simplified
-if request.method == "OPTIONS" or path in PUBLIC_PATHS:        # /health, /docs, /redoc, /openapi.json
+if request.method == "OPTIONS" or path in PUBLIC_PATHS:        # exact match, never a prefix
     return await call_next(request)
 token = extract_bearer_token(request)
 if ENV == "local" and DEV_AUTH_BYPASS == "true" and token == "dev-local-token":
@@ -169,6 +169,12 @@ except Exception:
     return JSONResponse(401, "Authentication failed")
 return await call_next(request)
 ```
+
+`PUBLIC_PATHS` is `/health`, `/docs`, `/redoc`, `/openapi.json` and `/favicon.ico`, matched
+exactly. It used to be matched by prefix as well, which made any future route that began with
+one of them (`/healthz`, `/docs-admin`, `/health/internal`) public;
+`backend/tests/unit/test_auth_public_paths.py` mounts such routes and requires a token for each.
+FastAPI's docs pages need no other path: Swagger UI and ReDoc load their assets from a CDN.
 
 The local-dev bypass needs all three conditions. The mock user carries the roles
 `governance_officer`, `platform_engineer`, `analyst` and `sre`, and every row of the role

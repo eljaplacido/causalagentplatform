@@ -18,7 +18,7 @@ function makeItem(overrides: Partial<ReviewQueueItem>): ReviewQueueItem {
     id: "item",
     objectName: "object",
     objectType: "CAUSAL_EDGE",
-    domain: "COMPLICATED",
+    businessDomain: "devops",
     riskTier: "MEDIUM",
     riskReasons: [],
     submittedBy: "someone",

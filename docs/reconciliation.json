@@ -20,24 +20,24 @@
       "why": "status line, what's in the box, quick-start commands, MCP entry point",
       "subjects": [
         "backend/pyproject.toml",
+        "packages/causal-mcp",
         "frontend/package.json",
         "launch_backend.sh",
-        "docs/CURRENT_STAGE.md",
-        "packages/causal-mcp"
+        "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
           "backend/pyproject.toml": "aed6cbb405b21ebabf3b25620ab10ff1bc095f3860cf0c079a378b539875580a",
+          "packages/causal-mcp": "f86dd08d8fef8f9b09adab83770f37de1234101a5c84ff11ef0427bdab2507d1",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "90f35b0cb3d745dcb87aebc32eb11730c120e0206a98bafa08d4d7f923f5bef6",
-          "packages/causal-mcp": "f86dd08d8fef8f9b09adab83770f37de1234101a5c84ff11ef0427bdab2507d1"
+          "docs/CURRENT_STAGE.md": "87190ed92d95a396709dad92442b88d3b252090580fc9b66f4f7cd8d601adf45"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #38 into #40: gate lists name T9 and C0 together (AGENTS, skills, benchmarks README, TESTING_CICD seeded-defect list); ROADMAP keeps the train's done list with calibration evidence open; CURRENT_STAGE package counts 233/146/41 measured on this tree; README and QUICKSTART quote no version floors)"
+        "by": "Claude (cascade of #46's re-measured Gates table: CURRENT_STAGE moved only in that table's figures, which neither README nor ROADMAP quotes)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "516158bd388357846e2c628681da9bbd1be332da78ac45c443592794292dcef8",
-          "backend/src": "30b8ce7edfd984129ec06e2065c8cc0edb1728252a4a4bee91d3146f531a8cd9",
-          "backend/tests": "8c9ca0008cb6bea628e82494a0e3617fbcd57b26d9bb593cc6df3a3130275e40",
-          "frontend/src": "f309f78f9a388af875805eefabe52267de66468efb047a2c8e924303e5cee552",
-          "packages": "c64361259b84856ce02d9b623ea3149011f0cc6b814061ce479df6c12d66cbbc",
+          "conformance/declared_not_implemented.json": "06aa634fe74b3c9bfac8ec28980fe0a07de11d4a3c30ac3969d4f4d02c8cb87e",
+          "backend/src": "1e9d3dc122d2a853b6e75237687f61c563a799d77455879243a2b65d50065008",
+          "backend/tests": "b789634220d1ef99b3ab8786d15747d1e9e4920749b9acf4cea920b618b9287e",
+          "frontend/src": "cfe44a11e817c5d272f7125694a5cba46c438299c632f63315a8f836a9278d80",
+          "packages": "d2f937f66efee78148564d82fbe376b1b72ca9e6c6e60068c8e8afb85bb4fcfa",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #38 into #40: gate lists name T9 and C0 together (AGENTS, skills, benchmarks README, TESTING_CICD seeded-defect list); ROADMAP keeps the train's done list with calibration evidence open; CURRENT_STAGE package counts 233/146/41 measured on this tree; README and QUICKSTART quote no version floors)"
+        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -78,7 +78,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/semantic_layer": "210c7146f6f389a03da2e808d1abaa4e0ebfccd0912921601c86e4020bc99634",
+          "backend/src/semantic_layer": "2b3aee3ef98dd7c74992a44be9588d099de06c829997fe78cb6a75ddf6594e30",
           "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
           "packages/semantic-types/src": "b88502a55b3406392490bc55954f738e1c9557acaa2e273743cdb113c4bc31ce",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
@@ -87,7 +87,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #37 into #38: ADR-001 keeps the governed-escalation text with #47's SimulationAgent line; ADR-003 says PR-010 now bites, pinned end to end; CURRENT_STAGE session rows combined, PR-010 row cites the session test; AGENTS PR-010 line holds; README/QUICKSTART/ORCHESTRATION/ROADMAP/TESTING_CICD merged cleanly, re-read for session and kernel claims)"
+        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -103,7 +103,7 @@
         "on": "2026-09-26",
         "sha256": {
           "backend/src/semantic_layer/provenance.py": "c912fb0af67442b984325d80528867c559ccb0332ac7725ac448e48f87164c89",
-          "backend/src/semantic_layer/contracts.py": "8af9432f179c0d3e8652b3b7d4a48db9edbff3f5acc1fb25c8a6e8d9af3eaaa4",
+          "backend/src/semantic_layer/contracts.py": "96357377af27b488fd82e05c2601a907cbf99afe7cd9ae71819ee37c7e284068",
           "backend/src/api/provenance.py": "55fa5a3e0153904f557da134e6e0f3a8c8c1ae0ab8b5fe4faa8a6918a70c617e",
           "backend/src/agents/llm_factory.py": "cf027815b09bfd658aa041072ebd42158e3bdf5f6e76d3f8941ed7b227fd9f1e",
           "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3"
@@ -111,7 +111,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #47 into #53: read each conflict against the code; SECURITY states both review bindings with PR-007's platform-recorded rule and the drafts route; UIX keeps the reject flow and the no-draft-page note; CYBERSECURITY 7.2 says a drafter's own result does not count)"
+        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
       }
     },
     "docs/ADR-003-hierarchical-planning-and-evaluation.md": {
@@ -126,12 +126,12 @@
         "sha256": {
           "backend/src/orchestration": "7776a0a563af5bda75451c4ff4bb546683ae9947207f6da8b0545c1781976c8f",
           "backend/src/evaluation": "9a2708b95f3bae7f8b05075e62815c7f51cb3f6e7939a585c1c2c26e5b500b07",
-          "backend/src/api/platform.py": "f7c4646310f0b2ef312e224c093000eb90aff0a890966cdff9482a348976781b"
+          "backend/src/api/platform.py": "68355a7d3d4daf13952937559f743d59e1688bfd8f4b61f4b983faa1463ff5b6"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #37 into #38: ADR-001 keeps the governed-escalation text with #47's SimulationAgent line; ADR-003 says PR-010 now bites, pinned end to end; CURRENT_STAGE session rows combined, PR-010 row cites the session test; AGENTS PR-010 line holds; README/QUICKSTART/ORCHESTRATION/ROADMAP/TESTING_CICD merged cleanly, re-read for session and kernel claims)"
+        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
       }
     },
     "docs/AGENTS.md": {
@@ -139,23 +139,23 @@
       "subjects": [
         "backend/src/agents",
         "backend/src/skills",
+        "packages/causal-mcp",
         "backend/src/orchestration",
-        "prompts",
-        "packages/causal-mcp"
+        "prompts"
       ],
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/agents": "d16986c9824b0a6d82372f6abefe0624f41f0dce75d36a3fc4bc712268656139",
+          "backend/src/agents": "748c3b7f1398dfb683ac629c248d785a65c3483dbae7bf26b07f1a746798d8b3",
           "backend/src/skills": "b0bcef79c64f6b8d2f35f87f92095d54c52cec7d972a4cf1520b95fcc0d68347",
+          "packages/causal-mcp": "f86dd08d8fef8f9b09adab83770f37de1234101a5c84ff11ef0427bdab2507d1",
           "backend/src/orchestration": "7776a0a563af5bda75451c4ff4bb546683ae9947207f6da8b0545c1781976c8f",
-          "prompts": "664b74cd837a44513e10dc0a7a5c44a3015816f928c93d4f7831320b0231e50f",
-          "packages/causal-mcp": "f86dd08d8fef8f9b09adab83770f37de1234101a5c84ff11ef0427bdab2507d1"
+          "prompts": "664b74cd837a44513e10dc0a7a5c44a3015816f928c93d4f7831320b0231e50f"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #37 into #38: ADR-001 keeps the governed-escalation text with #47's SimulationAgent line; ADR-003 says PR-010 now bites, pinned end to end; CURRENT_STAGE session rows combined, PR-010 row cites the session test; AGENTS PR-010 line holds; README/QUICKSTART/ORCHESTRATION/ROADMAP/TESTING_CICD merged cleanly, re-read for session and kernel claims)"
+        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -174,7 +174,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/middleware": "2ccb514c0d866d9821835ae3e12b4643addaff0d5bbccb03fb599145231feb05",
+          "backend/src/middleware": "9085c1b32915118b1ecb76c779c5ad65c7849ac8c18f0faa7911423862db68d6",
           "backend/src/api/governance.py": "f04db4d767e8a62c4315c46635a3e93d045a0817116acb6d33bbdb0d3a230cd0",
           "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
           "backend/src/semantic_layer/registry.py": "32f6f4cee20e193c4ab87d60ca5b90a9aba8e18a01feef60c166433e63c7374c",
@@ -187,7 +187,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #47 into #53: read each conflict against the code; SECURITY states both review bindings with PR-007's platform-recorded rule and the drafts route; UIX keeps the reject flow and the no-draft-page note; CYBERSECURITY 7.2 says a drafter's own result does not count)"
+        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -208,16 +208,16 @@
           "backend/src/db": "918886f41d041a016e43d2e32818791a28481b49a24d7ce149b7ec71a42bf826",
           "backend/src/connectors": "2b7f65f2acc7f7732deecdad2c8c1b72e4db72caed067285d65631be65c4edfa",
           "backend/src/semantic_layer/models.py": "9d20689801ee209370c995278bfa23f58d19fd0c68a65d86e705e4fb7b1a036f",
-          "backend/src/sensors": "d38f988ccb52659ac4ecc8724e8aa775b2e6e9fca76b73dbba6576c3f3d1dcba",
+          "backend/src/sensors": "37f0b547a27bf3617693225db822302372fe941185153afa65d9cc5296e3360c",
           "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
           "backend/src/semantic_layer/registry.py": "32f6f4cee20e193c4ab87d60ca5b90a9aba8e18a01feef60c166433e63c7374c",
-          "backend/src/agents/drift_monitor.py": "d4aeecf75035c60feb196914aea340ddeadd4c1de4237734c7533dc647aeb076",
+          "backend/src/agents/drift_monitor.py": "3e5807b7fcc88cb7215e1126cbf5461c293020fb2153937fbbd923ca085b2c9f",
           "backend/src/skills/drift_detect.py": "9432982258b155287a90701d76dc9bf331dd8c65fbc692ad37fcd124fcab7111"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-10: the backend pin moved; DATA_LAYER makes no claim about package versions)"
+        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
       }
     },
     "docs/HANDOFFS.md": {
@@ -282,12 +282,12 @@
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
           ".env.example": "10b19ac63993ff640ea47936fb99d53938077413273463afe5e5661313451c97",
-          "backend/scripts": "36d9419c9cb543ee85703a4d4008be1c16e383c5d7567d9c7bcb6dce92ad64da"
+          "backend/scripts": "adfe996282f443b9f37340ccda7e0e85afae2ad77fbed2455cc8dc6a63dc987b"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #38 into #40: gate lists name T9 and C0 together (AGENTS, skills, benchmarks README, TESTING_CICD seeded-defect list); ROADMAP keeps the train's done list with calibration evidence open; CURRENT_STAGE package counts 233/146/41 measured on this tree; README and QUICKSTART quote no version floors)"
+        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -309,21 +309,21 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "8c9ca0008cb6bea628e82494a0e3617fbcd57b26d9bb593cc6df3a3130275e40",
+          "backend/tests": "b789634220d1ef99b3ab8786d15747d1e9e4920749b9acf4cea920b618b9287e",
           "backend/pyproject.toml": "aed6cbb405b21ebabf3b25620ab10ff1bc095f3860cf0c079a378b539875580a",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
           ".gnomon/ci.sh": "a05e016e87f09e27989ffc185d06ad2b55c6d31f4e9b9cc2954b8cfdf7a40e45",
-          "scripts": "04f86e2aa348b9a2355ad3bb5750f8b94b78b9d5e77fc5e38a3cc0b604dae99c",
+          "scripts": "2edc6c26a73622247b41baf5b85f14330695253388e9b3c63c470750f339894c",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "58eaf5af920accec421ce7392b3d999aa35199d6f471c989b7fab25b3865acd0",
-          "packages/causal-core/tests": "4496d9663daa2b71e5a548c0ac79983c4ba33380ac0829eb3232292f23303ee1",
+          "packages/causal-core/tests": "25d7a9bf81d3202afcd2359570774f2ea059d0e74d2b949146e44c6f3070042c",
           "packages/causal-decision/tests": "811166b3dd05cfc3cbd62c7e71fcf1d62666fb738c97dcb65e34725fede4d034"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #38 into #40: gate lists name T9 and C0 together (AGENTS, skills, benchmarks README, TESTING_CICD seeded-defect list); ROADMAP keeps the train's done list with calibration evidence open; CURRENT_STAGE package counts 233/146/41 measured on this tree; README and QUICKSTART quote no version floors)"
+        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
       }
     },
     "docs/UIX.md": {
@@ -334,12 +334,12 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "frontend/src": "f309f78f9a388af875805eefabe52267de66468efb047a2c8e924303e5cee552"
+          "frontend/src": "cfe44a11e817c5d272f7125694a5cba46c438299c632f63315a8f836a9278d80"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #47 into #53: read each conflict against the code; SECURITY states both review bindings with PR-007's platform-recorded rule and the drafts route; UIX keeps the reject flow and the no-draft-page note; CYBERSECURITY 7.2 says a drafter's own result does not count)"
+        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
       }
     },
     "docs/ROADMAP.md": {
@@ -353,13 +353,13 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "65b5b9fe4d2bc339a536717c0fdd0f252483ac9e136b0600914ff3590a977c45",
-          "conformance/declared_not_implemented.json": "516158bd388357846e2c628681da9bbd1be332da78ac45c443592794292dcef8",
-          "docs/CURRENT_STAGE.md": "90f35b0cb3d745dcb87aebc32eb11730c120e0206a98bafa08d4d7f923f5bef6"
+          "conformance/declared_not_implemented.json": "06aa634fe74b3c9bfac8ec28980fe0a07de11d4a3c30ac3969d4f4d02c8cb87e",
+          "docs/CURRENT_STAGE.md": "87190ed92d95a396709dad92442b88d3b252090580fc9b66f4f7cd8d601adf45"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #38 into #40: gate lists name T9 and C0 together (AGENTS, skills, benchmarks README, TESTING_CICD seeded-defect list); ROADMAP keeps the train's done list with calibration evidence open; CURRENT_STAGE package counts 233/146/41 measured on this tree; README and QUICKSTART quote no version floors)"
+        "by": "Claude (cascade of #46's re-measured Gates table: CURRENT_STAGE moved only in that table's figures, which neither README nor ROADMAP quotes)"
       }
     },
     "SECURITY.md": {
@@ -375,7 +375,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/middleware": "2ccb514c0d866d9821835ae3e12b4643addaff0d5bbccb03fb599145231feb05",
+          "backend/src/middleware": "9085c1b32915118b1ecb76c779c5ad65c7849ac8c18f0faa7911423862db68d6",
           "backend/src/api/governance.py": "f04db4d767e8a62c4315c46635a3e93d045a0817116acb6d33bbdb0d3a230cd0",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
           "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
@@ -385,7 +385,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #47 into #53: read each conflict against the code; SECURITY states both review bindings with PR-007's platform-recorded rule and the drafts route; UIX keeps the reject flow and the no-draft-page note; CYBERSECURITY 7.2 says a drafter's own result does not count)"
+        "by": "Claude (merge #46 into #50: conflicts read against the code (seeder on PostgreSQL plus owner-only --clear; Neo4j connector check; drift alerts with no scheduler); grepped every doc for DriftSensor, health.py, prefix-matched public paths and SQLite-only seeding, none left stale; the health row names the Neo4j connector; other text merged cleanly from both blessed sides)"
       }
     }
   }

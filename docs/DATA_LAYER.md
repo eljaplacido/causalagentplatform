@@ -281,9 +281,12 @@ claim was withdrawn (register `neo4j-graph-store`, in `left_the_list`). When `NE
 - **Drift alerts** (`backend/src/skills/drift_detect.py`): `(:DriftAlert)` nodes with a TTL and an
   acknowledged flag. Without Neo4j, alerts are emitted (§5.1) but not stored.
 
-(`src/api/health.py` defines a `/neo4j` connectivity check, but its router is not mounted in
-`src/api/main.py`, so the running API does not serve it.) Both paths are tested only
-against a mocked driver (`backend/tests/unit/test_experience_buffer_neo4j.py`,
+Whether that optional Neo4j answers is reported by the authenticated
+`GET /api/v1/platform/connectors` (connector `graph-neo4j`): `unconfigured` (no `NEO4J_URI`;
+healthy, since the SQL fallback serves), `reachable`, or `unreachable` (no driver, a failed
+connectivity check, or no answer within 3 s), with a fixed message instead of the driver's error
+text. Tested with a mocked driver (`backend/tests/integration/test_platform_api.py`). (An unmounted `/health/neo4j` router that
+checked the same was deleted on 2026-09-26.) Both paths are tested only against a mocked driver (`backend/tests/unit/test_experience_buffer_neo4j.py`,
 `test_drift_detect.py`, `test_neo4j_factory.py`); no test runs them against a real Neo4j.
 `docker-compose.yml` starts a local Neo4j 5 for them.
 
@@ -463,11 +466,14 @@ fragment id → drift_detect (KL) → causal_structure_compare → semantic_drif
 The thresholds are `_DEFAULT_KL_THRESHOLD = 0.1` and `_DEFAULT_SEVERE_KL_THRESHOLD = 0.5`.
 The agent calls each skill with the fragment id only, and each skill returns "no drift" when
 it gets no data: `drift_detect` answers `kl_divergence 0.0` with `note: no_data_for_comparison`,
-and the other two answer `no_fragment_edges` and `no_definitions_for_comparison`. So the periodic
-sensor (`backend/src/sensors/periodic_drift.py`), which runs this agent, cannot raise a drift
-alert today. Alerts go to `AlertEmitter` (logging, callbacks, deduplication). The
-`platform.drift.alert.v1` topic name in the agent's return value is only a label: nothing
-publishes to a broker (§3.3).
+and the other two answer `no_fragment_edges` and `no_definitions_for_comparison`. So the agent
+cannot raise a drift alert today, and nothing runs it on a schedule: the periodic `DriftSensor`
+that was meant to, never started by the app, was deleted in September 2026 rather than scheduled
+to alert on nothing. Alerts go to `AlertEmitter` (`backend/src/sensors/alert_emit.py`: logging,
+callbacks, deduplication). The agent's
+return value names that channel; nothing publishes to a broker (§3.3). Until 2026-09-26 the
+`alert_emit` skill, dispatched as a skill, never received the state, answered `emitted: true`
+with a `platform.drift.alert.v1` topic name, and emitted nothing.
 
 ### 5.2 Drift Types
 

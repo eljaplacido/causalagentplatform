@@ -15,7 +15,7 @@ from __future__ import annotations
 import hashlib
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -25,6 +25,9 @@ from httpx import ASGITransport, AsyncClient
 from src.api.main import app
 from src.db.types import TEXT_ARRAY, TIMESTAMP, typed_text
 from tests.conftest import TEST_DB_BACKEND
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 #: The database connector's id: it reports the database it is connected to.
 DB_CONNECTOR = f"db-{TEST_DB_BACKEND}"
@@ -624,3 +627,125 @@ async def test_drift_severity_critical_for_five_rejections(
     pr007_alerts = [a for a in alerts if "PR-007" in a["message"]]
     assert len(pr007_alerts) >= 1
     assert pr007_alerts[0]["severity"] == "CRITICAL"
+
+
+# ── GET /connectors: the Neo4j graph store ────────────────────────────────────
+#
+# Neo4j is optional (NEO4J_URI unset -> the graph paths fall back to SQL), so the
+# connector reports one of three states: unconfigured, configured and reachable,
+# configured and unreachable. Only the last is unhealthy. Whatever the driver
+# raised stays in the server log: the response carries a fixed message, never the
+# driver's error text (which names hosts, ports and sometimes credentials).
+
+_NEO4J_SECRET_ERROR = (
+    "Couldn't connect to bolt://neo4j-secret-host.internal:7687 "
+    "(auth user=neo4j password=hunter2-leaked)"
+)
+
+
+def _neo4j_connector(body: list[dict[str, Any]]) -> dict[str, Any]:
+    matches = [c for c in body if c["connector_id"] == "graph-neo4j"]
+    assert len(matches) == 1, [c["connector_id"] for c in body]
+    return matches[0]
+
+
+def _fake_driver(verify: AsyncMock) -> object:
+    from unittest.mock import MagicMock
+
+    driver = MagicMock()
+    driver.verify_connectivity = verify
+    return driver
+
+
+@pytest.fixture
+def neo4j_factory() -> Iterator[Any]:
+    from src.db.neo4j_factory import Neo4jFactory
+
+    Neo4jFactory.reset()
+    yield Neo4jFactory
+    Neo4jFactory.reset()
+
+
+async def test_connectors_neo4j_unconfigured(
+    client: AsyncClient, neo4j_factory: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("NEO4J_URI", raising=False)
+    resp = await client.get("/api/v1/platform/connectors")
+    assert resp.status_code == 200
+    neo = _neo4j_connector(resp.json())
+    assert neo["healthy"] is True
+    assert neo["error_message"] is None
+    assert neo["raw_output"] == {"configured": False, "reachable": None, "status": "unconfigured"}
+
+
+async def test_connectors_neo4j_reachable(
+    client: AsyncClient, neo4j_factory: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("NEO4J_URI", "bolt://neo4j.test:7687")
+    verify = AsyncMock(return_value=None)
+    monkeypatch.setattr(
+        neo4j_factory, "get_driver", classmethod(lambda cls: _fake_driver(verify))
+    )
+    resp = await client.get("/api/v1/platform/connectors")
+    assert resp.status_code == 200
+    neo = _neo4j_connector(resp.json())
+    verify.assert_awaited_once()
+    assert neo["healthy"] is True
+    assert neo["error_message"] is None
+    assert neo["raw_output"] == {"configured": True, "reachable": True, "status": "reachable"}
+
+
+async def test_connectors_neo4j_unreachable_does_not_leak_the_driver_error(
+    client: AsyncClient, neo4j_factory: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("NEO4J_URI", "bolt://neo4j-secret-host.internal:7687")
+    verify = AsyncMock(side_effect=OSError(_NEO4J_SECRET_ERROR))
+    monkeypatch.setattr(
+        neo4j_factory, "get_driver", classmethod(lambda cls: _fake_driver(verify))
+    )
+    resp = await client.get("/api/v1/platform/connectors")
+    assert resp.status_code == 200
+    neo = _neo4j_connector(resp.json())
+    assert neo["healthy"] is False
+    assert neo["raw_output"] == {"configured": True, "reachable": False, "status": "unreachable"}
+    assert neo["error_message"]
+    for secret in ("neo4j-secret-host", "7687", "hunter2", "Couldn't connect"):
+        assert secret not in resp.text, secret
+
+
+async def test_connectors_neo4j_driver_not_created_is_unreachable(
+    client: AsyncClient, neo4j_factory: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("NEO4J_URI", "bolt://neo4j.test:7687")
+    monkeypatch.setattr(neo4j_factory, "get_driver", classmethod(lambda cls: None))
+    resp = await client.get("/api/v1/platform/connectors")
+    neo = _neo4j_connector(resp.json())
+    assert neo["healthy"] is False
+    assert neo["raw_output"]["status"] == "unreachable"
+
+
+async def test_connectors_neo4j_check_is_bounded_in_time(
+    client: AsyncClient, neo4j_factory: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import asyncio
+
+    from src.api import platform as platform_module
+
+    async def hang() -> None:
+        await asyncio.sleep(30)
+
+    monkeypatch.setenv("NEO4J_URI", "bolt://neo4j.test:7687")
+    monkeypatch.setattr(platform_module, "NEO4J_CHECK_TIMEOUT_SECONDS", 0.05)
+    hanging = _fake_driver(AsyncMock(side_effect=hang))
+    monkeypatch.setattr(neo4j_factory, "get_driver", classmethod(lambda cls: hanging))
+    resp = await asyncio.wait_for(client.get("/api/v1/platform/connectors"), timeout=10)
+    neo = _neo4j_connector(resp.json())
+    assert neo["healthy"] is False
+    assert neo["raw_output"]["status"] == "unreachable"
+
+
+async def test_connectors_requires_authentication(db_engine: object) -> None:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        resp = await ac.get("/api/v1/platform/connectors")
+    assert resp.status_code == 401
+    assert "neo4j" not in resp.text.lower()

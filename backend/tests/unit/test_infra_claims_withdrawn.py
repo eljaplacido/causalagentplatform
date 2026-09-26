@@ -207,7 +207,7 @@ def test_neo4j_is_reached_only_by_the_optional_side_stores() -> None:
         if reaches.search(p.read_text(encoding="utf-8"))
     )
     assert users == [
-        "api/health.py",
+        "api/platform.py",  # the graph-neo4j connector's health check, behind auth
         "db/neo4j_factory.py",
         "skills/drift_detect.py",
         "skills/experience_buffer.py",
