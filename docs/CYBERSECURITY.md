@@ -90,9 +90,16 @@ An agent or user attempts to write to the semantic layer without a Guardian verd
 
 **Mitigations:**
 - **In place:** the registry's write methods take a verdict id and refuse it unless it exists,
-  is APPROVED (REJECTED for `reject_draft`), is signed by the Guardian, names this object, and
+  is APPROVED, is signed by the Guardian, was issued for this action, names this object, and
   is unspent (`backend/src/semantic_layer/registry.py`, `verdict.py`;
-  `backend/tests/guardian/test_verdict_binding.py`).
+  `backend/tests/guardian/test_verdict_binding.py`). The action is part of the signed claim:
+  `reject_draft` accepts only a verdict issued for `GOVERNANCE_REJECT`, and a verdict for
+  `GOVERNANCE_REJECT` or `GOVERNANCE_APPROVE` authorises that decision and no other write
+  (`backend/tests/integration/test_governance_reject_verdict.py`). Rejecting used to need a
+  REJECTED verdict, which only an unclassified (DISORDER) check produced, so the authority to
+  reject depended on the Guardian declining to classify (`septa-53`). `promote_to_approved`
+  still accepts an APPROVED verdict for any action other than `GOVERNANCE_REJECT`; the
+  governance page asks for `GOVERNANCE_APPROVE`.
 - **In place, and narrower than "row security":** the database does not evaluate verdicts.
   `causal_edges.guardian_verdict_ref` and `interventions.guardian_verdict_ref` are
   `NOT NULL REFERENCES audit_log(id)`, so a row must point at *some* audit row. The

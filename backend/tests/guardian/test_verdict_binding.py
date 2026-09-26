@@ -367,7 +367,10 @@ async def test_a_graph_fragment_can_be_rejected(
     fragment = make_graph_fragment()
     await registry.propose_draft(fragment, await verdict_for(fragment.id))
     await registry.reject_draft(
-        fragment.id, "GraphFragment", await verdict_for(fragment.id, action_type="GOVERNANCE_REJECT"), _approver(),
+        fragment.id,
+        "GraphFragment",
+        await verdict_for(fragment.id, action_type="GOVERNANCE_REJECT"),
+        _approver(),
         "the fragment omits the load confounder",
     )
     row = await db_session.execute(

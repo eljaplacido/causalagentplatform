@@ -158,7 +158,10 @@ class RejectRequest(BaseModel):
     reason: str = Field(..., min_length=10, description="Reason for rejection")
     verdict_id: UUID = Field(
         ...,
-        description="ID of the Guardian REJECTED audit_log entry",
+        description="ID of the Guardian APPROVED audit_log entry from a /check for action "
+        "GOVERNANCE_REJECT on this object: signed, bound to the object, single-use. A "
+        "REJECTED verdict does not authorise a rejection, and neither does one issued "
+        "for any other action.",
     )
 
 
@@ -331,8 +334,11 @@ async def reject_object(
     """
     Mark a draft semantic object as REJECTED and write an audit entry.
 
-    A REJECTED object cannot be promoted without submitting a new draft.
-    The reason is stored in the audit trail.
+    Requires governance_officer or platform_engineer role, and the verdict_id of an
+    APPROVED Guardian verdict from /check for action GOVERNANCE_REJECT with this
+    object as subject_id -- the way /approve needs one for the approval. The verdict
+    is spent on use. A REJECTED object cannot be promoted without submitting a new
+    draft. The reason is stored in the audit trail.
     """
     uid = user.get("uid", "unknown")
 

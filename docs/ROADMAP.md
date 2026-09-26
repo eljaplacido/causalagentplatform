@@ -112,8 +112,11 @@ priority first, and the priorities put hardening the platform before new estimat
   SQLite, on the schema the migrations build: it found that the Guardian could not write
   `audit_log` there and that `session_state` and `incidents` had no migration, and both are
   fixed (`septa-52`, gate step `backend-pytest-postgres`). No SQL in `backend/src` is built
-  from strings, and bandit enforces it (`septa-50`). Open: rejecting a draft needs a Guardian
-  REJECTED verdict, which a classified reject request never gets (`septa-53`).
+  from strings, and bandit enforces it (`septa-50`). Rejecting a draft needs an APPROVED
+  Guardian verdict for `GOVERNANCE_REJECT` on that draft, as approving needs one for
+  `GOVERNANCE_APPROVE`, and the governance page sends the reviewer's classification with
+  both; it used to need a REJECTED verdict, which a classified reject request never got
+  (`septa-53`).
 - **p1, release and drift.** Done: the gate checks that the skills and agent docs name only
   things that exist (`septa-3`), and the MCP tools' parameters are derived from `CausalQuery`,
   with a parity test (`septa-4`; it found `causal_impact` judging every earlier answer as
