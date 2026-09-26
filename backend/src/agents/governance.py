@@ -64,6 +64,10 @@ _POLICY_RULES = {
     "PR-007": "Sensitivity analysis: edges without sensitivity_result blocked from APPROVED.",
     "PR-008": "Drift-triggered actions: Any action initiated by drift detection must include full evidence payload and cannot modify semantic layer without re-validation workflow.",
     "PR-009": "Data contract enforcement: Agent actions consuming data products with active contract violations must be blocked or warned. Violations are surfaced for human review.",
+    "PR-010": (
+        "Planner escalation: a run whose lookahead found no safe action "
+        "(plan_outcome no_safe_action) cannot be APPROVED; it requires escalation."
+    ),
 }
 
 
@@ -71,6 +75,16 @@ _POLICY_RULES = {
 #: draft puts the object's own id here; the API passes the path's object id. A payload
 #: with none gets a verdict that records what was checked but authorises no write.
 _SUBJECT_KEYS = ("subject_id", "object_id")
+
+
+#: PR-010's contract. A check built from a planned run carries the planner's result in
+#: the payload under PLAN_OUTCOME_KEY; NO_SAFE_ACTION is the value PlanAhead
+#: (src/orchestration/planning.py) reports when its lookahead found no action it could
+#: commit. It is read from the payload of *this* check, never from the state's flags:
+#: a resumed session carries every earlier run's flags, so a flag cannot say what this
+#: run's planner found. A caller that sends the value only makes the check stricter.
+PLAN_OUTCOME_KEY = "plan_outcome"
+NO_SAFE_ACTION = "no_safe_action"
 
 
 def _subject_of(payload: dict[str, Any]) -> str | None:
@@ -443,6 +457,16 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
             return (
                 GuardianVerdict.REJECTED,
                 "DISORDER domain: domain must be classified before any approval.",
+                rules_fired,
+            )
+
+        # PR-010: the planner found no safe action -- a person decides, not the Guardian
+        if payload.get(PLAN_OUTCOME_KEY) == NO_SAFE_ACTION:
+            rules_fired.append("PR-010")
+            return (
+                GuardianVerdict.REQUIRES_ESCALATION,
+                "The plan's lookahead found no safe action to commit. A run its own "
+                "planner escalated cannot be approved; it goes to a human reviewer.",
                 rules_fired,
             )
 
