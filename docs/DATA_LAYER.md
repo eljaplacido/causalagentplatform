@@ -284,6 +284,12 @@ are target designs.
 > is stored in SQL. The one Neo4j code path is an optional experience-buffer backend
 > (`skills/experience_buffer_neo4j.py`, used when `NEO4J_URI` is set), and the tests exercise it
 > only with mocks.
+>
+> Whether that optional Neo4j answers is reported by the authenticated
+> `GET /api/v1/platform/connectors` (connector `graph-neo4j`): `unconfigured` (no `NEO4J_URI`;
+> healthy, since the SQL fallback serves), `reachable`, or `unreachable` (no driver, a failed
+> connectivity check, or no answer within 3 s), with a fixed message instead of the driver's error
+> text. Tested with a mocked driver (`backend/tests/integration/test_platform_api.py`).
 
 **Used for:**
 - Causal graph storage: nodes (CausalEntity, Treatment, Outcome, Confounder) and edges (CausalEdge)

@@ -15,8 +15,7 @@ from __future__ import annotations
 import hashlib
 import uuid
 from datetime import UTC, datetime, timedelta
-from collections.abc import Iterator
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -26,6 +25,9 @@ from httpx import ASGITransport, AsyncClient
 from src.api.main import app
 from src.db.types import TEXT_ARRAY, TIMESTAMP, typed_text
 from tests.conftest import TEST_DB_BACKEND
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 #: The database connector's id: it reports the database it is connected to.
 DB_CONNECTOR = f"db-{TEST_DB_BACKEND}"

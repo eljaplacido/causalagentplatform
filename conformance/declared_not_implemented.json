@@ -335,7 +335,7 @@
           "says": "3.1 Neo4j (Graph Store)"
         },
         {
-          "at": "docs/DATA_LAYER.md:312",
+          "at": "docs/DATA_LAYER.md:318",
           "says": "d-separation query p95 < 50ms"
         },
         {
@@ -366,7 +366,7 @@
           "says": "Ingestion Bus (Kafka)"
         },
         {
-          "at": "docs/DATA_LAYER.md:405",
+          "at": "docs/DATA_LAYER.md:411",
           "says": "3.3 Kafka (Event Streaming)"
         },
         {
@@ -556,11 +556,11 @@
       "capability": "Agent evaluation endpoints (consistency, calibration, decision quality) measure the running platform",
       "claimed_in": [
         {
-          "at": "backend/src/api/platform.py:752",
+          "at": "backend/src/api/platform.py:818",
           "says": "    summary=\"Agent confidence calibration probe\","
         },
         {
-          "at": "backend/src/api/platform.py:794",
+          "at": "backend/src/api/platform.py:860",
           "says": "    summary=\"Composite decision quality index\","
         },
         {
@@ -579,7 +579,7 @@
       "reality": "None of the three observes an agent. /evaluation/consistency scores num_runs identical EMPTY recommendation lists against each other, so the variance it reports is 0 by construction whatever the platform is doing. /evaluation/calibration scores the confidences in the request body, and CalibrationProbe states it uses their variance as a proxy because there is no ground truth -- calibration needs realized outcomes, and nothing records one. /evaluation/decision-quality combines four numbers taken as query parameters, defaulting to 0.75/0.05/0.80/0.70, so its 'index' is whatever the caller passes. The module docstring claimed 'No static or mock values' until 2026-09-24; it now names these three as excluded.",
       "evidence": [
         {
-          "at": "backend/src/api/platform.py:732",
+          "at": "backend/src/api/platform.py:798",
           "says": "    mock_recommendations: list[list[Any]] = [[] for _ in range(num_runs)]"
         },
         {
@@ -587,7 +587,7 @@
           "says": "        - Variance of confidence scores as a proxy for calibration"
         },
         {
-          "at": "backend/src/api/platform.py:800",
+          "at": "backend/src/api/platform.py:866",
           "says": "    calibration_score: float = Query(default=0.70, ge=0.0, le=1.0),"
         }
       ],
