@@ -259,7 +259,8 @@ async def test_a_slow_call_times_out(monkeypatch: pytest.MonkeyPatch) -> None:
     _use_fake(monkeypatch, Slow())
     monkeypatch.setenv("LLM_TIMEOUT_SECONDS", "1")
     n = await narrate_outcome(_kernel_outcome(), fallback="F", session_id="s", agent_id="a")
-    assert n.source == "deterministic" and "TimeoutError" in n.reason
+    assert n.source == "deterministic" and n.reason == "LLM call timed out after 1s"
+    assert n.model == "fake-narrator"
 
 
 @pytest.mark.parametrize(
@@ -317,4 +318,8 @@ async def test_live_local_ollama_narration_is_grounded_or_refused() -> None:
         assert verify(n.text, OUTCOME_ADAPTER.validate_python(outcome.model_dump(mode="json"))).ok
     else:
         assert n.text == "FALLBACK"
-        assert n.reason.startswith(("rejected", "rendered text rejected", "LLM reply"))
+        # Refused by grounding, or a reply/call the layer would not use (a cold model can
+        # exceed LLM_TIMEOUT_SECONDS): either way the fallback, with the reason.
+        assert n.reason.startswith(
+            ("rejected", "rendered text rejected", "LLM reply", "LLM call timed out")
+        )

@@ -207,6 +207,8 @@ async def narrate_outcome(
         return deterministic(f"prompt template: {exc}")
     ids = {"template_id": template.template_id, "template_hash": template.sha256}
 
+    model: str | None = None
+    timeout = _timeout_seconds()
     try:
         llm = get_llm(
             capability=template.capability,
@@ -217,9 +219,13 @@ async def narrate_outcome(
             prompt_template_hash=template.sha256,
         )
         model = getattr(llm, "_model_name", None) or getattr(llm, "model", None)
-        reply = await asyncio.wait_for(llm.ainvoke(prompt), timeout=_timeout_seconds())
+        reply = await asyncio.wait_for(llm.ainvoke(prompt), timeout=timeout)
+    except TimeoutError:
+        return deterministic(f"LLM call timed out after {timeout:g}s", model=model, **ids)
     except Exception as exc:
-        return deterministic(f"LLM call failed: {type(exc).__name__}: {exc}"[:300], **ids)
+        return deterministic(
+            f"LLM call failed: {type(exc).__name__}: {exc}"[:300], model=model, **ids
+        )
 
     text = _reply_text(reply)
     if not text:

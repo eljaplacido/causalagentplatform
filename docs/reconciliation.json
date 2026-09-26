@@ -55,9 +55,9 @@
         "on": "2026-09-26",
         "sha256": {
           "conformance/declared_not_implemented.json": "f983d970f2540b33dce0577b53b56bed88eaefee068657fb0963bc89729cceaa",
-          "backend/src": "0933d4c710e3ced4b5b6a122bd35e4d1523ef76c739229dcbc30283d9416cd5b",
+          "backend/src": "367b01cd3866edc7fcd84063e2e416815aa07ba74b74ee27840a94c65a52095d",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "a430a93ebb5b4d8053af7ea29be24e5222ea796d89e5243663c6661766dfe084",
+          "backend/tests": "cf7ce68eaf82e0727fc4cc7ae8f312e471fdaafb2b080b3ccaf6ba89c7298eee",
           "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
           "packages": "f39decf6dcae81c0e60801fa80c933c6547de55348adb3fd3867119423414373",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
@@ -65,7 +65,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-17/37: re-read for the LLM layer; §6.3/§7, the ADR's capture hook, the status rows and bullet, the Ollama setup, the prompts row and the test notes now say which two paths call a model, for language only, grounded by PR-002, local-first, and that nothing is attempted with no provider)"
+        "by": "Claude (septa-17/37: re-read after narration.py records the model on a failed or timed-out call and names the timeout; §7's fallback list, the status rows and the test notes still hold)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -148,7 +148,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/agents": "a76cc2f7154319ea33194c02dbe15ca16f7976bf645d1ff55c4f01411e2f49d4",
+          "backend/src/agents": "7411fe4154bab3bc00830536981f995c266edd28bd329902a4d630c861e0dc7d",
           "backend/src/skills": "7c14f6095d38b78711081427d4f98e3f621a0a72de4b377d6fc374c346c4ecea",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "backend/src/orchestration": "026e61993e2c3e51962380e4d4e957cf5d26e650455679bd5e7cdce75c31c2f4",
@@ -157,7 +157,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-17/37: re-read for the LLM layer; §6.3/§7, the ADR's capture hook, the status rows and bullet, the Ollama setup, the prompts row and the test notes now say which two paths call a model, for language only, grounded by PR-002, local-first, and that nothing is attempted with no provider)"
+        "by": "Claude (septa-17/37: re-read after narration.py records the model on a failed or timed-out call and names the timeout; §7's fallback list, the status rows and the test notes still hold)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -311,7 +311,7 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "a430a93ebb5b4d8053af7ea29be24e5222ea796d89e5243663c6661766dfe084",
+          "backend/tests": "cf7ce68eaf82e0727fc4cc7ae8f312e471fdaafb2b080b3ccaf6ba89c7298eee",
           "backend/pyproject.toml": "7f85969c811ed11c6b51f9f1a00a5670a3759c9a11871848b8b3e69b94d12029",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
@@ -325,7 +325,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-17/37: re-read for the LLM layer; §6.3/§7, the ADR's capture hook, the status rows and bullet, the Ollama setup, the prompts row and the test notes now say which two paths call a model, for language only, grounded by PR-002, local-first, and that nothing is attempted with no provider)"
+        "by": "Claude (septa-17/37: re-read after narration.py records the model on a failed or timed-out call and names the timeout; §7's fallback list, the status rows and the test notes still hold)"
       }
     },
     "docs/UIX.md": {
