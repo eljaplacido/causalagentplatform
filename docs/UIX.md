@@ -2,7 +2,7 @@
 
 > **Scope:** User experience architecture, design principles, user personas, user stories, and component strategy for the Unified Enterprise Causal Platform. Every new feature must be anchored to an identified persona need before design begins.
 >
-> **Read against `frontend/src` 2026-09-25.** The personas and user stories (§3) are needs, not
+> **Read against `frontend/src` 2026-09-26.** The personas and user stories (§3) are needs, not
 > features, and many are unbuilt. The principles (§1) and the component inventory (§4.2) now
 > say which parts exist. Onboarding walkthroughs (§5) are roadmap.
 
@@ -32,10 +32,26 @@ The platform serves people who are trying to make better decisions under uncerta
 Each persona sees a **filtered, task-optimized lens** on the same underlying platform data. The platform does not build separate UIs per persona—it applies a view configuration over a shared component library.
 
 Today, `PersonaSelector` switches between five views, and there is a page per view:
-`/incidents`, `/analyst`, `/executive`, `/governance` and `/engineer`, plus `/workbench`. How much
-of each view's surface below is built varies (see §4.2). The DAG Workbench is planned (register
-`dag-workbench`). The decision ledger and the assumption registry have API routes
-(`/api/v1/decisions`, `/api/v1/models`) and no view: the frontend calls neither.
+`/incidents`, `/analyst`, `/executive`, `/governance` and `/engineer`, plus `/workbench`,
+`/decisions` and `/registry`, which link to each other (`ViewNav`). How much of each view's
+surface below is built varies (see §4.2).
+
+- **`/workbench` (DAG Workbench)** shows the fragments and their edges, and proposes a new fragment
+  from existing edges through `POST /api/semantic/drafts`. The drafter must classify the situation
+  (a declared Cynefin domain, DISORDER not offered, or a reasoning session's id). The Guardian's
+  verdict is shown as the API returns it: on success the audit entry and whether
+  `GET /api/governance/review-queue` lists the draft; on the 403 the verdict, reason and rules
+  cited. The backend on `main` ignores the classification and PR-006 refuses every draft (a fix
+  is on another branch), so today a user sees that refusal. Authoring new edges or entities is not
+  built, and the register entry `dag-workbench` stays open (`partial`).
+- **`/decisions` (decision ledger)** lists `GET /api/v1/decisions` (filter by action, limit),
+  shows a record's verdict, checks, evidence and chain digests, verifies the chain
+  (`/verify`), takes a follow-up (`POST .../{entry_digest}/followup`, once per decision) and shows
+  the calibration report (`/calibration`). Numbers are shown as the API sent them; a null rate
+  is shown as null.
+- **`/registry` (assumption registry)** lists `GET /api/v1/models` and shows a model's versions,
+  the diff between two, the impact of a version on recorded decisions, and the history check.
+  It is read-only: registering, revising and reviewing a model are API-only.
 
 | Persona View | Primary Surface | Secondary Surfaces |
 |---|---|---|
@@ -257,20 +273,54 @@ Components under `frontend/src/components/` are marked **built**. The rest are *
 
 | Group | Built | Not built | Used by |
 |---|---|---|---|
-| **Causal Graph** | `DAGCanvas`, `EdgeProposal`, `NodeDetail`, `GraphDiff`, `FragmentCard` | -- | Analyst, Platform Engineer |
+| **Causal Graph** | `DAGCanvas`, `EdgeProposal`, `NodeDetail`, `GraphDiff`, `FragmentCard`, `FragmentDraftComposer` | -- | Workbench (`DAGCanvas`, `FragmentDraftComposer`), Analyst and Platform Engineer (`FragmentCard`) |
+| **Decisions** | `VerdictBadge`, `DecisionDetail` (with the follow-up form), `CalibrationReportPanel` | -- | Executive, Governance Officer, Analyst |
+| **Assumption registry** | `ModelVersionView` (with `EdgeTable`), `ModelDiffView`, `ImpactReportView` | -- | Analyst, Governance Officer |
 | **Incident Response** | `IncidentBrief`, `CynefinBadge` (in `shared/`), `CausalHypothesisList`, `InterventionCard`, `EscalationBanner` | -- | SRE, Incident Commander |
 | **Simulation** | `InterventionComparison` (with `EffectEstimateBar` inside it), `AssumptionDisclosure` | `ScenarioRange` | Business Analyst, SRE |
 | **Governance** | `ReviewQueue`, `ApprovalPanel` | `AuditTrailEntry`, `SensitivityResult`, `AssumptionCard` | Governance Officer, Analyst |
 | **Evidence** | -- | `EvidenceCitation`, `DocumentSnippet`, `StatisticalTestResult`, `ConfidenceMeter` | Analyst, Governance Officer |
-| **Shared** | `EpistemicConfidenceBadge`, `ThinkingIndicator`, `PersonaSelector`, `AuditLogPanel`, `GuardianVerdictBadge` | -- | All |
+| **Shared** | `EpistemicConfidenceBadge`, `ThinkingIndicator`, `PersonaSelector`, `AuditLogPanel`, `GuardianVerdictBadge`, `ViewNav` | -- | All |
 
-The review queue shows no real risk tier or submitter (register `review-queue-risk-tier`), and
-the Evidence group has no backend to read from yet (register `agent-skills-are-stubs`).
+The review queue shows each item's risk tier and submitter from the backend, most at risk
+first (US-27). The tier is derived from stored fields by `backend/src/semantic_layer/review_risk.py`:
+an edge is Critical below stated confidence 0.5, High below 0.8 or without a sensitivity result
+the platform recorded for it that says it is robust (a drafter's own result does not count), else
+Medium; a fragment is High while it names an unapproved edge,
+else Medium; an entity is Low. The tier badge's tooltip gives the reasons, and an item whose
+submitter was never recorded (edges drafted before migration 012) says "not recorded"; a row that
+arrives without a tier shows a dash and sorts last. The
+Evidence group has no backend to read from yet (register `agent-skills-are-stubs`).
+A review item's domain is its business domain (`devops`, `marketing`), shown as a plain label in
+the queue and the panel header; a `CynefinBadge` appears only when an item carries a Cynefin
+classification, which the review-queue endpoint does not return. Until 2026-09-26 the page fed the
+business domain to `CynefinBadge`, which crashed on it; the badge now renders any value that is
+not a Cynefin domain as a neutral "Unclassified", never as a real domain.
+The type is the backend's `object_type`, labelled; the submitted time is `created_at`, or a dash
+when there is none. The page enters mock mode (with `NEXT_PUBLIC_ENABLE_MOCK_FALLBACK=true`)
+only when the review queue itself cannot be reached; an audit-log failure alone is reported in
+the audit panel and leaves decisions enabled. Across the governance, incidents and analyst pages
+a 401 or 403 (other than a Guardian block) reads "not authorised", not "backend unavailable" or
+an empty list.
+
+The incidents page speaks the backend's severity vocabulary, P0 to P3, end to end (rows the seed
+script wrote as SEV1 to SEV4 are shown as P0 to P3). No endpoint returns an effect estimate for an
+incident's interventions, so `InterventionCard` says "No effect estimate" rather than drawing an
+interval. The Guardian's verdict and a person's recorded decision are shown side by side; the
+incidents API returns the decision as `humanDecision` and leaves `guardianVerdict` as the
+Guardian issued it. A new incident's id is `INC-` and eight random hex digits.
+
+The analyst page draws no causal graph: the session API returns how many edges a run proposed
+(`proposed_edge_count`) but not the edges, so the page shows that count and the run's
+recommendations as sent. `EdgeProposal`, `NodeDetail` and `GraphDiff` are built, and no page
+renders them since the analyst page stopped drawing a graph it had made up.
 Approving or rejecting in `ApprovalPanel` asks the reviewer to classify the situation
 (Cynefin domain; required, nothing pre-selected, DISORDER not offered): Guardian reads it,
 and without one rule PR-006 refuses the request. A rejection needs an APPROVED verdict for
 `GOVERNANCE_REJECT` (`septa-53`), so it asks for the domain exactly as an approval does, and
 the page does not call `/reject` unless the verdict is APPROVED.
+The tests of the three analysis views are `frontend/src/app/{workbench,decisions,registry}/__tests__/page.test.tsx`;
+the ledger and registry tests use responses the kernel produced (`frontend/src/test-fixtures/kernel.ts`).
 `AssumptionDisclosure` is built but no page renders it; the analyst page imported it
 without using it, and the import was removed.
 
@@ -334,7 +384,9 @@ Each persona has a dedicated first-session walkthrough. Walkthroughs are:
 > lint: the `jsx-a11y` rules in Next's `core-web-vitals` set (valid ARIA attributes for each
 > role, `alt` text), run over `frontend/src` by the gate's `frontend-eslint` step and held at
 > zero findings. Selection in lists (connector cards, incidents, the review queue, DAG nodes,
-> fragment cards) is marked with `aria-current`; `aria-selected` is kept for tabs.
+> fragment cards, decisions, registered models and versions) is marked with `aria-current`;
+> `aria-selected` is kept for tabs. A backend refusal or error is announced with `role="alert"`,
+> a backend-confirmed result with `role="status"`.
 
 - WCAG 2.1 AA compliance on all screens
 - Keyboard navigation for all interactive elements

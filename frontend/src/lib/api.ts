@@ -7,6 +7,8 @@
  *   Session   → /api/v1/session/run | /incident | /{id}/state
  *   Governance→ /api/governance/review-queue | /approve | /reject | /audit-log
  *   Semantic  → /api/semantic/entities | /fragments | /drafts | /edges/{id}/audit-trail
+ *   Decisions → /api/v1/decisions | /verify | /calibration | /{entry_digest}/followup
+ *   Models    → /api/v1/models | /{name} | /versions/{v} | /diff | /impact | /verify
  *   Health    → /health  (public)
  */
 
@@ -18,6 +20,7 @@ import type {
   EdgeType,
   GraphFragment,
   GuardianVerdict,
+  RiskTier,
 } from "@causalplatform/semantic-types";
 import { type ApiError } from "@/lib/types";
 
@@ -31,6 +34,11 @@ const API_BASE_URL =
 export class CausalApiError extends Error {
   constructor(
     public readonly status: number,
+    /**
+     * The backend's machine-readable code: the `error` field its exception
+     * handlers send (unauthorized, forbidden, guardian_blocked, not_found,
+     * circuit_breaker_open), else HTTP_ERROR, or NETWORK_ERROR (status 0).
+     */
     public readonly code: string,
     message: string,
     public readonly details?: Record<string, unknown>
@@ -38,6 +46,40 @@ export class CausalApiError extends Error {
     super(message);
     this.name = "CausalApiError";
   }
+
+  /**
+   * The caller is not authenticated (401), or is authenticated and not allowed
+   * (403). A 403 from a Guardian block is a policy verdict, not an
+   * authorisation failure, and does not count.
+   */
+  get isNotAuthorised(): boolean {
+    return (
+      this.status === 401 ||
+      (this.status === 403 && this.code !== "guardian_blocked")
+    );
+  }
+}
+
+/** True when `err` is a 401/403 authorisation failure from the backend. */
+export function isNotAuthorised(err: unknown): boolean {
+  return err instanceof CausalApiError && err.isNotAuthorised;
+}
+
+/**
+ * FastAPI's 422 body: `detail` is a list of {loc, msg, type}. Rendered as
+ * "field.path: message; ..." so the UI can say which field was refused.
+ */
+function formatValidationDetail(detail: unknown): string | undefined {
+  if (!Array.isArray(detail) || detail.length === 0) return undefined;
+  const parts = detail.map((d) => {
+    const item = (d ?? {}) as { loc?: unknown; msg?: unknown };
+    const loc = Array.isArray(item.loc)
+      ? item.loc.filter((p) => p !== "body").map(String).join(".")
+      : "";
+    const msg = typeof item.msg === "string" ? item.msg : JSON.stringify(d);
+    return loc ? `${loc}: ${msg}` : msg;
+  });
+  return parts.join("; ");
 }
 
 // ─── Token helpers ────────────────────────────────────────────────────────────
@@ -137,31 +179,54 @@ async function apiFetch<T>(
   }
 
   if (!response.ok) {
-    let errorBody: (ApiError & { detail?: unknown; reason?: unknown }) | null =
-      null;
+    type ErrorBody = Partial<ApiError> & {
+      error?: unknown;
+      detail?: unknown;
+      reason?: unknown;
+    };
+    let errorBody: ErrorBody | null = null;
 
     try {
-      errorBody = (await response.json()) as ApiError & {
-        detail?: unknown;
-        reason?: unknown;
-      };
+      errorBody = (await response.json()) as ErrorBody;
     } catch {
       // Body is not JSON — use status text
     }
 
-    // FastAPI HTTPException bodies carry the explanation in `detail`; the
-    // Guardian-blocked handler uses `reason`. Surface whichever is present so
-    // the UI can show the real cause instead of a bare status code.
+    // FastAPI HTTPException bodies carry the explanation in `detail` (a string,
+    // or on a 422 a list of field errors); the backend's own exception handlers
+    // send `error` (the code) with `message`, or with `reason` for a Guardian
+    // block. Surface whichever is present so the UI can show the real cause
+    // instead of a bare status code. A route that raises with a structured
+    // `detail` (POST /api/semantic/drafts when the Guardian blocks: {error,
+    // verdict, reason, audit_entry_id, ...}) has that object kept as `details`,
+    // and its `reason` becomes the message.
+    const validationMessage = formatValidationDetail(errorBody?.detail);
+    const objectDetail =
+      errorBody?.detail !== null &&
+      typeof errorBody?.detail === "object" &&
+      !Array.isArray(errorBody.detail)
+        ? (errorBody.detail as Record<string, unknown>)
+        : undefined;
     const backendMessage =
-      errorBody?.message ??
+      (typeof errorBody?.message === "string" ? errorBody.message : undefined) ??
       (typeof errorBody?.detail === "string" ? errorBody.detail : undefined) ??
+      validationMessage ??
+      (typeof objectDetail?.["reason"] === "string" ? objectDetail["reason"] : undefined) ??
       (typeof errorBody?.reason === "string" ? errorBody.reason : undefined);
+
+    const code =
+      (typeof errorBody?.error === "string" ? errorBody.error : undefined) ??
+      (typeof errorBody?.code === "string" ? errorBody.code : undefined) ??
+      (typeof objectDetail?.["error"] === "string" ? objectDetail["error"] : undefined) ??
+      (response.status === 422 ? "validation_error" : "HTTP_ERROR");
 
     throw new CausalApiError(
       response.status,
-      errorBody?.code ?? "HTTP_ERROR",
+      code,
       backendMessage ?? `Request failed with status ${response.status}`,
-      errorBody?.details
+      errorBody?.details ??
+        objectDetail ??
+        (validationMessage ? { detail: errorBody?.detail } : undefined)
     );
   }
 
@@ -254,6 +319,15 @@ export interface ReviewQueueItemResponse {
   /** DRAFT or UNDER_REVIEW -- the queue lists only objects pending review. */
   approval_status: ApprovalStatus;
   created_at: string | null;
+  /**
+   * Derived by the backend from stored fields (review_risk.py): edges by stated
+   * confidence and stored sensitivity results, fragments by whether they carry an
+   * unapproved edge, entities LOW. The queue arrives most at risk first.
+   */
+  risk_tier: RiskTier;
+  risk_reasons: string[];
+  /** The id in the object's created_by; null where none was recorded. */
+  submitted_by: string | null;
 }
 
 /**
@@ -462,6 +536,434 @@ export const interventionApi = {
   },
 };
 
+// ─── Drafts (POST /api/semantic/drafts) ───────────────────────────────────────
+
+/** DraftSubmissionRequest.object_type (backend/src/api/semantic.py type_map). */
+export type DraftObjectType = "CausalEdge" | "GraphFragment" | "CausalEntity" | "Assumption";
+
+/**
+ * What a draft is judged in: a reasoning session's classification, or the
+ * drafter's declared Cynefin domain. DISORDER is not offered: it means "not
+ * classified", and Guardian rule PR-006 refuses every draft in it.
+ */
+export type DraftClassification =
+  | { sessionId: string }
+  | { cynefinDomain: Exclude<CynefinDomain, "DISORDER"> };
+
+/**
+ * 201 of POST /api/semantic/drafts (DraftSubmissionResponse), snake_case. The
+ * route that reads the classification also returns the domain it judged the
+ * draft in and where that came from; a backend that predates it omits both.
+ */
+export interface DraftSubmissionResponse {
+  object_id: string;
+  object_type: string;
+  guardian_verdict: string;
+  audit_entry_id: string;
+  cynefin_domain?: string;
+  domain_source?: string;
+  message: string;
+}
+
+/**
+ * The `detail` of the 403 POST /api/semantic/drafts raises when the Guardian
+ * does not approve: `{error: "guardian_blocked", verdict, reason,
+ * audit_entry_id}`, plus the rules cited and the domain judged in on a backend
+ * that reads the classification.
+ */
+export interface DraftBlockedDetail {
+  error: "guardian_blocked";
+  verdict: string;
+  reason: string;
+  audit_entry_id: string;
+  policy_rules_cited?: string[];
+  cynefin_domain?: string;
+  domain_source?: string;
+}
+
+/** The Guardian's block, if `err` is one; null for any other failure. */
+export function draftBlockOf(err: unknown): DraftBlockedDetail | null {
+  if (!(err instanceof CausalApiError) || err.status !== 403) return null;
+  const d = err.details;
+  if (!d || d["error"] !== "guardian_blocked") return null;
+  if (typeof d["verdict"] !== "string" || typeof d["reason"] !== "string") return null;
+  return d as unknown as DraftBlockedDetail;
+}
+
+// ─── Decision ledger (/api/v1/decisions) ──────────────────────────────────────
+// Shapes of causal_decision's pydantic models as FastAPI serialises them
+// (snake_case, no aliases). Tuples arrive as arrays.
+
+/** causal_decision.contract.Verdict */
+export type DecisionVerdict = "act" | "act_with_approval" | "experiment" | "refuse";
+
+/** causal_decision.assumptions.ModelRef */
+export interface ModelRefResponse {
+  name: string;
+  version: number;
+  digest: string;
+}
+
+/** causal_decision.contract.Check */
+export interface DecisionCheck {
+  name: string;
+  passed: boolean;
+  allows: DecisionVerdict;
+  detail: string;
+}
+
+/** causal_decision.contract.SegmentEvidence */
+export interface SegmentEvidenceResponse {
+  level: string;
+  variable: string;
+  n_used: number;
+  benefit?: number | null;
+  benefit_ci?: [number, number] | null;
+  refusal?: string | null;
+}
+
+/**
+ * causal_decision.contract.Evidence. Fields added after decisions were first
+ * recorded (segments' siblings `trend_breakdown`, `heterogeneity_differs`) are
+ * omitted from the JSON when unset, hence optional.
+ */
+export interface DecisionEvidence {
+  kind: "result" | "refusal" | "apparatus_failure";
+  status?: string | null;
+  refusal_reason?: string | null;
+  estimator?: string | null;
+  estimand?: string | null;
+  identification_strategy?: string | null;
+  identification_tier?: string | null;
+  benefit?: number | null;
+  benefit_ci?: [number, number] | null;
+  ci_level?: number | null;
+  e_value_ci?: number | null;
+  refuters_failed?: string[];
+  triangulation_agree?: boolean | null;
+  n_used?: number | null;
+  outcome_sd?: number | null;
+  result_digest?: string | null;
+  segments?: SegmentEvidenceResponse[];
+  trend_breakdown?: number | null;
+  heterogeneity_differs?: boolean | null;
+}
+
+/** causal_decision.contract.DecisionRequest */
+export interface DecisionRequestResponse {
+  action: string;
+  outcome: string;
+  direction: "increase" | "decrease";
+  risk_class: "low" | "medium" | "high";
+  reversible: boolean;
+  minimum_worthwhile_effect: number;
+  harm_threshold: number;
+  population: string | null;
+  horizon: string | null;
+  can_randomize: boolean;
+  randomization_unit: string;
+  units_per_day: number | null;
+}
+
+/** causal_decision.contract.ExperimentSpec */
+export interface ExperimentSpecResponse {
+  question: string;
+  design: "randomized_units";
+  unit: string;
+  arms: [string, string];
+  allocation: number;
+  minimum_detectable_effect: number;
+  outcome_sd: number | null;
+  units_per_arm: number | null;
+  estimated_days: number | null;
+  guardrails: string[];
+  note: string;
+}
+
+/** causal_decision.contract.Decision */
+export interface DecisionResponse {
+  verdict: DecisionVerdict;
+  request: DecisionRequestResponse;
+  evidence: DecisionEvidence;
+  checks: DecisionCheck[];
+  rationale: string;
+  experiment: ExperimentSpecResponse | null;
+  what_would_change_it: string[];
+  policy_digest: string;
+  request_digest: string;
+  decision_digest: string | null;
+}
+
+/** causal_decision.ledger.EvidenceRef */
+export interface EvidenceRefResponse {
+  outcome_kind: "result" | "refusal" | "apparatus_failure";
+  result_digest: string | null;
+  graph_digest: string | null;
+  data_digest: string | null;
+  query_digest: string | null;
+  contract_version: string | null;
+  core_version: string | null;
+  model?: ModelRefResponse | null;
+}
+
+/** causal_decision.ledger.Approval */
+export interface ApprovalResponse {
+  approver_id: string;
+  approved_at: string;
+  authorisation_id: string | null;
+  notes: string;
+}
+
+/** causal_decision.ledger.DecisionRecord -- one link of the hash chain. */
+export interface DecisionRecordResponse {
+  sequence: number;
+  recorded_at: string;
+  decision: DecisionResponse;
+  evidence: EvidenceRefResponse;
+  approval: ApprovalResponse | null;
+  executed: boolean;
+  prev_digest: string;
+  entry_digest: string;
+}
+
+/** GET /api/v1/decisions (decisions.py RecordList). */
+export interface DecisionRecordList {
+  records: DecisionRecordResponse[];
+  total: number;
+}
+
+/** GET /api/v1/decisions/verify (causal_decision.ledger.ChainReport). */
+export interface ChainReportResponse {
+  ok: boolean;
+  length: number;
+  head_digest: string | null;
+  broken_at: number | null;
+  reason: string;
+}
+
+/** causal_decision.outcome.Realization */
+export interface RealizationResponse {
+  decision_digest: string;
+  verdict: DecisionVerdict;
+  predicted_benefit: number | null;
+  predicted_ci: [number, number] | null;
+  realized_benefit: number | null;
+  realized_ci: [number, number] | null;
+  decidable: boolean;
+  undecidable_reason: string | null;
+  undecidable_detail: string;
+  point_in_predicted_ci: boolean | null;
+  intervals_overlap: boolean | null;
+  cleared_worthwhile: boolean | null;
+  realized_harm: boolean | null;
+}
+
+/** POST /api/v1/decisions/{entry_digest}/followup (decisions.py FollowUpResponse). */
+export interface FollowUpResponse {
+  realization: RealizationResponse;
+  explanation: string;
+}
+
+/** A follow-up's rows: columns as lists, covering the period after the decision. */
+export type FollowUpColumns = Record<string, Array<number | string | boolean | null>>;
+
+/**
+ * GET /api/v1/decisions/calibration (causal_decision.outcome.CalibrationReport).
+ * Every rate is null when nothing stands behind it.
+ */
+export interface CalibrationReportResponse {
+  n_decisions: number;
+  n_acted: number;
+  n_decidable: number;
+  n_undecidable: number;
+  undecidable_by_reason: Record<string, number>;
+  point_in_interval_rate: number | null;
+  interval_overlap_rate: number | null;
+  acted_and_worthwhile_rate: number | null;
+  acted_and_harmful: number;
+  not_acted_but_worthwhile: number;
+  by_verdict: Record<string, number>;
+  note: string;
+}
+
+/** Decision ledger — records, chain verification, follow-ups, calibration */
+export const decisionsApi = {
+  list: (params?: { action?: string; limit?: number }) =>
+    api.get<DecisionRecordList>(`/api/v1/decisions${toQuery(params)}`),
+  verify: () => api.get<ChainReportResponse>("/api/v1/decisions/verify"),
+  calibration: (params?: { limit?: number }) =>
+    api.get<CalibrationReportResponse>(
+      `/api/v1/decisions/calibration${toQuery(params)}`
+    ),
+  followup: (entryDigest: string, data: FollowUpColumns) =>
+    api.post<FollowUpResponse>(
+      `/api/v1/decisions/${encodeURIComponent(entryDigest)}/followup`,
+      { data }
+    ),
+};
+
+// ─── Assumption registry (/api/v1/models) ─────────────────────────────────────
+
+/** causal_core.contract.Edge (the kernel's edge, not the semantic layer's CausalEdge). */
+export interface KernelEdge {
+  source: string;
+  target: string;
+  kind: "directed" | "bidirected";
+  origin: "human" | "data" | "experiment" | "literature" | "llm_prior";
+  status: "asserted" | "proposed" | "approved" | "refuted";
+  evidence: string[];
+}
+
+/** causal_core.contract.CausalGraph */
+export interface KernelGraph {
+  nodes: string[];
+  edges: KernelEdge[];
+  latent: string[];
+}
+
+/** causal_decision.assumptions.Assumption */
+export interface ModelAssumption {
+  kind:
+    | "no_interference"
+    | "consistency"
+    | "positivity"
+    | "measurement"
+    | "stable_population"
+    | "timing"
+    | "other";
+  statement: string;
+  about: string[];
+}
+
+/** causal_decision.assumptions.EdgeReview */
+export interface EdgeReviewResponse {
+  edge: string;
+  status: "approved" | "refuted";
+  reason: string;
+}
+
+/** causal_decision.assumptions.ModelVersion -- one immutable version. */
+export interface ModelVersionResponse {
+  name: string;
+  version: number;
+  graph: KernelGraph;
+  assumptions: ModelAssumption[];
+  parent_digest: string | null;
+  author_id: string;
+  created_at: string;
+  why: string;
+  edge_authors: Record<string, string>;
+  reviews: EdgeReviewResponse[];
+  digest: string;
+}
+
+/** One row of GET /api/v1/models (models.py ModelSummary). */
+export interface ModelSummaryResponse {
+  name: string;
+  version: number;
+  digest: string;
+  author_id: string;
+  created_at: string;
+  unreviewed_edges: string[];
+}
+
+/** GET /api/v1/models/{name} (models.py ModelHistory). */
+export interface ModelHistoryResponse {
+  head: ModelVersionResponse;
+  versions: ModelRefResponse[];
+}
+
+/** causal_decision.assumptions.EdgeChange */
+export interface EdgeChangeResponse {
+  edge: string;
+  before: KernelEdge;
+  after: KernelEdge;
+}
+
+/** GET /api/v1/models/{name}/diff (causal_decision.assumptions.ModelDiff). */
+export interface ModelDiffResponse {
+  added_edges: KernelEdge[];
+  removed_edges: KernelEdge[];
+  changed_edges: EdgeChangeResponse[];
+  added_nodes: string[];
+  removed_nodes: string[];
+  latent_added: string[];
+  latent_removed: string[];
+  assumptions_added: ModelAssumption[];
+  assumptions_removed: ModelAssumption[];
+}
+
+/** causal_decision.assumptions.ImpactStatus */
+export type ImpactStatus =
+  | "holds"
+  | "invalidated"
+  | "unverified"
+  | "gained"
+  | "still_unidentified";
+
+/** causal_decision.assumptions.Impact */
+export interface ImpactResponse {
+  status: ImpactStatus;
+  detail: string;
+  old_strategy: string | null;
+  new_strategy: string | null;
+  old_adjustment_set: string[];
+  new_adjustment_set: string[];
+  unreviewed_before: string[];
+  unreviewed_after: string[];
+  digest: string;
+}
+
+/** models.py DecisionImpact */
+export interface DecisionImpactResponse {
+  entry_digest: string;
+  model_version: number;
+  verdict: string;
+  action: string;
+  impact: ImpactResponse;
+}
+
+/** GET /api/v1/models/{name}/impact (models.py ImpactReport). */
+export interface ImpactReportResponse {
+  model: string;
+  to: ModelRefResponse;
+  decisions: DecisionImpactResponse[];
+  by_status: Record<string, number>;
+  note: string;
+}
+
+/** GET /api/v1/models/{name}/verify (causal_decision.assumptions.HistoryReport). */
+export interface HistoryReportResponse {
+  ok: boolean;
+  length: number;
+  head_digest: string | null;
+  broken_at: number | null;
+  reason: string;
+}
+
+/** Assumption registry — models, versions, diff, impact, history verification */
+export const modelsApi = {
+  list: () => api.get<{ models: ModelSummaryResponse[] }>("/api/v1/models"),
+  get: (name: string) =>
+    api.get<ModelHistoryResponse>(`/api/v1/models/${encodeURIComponent(name)}`),
+  version: (name: string, version: number) =>
+    api.get<ModelVersionResponse>(
+      `/api/v1/models/${encodeURIComponent(name)}/versions/${version}`
+    ),
+  diff: (name: string, from: number, to: number) =>
+    api.get<ModelDiffResponse>(
+      `/api/v1/models/${encodeURIComponent(name)}/diff${toQuery({ from, to })}`
+    ),
+  impact: (name: string, to?: number) =>
+    api.get<ImpactReportResponse>(
+      `/api/v1/models/${encodeURIComponent(name)}/impact${toQuery({ to })}`
+    ),
+  verify: (name: string) =>
+    api.get<HistoryReportResponse>(
+      `/api/v1/models/${encodeURIComponent(name)}/verify`
+    ),
+};
+
 /** Semantic layer — entities, fragments, drafts */
 export const semanticApi = {
   // Routes: /api/semantic/... (no v1 prefix)
@@ -475,8 +977,25 @@ export const semanticApi = {
     api.get(`/api/semantic/entities${domain ? `?domain=${domain}` : ""}`),
   entity: (id: string) => api.get(`/api/semantic/entities/${id}`),
   edge: (id: string) => api.get<CausalEdgeResponse>(`/api/semantic/edges/${id}`),
-  submitDraft: (objectType: string, payload: unknown) =>
-    api.post("/api/semantic/drafts", { object_type: objectType, payload }),
+  /**
+   * POST /api/semantic/drafts. The Guardian judges a draft in a classified
+   * situation: a reasoning session's own domain (`session_id`), or the domain
+   * the drafter declares (`cynefin_domain`). With neither it is DISORDER, which
+   * rule PR-006 refuses, so the client requires one. A block comes back as 403
+   * with a structured detail -- read it with {@link draftBlockOf}.
+   */
+  submitDraft: (
+    objectType: DraftObjectType,
+    payload: unknown,
+    classification: DraftClassification
+  ) =>
+    api.post<DraftSubmissionResponse>("/api/semantic/drafts", {
+      object_type: objectType,
+      payload,
+      ...("sessionId" in classification
+        ? { session_id: classification.sessionId }
+        : { cynefin_domain: classification.cynefinDomain }),
+    }),
   edgeAuditTrail: (edgeId: string) =>
     api.get<AuditEntry[]>(`/api/semantic/edges/${edgeId}/audit-trail`),
 };

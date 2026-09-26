@@ -96,9 +96,9 @@ Only 0 is done. `.septacore.json` maps the same codes to `passed`, `failed`,
 
 | Directory | What it holds |
 |---|---|
-| `unit/` | Skills, agents, the registry, the DB factory, connectors (HTTP mocked), provenance and contract models, planning, evaluation, and negative controls for the gate's own scripts (`test_contract_parity.py`, `test_secret_scan.py`, `test_dep_audit.py`, `test_skill_refs.py`, `test_doc_figures.py`, `test_import_origin.py`, `test_gate_scope_package_rows.py`), and for the supply-chain checks outside it (`test_py_lock.py`, `test_image_scan.py`, `test_sbom_check.py`) |
-| `integration/` | FastAPI routes through `httpx`: governance approval flow, the reject authority (an APPROVED verdict for `GOVERNANCE_REJECT`, and the governance page's own reject bodies end to end, `test_governance_reject_verdict.py`), recorded reasons, intervention roles, the role matrix and domain isolation (`test_rbac_matrix.py`: every state-changing route has a row, and is refused without a granted role), the database's own domain isolation on PostgreSQL (`test_rls_domain_isolation.py`), session API and store, the decision ledger (checkpoints and anchored verification included) and follow-ups, the assumption registry (`/api/v1/models`), and the MCP server over stdio |
-| `guardian/` | Guardian bypass prevention, verdict binding (signed, subject-bound, single-use), drafts that cannot approve themselves, a risk score and cycle count the caller cannot supply, the `audit_write` skill, and `audit_log` refusing UPDATE and DELETE |
+| `unit/` | Skills, agents, the registry, the DB factory, connectors (HTTP mocked), provenance and contract models, planning, evaluation, the incidents API's decision merge (a human decision beside the Guardian verdict, `test_incident_decision_merge.py`), and negative controls for the gate's own scripts (`test_contract_parity.py`, `test_secret_scan.py`, `test_dep_audit.py`, `test_skill_refs.py`, `test_doc_figures.py`, `test_import_origin.py`, `test_gate_scope_package_rows.py`), and for the supply-chain checks outside it (`test_py_lock.py`, `test_image_scan.py`, `test_sbom_check.py`) |
+| `integration/` | FastAPI routes through `httpx`: draft submission end to end (`test_draft_submission_api.py`: a declared or session domain is judged, nothing declared is PR-006, CHAOTIC is PR-003), governance approval flow, the reject authority (an APPROVED verdict for `GOVERNANCE_REJECT`, and the governance page's own reject bodies end to end, `test_governance_reject_verdict.py`), recorded reasons, the review queue's risk tiers and submitters (`test_review_queue_risk.py`), intervention roles, the role matrix and domain isolation (`test_rbac_matrix.py`: every route but the liveness probe has a row, reads included, and is refused without a granted role), session ownership (`test_session_ownership.py`), incident overwrites (`test_incident_overwrite.py`), intervention decisions by exact id (`test_intervention_decision_identity.py`), the database's own domain isolation on PostgreSQL (`test_rls_domain_isolation.py`), session API and store (a caller-declared Cynefin domain refused: `test_session_domain_not_declared.py`), the decision ledger (checkpoints and anchored verification included) and follow-ups, the assumption registry (`/api/v1/models`), provenance written by the running flows and kept append-only with erasure as a tombstone (`test_provenance_flow.py`, `test_provenance_append_only.py`), and the MCP server over stdio |
+| `guardian/` | Guardian bypass prevention, verdict binding (signed, subject-bound, single-use, and for approval bound to `GOVERNANCE_APPROVE`), drafts that cannot approve themselves, PR-007 (no edge approved without a sensitivity result the platform recorded under a `RECORD_SENSITIVITY` verdict; a drafter's own result, or a forged verdict reference, does not count) and the kernel's sensitivity analysis recorded where it reads it, PR-010 (no approval of a plan with no safe action), a risk score and cycle count the caller cannot supply, the `audit_write` skill, and `audit_log` refusing UPDATE and DELETE |
 
 The backend suite runs against one of two schemas, chosen by `TEST_DATABASE_URL`
 (`backend/tests/conftest.py`, fixture `db_engine`):
@@ -143,7 +143,19 @@ docker rm -f causal-pg-test
 The optional Neo4j code paths (experience buffer, drift-alert storage) are tested only with a
 mocked driver; Neo4j is not the causal graph store (`neo4j-graph-store` was retracted). No backend test asserts a causal estimate against ground truth:
 the backend delegates estimation to `packages/causal-core`, and that is where estimates are
-gated (§3.2).
+gated (§3.2); the narration tests check the kernel's interval covers
+the effect their simulated data were built with only as a premise, before testing what the LLM
+layer did with the number.
+
+**LLM calls.** No backend test needs a model or the network. `tests/conftest.py` clears the
+provider variables (`OLLAMA_BASE_URL`, the cloud keys and their `_FILE` forms) for every test, so a
+developer's own configuration cannot reach an agent test; tests that exercise the LLM layer
+(`unit/test_llm_routing_used.py`, `unit/test_prompt_templates_loaded.py`,
+`integration/test_decision_narrative.py`) configure Ollama and substitute LangChain's
+deterministic fake chat model for the client. One test is marked `llm_live` and calls a real local
+Ollama; it is **deselected** (not skipped, which `backend-pytest-postgres` would fail) unless
+`LLM_LIVE=1`, and the gate never sets it. Run it with `LLM_LIVE=1 OLLAMA_BASE_URL=...
+OLLAMA_CAUSAL_MODEL=... pytest -m llm_live -s --no-cov tests/unit/test_llm_routing_used.py`.
 
 ### 3.2 Causal correctness: the pre-registered benchmarks
 
@@ -160,8 +172,11 @@ data, the metric, the pass threshold and the seeded defects the suite must catch
 | T6: anytime-valid monitoring of watched rollouts | [`benchmarks/t6-sequential/PRE-REGISTRATION.md`](../benchmarks/t6-sequential/PRE-REGISTRATION.md) | `causal_core.sequential` | Every PR (`pytest -m t6`) |
 | T7: cluster-randomized designs | [`benchmarks/t7-cluster/PRE-REGISTRATION.md`](../benchmarks/t7-cluster/PRE-REGISTRATION.md) | `causal_core.cluster` | Every PR (`pytest -m t7`) |
 | T8: switchback designs | [`benchmarks/t8-switchback/PRE-REGISTRATION.md`](../benchmarks/t8-switchback/PRE-REGISTRATION.md) | `causal_core.cluster`, through `causal_core.analyze` | Every PR (`pytest -m t8`) |
+| T9: Rosenbaum sensitivity | [`benchmarks/t9-rosenbaum/PRE-REGISTRATION.md`](../benchmarks/t9-rosenbaum/PRE-REGISTRATION.md) | `causal_core.sensitivity`, directly and through `causal_core.analyze` | Every PR (`pytest -m t9`) |
+| T10: positivity and overlap | [`benchmarks/t10-positivity/PRE-REGISTRATION.md`](../benchmarks/t10-positivity/PRE-REGISTRATION.md) | `causal_core.design` and `causal_core.overlap`, through `causal_core.analyze` | Every PR (`pytest -m t10`) |
 | D0: the decision procedure | [`benchmarks/d0-decision-policy/PRE-REGISTRATION.md`](../benchmarks/d0-decision-policy/PRE-REGISTRATION.md) | `causal_decision.decide` | Every PR (`pytest -m d0` in `packages/causal-decision`) |
 | A0: whether a graph revision invalidates an estimate | [`benchmarks/a0-assumption-impact/PRE-REGISTRATION.md`](../benchmarks/a0-assumption-impact/PRE-REGISTRATION.md) | `causal_decision.assumptions.impact` | Every PR (`pytest -m a0` in `packages/causal-decision`) |
+| C0: whether the calibration report is honest about what follow-ups can say (simulated streams) | [`benchmarks/c0-calibration/PRE-REGISTRATION.md`](../benchmarks/c0-calibration/PRE-REGISTRATION.md) | `causal_decision.outcome.report` | Every PR (`pytest -m c0` in `packages/causal-decision`) |
 
 `packages/causal-core/tests/test_benchmark_results.py` holds the registrations to their runs:
 for every `benchmarks/*/PRE-REGISTRATION.md`, a committed result must record a passing run
@@ -174,27 +189,40 @@ the registration requires recorded as caught, fails the test. Failing runs stay 
 commit of the checkout its code was imported from, not the working directory's.
 
 The seeded-defect tests (`tests/t0/test_seeded_defects.py`, `tests/t4/…`, `tests/t5/…`, `tests/t6/…`, `tests/t7/…`, `tests/t8/…`,
-`tests/d0/…`, `tests/a0/…`) break the system under test on purpose and assert that the gate fails. A gate that cannot see a
+`tests/t9/…`, `tests/t10/…`, `tests/d0/…`, `tests/a0/…`, `tests/c0/…`) break the system under test on purpose and assert that the gate fails. A gate that cannot see a
 known defect does not count as a gate. The benchmark results, and the limits they found, are on
-the register (for example `kernel-triangulation-moderate-n`).
+the register (for example `kernel-overlap-detection-limits`), and leave it only when a gate closes them
+(`kernel-triangulation-moderate-n`, closed by T0 v4).
 
-Counterfactuals over an SCM, causal discovery and Rosenbaum bounds have no correctness tests
-because they are not implemented (registers `scm-counterfactuals`, `causal-discovery`,
-`sensitivity-analysis`).
+Counterfactuals over an SCM and causal discovery have no correctness tests because they are not
+implemented (registers `scm-counterfactuals`, `causal-discovery`). Rosenbaum bounds are gated by
+T9 and pinned to a published example by `backend/tests/unit/test_rosenbaum_bounds.py`.
 
 ### 3.3 Frontend (`frontend/`)
 
-- **Vitest + React Testing Library** (`src/**/__tests__/*.test.tsx`). Covers the
-  `ThinkingIndicator` latency contract, `ApprovalPanel`, `InterventionCard`, and the governance
-  and incidents pages. The page tests pin the fail-closed contract. They mock the API, so the governance page's
+- **Vitest + React Testing Library** (`src/**/__tests__/*.test.{ts,tsx}`). Covers the
+  `ThinkingIndicator` latency contract, `CynefinBadge`, `ApprovalPanel`, `InterventionCard`, the
+  API client's errors (`src/lib/__tests__/api.test.ts`: the backend's `error` code, 422 field
+  errors, 401/403 as not authorised, a Guardian block's structured detail), and the governance,
+  incidents, analyst, workbench (fragment drafting), decision-ledger and assumption-registry pages.
+  The page tests pin the fail-closed contract. The ledger and registry tests use responses the
+  kernel produced (`src/test-fixtures/kernel.ts`, from data simulated with a set effect) and check
+  that the pages show those numbers verbatim, and null rates as null. They mock the API, so the governance page's
   request bodies are also pinned against the real endpoints by a backend integration test
   (`test_the_governance_pages_own_requests_approve_an_object`). The governance page shows
   only backend-confirmed decisions and audit rows, and the incidents page leaves a decision
-  unchanged and shows the error when the API call fails.
+  unchanged and shows the error when the API call fails. They also pin that each page renders
+  data shaped as the backend sends it and invents none: registry rows with a business domain,
+  stored incidents with P0–P3 or seeded SEV1–SEV4 severities and no effect estimate, and a
+  session result with only a proposed-edge count.
   There is no coverage threshold.
-- **Playwright** (`frontend/e2e/platform.spec.ts`, config `frontend/playwright.config.ts`). It
-  runs against a dev server on `localhost:3000` and is **not part of the gate or of CI**. Run it
-  by hand with `npx playwright test` in `frontend/`.
+- **Playwright** (`frontend/e2e/`, config `frontend/playwright.config.ts`). **Not part of the
+  gate or of CI**; run by hand with `npx playwright test` in `frontend/`. `platform.spec.ts`
+  expects a live backend. `workbench-authoring.spec.ts` drives the real frontend in Chromium with
+  the backend stubbed at the network boundary (`page.route`), so it checks the drafting surface,
+  not that the backend accepts a draft. `E2E_PORT` moves the server off 3000, and `E2E_PROD=1`
+  serves a production build (`next build` first) instead of the dev server, which fails on a host
+  at its file-watch limit.
 
 ---
 
@@ -338,7 +366,9 @@ python3 scripts/py_lock.py relock --upgrade    # moves every pin to the newest t
 ```
 
 `relock` writes the four locks and `requirements/lock-inputs.json`, the fingerprint the gate's
-`python-lock` step compares. A dependency edit without a re-lock fails that step, naming the
+`python-lock` step compares. It passes uv `--refresh-package` for each local package the `.in`
+file names, so a version bump of one (causal-core 0.10 to 0.11) is resolved from the source, not
+from uv's cached build of the old version; index packages keep their cache. A dependency edit without a re-lock fails that step, naming the
 file and the command. The step also requires your local environments to equal their locks, so
 after a re-lock (or a pull that brought one), bring them back in line:
 
@@ -410,7 +440,7 @@ used anywhere.
 ## 9. Observability
 
 The backend logs structured events with `structlog`: `auth.*`, `governance.*`, `registry.*`,
-`plan_ahead.*`, `drift_sensor.*`, and so on. Every Guardian verdict is a row in `audit_log`.
+`plan_ahead.*`, `drift_monitor.*`, and so on. Every Guardian verdict is a row in `audit_log`.
 There is no metrics pipeline, dashboard or alerting on these. With `ENV=local`, the verdict
 signing key's absence is logged at CRITICAL (`guardian.signing_key.ephemeral`); with any other
 `ENV` it stops start-up instead.

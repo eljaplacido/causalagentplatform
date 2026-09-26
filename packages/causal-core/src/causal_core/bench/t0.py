@@ -497,6 +497,29 @@ TRIANGULATION_POWER_CASE = EstCase(
 )
 
 
+def _harmless_interaction(n: int, rng: np.random.Generator) -> pd.DataFrame:
+    """Z1, Z2 ~ N(0,1); X ~ Bernoulli(logistic(0.8 Z1 + 0.8 Z2)); Y = X + Z1 + Z2 + 0.5 Z1 Z2 + e.
+
+    The outcome is not linear in the covariates, yet by the design's symmetry interacted
+    regression adjustment is unbiased for the ATE (= 1). T0 v4 reports how often the
+    outcome-model specification test flags it: what the test costs, not what it catches.
+    """
+    z1, z2 = rng.normal(size=n), rng.normal(size=n)
+    x = (0.8 * z1 + 0.8 * z2 + rng.logistic(size=n) > 0).astype(float)
+    y = x + z1 + z2 + 0.5 * z1 * z2 + rng.normal(size=n)
+    return pd.DataFrame({"Z1": z1, "Z2": z2, "X": x, "Y": y})
+
+
+TRIANGULATION_HARMLESS_CASE = EstCase(
+    "harmless_interaction",
+    "Z1 -> X; Z2 -> X; Z1 -> Y; Z2 -> Y; X -> Y",
+    {},
+    binary=frozenset({"X"}),
+    sampler=_harmless_interaction,
+    truth_value=1.0,
+)
+
+
 # ── runners ───────────────────────────────────────────────────────────────────
 
 FAST_POLICY: dict[str, Any] = {"refuters": (), "sensitivity": False}
@@ -664,6 +687,7 @@ class RateReport:
     false_alarms: dict[str, float]
     power: dict[str, float]
     failures: list[str]
+    reported: dict[str, float] = field(default_factory=dict)
 
     @property
     def passed(self) -> bool:
@@ -707,14 +731,33 @@ def check_refuters(
     return RateReport(fa, power, failures)
 
 
-def _triangulation_rate(args: tuple[EstCase, int, int, int, int]) -> list[bool]:
+@dataclass(frozen=True)
+class TriRecord:
+    disagree: bool
+    contested: bool
+    covered: bool
+    pairwise_disagree: bool  # the v3 rule: estimator contrasts alone
+
+
+def _triangulation_records(args: tuple[EstCase, int, int, int, int]) -> list[TriRecord]:
     case, idx, n, reps, seed = args
-    fired = []
+    alpha = AnalysisPolicy().triangulation_alpha
+    recs = []
     for r in range(reps):
         out = _one_rep(case, n, seed, idx, r, FAST_POLICY)
         if isinstance(out, CausalResult) and out.triangulation is not None:
-            fired.append(not out.triangulation.agree)
-    return fired
+            tri = out.triangulation
+            pvals = [float(2 * stats.norm.sf(abs(p.z))) for p in tri.pairs]
+            ci = out.primary.ci
+            recs.append(
+                TriRecord(
+                    disagree=not tri.agree,
+                    contested=out.status.value == "contested",
+                    covered=ci is not None and ci.lo <= case.truth <= ci.hi,
+                    pairwise_disagree=any(holm(pvals, alpha)) if pvals else False,
+                )
+            )
+    return recs
 
 
 def check_triangulation(
@@ -725,13 +768,13 @@ def check_triangulation(
     jobs = [
         (case, 200 + i, c["n"], reps, c["seed"]) for i, case in enumerate(TRIANGULATION_VALID_CASES)
     ]
-    res = _map(_triangulation_rate, jobs, parallel)
+    res = _map(_triangulation_records, jobs, parallel)
     failures = []
     fa = {
-        case.id: float(np.mean(v)) if v else math.nan
+        case.id: float(np.mean([r.disagree for r in v])) if v else math.nan
         for case, v in zip(TRIANGULATION_VALID_CASES, res, strict=True)
     }
-    pooled = [x for v in res for x in v]
+    pooled = [r.disagree for v in res for r in v]
     rate = float(np.mean(pooled)) if pooled else math.nan
     fa["pooled"] = rate
     if not pooled:
@@ -739,26 +782,67 @@ def check_triangulation(
     elif rate > c["false_alarm_max"]:
         failures.append(f"triangulation false-alarm rate {rate:.3f} > {c['false_alarm_max']}")
     power_reps = reps if reps != c["reps"] else c["power_reps"]
-    gated, reported = _map(
-        _triangulation_rate,
+    moderate_reps = reps if reps != c["reps"] else c["moderate_power_reps"]
+    mod_n = c["moderate_power_n"]
+    gated, moderate, harmless = _map(
+        _triangulation_records,
         [
             (TRIANGULATION_POWER_CASE, 299, c["power_n"], power_reps, c["seed"]),
-            (TRIANGULATION_POWER_CASE, 298, c["n"], reps, c["seed"]),
+            # index 298: the same draws as the v2/v3 reported power at n = 2,000
+            (TRIANGULATION_POWER_CASE, 298, mod_n, moderate_reps, c["seed"]),
+            (TRIANGULATION_HARMLESS_CASE, 297, c["n"], reps, c["seed"]),
         ],
         parallel,
     )
-    power_rate = float(np.mean(gated)) if gated else 0.0
+    power_rate = float(np.mean([r.disagree for r in gated])) if gated else 0.0
     if power_rate < c["power_min"]:
         failures.append(
             f"triangulation power at n={c['power_n']}: {power_rate:.3f} < {c['power_min']}"
         )
+    # v4: detected means the flag fired AND changed the status.
+    mod_rate = float(np.mean([r.disagree and r.contested for r in moderate])) if moderate else 0.0
+    if mod_rate < c["moderate_power_min"]:
+        failures.append(
+            f"triangulation power at n={mod_n} (disagree and contested): "
+            f"{mod_rate:.3f} < {c['moderate_power_min']}"
+        )
+    k = len(moderate)
+    hits = sum(r.covered for r in moderate)
+    cov = hits / k if k else 0.0
+    cov_p = float(stats.binomtest(hits, k, 0.95).pvalue) if k else 0.0
+    if cov_p < c["moderate_power_coverage_alpha"]:
+        failures.append(
+            f"primary coverage on {TRIANGULATION_POWER_CASE.id}@n={mod_n}: {cov:.3f} "
+            f"(binomial p={cov_p:.2g} < {c['moderate_power_coverage_alpha']})"
+        )
+    everything = [r for v in (*res, gated, moderate, harmless) for r in v]
+    flagged = [r for r in everything if r.disagree]
+    consistency = float(np.mean([r.contested for r in flagged])) if flagged else 1.0
+    if consistency < c["status_consistency_required"]:
+        failures.append(
+            f"status consistency {consistency:.3f} < {c['status_consistency_required']}: "
+            "a triangulation disagreement left the result uncontested"
+        )
     power = {
         f"{TRIANGULATION_POWER_CASE.id}@n={c['power_n']} (gated)": power_rate,
-        f"{TRIANGULATION_POWER_CASE.id}@n={c['n']} (reported)": float(np.mean(reported))
-        if reported
-        else 0.0,
+        f"{TRIANGULATION_POWER_CASE.id}@n={mod_n} (gated, disagree and contested)": mod_rate,
     }
-    return RateReport(fa, power, failures)
+    reported = {
+        f"{TRIANGULATION_POWER_CASE.id}@n={mod_n} primary coverage": cov,
+        f"{TRIANGULATION_POWER_CASE.id}@n={mod_n} primary coverage binomial p": cov_p,
+        f"{TRIANGULATION_POWER_CASE.id}@n={mod_n} pairwise contrasts alone (v3 rule)": float(
+            np.mean([r.pairwise_disagree for r in moderate])
+        )
+        if moderate
+        else 0.0,
+        f"{TRIANGULATION_HARMLESS_CASE.id}@n={c['n']} flag rate": float(
+            np.mean([r.disagree for r in harmless])
+        )
+        if harmless
+        else math.nan,
+        "status consistency": consistency,
+    }
+    return RateReport(fa, power, failures, reported)
 
 
 # ── the gate ──────────────────────────────────────────────────────────────────
@@ -850,6 +934,7 @@ def run_gate(prereg: Path | None = None, parallel: bool = True) -> dict[str, Any
             "failures": tri.failures,
             "false_alarms": tri.false_alarms,
             "power": tri.power,
+            "reported": tri.reported,
         },
     }
     return {

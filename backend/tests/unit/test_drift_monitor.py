@@ -389,6 +389,44 @@ async def test_alert_emit_called(db_engine: object) -> None:
     assert captured_alert["context"]["evidence"]["kl_divergence"] == 0.8
 
 
+async def test_alert_emit_skill_emits_through_alert_emitter(db_engine: object) -> None:
+    """
+    The alert_emit skill, dispatched as a skill, emits through AlertEmitter.
+
+    _execute_skill never passed the state on, so the skill always took its
+    "legacy" branch: it reported emitted=True with a Kafka topic name while
+    emitting nothing (no Kafka producer exists; register kafka-streaming).
+    """
+    from src.sensors.alert_emit import Alert
+
+    agent = DriftMonitorAgent()
+    state = make_drift_state()
+    calls: list[dict[str, object]] = []
+
+    async def mock_emit(*, severity, alert_type, message, context):  # noqa: ANN001, ANN202
+        calls.append({"alert_type": alert_type})
+        return Alert(
+            alert_id="a-1", timestamp=datetime.now(UTC), severity=severity,
+            alert_type=alert_type, message=message, source="test", context=context,
+        )
+
+    agent._alert_emitter.emit = mock_emit  # type: ignore[method-assign]
+    out = await agent._execute_skill(
+        "alert_emit", {"alert_type": "SEVERE_DISTRIBUTION_DRIFT", "severity": "HIGH"}, state
+    )
+    assert calls == [{"alert_type": "SEVERE_DISTRIBUTION_DRIFT"}]
+    assert out["emitted"] is True and out["alert_id"] == "a-1"
+    assert "topic" not in out  # no message bus: nothing is published to a topic
+    assert out["channel"] == "AlertEmitter (in-process)"
+
+
+async def test_alert_emit_without_state_emits_nothing_and_says_so(db_engine: object) -> None:
+    agent = DriftMonitorAgent()
+    out = await agent._skill_alert_emit({"alert_type": "X"})
+    assert out["emitted"] is False
+    assert "topic" not in out
+
+
 # ── 11. Drift types tracked in explanation ──────────────────────────────────
 
 

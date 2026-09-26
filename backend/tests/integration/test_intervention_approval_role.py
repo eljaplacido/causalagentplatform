@@ -112,9 +112,20 @@ async def test_an_sre_can_decide(
     assert record["signature"] is None
 
 
-async def test_reading_interventions_needs_no_role(
+async def test_reading_interventions_needs_a_platform_role(
     plain_client: AsyncClient, db_engine: object
 ) -> None:
-    """Only deciding is restricted. Anyone authenticated may look."""
+    """Deciding needs a decision role; looking needs any platform role, a viewer's
+    included. A token holding none read the decisions (reason, decided_by) until
+    the reads took matrix rows."""
     resp = await plain_client.get("/api/v1/interventions/pending")
+    assert resp.status_code == 403
+    viewer = {**_NO_ROLE, "roles": ["viewer"]}
+    with patch("src.middleware.auth._verify_firebase_token", new=AsyncMock(return_value=viewer)):
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+            headers={"Authorization": "Bearer t"},
+        ) as client:
+            resp = await client.get("/api/v1/interventions/pending")
     assert resp.status_code == 200

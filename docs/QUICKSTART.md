@@ -111,7 +111,8 @@ DATABASE_URL=postgresql+asyncpg://causal_app:<that secret>@<host>:5432/<db>
 
 Against the compose stack (§4) that is
 `postgresql+asyncpg://causal_app:causal_app_local_dev@localhost:5432/causalplatform`: its init
-script sets that local-dev password. Migrations and seeding run as the owner (`causal`).
+script sets that local-dev password. Migrations run as the owner (`causal`); seeding (§8) runs as
+`causal_app` or the owner.
 
 The dev auth bypass works only with `ENV=local`, so a local session with the bypass is always on
 SQLite. The causal graph is always in SQL. Neo4j is used only when `NEO4J_URI` is set, for the
@@ -136,9 +137,27 @@ setting both `NAME` and `NAME_FILE` is an error. To rotate the key, list the old
 restart; unspent verdicts signed with the old key keep working until you remove it from the list.
 `docs/CYBERSECURITY.md` §8.2 has the details.
 
-**LLM providers.** `backend/.env.example` lists them, and `src/agents/llm_factory.py` can build a
-client for each, but no agent or skill calls it today (`llm-routing-no-callers` in the register).
-Nothing needs an API key to run.
+**LLM (optional, local-first).** The platform runs without any model: every number, verdict and
+explanation has a deterministic source, and that is what you get with nothing configured. With a
+model, two paths use it for *language only* -- the SimulationAgent's draft explanation and
+`POST /api/v1/decisions` with `"narrate": true` -- and a reply is kept only if every number in it
+is a claim of the kernel's outcome (PR-002 grounding); otherwise the deterministic text is shown,
+with the reason (`docs/AGENTS.md` §7). To use a local Ollama, no API key and no cloud cost:
+
+```bash
+ollama pull qwen2.5:7b-instruct            # or any instruct model your host can run
+echo "OLLAMA_BASE_URL=http://127.0.0.1:11434" >> backend/.env
+echo "OLLAMA_CAUSAL_MODEL=qwen2.5:7b-instruct" >> backend/.env   # the default names a 122B model
+```
+
+`LLM_TIMEOUT_SECONDS` (default 60) bounds each call. `backend/.env.example` lists the cloud
+providers too; Ollama wins when both are set. The tests never need a model: the suite clears the
+provider variables and uses a fake chat model. One live test runs against your Ollama on request:
+
+```bash
+cd backend && LLM_LIVE=1 OLLAMA_BASE_URL=http://127.0.0.1:11434 \
+  OLLAMA_CAUSAL_MODEL=qwen2.5:7b-instruct pytest -m llm_live -s --no-cov tests/unit/test_llm_routing_used.py
+```
 
 > **Security:** never commit `.env` files. They are gitignored.
 
@@ -224,7 +243,7 @@ written here. Pieces, when iterating:
 
 ```bash
 cd backend && .venv/bin/pytest -q                          # backend suite, on SQLite
-cd packages/causal-core && .venv/bin/pytest                # kernel, incl. the T0 and T4-T8 gates
+cd packages/causal-core && .venv/bin/pytest                # kernel, incl. the T0 and T4-T10 gates
 cd packages/causal-decision && ../causal-core/.venv/bin/pytest   # decision layer, incl. D0 and A0
 cd frontend && npm run type-check && npx vitest run        # frontend
 ```
@@ -278,6 +297,23 @@ cd backend
 .venv/bin/python -m scripts.seed_data --clear        # remove seeded data
 ```
 
+The seeder runs on SQLite (`ENV=local`, the default) and on PostgreSQL, where it may connect as
+`causal_app`: it writes inside a service scope, which the row-level-security policies let write
+every domain, and it needs only the `INSERT`/`UPDATE` grants `causal_app` has
+(`backend/tests/integration/test_seed_data_backends.py`). Incidents are upserted on their fixed
+ids; the rest is added anew each run, and on PostgreSQL a second `--all` without `--clear` stops
+at the first graph fragment, which is unique on (name, version, domain) there.
+
+`--clear` deletes the seeder's rows from the tables that allow a delete: graph fragments and
+entities whose `created_by` is the seeder, edges whose Guardian verdict is a seeder audit row, and
+incidents the seeder submitted. It never touches an append-only table (`audit_log`,
+`decision_records`, `decision_followups`, `causal_model_versions`, `decision_model_refs`), whose
+triggers refuse a delete: the seeder's audit rows stay, `--clear` reports how many it kept, and
+seeding again adds new ones. For a fully empty database, delete the SQLite file (`SQLITE_PATH`,
+default `backend/local_dev.db`) instead. On PostgreSQL `--clear` must run as the tables' owner;
+`causal_app` has no `DELETE` grant, and as `causal_app` it refuses before deleting anything
+(`backend/tests/integration/test_seed_data_clear.py`).
+
 With `ENV=local` and `DEV_AUTH_BYPASS=true`, the backend accepts the fixed dev token
 `dev-local-token` (`backend/src/middleware/auth.py`) — it is not a real credential and is refused
 in any other configuration:
@@ -317,7 +353,7 @@ causalplatform/
 ├── benchmarks/              # pre-registered gates and their results
 ├── conformance/             # claim-contract schemas + the declared-not-implemented register
 ├── docs/                    # specifications, status page (CURRENT_STAGE.md), ADRs
-├── prompts/                 # prompt specifications (not loaded at runtime)
+├── prompts/                 # prompt templates (explanation_generate loaded at runtime; the rest specs)
 ├── scripts/                 # the gate's checks and ratchets
 ├── .gnomon/                 # agent harness surface; ci.sh is the gate
 ├── docker-compose.yml       # optional local services

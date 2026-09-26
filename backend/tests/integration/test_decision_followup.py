@@ -217,8 +217,12 @@ async def test_calibration_over_nothing_reports_no_rate(client: AsyncClient) -> 
     rep = resp.json()
 
     assert rep["n_decisions"] == 0
-    assert rep["point_in_interval_rate"] is None, "no data must not read as perfect calibration"
-    assert rep["acted_and_worthwhile_rate"] is None
+    assert rep["point_in_interval_rate"]["rate"] is None, (
+        "no data must not read as perfect calibration"
+    )
+    assert rep["acted_and_worthwhile_rate"]["rate"] is None
+    assert rep["acted_worthwhile_bounds"]["ci"] is None
+    assert rep["worthwhile_claimed_vs_confirmed"]["status"] == "could_not_resolve"
 
 
 async def test_calibration_counts_the_undecidable_beside_the_rates(client: AsyncClient) -> None:
@@ -239,7 +243,13 @@ async def test_calibration_counts_the_undecidable_beside_the_rates(client: Async
     assert rep["n_decidable"] == 1
     assert rep["n_undecidable"] == 1
     assert sum(rep["undecidable_by_reason"].values()) == 1
-    assert rep["point_in_interval_rate"] is not None, "one decidable measurement is a rate of one"
+    # One decidable measurement used to read as a rate of one. It is counted now, and the
+    # division is refused until the registered minimum (C0) stands behind it.
+    rate = rep["point_in_interval_rate"]
+    assert rate["denominator"] == 1
+    assert rate["rate"] is None and rate["ci"] is None
+    assert str(rep["min_followups"]) in rate["refused"]
+    assert rep["acted_worthwhile_bounds"]["unresolved"] == 1, "the rollout is an unknown"
     assert "not missing at random" in rep["note"]
 
 

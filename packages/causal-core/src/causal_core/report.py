@@ -34,8 +34,12 @@ def _template(out: CausalResult) -> str:
     )
     if out.triangulation is not None:
         others = ", ".join(out.triangulation.estimators[1:])
-        verdict = "agree" if out.triangulation.agree else "DISAGREE"
-        lines.append(f"Cross-checked against {others}: estimators {verdict}.")
+        verdict = (
+            "estimators agree"
+            if out.triangulation.agree
+            else "DISAGREE (an estimator contrast or the outcome-model specification test)"
+        )
+        lines.append(f"Cross-checked against {others}: {verdict}.")
     failed = [r.name for r in out.refutations if not r.passed]
     passed = [r.name for r in out.refutations if r.passed]
     if passed:

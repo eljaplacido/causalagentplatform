@@ -5,9 +5,10 @@
 > **Decision Owner:** Platform Architecture
 > **Trigger:** [Missing Standards for Agentic Data Engineering report](research/missing-standards-agentic-data-engineering.md) (§2 Provenance, §4 Data Contracts)
 > **Replaces:** N/A — new capability
-> **Read against the code:** 2026-09-25. The models, the endpoints and the Guardian rule exist,
-> but no running flow feeds any of them. See *Implementation Status*, and registers
-> `provenance-store-no-callers`, `llm-routing-no-callers` and `data-contracts-not-enforced` in
+> **Read against the code:** 2026-09-26. Provenance is durable and append-only, and session
+> runs, Guardian checks and decisions write it. No LLM call is made, so no invocation is captured,
+> and no running flow feeds the data contracts or PR-009. See *Implementation Status*, and
+> registers `llm-routing-no-callers` and `data-contracts-not-enforced` in
 > [`conformance/declared_not_implemented.json`](../conformance/declared_not_implemented.json).
 
 ## Summary
@@ -46,19 +47,34 @@ Two critical gaps identified from cross-referencing the 2026 standards landscape
    - `GET /api/v1/provenance/trace/{session_id}` — full provenance trace
    - `GET /api/v1/provenance/export/{session_id}` — W3C PROV-JSON export
    - `GET /api/v1/provenance/invocations/{session_id}` — LLM invocation listing
+   - `POST /api/v1/provenance/session/{session_id}/erasure` — hide a session's records behind a
+     tombstone (a reason is required)
    - All four provenance routes need a governance role (`governance_officer` or
      `platform_engineer`; the role matrix, CYBERSECURITY.md §4.0)
-   - Provenance store: two module-level dicts in `src/api/provenance.py`, keyed by session id.
-     They are not written to any database and are lost on restart. `DELETE
-     /api/v1/provenance/session/{session_id}` clears a session's records (register
-     `provenance-not-append-only`)
+   - Provenance store: `src/semantic_layer/provenance_store.py` over tables
+     `provenance_entries` and `provenance_erasures` (migration `011_provenance.sql`, and the
+     SQLite schema). Both are append-only: no role is granted UPDATE or DELETE, and a trigger
+     refuses both. An erasure is a row saying which session, who, when and why; the reads stop
+     returning that session's earlier records and return the tombstone instead. The records
+     stay in the database, so an erasure is not GDPR Art. 17 erasure (register `gdpr-controls`)
+   - Who writes (`src/semantic_layer/provenance_capture.py`): session runs and incident sessions
+     (the agent, the run, each reasoning step it added, input and output as digests); every
+     Guardian check (`GovernanceAgent.check`, an activity citing its `audit_log` row, in the same
+     transaction); and `POST /api/v1/decisions` (data, graph, analysis and ledger entry, under
+     session `decision:<entry_digest>`)
 
 3. **Module `src/agents/llm_factory.py`** extended with:
    - `_ProvenanceCapturingLLM` wrapper that auto-captures LLMInvocation on every call
-   - Optional `session_id` and `agent_id` params on `get_llm()` enable provenance tracking
-   - Best-effort capture (never blocks on provenance failure)
-   - **Status:** the wrapper exists, but `get_llm` has no callers, so nothing is captured
-     (register `llm-routing-no-callers`)
+   - Optional `session_id` and `agent_id` params on `get_llm()` enable provenance tracking, and
+     `prompt_template_id` / `prompt_template_hash` name the versioned template the prompt was
+     rendered from
+   - Best-effort capture (never blocks on provenance failure; a failed capture is logged)
+   - **Status:** exercised. The SimulationAgent's narration and `POST /api/v1/decisions` with
+     `narrate: true` call `get_llm(session_id=..., agent_id=..., prompt_template_id=...,
+     prompt_template_hash=...)` (`src/agents/narration.py`), and every call -- successful or
+     failed -- appends an `LLMInvocation` with provider, model, capability, template id and hash,
+     temperature, token counts when the provider reports them, and latency. It is appended to the
+     durable, append-only provenance store (`src/semantic_layer/provenance_store.py`)
 
 4. **Prompt `prompts/provenance_trace.yaml`** for the `provenance_trace` skill. The file exists,
    and no code loads it
@@ -102,27 +118,27 @@ The Status column was PASS on every row when the ADR was written. As read agains
 |--------|--------|-------|
 | EpistemicState contract preserved | PASS | Provenance records are separate from state; they do not mutate it |
 | Guardian-gated writes enforced | NOT MET | Nothing writes contract violations, and PR-009 never sees a real one |
-| Audit trail integrity maintained | NOT MET | The provenance store is not append-only: `DELETE /api/v1/provenance/session/{id}` clears it. It is not part of `audit_log` |
-| Provider-agnostic implementation | PASS, unexercised | The capture wrapper is provider-agnostic; no call goes through it |
+| Audit trail integrity maintained | PASS | Provenance is append-only (`011_provenance.sql`); an erasure is a kept tombstone. It is a separate table from `audit_log`; a Guardian check's provenance record cites its `audit_log` row and is written in the same transaction |
+| Provider-agnostic implementation | PASS | The capture wrapper is provider-agnostic; the narration calls go through it, with local Ollama as the first provider |
 | PII handling compliant | NOT ASSESSED | Nothing pseudonymises identifiers (see CYBERSECURITY.md §5) |
 
 ## Risk Assessment
 
 | Risk | Severity | Mitigation |
 |------|----------|------------|
-| Provenance graph size explosion | MEDIUM | TTL-based expiry matching audit_log retention; periodic pruning |
-| Contract enforcement latency | LOW | Contract checks are O(1) in-memory lookups; Redis cache for production |
+| Provenance graph size explosion | MEDIUM | Not built. The mitigation first proposed, TTL-based expiry and pruning, would delete rows the store keeps append-only; retention has to be designed against that rule |
+| Contract enforcement latency | LOW | Contract checks are O(1) in-memory lookups (`ContractRegistry` holds contracts in process; nothing persists or caches them elsewhere) |
 | PROV-AGENT spec divergence | MEDIUM | Track upstream changes; abstract via internal model layer |
 | Agent blocking on stale data | MEDIUM | DEGRADED mode allows read with warning; BLOCK mode only for PR-009 critical paths |
 
 ## Dependencies
 
-- `src/agents/llm_factory.py`: the LLMInvocation capture wrapper exists; `get_llm` has no callers
+- `src/agents/llm_factory.py`: the LLMInvocation capture wrapper, reached by `src/agents/narration.py`
 - `src/api/main.py` registers the provenance router (implemented)
 - `src/agents/governance.py`: the PR-009 rule exists; no caller sends the action type it checks
-- Persistence: none. The provenance store is in-memory and process-scoped; no database (Neo4j or SQL) holds it
+- Neo4j: future work. Provenance is stored in PostgreSQL (SQLite locally), not in a graph store
 
-## Implementation Status (read against the code 2026-09-25)
+## Implementation Status (read against the code 2026-09-26)
 
 Test counts and coverage are not written down here, because they would go stale. The suite and
 its coverage are reported by `.gnomon/ci.sh` on every run.
@@ -131,24 +147,26 @@ its coverage are reported by `.gnomon/ci.sh` on every run.
 |---|---|---|
 | `src/semantic_layer/provenance.py` | Implemented: the PROV models | `tests/unit/test_provenance.py` |
 | `src/semantic_layer/contracts.py` | Models and a lookup registry. No contract evaluation; register `data-contracts-not-enforced` | `tests/unit/test_contracts.py` |
-| `src/api/provenance.py` | Implemented (endpoints and in-memory store). Nothing writes to the store; register `provenance-store-no-callers` | `tests/unit/test_provenance.py` |
-| `src/agents/llm_factory.py` capture hook | Written; unreachable, since `get_llm` has no callers (register `llm-routing-no-callers`) | -- (the factory is tested; the wrapper is not) |
+| `src/api/provenance.py`, `src/semantic_layer/provenance_store.py` | Implemented: durable, append-only, erasure by tombstone | `tests/integration/test_provenance_append_only.py` |
+| Provenance written by running flows | Implemented for session runs, Guardian checks and decisions | `tests/integration/test_provenance_flow.py` |
+| `src/agents/llm_factory.py` capture hook | Implemented; writes to the durable store, reached by the narration callers, records the template id and hash | `tests/unit/test_llm_routing_used.py`, `tests/unit/test_prompt_templates_loaded.py`, `tests/integration/test_provenance_flow.py` |
 | `src/agents/governance.py` PR-009 | Rule written; no caller sends `DATA_ACCESS_WITH_CONTRACT` | -- |
 | `prompts/provenance_trace.yaml` | Created; not loaded by any code | -- |
 
 ## Consequences
 
 ### Positive (intended; see Implementation Status for what holds)
-- An LLM call made through `get_llm(session_id=..., agent_id=...)` would capture invocation
-  metadata. No call is made
-- Provenance traces are queryable via API endpoints. The store they read is empty unless a test
-  fills it
+- An LLM call made through `get_llm(session_id=..., agent_id=...)` captures invocation metadata,
+  including the prompt template it was rendered from. The narration calls are the ones made
+- Provenance traces are queryable via API endpoints, for session runs, Guardian checks and
+  decisions
 - Data contracts would enforce freshness SLAs at runtime. Nothing evaluates a contract today
 - Guardian PR-009 would gate agent actions on contract compliance, given a violation list from
   something other than the caller
 
 ### Negative
-- In-memory provenance store is session-scoped; durable persistence is not built
+- Provenance grows without bound: append-only rows, and an erasure adds a row rather than
+  freeing one. No retention or pruning exists (see *Risk Assessment*)
 - LLM invocation capture adds a small overhead per call (best-effort, non-blocking)
 - Data contract enforcement requires manual contract registration (no UI yet)
 

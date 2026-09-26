@@ -27,7 +27,7 @@ sustainability investment assurance follow, in that order.
 | Retrieve the assumptions and evidence that apply | Done for causal models: `causal_decision.assumptions` and `/api/v1/models` keep each model as immutable, content-addressed versions whose edges carry origin and review status, and a decision names the version it used. Missing: retrieving evidence (documents, metrics) for an edge; nothing links it |
 | Decide identified / partially identified / unsupported | Done, except bounds: complete ID, back-door with the optimal adjustment set, front-door, conditional IV, proximal; 11 typed refusals, each with what is missing |
 | Estimate impact and uncertainty | Done for ATE and ATT with coverage-tested intervals; for effects within declared segments with family-wise correction and a heterogeneity test (pre-registered T4); for staggered rollouts by difference-in-differences with unit-clustered intervals and a pre-trends test, against never-treated or not-yet-treated units and, with covariates, doubly robust (T5); for watched randomized rollouts by anytime-valid confidence sequences (T6); for cluster-randomized rollouts with CR2 cluster-robust intervals (T7); and for switchbacks, where the caller chooses a washout that covers the carryover (T8). Missing: policy value, spillovers between units, DiD with anticipation or repeated cross-sections, a carryover check with real power, and subgroup *discovery* |
-| Robustness checks | Done: placebo, negative controls, graph-implied independences with measured power, overlap, balance, E-values, robustness values |
+| Robustness checks | Done: placebo, negative controls, graph-implied independences with measured power, overlap (honest covariate regions and a limited-overlap flag, T10), balance, E-values, robustness values, and Rosenbaum bounds on a matched design for back-door designs with a binary treatment (T9). Missing: a sensitivity model for the weighted estimators themselves |
 | Decide: act, ask, experiment, refuse | Done: `packages/causal-decision` turns an outcome, a request and a policy into one verdict, deterministically, gated by the pre-registered D0 suite (v3: 19 scenarios, 8 properties, 8 seeded defects). Declared segments reach the verdict -- an action that harms one of them is not automated on a favourable pooled effect -- and so does a difference-in-differences result's parallel-trends breakdown: a conclusion a violation smaller than the pre-adoption ones would flip is sent to an experiment |
 | Evidence record | Partial: every result and every decision carries digests of its inputs and itself, decisions are persisted into a verified hash chain with the observed outcome recorded against them, and the model version a decision used is recorded. Checkpoints of the chain head can be taken and verified against (`/api/v1/decisions/checkpoint`, `/verify-anchored`). Missing: publishing a checkpoint somewhere the writer cannot edit |
 | Recommend the next experiment | Done for the case the layer can size: randomized units, with the minimum detectable effect, per-arm size, duration and guardrails. Clustered, switchback and sequential designs are not sized |
@@ -81,11 +81,13 @@ sustainability investment assurance follow, in that order.
    was not the arithmetic: calibrating a causal prediction needs a causal estimate afterwards,
    and an action rolled out to everybody leaves no comparison group. That case is the kernel's
    own refusal, recorded as an undecidable measurement and counted beside the rates rather than
-   dropped — those decisions are not missing at random. What remains is operational history:
-   until follow-ups have been taken, every rate reads null, and the thresholds are consistent
-   rather than calibrated (`decision-thresholds-uncalibrated`). The gate that would judge that
-   evidence — a minimum follow-up count, intervals on each rate, "could not resolve" kept apart
-   from "no difference" — is `septa-10`.
+   dropped — those decisions are not missing at random. The report that would judge the
+   evidence is built and gated (`septa-10`, the C0 gate, on simulated streams): a rate only from
+   ten follow-ups or more, each with a Clopper-Pearson interval, undecidable follow-ups carried
+   into worst-case bounds, and "could not resolve" kept apart from "no difference". What remains
+   is operational history: no follow-up has been taken on a real operation, so every rate is
+   refused, and the thresholds are consistent rather than calibrated
+   (`decision-thresholds-uncalibrated`).
 6. **Domain packs.** Operations first, then energy flexibility. Not yet on the ledger.
 
 ## What is next
@@ -112,11 +114,11 @@ priority first, and the priorities put hardening the platform before new estimat
   SQLite, on the schema the migrations build: it found that the Guardian could not write
   `audit_log` there and that `session_state` and `incidents` had no migration, and both are
   fixed (`septa-52`, gate step `backend-pytest-postgres`). No SQL in `backend/src` is built
-  from strings, and bandit enforces it (`septa-50`). Rejecting a draft needs an APPROVED
-  Guardian verdict for `GOVERNANCE_REJECT` on that draft, as approving needs one for
-  `GOVERNANCE_APPROVE`, and the governance page sends the reviewer's classification with
-  both; it used to need a REJECTED verdict, which a classified reject request never got
-  (`septa-53`).
+  from strings, and bandit enforces it (`septa-50`). Approving a draft needs an APPROVED
+  Guardian verdict issued for `GOVERNANCE_APPROVE`, not one from a check for any other action
+  (`septa-60`), and rejecting one needs an APPROVED verdict for `GOVERNANCE_REJECT` on that
+  draft; the governance page sends the reviewer's classification with both. Rejecting used to
+  need a REJECTED verdict, which a classified reject request never got (`septa-53`).
 - **p1, release and drift.** Done: the gate checks that the skills and agent docs name only
   things that exist (`septa-3`), and the MCP tools' parameters are derived from `CausalQuery`,
   with a parity test (`septa-4`; it found `causal_impact` judging every earlier answer as
@@ -127,18 +129,33 @@ priority first, and the priorities put hardening the platform before new estimat
 - **p2, the kernel and decision layer.** Done: DiD with covariates (doubly robust) and
   not-yet-treated comparisons, T5 v4 (`septa-8`); a switchback carryover check with gated power
   whose flag makes the result contested, T8 v2 (`septa-9`; a carryover too small to bias the
-  estimate materially stays undetectable at T8's sizes, and is reported). Open: step 3's
-  remaining estimator (`septa-7`), calibration (`septa-10`), anchoring (`septa-11`), Rosenbaum bounds (`septa-12`),
-  Guardian PR-007 (`septa-33`), positivity detection and triangulation at moderate n (`septa-34`,
-  `septa-35`), and the review queue's risk tier (`septa-36`).
-- **p3 and p4.** The rest of the register (versioned semantic objects, lineage,
-  provenance, the LLM layer, Cynefin routing, frontend views and others), then the longer-range
+  estimate materially stays undetectable at T8's sizes, and is reported); Guardian PR-007, no
+  edge approved without a sensitivity result stored on an assumption it rests on (`septa-33`; since `062f57d` only one the
+  platform recorded for the edge counts, not a drafter's own), and the kernel's sensitivity
+  analysis of a draft edge recorded there when the platform runs it (`septa-62`); Rosenbaum bounds on
+  a matched design, T9 (`septa-12`); positivity detection by honest overlap regions and a
+  limited-overlap flag, T10 and T2 v2 (`septa-34`; four-way strata and exclusive-or patterns stay
+  undetected, and are recorded); triangulation at moderate n through an outcome-model
+  specification test, T0 v4 (`septa-35`; it also flags nonlinearity that does not bias the
+  estimate);
+  the review queue ordered by a risk tier derived from stored fields, with who submitted each
+  item (`septa-36`). Open: step 3's remaining estimator (`septa-7`), calibration evidence (`septa-10`: the report
+  and its simulated C0 gate are built; real follow-ups are not),
+  and anchoring (`septa-11`).
+- **p3 and p4.** Done: provenance is durable and append-only, with erasure as a tombstone, and
+  session runs, Guardian checks and decisions write it (`septa-48`, `septa-16`). The rest of the
+  register (versioned semantic objects, lineage, the LLM layer, Cynefin routing, frontend views
+  and others), then the longer-range
   methods: discovery, rung-3 counterfactuals, general ID estimation, subgroup discovery. Many of
   these end either in the capability or in its claim being withdrawn from the docs.
   Four have ended that way: EconML/PyMC backends, the `cynepic-*` Rust crates, Neo4j as the
   causal graph store and Kafka streaming were claimed and never built, and are not needed by the
   product, so the claims were withdrawn and the idle Kafka and Redis services removed
   (`econml-pymc`, `rust-crates`, `neo4j-graph-store`, `kafka-streaming` in `left_the_list`).
+  Of the frontend views, the decision ledger (`/decisions`) and the assumption registry
+  (`/registry`) are built (`septa-24`); the DAG Workbench proposes a fragment through the governed
+  draft route but stays `partial` (`dag-workbench`): it authors no new edges, and its e2e spec
+  stubs the backend.
 
 ## What this project will not do first
 

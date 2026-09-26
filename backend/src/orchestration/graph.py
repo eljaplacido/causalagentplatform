@@ -4,14 +4,18 @@ LangGraph StateGraph for the Unified Enterprise Causal Platform.
 Topology (AGENTS.md §5.1):
 
     Intake → CynefinClassify → [Router]
-        ├── CLEAR        → DirectAnswer → GuardianCheck → Output
-        ├── COMPLICATED  → CausalAnalysis → GuardianCheck → Output
-        ├── COMPLEX      → CausalDiscovery → GuardianCheck → Output
-        ├── CHAOTIC      → EscalateHuman → END
-        └── DISORDER     → DisorderProtocol → CynefinClassify [retry, max 1]
+        ├── CLEAR        → DirectAnswer ────┐
+        ├── COMPLICATED  → CausalAnalysis ──┼→ PlanAhead ─┬───────────────→ GuardianCheck → Output
+        ├── COMPLEX      → CausalDiscovery ─┘             └→ EscalateHuman → GuardianCheck → Output
+        ├── CHAOTIC      → EscalateHuman → GuardianCheck → Output
+        └── DISORDER     → DisorderProtocol → CynefinClassify [retry once, then EscalateHuman]
 
 Security invariants:
-  - GuardianCheck node runs before every Output node
+  - Every path ends GuardianCheck → Output: nothing reaches the caller without a
+    Guardian verdict written to audit_log. An escalation is ruled on and recorded
+    too (action_type GRAPH_HUMAN_ESCALATION): PR-003 for CHAOTIC, PR-006 for
+    DISORDER. Escalating was never meant to mean "ungoverned" -- it used to end
+    at END, leaving no record of the escalation or of why.
   - CHAOTIC domain routes immediately to human escalation
   - CircuitBreakerError terminates the graph and marks requires_human_review
   - All state transitions are appended to reasoning_steps (immutable audit)
@@ -19,7 +23,7 @@ Security invariants:
 
 from __future__ import annotations
 
-from typing import Literal, TypedDict
+from typing import Literal, NotRequired, TypedDict
 
 import structlog
 from langgraph.graph import END, StateGraph
@@ -55,6 +59,15 @@ class PlatformState(TypedDict):
 
     epistemic: EpistemicState
     disorder_retries: int  # tracks DISORDER retry count to prevent infinite loops
+    # The problem as submitted. CynefinClassify classifies this, not
+    # epistemic.draft_explanation, which agents overwrite with their own narrative:
+    # /incident used to re-classify the triage agent's "Incident classified as
+    # COMPLICATED ..." -- no keyword, so DISORDER -- instead of the incident.
+    description: NotRequired[str]
+    # Set by PlanAhead for this run (planning.node_plan_ahead documents the values).
+    plan_outcome: NotRequired[str | None]
+    # Set by EscalateHuman: why this run went to a person. GuardianCheck records it.
+    escalation_reason: NotRequired[str | None]
 
 
 # ── Node implementations ──────────────────────────────────────────────────────
@@ -94,7 +107,9 @@ async def node_cynefin_classify(state: PlatformState) -> PlatformState:
         classify_outputs, updated = await agent._call_skill(
             "cynefin_classify",
             {
-                "description": epistemic.draft_explanation or epistemic.agent_id,
+                "description": (
+                    state.get("description") or epistemic.draft_explanation or epistemic.agent_id
+                ),
                 "signals": {
                     "cycle_count": epistemic.cycle_count,
                     "active_assumptions": len(epistemic.active_assumptions),
@@ -197,19 +212,29 @@ async def node_guardian_check(state: PlatformState) -> PlatformState:
     """
     GuardianCheck node — mandatory pre-Output policy enforcement.
 
-    All outputs must pass the Guardian before being surfaced to the user.
-    Writes an audit entry for every check (immutability contract).
+    All outputs must pass the Guardian before being surfaced to the user, the
+    escalations included. Writes an audit entry for every check (immutability
+    contract).
     """
     epistemic = state["epistemic"]
     agent = GovernanceAgent(agent_id="guardian-check-node")
+    escalation_reason = state.get("escalation_reason")
 
+    # The payload is what the verdict is about, and its hash is what audit_log
+    # binds: the recommendations the caller will see are part of it, as are the
+    # plan's status and, on an escalation, why the run went to a person.
     action_payload = {
-        "action_type": "GRAPH_NODE_GUARDIAN_CHECK",
+        "action_type": (
+            "GRAPH_HUMAN_ESCALATION" if escalation_reason else "GRAPH_NODE_GUARDIAN_CHECK"
+        ),
         "proposed_edges": [e.model_dump() for e in epistemic.proposed_edges],
+        "recommendations": [r.model_dump() for r in epistemic.recommendations],
         "cynefin_domain": epistemic.cynefin_domain,
         "hallucination_risk_score": epistemic.hallucination_risk_score,
         "cycle_count": epistemic.cycle_count,
         "active_assumptions": [a.model_dump() for a in epistemic.active_assumptions],
+        "plan_outcome": state.get("plan_outcome"),
+        "escalation_reason": escalation_reason,
     }
 
     try:
@@ -243,45 +268,99 @@ async def node_guardian_check(state: PlatformState) -> PlatformState:
     return {"epistemic": epistemic, "disorder_retries": state.get("disorder_retries", 0)}
 
 
+#: Why a run went to a person: (explanation, directive rationale), by reason.
+_ESCALATIONS: dict[str, tuple[str, str]] = {
+    "chaotic_domain": (
+        "CHAOTIC domain: automated analysis suspended. "
+        "Route this incident to your human incident commander now.",
+        "CHAOTIC domain detected. Novel situation with no established causal "
+        "patterns. AI analysis suppressed. Human must: Stabilise → Act → Sense.",
+    ),
+    "disorder_unresolved": (
+        "DISORDER domain: the problem could not be classified, after one "
+        "re-classification attempt, so no analysis ran. A person must classify it "
+        "before anything is recommended.",
+        "The Cynefin domain is unresolved (DISORDER). No analysis ran and nothing "
+        "can be approved until a person classifies the problem.",
+    ),
+    "planning_no_safe_action": (
+        "Planning found no safe action: the lookahead estimated each candidate's "
+        "consequences and none survived. Escalating to human review.",
+        "FLARE lookahead found no candidate action safe to commit.",
+    ),
+    "circuit_breaker": (
+        "Circuit breaker open: maximum reasoning cycles reached. "
+        "Routing to human for resolution.",
+        "The reasoning-cycle limit was reached before an answer could be governed.",
+    ),
+}
+
+
+def _escalation_reason(state: PlatformState) -> str:
+    """Why this run is escalating -- from this run's state, not flags a resumed session carried."""
+    epistemic = state["epistemic"]
+    if state.get("plan_outcome") == "no_safe_action":
+        return "planning_no_safe_action"
+    if epistemic.cynefin_domain == CynefinDomain.CHAOTIC:
+        return "chaotic_domain"
+    if epistemic.cynefin_domain == CynefinDomain.DISORDER:
+        return "disorder_unresolved"
+    return "circuit_breaker"
+
+
 async def node_escalate_human(state: PlatformState) -> PlatformState:
     """
-    EscalateHuman node — CHAOTIC domain mandatory human escalation.
+    EscalateHuman node — route the run to a person, and say why.
 
-    Adds minimal framing and marks for immediate human review.
-    Per AGENTS.md: no automated approval permitted in CHAOTIC domain.
+    CHAOTIC (no automated approval, AGENTS.md), DISORDER still unresolved after one
+    retry, or a lookahead that found no safe action. The run then goes on to
+    GuardianCheck, which rules on the escalation and writes it to audit_log: an
+    escalation is a decision about the run and is recorded like one. The Guardian
+    cannot approve CHAOTIC (PR-003) or DISORDER (PR-006).
     """
     epistemic = state["epistemic"]
+    reason = _escalation_reason(state)
+    explanation, rationale = _ESCALATIONS[reason]
+    directive = Recommendation(
+        rank=1,
+        action="ESCALATE: Route to human decision-maker immediately.",
+        rationale=rationale,
+        confidence=1.0,
+        risk_tier="CRITICAL",
+    )
+    if reason == "chaotic_domain":
+        # AI analysis suppressed: the directive alone. /incident's triage agent may
+        # already have put its own escalation first; one directive, not two.
+        leading = epistemic.recommendations[:1]
+        if leading and leading[0].action.startswith("ESCALATE"):
+            recommendations = leading
+        else:
+            recommendations = [directive]
+    else:
+        recommendations = [
+            directive,
+            *(r.model_copy(update={"rank": r.rank + 1}) for r in epistemic.recommendations),
+        ]
     epistemic = epistemic.model_copy(
         update={
             "requires_human_review": True,
-            "flags": [*epistemic.flags, "human_escalation_required"],
+            "flags": [*epistemic.flags, "human_escalation_required", f"escalation:{reason}"],
             "guardian_verdict": GuardianVerdict.PENDING,
-            "recommendations": [
-                Recommendation(
-                    rank=1,
-                    action="ESCALATE: Route to human decision-maker immediately.",
-                    rationale=(
-                        "CHAOTIC domain detected. Novel situation with no established "
-                        "causal patterns. AI analysis suppressed. "
-                        "Human must: Stabilise → Act → Sense."
-                    ),
-                    confidence=1.0,
-                    risk_tier="CRITICAL",
-                ),
-                *epistemic.recommendations,
-            ],
-            "draft_explanation": (
-                "CHAOTIC domain: automated analysis suspended. "
-                "Route this incident to your human incident commander now."
-            ),
+            "recommendations": recommendations,
+            "draft_explanation": explanation,
         }
     )
     log.warning(
         "graph.escalate_human",
         session_id=epistemic.session_id,
         domain=epistemic.cynefin_domain,
+        reason=reason,
     )
-    return {"epistemic": epistemic, "disorder_retries": state.get("disorder_retries", 0)}
+    return {
+        "epistemic": epistemic,
+        "disorder_retries": state.get("disorder_retries", 0),
+        "escalation_reason": reason,
+    }
 
 
 async def node_disorder_protocol(state: PlatformState) -> PlatformState:
@@ -339,7 +418,10 @@ async def node_output(state: PlatformState) -> PlatformState:
             update={
                 "requires_human_review": True,
                 "flags": flags,
-                "draft_explanation": epistemic.draft_explanation + " [REJECTED by Guardian — human review required]",
+                "draft_explanation": (
+                    epistemic.draft_explanation
+                    + " [REJECTED by Guardian — human review required]"
+                ),
             }
         )
     elif epistemic.guardian_verdict == GuardianVerdict.REQUIRES_ESCALATION:
@@ -368,7 +450,9 @@ async def node_output(state: PlatformState) -> PlatformState:
 
 def route_after_cynefin(
     state: PlatformState,
-) -> Literal["direct_answer", "causal_analysis", "causal_discovery", "escalate_human", "disorder_protocol"]:
+) -> Literal[
+    "direct_answer", "causal_analysis", "causal_discovery", "escalate_human", "disorder_protocol"
+]:
     """Route to the appropriate analysis node based on Cynefin domain."""
     domain = state["epistemic"].cynefin_domain
     retries = state.get("disorder_retries", 0)
@@ -390,9 +474,13 @@ def route_after_cynefin(
 def route_after_disorder(
     state: PlatformState,
 ) -> Literal["cynefin_classify", "escalate_human"]:
-    """After disorder protocol, retry classify or escalate if max retries hit."""
-    retries = state.get("disorder_retries", 0)
-    if retries >= _MAX_DISORDER_RETRIES or state["epistemic"].requires_human_review:
+    """After disorder protocol, retry classify once; escalate past the retry limit.
+
+    This escalated whenever ``retries >= 1`` -- which it always is here, the
+    protocol having just counted itself -- so the documented retry never ran.
+    ``route_after_cynefin`` escalates a second DISORDER.
+    """
+    if state.get("disorder_retries", 0) > _MAX_DISORDER_RETRIES:
         return "escalate_human"
     return "cynefin_classify"
 
@@ -400,9 +488,13 @@ def route_after_disorder(
 def route_after_plan_ahead(
     state: PlatformState,
 ) -> Literal["guardian_check", "escalate_human"]:
-    """Route to guardian check, or escalate if planning found no safe action."""
-    epistemic = state["epistemic"]
-    if epistemic.requires_human_review and "no_safe_action_found" in epistemic.flags:
+    """Route to guardian check, or escalate if the lookahead found no safe action.
+
+    Reads this run's plan_outcome, not the flags: a resumed session carries the
+    flags of every earlier run. A plan nothing could simulate is not a finding
+    that no action is safe, and goes to the Guardian (planning.node_plan_ahead).
+    """
+    if state.get("plan_outcome") == "no_safe_action":
         return "escalate_human"
     return "guardian_check"
 
@@ -421,7 +513,7 @@ def build_platform_graph() -> StateGraph:
     """
     Build and return the compiled LangGraph StateGraph for the platform.
 
-    Topology mirrors AGENTS.md §5.1 exactly.
+    Topology mirrors AGENTS.md §5.1: every path ends GuardianCheck → Output.
 
     Returns an uncompiled StateGraph — call .compile() to get a runnable graph.
     """
@@ -479,8 +571,9 @@ def build_platform_graph() -> StateGraph:
     # Output → END
     graph.add_edge("output", END)
 
-    # CHAOTIC → END (human only)
-    graph.add_edge("escalate_human", END)
+    # Escalation → Guardian: the escalation is ruled on and written to audit_log
+    # (PR-003 for CHAOTIC, PR-006 for DISORDER) before the run returns.
+    graph.add_edge("escalate_human", "guardian_check")
 
     # DISORDER retry loop
     graph.add_conditional_edges(

@@ -128,6 +128,98 @@ def _merge_type_unions(node: Any) -> Any:
     return node
 
 
+def _drop_implied_types(node: Any) -> Any:
+    """``{"enum": ["a", "b"], "type": "string"}`` as ``{"enum": ["a", "b"]}``, the same for a
+    string ``const``, and a fixed-length tuple of one type, ``{"prefixItems": [A, A],
+    "minItems": 2, "maxItems": 2}``, as ``{"items": A, "minItems": 2, "maxItems": 2}``.
+
+    Each is the same schema (JSON Schema 2020-12, sections 6.1.1-6.1.3 and 10.3.1): a value
+    equal to one of the listed strings is a string, so the ``type`` keyword excludes nothing
+    the ``enum`` or ``const`` admits; and an array of exactly k elements each valid under A is
+    what both tuple forms accept. Pydantic writes the long forms.
+    """
+    if isinstance(node, dict):
+        out = {
+            k: (
+                {name: _drop_implied_types(sub) for name, sub in v.items()}
+                if k in ("properties", "$defs") and isinstance(v, dict)
+                else _drop_implied_types(v)
+            )
+            for k, v in node.items()
+        }
+        values = out.get("enum", [out["const"]] if "const" in out else None)
+        if (
+            out.get("type") == "string"
+            and isinstance(values, list)
+            and values
+            and all(isinstance(v, str) for v in values)
+        ):
+            out.pop("type")
+        prefix = out.get("prefixItems")
+        if (
+            isinstance(prefix, list)
+            and prefix
+            and "items" not in out
+            and out.get("minItems") == out.get("maxItems") == len(prefix)
+            and all(p == prefix[0] for p in prefix)
+        ):
+            out["items"] = out.pop("prefixItems")[0]
+        return out
+    if isinstance(node, list):
+        return [_drop_implied_types(v) for v in node]
+    return node
+
+
+#: Keywords that constrain only instances of one JSON type (JSON Schema 2020-12, sections
+#: 6.2-6.5 and 10.3): a null satisfies each of them vacuously.
+_TYPE_ONLY_KEYWORDS = {
+    "array": {"items", "prefixItems", "minItems", "maxItems", "uniqueItems"},
+    "string": {"minLength", "maxLength", "pattern", "format"},
+    "number": {"minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf"},
+    "integer": {"minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf"},
+    "object": {"properties", "required", "additionalProperties", "patternProperties",
+               "minProperties", "maxProperties"},
+}
+
+
+def _merge_nullable(node: Any) -> Any:
+    """``{"anyOf": [X, {"type": "null"}]}`` as a nullable X, when that is the same schema.
+
+    Two cases (JSON Schema 2020-12): X has one ``type`` and otherwise only keywords that apply
+    to that type, so ``{**X, "type": [T, "null"]}`` accepts null (those keywords ignore it) and
+    exactly what X accepts; and X is a bare ``enum``, so ``{"enum": [..., null]}``. Anything
+    else -- a ``$ref``, a nested ``anyOf``, a ``const`` -- is left as it is.
+    """
+    if isinstance(node, dict):
+        out = {
+            k: (
+                {name: _merge_nullable(sub) for name, sub in v.items()}
+                if k in ("properties", "$defs") and isinstance(v, dict)
+                else _merge_nullable(v)
+            )
+            for k, v in node.items()
+        }
+        branches = out.get("anyOf")
+        if isinstance(branches, list) and len(branches) == 2 and {"type": "null"} in branches:
+            other = branches[0] if branches[1] == {"type": "null"} else branches[1]
+            merged: dict[str, Any] | None = None
+            if isinstance(other, dict) and set(other) == {"enum"} and None not in other["enum"]:
+                merged = {"enum": [*other["enum"], None]}
+            elif (
+                isinstance(other, dict)
+                and isinstance(other.get("type"), str)
+                and set(other) - {"type"} <= _TYPE_ONLY_KEYWORDS.get(other["type"], set())
+            ):
+                merged = {**other, "type": [other["type"], "null"]}
+            if merged is not None and not (set(merged) & (set(out) - {"anyOf"})):
+                out.pop("anyOf")
+                out.update(merged)
+        return out
+    if isinstance(node, list):
+        return [_merge_nullable(v) for v in node]
+    return node
+
+
 def _slim_output_schema(server: MCPServer, name: str) -> None:
     """Drop annotations (descriptions, titles, defaults) from a tool's OUTPUT schema; keep
     them on its input.
@@ -141,12 +233,17 @@ def _slim_output_schema(server: MCPServer, name: str) -> None:
     schemas began carrying the contract's parameter descriptions (septa-4): a default in an
     output schema validates nothing. Input schemas keep every word, because that is what an
     agent reads to call a tool correctly. Unions of bare types are written as one type list
-    (contract 0.10.0, when two panel fields pushed the listing past its budget again): the
+    (contract 0.10.0, when two panel fields pushed the listing past its budget again), and a
+    ``type`` implied by a string ``enum`` or ``const`` is dropped (contract 0.12.0, the Rosenbaum
+    fields), as is a fixed-length tuple's repeated item type, and an optional typed value or
+    enumeration is written as a nullable one (contract 0.13.0, the overlap diagnostics): the
     same schema in fewer bytes.
     """
     tool = server._tool_manager.get_tool(name)  # private: mcp 2.2 exposes no setter
     if tool is not None and tool.output_schema is not None:
-        tool.__dict__["output_schema"] = _merge_type_unions(_strip_prose(tool.output_schema))
+        tool.__dict__["output_schema"] = _merge_nullable(
+            _drop_implied_types(_merge_type_unions(_strip_prose(tool.output_schema)))
+        )
 
 
 def build_server() -> MCPServer:

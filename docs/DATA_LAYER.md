@@ -146,6 +146,7 @@ interface CausalEdge {
   guardianVerdictRef: AuditEntry["id"];
   version: string;
   lineage: LineageRecord[];
+  createdBy: UserRef | null;            // who drafted it; null before migration 012
 }
 ```
 
@@ -239,8 +240,10 @@ its state today.
 
 1. **All writes require a Guardian `APPROVED` verdict.** Holds for the registry's write methods.
    `propose_draft` and `promote_to_approved` refuse a verdict that does not exist, is not
-   APPROVED, is unsigned, names a different object, or has already been spent. `reject_draft`
-   applies the same checks, and the verdict must also have been issued for action
+   APPROVED, is unsigned, names a different object, or has already been spent, and
+   `promote_to_approved` also refuses one not issued for action `GOVERNANCE_APPROVE`
+   (`septa-60`, `backend/tests/guardian/test_approve_action_binding.py`). `reject_draft`
+   applies the same checks, and the verdict must have been issued for action
    `GOVERNANCE_REJECT`; a verdict for `GOVERNANCE_REJECT` or `GOVERNANCE_APPROVE` authorises
    that decision only (`septa-53`). See `backend/tests/guardian/test_verdict_binding.py`.
 2. **All objects are versioned.** Does not hold. Objects carry a `version` field (default
@@ -278,9 +281,12 @@ claim was withdrawn (register `neo4j-graph-store`, in `left_the_list`). When `NE
 - **Drift alerts** (`backend/src/skills/drift_detect.py`): `(:DriftAlert)` nodes with a TTL and an
   acknowledged flag. Without Neo4j, alerts are emitted (§5.1) but not stored.
 
-(`src/api/health.py` defines a `/neo4j` connectivity check, but its router is not mounted in
-`src/api/main.py`, so the running API does not serve it.) Both paths are tested only
-against a mocked driver (`backend/tests/unit/test_experience_buffer_neo4j.py`,
+Whether that optional Neo4j answers is reported by the authenticated
+`GET /api/v1/platform/connectors` (connector `graph-neo4j`): `unconfigured` (no `NEO4J_URI`;
+healthy, since the SQL fallback serves), `reachable`, or `unreachable` (no driver, a failed
+connectivity check, or no answer within 3 s), with a fixed message instead of the driver's error
+text. Tested with a mocked driver (`backend/tests/integration/test_platform_api.py`). (An unmounted `/health/neo4j` router that
+checked the same was deleted on 2026-09-26.) Both paths are tested only against a mocked driver (`backend/tests/unit/test_experience_buffer_neo4j.py`,
 `test_drift_detect.py`, `test_neo4j_factory.py`); no test runs them against a real Neo4j.
 `docker-compose.yml` starts a local Neo4j 5 for them.
 
@@ -294,7 +300,7 @@ grants, row-level security and most `CHECK` constraints exist only on the Postgr
 (SQLite keeps three: `audit_log.guardian_verdict`, `decision_followups.kind` and
 `causal_model_versions.version`).
 
-- **PostgreSQL**: `backend/src/db/migrations/001_initial.sql` to `010_rls_binds.sql`, applied in
+- **PostgreSQL**: `backend/src/db/migrations/001_initial.sql` to `013_assumption_sensitivity_verdict.sql`, applied in
   filename order. Two things in this repository apply them: `docker-compose.yml`, whose init
   script (`backend/src/db/docker/initdb.sh`) runs them when the container's volume is first
   created and then gives `causal_app` its local-dev login, and the test fixtures when
@@ -310,7 +316,7 @@ grants, row-level security and most `CHECK` constraints exist only on the Postgr
 |---|---|---|---|
 | `audit_log` | 001, 002 | yes | Every Guardian verdict and agent action record. Append-only |
 | `verdict_consumption` | 002 | yes | One row per spent verdict. Its primary key is what makes a verdict single-use |
-| `causal_entities`, `causal_edges`, `graph_fragments`, `assumptions` | 001 (+002 for `causal_entities.guardian_verdict_ref`, +006 for `graph_fragments.lineage`) | yes | The semantic layer objects of §2 |
+| `causal_entities`, `causal_edges`, `graph_fragments`, `assumptions` | 001 (+002 for `causal_entities.guardian_verdict_ref`, +006 for `graph_fragments.lineage`, +011 for `causal_edges.created_by`) | yes | The semantic layer objects of §2 |
 | `interventions` | 001 | yes | Intervention log: expected vs actual effect, feedback closure |
 | `decision_records` | 003 | yes | The decision ledger's hash chain, one sealed record per row. Append-only |
 | `decision_followups` | 004, 005 | yes | The follow-up plan written at decision time, and each later realization. Append-only; 005 allows one row per decision and kind, so a decision is measured once |
@@ -318,6 +324,7 @@ grants, row-level security and most `CHECK` constraints exist only on the Postgr
 | `session_state` | 008 | yes | Latest `EpistemicState` snapshot per session (`orchestration/session_store.py`), upserted on `session_id`; also what the incident triage agent's experience buffer reads back |
 | (row-level security) | 001, replaced by 010 | no | Not a table: 010 puts a domain policy on `causal_entities`, `causal_edges` and `graph_fragments`, fed by the settings `backend/src/db/scope.py` sets on every transaction (docs/CYBERSECURITY.md §4.2), and grants `causal_app` the sequence 004 created after 001's grant |
 | `incidents` | 009 | yes | Incident records (`api/incidents.py`), upserted on `id` with `INSERT ... ON CONFLICT`, keeping the first `created_at`. Decisions on their interventions are `audit_log` rows, joined in on read |
+| `provenance_entries`, `provenance_erasures` | 011 | yes | W3C PROV records and LLM invocations per session (`semantic_layer/provenance_store.py`, §6), and the tombstones that hide a session's records from the provenance API. Append-only; `causal_readonly` gets no `SELECT` on the entries |
 
 Until 008 and 009 (septa-52) `session_state` and `incidents` existed only in the SQLite schema,
 and on PostgreSQL session persistence and the incidents API failed with a missing table. Neither
@@ -354,7 +361,7 @@ CREATE TABLE audit_log (
 );
 ```
 
-On PostgreSQL, `audit_log`, `decision_records`, `decision_followups` and the 007 tables are append-only in two
+On PostgreSQL, `audit_log`, `decision_records`, `decision_followups`, the 007 tables and the 011 tables are append-only in two
 ways: `UPDATE` and `DELETE` are revoked from the application roles, and `BEFORE UPDATE/DELETE`
 triggers raise. The SQLite schema declares the same triggers.
 
@@ -459,11 +466,14 @@ fragment id → drift_detect (KL) → causal_structure_compare → semantic_drif
 The thresholds are `_DEFAULT_KL_THRESHOLD = 0.1` and `_DEFAULT_SEVERE_KL_THRESHOLD = 0.5`.
 The agent calls each skill with the fragment id only, and each skill returns "no drift" when
 it gets no data: `drift_detect` answers `kl_divergence 0.0` with `note: no_data_for_comparison`,
-and the other two answer `no_fragment_edges` and `no_definitions_for_comparison`. So the periodic
-sensor (`backend/src/sensors/periodic_drift.py`), which runs this agent, cannot raise a drift
-alert today. Alerts go to `AlertEmitter` (logging, callbacks, deduplication). The
-`platform.drift.alert.v1` topic name in the agent's return value is only a label: nothing
-publishes to a broker (§3.3).
+and the other two answer `no_fragment_edges` and `no_definitions_for_comparison`. So the agent
+cannot raise a drift alert today, and nothing runs it on a schedule: the periodic `DriftSensor`
+that was meant to, never started by the app, was deleted in September 2026 rather than scheduled
+to alert on nothing. Alerts go to `AlertEmitter` (`backend/src/sensors/alert_emit.py`: logging,
+callbacks, deduplication). The agent's
+return value names that channel; nothing publishes to a broker (§3.3). Until 2026-09-26 the
+`alert_emit` skill, dispatched as a skill, never received the state, answered `emitted: true`
+with a `platform.drift.alert.v1` topic name, and emitted nothing.
 
 ### 5.2 Drift Types
 
@@ -504,6 +514,15 @@ those, but no single field holds it. That is a step towards the transparency the
 for (Art. 13). It is not evidence of meeting it, and nothing here reproduces an analysis from its
 lineage.
 
+**Provenance records** (ADR-002) are a separate, per-session store: `provenance_entries` and
+`provenance_erasures` (011), read through `/api/v1/provenance/*` by governance roles. Session
+runs, Guardian checks and `POST /api/v1/decisions` write them
+(`backend/src/semantic_layer/provenance_capture.py`); what they hold about inputs is digests
+(of a description, a dataset, a reasoning step's inputs and outputs), not the content. The store
+is append-only; an erasure is a tombstone that hides a session's earlier records from the API and
+keeps the rows, so it is not GDPR erasure (register `gdpr-controls`). No LLM invocation is
+recorded, because no runtime path calls an LLM (register `llm-routing-no-callers`).
+
 ---
 
 ## 7. Data Access Patterns by Component
@@ -511,13 +530,16 @@ lineage.
 | Component | Read | Write | Notes |
 |---|---|---|---|
 | CausalDiscoveryAgent | Semantic layer (read) | `audit_write` records (PENDING, unsigned) | Proposes; does not persist semantic objects itself |
-| GovernanceAgent | The action payload and `EpistemicState` it is given | `audit_log` (every verdict, signed) | Its verdict is what `propose_draft` / `promote_to_approved` / `reject_draft` require |
-| SimulationAgent | APPROVED graph fragments | `EpistemicState.simulation_results` (in memory; the `session_state` snapshot) | Read-only on the semantic layer |
+| GovernanceAgent | The action payload and `EpistemicState` it is given | `audit_log` (every verdict, signed) | Its verdict is what `propose_draft` / `promote_to_approved` / `reject_draft` / `record_edge_sensitivity` require |
+| SimulationAgent | APPROVED graph fragments | `EpistemicState.simulation_results` (in memory; the `session_state` snapshot); given data, the kernel's sensitivity result on the fragment's draft Treatment -> Outcome edge (a new `assumptions` row, appended to the edge's `assumption_refs`) | That one write under a Guardian verdict for `RECORD_SENSITIVITY` on the edge; otherwise read-only on the semantic layer |
 | DriftMonitorAgent | Whatever its skills are handed (see §5) | In-process `AlertEmitter`; `(:DriftAlert)` nodes in Neo4j when `NEO4J_URI` is set | No semantic-layer writes; no message broker |
 | `GET /api/semantic/*` | Entities, edges, fragments inside the user's domain scope; APPROVED only for a `viewer` | -- | Outside the scope is 404 (CYBERSECURITY.md §4.2) |
-| `POST /api/semantic/drafts` | -- | `causal_edges` / `graph_fragments` / `causal_entities` / `assumptions` as DRAFT | A drafting role, a domain inside the user's scope, then a GovernanceAgent check; status forced to DRAFT |
+| `POST /api/semantic/drafts` | -- | `causal_edges` / `graph_fragments` / `causal_entities` / `assumptions` as DRAFT | A drafting role, a domain inside the user's scope, then a GovernanceAgent check in the named session's Cynefin domain or the caller's declared one (recorded with its source in the audit row's notes; nothing declared is DISORDER, refused by PR-006); status forced to DRAFT; an assumption's `sensitivity_verdict_id` is never written, so a drafted sensitivity result counts for nothing |
+| `POST /api/semantic/edges/{id}/sensitivity` | The edge, inside the user's scope | A new IGNORABILITY `assumptions` row carrying the kernel's sensitivity result and the id of the verdict it was recorded under (`sensitivity_verdict_id`, migration 013: what makes PR-007 count it); the draft edge's `assumption_refs` and lineage | A drafting role; a Guardian verdict for `RECORD_SENSITIVITY` on the edge; never an APPROVED or DEPRECATED edge (409) |
 | `POST /api/governance/approve/{id}`, `/reject/{id}` | -- | Status, approver and lineage on the same row | A governance role, the object inside the reviewer's domains; see §2.2 rule 2 |
-| `POST /api/v1/decisions` | A registered model version, when the request names one | `decision_records`, `decision_followups`, and `decision_model_refs` when a model is named | Append-only hash chain |
+| `POST /api/v1/decisions` | A registered model version, when the request names one | `decision_records`, `decision_followups`, `decision_model_refs` when a model is named, and `provenance_entries` (session `decision:<entry_digest>`) | Append-only hash chain |
+| `POST /api/v1/session/run`, `/incident`; `GovernanceAgent.check` | -- | `provenance_entries`, beside `session_state` / `audit_log` | The Guardian's record is in the same transaction as its `audit_log` row |
+| `GET /api/v1/provenance/*`, `POST .../session/{id}/erasure` | `provenance_entries` not hidden by a tombstone, and every tombstone | `provenance_erasures` | Governance roles only |
 | `POST /api/v1/models`, `/{name}/versions`, `/{name}/reviews` | The model's head | `causal_model_versions` | Append-only; a version is appended only to the head it was built on; proposing needs a drafting role, reviews a governance role |
 
 The DAG Workbench is planned, not built (register `dag-workbench`).

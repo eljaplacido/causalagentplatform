@@ -377,7 +377,7 @@ async def test_run_chaotic_description_no_edges(auth_client: AsyncClient) -> Non
     assert data["requires_human_review"] is True, (
         "CHAOTIC domain must set requires_human_review=True"
     )
-    # CHAOTIC path: graph node_escalate_human → END without guardian_check
+    # CHAOTIC path: graph node_escalate_human → GuardianCheck (PR-003) → Output
     # proposed_edges should remain 0
     assert data["proposed_edge_count"] == 0, (
         "CHAOTIC domain must not produce proposed causal edges"

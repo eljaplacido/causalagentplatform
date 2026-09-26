@@ -30,6 +30,7 @@ from src.api.interventions import (
 from src.api.main import app
 from src.db.factory import CloudSqlFactory
 from src.db.types import TEXT_ARRAY, TIMESTAMP, typed_text
+from tests.conftest import postgres_only
 
 pytestmark = pytest.mark.asyncio
 
@@ -538,3 +539,83 @@ async def test_close_feedback_refuses_a_non_uuid_id(intv_client: AsyncClient) ->
             json={"intervention_id": bad, "actual_effect": 0.5},
         )
         assert resp.status_code == 422, (bad, resp.status_code, resp.text)
+
+
+@postgres_only
+async def test_concurrent_closures_close_once(intv_client: AsyncClient, db_engine: object) -> None:
+    """Three closures at once: one wins, two get 409, one closure row in the trail.
+
+    PostgreSQL only: the in-memory SQLite test engine is one connection shared by
+    every session, so concurrent requests there are not concurrent transactions.
+
+    The route read feedback_loop_closed, then updated unconditionally: concurrent
+    closures all passed the read, each wrote a FEEDBACK_LOOP_CLOSED audit row, and
+    the stored actual effect was whichever wrote last.
+    """
+    import asyncio
+
+    intv_id = str(uuid.uuid4())
+    verdict_id = str(uuid.uuid4())
+    async with CloudSqlFactory.get_session_factory()() as session:
+        await session.execute(
+            typed_text(
+                "INSERT INTO audit_log (id, agent_id, action_type, payload_hash, "
+                "guardian_verdict, policy_rules_cited, created_at) "
+                "VALUES (:id, :agent, :action, :hash, :verdict, :rules, :ts)",
+                rules=TEXT_ARRAY, ts=TIMESTAMP
+            ),
+            {"id": verdict_id, "agent": "tester", "action": "TEST", "hash": "abc",
+             "verdict": "APPROVED", "rules": [], "ts": datetime.now(UTC).isoformat()},
+        )
+        await session.execute(
+            typed_text(
+                "INSERT INTO interventions (id, name, initiated_by, initiated_at, "
+                "approved_by, approval_timestamp, guardian_verdict_ref, expected_effect, "
+                "feedback_loop_closed, created_at) "
+                "VALUES (:id, :name, :by, :iat, :ab, :at, :gvr, :ee, FALSE, :ca)",
+                iat=TIMESTAMP, at=TIMESTAMP, ca=TIMESTAMP
+            ),
+            {"id": intv_id, "name": "Race", "by": _TESTER,
+             "iat": datetime.now(UTC).isoformat(), "ab": _TESTER,
+             "at": datetime.now(UTC).isoformat(), "gvr": verdict_id,
+             "ee": json.dumps({"ate": 0.5}), "ca": datetime.now(UTC).isoformat()},
+        )
+        await session.commit()
+
+    # Every request waits, just after reading feedback_loop_closed, until all three
+    # have read it: the interleaving the race needs, every run rather than by luck.
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    barrier = asyncio.Barrier(3)
+    real_execute = AsyncSession.execute
+
+    async def execute_then_wait(self: AsyncSession, statement: Any, *a: Any, **kw: Any) -> Any:
+        result = await real_execute(self, statement, *a, **kw)
+        if "feedback_loop_closed FROM interventions" in str(statement):
+            await asyncio.wait_for(barrier.wait(), timeout=10)
+        return result
+
+    with patch.object(AsyncSession, "execute", execute_then_wait):
+        responses = await asyncio.gather(*(
+            intv_client.post(
+                "/api/v1/interventions/feedback",
+                json={"intervention_id": intv_id, "actual_effect": value},
+            )
+            for value in (0.1, 0.2, 0.3)
+        ))
+    codes = sorted(r.status_code for r in responses)
+    assert codes == [200, 409, 409], [r.text for r in responses]
+    winner = next(r.json() for r in responses if r.status_code == 200)
+
+    async with CloudSqlFactory.get_session_factory()() as session:
+        closures = (await session.execute(
+            text("SELECT COUNT(*) FROM audit_log WHERE action_type = 'FEEDBACK_LOOP_CLOSED' "
+                 "AND session_id = :s"),
+            {"s": f"feedback-{intv_id}"},
+        )).scalar()
+        stored = (await session.execute(
+            text("SELECT actual_effect FROM interventions WHERE id = :id"), {"id": intv_id}
+        )).scalar()
+    assert closures == 1
+    stored = json.loads(stored) if isinstance(stored, str) else stored
+    assert stored["observed_value"] == winner["actual_effect"]

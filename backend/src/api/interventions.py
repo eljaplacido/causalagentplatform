@@ -33,7 +33,6 @@ from sqlalchemy import text
 
 from src.db.factory import CloudSqlFactory
 from src.db.types import TEXT_ARRAY, TIMESTAMP, timestamp_text, typed_text
-from src.middleware.auth import get_current_user
 from src.middleware.rbac import DECISION_ROLES, guard
 
 log = structlog.get_logger(__name__)
@@ -230,14 +229,16 @@ async def close_feedback_loop(
         re_validation = error_severity in ("HIGH", "CRITICAL")
         drift_emitted = error_severity == "CRITICAL"
 
-        # Update the intervention
-        await session.execute(
+        # Close it only if it is still open: the check above is a read, and a
+        # concurrent closure may have passed it too. The row lock makes the loser's
+        # UPDATE re-read the flag and match nothing, and it writes no audit row.
+        closed = await session.execute(
             typed_text(
                 "UPDATE interventions SET "
                 "actual_effect = :actual, "
                 "feedback_loop_closed = TRUE, "
                 "outcome_observed_at = :now "
-                "WHERE id = :id",
+                "WHERE id = :id AND feedback_loop_closed = FALSE",
                 now=TIMESTAMP,
             ),
             {
@@ -246,6 +247,12 @@ async def close_feedback_loop(
                 "id": intervention_id,
             },
         )
+        if not closed.rowcount:  # type: ignore[attr-defined]
+            await session.rollback()
+            raise HTTPException(
+                status_code=409,
+                detail=f"Feedback loop already closed for intervention {intervention_id}",
+            )
 
         # Record the closure in the audit log -- as a record, not a ruling. This
         # route used to write guardian_verdict=APPROVED (and REQUIRES_ESCALATION for
@@ -322,7 +329,7 @@ async def close_feedback_loop(
 async def list_pending(
     domain: str | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=500),
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/interventions/pending")),
 ) -> list[PendingIntervention]:
     """List interventions that have been executed but whose outcomes are not yet observed."""
     now = datetime.now(UTC)
@@ -380,22 +387,29 @@ async def _find_existing_decision(
     """Look up a prior approve/reject decision for this intervention_id.
 
     audit_log is queried directly because proposed interventions aren't persisted
-    as their own rows — the immutable log is the source of truth.
+    as their own rows — the immutable log is the source of truth. The LIKE only
+    narrows the candidates (its wildcards escaped, the id as the payload encodes
+    it); a row counts when its payload's intervention_id equals this one exactly,
+    since SQLite's LIKE ignores ASCII case.
     """
+    encoded = json.dumps(intervention_id)
+    needle = "%" + _like_escape(f'"intervention_id": {encoded}') + "%"
     async with CloudSqlFactory.get_session_factory()() as session:
-        row = await session.execute(
+        rows = await session.execute(
             text(
                 "SELECT id, action_type, created_at, payload_hash "
                 "FROM audit_log "
                 "WHERE action_type IN ('INTERVENTION_APPROVED', 'INTERVENTION_REJECTED') "
-                "AND payload_hash LIKE :needle "
-                "ORDER BY created_at ASC "
-                "LIMIT 1"
+                "AND payload_hash LIKE :needle ESCAPE '\\' "
+                "ORDER BY created_at ASC"
             ),
-            {"needle": f'%"intervention_id": "{intervention_id}"%'},
+            {"needle": needle},
         )
-        record = row.mappings().fetchone()
-        if not record:
+        record = next(
+            (r for r in rows.mappings() if _payload_id(r["payload_hash"]) == intervention_id),
+            None,
+        )
+        if record is None:
             return None
         decision = "APPROVED" if record["action_type"] == "INTERVENTION_APPROVED" else "REJECTED"
         return InterventionDecisionResponse(
@@ -405,6 +419,20 @@ async def _find_existing_decision(
             recorded_at=timestamp_text(record["created_at"]) or "",
             already_decided=True,
         )
+
+
+def _like_escape(value: str) -> str:
+    """`value` as a literal inside a LIKE pattern whose escape character is ``\\``."""
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def _payload_id(payload_hash: str | None) -> str | None:
+    """The intervention_id a decision row's payload names (None if unreadable)."""
+    try:
+        value = json.loads(payload_hash or "").get("intervention_id")
+    except (ValueError, AttributeError):
+        return None
+    return value if isinstance(value, str) else None
 
 
 async def _record_decision(
@@ -541,7 +569,7 @@ _LIST_DECISIONS_FOR_INCIDENT = (
 async def list_decisions(
     incident_id: str | None = Query(default=None, description="Filter to a single incident's decisions"),
     limit: int = Query(default=100, ge=1, le=500),
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/interventions/decisions")),
 ) -> list[InterventionDecisionRecord]:
     """Return intervention decisions from audit_log, newest first.
 
@@ -584,7 +612,7 @@ async def list_decisions(
 )
 async def get_prediction_accuracy(
     period_days: int = Query(default=30, ge=1, le=365),
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/interventions/accuracy")),
 ) -> dict[str, Any]:
     """
     Compute prediction accuracy for closed feedback loops.

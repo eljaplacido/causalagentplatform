@@ -6,7 +6,8 @@ Responsibilities (AGENTS.md §2.1 DriftMonitorAgent):
   - Detect causal drift (graph structure vs observed data patterns)
   - Detect semantic drift (entity definition inconsistencies)
   - Detect concept drift (model performance degradation)
-  - Emit drift alerts through the in-process AlertEmitter (log + callbacks)
+  - Emit drift alerts through the in-process AlertEmitter (logging, callbacks,
+    deduplication; there is no message broker)
   - Store drift alerts in Neo4j for audit and tracking, when NEO4J_URI is set
   - NEVER write to the semantic layer (alert-only, no graph modifications)
 
@@ -58,6 +59,10 @@ log = structlog.get_logger(__name__)
 _DEFAULT_KL_THRESHOLD = 0.1
 _DEFAULT_SEVERE_KL_THRESHOLD = 0.5
 _DEFAULT_SEMANTIC_SIMILARITY_THRESHOLD = 0.7
+
+#: Where an emitted alert goes: the in-process AlertEmitter. There is no message
+#: broker, so no topic is named.
+_ALERT_CHANNEL = "AlertEmitter (in-process)"
 
 
 class DriftMonitorAgent(BaseAgent):
@@ -544,7 +549,7 @@ class DriftMonitorAgent(BaseAgent):
             return {
                 "emitted": True,
                 "alert_id": alert.alert_id,
-                "topic": "platform.drift.alert.v1",
+                "channel": _ALERT_CHANNEL,
                 "timestamp": alert.timestamp.isoformat(),
             }
 
@@ -567,7 +572,9 @@ class DriftMonitorAgent(BaseAgent):
         if skill_name == "semantic_drift_detect":
             return await self._skill_semantic_drift_detect(inputs)
         if skill_name == "alert_emit":
-            return await self._skill_alert_emit(inputs)
+            # The skill needs the state to build the alert's context. It was not
+            # passed on, so the skill always took its no-state branch.
+            return await self._skill_alert_emit({**inputs, "_state": state})
         if skill_name == "semantic_layer_read":
             return await self._skill_semantic_layer_read(inputs)
         return await super()._execute_skill(skill_name, inputs, state)
@@ -699,22 +706,22 @@ class DriftMonitorAgent(BaseAgent):
         self, inputs: dict[str, Any]
     ) -> dict[str, Any]:
         """
-        Emit a drift alert through AlertEmitter.
-
-        Production: emits through AlertEmitter with deduplication,
-        throttling, and severity routing.
+        Emit a drift alert through AlertEmitter (deduplication, throttling,
+        severity routing). Without a state there is nothing to build the alert
+        from, and nothing is emitted.
         """
         # This skill is now a thin wrapper over _emit_production_alert.
         # The real emission happens through AlertEmitter.
         state = inputs.get("_state")
         if state is None:
-            # Legacy skill call without state — create minimal response
+            # A call without state: nothing to build the alert from. It used to
+            # answer emitted=True with a Kafka topic name while emitting nothing.
             self._log.warning(
-                "drift_monitor.alert.emit_legacy",
+                "drift_monitor.alert.emit_without_state",
                 alert_type=inputs.get("alert_type"),
-                note="alert_emit called without state; using minimal emission",
+                note="alert_emit called without state; nothing emitted",
             )
-            return {"emitted": True, "topic": "platform.drift.alert.v1"}
+            return {"emitted": False, "reason": "no_state"}
 
         return await self._emit_production_alert(
             state=state,
