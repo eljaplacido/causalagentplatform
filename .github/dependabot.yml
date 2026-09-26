@@ -9,8 +9,8 @@
 #                   so the lock stays current, and CI proves the environment whole.
 #   pyproject.toml  the ranges themselves. increase-if-necessary: a PR only when a
 #                   release falls outside a range (a deliberate ceiling: fastapi <0.142,
-#                   mcp <2 in the backend, ruff/mypy/bandit pinned to a minor because
-#                   the ratchets count per version). Such a PR is red until someone
+#                   ruff/mypy/bandit pinned to a minor because the ratchets count
+#                   per version). Such a PR is red until someone
 #                   re-locks on its branch (python3 scripts/py_lock.py relock) and
 #                   re-measures a ratchet it moves -- which is the review it needs.
 version: 2

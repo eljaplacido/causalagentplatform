@@ -133,7 +133,7 @@
           "says": "(DoWhy, PyMC)"
         },
         {
-          "at": "docs/AGENTS.md:666",
+          "at": "docs/AGENTS.md:655",
           "says": "DoWhy, EconML, statsmodels"
         },
         {
@@ -195,11 +195,11 @@
           "says": "Provider-agnostic LLM"
         },
         {
-          "at": "docs/AGENTS.md:616",
+          "at": "docs/AGENTS.md:605",
           "says": "the LLM factory resolves capability \u2192 provider at runtime"
         },
         {
-          "at": "docs/AGENTS.md:626",
+          "at": "docs/AGENTS.md:615",
           "says": "Routing is handled by `src/agents/llm_factory.py`"
         },
         {
@@ -661,7 +661,7 @@
       "capability": "Agents render their prompts from the versioned templates in prompts/",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:610",
+          "at": "docs/AGENTS.md:599",
           "says": "Prompt templates are versioned in `prompts/` alongside their schema contracts. No agent uses ad-hoc prompts at runtime."
         }
       ],
@@ -797,7 +797,7 @@
       "capability": "The published TypeScript contract matches the backend models field for field",
       "claimed_in": [
         {
-          "at": "docs/ADR-001-canonical-semantic-layer.md:28",
+          "at": "docs/ADR-001-canonical-semantic-layer.md:27",
           "says": "MUST implement these core types with exact field alignment"
         },
         {
@@ -871,7 +871,7 @@
           "says": "1. SimulateAhead   \u2014 Forward-simulate action consequences using the approved SCM"
         },
         {
-          "at": "docs/AGENTS.md:543",
+          "at": "docs/AGENTS.md:532",
           "says": "SimulateAhead (SCM lookahead)"
         },
         {
@@ -1037,7 +1037,7 @@
       "reality": "backend/mcp_server (mcp SDK v1, seven backend skills, two of them heuristic triage scores rather than effects) still ships beside packages/causal-mcp (SDK v2, the kernel, the decision layer, causal_impact, a narrative verifier). As of 2026-09-25 no gnomon role is granted it, its gnomon declaration is commented out, and it warns on startup that it is deprecated. It is not deleted because client configurations outside this repository may still launch `causal-platform-mcp`, and scripts/gate_scope.py's mcp-tools identity check still inspects it.",
       "evidence": [
         {
-          "at": "backend/mcp_server/server.py:106",
+          "at": "backend/mcp_server/server.py@f64b2b0:106",
           "says": "causal-platform MCP server is DEPRECATED"
         }
       ],
@@ -1061,7 +1061,7 @@
           "says": "Cynefin domain classification with confidence"
         },
         {
-          "at": "docs/AGENTS.md:559",
+          "at": "docs/AGENTS.md:548",
           "says": "Domain confidence > 0.7"
         },
         {
@@ -1124,7 +1124,8 @@
       "id": "mcp-tools-crash-and-stdout-logging",
       "was": "2 of 7 MCP tools raised TypeError (stdlib loggers called with structlog kwargs) and structlog wrote log lines to stdout, the stdio protocol channel",
       "fixed_in": "6768cc6",
-      "pinned_by": "backend/tests/integration/test_mcp_stdio.py"
+      "pinned_by": "packages/causal-mcp/tests/test_stdio_flow.py",
+      "note": "Re-pinned in septa-6. The crash was in the legacy backend server, which septa-6 deleted together with its own pin (backend/tests/integration/test_mcp_stdio.py, last at f64b2b0). The property the fix established -- every tool callable over stdio at INFO logging, and every stdout line a JSON-RPC frame -- is held on the one server that remains by this test (test_stdout_is_only_jsonrpc)."
     },
     {
       "id": "ui-fabricated-approvals",

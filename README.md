@@ -71,7 +71,7 @@ Known limits are listed, not hidden: [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAG
 
 - **Backend** (`backend/`): Python 3.12, FastAPI, SQLAlchemy and LangGraph. `.gnomon/ci.sh` prints the current test count and coverage.
 - **Frontend** (`frontend/`): Next.js, TypeScript and Tailwind. Persona-scoped views: workbench, governance, incidents, engineer, analyst and executive.
-- **Legacy MCP server** (`backend/mcp_server/`): **deprecated** — it warns on startup, and no gnomon role is granted it. It exposes seven backend skills (console script `causal-platform-mcp`) and is kept only for client configurations that still launch it; its retirement is tracked as `legacy-mcp-server` in `conformance/declared_not_implemented.json`. Use `packages/causal-mcp`.
+- **One MCP server**: `packages/causal-mcp`, above. The backend's legacy server (`backend/mcp_server/`, console script `causal-platform-mcp`) was deleted in September 2026; a client configuration that still launches `causal-platform-mcp` should launch `causal-mcp` instead.
 - **Docs** (`docs/`): architecture (AGENTS.md), data layer, ADRs, quickstart and testing standards.
 
 ## Quick start
@@ -104,7 +104,7 @@ Full guide: [`docs/QUICKSTART.md`](docs/QUICKSTART.md).
 
 ## Calling the kernel from an external agent
 
-In its own virtualenv — the backend pins MCP SDK v1 for the legacy server, causal-mcp needs v2:
+In its own virtualenv (causal-mcp needs MCP SDK v2):
 
 ```bash
 pip install -e 'packages/causal-core' -e 'packages/causal-decision' -e 'packages/causal-mcp[decision]'
@@ -112,7 +112,6 @@ causal-mcp                        # stdio; `causal-mcp --http --port 8765` needs
 ```
 
 Client configuration and the tool list: [`packages/causal-mcp/README.md`](packages/causal-mcp/README.md).
-The legacy server's docs remain at [`backend/mcp_server/README.md`](backend/mcp_server/README.md).
 
 ## Documentation
 

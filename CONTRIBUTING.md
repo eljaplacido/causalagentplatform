@@ -11,9 +11,9 @@ the same rules in brief.
 |---|---|
 | `packages/causal-core` | The causal kernel: identification, estimation, refutation, sensitivity, declared segments. No web or LLM dependencies. |
 | `packages/causal-decision` | Evidence → verdict (`act`, `act_with_approval`, `experiment`, `refuse`), the hash-chained decision ledger, outcome follow-up and calibration. |
-| `packages/causal-mcp` | The kernel's MCP server (the canonical one). |
+| `packages/causal-mcp` | The kernel's MCP server, the repository's one MCP server. |
 | `packages/semantic-types` | The published TypeScript contract for the semantic layer. |
-| `backend/` | FastAPI platform: governance (Guardian), semantic layer, API, agents. Its causal skills delegate to the kernel. `backend/mcp_server` is the legacy MCP server, being deprecated. |
+| `backend/` | FastAPI platform: governance (Guardian), semantic layer, API, agents. Its causal skills delegate to the kernel. It serves no MCP tools. |
 | `frontend/` | Next.js UI. |
 | `benchmarks/` | Pre-registered correctness gates and every run's result (see [`benchmarks/README.md`](benchmarks/README.md)). |
 | `conformance/` | The claim contract's published JSON Schemas, and `declared_not_implemented.json`, the register of what the docs claim and the code does not do. |
@@ -27,8 +27,9 @@ says so.
 
 ## Setting up
 
-Python 3.12 and Node 20, as CI uses. Two Python environments, because the kernel and the backend
-pin different MCP SDK majors (the backend's legacy server is on v1, causal-mcp on v2):
+Python 3.12 and Node 20, as CI uses. Two Python environments, one per lock, as CI builds them: the
+backend's, and the kernel's (the three kernel packages, with causal-mcp on MCP SDK v2 and the kernel
+suites' own test dependencies):
 
 Each installs from a hash-pinned lock in `requirements/` (every distribution pinned, every file
 checked against its sha256, nothing else resolved), then this checkout's own packages, which are
@@ -110,7 +111,7 @@ A new causal capability goes into `packages/causal-core` (or `packages/causal-de
 4. a **seeded-defect negative control**: a plausible wrong implementation that the gate is shown
    to fail on.
 
-Do not add modules to `backend/src/skills/`, and do not add tools to `backend/mcp_server`. The
+Do not add modules to `backend/src/skills/`, and do not add an MCP server to `backend/`. The
 backend reaches new methods through the kernel; agents reach them through `packages/causal-mcp`.
 The working recipe is [`.gnomon/skills/adding-an-estimator.md`](.gnomon/skills/adding-an-estimator.md).
 

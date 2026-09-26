@@ -506,7 +506,7 @@ published since the last push surfaces without one):
   raising a floor in `backend/pyproject.toml` (transitive dependencies included) or
   upgrading in `package-lock.json`. The advisory databases are remote; when one cannot be
   reached the step is SKIPPED (not measured), which fails CI.
-- **SAST.** `bandit` over `backend/src`, `backend/mcp_server` and every `packages/*/src`,
+- **SAST.** `bandit` over `backend/src` and every `packages/*/src`,
   blocking on MEDIUM and HIGH findings, held at zero by the ratchet in
   `scripts/lint-baseline.json` (steps `bandit-backend`, `bandit-packages`). The backend's
   `[tool.bandit]` skips no rule. B608 (SQL built from strings) was skipped for the whole

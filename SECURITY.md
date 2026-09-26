@@ -47,11 +47,11 @@ These are best-effort targets, not contractual commitments:
 ## Scope
 
 In scope:
-- The backend service (`backend/src/`) and its REST + MCP surfaces
+- The backend service (`backend/src/`) and its REST surface
 - The Guardian policy engine and audit trail integrity
-- The legacy MCP server (`backend/mcp_server/`, deprecated but still shipped) and its tool wrappers
 - The frontend (`frontend/`) and any code that handles auth tokens
-- The published packages under `packages/` (`causal-core`, `causal-decision`, `causal-mcp`)
+- The published packages under `packages/` (`causal-core`, `causal-decision`, `causal-mcp`,
+  the one MCP server)
 - Build / packaging configuration (`pyproject.toml`, `package.json`, the `Dockerfile`s)
 - The Docker Compose dev stack (`docker-compose.yml`). The repository contains no production
   deployment
@@ -175,7 +175,7 @@ keep in mind when evaluating issues:
   `audit_log` entries is critical-severity.
 - **`EpistemicState`** is the single in-flight contract. Code that mutates it
   outside an agent boundary, or smuggles data past it, is in scope.
-- **MCP wrappers must not raise**. They return a structured `{ok: False, ...}`
-  envelope. A wrapper that crashes the server is in scope.
+- **MCP tools must not crash the server**. A `causal-mcp` tool call answers with
+  a result or a typed refusal; one that crashes the server instead is in scope.
 - **`DEV_AUTH_BYPASS=true`** is intentionally permissive in local dev. A code
   path that reaches that branch when `ENV != "local"` is in scope.
