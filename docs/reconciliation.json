@@ -20,7 +20,7 @@
       "why": "status line, what's in the box, quick-start commands, MCP entry point",
       "subjects": [
         "backend/pyproject.toml",
-        "backend/mcp_server",
+        "packages/causal-mcp",
         "frontend/package.json",
         "launch_backend.sh",
         "docs/CURRENT_STAGE.md"
@@ -28,16 +28,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
-          "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
+          "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
+          "packages/causal-mcp": "ac8ffe5b31a7fc07dfbfaee6156a0003bc0753f30c9a3a730b99d39de085a913",
+          "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "04f211c64b55720f982b683135eaee345a6f03c5d8036a9dfe373c471cbcf4e8"
+          "docs/CURRENT_STAGE.md": "13073839aa692e13a3fbf3a2f9ef79d8b483e8204050ee528754c2c75b1cf124"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-53: re-read; it quotes nothing about the reject authority, and the CURRENT_STAGE rows it points to still exist)"
+        "by": "Claude (merge of #26 into septa-53: subjects follow main (causal-mcp replaces the deleted backend/mcp_server); reject-authority text and main's content both present)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -45,7 +45,6 @@
       "subjects": [
         "conformance/declared_not_implemented.json",
         "backend/src",
-        "backend/mcp_server",
         "backend/tests",
         "frontend/src",
         "packages",
@@ -54,18 +53,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "fa1d6b5f09407f7f1f6b23cc376ac7ba2801b8eda5db862ba5923be5dafc5d81",
+          "conformance/declared_not_implemented.json": "af75c31b1c585fdd11a188a9a06b18c6f71f8b0400996343d6ebfe8e1ade15ab",
           "backend/src": "5d104e029b81eb564cc22f905604efaa2a7cfcd20482df947a211fc3b871f570",
-          "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "d4d1aa9a1ad24d105a2ebd0ec252c5e002514f770e16f08dd4bdcdd4fe31bd4e",
+          "backend/tests": "aa5434d14e2a7f34e9c385f15c79890c946ceee6bf5e33fc13dd2af7f1f6a8b7",
           "frontend/src": "d357d66d238bdc673ac0c5215b914bf4a8649a1ea7ca09c9e5bb0052c0b48fcb",
-          "packages": "b6ee9e7b2337b6a02a1015e9b026ef382e06dd7afb17259c76142ad2af9e8a02",
+          "packages": "f39decf6dcae81c0e60801fa80c933c6547de55348adb3fd3867119423414373",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-53: /reject row and the Governance summary describe the GOVERNANCE_REJECT authority; 13 register citations re-cited)"
+        "by": "Claude (merge of #26 into septa-53: subjects follow main (causal-mcp replaces the deleted backend/mcp_server); reject-authority text and main's content both present)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -141,7 +139,7 @@
       "subjects": [
         "backend/src/agents",
         "backend/src/skills",
-        "backend/mcp_server",
+        "packages/causal-mcp",
         "backend/src/orchestration",
         "prompts"
       ],
@@ -150,14 +148,14 @@
         "sha256": {
           "backend/src/agents": "ab6334ee1a9e15e7e3a6bf4647430473456a86799863b8ce80b3110670587aa9",
           "backend/src/skills": "7c14f6095d38b78711081427d4f98e3f621a0a72de4b377d6fc374c346c4ecea",
-          "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
+          "packages/causal-mcp": "ac8ffe5b31a7fc07dfbfaee6156a0003bc0753f30c9a3a730b99d39de085a913",
           "backend/src/orchestration": "026e61993e2c3e51962380e4d4e957cf5d26e650455679bd5e7cdce75c31c2f4",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: re-read the memory tiers; session memory in PostgreSQL is now true, 008_session_state.sql, and the experience buffer's session_state reads run on it too)"
+        "by": "Claude (merge of #26 into septa-53: subjects follow main (causal-mcp replaces the deleted backend/mcp_server); reject-authority text and main's content both present)"
       }
     },
     "docs/CYBERSECURITY.md": {
