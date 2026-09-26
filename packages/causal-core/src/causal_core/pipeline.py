@@ -63,6 +63,7 @@ from causal_core.refute import RefutationContext, holm
 from causal_core.segments import estimate_segments
 from causal_core.sensitivity import analyze_sensitivity
 from causal_core.sequential import analyze_sequential
+from causal_core.specification import SpecificationTest, outcome_model_specification
 
 CORE_VERSION = __version__
 
@@ -128,9 +129,20 @@ def _effective_graph(spec: CausalGraph, columns: set[str]) -> tuple[CausalGraph,
     )
 
 
-def _triangulate(fits: list[Fit], alpha: float) -> Triangulation | None:
+def _triangulate(
+    fits: list[Fit], alpha: float, spec: SpecificationTest | None = None
+) -> Triangulation | None:
+    """Pairwise estimator contrasts plus, when it ran, the outcome-model specification test.
+
+    Every p-value is one member of a single Holm family at ``alpha``; any rejection is a
+    disagreement. The contrasts alone cannot see moderate outcome-model misspecification at
+    moderate n (their standard error carries the misfit), which is why the specification
+    test is in the family (benchmarks/t0, v4).
+    """
     usable = [f for f in fits if f.influence is not None and f.record.se]
-    if len(usable) < 2:
+    if len(usable) < 2 and spec is None:
+        return None
+    if not usable:
         return None
     primary, others = usable[0], usable[1:]
     pairs: list[TriangulationPair] = []
@@ -152,20 +164,44 @@ def _triangulate(fits: list[Fit], alpha: float) -> Triangulation | None:
             )
         )
         pvals.append(float(2 * stats.norm.sf(abs(z))))
+    if spec is not None:
+        pvals.append(spec.p_value)
     rejected = holm(pvals, alpha)
     agree = not any(rejected)
-    detail = (
-        "estimators with different modelling assumptions agree within sampling noise"
-        if agree
-        else "estimators disagree beyond sampling noise: at least one model is misspecified; "
-        "the estimate is reported but causal wording is withheld"
-    )
+    pair_rejected = any(rejected[: len(pairs)])
+    spec_rejected = spec is not None and rejected[-1]
+    if agree:
+        detail = "estimators with different modelling assumptions agree within sampling noise"
+        if spec is not None:
+            detail += f"; the {spec.describe()}, not rejected"
+    else:
+        found = []
+        if pair_rejected:
+            found.append("estimators disagree beyond sampling noise")
+        if spec_rejected:
+            found.append(f"the {spec.describe()}, rejects it")  # type: ignore[union-attr]
+        detail = (
+            "; ".join(found) + ": at least one model is misspecified; "
+            "the estimate is reported but causal wording is withheld"
+        )
     return Triangulation(
         estimators=tuple(f.record.estimator for f in usable),
         agree=agree,
         pairs=tuple(pairs),
         detail=detail,
     )
+
+
+def _result_status(
+    failed: list[str], tri: Triangulation | None, unreviewed: list[str]
+) -> ResultStatus:
+    """A failed refuter or a triangulation disagreement contests the result; both are
+    evidence that an assumption the estimate rests on is false."""
+    if failed or (tri is not None and not tri.agree):
+        return ResultStatus.contested
+    if unreviewed:
+        return ResultStatus.provisional
+    return ResultStatus.supported
 
 
 def _frame_diagnostics(frame: pd.DataFrame, query: CausalQuery) -> Diagnostics | None:
@@ -488,7 +524,8 @@ def _analyze(
             )
 
     stage.name = "triangulate"
-    tri = _triangulate(fits, policy.triangulation_alpha)
+    spec_test = outcome_model_specification(d, cert.strategy, fits)
+    tri = _triangulate(fits, policy.triangulation_alpha, spec_test)
 
     stage.name = "refute"
     ref_ctx = RefutationContext(
@@ -523,15 +560,11 @@ def _analyze(
 
     stage.name = "assemble"
     failed = [r.name for r in refutations if not r.passed]
-    if failed or (tri is not None and not tri.agree):
-        status = ResultStatus.contested
-        if failed:
-            warnings.append(f"falsification tests failed: {failed}")
-    elif unreviewed:
-        status = ResultStatus.provisional
+    status = _result_status(failed, tri, unreviewed)
+    if failed:
+        warnings.append(f"falsification tests failed: {failed}")
+    elif status is ResultStatus.provisional:
         warnings.append(f"graph contains unreviewed edges: {unreviewed}")
-    else:
-        status = ResultStatus.supported
 
     claim_fields: dict[str, tuple[float | None, str, str | None]] = {
         "effect": (rec.point, "/primary/point", None),
