@@ -128,7 +128,33 @@ ROUTE_ROLES: dict[tuple[str, str], tuple[str, ...]] = {
     ("POST", "/api/v1/models"): DRAFT_ROLES,
     ("POST", "/api/v1/models/{name}/versions"): DRAFT_ROLES,
     ("POST", "/api/v1/models/{name}/reviews"): GOVERNANCE_ROLES,
+    # Reads outside the semantic layer: any platform role. A token holding none of
+    # them holds no permission (above), so it reads nothing here either.
+    ("GET", "/api/v1/session/{session_id}/state"): ALL_ROLES,
+    ("GET", "/api/v1/platform/connectors"): ALL_ROLES,
+    ("GET", "/api/v1/platform/metrics"): ALL_ROLES,
+    ("GET", "/api/v1/platform/drift"): ALL_ROLES,
+    ("GET", "/api/v1/platform/evaluation/consistency"): ALL_ROLES,
+    ("GET", "/api/v1/platform/evaluation/decision-quality"): ALL_ROLES,
+    ("GET", "/api/v1/interventions/pending"): ALL_ROLES,
+    ("GET", "/api/v1/interventions/decisions"): ALL_ROLES,
+    ("GET", "/api/v1/interventions/accuracy"): ALL_ROLES,
+    ("GET", "/api/v1/incidents/"): ALL_ROLES,
+    ("GET", "/api/v1/incidents/{incident_id}"): ALL_ROLES,
+    ("GET", "/api/v1/decisions"): ALL_ROLES,
+    ("GET", "/api/v1/decisions/verify"): ALL_ROLES,
+    ("GET", "/api/v1/decisions/checkpoint"): ALL_ROLES,
+    ("GET", "/api/v1/decisions/calibration"): ALL_ROLES,
+    ("GET", "/api/v1/models"): ALL_ROLES,
+    ("GET", "/api/v1/models/{name}"): ALL_ROLES,
+    ("GET", "/api/v1/models/{name}/versions/{version}"): ALL_ROLES,
+    ("GET", "/api/v1/models/{name}/diff"): ALL_ROLES,
+    ("GET", "/api/v1/models/{name}/impact"): ALL_ROLES,
+    ("GET", "/api/v1/models/{name}/verify"): ALL_ROLES,
 }
+
+#: The routes served without a token: the liveness probe, and nothing else.
+PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({("GET", "/health")})
 
 _GUARDS: dict[tuple[str, str], Callable[[Request], Any]] = {}
 

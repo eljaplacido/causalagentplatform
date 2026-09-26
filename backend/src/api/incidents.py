@@ -26,7 +26,7 @@ from sqlalchemy import bindparam, text
 
 from src.db.factory import CloudSqlFactory
 from src.db.types import TIMESTAMP, json_value, timestamp_text, typed_text
-from src.middleware.auth import get_current_user
+from src.middleware.rbac import guard
 
 log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/api/v1/incidents", tags=["Incidents"])
@@ -228,7 +228,7 @@ def _row_to_record(row: Any) -> IncidentRecord:
 async def list_incidents(
     limit: int = Query(default=50, ge=1, le=500),
     status_filter: str | None = Query(default=None, alias="status", description="Filter by status (ACTIVE, INVESTIGATING, RESOLVED)"),
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/incidents/")),
 ) -> list[IncidentRecord]:
     params: dict[str, Any] = {"limit": limit}
     sql = _LIST_INCIDENTS
@@ -253,7 +253,7 @@ async def list_incidents(
 )
 async def get_incident(
     incident_id: str,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/incidents/{incident_id}")),
 ) -> IncidentRecord:
     async with CloudSqlFactory.get_session_factory()() as session:
         row = await session.execute(

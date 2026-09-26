@@ -33,7 +33,6 @@ from sqlalchemy import text
 
 from src.db.factory import CloudSqlFactory
 from src.db.types import TIMESTAMP, timestamp_text, typed_text
-from src.middleware.auth import get_current_user
 from src.middleware.rbac import guard
 from src.orchestration.graph import compile_platform_graph
 from src.semantic_layer.registry import SemanticLayerRegistry
@@ -164,7 +163,7 @@ def _week_label(dt: datetime) -> str:
     summary="Real-time health of all backend components",
 )
 async def get_connector_health(
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/platform/connectors")),
 ) -> list[ConnectorStatus]:
     """
     Check the health of every backend component and return current status.
@@ -378,7 +377,7 @@ async def get_connector_health(
     summary="Operational metrics computed from live session and audit data",
 )
 async def get_platform_metrics(
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/platform/metrics")),
 ) -> PlatformMetricsResponse:
     """
     Compute real platform metrics from audit_log and semantic layer.
@@ -569,7 +568,7 @@ async def get_platform_metrics(
     summary="Drift alerts derived from recent rejected Guardian verdicts",
 )
 async def get_drift_alerts(
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/platform/drift")),
 ) -> list[DriftAlert]:
     """
     Compute drift alerts from recent audit_log activity.
@@ -717,7 +716,7 @@ class CalibrationRequest(BaseModel):
 async def get_consistency(
     session_id: str = "test",
     num_runs: int = Query(default=8, ge=2, le=100),
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/platform/evaluation/consistency")),
 ) -> ConsistencyResponse:
     """
     Measure agent output variance across N consecutive runs.
@@ -799,7 +798,7 @@ async def get_decision_quality(
     consistency_score: float = Query(default=0.80, ge=0.0, le=1.0),
     calibration_score: float = Query(default=0.70, ge=0.0, le=1.0),
     period_days: int = Query(default=30, ge=1, le=365),
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/platform/evaluation/decision-quality")),
 ) -> DecisionQualityResponse:
     """
     Compute a composite decision quality index from platform metrics.

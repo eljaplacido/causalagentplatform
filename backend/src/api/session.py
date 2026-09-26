@@ -25,7 +25,6 @@ from pydantic import BaseModel, Field
 
 from src.agents.incident_triage import IncidentTriageAgent
 from src.exceptions import CircuitBreakerError
-from src.middleware.auth import get_current_user
 from src.middleware.rbac import guard
 from src.orchestration.graph import PlatformState, compile_platform_graph
 from src.orchestration.session_store import SessionStateStore
@@ -421,7 +420,7 @@ async def _persist_incident(
 )
 async def get_session_state(
     session_id: str,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/session/{session_id}/state")),
 ) -> SessionStateResponse:
     """Return the cached or durably persisted EpistemicState for a session_id."""
     state = _session_cache.get(session_id)

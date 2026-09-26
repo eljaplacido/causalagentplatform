@@ -33,7 +33,6 @@ from sqlalchemy import text
 
 from src.db.factory import CloudSqlFactory
 from src.db.types import TEXT_ARRAY, TIMESTAMP, timestamp_text, typed_text
-from src.middleware.auth import get_current_user
 from src.middleware.rbac import DECISION_ROLES, guard
 
 log = structlog.get_logger(__name__)
@@ -322,7 +321,7 @@ async def close_feedback_loop(
 async def list_pending(
     domain: str | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=500),
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/interventions/pending")),
 ) -> list[PendingIntervention]:
     """List interventions that have been executed but whose outcomes are not yet observed."""
     now = datetime.now(UTC)
@@ -541,7 +540,7 @@ _LIST_DECISIONS_FOR_INCIDENT = (
 async def list_decisions(
     incident_id: str | None = Query(default=None, description="Filter to a single incident's decisions"),
     limit: int = Query(default=100, ge=1, le=500),
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/interventions/decisions")),
 ) -> list[InterventionDecisionRecord]:
     """Return intervention decisions from audit_log, newest first.
 
@@ -584,7 +583,7 @@ async def list_decisions(
 )
 async def get_prediction_accuracy(
     period_days: int = Query(default=30, ge=1, le=365),
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(guard("GET", "/api/v1/interventions/accuracy")),
 ) -> dict[str, Any]:
     """
     Compute prediction accuracy for closed feedback loops.
