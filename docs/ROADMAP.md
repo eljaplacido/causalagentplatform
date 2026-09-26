@@ -135,6 +135,10 @@ priority first, and the priorities put hardening the platform before new estimat
   provenance, the LLM layer, Cynefin routing, frontend views and others), then the longer-range
   methods: discovery, rung-3 counterfactuals, general ID estimation, subgroup discovery. Many of
   these end either in the capability or in its claim being withdrawn from the docs.
+  Four have ended that way: EconML/PyMC backends, the `cynepic-*` Rust crates, Neo4j as the
+  causal graph store and Kafka streaming were claimed and never built, and are not needed by the
+  product, so the claims were withdrawn and the idle Kafka and Redis services removed
+  (`econml-pymc`, `rust-crates`, `neo4j-graph-store`, `kafka-streaming` in `left_the_list`).
 
 ## What this project will not do first
 

@@ -335,7 +335,7 @@ Causal inference over customer or employee data carries PII risk.
 
 The connector `mapToSemanticObjects` step is the **only place** where raw operational data touches the causal layer. Connectors must:
 - Strip fields not needed for causal analysis
-- Pseudonymize before emitting to Kafka
+- Pseudonymize before returning draft objects (connectors emit nothing to a broker; there is none)
 - Log which fields were stripped (for lineage audit)
 
 ### 5.3 Data Residency

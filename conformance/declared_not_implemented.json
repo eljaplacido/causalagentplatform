@@ -74,11 +74,11 @@
       "reality": "The discovery agent proposes one edge between two freshly generated uuid4() nodes with a confidence looked up from the Cynefin domain; conditional_independence_test is a stub that returns None.",
       "evidence": [
         {
-          "at": "backend/src/agents/causal_discovery.py:330",
+          "at": "backend/src/agents/causal_discovery.py:329",
           "says": "source_id = uuid4()"
         },
         {
-          "at": "backend/src/agents/causal_discovery.py:394",
+          "at": "backend/src/agents/causal_discovery.py:392",
           "says": "stub \u2014 real data required"
         }
       ],
@@ -117,72 +117,6 @@
         "kind": "test",
         "path": "backend/tests/unit/test_rosenbaum_bounds.py",
         "asserts": "Rosenbaum bounds match a published matched-pairs example (E-values are already pinned by backend/tests/unit/test_effect_estimate.py)"
-      }
-    },
-    {
-      "id": "econml-pymc",
-      "status": "declared-not-implemented",
-      "capability": "EconML / PyMC estimation backends",
-      "claimed_in": [
-        {
-          "at": "docs/AGENTS.md:53",
-          "says": "DoWhy / EconML for statistical estimation"
-        },
-        {
-          "at": "docs/AGENTS.md:361",
-          "says": "(DoWhy, PyMC)"
-        },
-        {
-          "at": "docs/AGENTS.md:655",
-          "says": "DoWhy, EconML, statsmodels"
-        },
-        {
-          "at": "docs/CURRENT_STAGE.md@4e036a0:84",
-          "says": "DoWhy/EconML"
-        }
-      ],
-      "reality": "Neither EconML nor PyMC is a dependency; estimation is causal-core (and DoWhy is no longer a backend dependency either). causal-core's plug-in registry is the way to add EconML estimators.",
-      "evidence": [
-        {
-          "at": "backend/pyproject.toml:51",
-          "says": "\"causal-core>=0.11.0\","
-        }
-      ],
-      "leaves_by": {
-        "kind": "retraction",
-        "path": "docs/AGENTS.md",
-        "asserts": "the claims are removed from the docs -- or the dependency is added with a test that exercises an estimator from it"
-      }
-    },
-    {
-      "id": "rust-crates",
-      "status": "declared-not-implemented",
-      "capability": "Rust crates (cynepic-causal, cynepic-bayes) backing DAG operations and belief tracking",
-      "claimed_in": [
-        {
-          "at": "docs/AGENTS.md:53",
-          "says": "`cynepic-causal` crate (Rust) for DAG operations"
-        },
-        {
-          "at": "docs/AGENTS.md:158",
-          "says": "cynepic-bayes Bayesian belief tracking"
-        },
-        {
-          "at": "docs/AGENTS.md:266",
-          "says": "`cynepic-causal` Rust crate"
-        }
-      ],
-      "reality": "This repository contains no Rust code and depends on no crate; the cynepic crates belong to separate projects that were inspiration only.",
-      "evidence": [
-        {
-          "at": "backend/src/agents/causal_discovery.py:312",
-          "says": "cynepic-causal Rust crate"
-        }
-      ],
-      "leaves_by": {
-        "kind": "retraction",
-        "path": "docs/AGENTS.md",
-        "asserts": "the crate references are removed from the docs and the docstrings that repeat them"
       }
     },
     {
@@ -323,72 +257,6 @@
         "kind": "ci-run",
         "path": "specs/guardian_policy.tla",
         "asserts": "a CI step runs TLC on specs/guardian_policy.tla with guardian_policy.cfg to completion with no violation, and a deliberately broken copy is rejected"
-      }
-    },
-    {
-      "id": "neo4j-graph-store",
-      "status": "declared-not-implemented",
-      "capability": "Neo4j as the causal graph store (d-separation and backdoor-path queries)",
-      "claimed_in": [
-        {
-          "at": "docs/DATA_LAYER.md:282",
-          "says": "3.1 Neo4j (Graph Store)"
-        },
-        {
-          "at": "docs/DATA_LAYER.md:313",
-          "says": "d-separation query p95 < 50ms"
-        },
-        {
-          "at": "docs/CURRENT_STAGE.md@4e036a0:151",
-          "says": "Neo4j for causal graph storage"
-        }
-      ],
-      "reality": "The semantic layer (fragments, edges) is stored through SQLAlchemy (SQLite/PostgreSQL); Neo4j code exists only for the experience buffer and drift alerts, is exercised only against mocks, and no d-separation or path query runs in Neo4j.",
-      "evidence": [
-        {
-          "at": "backend/src/semantic_layer/registry.py:613",
-          "says": "FROM graph_fragments"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/integration/test_neo4j_live.py",
-        "asserts": "against a real Neo4j (the docker-compose service), the paths that claim Neo4j store and query what they claim to"
-      }
-    },
-    {
-      "id": "kafka-streaming",
-      "status": "declared-not-implemented",
-      "capability": "Kafka event streaming (ingestion bus, alert emission)",
-      "claimed_in": [
-        {
-          "at": "docs/DATA_LAYER.md:22",
-          "says": "Ingestion Bus (Kafka)"
-        },
-        {
-          "at": "docs/DATA_LAYER.md:406",
-          "says": "3.3 Kafka (Event Streaming)"
-        },
-        {
-          "at": "docs/AGENTS.md:134",
-          "says": "Alert emission via Kafka ready for integration"
-        },
-        {
-          "at": "docs/QUICKSTART.md@13e7d92:93",
-          "says": "The platform requires PostgreSQL 16, Neo4j 5, Kafka (KRaft), and Redis."
-        }
-      ],
-      "reality": "No Kafka client is a dependency or imported anywhere; the connector base class carries a comment to replace its stub with a producer. docker-compose starts a broker nothing talks to.",
-      "evidence": [
-        {
-          "at": "backend/src/connectors/base.py:174",
-          "says": "Production: replace with confluent_kafka.Producer."
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/integration/test_kafka_live.py",
-        "asserts": "an alert produced by the platform is consumed from the broker"
       }
     },
     {
@@ -773,15 +641,15 @@
       "reality": "The drift functions compute when called directly with data (KL/JS on histograms, a correlation-below-0.5 check labelled causal drift, Jaccard word overlap on definitions, a chi-squared test on labels). DriftMonitorAgent.process, which the periodic sensor runs, hands each skill only a fragment id, so drift_detect returns kl_divergence 0.0 with note no_data_for_comparison, the structure and semantic comparisons return no drift for want of edges and definitions, and concept_drift is passed as False. The pipeline therefore cannot raise a drift alert. Alerts go to an in-process AlertEmitter; the Kafka topic named in its return value has no producer.",
       "evidence": [
         {
-          "at": "backend/src/agents/drift_monitor.py:598",
+          "at": "backend/src/agents/drift_monitor.py:599",
           "says": "\"note\": \"no_data_for_comparison\","
         },
         {
-          "at": "backend/src/agents/drift_monitor.py:186",
+          "at": "backend/src/agents/drift_monitor.py:187",
           "says": "concept_drift=False,  # Would need label data"
         },
         {
-          "at": "backend/src/agents/drift_monitor.py:546",
+          "at": "backend/src/agents/drift_monitor.py:547",
           "says": "\"topic\": \"platform.drift.alert.v1\","
         }
       ],
@@ -948,7 +816,7 @@
       "reality": "No code pseudonymizes, tokenizes or strips any field, no erasure path exists, and no JSON-LD (or other) export of the semantic layer exists. No connector runs in the platform, so today PII can enter only through API request bodies, and nothing inspects them for it. The Art. 30 row (records of processing) is the one backed by something real: audit_log.",
       "evidence": [
         {
-          "at": "backend/src/connectors/base.py:146",
+          "at": "backend/src/connectors/base.py:144",
           "says": "def map_to_semantic_objects("
         }
       ],
@@ -1084,13 +952,6 @@
     }
   ],
   "left_the_list": [
-    {
-      "id": "legacy-mcp-server",
-      "was": "backend/mcp_server (MCP SDK v1, seven backend skills, two of them heuristic triage scores rather than effects) shipped beside packages/causal-mcp; deprecated and granted to no gnomon role, it was kept for client configurations outside the repository that might still launch `causal-platform-mcp`",
-      "fixed_in": "b86ca81",
-      "pinned_by": "backend/tests/unit/test_one_mcp_server.py",
-      "note": "Left by its leaves_by kind, retraction, and by the deletion itself (septa-6, after the owner confirmed no external client needs it): the directory, its console script, its tests and the backend's mcp dependency are gone, the docs describe it only as history, and gate_scope's mcp-tools check left with it, the one server being inspected by kernel-mcp-tools. The test pins the absence: no package, no console script, no mcp dependency or import in backend/src, and gate_scope reading causal-mcp's TOOLS."
-    },
     {
       "id": "mcp-tools-crash-and-stdout-logging",
       "was": "2 of 7 MCP tools raised TypeError (stdlib loggers called with structlog kwargs) and structlog wrote log lines to stdout, the stdio protocol channel",
@@ -1271,6 +1132,41 @@
       "fixed_in": "a6a864d",
       "pinned_by": "backend/tests/unit/test_py_lock.py",
       "note": "Implemented, except DAST, which did not leave: it is dast-not-built. Hash-pinned installs: every Python environment CI builds installs from a lock in requirements/ (backend.txt for backend/.venv, kernel.txt for packages/causal-core/.venv and release.yml's verify job, image.txt for backend/Dockerfile, release.txt for the published wheels), made by `uv pip compile --universal --generate-hashes` from requirements/*.in and installed with pip --require-hashes --no-deps; the repository's own packages, not on an index and so not in the lock, then install from the checkout with --no-deps --no-build-isolation (hatchling and editables come from the lock), and pip check proves the pair whole. The gate step python-lock (scripts/py_lock.py check) fails a lock whose inputs (the .in file and the dependency tables of each pyproject.toml it names) changed since `python3 scripts/py_lock.py relock` recorded them in requirements/lock-inputs.json, a lock that does not satisfy its local packages, and a tested environment that differs from its lock; the pip-audit steps audit the locks (pip-audit-image added for image.txt). Image scan: CI job `images` builds backend/Dockerfile and frontend/Dockerfile (the latter did not build at all before this change; it now builds from the repository root with output: standalone) and scans each with Trivy 0.74.0 pinned by digest; scripts/image_scan.py fails a HIGH or CRITICAL finding with a published fix not excused in scripts/image-scan-allowlist.json (empty), lists findings with no fix published without failing (44 in the backend image's Debian 13 base packages on 2026-09-26, none in the frontend's), and fails a report that lists no package. The one fixable pair it found (msgpack and setuptools copies vendored in pip 26.2.1) went by removing pip from the runtime image. SBOM: release.yml installs the built wheels with requirements/release.txt into a fresh environment, writes a CycloneDX 1.6 SBOM of it with cyclonedx-bom 7.4.0, checks it lists exactly the locked pins and the three packages (scripts/sbom_check.py), keeps it as an artifact and attaches it to the tag's GitHub release; the images job keeps a Trivy CycloneDX SBOM per image. Update PRs: .github/dependabot.yml, weekly and grouped, for the locks, the pyproject ranges, npm, GitHub Actions and the base images (pinned by digest). Negative controls: test_py_lock.py (a dependency edit without a re-lock, a pin below a floor, a pin without a hash, an environment one version, one package or one extra away from its lock), test_image_scan.py, test_sbom_check.py, and test_dep_audit.py for the lock mode. Not verified here: the images job and release.yml have not run on GitHub (their steps were run locally with the same images and tools), and Dependabot's handling of the uv-compiled locks is untested. Not changed: the release's build tools are pinned by version, not hash; HIGH findings with no fix published are not gated."
+    },
+    {
+      "id": "econml-pymc",
+      "was": "EconML / PyMC estimation backends. Neither was ever a dependency; docs/AGENTS.md named them (with DoWhy) as backing the causal-discovery and simulation agents and the effect_estimate and counterfactual skills.",
+      "fixed_in": "4529617",
+      "pinned_by": "backend/tests/unit/test_infra_claims_withdrawn.py",
+      "note": "Left by retraction. Not needed: estimation is packages/causal-core, and a third-party estimator (EconML's among them) would enter through its `causal_core.estimators` entry-point registry with a pre-registered benchmark, not as a backend dependency. docs/AGENTS.md now names causal-core for each agent and skill (DoWhy and y0 appear only in causal-core's optional crosscheck extra, as test-time identification cross-checks); simulation.py's docstrings no longer name DoWhy/PyMC; NOTICE no longer lists EconML or PyMC. test_infra_claims_withdrawn.py fails if a dependency table or lock names econml or pymc, or a withdrawn phrasing returns to the docs, prompts or backend source."
+    },
+    {
+      "id": "rust-crates",
+      "was": "Rust crates (cynepic-causal, cynepic-bayes, cynepic-guardian, cynepic-router) named in docs/AGENTS.md, agent docstrings and prompt headers as backing DAG operations, belief tracking, the Guardian and Cynefin routing.",
+      "fixed_in": "4529617",
+      "pinned_by": "backend/tests/unit/test_infra_claims_withdrawn.py",
+      "note": "Left by retraction. The crates belong to separate projects that were inspiration only; this repository has no Rust. docs/AGENTS.md now names the Python that runs (causal-core for graph checks and identification, GovernanceAgent for the Guardian, the keyword stub for Cynefin; no Bayesian belief tracking exists); the causal_discovery.py and incident_triage.py docstrings and four prompts/*.yaml headers no longer name crates. Attribution of design inspiration (docs/AGENTS.md 9.3, ADR-001, a few code comments) stays. test_infra_claims_withdrawn.py fails on a tracked *.rs or Cargo manifest, or a `cynepic-* crate` phrasing in the docs, prompts or backend source."
+    },
+    {
+      "id": "neo4j-graph-store",
+      "was": "Neo4j as the causal graph store, running d-separation and back-door path queries (docs/DATA_LAYER.md 3.1 with a Cypher schema and a p95 target; docs/AGENTS.md's memory table put graph memory and the semantic registry in Neo4j).",
+      "fixed_in": "4529617",
+      "pinned_by": "backend/tests/unit/test_infra_claims_withdrawn.py",
+      "note": "Left by retraction, not by the live test its leaves_by named: the graph store is not needed. The graph lives in SQL (graph_fragments, causal_edges) and every graph query runs in packages/causal-core. DATA_LAYER 1 and 3.1, AGENTS.md (memory table, ChangeImpactAgent, experience buffer), QUICKSTART, TESTING_CICD and ADR-002 now say so. What stays, documented as optional: Neo4jFactory and the two side stores that use it when NEO4J_URI is set, the experience buffer (TTL and relevance decay) and drift-alert storage, and the compose neo4j service (APOC plugin dropped: nothing used it). Those paths are still tested only against a mocked driver, and src/api/health.py's /neo4j check is not mounted. test_infra_claims_withdrawn.py fails if the graph-store phrasings return or any module outside the factory, the two side stores and health.py reaches Neo4j."
+    },
+    {
+      "id": "kafka-streaming",
+      "was": "Kafka event streaming: an ingestion bus, drift-alert emission via Kafka, topics and consumer groups (docs/DATA_LAYER.md, docs/AGENTS.md, an earlier QUICKSTART listing Kafka as required). No Kafka client was a dependency; docker-compose started a broker nothing talked to.",
+      "fixed_in": "4529617",
+      "pinned_by": "backend/tests/unit/test_infra_claims_withdrawn.py",
+      "note": "Left by retraction. Not needed: no connector is called by the running platform, and drift alerts go through the in-process AlertEmitter (log, callbacks, deduplication). Removed: the compose kafka, kafka-ui and redis services (the whole idle `future` profile; no Redis client exists either) and their env examples; BaseCausalConnector.subscribe(), a no-op nothing called, and its test; semantic-types' KafkaTopic, KAFKA_TOPICS, KafkaTopicName and CausalConnector.subscribe. DATA_LAYER 3.3 now says there is no event streaming; AGENTS.md, CYBERSECURITY 5.2, QUICKSTART 4 and drift_monitor.py's docstrings say AlertEmitter. test_infra_claims_withdrawn.py fails if compose defines any service but postgres and neo4j, a Kafka or Redis client becomes a dependency, or a Kafka phrasing returns."
+    },
+    {
+      "id": "legacy-mcp-server",
+      "was": "backend/mcp_server (MCP SDK v1, seven backend skills, two of them heuristic triage scores rather than effects) shipped beside packages/causal-mcp; deprecated and granted to no gnomon role, it was kept for client configurations outside the repository that might still launch `causal-platform-mcp`",
+      "fixed_in": "b86ca81",
+      "pinned_by": "backend/tests/unit/test_one_mcp_server.py",
+      "note": "Left by its leaves_by kind, retraction, and by the deletion itself (septa-6, after the owner confirmed no external client needs it): the directory, its console script, its tests and the backend's mcp dependency are gone, the docs describe it only as history, and gate_scope's mcp-tools check left with it, the one server being inspected by kernel-mcp-tools. The test pins the absence: no package, no console script, no mcp dependency or import in backend/src, and gate_scope reading causal-mcp's TOOLS."
     },
     {
       "id": "carryover-check-weak",

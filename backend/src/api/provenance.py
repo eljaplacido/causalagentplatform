@@ -28,8 +28,8 @@ from src.semantic_layer.provenance import (
 log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/api/v1/provenance", tags=["Provenance"])
 
-# ── In-memory store (SQLite-backed in production; session-scoped for dev) ──────
-# Keyed by session_id for simplicity. Production replaces with Neo4j + PostgreSQL.
+# ── In-memory store: process-scoped, not persisted ─────────────────────────────
+# Keyed by session_id. No database holds provenance records.
 
 _provenance_store: dict[str, list[ProvenanceRecord]] = {}
 _invocation_store: dict[str, list[LLMInvocation]] = {}

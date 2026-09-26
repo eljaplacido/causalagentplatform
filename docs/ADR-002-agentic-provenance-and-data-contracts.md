@@ -120,7 +120,7 @@ The Status column was PASS on every row when the ADR was written. As read agains
 - `src/agents/llm_factory.py`: the LLMInvocation capture wrapper exists; `get_llm` has no callers
 - `src/api/main.py` registers the provenance router (implemented)
 - `src/agents/governance.py`: the PR-009 rule exists; no caller sends the action type it checks
-- Neo4j: future work. Production provenance graph storage is currently in-memory
+- Persistence: none. The provenance store is in-memory and process-scoped; no database (Neo4j or SQL) holds it
 
 ## Implementation Status (read against the code 2026-09-25)
 
@@ -148,7 +148,7 @@ its coverage are reported by `.gnomon/ci.sh` on every run.
   something other than the caller
 
 ### Negative
-- In-memory provenance store is session-scoped; production needs Neo4j/pg persistence
+- In-memory provenance store is session-scoped; durable persistence is not built
 - LLM invocation capture adds a small overhead per call (best-effort, non-blocking)
 - Data contract enforcement requires manual contract registration (no UI yet)
 
