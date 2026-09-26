@@ -43,7 +43,8 @@ Confounder       → id, name, treatmentRef, outcomeRef, measuredStatus,
 
 CausalEdge       → id, source, target, edgeType, direction, confidence,
                     evidenceRefs, assumptionRefs, approvalStatus,
-                    approvedBy, approvedAt, guardianVerdictRef, version, lineage
+                    approvedBy, approvedAt, guardianVerdictRef, version, lineage,
+                    createdBy
 
 GraphFragment    → id, name, domain, description, edges, entryNodes,
                     exitNodes, approvalStatus, version, usageCount, tags

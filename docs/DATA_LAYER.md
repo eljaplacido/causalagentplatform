@@ -162,6 +162,7 @@ interface CausalEdge {
   guardianVerdictRef: AuditEntry["id"];
   version: string;
   lineage: LineageRecord[];
+  createdBy: UserRef | null;            // who drafted it; null before migration 011
 }
 ```
 
@@ -323,7 +324,7 @@ grants, row-level security and most `CHECK` constraints exist only on the Postgr
 (SQLite keeps three: `audit_log.guardian_verdict`, `decision_followups.kind` and
 `causal_model_versions.version`).
 
-- **PostgreSQL**: `backend/src/db/migrations/001_initial.sql` to `010_rls_binds.sql`, applied in
+- **PostgreSQL**: `backend/src/db/migrations/001_initial.sql` to `011_edge_created_by.sql`, applied in
   filename order. Two things in this repository apply them: `docker-compose.yml`, whose init
   script (`backend/src/db/docker/initdb.sh`) runs them when the container's volume is first
   created and then gives `causal_app` its local-dev login, and the test fixtures when
@@ -339,7 +340,7 @@ grants, row-level security and most `CHECK` constraints exist only on the Postgr
 |---|---|---|---|
 | `audit_log` | 001, 002 | yes | Every Guardian verdict and agent action record. Append-only |
 | `verdict_consumption` | 002 | yes | One row per spent verdict. Its primary key is what makes a verdict single-use |
-| `causal_entities`, `causal_edges`, `graph_fragments`, `assumptions` | 001 (+002 for `causal_entities.guardian_verdict_ref`, +006 for `graph_fragments.lineage`) | yes | The semantic layer objects of §2 |
+| `causal_entities`, `causal_edges`, `graph_fragments`, `assumptions` | 001 (+002 for `causal_entities.guardian_verdict_ref`, +006 for `graph_fragments.lineage`, +011 for `causal_edges.created_by`) | yes | The semantic layer objects of §2 |
 | `interventions` | 001 | yes | Intervention log: expected vs actual effect, feedback closure |
 | `decision_records` | 003 | yes | The decision ledger's hash chain, one sealed record per row. Append-only |
 | `decision_followups` | 004, 005 | yes | The follow-up plan written at decision time, and each later realization. Append-only; 005 allows one row per decision and kind, so a decision is measured once |

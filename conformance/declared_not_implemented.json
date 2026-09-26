@@ -229,41 +229,6 @@
       }
     },
     {
-      "id": "review-queue-risk-tier",
-      "status": "declared-not-implemented",
-      "capability": "Review queue ordered by risk tier, showing who submitted each item",
-      "claimed_in": [
-        {
-          "at": "backend/src/api/governance.py:398",
-          "says": "summary=\"List pending drafts ordered by risk tier\""
-        },
-        {
-          "at": "docs/UIX.md:235",
-          "says": "I want a structured review queue of all draft graph changes awaiting approval, ordered by risk tier"
-        }
-      ],
-      "reality": "ReviewQueueItem carries no risk tier and no submitter, the queue is not ordered by risk, and the UI fills riskTier \"MEDIUM\" and submittedBy \"system\" for every item.",
-      "evidence": [
-        {
-          "at": "backend/src/api/governance.py:167",
-          "says": "class ReviewQueueItem(BaseModel):"
-        },
-        {
-          "at": "frontend/src/app/governance/page.tsx:230",
-          "says": "riskTier: \"MEDIUM\","
-        },
-        {
-          "at": "frontend/src/app/governance/page.tsx:231",
-          "says": "submittedBy: \"system\","
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/integration/test_review_queue_risk.py",
-        "asserts": "/review-queue returns risk_tier and submitted_by derived from each object and orders by risk tier"
-      }
-    },
-    {
       "id": "provenance-store-no-callers",
       "status": "declared-not-implemented",
       "capability": "Provenance records written by real platform flows",
@@ -331,11 +296,11 @@
       "capability": "Neo4j as the causal graph store (d-separation and backdoor-path queries)",
       "claimed_in": [
         {
-          "at": "docs/DATA_LAYER.md:283",
+          "at": "docs/DATA_LAYER.md:284",
           "says": "3.1 Neo4j (Graph Store)"
         },
         {
-          "at": "docs/DATA_LAYER.md:314",
+          "at": "docs/DATA_LAYER.md:315",
           "says": "d-separation query p95 < 50ms"
         },
         {
@@ -346,7 +311,7 @@
       "reality": "The semantic layer (fragments, edges) is stored through SQLAlchemy (SQLite/PostgreSQL); Neo4j code exists only for the experience buffer and drift alerts, is exercised only against mocks, and no d-separation or path query runs in Neo4j.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:590",
+          "at": "backend/src/semantic_layer/registry.py:624",
           "says": "FROM graph_fragments"
         }
       ],
@@ -366,7 +331,7 @@
           "says": "Ingestion Bus (Kafka)"
         },
         {
-          "at": "docs/DATA_LAYER.md:407",
+          "at": "docs/DATA_LAYER.md:408",
           "says": "3.3 Kafka (Event Streaming)"
         },
         {
@@ -703,11 +668,11 @@
       "reality": "Approval and rejection UPDATE the object's own row: promote_to_approved rewrites approval_status, approved_at, approved_by, guardian_verdict_ref and lineage, and reject_draft rewrites approval_status (to DEPRECATED) and lineage. The version column keeps its 1.0.0 default, because no code path increments it and no new row is written for a new version. The previous state survives only as lineage entries and audit_log rows. The interventions feedback endpoint likewise UPDATEs interventions in place.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:952",
+          "at": "backend/src/semantic_layer/registry.py:991",
           "says": "\"status\": \"APPROVED\","
         },
         {
-          "at": "backend/src/semantic_layer/registry.py:1032",
+          "at": "backend/src/semantic_layer/registry.py:1071",
           "says": ".values(approval_status=bindparam(\"status\"), lineage=bindparam(\"lineage\")),"
         }
       ],
@@ -738,11 +703,11 @@
       "reality": "Approval and rejection each append one step (APPROVED or REJECTED: actor, time, verdict id), and an edge keeps whatever lineage list its submitter sent. Nothing records the data source, the transformation steps or the policy rules into lineage, and no platform code constructs a LineageRecord. An entity's submitted lineage is not stored (the INSERT omits the column). Fragments had no lineage column at all until 006_graph_fragment_lineage.sql, so approving or rejecting one failed outright. The Guardian verdict, its cited rules, and the evidence and assumption ids are linked by reference, so the chain can be partly rebuilt by joins. Nothing shows that this satisfies EU AI Act Art. 13.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:920",
+          "at": "backend/src/semantic_layer/registry.py:959",
           "says": "select(t.c.lineage, t.c.approval_status, t.c.domain).where("
         },
         {
-          "at": "backend/src/semantic_layer/models.py:200",
+          "at": "backend/src/semantic_layer/models.py:213",
           "says": "class LineageRecord(BaseModel):"
         }
       ],
@@ -805,14 +770,14 @@
           "says": "TypeScript interfaces generated from / aligned to the canonical schema"
         }
       ],
-      "reality": "packages/semantic-types/src/entities.ts is written by hand, not generated, and seven of its interfaces declare fields models.py does not have. Treatment, Confounder and Mediator add description, domain, approvalStatus, createdBy, createdAt and lineage; Outcome adds the same plus units; CausalEdge adds createdBy and createdAt; GraphFragment adds approvedBy, approvedAt and lineage; Intervention adds description, domain, graphFragmentRef and approvalReason. A client typed against the package expects fields the API never sends. scripts/contract_parity.py checks only the shared enumerations, not interface fields.",
+      "reality": "packages/semantic-types/src/entities.ts is written by hand, not generated, and seven of its interfaces declare fields models.py does not have. Treatment, Confounder and Mediator add description, domain, approvalStatus, createdBy, createdAt and lineage; Outcome adds the same plus units; CausalEdge adds createdAt, and declares createdBy non-null where the backend's is optional (null for edges drafted before migration 011); GraphFragment adds approvedBy, approvedAt and lineage; Intervention adds description, domain, graphFragmentRef and approvalReason. A client typed against the package expects fields the API never sends. scripts/contract_parity.py checks only the shared enumerations, not interface fields.",
       "evidence": [
         {
           "at": "packages/semantic-types/src/entities.ts:45",
           "says": "  createdBy: UserRef;"
         },
         {
-          "at": "backend/src/semantic_layer/models.py:397",
+          "at": "backend/src/semantic_layer/models.py:410",
           "says": "class CausalEdge(BaseModel):"
         }
       ],
@@ -843,11 +808,11 @@
       "reality": "contracts.py defines the contract, SLA and violation models and a ContractRegistry that can register, look up and remove contracts. Nothing evaluates a contract, nothing produces a ContractViolation, and only the tests instantiate the registry. PR-009 fires only when a caller sends action_type DATA_ACCESS_WITH_CONTRACT, which no code path does, and it reads the violation list from that caller's own payload. So a caller that reports no violations is never blocked.",
       "evidence": [
         {
-          "at": "backend/src/agents/governance.py:519",
+          "at": "backend/src/agents/governance.py:517",
           "says": "if action_type == \"DATA_ACCESS_WITH_CONTRACT\":"
         },
         {
-          "at": "backend/src/agents/governance.py:520",
+          "at": "backend/src/agents/governance.py:518",
           "says": "contract_violations = payload.get(\"contract_violations\", [])"
         },
         {
@@ -1279,6 +1244,13 @@
       "fixed_in": "4d68ac5",
       "pinned_by": "backend/tests/guardian/test_pr007_sensitivity_gate.py",
       "note": "Implemented for approvals. A /check for GOVERNANCE_APPROVE whose subject is a stored edge reads the edge's sensitivity results from the database (src/agents/governance.py edge_sensitivity) and is REJECTED citing PR-007 when there are none; evaluated after PR-001, before PR-004, and an unreadable edge fails closed. What counts as an edge's sensitivity result: CausalEdge has no field of its own, so it is a valid SensitivityResult (E-value / Rosenbaum) stored on an assumption the edge names in assumption_refs, that assumption not REJECTED in review; the checked payload cannot supply one. The write path it needs was broken too: propose_draft dropped an assumption's sensitivity_result, and the reads did not decode it; both fixed. Pinned with results from causal_core.analyze on simulated data. Limits: PR-007 asks for a result, not a robust one -- a result that says not robust still counts, and the reviewer sees it (the CYBERSECURITY.md claim, since withdrawn, said 'pass'); proposing an edge (the process() path's proposed_edges) is not approving it and is not judged; nothing in the platform yet records the kernel's sensitivity output on an assumption automatically -- a result arrives with the assumption's draft."
+    },
+    {
+      "id": "review-queue-risk-tier",
+      "was": "ReviewQueueItem carries no risk tier and no submitter, the queue is not ordered by risk, and the UI fills riskTier \"MEDIUM\" and submittedBy \"system\" for every item.",
+      "fixed_in": "1d1d429",
+      "pinned_by": "backend/tests/integration/test_review_queue_risk.py",
+      "note": "Implemented. GET /api/governance/review-queue returns risk_tier, risk_reasons and submitted_by for each item and orders by tier (CRITICAL, HIGH, MEDIUM, LOW), oldest first within a tier. The tier is derived from stored fields only, by rules defined in backend/src/semantic_layer/review_risk.py: an edge is CRITICAL below stated confidence 0.5, HIGH below 0.8 or when no stored sensitivity result on an assumption it rests on says it is robust (the results Guardian PR-007 reads), else MEDIUM; a fragment is HIGH while it names an edge that is not APPROVED, else MEDIUM; an entity is LOW. These are this repository's own rules, not a standard: stated confidence is the proposer's number, so it can only raise a tier, never lower one on its own. submitted_by is the id in created_by; edges had no created_by, so CausalEdge gained one (migration 011_edge_created_by.sql, the SQLite DDL, propose_draft, get_edge), and edges drafted before it show null, which the UI renders as 'not recorded'. The frontend maps the three fields (frontend/src/app/governance/page.tsx) and ReviewQueue shows the reasons as the tier badge's title; pinned on that side by frontend/src/components/governance/__tests__/ReviewQueue.test.tsx and the queue test in frontend/src/app/governance/__tests__/page.test.tsx."
     }
   ]
 }

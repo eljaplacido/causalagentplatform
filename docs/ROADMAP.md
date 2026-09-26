@@ -125,10 +125,11 @@ priority first, and the priorities put hardening the platform before new estimat
   server once no external client needs it (`septa-6`).
 - **p2, the kernel and decision layer.** Done: DiD with covariates (doubly robust) and
   not-yet-treated comparisons, T5 v4 (`septa-8`); Guardian PR-007, no edge approved without a
-  sensitivity result stored on an assumption it rests on (`septa-33`). Open: step 3's remaining
-  estimators (`septa-7`, `septa-9`), calibration (`septa-10`), anchoring (`septa-11`), Rosenbaum
-  bounds (`septa-12`), positivity detection and triangulation at moderate n (`septa-34`,
-  `septa-35`), and the review queue's risk tier (`septa-36`).
+  sensitivity result stored on an assumption it rests on (`septa-33`); the review queue ordered
+  by a risk tier derived from stored fields, with who submitted each item (`septa-36`). Open:
+  step 3's remaining estimators (`septa-7`, `septa-9`), calibration (`septa-10`), anchoring
+  (`septa-11`), Rosenbaum bounds (`septa-12`), positivity detection and triangulation at
+  moderate n (`septa-34`, `septa-35`).
 - **p3 and p4.** The rest of the register (versioned semantic objects, lineage,
   provenance, the LLM layer, Cynefin routing, frontend views and others), then the longer-range
   methods: discovery, rung-3 counterfactuals, general ID estimation, subgroup discovery. Many of
