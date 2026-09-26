@@ -472,7 +472,7 @@ access inside the platform.
 ### 8.3 Container Security
 
 - **In place:** backend and frontend images run as non-root users (`USER causal`,
-  `USER nextjs`). The backend image is `python:3.12-slim`, the frontend image `node:22-alpine`,
+  `USER nextjs`). The backend image is `python:3.12-slim`, the frontend image `node:24-alpine`,
   each pinned by digest (Dependabot moves the digest). The backend installs its Python packages
   from the hash-pinned lock `requirements/image.txt` (§8.4) and keeps no pip at run time; the
   frontend installs `package-lock.json` with `npm ci` and runs Next's standalone server with npm
@@ -540,7 +540,14 @@ published since the last push surfaces without one):
   runtime environment (the built wheels plus `requirements/release.txt`), checks that it lists
   exactly that (`scripts/sbom_check.py`), and attaches it to the tag's GitHub release.
 - **Update PRs.** `.github/dependabot.yml`: weekly, grouped, for the Python locks and ranges,
-  npm, the GitHub Actions and the base images.
+  npm, the GitHub Actions and the base images. It ignores the pins the ratchets count per
+  version (ruff, mypy, bandit, pip-audit), pyproject majors, node lines that are not LTS, and
+  majors held by an open ledger item (TESTING_CICD.md §5.4).
+- **Where CI runs.** Jobs run where the repository variable `CI_RUNS_ON` says: GitHub's hosted
+  runners when it is unset, otherwise self-hosted runners (label `causalplatform-ci`). A
+  self-hosted job executes the repository's code, including a dependency update's install
+  scripts, on that host as the runner's user; the repository is private, so no outside party can
+  open a pull request that runs there. The job's database listens on loopback only.
 - The Python build tools the release uses (`build`, `twine`, `cyclonedx-bom`) are pinned by
   version, not by hash. `safety` is not run; `pip-audit` covers the same advisories.
 

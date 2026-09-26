@@ -30,14 +30,14 @@
         "sha256": {
           "backend/pyproject.toml": "cdabd6c6e24ab6d579d2aa1de3d0d6db5b8802e87b10489cc3df43a2d34a47ed",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
+          "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docs/CURRENT_STAGE.md": "47f82f3b25daf272632ad22a9a238b8cb03587eb0cdbb17e856d8cf8105d8143"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-9: T8 v2 carryover check; the T8 row now quotes v2's power and false alarms, bound in doc-figures; nothing else it quotes moved)"
+        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -54,18 +54,18 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "8f09849bc6e1d38328ae116b79d66c74b8342d6434ceda9992c2675fc21ccfdd",
+          "conformance/declared_not_implemented.json": "98c034273f8f22c34ee6a0f2491101e80aa8c9b62c9120701f6ebc012c611e4d",
           "backend/src": "c06af80dee95babb1eed74ffbc5435ffe7f1cb1fdc8bf8f8489d087ad42aabe1",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
           "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
-          "packages": "6cb557af5d59a2a18b0e8a437c0475259d674650b59d1d26e70b5ef5b1c1e157",
+          "packages": "f39decf6dcae81c0e60801fa80c933c6547de55348adb3fd3867119423414373",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-9: T8 v2 carryover check; switchback overview and rows updated, the planned row now implemented with test_carryover_power.py; causal-core 211 passed from this branch's gate)"
+        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -184,12 +184,12 @@
           "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
           "backend/src/db/migrations": "6b52679eb2132b16e3bb238da5d6a7bde969f409bba4bd63b431c94456db74f1",
           "backend/src/semantic_layer/verdict.py": "2807535994f0073bd9f58cc2774822d9f7bd1749aa7801d669eb2301bde3ac00",
-          ".github/workflows": "1ae0fadaa874c419905d5c24ebadf5ccca68705dc7d83057ea81682712fae31b"
+          ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: #14's image-scan and SBOM text present; septa-8 does not touch it)"
+        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -253,13 +253,13 @@
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
-          ".github": "0a8d8e713831ebec1cc8e44c2f719c44085c453b44baed2d4607ac2fa3df132b",
+          ".github": "405abf54754d93806c64cd703261a4cac70212e22955f1dd3c651a237dbdb2cb",
           ".gnomon": "ef33b01c3cfb5e5d70d83032e0bc2510e5306a54a9be8f6396daf1bf60f354bd"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-9: T8 v2 carryover check; .gnomon moved only by a sentence in the using-causal-mcp skill; the page names the surface files, still true)"
+        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -281,7 +281,7 @@
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
           "backend/pyproject.toml": "cdabd6c6e24ab6d579d2aa1de3d0d6db5b8802e87b10489cc3df43a2d34a47ed",
-          "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
+          "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
           ".env.example": "f5dbf40f551d60b4b91d5bbaa9b36a2404f89536421fe51b8bcbf17a6ae1258f",
           "backend/scripts": "36d9419c9cb543ee85703a4d4008be1c16e383c5d7567d9c7bcb6dce92ad64da"
@@ -289,7 +289,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-9: T8 v2 carryover check; the backend pin moved to causal-core>=0.11.0; the page states no kernel version, its install and T4-T8 lines unchanged)"
+        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -310,7 +310,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          ".github/workflows": "1ae0fadaa874c419905d5c24ebadf5ccca68705dc7d83057ea81682712fae31b",
+          ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
           "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
           "backend/pyproject.toml": "cdabd6c6e24ab6d579d2aa1de3d0d6db5b8802e87b10489cc3df43a2d34a47ed",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
@@ -320,12 +320,12 @@
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "2ea289c99ef957a2b22a4eed544e76c06e45eb8a2c844d384f9e05eb7f84d940",
           "packages/causal-core/tests": "ca9a8600b9bdeb81d9509afcb864900159868a7509bcc0aa13fff0fc501869f5",
-          "packages/causal-decision/tests": "61bde7786a6158cc99f269fd057908ce3959e5e812ac5d8b4c82c11c2c7200b4"
+          "packages/causal-decision/tests": "c7ccd2d2b91e1ec53a3eb456c70f670268b2ec1f8f431e161f399360b94ef7de"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-9: T8 v2 carryover check; the T8 row and the seeded-defect paragraph still true -- same suite, marker and test directory)"
+        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
       }
     },
     "docs/UIX.md": {
@@ -355,13 +355,13 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "6b029f17fceb5b8a44c784ea601802c8d97c1d2ed3ce9a6a92c2600823826501",
-          "conformance/declared_not_implemented.json": "8f09849bc6e1d38328ae116b79d66c74b8342d6434ceda9992c2675fc21ccfdd",
+          "conformance/declared_not_implemented.json": "98c034273f8f22c34ee6a0f2491101e80aa8c9b62c9120701f6ebc012c611e4d",
           "docs/CURRENT_STAGE.md": "47f82f3b25daf272632ad22a9a238b8cb03587eb0cdbb17e856d8cf8105d8143"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-9: T8 v2 carryover check; step 3 says the check is gated and contests the result, septa-9 no longer listed as to come there; the p2 ledger line left as the ledger stands)"
+        "by": "Claude (merge of #24/#28 into septa-9: both sides' content present; those changes were read on their own branches)"
       }
     },
     "SECURITY.md": {
