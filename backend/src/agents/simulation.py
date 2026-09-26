@@ -14,6 +14,10 @@ Implemented skills:
   identification_check     — validate causal effect identifiability (DoWhy)
   effect_estimate          — compute ATE via DoWhy / PyMC
   sensitivity_analysis     — Rosenbaum bounds / E-value computation
+  explanation_generate     — the draft explanation of a kernel outcome, written by the
+                             configured LLM from prompts/explanation_generate.yaml and
+                             kept only if it passes PR-002 grounding (src/agents/narration.py);
+                             otherwise, or with no LLM configured, the deterministic text
 
 EpistemicState constraints enforced:
   - require_approved_fragment: Only APPROVED fragments usable
@@ -29,6 +33,7 @@ from typing import Any
 import structlog
 
 from src.agents.base import BaseAgent
+from src.agents.narration import narrate_outcome
 from src.semantic_layer.graph_context import load_fragment_with_edges
 from src.semantic_layer.models import (
     CynefinDomain,
@@ -182,6 +187,7 @@ class SimulationAgent(BaseAgent):
                     ),
                 }
             )
+            state = await self._narrate(state, estimate_out.get("outcome"))
             return self._add_reasoning_step(
                 state,
                 node="Simulation",
@@ -263,6 +269,8 @@ class SimulationAgent(BaseAgent):
             }
         )
 
+        state = await self._narrate(state, estimate_out.get("outcome"))
+
         state = self._add_reasoning_step(
             state,
             node="Simulation",
@@ -284,6 +292,39 @@ class SimulationAgent(BaseAgent):
             robust=robust,
         )
         return state
+
+    # ── Narration ─────────────────────────────────────────────────────────────
+
+    async def _narrate(
+        self, state: EpistemicState, outcome: dict[str, Any] | None
+    ) -> EpistemicState:
+        """Replace the deterministic draft with a grounded LLM narrative of the kernel outcome.
+
+        Only an outcome the kernel produced is narrated; the deterministic draft already in
+        ``state`` is the fallback. The step records which text was kept and why.
+        """
+        if not outcome:
+            return state
+        narration = await narrate_outcome(
+            outcome,
+            fallback=state.draft_explanation,
+            session_id=state.session_id,
+            agent_id=self.agent_id,
+            assumptions=[a.statement for a in state.active_assumptions],
+        )
+        state = state.model_copy(update={"draft_explanation": narration.text})
+        return self._add_reasoning_step(
+            state,
+            node="Simulation",
+            action="NARRATION",
+            inputs={"outcome_kind": outcome.get("kind"), "skill": "explanation_generate"},
+            outputs={
+                "source": narration.source,
+                "reason": narration.reason,
+                "template_id": narration.template_id,
+                "model": narration.model,
+            },
+        )
 
     # ── Skill dispatch ────────────────────────────────────────────────────────
 

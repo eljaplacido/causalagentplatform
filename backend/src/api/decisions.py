@@ -43,6 +43,7 @@ from causal_decision.outcome import CalibrationReport, Realization, compare, pla
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field, create_model, model_validator
 
+from src.agents.narration import Persona, narrate_outcome
 from src.middleware.auth import get_current_user
 from src.middleware.rbac import guard
 from src.semantic_layer.decision_store import (
@@ -152,6 +153,16 @@ class DecideRequest(BaseModel):
     units_per_day: float | None = Field(default=None, gt=0)
     analysis_policy: AnalysisPolicy | None = None
     decision_policy: DecisionPolicy | None = None
+    narrate: bool = Field(
+        default=False,
+        description="Also return `narrative`: the verdict and analysis in plain language, "
+        "written by the configured LLM (local Ollama first) and kept only if every number in "
+        "it is a claim of the analysis (PR-002 grounding); otherwise, or with no LLM "
+        "configured, the deterministic explanation. Never recorded in the ledger.",
+    )
+    persona: Persona = Field(
+        default="ANALYST", description="The reader `narrative` is written for."
+    )
 
     @model_validator(mode="after")
     def _one_graph(self) -> DecideRequest:
@@ -160,12 +171,25 @@ class DecideRequest(BaseModel):
         return self
 
 
+class Narrative(BaseModel):
+    """The plain-language account, and whether a model or the platform wrote it."""
+
+    text: str
+    source: Literal["llm", "deterministic"]
+    reason: str = Field(description="Why the deterministic text was used; empty for `llm`.")
+    template_id: str | None = None
+    model: str | None = None
+
+
 class DecideResponse(BaseModel):
     verdict: Verdict
     explanation: str
     decision: Decision
     outcome: Annotated[CausalOutcome, Field(discriminator="kind")]
     record: DecisionRecord
+    narrative: Narrative | None = Field(
+        default=None, description="Present when the request asked for `narrate`."
+    )
 
 
 class RecordList(BaseModel):
@@ -282,12 +306,40 @@ async def make_decision(
         uid=user.get("uid"),
     )
 
+    explanation = explain(decision, outcome)
+    narrative: Narrative | None = None
+    if body.narrate:
+        # After the ledger write, on purpose: the sealed record holds the verdict and the
+        # analysis, never model-written text.
+        told = await narrate_outcome(
+            outcome,
+            fallback=explanation,
+            session_id=f"decision:{record.entry_digest}",
+            agent_id="decisions-api",
+            persona=body.persona,
+            decision={
+                "action": body.action,
+                "verdict": str(decision.verdict),
+                "direction_wanted": body.direction,
+                "risk_class": str(body.risk_class),
+                "reversible": body.reversible,
+            },
+        )
+        narrative = Narrative(
+            text=told.text,
+            source=told.source,
+            reason=told.reason,
+            template_id=told.template_id,
+            model=told.model,
+        )
+
     return DecideResponse(
         verdict=decision.verdict,
-        explanation=explain(decision, outcome),
+        explanation=explanation,
         decision=decision,
         outcome=outcome,
         record=record,
+        narrative=narrative,
     )
 
 
