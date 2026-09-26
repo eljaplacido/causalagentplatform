@@ -343,6 +343,8 @@ class SimulationAgent(BaseAgent):
         from src.agents.governance import GovernanceAgent  # the Guardian, per call
 
         guardian = GovernanceAgent(agent_id=f"{self.agent_id}-guardian")
+        frame = self._frame()
+        rows = None if frame is None else len(frame)
         recorded: list[dict[str, Any]] = []
         flags = list(state.flags)
         for edge in drafts:
@@ -356,7 +358,7 @@ class SimulationAgent(BaseAgent):
                     actor=UserRef(id=self.agent_id),
                     evidence={
                         "fragment_id": str(state.active_graph_fragment_id),
-                        "rows": None if self._data is None else len(self._frame()),
+                        "rows": rows,
                     },
                 )
             except Exception as exc:  # the registry refused: log, flag, carry on
