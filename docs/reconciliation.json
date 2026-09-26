@@ -32,12 +32,12 @@
           "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "b9abdd07f41e5d9f1caf7dde1e109a3e8e508fc8d8ccd6900058950d85fb47ac"
+          "docs/CURRENT_STAGE.md": "f37a7a72b27ab9318e63e99833e0ab7201a96def3f6bd6b24418e312aef13ca4"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #49 into #54: README and CURRENT_STAGE carry triangulation (T0 v4) and positivity (T10) both as done, kernel-limits bullet names only general-ID estimation as open; ROADMAP done list has both, open list calibration evidence and anchoring; TESTING_CICD merged cleanly; package counts to be re-measured on this tree)"
+        "by": "Claude (cascade of #46's re-measured Gates table: CURRENT_STAGE moved only in that table's figures, which neither README nor ROADMAP quotes)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -354,12 +354,12 @@
         "sha256": {
           "packages/causal-core/src/causal_core": "18d2aa2f2ef7931f67675a18f9e0ba170989adc9fa7cbf2a7bee4ea53c3342a3",
           "conformance/declared_not_implemented.json": "68954ef8dc0ca8f974093c98c33602cfcacf1e2c22ddb5cdf33000870c2baaa4",
-          "docs/CURRENT_STAGE.md": "b9abdd07f41e5d9f1caf7dde1e109a3e8e508fc8d8ccd6900058950d85fb47ac"
+          "docs/CURRENT_STAGE.md": "f37a7a72b27ab9318e63e99833e0ab7201a96def3f6bd6b24418e312aef13ca4"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #49 into #54: README and CURRENT_STAGE carry triangulation (T0 v4) and positivity (T10) both as done, kernel-limits bullet names only general-ID estimation as open; ROADMAP done list has both, open list calibration evidence and anchoring; TESTING_CICD merged cleanly; package counts to be re-measured on this tree)"
+        "by": "Claude (cascade of #46's re-measured Gates table: CURRENT_STAGE moved only in that table's figures, which neither README nor ROADMAP quotes)"
       }
     },
     "SECURITY.md": {
