@@ -26,7 +26,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
-CONTRACT_VERSION = "0.10.0"
+CONTRACT_VERSION = "0.11.0"
 
 
 class _Model(BaseModel):
@@ -271,6 +271,12 @@ class AnalysisPolicy(_Model):
         Literal["placebo_treatment", "negative_control_outcomes", "implied_independences"], ...
     ] = ("placebo_treatment", "negative_control_outcomes", "implied_independences")
     sensitivity: bool = True
+    match_caliper: float = Field(
+        default=0.2,
+        gt=0,
+        description="Rosenbaum bound: the matched design's caliper, in standard deviations of "
+        "the propensity-score logit (Austin 2011). Units with no partner inside it are dropped.",
+    )
     require_approved_graph: bool = False
     max_ci_width: float | None = Field(default=None, gt=0)
     pt_sensitivity_grid: tuple[float, ...] = Field(
@@ -441,6 +447,37 @@ class ParallelTrendsSensitivity(_Model):
     )
 
 
+class RosenbaumSensitivity(_Model):
+    """How much hidden bias the matched comparison survives (back-door, binary treatment)."""
+
+    method: str = Field(description="The matching and the test, in words.")
+    n_pairs: int
+    n_unmatched: int = Field(description="Units of the smaller arm with no partner inside the "
+                             "caliper.")
+    max_abs_smd: float | None = Field(
+        default=None,
+        description="Largest absolute standardized difference of the adjustment covariates "
+        "between the matched arms. Residual imbalance is bias the bound does not cover.",
+    )
+    matched_difference: float = Field(
+        description="Mean treated-minus-control difference over the pairs. Its population is "
+        "the matched units, not the primary estimand's.",
+    )
+    gamma_star: float | None = Field(
+        default=None,
+        description="The sensitivity value: the largest gamma >= 1 at which the test of no "
+        "effect, one-sided in the direction of the primary estimate at (1 - ci_level) / 2 (the "
+        "level of the primary interval and of e_value_ci), still rejects; gamma is the factor "
+        "by which two units with the same covariates may differ in their odds of treatment. "
+        "None when the test does not reject even at gamma = 1.",
+    )
+    p_upper: dict[str, float] = Field(
+        default_factory=dict,
+        description="Upper bound on the one-sided p-value of no effect when hidden bias is at "
+        "most gamma, keyed by gamma.",
+    )
+
+
 class Sensitivity(_Model):
     e_value: float | None = None
     e_value_ci: float | None = None
@@ -449,6 +486,8 @@ class Sensitivity(_Model):
     robustness_value: float | None = None
     robustness_value_alpha: float | None = None
     parallel_trends: ParallelTrendsSensitivity | None = None
+    rosenbaum: RosenbaumSensitivity | None = None
+    rosenbaum_null_reason: str | None = None
 
 
 class TriangulationPair(_Model):

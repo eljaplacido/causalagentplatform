@@ -1,5 +1,5 @@
 {
-  "$id": "urn:causalplatform:claims:0.10.0:analysis_policy",
+  "$id": "urn:causalplatform:claims:0.11.0:analysis_policy",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Every threshold that can change an answer. Hashed into provenance.",
@@ -52,6 +52,13 @@
       ],
       "title": "Learners",
       "type": "string"
+    },
+    "match_caliper": {
+      "default": 0.2,
+      "description": "Rosenbaum bound: the matched design's caliper, in standard deviations of the propensity-score logit (Austin 2011). Units with no partner inside it are dropped.",
+      "exclusiveMinimum": 0,
+      "title": "Match Caliper",
+      "type": "number"
     },
     "max_ci_width": {
       "anyOf": [

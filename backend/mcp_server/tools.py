@@ -155,8 +155,9 @@ async def tool_sensitivity_analysis(
     The E-value is defined on the risk-ratio scale, so give either
     ``effect_scale="risk_ratio"`` (``ate`` is a risk ratio) or a difference-scale ``ate``
     with the outcome's standard deviation (``outcome_sd``, or ``data`` plus
-    ``outcome_column``). Otherwise ``e_value`` is null with the reason. Rosenbaum bounds
-    are not implemented (``rosenbaum_gamma`` is always null).
+    ``outcome_column``). Otherwise ``e_value`` is null with the reason. This legacy tool
+    passes no matched pairs, so ``rosenbaum_gamma`` is null here; the kernel reports
+    Rosenbaum bounds (causal-mcp's ``causal_analyze``, ``sensitivity.rosenbaum``).
 
     Returns:
         ``{e_value, e_value_ci, robust_to_unmeasured_confounding, method, reason, ok}``.
