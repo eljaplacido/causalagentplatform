@@ -64,7 +64,7 @@ SIGNATURE_VERSION = 1
 GOVERNANCE_APPROVE = "GOVERNANCE_APPROVE"
 GOVERNANCE_REJECT = "GOVERNANCE_REJECT"
 #: The action a verdict authorising the platform to record the kernel's sensitivity
-#: analysis of a draft edge is issued for (septa-62,
+#: analysis of a draft edge is issued for (septa-70,
 #: SemanticLayerRegistry.record_edge_sensitivity). Its subject is the edge.
 RECORD_SENSITIVITY = "RECORD_SENSITIVITY"
 

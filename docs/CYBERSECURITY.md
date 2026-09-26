@@ -478,7 +478,7 @@ Proposed Edge → CausalDiscoveryAgent → Contradiction Check
 > drafter attaches to their own assumption does not count. It asks for a result, not a robust
 > one: a result that says not robust still counts, and the reviewer sees it in the queue's risk
 > tier (`septa-71`). The platform records the kernel's result on a draft edge when it runs the
-> analysis, under a `RECORD_SENSITIVITY` verdict (`septa-62`, §2 above). causal-core computes
+> analysis, under a `RECORD_SENSITIVITY` verdict (`septa-70`, §2 above). causal-core computes
 > E-values, and Rosenbaum bounds for back-door designs with a binary treatment (T9), on every
 > analysis from data. Nothing labels an edge `REQUIRES_REVIEW` or blocks it from simulation use.
 

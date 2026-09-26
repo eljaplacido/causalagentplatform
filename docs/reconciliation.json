@@ -32,12 +32,12 @@
           "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "e8159af191e82a1fef9f41e0566016b87e44a0bc7f6a385977b45e33027330a7"
+          "docs/CURRENT_STAGE.md": "d32ddbc9b854d3c2af42ee17a37de2526182a13b87f9f789842edc04f659bae6"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (workbench source data: UIX, CURRENT_STAGE, ROADMAP and the dag-workbench register reality say the composer asks for a reference and SHA-256 digest; README and TESTING_CICD name no composer fields)"
+        "by": "Claude (housekeeping: the only change in the code these docs describe is the ledger id in comments, septa-62 -> septa-70 for the sensitivity recording; the docs' own references were corrected the same way; no claim moved)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,9 +53,9 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "5906ee11987d7d850993ebf3f979b25fcf2f310b248ad5026e14924655edb59d",
-          "backend/src": "8e990f3fb69302d2c20296b8dde922c07365ce57f4e0e616a3472991c2f7cbb4",
-          "backend/tests": "ed2f1cce5c7641c856c6fb27943f1e39f19463e03d8a9d4614c869dfa44a920e",
+          "conformance/declared_not_implemented.json": "1f0db627181a27f6d2369de115ae6bad6f98020aa68f04c7a6b75e75d7cc62e9",
+          "backend/src": "c85592355c8671f7c2819adbac03e48fdc6feb85b7bed5dcc446632da91315c2",
+          "backend/tests": "abd489cdf9173f9c8d328e2a1f74e246fc6d788956f359c86c0814123bb8fbd6",
           "frontend/src": "0f505690e8d04806e1f735272b7b81a8a6ed5e6c4308da5ba3536531ef21f6a0",
           "packages": "f41962f45dc02d0c7d0fed82e375a3f1c65d327fcf995cc8cf4a8753ad5d9174",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
@@ -63,7 +63,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (workbench source data: UIX, CURRENT_STAGE, ROADMAP and the dag-workbench register reality say the composer asks for a reference and SHA-256 digest; README and TESTING_CICD name no composer fields)"
+        "by": "Claude (housekeeping: the only change in the code these docs describe is the ledger id in comments, septa-62 -> septa-70 for the sensitivity recording; the docs' own references were corrected the same way; no claim moved)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -78,7 +78,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/semantic_layer": "0e9e212860d77e08f6455567d2f638da83fdf6a4653034345bec119580de787b",
+          "backend/src/semantic_layer": "8116d29f6f80e0fb17276d50f2450aec39165c4f50dc0bd5c736a6d7c8c9f072",
           "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
           "packages/semantic-types/src": "599b141c5312c6940a4479a5400b1113adfbef407f85ff016edeeade864d834c",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
@@ -87,7 +87,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of the train into septa-14/15: rule 2 and §4 say recording a sensitivity result is the edge's next revision (RECORDED) and the one content change after a draft; §3 binds RECORD_SENSITIVITY; object listing and §6 box carry revision and sourceData)"
+        "by": "Claude (housekeeping: the only change in the code these docs describe is the ledger id in comments, septa-62 -> septa-70 for the sensitivity recording; the docs' own references were corrected the same way; no claim moved)"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -146,7 +146,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/agents": "2b780a9415010e03ab854b5381d42cd2444ade7d982b80cd156e77853276b274",
+          "backend/src/agents": "81a4e9fe97f4324a0456c26edc3dee0238f64f8540ac59be17e046fd4750a48d",
           "backend/src/skills": "b0bcef79c64f6b8d2f35f87f92095d54c52cec7d972a4cf1520b95fcc0d68347",
           "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d",
           "backend/src/orchestration": "e2eb3496c39122094c47140ed28a932742480b35a2cbe4d2c1a11a40e9a0c6f7",
@@ -155,7 +155,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of the train into septa-14/15: SimulationAgent note re-read against edge_sensitivity.py, which now passes the state's agent_id; the edge's changed assumption_refs are its next revision)"
+        "by": "Claude (housekeeping: the only change in the code these docs describe is the ledger id in comments, septa-62 -> septa-70 for the sensitivity recording; the docs' own references were corrected the same way; no claim moved)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -177,17 +177,17 @@
           "backend/src/middleware": "2d6be39aef099981c6f52ec30674b91a209bc43763b316c33d290b3eda1ab215",
           "backend/src/api/governance.py": "c2ab8a061fe056b835dbb9097b147f414437df0ca702708c3e923b23c8d5751c",
           "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
-          "backend/src/semantic_layer/registry.py": "60e4360102efad1bf2072ce0d2a0347e7375d6036e73639f4b3944c0f336950c",
+          "backend/src/semantic_layer/registry.py": "fcf26738fc64003c29d3a4964517495cdb2b0267fb39f2c44c3f4311e30c9374",
           "backend/src/api/interventions.py": "928915a5bb49c3e1d993fc0da88ca6d1ac05bb1923afc6c3a0f248194d229e43",
           "backend/src/api/provenance.py": "2a308e924c9fd7ea910284fa58a479bdeeb97f260764d9c09c5d7eabeb74cfec",
           "backend/src/db/migrations": "0061d7048117bb0d23b2c6b9dddc771f21ab84dc5076464aa54750aa8ddb05e8",
-          "backend/src/semantic_layer/verdict.py": "13e537f2b000c10f10e57b0453f1f459b5237a2d60ea009103247a8bfbcade80",
+          "backend/src/semantic_layer/verdict.py": "6a46fcf8331be6953a01541f0f75151246ab50967b6baf2e1ded51ad55a80ae8",
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of the train into septa-14/15: poisoning mitigations, route table (versions and lineage reads added), RLS and grants (011 and 014 append-only tables) re-read; Art. 9 from the train, Art. 10 from this branch)"
+        "by": "Claude (housekeeping: the only change in the code these docs describe is the ledger id in comments, septa-62 -> septa-70 for the sensitivity recording; the docs' own references were corrected the same way; no claim moved)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -210,14 +210,14 @@
           "backend/src/semantic_layer/models.py": "b797d8121087451bbd55dd3489732f7aeabaea2e59c10138e2759f11bbd58960",
           "backend/src/sensors": "37f0b547a27bf3617693225db822302372fe941185153afa65d9cc5296e3360c",
           "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
-          "backend/src/semantic_layer/registry.py": "60e4360102efad1bf2072ce0d2a0347e7375d6036e73639f4b3944c0f336950c",
+          "backend/src/semantic_layer/registry.py": "fcf26738fc64003c29d3a4964517495cdb2b0267fb39f2c44c3f4311e30c9374",
           "backend/src/agents/drift_monitor.py": "3e5807b7fcc88cb7215e1126cbf5461c293020fb2153937fbbd923ca085b2c9f",
           "backend/src/skills/drift_detect.py": "9432982258b155287a90701d76dc9bf331dd8c65fbc692ad37fcd124fcab7111"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of the train into septa-14/15: §2.1 interfaces gain revision/sourceData/DataSource; rules 1-3; §3 tables for 011-014, append-only and RLS text; §6 reads durable provenance and LLM capture; §7 rows for drafts, sensitivity (versioned) and review)"
+        "by": "Claude (housekeeping: the only change in the code these docs describe is the ledger id in comments, septa-62 -> septa-70 for the sensitivity recording; the docs' own references were corrected the same way; no claim moved)"
       }
     },
     "docs/HANDOFFS.md": {
@@ -309,7 +309,7 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "ed2f1cce5c7641c856c6fb27943f1e39f19463e03d8a9d4614c869dfa44a920e",
+          "backend/tests": "abd489cdf9173f9c8d328e2a1f74e246fc6d788956f359c86c0814123bb8fbd6",
           "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "c488a844dd07e837e2d22c4b661f4efd3becea08b2315052affe794a0cd78fa6",
@@ -323,7 +323,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (workbench source data: UIX, CURRENT_STAGE, ROADMAP and the dag-workbench register reality say the composer asks for a reference and SHA-256 digest; README and TESTING_CICD name no composer fields)"
+        "by": "Claude (housekeeping: the only change in the code these docs describe is the ledger id in comments, septa-62 -> septa-70 for the sensitivity recording; the docs' own references were corrected the same way; no claim moved)"
       }
     },
     "docs/UIX.md": {
@@ -353,13 +353,13 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "fee739ab430ee5145e6e125ab755d0e3d2cb6c08bdc4b45c0f58857b21fb7686",
-          "conformance/declared_not_implemented.json": "5906ee11987d7d850993ebf3f979b25fcf2f310b248ad5026e14924655edb59d",
-          "docs/CURRENT_STAGE.md": "e8159af191e82a1fef9f41e0566016b87e44a0bc7f6a385977b45e33027330a7"
+          "conformance/declared_not_implemented.json": "1f0db627181a27f6d2369de115ae6bad6f98020aa68f04c7a6b75e75d7cc62e9",
+          "docs/CURRENT_STAGE.md": "d32ddbc9b854d3c2af42ee17a37de2526182a13b87f9f789842edc04f659bae6"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (workbench source data: UIX, CURRENT_STAGE, ROADMAP and the dag-workbench register reality say the composer asks for a reference and SHA-256 digest; README and TESTING_CICD name no composer fields)"
+        "by": "Claude (housekeeping: the only change in the code these docs describe is the ledger id in comments, septa-62 -> septa-70 for the sensitivity recording; the docs' own references were corrected the same way; no claim moved)"
       }
     },
     "SECURITY.md": {
@@ -379,13 +379,13 @@
           "backend/src/api/governance.py": "c2ab8a061fe056b835dbb9097b147f414437df0ca702708c3e923b23c8d5751c",
           "backend/src/api/interventions.py": "928915a5bb49c3e1d993fc0da88ca6d1ac05bb1923afc6c3a0f248194d229e43",
           "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
-          "backend/src/semantic_layer/registry.py": "60e4360102efad1bf2072ce0d2a0347e7375d6036e73639f4b3944c0f336950c",
-          "backend/src/semantic_layer/verdict.py": "13e537f2b000c10f10e57b0453f1f459b5237a2d60ea009103247a8bfbcade80"
+          "backend/src/semantic_layer/registry.py": "fcf26738fc64003c29d3a4964517495cdb2b0267fb39f2c44c3f4311e30c9374",
+          "backend/src/semantic_layer/verdict.py": "6a46fcf8331be6953a01541f0f75151246ab50967b6baf2e1ded51ad55a80ae8"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of the train into septa-14/15: domain-isolation, verdict and snapshot sections re-read; kept both append-only bullets (semantic_object_versions, provenance); RECORD_SENSITIVITY binding and RLS on the version history hold)"
+        "by": "Claude (housekeeping: the only change in the code these docs describe is the ledger id in comments, septa-62 -> septa-70 for the sensitivity recording; the docs' own references were corrected the same way; no claim moved)"
       }
     }
   }

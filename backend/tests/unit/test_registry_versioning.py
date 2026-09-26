@@ -297,7 +297,7 @@ async def test_a_refused_review_writes_no_version(
     ]
 
 
-# ── Recording a sensitivity result is a state change too (septa-62) ──────────
+# ── Recording a sensitivity result is a state change too (septa-70) ──────────
 
 
 def _sensitivity(e_value: float) -> SensitivityResult:

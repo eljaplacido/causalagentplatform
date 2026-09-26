@@ -12,7 +12,7 @@ Endpoints:
   GET  /api/semantic/objects/{type}/{id}/versions — every recorded version of an object
   GET  /api/semantic/objects/{type}/{id}/lineage  — source data → drafter → verdicts → approver
   POST /api/semantic/edges/{id}/sensitivity — run the kernel on a draft edge's question
-                                             and record its sensitivity analysis (septa-62)
+                                             and record its sensitivity analysis (septa-70)
 
 All write operations require a Guardian APPROVED verdict.  The draft submission
 endpoint runs a governance check inline before persisting.
@@ -547,7 +547,7 @@ async def get_object_lineage(
     return chain.model_copy(update={"provenance_records": records})
 
 
-# ── An edge's sensitivity analysis (septa-62) ─────────────────────────────────
+# ── An edge's sensitivity analysis (septa-70) ─────────────────────────────────
 
 Cell = float | int | str | bool | None
 

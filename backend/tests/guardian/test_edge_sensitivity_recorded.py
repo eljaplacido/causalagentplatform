@@ -1,5 +1,5 @@
 """
-The kernel's sensitivity analysis of an edge reaches the assumption PR-007 reads (septa-62).
+The kernel's sensitivity analysis of an edge reaches the assumption PR-007 reads (septa-70).
 
 Guardian PR-007 refuses to approve an edge unless an assumption it rests on carries a
 stored SensitivityResult (septa-33). Nothing in the platform wrote one: SimulationAgent

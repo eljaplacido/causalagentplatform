@@ -261,7 +261,7 @@ its state today.
    applies the same checks, and the verdict must have been issued for action
    `GOVERNANCE_REJECT`; a verdict for `GOVERNANCE_REJECT` or `GOVERNANCE_APPROVE` authorises
    that decision only (`septa-53`). `record_edge_sensitivity` needs one issued for
-   `RECORD_SENSITIVITY` on the edge (`septa-62`). See `backend/tests/guardian/test_verdict_binding.py`.
+   `RECORD_SENSITIVITY` on the edge (`septa-70`). See `backend/tests/guardian/test_verdict_binding.py`.
 2. **All objects are versioned.** Holds for entities, edges, fragments and assumptions. Every
    state is an immutable row in `semantic_object_versions` (`014_semantic_object_versions.sql`):
    the object's complete row at that revision, what changed it, who, and on which verdict. The

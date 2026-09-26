@@ -198,7 +198,7 @@ async def _queue(client: AsyncClient) -> dict[str, dict[str, Any]]:
 async def _record(
     registry: SemanticLayerRegistry, db_session: AsyncSession, edge: CausalEdge, robust: bool
 ) -> None:
-    """Record a sensitivity result on the edge the platform's way (septa-62)."""
+    """Record a sensitivity result on the edge the platform's way (septa-70)."""
     verdict = await issue_verdict_for(db_session, edge.id, action_type=RECORD_SENSITIVITY)
     await registry.record_edge_sensitivity(edge.id, _sensitivity(robust), verdict, _user("sim"))
 

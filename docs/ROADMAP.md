@@ -132,7 +132,7 @@ priority first, and the priorities put hardening the platform before new estimat
   estimate materially stays undetectable at T8's sizes, and is reported); Guardian PR-007, no
   edge approved without a sensitivity result stored on an assumption it rests on (`septa-33`; since `062f57d` only one the
   platform recorded for the edge counts, not a drafter's own), and the kernel's sensitivity
-  analysis of a draft edge recorded there when the platform runs it (`septa-62`); Rosenbaum bounds on
+  analysis of a draft edge recorded there when the platform runs it (`septa-70`); Rosenbaum bounds on
   a matched design, T9 (`septa-12`); positivity detection by honest overlap regions and a
   limited-overlap flag, T10 and T2 v2 (`septa-34`; four-way strata and exclusive-or patterns stay
   undetected, and are recorded); triangulation at moderate n through an outcome-model

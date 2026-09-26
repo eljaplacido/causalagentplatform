@@ -153,7 +153,7 @@ Guardian integration points, as built:
 - **Deprecate and replace.** A rejection's version is `DEPRECATED`; nothing deletes an object or a
   version. One path changes a draft's content: `record_edge_sensitivity` adds the assumption
   carrying the kernel's sensitivity result to a draft edge's `assumptionRefs` and lineage, as the
-  edge's next revision (septa-62). Otherwise a changed object is a new draft.
+  edge's next revision (septa-70). Otherwise a changed object is a new draft.
 - **`revision` counts states; `version` is the author's.** The semver `version` on edges and
   fragments is the content version an author declares, and part of `graph_fragments`' unique key;
   a state change does not touch it. "Version increments on any field change" holds as: every

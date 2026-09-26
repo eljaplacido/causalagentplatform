@@ -2,7 +2,7 @@
 The kernel's sensitivity analysis of an edge, recorded where Guardian PR-007 reads it.
 
 PR-007 (src/agents/governance.py) refuses to approve an edge unless an assumption it
-rests on carries a stored SensitivityResult. Before septa-62 nothing in the platform
+rests on carries a stored SensitivityResult. Before septa-70 nothing in the platform
 wrote one: SimulationAgent computed the kernel's E-value and dropped it. This module
 is the one path from a kernel outcome to that stored result:
 

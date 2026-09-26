@@ -25,7 +25,7 @@ table before proceeding.  GuardianBlockedError is raised if:
   - The verdict was issued for another action: a promotion needs one issued for
     GOVERNANCE_APPROVE (septa-60), a rejection one issued for GOVERNANCE_REJECT
     (septa-53), recording an edge's sensitivity result one issued for
-    RECORD_SENSITIVITY (septa-62), and a verdict for any of those decisions
+    RECORD_SENSITIVITY (septa-70), and a verdict for any of those decisions
     authorises only that decision
   - The verdict was issued for a different object, or for none
   - The verdict has already been spent (see verdict_consumption)
@@ -282,7 +282,7 @@ def _assert_action(issued: Any, action: str | None, verdict_id: UUID, context: s
 
     A bound decision accepts only a verdict issued for exactly that action: a
     promotion GOVERNANCE_APPROVE (septa-60), a rejection GOVERNANCE_REJECT
-    (septa-53), recording a sensitivity result RECORD_SENSITIVITY (septa-62). A
+    (septa-53), recording a sensitivity result RECORD_SENSITIVITY (septa-70). A
     write that names no action (a new draft) accepts none of them.
     """
     issued = str(issued)
@@ -1620,7 +1620,7 @@ class SemanticLayerRegistry:
             verdict_id=str(verdict_id),
         )
 
-    # ── The kernel's sensitivity analysis of a draft edge (septa-62) ──────────
+    # ── The kernel's sensitivity analysis of a draft edge (septa-70) ──────────
 
     async def record_edge_sensitivity(
         self,
