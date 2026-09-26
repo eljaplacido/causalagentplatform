@@ -78,16 +78,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/semantic_layer": "71a5b17a3d88bad6f369b0bf6fe663d3445b47d11ff5c1b933d337146823a857",
-          "backend/src/agents/governance.py": "6875a1979d23e6563aa7ca3b476ffb8d634a4d13fca4d33e8e85b0567043ac86",
-          "packages/semantic-types/src": "fe7182fc233b307aa02d26a958898db94ead599601fe740dcfe2981bf5a1150d",
+          "backend/src/semantic_layer": "46f7f2b28818506bf9ec6a43d822e799e7555324b6c4fd8bc5b32de34db9b3d8",
+          "backend/src/agents/governance.py": "a1317e386b8f5783a1fd17bdf864fb52a88ece0aabad93ef6cdd416d5190dff3",
+          "packages/semantic-types/src": "b88502a55b3406392490bc55954f738e1c9557acaa2e273743cdb113c4bc31ce",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
           "backend/src/orchestration/graph.py": "1c42a22eed003aa1e67b1ffc70545347304a0cc5170959464f263439b727eacc"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-36: CausalEdge field list gains createdBy (migration 011); transitions and registry rules unchanged)"
+        "by": "Claude (merge #30 into #31: registry guard now names the review-action binding for approve and reject; createdBy list unchanged)"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {

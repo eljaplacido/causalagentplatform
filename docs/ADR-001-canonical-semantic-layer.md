@@ -103,7 +103,8 @@ Guardian integration points, as built:
 - Only `GovernanceAgent` and `IncidentTriageAgent` call the `guardian_check` skill themselves.
   `BaseAgent._assert_guardian_approved`, the write guard meant for every agent, has no callers.
   The persistence guard that does hold is in the registry: every semantic-layer write needs a
-  signed, subject-bound, single-use APPROVED verdict (`_assert_verdict_approved`).
+  signed, subject-bound, single-use APPROVED verdict, and a review decision one issued for
+  exactly that action, `GOVERNANCE_APPROVE` or `GOVERNANCE_REJECT` (`_assert_verdict_approved`).
 - An audit trail entry is written on every verdict.
 - The circuit breaker escalates at `cycle_count >= 5` (PR-005; `MAX_CYCLES` in `agents/base.py`).
 
