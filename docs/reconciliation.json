@@ -28,16 +28,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
-          "packages/causal-mcp": "ac8ffe5b31a7fc07dfbfaee6156a0003bc0753f30c9a3a730b99d39de085a913",
+          "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
+          "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "648b299bd660dcfed29661af96e1652988964c391fe84baecb85f1c106e3196d"
+          "docs/CURRENT_STAGE.md": "9ccdf065bc6a28ec1d190917fea7935e80e3845daa5c897f1b860a853953a35e"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-14/15: re-read after CURRENT_STAGE gained the versioning and lineage rows; its status paragraph still holds)"
+        "by": "Claude (merge of the train into septa-14/15: status paragraph re-read; it names no versioning or provenance claim the merge changed)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "51890837c1db285d45d16e1f48bc6489de49844a0eb9c40b609082db7ed25b22",
-          "backend/src": "9453feee8239ecac8f988d27497721602e4a13babe28a4aefb0efd0b9f5fe7b5",
-          "backend/tests": "5fc4b79eac20928c3642f15846a2126cacc01bb887291394508b626cb069ddb6",
-          "frontend/src": "d357d66d238bdc673ac0c5215b914bf4a8649a1ea7ca09c9e5bb0052c0b48fcb",
-          "packages": "b5348573d056b4c0da6fd6626778288f4307255d048f37aabe6ddf7c07d2d776",
+          "conformance/declared_not_implemented.json": "00c6183989d5a08b01ff65fde423dece42ea334ac83066f58c3599b321c2fe49",
+          "backend/src": "d891a9ed74eca61880fe91529e837e53bb3346691315b7ddf4e6c0e78f749fb7",
+          "backend/tests": "c6d6564dfa05a6bdf05dcced207a79d96e355d8c14574bfed3784e5f1510127d",
+          "frontend/src": "b466587cba2f440aaacdd3395df8690b5c08971f869236ecd9694a646caf0b31",
+          "packages": "89a7c98a69a18d50e9df7173cc15e56fba44848d95cbf8a1cb3cfdfffd139103",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-14/15: versioning and lineage rows implemented, interventions-mutated-in-place and lineage-to-analyses rows added, RLS row names 014)"
+        "by": "Claude (merge of the train into septa-14/15: summary keeps the train's heuristic/LLM/governance bullets and this branch's semantic-objects bullet; RLS row names 014; provenance rows from the train; lineage-to-analyses and dag-workbench rows corrected; status_claims ok)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -78,16 +78,16 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/semantic_layer": "f33a7ad42a0749ade4842aa02793d79888153073e81c549d7331ce3efaebdd5c",
-          "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
-          "packages/semantic-types/src": "c2e5a655ecb62af34684729fd640e5c43b50bef6978151f79c7bb4e326c63a05",
+          "backend/src/semantic_layer": "0e9e212860d77e08f6455567d2f638da83fdf6a4653034345bec119580de787b",
+          "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
+          "packages/semantic-types/src": "599b141c5312c6940a4479a5400b1113adfbef407f85ff016edeeade864d834c",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
-          "backend/src/orchestration/graph.py": "1c42a22eed003aa1e67b1ffc70545347304a0cc5170959464f263439b727eacc"
+          "backend/src/orchestration/graph.py": "9e75a97dcfccf2e649b77e2b52bd0bc1ae8d11aaf7a3af5c072d4bcb2e09d7e8"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-14/15: §2 rules 2-3 and §4 Versioning rewritten against 014 and the registry; interventions and lineage-to-analyses named as open)"
+        "by": "Claude (merge of the train into septa-14/15: rule 2 and §4 say recording a sensitivity result is the edge's next revision (RECORDED) and the one content change after a draft; §3 binds RECORD_SENSITIVITY; object listing and §6 box carry revision and sourceData)"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -104,14 +104,14 @@
         "sha256": {
           "backend/src/semantic_layer/provenance.py": "c912fb0af67442b984325d80528867c559ccb0332ac7725ac448e48f87164c89",
           "backend/src/semantic_layer/contracts.py": "96357377af27b488fd82e05c2601a907cbf99afe7cd9ae71819ee37c7e284068",
-          "backend/src/api/provenance.py": "55fa5a3e0153904f557da134e6e0f3a8c8c1ae0ab8b5fe4faa8a6918a70c617e",
+          "backend/src/api/provenance.py": "2a308e924c9fd7ea910284fa58a479bdeeb97f260764d9c09c5d7eabeb74cfec",
           "backend/src/agents/llm_factory.py": "e10b999f795c944f596ff9d2f113bc56a5f07e5b64b464fee712dc08e4a1f9ed",
           "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge #50 into #48: LLM layer has callers (this branch) and invocations go to the durable store (#30): ADR-002 status, criteria and component rows, CURRENT_STAGE LLM bullet and provenance-flow row, ADR-003 planner note all say so; grepped for 'no callers', 'in-memory' and 'No LLM is called', none stale; ORCHESTRATION merged cleanly on LF; TESTING_CICD keeps main's Neo4j text and this branch's LLM-calls paragraph)"
+        "by": "Claude (merge of the train into septa-14/15: header no longer says no LLM is called; api/provenance.py docstring names the narration callers; lineage chain reads the durable store through async get_provenance_graph)"
       }
     },
     "docs/ADR-003-hierarchical-planning-and-evaluation.md": {
@@ -146,7 +146,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/agents": "f54499833e60481971d54deb0252ae7fe46d03ac7fd066ccfa1282a85a1b5769",
+          "backend/src/agents": "2b780a9415010e03ab854b5381d42cd2444ade7d982b80cd156e77853276b274",
           "backend/src/skills": "b0bcef79c64f6b8d2f35f87f92095d54c52cec7d972a4cf1520b95fcc0d68347",
           "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d",
           "backend/src/orchestration": "e2eb3496c39122094c47140ed28a932742480b35a2cbe4d2c1a11a40e9a0c6f7",
@@ -155,7 +155,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (backend integrity fixes, merged onto #54: SECURITY and CYBERSECURITY 4.0 say every route but the liveness probe has a matrix row, reads included, and sessions are owner-or-governance; CURRENT_STAGE rows for role-less reads, session ownership, incident overwrites, exact-id intervention decisions with single closure, weekly metrics; TESTING_CICD names the new tests; ADR-003, AGENTS and ROADMAP re-read after session.py and the merge, nothing they state moved)"
+        "by": "Claude (merge of the train into septa-14/15: SimulationAgent note re-read against edge_sensitivity.py, which now passes the state's agent_id; the edge's changed assumption_refs are its next revision)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -174,20 +174,20 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/middleware": "8fc9e7be7f813e668a4198a5426afb713e09150a9e791a066b98f868a6e74389",
-          "backend/src/api/governance.py": "0deba40a36b3f2337ce943af9bd0c768c2eb29532b333df12f96a3fe67bf3b48",
-          "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
-          "backend/src/semantic_layer/registry.py": "041f4d6c84e8e8105b4223741cef60ab0953a2e060719189e21c0b30c3c77120",
-          "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
-          "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
-          "backend/src/db/migrations": "8822cffcd6534e6682dfbc0f2c6157f1beed4f3a80773180d9285903945813d3",
-          "backend/src/semantic_layer/verdict.py": "12f9101110cc775c51be9a8d8040bb01b9e8e6270bfb588c111fb204abc0d4f9",
+          "backend/src/middleware": "2d6be39aef099981c6f52ec30674b91a209bc43763b316c33d290b3eda1ab215",
+          "backend/src/api/governance.py": "c2ab8a061fe056b835dbb9097b147f414437df0ca702708c3e923b23c8d5751c",
+          "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
+          "backend/src/semantic_layer/registry.py": "60e4360102efad1bf2072ce0d2a0347e7375d6036e73639f4b3944c0f336950c",
+          "backend/src/api/interventions.py": "928915a5bb49c3e1d993fc0da88ca6d1ac05bb1923afc6c3a0f248194d229e43",
+          "backend/src/api/provenance.py": "2a308e924c9fd7ea910284fa58a479bdeeb97f260764d9c09c5d7eabeb74cfec",
+          "backend/src/db/migrations": "0061d7048117bb0d23b2c6b9dddc771f21ab84dc5076464aa54750aa8ddb05e8",
+          "backend/src/semantic_layer/verdict.py": "13e537f2b000c10f10e57b0453f1f459b5237a2d60ea009103247a8bfbcade80",
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-14/15: poisoning mitigations, RLS tables and append-only surfaces include semantic_object_versions; Art. 10 row)"
+        "by": "Claude (merge of the train into septa-14/15: poisoning mitigations, route table (versions and lineage reads added), RLS and grants (011 and 014 append-only tables) re-read; Art. 9 from the train, Art. 10 from this branch)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -205,19 +205,19 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/db": "b8d6956115cad50e1a5c83d06f7cb501d7020da9eb65d5a7d368640999aaa8d4",
-          "backend/src/connectors": "47199e6fd213f90c59af28dda1c6469d256d6595cdd433fbbd1a2957ec723569",
-          "backend/src/semantic_layer/models.py": "3d839cb9c7653dbb4872f56cf6e296f095b2543d95cc387edca4cb56cd9714dd",
-          "backend/src/sensors": "d38f988ccb52659ac4ecc8724e8aa775b2e6e9fca76b73dbba6576c3f3d1dcba",
-          "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
-          "backend/src/semantic_layer/registry.py": "041f4d6c84e8e8105b4223741cef60ab0953a2e060719189e21c0b30c3c77120",
-          "backend/src/agents/drift_monitor.py": "9279c31636b3b663007f21e7aa671ffe738a535432f610ecb5b6de00ae6bd815",
+          "backend/src/db": "a70c4bbc790ffe07c3a7405f078af38c9576dfa55d75e5ab87b4a821162a63a8",
+          "backend/src/connectors": "2b7f65f2acc7f7732deecdad2c8c1b72e4db72caed067285d65631be65c4edfa",
+          "backend/src/semantic_layer/models.py": "b797d8121087451bbd55dd3489732f7aeabaea2e59c10138e2759f11bbd58960",
+          "backend/src/sensors": "37f0b547a27bf3617693225db822302372fe941185153afa65d9cc5296e3360c",
+          "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
+          "backend/src/semantic_layer/registry.py": "60e4360102efad1bf2072ce0d2a0347e7375d6036e73639f4b3944c0f336950c",
+          "backend/src/agents/drift_monitor.py": "3e5807b7fcc88cb7215e1126cbf5461c293020fb2153937fbbd923ca085b2c9f",
           "backend/src/skills/drift_detect.py": "9432982258b155287a90701d76dc9bf331dd8c65fbc692ad37fcd124fcab7111"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-14/15: §2.2 rules 2-3, §3 table rows for 014, §6 lineage chain, §7 draft/approve rows re-read against registry.py and the API)"
+        "by": "Claude (merge of the train into septa-14/15: §2.1 interfaces gain revision/sourceData/DataSource; rules 1-3; §3 tables for 011-014, append-only and RLS text; §6 reads durable provenance and LLM capture; §7 rows for drafts, sensitivity (versioned) and review)"
       }
     },
     "docs/HANDOFFS.md": {
@@ -230,12 +230,12 @@
         "on": "2026-09-26",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
-          "backend/src/semantic_layer/models.py": "3d839cb9c7653dbb4872f56cf6e296f095b2543d95cc387edca4cb56cd9714dd"
+          "backend/src/semantic_layer/models.py": "b797d8121087451bbd55dd3489732f7aeabaea2e59c10138e2759f11bbd58960"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-14/15: re-read after models.py gained DataSource, revision and the lineage models; its constraints still hold)"
+        "by": "Claude (merge of the train into septa-14/15: re-read after models.py gained created_by on edges and the RECORDED meaning; its EpistemicState constraints still hold)"
       }
     },
     "docs/ORCHESTRATION.md": {
@@ -309,21 +309,21 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "5fc4b79eac20928c3642f15846a2126cacc01bb887291394508b626cb069ddb6",
-          "backend/pyproject.toml": "a2fcaf881b6deb28b56ff942d621e3b29ea7a837c8b4fe3a57b54425ffbe3c8b",
+          "backend/tests": "c6d6564dfa05a6bdf05dcced207a79d96e355d8c14574bfed3784e5f1510127d",
+          "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
-          "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
-          ".gnomon/ci.sh": "a05e016e87f09e27989ffc185d06ad2b55c6d31f4e9b9cc2954b8cfdf7a40e45",
-          "scripts": "6328d041412372fffe18e04e68d217f72ec5c20e772ccc083fada35dc989f264",
+          "frontend/playwright.config.ts": "c488a844dd07e837e2d22c4b661f4efd3becea08b2315052affe794a0cd78fa6",
+          ".gnomon/ci.sh": "9bd34338c9fb7a397f25f383bee73cde526105c9217e6e1ee60bf0e8c0802956",
+          "scripts": "0bd371c4d9f693a52bf29f3f0c1e2d10e38e11b7001473e46be6c9c187b589cc",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
-          "benchmarks": "2ea289c99ef957a2b22a4eed544e76c06e45eb8a2c844d384f9e05eb7f84d940",
-          "packages/causal-core/tests": "ca9a8600b9bdeb81d9509afcb864900159868a7509bcc0aa13fff0fc501869f5",
-          "packages/causal-decision/tests": "c7ccd2d2b91e1ec53a3eb456c70f670268b2ec1f8f431e161f399360b94ef7de"
+          "benchmarks": "29568520a660ee325cd3ba990a0e9ba6be64e73b9090aab26b5b4d076d85b951",
+          "packages/causal-core/tests": "9100d049011c0d40676f25535f0df4dba0cbd7039acc96e7e1c4b8eab1fbfa3d",
+          "packages/causal-decision/tests": "ba13e24dd22403ccd0773c06f1140b7db6d3e84f306c23cf5efa96be62c10ead"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-14/15: the versioning triggers on both engines, and the lineage test, described in the schema section)"
+        "by": "Claude (merge of the train into septa-14/15: schema section names the revision-rule helper, the sensitivity-revision test and the lineage test's recorded analysis; test tables from the train re-read)"
       }
     },
     "docs/UIX.md": {
@@ -352,14 +352,14 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "packages/causal-core/src/causal_core": "6b029f17fceb5b8a44c784ea601802c8d97c1d2ed3ce9a6a92c2600823826501",
-          "conformance/declared_not_implemented.json": "51890837c1db285d45d16e1f48bc6489de49844a0eb9c40b609082db7ed25b22",
-          "docs/CURRENT_STAGE.md": "648b299bd660dcfed29661af96e1652988964c391fe84baecb85f1c106e3196d"
+          "packages/causal-core/src/causal_core": "fee739ab430ee5145e6e125ab755d0e3d2cb6c08bdc4b45c0f58857b21fb7686",
+          "conformance/declared_not_implemented.json": "00c6183989d5a08b01ff65fde423dece42ea334ac83066f58c3599b321c2fe49",
+          "docs/CURRENT_STAGE.md": "9ccdf065bc6a28ec1d190917fea7935e80e3845daa5c897f1b860a853953a35e"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-14/15: p3/p4 names what remains of versioning and lineage)"
+        "by": "Claude (merge of the train into septa-14/15: p3/p4 lists versioning, lineage and the LLM layer's callers as done; workbench drafts named as unapprovable without source data)"
       }
     },
     "SECURITY.md": {
@@ -375,17 +375,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/middleware": "8fc9e7be7f813e668a4198a5426afb713e09150a9e791a066b98f868a6e74389",
-          "backend/src/api/governance.py": "0deba40a36b3f2337ce943af9bd0c768c2eb29532b333df12f96a3fe67bf3b48",
-          "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
-          "backend/src/agents/governance.py": "45eab1558eb44b074bcb3c47926576ae42efe594ab6934aa367e7bdc845d7bd0",
-          "backend/src/semantic_layer/registry.py": "041f4d6c84e8e8105b4223741cef60ab0953a2e060719189e21c0b30c3c77120",
-          "backend/src/semantic_layer/verdict.py": "12f9101110cc775c51be9a8d8040bb01b9e8e6270bfb588c111fb204abc0d4f9"
+          "backend/src/middleware": "2d6be39aef099981c6f52ec30674b91a209bc43763b316c33d290b3eda1ab215",
+          "backend/src/api/governance.py": "c2ab8a061fe056b835dbb9097b147f414437df0ca702708c3e923b23c8d5751c",
+          "backend/src/api/interventions.py": "928915a5bb49c3e1d993fc0da88ca6d1ac05bb1923afc6c3a0f248194d229e43",
+          "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
+          "backend/src/semantic_layer/registry.py": "60e4360102efad1bf2072ce0d2a0347e7375d6036e73639f4b3944c0f336950c",
+          "backend/src/semantic_layer/verdict.py": "13e537f2b000c10f10e57b0453f1f459b5237a2d60ea009103247a8bfbcade80"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-14/15: RLS list and the append-only snapshot include semantic_object_versions; registry write claim still holds)"
+        "by": "Claude (merge of the train into septa-14/15: domain-isolation, verdict and snapshot sections re-read; kept both append-only bullets (semantic_object_versions, provenance); RECORD_SENSITIVITY binding and RLS on the version history hold)"
       }
     }
   }
