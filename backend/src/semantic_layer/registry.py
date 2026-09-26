@@ -1237,9 +1237,10 @@ class SemanticLayerRegistry:
         risk_tier, risk_reasons and submitted_by. The tier is derived from stored
         fields by src/semantic_layer/review_risk.py (edges by stated confidence and
         the sensitivity results the platform recorded for them, fragments by
-        whether they carry an unapproved edge, entities LOW); the queue is ordered CRITICAL, HIGH, MEDIUM, LOW and
-        oldest first within a tier. submitted_by is the id in the object's
-        created_by, or None where none was recorded (edges drafted before 011).
+        whether they carry an unapproved edge, entities LOW); the queue is ordered
+        CRITICAL, HIGH, MEDIUM, LOW and oldest first within a tier. submitted_by is
+        the id in the object's created_by, or None where none was recorded (edges
+        drafted before 011).
 
         Every pending object is read before the cut to `limit`: a tier depends on the
         row, so cutting each table first could drop a CRITICAL item for a LOW one.
