@@ -31,6 +31,11 @@ const API_BASE_URL =
 export class CausalApiError extends Error {
   constructor(
     public readonly status: number,
+    /**
+     * The backend's machine-readable code: the `error` field its exception
+     * handlers send (unauthorized, forbidden, guardian_blocked, not_found,
+     * circuit_breaker_open), else HTTP_ERROR, or NETWORK_ERROR (status 0).
+     */
     public readonly code: string,
     message: string,
     public readonly details?: Record<string, unknown>
@@ -38,6 +43,40 @@ export class CausalApiError extends Error {
     super(message);
     this.name = "CausalApiError";
   }
+
+  /**
+   * The caller is not authenticated (401), or is authenticated and not allowed
+   * (403). A 403 from a Guardian block is a policy verdict, not an
+   * authorisation failure, and does not count.
+   */
+  get isNotAuthorised(): boolean {
+    return (
+      this.status === 401 ||
+      (this.status === 403 && this.code !== "guardian_blocked")
+    );
+  }
+}
+
+/** True when `err` is a 401/403 authorisation failure from the backend. */
+export function isNotAuthorised(err: unknown): boolean {
+  return err instanceof CausalApiError && err.isNotAuthorised;
+}
+
+/**
+ * FastAPI's 422 body: `detail` is a list of {loc, msg, type}. Rendered as
+ * "field.path: message; ..." so the UI can say which field was refused.
+ */
+function formatValidationDetail(detail: unknown): string | undefined {
+  if (!Array.isArray(detail) || detail.length === 0) return undefined;
+  const parts = detail.map((d) => {
+    const item = (d ?? {}) as { loc?: unknown; msg?: unknown };
+    const loc = Array.isArray(item.loc)
+      ? item.loc.filter((p) => p !== "body").map(String).join(".")
+      : "";
+    const msg = typeof item.msg === "string" ? item.msg : JSON.stringify(d);
+    return loc ? `${loc}: ${msg}` : msg;
+  });
+  return parts.join("; ");
 }
 
 // ─── Token helpers ────────────────────────────────────────────────────────────
@@ -137,31 +176,42 @@ async function apiFetch<T>(
   }
 
   if (!response.ok) {
-    let errorBody: (ApiError & { detail?: unknown; reason?: unknown }) | null =
-      null;
+    type ErrorBody = Partial<ApiError> & {
+      error?: unknown;
+      detail?: unknown;
+      reason?: unknown;
+    };
+    let errorBody: ErrorBody | null = null;
 
     try {
-      errorBody = (await response.json()) as ApiError & {
-        detail?: unknown;
-        reason?: unknown;
-      };
+      errorBody = (await response.json()) as ErrorBody;
     } catch {
       // Body is not JSON — use status text
     }
 
-    // FastAPI HTTPException bodies carry the explanation in `detail`; the
-    // Guardian-blocked handler uses `reason`. Surface whichever is present so
-    // the UI can show the real cause instead of a bare status code.
+    // FastAPI HTTPException bodies carry the explanation in `detail` (a string,
+    // or on a 422 a list of field errors); the backend's own exception handlers
+    // send `error` (the code) with `message`, or with `reason` for a Guardian
+    // block. Surface whichever is present so the UI can show the real cause
+    // instead of a bare status code.
+    const validationMessage = formatValidationDetail(errorBody?.detail);
     const backendMessage =
-      errorBody?.message ??
+      (typeof errorBody?.message === "string" ? errorBody.message : undefined) ??
       (typeof errorBody?.detail === "string" ? errorBody.detail : undefined) ??
+      validationMessage ??
       (typeof errorBody?.reason === "string" ? errorBody.reason : undefined);
+
+    const code =
+      (typeof errorBody?.error === "string" ? errorBody.error : undefined) ??
+      (typeof errorBody?.code === "string" ? errorBody.code : undefined) ??
+      (response.status === 422 ? "validation_error" : "HTTP_ERROR");
 
     throw new CausalApiError(
       response.status,
-      errorBody?.code ?? "HTTP_ERROR",
+      code,
       backendMessage ?? `Request failed with status ${response.status}`,
-      errorBody?.details
+      errorBody?.details ??
+        (validationMessage ? { detail: errorBody?.detail } : undefined)
     );
   }
 
