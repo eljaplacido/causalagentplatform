@@ -32,12 +32,12 @@
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "f821226daaf873e3de48ce2c45e1ad2cbe8447fcbad5353adf61245970301392"
+          "docs/CURRENT_STAGE.md": "8cb0b01de6c229be0d38b19959ac98ed6d7fa322223ea90c839f91d26778e60a"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-36: re-read; README quotes no governance row of CURRENT_STAGE)"
+        "by": "Claude (septa-62: re-read; README quotes no governance row or session parameter of CURRENT_STAGE)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -54,10 +54,10 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "703a728d2f54dd528266363a620bdde06ccdc71a255998d26171ea7b27f0fb90",
-          "backend/src": "7da218504677aa33c206da1b86eeb8eb382ade9344b713b8b36fb6a21acbf191",
+          "conformance/declared_not_implemented.json": "92ade83270a50fd7d1ff082c74f4c18878aded24fdb5c053c866a918e3a9865a",
+          "backend/src": "e37a72fe9135ca9ff22a2d5df24b505a3b56a7bb45f7073756c8c551134af3f3",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "ec946ae24599f8d111b7faff7336eb8d14e6469e4c5cc40896396936b30f061d",
+          "backend/tests": "564fea6f31b323d763bd46de763f91372899e2ee8c66d60b038c999e1916446d",
           "frontend/src": "653e2e1dd0b61fab109dbe492e7facb12581472ba80c9aa3e550616a5d3c5902",
           "packages": "b6ee9e7b2337b6a02a1015e9b026ef382e06dd7afb17259c76142ad2af9e8a02",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
@@ -65,7 +65,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (migration renumbered 011 -> 012_edge_created_by so it follows #30's 011_provenance; content unchanged)"
+        "by": "Claude (septa-62/PR-010/session domain: rows for the recorded sensitivity result and PR-010; the session row says a declared cynefin_domain is refused)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -80,8 +80,8 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/semantic_layer": "71a5b17a3d88bad6f369b0bf6fe663d3445b47d11ff5c1b933d337146823a857",
-          "backend/src/agents/governance.py": "6875a1979d23e6563aa7ca3b476ffb8d634a4d13fca4d33e8e85b0567043ac86",
+          "backend/src/semantic_layer": "5949f27e6ff1d427b0bc1f8ccebd325608951ce4ffb3262c8c18d77c08e801eb",
+          "backend/src/agents/governance.py": "9fe55f2595f15ade50b8ca822b269def453dde6ec23b24855a307a413271a233",
           "packages/semantic-types/src": "fe7182fc233b307aa02d26a958898db94ead599601fe740dcfe2981bf5a1150d",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
           "backend/src/orchestration/graph.py": "1c42a22eed003aa1e67b1ffc70545347304a0cc5170959464f263439b727eacc"
@@ -89,7 +89,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-36: CausalEdge field list gains createdBy (migration 011); transitions and registry rules unchanged)"
+        "by": "Claude (septa-62: SimulationAgent calls GovernanceAgent.check for RECORD_SENSITIVITY; recording a result is another in-place update of a draft edge)"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -108,12 +108,12 @@
           "backend/src/semantic_layer/contracts.py": "8af9432f179c0d3e8652b3b7d4a48db9edbff3f5acc1fb25c8a6e8d9af3eaaa4",
           "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
           "backend/src/agents/llm_factory.py": "f7a2d5514b4002494fe1cf9edf69c5b9cc31b8d2751fe39b335ecbfce4d8014a",
-          "backend/src/agents/governance.py": "6875a1979d23e6563aa7ca3b476ffb8d634a4d13fca4d33e8e85b0567043ac86"
+          "backend/src/agents/governance.py": "9fe55f2595f15ade50b8ca822b269def453dde6ec23b24855a307a413271a233"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-36: re-read; governance.py only moved edge_sensitivity onto the shared usable_sensitivity reading, PR-009 unchanged)"
+        "by": "Claude (septa-62/PR-010: re-read; governance.py gained PR-010 before PR-002, PR-009 unchanged)"
       }
     },
     "docs/ADR-003-hierarchical-planning-and-evaluation.md": {
@@ -128,12 +128,12 @@
         "sha256": {
           "backend/src/orchestration": "026e61993e2c3e51962380e4d4e957cf5d26e650455679bd5e7cdce75c31c2f4",
           "backend/src/evaluation": "9a2708b95f3bae7f8b05075e62815c7f51cb3f6e7939a585c1c2c26e5b500b07",
-          "backend/src/api/platform.py": "16dcc7dbc23c2cf627fff078cbdf4e5355833ea156073ab190f48ba60574b613"
+          "backend/src/api/platform.py": "c97395b781c010f3ac6a9d5fc3e1338c89635132d76be45bb1d247fbab9c1b84"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-52: re-read; platform.py's metrics now group weeks in Python instead of SQLite's strftime and the DB connector is named by dialect; the three evaluation endpoints the ADR describes are unchanged)"
+        "by": "Claude (PR-010: the Guardian's side of the no-safe-action contract and when it bites; platform.py's rule table lists PR-010)"
       }
     },
     "docs/AGENTS.md": {
@@ -148,7 +148,7 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/agents": "e13037313fa3545f7c92bc7a96ce1a1798d3ac1e91c353758a18906b5e6a9ffd",
+          "backend/src/agents": "68cb60de5cdb22a6ee90ae4038a6dca1ade4d850ec8c4987a1019ac29b94b527",
           "backend/src/skills": "7c14f6095d38b78711081427d4f98e3f621a0a72de4b377d6fc374c346c4ecea",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "backend/src/orchestration": "026e61993e2c3e51962380e4d4e957cf5d26e650455679bd5e7cdce75c31c2f4",
@@ -157,7 +157,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-36: re-read; its one risk-tier mention is the change-impact agent output, not the review queue; the Guardian spec is intent and nothing became false)"
+        "by": "Claude (septa-62/PR-010: Guardian PR-010 constraint; SimulationAgent records the kernel's sensitivity analysis on its draft Treatment -> Outcome edge)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -176,20 +176,20 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/middleware": "0a00dc9c734e148a08c531bcd281d3afe81a8189ef75ef669543b89cd0e4136b",
+          "backend/src/middleware": "6ee862a87da7273046c071c42228816a60cbc9fd781f0598d447b0d9be31e3e5",
           "backend/src/api/governance.py": "785d6bc6b0897067d92fd1e9c7e0a7619379c44b9103d04a6fa3e5ad8017f527",
-          "backend/src/agents/governance.py": "6875a1979d23e6563aa7ca3b476ffb8d634a4d13fca4d33e8e85b0567043ac86",
-          "backend/src/semantic_layer/registry.py": "7353cc8b8dbbb31cffcdfb2f7658ab802f07c58650a8dee70cd83f8650c19536",
+          "backend/src/agents/governance.py": "9fe55f2595f15ade50b8ca822b269def453dde6ec23b24855a307a413271a233",
+          "backend/src/semantic_layer/registry.py": "abbaff62f0ac3a7e1de0979fb9382a896a70a71fae5b7557e8cb55db9de94cd6",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
           "backend/src/api/provenance.py": "49b693d6cb26129f8a1b981bd2f217232e24641e4b45a7ff7b5957c417b4e211",
           "backend/src/db/migrations": "deb8e99b8e619c145353da0566913555421eb3daa3f028d4f0f90a5eeccfd558",
-          "backend/src/semantic_layer/verdict.py": "4b32849d51f5dd4b19a0dd93d807b817eab0083210bc10180745c8454a61c230",
+          "backend/src/semantic_layer/verdict.py": "24957a1883bc35f9e0f2611051fd5a1712dfe2945cb244dd916aa1caeb28ce6e",
           ".github/workflows": "1ae0fadaa874c419905d5c24ebadf5ccca68705dc7d83057ea81682712fae31b"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (migration renumbered 011 -> 012_edge_created_by so it follows #30's 011_provenance; content unchanged)"
+        "by": "Claude (septa-62/PR-010: PR-007 paragraph says how a result is recorded; the new route under DRAFT_ROLES; Art. 9 counts PR-010)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -212,14 +212,14 @@
           "backend/src/semantic_layer/models.py": "9d20689801ee209370c995278bfa23f58d19fd0c68a65d86e705e4fb7b1a036f",
           "backend/src/sensors": "d38f988ccb52659ac4ecc8724e8aa775b2e6e9fca76b73dbba6576c3f3d1dcba",
           "docker-compose.yml": "af8576914eedf31cfb01946682e0ff0ce052b9925febd07a15af5a61b932334b",
-          "backend/src/semantic_layer/registry.py": "7353cc8b8dbbb31cffcdfb2f7658ab802f07c58650a8dee70cd83f8650c19536",
+          "backend/src/semantic_layer/registry.py": "abbaff62f0ac3a7e1de0979fb9382a896a70a71fae5b7557e8cb55db9de94cd6",
           "backend/src/agents/drift_monitor.py": "9279c31636b3b663007f21e7aa671ffe738a535432f610ecb5b6de00ae6bd815",
           "backend/src/skills/drift_detect.py": "9432982258b155287a90701d76dc9bf331dd8c65fbc692ad37fcd124fcab7111"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (migration renumbered 011 -> 012_edge_created_by so it follows #30's 011_provenance; content unchanged)"
+        "by": "Claude (septa-62: §7 lists the sensitivity route and SimulationAgent's one semantic-layer write)"
       }
     },
     "docs/HANDOFFS.md": {
@@ -311,7 +311,7 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "1ae0fadaa874c419905d5c24ebadf5ccca68705dc7d83057ea81682712fae31b",
-          "backend/tests": "ec946ae24599f8d111b7faff7336eb8d14e6469e4c5cc40896396936b30f061d",
+          "backend/tests": "564fea6f31b323d763bd46de763f91372899e2ee8c66d60b038c999e1916446d",
           "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
@@ -325,7 +325,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-36: integration row names test_review_queue_risk.py)"
+        "by": "Claude (septa-62/PR-010/session domain: guardian/ and integration/ rows name the new tests)"
       }
     },
     "docs/UIX.md": {
@@ -355,13 +355,13 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "b3a206babea176dd53fdebe83037e38e66922eeced1def6dbfb248262c2477a6",
-          "conformance/declared_not_implemented.json": "703a728d2f54dd528266363a620bdde06ccdc71a255998d26171ea7b27f0fb90",
-          "docs/CURRENT_STAGE.md": "f821226daaf873e3de48ce2c45e1ad2cbe8447fcbad5353adf61245970301392"
+          "conformance/declared_not_implemented.json": "92ade83270a50fd7d1ff082c74f4c18878aded24fdb5c053c866a918e3a9865a",
+          "docs/CURRENT_STAGE.md": "8cb0b01de6c229be0d38b19959ac98ed6d7fa322223ea90c839f91d26778e60a"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (migration renumbered 011 -> 012_edge_created_by so it follows #30's 011_provenance; content unchanged)"
+        "by": "Claude (septa-62: p2 names it; register and CURRENT_STAGE changes are rows and notes, no roadmap status moved)"
       }
     },
     "SECURITY.md": {
@@ -377,17 +377,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "backend/src/middleware": "0a00dc9c734e148a08c531bcd281d3afe81a8189ef75ef669543b89cd0e4136b",
+          "backend/src/middleware": "6ee862a87da7273046c071c42228816a60cbc9fd781f0598d447b0d9be31e3e5",
           "backend/src/api/governance.py": "785d6bc6b0897067d92fd1e9c7e0a7619379c44b9103d04a6fa3e5ad8017f527",
           "backend/src/api/interventions.py": "564d1765101baa27b1757de83733bf54915c6782abbea84076919739b3b68d21",
-          "backend/src/agents/governance.py": "6875a1979d23e6563aa7ca3b476ffb8d634a4d13fca4d33e8e85b0567043ac86",
-          "backend/src/semantic_layer/registry.py": "7353cc8b8dbbb31cffcdfb2f7658ab802f07c58650a8dee70cd83f8650c19536",
-          "backend/src/semantic_layer/verdict.py": "4b32849d51f5dd4b19a0dd93d807b817eab0083210bc10180745c8454a61c230"
+          "backend/src/agents/governance.py": "9fe55f2595f15ade50b8ca822b269def453dde6ec23b24855a307a413271a233",
+          "backend/src/semantic_layer/registry.py": "abbaff62f0ac3a7e1de0979fb9382a896a70a71fae5b7557e8cb55db9de94cd6",
+          "backend/src/semantic_layer/verdict.py": "24957a1883bc35f9e0f2611051fd5a1712dfe2945cb244dd916aa1caeb28ce6e"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (septa-36: re-read; the review queue is still role-gated and bounded by domain scope, the fragment edge lookup included)"
+        "by": "Claude (septa-62: the registry's action bindings now include RECORD_SENSITIVITY for a draft edge's sensitivity result; the route is in the role matrix)"
       }
     }
   }
