@@ -31,8 +31,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Install all three packages with their test extras
@@ -75,8 +75,8 @@ jobs:
     needs: verify
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       # The release tooling, each at a pinned version (cyclonedx-bom writes the SBOM;
@@ -116,11 +116,11 @@ jobs:
             -o sbom/causal-packages.cdx.json /tmp/wheels/bin/python
           python scripts/sbom_check.py sbom/causal-packages.cdx.json --lock release \
             --package causal-core --package causal-decision --package causal-mcp
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: distributions
           path: dist/
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sbom
           path: sbom/
@@ -133,7 +133,7 @@ jobs:
     permissions:
       contents: write # create the release for this tag if absent, and upload to it
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: sbom
           path: sbom/
@@ -160,7 +160,7 @@ jobs:
       matrix:
         package: [causal-core, causal-decision, causal-mcp]
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: distributions
           path: dist/
