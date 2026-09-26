@@ -26,7 +26,7 @@ sustainability investment assurance follow, in that order.
 | A typed causal question | Partial: `CausalQuery` is typed, but `population` and `horizon` are free text, and nothing translates an agent's action into an estimand |
 | Retrieve the assumptions and evidence that apply | Done for causal models: `causal_decision.assumptions` and `/api/v1/models` keep each model as immutable, content-addressed versions whose edges carry origin and review status, and a decision names the version it used. Missing: retrieving evidence (documents, metrics) for an edge; nothing links it |
 | Decide identified / partially identified / unsupported | Done, except bounds: complete ID, back-door with the optimal adjustment set, front-door, conditional IV, proximal; 11 typed refusals, each with what is missing |
-| Estimate impact and uncertainty | Done for ATE and ATT with coverage-tested intervals; for effects within declared segments with family-wise correction and a heterogeneity test (pre-registered T4); for staggered rollouts by difference-in-differences with unit-clustered intervals and a pre-trends test (T5); for watched randomized rollouts by anytime-valid confidence sequences (T6); for cluster-randomized rollouts with CR2 cluster-robust intervals (T7); and for switchbacks, where the caller chooses a washout that covers the carryover (T8). Missing: policy value, spillovers between units, DiD with covariates, a carryover check with real power, and subgroup *discovery* |
+| Estimate impact and uncertainty | Done for ATE and ATT with coverage-tested intervals; for effects within declared segments with family-wise correction and a heterogeneity test (pre-registered T4); for staggered rollouts by difference-in-differences with unit-clustered intervals and a pre-trends test, against never-treated or not-yet-treated units and, with covariates, doubly robust (T5); for watched randomized rollouts by anytime-valid confidence sequences (T6); for cluster-randomized rollouts with CR2 cluster-robust intervals (T7); and for switchbacks, where the caller chooses a washout that covers the carryover (T8). Missing: policy value, spillovers between units, DiD with anticipation or repeated cross-sections, a carryover check with real power, and subgroup *discovery* |
 | Robustness checks | Done: placebo, negative controls, graph-implied independences with measured power, overlap, balance, E-values, robustness values |
 | Decide: act, ask, experiment, refuse | Done: `packages/causal-decision` turns an outcome, a request and a policy into one verdict, deterministically, gated by the pre-registered D0 suite (v3: 19 scenarios, 8 properties, 8 seeded defects). Declared segments reach the verdict -- an action that harms one of them is not automated on a favourable pooled effect -- and so does a difference-in-differences result's parallel-trends breakdown: a conclusion a violation smaller than the pre-adoption ones would flip is sent to an experiment |
 | Evidence record | Partial: every result and every decision carries digests of its inputs and itself, decisions are persisted into a verified hash chain with the observed outcome recorded against them, and the model version a decision used is recorded. Checkpoints of the chain head can be taken and verified against (`/api/v1/decisions/checkpoint`, `/verify-anchored`). Missing: publishing a checkpoint somewhere the writer cannot edit |
@@ -55,7 +55,8 @@ sustainability investment assurance follow, in that order.
    intervals, Holm across the family, one Cochran's Q before anything is compared). Staggered
    difference-in-differences and event studies are **done** (`causal_core.panel`, pre-registered
    T5: group-time effects against never-treated units, unit-clustered influence-function
-   intervals, a pre-trends falsification test, tier C). Anytime-valid monitoring of
+   intervals, a pre-trends falsification test, tier C), and since T5 v4 against not-yet-treated
+   units and, with time-invariant covariates, doubly robust under conditional parallel trends. Anytime-valid monitoring of
    randomized canaries is **done** (`causal_core.sequential`, pre-registered T6: asymptotic
    confidence sequences over a predictable-baseline AIPW score). Cluster-randomized designs are
    **done** (`causal_core.cluster`, pre-registered T7: CR2 intervals on t(K − 2), a refusal where
@@ -64,9 +65,11 @@ sustainability investment assurance follow, in that order.
    reported, not gated, is weak, and says so: `carryover-check-weak`). Parallel-trends
    sensitivity is **done** (intervals under a relative-magnitudes restriction and a breakdown
    multiple, T5 v3). Still to come, in the ledger's order: spillovers between randomized units
-   (`septa-7`), DiD with covariates and not-yet-treated controls as T5 v4 (`septa-8`), and a
-   switchback carryover check with gated power as T8 v2, or a design that estimates the carryover
-   length (`septa-9`). Each with its own pre-registered gate and a seeded defect.
+   (`septa-7`) and a switchback carryover check with gated power as T8 v2, or a design that
+   estimates the carryover length (`septa-9`); then the DiD work the register still lists --
+   the full Rambachan–Roth sensitivity (`did-rambachan-roth`), and anticipation windows,
+   repeated cross-sections and time-varying covariates (`did-anticipation-cross-sections`).
+   Each with its own pre-registered gate and a seeded defect.
 4. ~~**Experiment recommendation.**~~ **Done for randomized units**, in the same package: unit,
    per-arm size and duration from a minimum-detectable-effect calculation, guardrails. A refusal
    now carries the outcome's spread even when identification is what failed, so an unanswerable

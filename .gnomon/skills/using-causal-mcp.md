@@ -36,7 +36,7 @@ return triage scores, not effects. Never cite it for a causal number.
 
 **Parameters come from the kernel's contract.** Every analysis parameter
 (`design`, `estimand`, `segment_by`, `cluster`, `washout`, `sequence`, `unit`,
-`time`, ...) is a field of `causal_core.contract.CausalQuery`, published in
+`time`, `covariates`, `control_group`, ...) is a field of `causal_core.contract.CausalQuery`, published in
 the tool's input schema with the contract's type, default, bounds and
 description (packages/causal-mcp/src/causal_mcp/query_params.py). Read the
 description there rather than guessing a value. `causal_analyze` and

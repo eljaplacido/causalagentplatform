@@ -12,7 +12,7 @@ the bars are fixed before the code is run against them, and the runs that failed
 | `t2-ihdp/` | T2 | Semi-synthetic: real IHDP covariates with simulated potential outcomes | `causal_core.analyze` | CI, and on demand; needs the data cached or `CAUSAL_FETCH=1` |
 | `t3-lalonde/` | T3 | Real observational data against an experimental benchmark (LaLonde / NSW) | `causal_core.analyze` | CI, and on demand; needs the data cached or `CAUSAL_FETCH=1` |
 | `t4-segments/` | T4 | Effects within declared segments: per-segment and family-wise coverage, heterogeneity test, Holm | `causal_core.segments` via `analyze` | every PR: `pytest -m t4` |
-| `t5-did/` | T5 | Staggered difference-in-differences on simulated rollouts: coverage, event-study coverage, pre-trends size and power, refusals | `causal_core.panel` via `analyze` | every PR: `pytest -m t5` |
+| `t5-did/` | T5 | Staggered difference-in-differences on simulated rollouts, with covariates (doubly robust) and not-yet-treated comparisons since v4: coverage, event-study coverage, pre-trends size and power, sensitivity, refusals | `causal_core.panel` via `analyze` | every PR: `pytest -m t5` |
 | `t6-sequential/` | T6 | Anytime-valid confidence sequences on watched randomized streams: coverage at every look, power, refusals | `causal_core.sequential` via `analyze` | every PR: `pytest -m t6` |
 | `t7-cluster/` | T7 | Cluster-randomized designs: unit-weighted effect, CR2 coverage, refusals where clusters dominate | `causal_core.cluster` via `analyze` | every PR: `pytest -m t7` |
 | `t8-switchback/` | T8 | Switchback designs: steady-state effect after a washout, coverage, carryover check (reported) | `causal_core.cluster` via `analyze` | every PR: `pytest -m t8` |

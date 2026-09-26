@@ -415,7 +415,7 @@
       "capability": "Triangulation flags outcome-model misspecification in causal-core",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:171",
+          "at": "packages/causal-core/README.md:178",
           "says": "Its power was 0.04 at n = 2,000"
         }
       ],
@@ -438,7 +438,7 @@
       "capability": "Estimation of effects identified only by the general ID algorithm (e.g. the napkin graph)",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:193",
+          "at": "packages/causal-core/README.md:200",
           "says": "Estimation for general ID functionals"
         }
       ],
@@ -461,18 +461,18 @@
       "capability": "causal-core methods beyond the current portfolio: nonparametric front-door, discovery, time series, interference between units",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:195",
+          "at": "packages/causal-core/README.md:202",
           "says": "Nonparametric front-door"
         },
         {
-          "at": "packages/causal-core/README.md:197",
+          "at": "packages/causal-core/README.md:204",
           "says": "Discovery"
         }
       ],
       "reality": "Listed as not implemented in the package README; none of these exists in the kernel. (Anytime-valid sequential tests left this entry on 2026-09-25 with T6; cluster-randomized designs, which handle dependence within clusters but not spillovers between them, arrived the same day with T7, and switchback designs with T8.)",
       "evidence": [
         {
-          "at": "packages/causal-core/README.md:190",
+          "at": "packages/causal-core/README.md:197",
           "says": "Not implemented yet"
         }
       ],
@@ -1025,21 +1025,47 @@
       }
     },
     {
-      "id": "did-extensions",
+      "id": "did-rambachan-roth",
       "status": "planned",
-      "capability": "Difference-in-differences beyond the current design: covariate-conditional parallel trends, not-yet-treated comparisons, anticipation, repeated cross-sections, and the full Rambachan-Roth sensitivity machinery",
+      "capability": "The full Rambachan-Roth sensitivity machinery for difference-in-differences: restrictions on consecutive changes in the trend difference (smoothness, relative magnitudes of period-to-period deviations) and their sharper confidence sets",
       "claimed_in": [],
-      "reality": "causal_core.panel estimates unconditional group-time effects against never-treated units on a balanced panel with an absorbing binary treatment, and refuses everything else with a typed reason. Parallel-trends sensitivity exists since T5 v3 in a simplified, conservative form (relative magnitudes on event-time levels, union-bound intervals, a breakdown multiple); Rambachan & Roth's restriction on consecutive changes and their sharper confidence sets do not.",
+      "reality": "Split from did-extensions when its covariate and not-yet-treated parts left the list (T5 v4). Parallel-trends sensitivity exists since T5 v3 in a simplified, conservative form: relative magnitudes on event-time levels, union-bound intervals, a breakdown multiple. Rambachan & Roth's restriction on consecutive changes and their confidence sets do not exist.",
       "evidence": [
         {
-          "at": "benchmarks/t5-did/PRE-REGISTRATION.md:4",
-          "says": "`packages/causal-core` (`causal_core.panel`"
+          "at": "packages/causal-core/src/causal_core/panel.py:587",
+          "says": "\"relative magnitudes on event-time deviations (after Rambachan & Roth 2023): post-adoption \""
+        },
+        {
+          "at": "benchmarks/t5-did/PRE-REGISTRATION.md:258",
+          "says": "- The full Rambachan & Roth machinery: their restriction is on consecutive changes, not levels,"
         }
       ],
       "leaves_by": {
         "kind": "test",
-        "path": "packages/causal-core/tests/t5/test_did_extensions.py",
-        "asserts": "each extension ships with its own pre-registered T5 version and seeded defect -- sensitivity first: a Rambachan-Roth style bound whose coverage is gated under planted violations"
+        "path": "packages/causal-core/tests/t5/test_rambachan_roth.py",
+        "asserts": "a pre-registered T5 version gates the coverage of Rambachan-Roth confidence sets under planted violations of a consecutive-change restriction, with a seeded defect that bounds levels instead of changes"
+      }
+    },
+    {
+      "id": "did-anticipation-cross-sections",
+      "status": "planned",
+      "capability": "Difference-in-differences with anticipation windows, repeated cross-sections (no unit observed twice) and time-varying covariates",
+      "claimed_in": [],
+      "reality": "Split from did-extensions when its covariate and not-yet-treated parts left the list (T5 v4). causal_core.panel needs a balanced panel of units observed in every period, assumes no anticipation, and accepts time-invariant covariates only: a covariate that varies within a unit is refused (INVALID_INPUT), an unbalanced panel is refused (DESIGN_CHECK_FAILED), and there is no anticipation parameter.",
+      "evidence": [
+        {
+          "at": "packages/causal-core/src/causal_core/panel.py:55",
+          "says": "Not offered in this version: time-varying covariates, anticipation windows,"
+        },
+        {
+          "at": "packages/causal-core/src/causal_core/panel.py:245",
+          "says": "\"time-invariant, pre-treatment characteristics only; a covariate that changes after \""
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "packages/causal-core/tests/t5/test_did_designs.py",
+        "asserts": "each of anticipation windows, repeated cross-sections and time-varying covariates ships with its own pre-registered T5 version and seeded defect, or is retracted from the docs that list it as planned"
       }
     },
     {
@@ -1280,6 +1306,13 @@
       "fixed_in": "e23adea",
       "pinned_by": "backend/tests/integration/test_rls_domain_isolation.py",
       "note": "Implemented, on PostgreSQL. Migration 010_rls_binds.sql replaces 001's two policies and gives graph_fragments one, each USING and WITH CHECK app_scope_allows(domain): the domain is in app.user_domains (now a JSON array; 001 split on commas) or no list is set and app.user_role (a JSON array of platform roles) holds governance_officer, platform_engineer or the causal_service marker -- so a present domains claim binds every role, as rbac.domain_scope says, where 001 let those two roles through regardless. src/db/scope.py keeps the scope in a context variable and opens every PostgreSQL transaction with set_config(..., true) for both settings (transaction-local, so pooled connections carry nothing over); the auth middleware binds rbac.scope_for_user(user) per request. Outside a request the scope is empty (nothing visible); code with no user declares service_scope(reason), which is unscoped on purpose (the seeder and the test fixtures' direct calls do). The app connects as causal_app, a non-owner role, rather than FORCE RLS on an owner connection, and refuses to start as a superuser, a BYPASSRLS role or the owner; docker-compose gives causal_app a local-dev login. 010 also grants causal_app USAGE on decision_followups_id_seq, created after 001's blanket grant, without which every followup insert as causal_app failed. The PostgreSQL test fixtures connect the app as causal_app (a per-run member login), so the whole suite runs under RLS. The leaves_by test asserts, over raw SQL as causal_app with the settings set as the app sets them, that a user limited to one domain selects no row of another from the three tables, and includes negative controls (policy dropped, RLS disabled, owner connection) that leak. Not changed: SQLite, the local engine, has no RLS, so there the application's filter is the only line; role checks (which route a role may call) stay in the API; tables without a domain are not scoped."
+    },
+    {
+      "id": "did-extensions",
+      "was": "Difference-in-differences beyond the current design: covariate-conditional parallel trends, not-yet-treated comparisons, anticipation, repeated cross-sections, and the full Rambachan-Roth sensitivity machinery. causal_core.panel estimated unconditional group-time effects against never-treated units only.",
+      "fixed_in": "210126e",
+      "pinned_by": "packages/causal-core/tests/t5/test_did_extensions.py",
+      "note": "Implemented in part, and the rest split rather than claimed. Covariate-conditional parallel trends (CausalQuery.covariates: each group-time effect is Sant'Anna & Zhao's doubly robust DiD, logistic propensity and linear outcome regression, with an influence function carrying both models' estimation effects) and not-yet-treated comparisons (CausalQuery.control_group) shipped in contract 0.10.0, pre-registered as T5 v4 (fbdbc1a) before the code, and passed its first registered run (benchmarks/t5-did/results/2026-09-26-v4-run1.json, 7b4ce0f): five new designs, including covariate-driven adoption timing where the unconditional estimate is biased by 0.54 and each nuisance model misspecified in turn; three new refusals (poor overlap -> POSITIVITY, time-varying covariate -> INVALID_INPUT, no comparison units -> DESIGN_CHECK_FAILED); four new seeded defects, each caught by its registered bias bar. Limits: under a misspecified outcome model the intervals sit near the coverage band's floor (0.932 in the registered run, 0.914-0.942 on development seeds); linear-index nuisance models only. The Rambachan-Roth machinery is now did-rambachan-roth; anticipation, repeated cross-sections and time-varying covariates are did-anticipation-cross-sections."
     }
   ]
 }
