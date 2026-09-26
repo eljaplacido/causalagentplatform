@@ -59,8 +59,8 @@ SIGNATURE_VERSION = 1
 #: The actions a human review decision is issued for. The action is part of the
 #: signed claim (:func:`claim`), so a verdict records which decision it rules on and
 #: cannot be relabelled: the registry promotes an object to APPROVED only on a verdict
-#: issued for GOVERNANCE_APPROVE (septa-60). GOVERNANCE_REJECT is the action the
-#: review page's reject check names.
+#: issued for GOVERNANCE_APPROVE (septa-60), spends a GOVERNANCE_REJECT verdict only
+#: on a rejection (septa-53), and never spends either on a new draft.
 GOVERNANCE_APPROVE = "GOVERNANCE_APPROVE"
 GOVERNANCE_REJECT = "GOVERNANCE_REJECT"
 

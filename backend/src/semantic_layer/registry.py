@@ -11,11 +11,13 @@ Rules (from DATA_LAYER.md §2.2):
 Every write method validates the guardian_verdict_ref against the audit_log
 table before proceeding.  GuardianBlockedError is raised if:
   - The verdict_id does not exist in audit_log
-  - The verdict is not APPROVED
+  - The verdict is not APPROVED -- for a rejection too (septa-53)
   - The verdict is not signed by the Guardian (a row in an append-only log is a
     record of what happened, not an authorisation)
   - The verdict was issued for another action: a promotion needs one issued for
-    GOVERNANCE_APPROVE (septa-60)
+    GOVERNANCE_APPROVE (septa-60), a rejection one issued for GOVERNANCE_REJECT
+    (septa-53), and a verdict for either review decision authorises only that
+    decision
   - The verdict was issued for a different object, or for none
   - The verdict has already been spent (see verdict_consumption)
 
@@ -66,7 +68,7 @@ from src.semantic_layer.review_risk import (
     fragment_risk,
     usable_sensitivity,
 )
-from src.semantic_layer.verdict import GOVERNANCE_APPROVE
+from src.semantic_layer.verdict import GOVERNANCE_APPROVE, GOVERNANCE_REJECT
 from src.semantic_layer.verdict import claim as verdict_claim
 from src.semantic_layer.verdict import verify as verdict_verify
 
@@ -89,32 +91,38 @@ async def _assert_verdict_approved(
     verdict_id: UUID,
     subject_id: UUID,
     context: str = "write",
-    expected: GuardianVerdict = GuardianVerdict.APPROVED,
     action: str | None = None,
 ) -> AuditEntry:
     """
     Assert that this verdict authorises *this* decision, then spend it.
 
-    ``expected`` is APPROVED for a write. A rejection needs the same four checks
-    against a REJECTED verdict: a human confirming a refusal should be acting on a
-    Guardian ruling about *this* object, not on any UUID they happened to send.
+    ``action`` is the review decision the caller is carrying out:
+    ``GOVERNANCE_APPROVE`` for a promotion, ``GOVERNANCE_REJECT`` for a rejection,
+    None for a write that is not a review decision (a new draft). Every one of them
+    needs an APPROVED verdict. A rejection used to need a REJECTED one, which the
+    Guardian issued only when it declined the reject request -- in practice only in
+    an unclassified (DISORDER) situation -- so the authority to reject hung on the
+    Guardian refusing to classify (septa-53).
 
-    ``action``, when given, is the decision the caller is carrying out, and the
-    verdict must have been issued for exactly that action: a promotion passes
-    ``GOVERNANCE_APPROVE``. The action is in the signed claim, so it is read after
-    the signature verifies. Before septa-60 it went unread, and an APPROVED verdict
-    from a check for any action on the object could approve it.
+    The verdict must have been issued for exactly that review action. The action is
+    in the signed claim, so it is read after the signature verifies. Before septa-60
+    it went unread, and an APPROVED verdict from a check for any action on the
+    object could approve it.
 
-    Four questions, all of which used to go unasked except the first two:
+    Five questions, all of which used to go unasked except the first two:
 
       1. Does the verdict exist, and does it say APPROVED?
       2. Was it issued by the Guardian? An unsigned row, or one whose signature
          does not verify, is history rather than authority -- which matters
          because two code paths insert APPROVED rows without going through the
          Guardian at all, one of them under no role requirement.
-      3. Was it issued for *this* object? A verdict for object A is refused for
+      3. Was it issued for *this* decision? The action is in the signed claim. A
+         rejection needs a verdict issued for GOVERNANCE_REJECT; a verdict issued
+         for GOVERNANCE_REJECT or GOVERNANCE_APPROVE authorises that decision and
+         no other write.
+      4. Was it issued for *this* object? A verdict for object A is refused for
          object B.
-      4. Has it been spent? Recorded by inserting into `verdict_consumption`,
+      5. Has it been spent? Recorded by inserting into `verdict_consumption`,
          because audit_log is append-only and cannot be marked. The primary key
          there is what makes the second attempt fail.
 
@@ -140,10 +148,10 @@ async def _assert_verdict_approved(
         )
 
     verdict_status = record["guardian_verdict"]
-    if verdict_status != expected:
+    if verdict_status != GuardianVerdict.APPROVED:
         raise GuardianBlockedError(
             reason=(
-                f"Guardian verdict is {verdict_status}, not {expected.value} — "
+                f"Guardian verdict is {verdict_status}, not {GuardianVerdict.APPROVED.value} — "
                 f"{context} blocked"
             ),
             verdict_status=verdict_status,
@@ -236,18 +244,39 @@ async def _assert_verdict_approved(
     )
 
 
+#: The review decisions a verdict can be issued for. Each authorises that decision
+#: only: a verdict for one is never spent on the other, nor on a new draft.
+_REVIEW_ACTIONS = frozenset({GOVERNANCE_APPROVE, GOVERNANCE_REJECT})
+
+
 def _assert_action(issued: Any, action: str | None, verdict_id: UUID, context: str) -> None:
-    """Refuse a verdict issued for a different decision than the one being made."""
-    if action is None or str(issued) == action:
+    """Refuse a verdict issued for a different decision than the one being made.
+
+    A review decision accepts only a verdict issued for exactly that action: a
+    promotion GOVERNANCE_APPROVE (septa-60), a rejection GOVERNANCE_REJECT
+    (septa-53). A write that is not a review decision (a new draft) accepts neither.
+    """
+    issued = str(issued)
+    if issued == action:
         return
-    raise GuardianBlockedError(
-        reason=(
-            f"Guardian verdict {verdict_id} was issued for action {issued}, not "
-            f"{action} — {context} blocked. It needs an APPROVED verdict from /check "
-            f"for action {action} on this object."
-        ),
-        verdict_id=str(verdict_id),
-    )
+    if action in _REVIEW_ACTIONS:
+        raise GuardianBlockedError(
+            reason=(
+                f"Guardian verdict {verdict_id} was issued for action {issued}, not "
+                f"{action} — {context} blocked. It needs an APPROVED verdict from /check "
+                f"for action {action} on this object."
+            ),
+            verdict_id=str(verdict_id),
+        )
+    if issued in _REVIEW_ACTIONS:
+        raise GuardianBlockedError(
+            reason=(
+                f"Guardian verdict {verdict_id} was issued for action {issued}, not "
+                f"{action or 'a new draft'} — {context} blocked. A verdict for a review "
+                "decision authorises that decision and nothing else."
+            ),
+            verdict_id=str(verdict_id),
+        )
 
 
 #: The statuses a review may move an object out of. APPROVED and DEPRECATED are
@@ -1017,13 +1046,15 @@ class SemanticLayerRegistry:
         reason: str,
         domains: Collection[str] | None = None,
     ) -> None:
-        """Mark a draft REJECTED (stored as DEPRECATED), against a real REJECTED verdict.
+        """Mark a draft REJECTED (stored as DEPRECATED), against a Guardian verdict.
 
-        The API has always *required* a verdict_id on rejection and never read it, so
-        any UUID was accepted. It gets the same four checks approval gets -- exists,
-        is the verdict it claims to be, signed by the Guardian, issued for this object,
-        not already spent -- because "this was refused for a reason" is a claim about
-        the record, and an unchecked one is worth nothing.
+        The verdict must be APPROVED and issued for action ``GOVERNANCE_REJECT`` on
+        this object: the Guardian ruled that this rejection may go ahead, exactly as
+        an approval needs a ruling that the approval may. It gets every check approval
+        gets -- exists, APPROVED, signed by the Guardian, issued for this action and
+        this object, not already spent. It used to need a REJECTED verdict, which only
+        an unclassified (DISORDER) check produced, so a reviewer who classified the
+        situation could not reject at all (septa-53).
         """
         if object_type not in _REVIEWABLE_TABLES:
             raise ValueError(f"reject_draft: unknown object_type '{object_type}'")
@@ -1036,7 +1067,7 @@ class SemanticLayerRegistry:
                 verdict_id,
                 subject_id=object_id,
                 context=f"reject_draft({object_type})",
-                expected=GuardianVerdict.REJECTED,
+                action=GOVERNANCE_REJECT,
             )
 
             now = datetime.now(UTC)

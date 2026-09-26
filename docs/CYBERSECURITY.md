@@ -94,12 +94,17 @@ An agent or user attempts to write to the semantic layer without a Guardian verd
 
 **Mitigations:**
 - **In place:** the registry's write methods take a verdict id and refuse it unless it exists,
-  is APPROVED (REJECTED for `reject_draft`), is signed by the Guardian, names this object, and
+  is APPROVED, is signed by the Guardian, was issued for this action, names this object, and
   is unspent (`backend/src/semantic_layer/registry.py`, `verdict.py`;
-  `backend/tests/guardian/test_verdict_binding.py`). The action a verdict was issued for is
-  part of the signed claim, and `promote_to_approved` accepts only one issued for
-  `GOVERNANCE_APPROVE`: an APPROVED verdict from a check for any other action on the object
-  used to approve it (`septa-60`, `backend/tests/guardian/test_approve_action_binding.py`).
+  `backend/tests/guardian/test_verdict_binding.py`). The action is part of the signed claim,
+  and each review decision accepts only a verdict issued for exactly that action:
+  `promote_to_approved` one for `GOVERNANCE_APPROVE` (an APPROVED verdict from a check for any
+  other action on the object used to approve it: `septa-60`,
+  `backend/tests/guardian/test_approve_action_binding.py`), and `reject_draft` one for
+  `GOVERNANCE_REJECT` (`backend/tests/integration/test_governance_reject_verdict.py`).
+  Rejecting used to need a REJECTED verdict, which only an unclassified (DISORDER) check
+  produced, so the authority to reject depended on the Guardian declining to classify
+  (`septa-53`). A verdict for either review action authorises that decision and no other write.
 - **In place, and narrower than "row security":** the database does not evaluate verdicts.
   `causal_edges.guardian_verdict_ref` and `interventions.guardian_verdict_ref` are
   `NOT NULL REFERENCES audit_log(id)`, so a row must point at *some* audit row. The
@@ -207,7 +212,7 @@ granted role gets 403, a token holding a granted role does not.
 | `POST /api/v1/decisions`, `POST /api/v1/decisions/{digest}/followup` | `analyst`, `governance_officer`, `platform_engineer`, `sre` |
 | `POST /api/v1/interventions/{id}/approve`, `/reject`, `POST /api/v1/interventions/feedback` | `governance_officer`, `platform_engineer`, `sre` (`DECISION_ROLES`) |
 | `POST /api/v1/session/run`, `/incident`, `POST /api/v1/decisions/verify-anchored`, `POST /api/v1/platform/evaluation/calibration` | any platform role |
-| `GET /api/v1/provenance/trace/{id}`, `/export/{id}`, `/invocations/{id}`, `DELETE /api/v1/provenance/session/{id}` | `GOVERNANCE_ROLES` |
+| `GET /api/v1/provenance/trace/{id}`, `/export/{id}`, `/invocations/{id}`, `POST /api/v1/provenance/session/{id}/erasure` | `GOVERNANCE_ROLES` |
 
 "Any platform role" is one of `viewer`, `analyst`, `graph_author`, `governance_officer`,
 `platform_engineer`, `agent`, `sre`: a valid token with none of them is refused. Every other
@@ -228,9 +233,10 @@ Where §4.1 does not say, these are the least-privilege choices made:
   read-only check and `graph_author` "submit"; `analyst` drafts through `/drafts`, which runs
   its own check, and gets no direct `/check`.
 - **Sessions** run the platform graph; §4.1 gives every role "Run".
-- **Provenance** is read like the audit log (governance roles only), and its erasure (a test
-  cleanup route) needs a governance role. It still erases: provenance is not append-only
-  (register `provenance-not-append-only`).
+- **Provenance** is read like the audit log (governance roles only), and so is its erasure.
+  Provenance is append-only (`011_provenance.sql`: no role holds UPDATE or DELETE, and a trigger
+  refuses both); an erasure writes a tombstone naming who, when and why, which hides the
+  session's earlier records from the provenance reads and deletes nothing.
 - **`graph_author` "Audit Log: Read own"** is not provided: the audit log stays governance-only.
 - **`sre`** is not in §4.1. It is the incident-commander role that decides interventions, and
   it reads all of the semantic layer.
@@ -318,8 +324,9 @@ application-only), and the tables that carry no domain.
 ## 5. Data Privacy
 
 > **Status:** target design. No pseudonymization, erasure or export control exists (register
-> `gdpr-controls`). No connector runs in the platform today (DATA_LAYER.md §4), so nothing
-> ingests operational data yet.
+> `gdpr-controls`). The provenance erasure (§4.0) hides records from the API and keeps them in
+> the database, so it is not Art. 17 erasure. No connector runs in the platform today
+> (DATA_LAYER.md §4), so nothing ingests operational data yet.
 
 ### 5.1 PII Handling in Causal Models
 
@@ -335,7 +342,7 @@ Causal inference over customer or employee data carries PII risk.
 
 The connector `mapToSemanticObjects` step is the **only place** where raw operational data touches the causal layer. Connectors must:
 - Strip fields not needed for causal analysis
-- Pseudonymize before emitting to Kafka
+- Pseudonymize before returning draft objects (connectors emit nothing to a broker; there is none)
 - Log which fields were stripped (for lineage audit)
 
 ### 5.3 Data Residency
@@ -479,7 +486,7 @@ access inside the platform.
 ### 8.3 Container Security
 
 - **In place:** backend and frontend images run as non-root users (`USER causal`,
-  `USER nextjs`). The backend image is `python:3.12-slim`, the frontend image `node:22-alpine`,
+  `USER nextjs`). The backend image is `python:3.12-slim`, the frontend image `node:24-alpine`,
   each pinned by digest (Dependabot moves the digest). The backend installs its Python packages
   from the hash-pinned lock `requirements/image.txt` (§8.4) and keeps no pip at run time; the
   frontend installs `package-lock.json` with `npm ci` and runs Next's standalone server with npm
@@ -513,7 +520,7 @@ published since the last push surfaces without one):
   raising a floor in `backend/pyproject.toml` (transitive dependencies included) or
   upgrading in `package-lock.json`. The advisory databases are remote; when one cannot be
   reached the step is SKIPPED (not measured), which fails CI.
-- **SAST.** `bandit` over `backend/src`, `backend/mcp_server` and every `packages/*/src`,
+- **SAST.** `bandit` over `backend/src` and every `packages/*/src`,
   blocking on MEDIUM and HIGH findings, held at zero by the ratchet in
   `scripts/lint-baseline.json` (steps `bandit-backend`, `bandit-packages`). The backend's
   `[tool.bandit]` skips no rule. B608 (SQL built from strings) was skipped for the whole
@@ -547,7 +554,14 @@ published since the last push surfaces without one):
   runtime environment (the built wheels plus `requirements/release.txt`), checks that it lists
   exactly that (`scripts/sbom_check.py`), and attaches it to the tag's GitHub release.
 - **Update PRs.** `.github/dependabot.yml`: weekly, grouped, for the Python locks and ranges,
-  npm, the GitHub Actions and the base images.
+  npm, the GitHub Actions and the base images. It ignores the pins the ratchets count per
+  version (ruff, mypy, bandit, pip-audit), semver-majors in pyprojects and npm (ledger work), node lines that are not LTS, and
+  the specific majors whose ledger items are open (TESTING_CICD.md §5.4).
+- **Where CI runs.** Jobs run where the repository variable `CI_RUNS_ON` says: GitHub's hosted
+  runners when it is unset, otherwise self-hosted runners (label `causalplatform-ci`). A
+  self-hosted job executes the repository's code, including a dependency update's install
+  scripts, on that host as the runner's user; the repository is private, so no outside party can
+  open a pull request that runs there. The job's database listens on loopback only.
 - The Python build tools the release uses (`build`, `twine`, `cyclonedx-bom`) are pinned by
   version, not by hash. `safety` is not run; `pip-audit` covers the same advisories.
 

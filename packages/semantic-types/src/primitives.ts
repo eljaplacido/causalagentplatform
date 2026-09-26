@@ -132,13 +132,6 @@ export type CausalObjectRef = {
   name: string;
 };
 
-export interface KafkaTopic {
-  domain: string;
-  entity: string;
-  eventType: string;
-  version: string;
-}
-
 export interface Cursor {
   lastEventId: string | null;
   timestamp: ISO8601 | null;

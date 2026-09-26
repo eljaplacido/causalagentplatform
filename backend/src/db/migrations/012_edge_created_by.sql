@@ -14,4 +14,4 @@ ALTER TABLE causal_edges
     ADD COLUMN IF NOT EXISTS created_by JSONB;
 
 COMMENT ON COLUMN causal_edges.created_by IS
-    'UserRef of the user who drafted the edge; NULL for edges drafted before 011.';
+    'UserRef of the user who drafted the edge; NULL for edges drafted before 012.';

@@ -1,9 +1,10 @@
 """gate_scope's kernel-mcp-tools check: it sees today's tools, and it can fail.
 
-The canonical MCP server (packages/causal-mcp) was, until this check, the one
-surface whose tools no identity check inspected -- the old mcp-tools check reads
-only the deprecated backend server. It is read statically because that server
-needs MCP SDK v2 and gate_scope runs in the backend's environment.
+The MCP server (packages/causal-mcp) was, until this check, the one surface
+whose tools no identity check inspected -- the old mcp-tools check read only the
+legacy backend server, which has since been deleted (septa-6). It is read
+statically because that server needs MCP SDK v2 and gate_scope runs in the
+backend's environment.
 """
 
 from __future__ import annotations
