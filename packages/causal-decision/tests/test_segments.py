@@ -216,9 +216,12 @@ def test_a_segment_that_could_not_be_estimated_needs_a_person() -> None:
     tiny["playbook"] = 0
     out = _analyse(pd.concat([df, tiny], ignore_index=True), segment=True)
 
+    # The fixture is built so the kernel refuses P5; if it ever estimates it, this test
+    # has stopped testing what it names, and says so (it used to skip, which read as green).
     unestimated = [s for s in out.segments if s.estimate is None]
-    if not unestimated:
-        pytest.skip("the kernel estimated every segment; nothing to assert here")
+    assert unestimated, (
+        "the kernel estimated every segment, P5 included: the fixture plants none it refuses"
+    )
 
     decision = decide(out, _request())
     check = _check(decision, "every declared segment could be estimated")
