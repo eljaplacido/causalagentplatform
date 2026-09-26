@@ -16,7 +16,7 @@ the backend's seven causal skills as tools over stdio.
 | `causal_effect_estimate`        | ATE for an APPROVED fragment, delegated to causal-core   |
 | `causal_identification_check`   | Identification, delegated to causal-core                 |
 | `causal_counterfactual_reason`  | Heuristic triage score, not an effect (NOT_ASSESSED)     |
-| `causal_sensitivity_analysis`   | E-value / Rosenbaum-bound robustness check               |
+| `causal_sensitivity_analysis`   | E-value robustness check (no Rosenbaum bound here: it takes no matched pairs) |
 | `causal_drift_detect`           | KL divergence between reference vs current data          |
 | `causal_intervention_estimate`  | Heuristic triage score for one proposed edge, not an effect |
 | `causal_structure_compare`      | Structural drift: edges going stale against fresh data   |

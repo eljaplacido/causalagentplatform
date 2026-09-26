@@ -397,9 +397,9 @@ Proposed Edge → CausalDiscoveryAgent → Contradiction Check
 
 ### 7.2 Sensitivity Analysis Requirement
 
-> **Status:** target design, not enforced (register `sensitivity-gate-not-enforced`). Rosenbaum
-> bounds are not implemented (register `sensitivity-analysis`). E-values are computed by
-> causal-core, when asked.
+> **Status:** target design, not enforced (register `sensitivity-gate-not-enforced`). causal-core
+> computes E-values, and Rosenbaum bounds for back-door designs with a binary treatment, on every
+> analysis from data; nothing requires either before an edge is approved.
 
 Every newly approved edge must pass a sensitivity analysis before it can be used in production simulations:
 - Rosenbaum sensitivity bounds

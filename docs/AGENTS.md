@@ -464,7 +464,7 @@ It predates the kernel and is deprecated: it warns on startup, no gnomon role is
 | MCP tool name | Status |
 |---|---|
 | `causal_effect_estimate`, `causal_identification_check` | Delegate to causal-core; without observational data they return no estimate and say why |
-| `causal_sensitivity_analysis` | E-value robustness check (see `sensitivity-analysis` in the register) |
+| `causal_sensitivity_analysis` | E-value robustness check; this legacy tool passes no matched pairs, so its `rosenbaum_gamma` is null (causal-mcp's `causal_analyze` reports the kernel's Rosenbaum bound) |
 | `causal_counterfactual_reason`, `causal_intervention_estimate` | Heuristic triage scores, not effects; labelled as such |
 | `causal_drift_detect`, `causal_structure_compare` | Data drift and structural drift against fresh data |
 

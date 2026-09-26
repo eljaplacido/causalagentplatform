@@ -79,7 +79,7 @@
         },
         {
           "at": "backend/src/agents/causal_discovery.py:394",
-          "says": "stub \u2014 real data required"
+          "says": "stub — real data required"
         }
       ],
       "leaves_by": {
@@ -89,34 +89,26 @@
       }
     },
     {
-      "id": "sensitivity-analysis",
-      "status": "partial",
-      "capability": "Sensitivity to unmeasured confounding (E-values, Rosenbaum bounds)",
+      "id": "sensitivity-one-click-ui",
+      "status": "declared-not-implemented",
+      "capability": "One-click Rosenbaum / E-value sensitivity analysis on an approved edge, in the UI",
       "claimed_in": [
-        {
-          "at": "docs/AGENTS.md:375",
-          "says": "Computes Rosenbaum sensitivity bounds and E-values for unmeasured confounders"
-        },
-        {
-          "at": "docs/CYBERSECURITY.md:405",
-          "says": "- Rosenbaum sensitivity bounds"
-        },
         {
           "at": "docs/UIX.md:192",
           "says": "I want to run a one-click Rosenbaum sensitivity analysis on any approved edge"
         }
       ],
-      "reality": "E-values are now correct and scale-aware (causal-core's e_value_rr; risk ratio, or difference plus outcome SD; otherwise null with the reason), and the kernel reports E-values and Cinelli-Hazlett robustness values from data. Rosenbaum bounds are not implemented: rosenbaum_gamma is always null (the previous values came from an invented multiplier).",
+      "reality": "No UI runs a sensitivity analysis. The kernel reports E-values, robustness values and (for back-door designs with a binary treatment) a Rosenbaum bound on every analysis from data, but nothing in the frontend requests one for an edge; the governance page's sensitivity panel is a hard-coded example whose label conflates the two methods (\"Rosenbaum E-value\").",
       "evidence": [
         {
-          "at": "backend/src/skills/sensitivity_analysis.py:67",
-          "says": "base: dict[str, Any] = {\"rosenbaum_gamma\": None"
+          "at": "frontend/src/app/governance/page.tsx:86",
+          "says": "testName: \"Rosenbaum E-value\","
         }
       ],
       "leaves_by": {
         "kind": "test",
-        "path": "backend/tests/unit/test_rosenbaum_bounds.py",
-        "asserts": "Rosenbaum bounds match a published matched-pairs example (E-values are already pinned by backend/tests/unit/test_effect_estimate.py)"
+        "path": "frontend/e2e/edge-sensitivity.spec.ts",
+        "asserts": "on an approved edge with data, one action shows the kernel's E-value and Rosenbaum gamma* (or its reason for none) from a live analysis, not a fixture"
       }
     },
     {
@@ -196,7 +188,7 @@
         },
         {
           "at": "docs/AGENTS.md:616",
-          "says": "the LLM factory resolves capability \u2192 provider at runtime"
+          "says": "the LLM factory resolves capability → provider at runtime"
         },
         {
           "at": "docs/AGENTS.md:626",
@@ -415,7 +407,7 @@
       "capability": "Triangulation flags outcome-model misspecification in causal-core",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:178",
+          "at": "packages/causal-core/README.md:188",
           "says": "Its power was 0.04 at n = 2,000"
         }
       ],
@@ -438,7 +430,7 @@
       "capability": "Estimation of effects identified only by the general ID algorithm (e.g. the napkin graph)",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:200",
+          "at": "packages/causal-core/README.md:210",
           "says": "Estimation for general ID functionals"
         }
       ],
@@ -461,18 +453,18 @@
       "capability": "causal-core methods beyond the current portfolio: nonparametric front-door, discovery, time series, interference between units",
       "claimed_in": [
         {
-          "at": "packages/causal-core/README.md:202",
+          "at": "packages/causal-core/README.md:212",
           "says": "Nonparametric front-door"
         },
         {
-          "at": "packages/causal-core/README.md:204",
+          "at": "packages/causal-core/README.md:214",
           "says": "Discovery"
         }
       ],
       "reality": "Listed as not implemented in the package README; none of these exists in the kernel. (Anytime-valid sequential tests left this entry on 2026-09-25 with T6; cluster-randomized designs, which handle dependence within clusters but not spillovers between them, arrived the same day with T7, and switchback designs with T8.)",
       "evidence": [
         {
-          "at": "packages/causal-core/README.md:197",
+          "at": "packages/causal-core/README.md:207",
           "says": "Not implemented yet"
         }
       ],
@@ -639,7 +631,7 @@
       "claimed_in": [
         {
           "at": "docs/ROADMAP.md:12",
-          "says": "> target outcome \u2014 and is that evidence strong enough to act on without asking a human?"
+          "says": "> target outcome — and is that evidence strong enough to act on without asking a human?"
         }
       ],
       "reality": "The machinery is built and pinned: every decision seals a follow-up plan carrying the prediction it used, POST /api/v1/decisions/{entry_digest}/followup re-runs that plan's own analysis over a later window, and GET /api/v1/decisions/calibration aggregates. What does not exist is the evidence: no follow-up has been taken on any real operation, so every rate in the report is null. That is the honest state and the report says so rather than reading as a perfect score. This entry leaves the list when a body of follow-ups exists and the thresholds have been moved by what it showed -- which is operational history, not code.",
@@ -685,7 +677,7 @@
       "claimed_in": [
         {
           "at": "backend/src/semantic_layer/registry.py:6",
-          "says": "2. All objects are versioned \u2014 no in-place mutation; deprecate and replace."
+          "says": "2. All objects are versioned — no in-place mutation; deprecate and replace."
         },
         {
           "at": "docs/DATA_LAYER.md@13e7d92:242",
@@ -693,7 +685,7 @@
         },
         {
           "at": "docs/ADR-001-canonical-semantic-layer.md@13e7d92:71",
-          "says": "All objects are versioned \u2014 no in-place mutation (Rule #2)"
+          "says": "All objects are versioned — no in-place mutation (Rule #2)"
         },
         {
           "at": "docs/ADR-001-canonical-semantic-layer.md@13e7d92:91",
@@ -868,7 +860,7 @@
       "claimed_in": [
         {
           "at": "backend/src/orchestration/planning.py:7",
-          "says": "1. SimulateAhead   \u2014 Forward-simulate action consequences using the approved SCM"
+          "says": "1. SimulateAhead   — Forward-simulate action consequences using the approved SCM"
         },
         {
           "at": "docs/AGENTS.md:543",
@@ -938,11 +930,11 @@
         },
         {
           "at": "docs/CYBERSECURITY.md@13e7d92:181",
-          "says": "| Art. 17 \u2013 Right to erasure | Pseudonymization + key deletion (logical erasure) |"
+          "says": "| Art. 17 – Right to erasure | Pseudonymization + key deletion (logical erasure) |"
         },
         {
           "at": "docs/CYBERSECURITY.md@13e7d92:182",
-          "says": "| Art. 20 \u2013 Data portability | Semantic layer export (JSON-LD format) |"
+          "says": "| Art. 20 – Data portability | Semantic layer export (JSON-LD format) |"
         }
       ],
       "reality": "No code pseudonymizes, tokenizes or strips any field, no erasure path exists, and no JSON-LD (or other) export of the semantic layer exists. No connector runs in the platform, so today PII can enter only through API request bodies, and nothing inspects them for it. The Art. 30 row (records of processing) is the one backed by something real: audit_log.",
@@ -1299,6 +1291,13 @@
       "fixed_in": "a6a864d",
       "pinned_by": "backend/tests/unit/test_py_lock.py",
       "note": "Implemented, except DAST, which did not leave: it is dast-not-built. Hash-pinned installs: every Python environment CI builds installs from a lock in requirements/ (backend.txt for backend/.venv, kernel.txt for packages/causal-core/.venv and release.yml's verify job, image.txt for backend/Dockerfile, release.txt for the published wheels), made by `uv pip compile --universal --generate-hashes` from requirements/*.in and installed with pip --require-hashes --no-deps; the repository's own packages, not on an index and so not in the lock, then install from the checkout with --no-deps --no-build-isolation (hatchling and editables come from the lock), and pip check proves the pair whole. The gate step python-lock (scripts/py_lock.py check) fails a lock whose inputs (the .in file and the dependency tables of each pyproject.toml it names) changed since `python3 scripts/py_lock.py relock` recorded them in requirements/lock-inputs.json, a lock that does not satisfy its local packages, and a tested environment that differs from its lock; the pip-audit steps audit the locks (pip-audit-image added for image.txt). Image scan: CI job `images` builds backend/Dockerfile and frontend/Dockerfile (the latter did not build at all before this change; it now builds from the repository root with output: standalone) and scans each with Trivy 0.74.0 pinned by digest; scripts/image_scan.py fails a HIGH or CRITICAL finding with a published fix not excused in scripts/image-scan-allowlist.json (empty), lists findings with no fix published without failing (44 in the backend image's Debian 13 base packages on 2026-09-26, none in the frontend's), and fails a report that lists no package. The one fixable pair it found (msgpack and setuptools copies vendored in pip 26.2.1) went by removing pip from the runtime image. SBOM: release.yml installs the built wheels with requirements/release.txt into a fresh environment, writes a CycloneDX 1.6 SBOM of it with cyclonedx-bom 7.4.0, checks it lists exactly the locked pins and the three packages (scripts/sbom_check.py), keeps it as an artifact and attaches it to the tag's GitHub release; the images job keeps a Trivy CycloneDX SBOM per image. Update PRs: .github/dependabot.yml, weekly and grouped, for the locks, the pyproject ranges, npm, GitHub Actions and the base images (pinned by digest). Negative controls: test_py_lock.py (a dependency edit without a re-lock, a pin below a floor, a pin without a hash, an environment one version, one package or one extra away from its lock), test_image_scan.py, test_sbom_check.py, and test_dep_audit.py for the lock mode. Not verified here: the images job and release.yml have not run on GitHub (their steps were run locally with the same images and tools), and Dependabot's handling of the uv-compiled locks is untested. Not changed: the release's build tools are pinned by version, not hash; HIGH findings with no fix published are not gated."
+    },
+    {
+      "id": "sensitivity-analysis",
+      "was": "E-values are now correct and scale-aware (causal-core's e_value_rr; risk ratio, or difference plus outcome SD; otherwise null with the reason), and the kernel reports E-values and Cinelli-Hazlett robustness values from data. Rosenbaum bounds are not implemented: rosenbaum_gamma is always null (the previous values came from an invented multiplier).",
+      "fixed_in": "a633cd8",
+      "pinned_by": "backend/tests/unit/test_rosenbaum_bounds.py",
+      "note": "Implemented, and the UI half split off rather than claimed. Rosenbaum bounds: for a back-door design with a binary treatment, causal_core.analyze builds a 1:1 matched design (greedy nearest neighbour on the propensity-score logit, without replacement, caliper AnalysisPolicy.match_caliper = 0.2 SD) and reports Sensitivity.rosenbaum (contract 0.11.0): Wilcoxon's signed-rank test under Rosenbaum's upper bound (normal approximation, Rosenbaum 2002 4.3.3), the upper-bound p-value by gamma, the matched sample's largest standardized difference, and gamma_star, the largest gamma at which the test -- one-sided in the primary estimate's direction at (1 - ci_level)/2, the level of the primary interval and e_value_ci -- still rejects no effect; randomized designs, non-back-door strategies, continuous treatments and too few pairs get no gamma and a reason (rosenbaum_null_reason). The backend sensitivity_analysis skill takes matched pair_differences and returns rosenbaum_gamma from the kernel. Pinned by test_rosenbaum_bounds.py, which reproduces Rosenbaum's Table 4.3 upper bounds on the Morton et al. (1982) lead pairs (0.0018, 0.0136, 0.0388, 0.0468, 0.0740 at gamma = 2, 3, 4, 4.25, 5), and pre-registered as T9 (730d15c) before the code, first registered run passed (benchmarks/t9-rosenbaum/results/2026-09-26-v1-run1.json, 4f34987): in paired designs drawn from Rosenbaum's model at its worst case, gamma_star reached the planted bias in 2.85% (gamma_0 = 2) and 1.95% (gamma_0 = 4) of runs (bar 3.5%) and retained the conclusion at gamma_0/1.5 in 96.7% and 91.8%; end-to-end with an unmeasured confounder of odds ratio 3, no run claimed gamma_star >= 3 and the median 1.63 tracked the oracle design sensitivity 1.880; three seeded defects caught. Limits: Wilcoxon's statistic only (it understates design sensitivity); greedy 1:1 matching, no full or optimal matching; residual imbalance after inexact matching is bias the bound does not cover; gamma_star speaks to the matched comparison's test of no effect, not to the AIPW/IPW estimate (no marginal sensitivity model for the weighted estimators). The one-click UI of docs/UIX.md US-21 is sensitivity-one-click-ui."
     }
   ]
 }
