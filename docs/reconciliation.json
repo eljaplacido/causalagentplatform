@@ -32,12 +32,12 @@
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
           "frontend/package.json": "4fd20069654edb77c710a609eb06d51b95c10068d837bf324a90a731dccc27df",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "fc5b6d1b7db3a4cae3ded89459aa58661b1946eaf6e8b8807fbc5bc34e674477"
+          "docs/CURRENT_STAGE.md": "e0d1c675b15a2f48c42c2a541741e392a32a8ac2e8f829b2eefd8a7a8d9a0cf9"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (merge of #14 into septa-8: T5 row from septa-8 present; #14 changed nothing it quotes)"
+        "by": "Claude (septa-10: C0 row added with its figures bound; status line still true -- no real operation measured)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -54,18 +54,18 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "cc3aefae8c5ea3aa635bb0b805ccf1db0e5253c384c8b1ba679822b355098c63",
-          "backend/src": "c06af80dee95babb1eed74ffbc5435ffe7f1cb1fdc8bf8f8489d087ad42aabe1",
+          "conformance/declared_not_implemented.json": "9bb2f6d221517e55380f01ddbf11b1aea2bb8d4eb0fa255e87afc402e92a230d",
+          "backend/src": "af017b3d079ed9ce4880fd228296f3dd3652f7ec054b46999e683eca071ba31b",
           "backend/mcp_server": "37359e186da3a2dc0eb5de8bb4ad234e44c279840ecde4e3e5e75fd84444002f",
-          "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
+          "backend/tests": "0c8d80e14a71871a39ebc59c14514ef354f15334222bf0b3406b14aa4527f0a9",
           "frontend/src": "23c2a47a141c045c852a243fea511c8b43f4f8f3b25fb68078bdd2aacf5a6429",
-          "packages": "e0df8dd5f27d915fc2f45eb9b1d9d01500c8d30dde637dbfd332b32abeab7016",
+          "packages": "72610ee7f8f2174b36506f8469534c590eb3a38b7bcde6a79fc965682d074788",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (self-hosted CI: the A0 gate test now inherits the environment; the row's claim is unchanged)"
+        "by": "Claude (septa-10: calibration row updated, two C0 rows added; report shape changed in outcome.py and the backend test, both described)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -254,12 +254,12 @@
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "5f03e4bc23a89eafdbb590a825165878f5dbd9f93a845dee52125c5742dea957",
           ".github": "fe510356e0b3b1a4cc1702c8b02a5faae9449c7ca170d7f06b1a83f40a2f3e90",
-          ".gnomon": "e9afa6dfbb985f1524e04a4ca8de7b5210e7e43e52d4106baca6d2a1b847532a"
+          ".gnomon": "012aca86374fc7c139d9ba2ece8e0ca58cf279031d579f0008c7bda02d880b57"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (self-hosted CI: workflow changes; the page names the workflow files, not runners)"
+        "by": "Claude (septa-10: .gnomon change is a gate-table row and match regexes; the page lists the harness files, none of which it quotes)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -311,21 +311,21 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "507210537708c484cabb55c1c2481d367609598832a89ca4a1a0e033b5e265ca",
-          "backend/tests": "dd8375951be7ed46d6b1b4ba0a83d5e5d302dc6f5c3df7ac7082ffd4bd39cf69",
+          "backend/tests": "0c8d80e14a71871a39ebc59c14514ef354f15334222bf0b3406b14aa4527f0a9",
           "backend/pyproject.toml": "169a78bcd3bcd7560ad019dbf5878bef10473c0ab6dd16c04ffa59c16983501d",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5bb76e3fb519f2950ed33f863c40d48a09eab70bd5bbef8d090917e5bea293cd",
           ".gnomon/ci.sh": "8379e43234946f44d8e569a68c60d42923500ded3012d88bf2a477f5ebecf8aa",
-          "scripts": "f0b53ec6456489ff7a911dc1b94d72ee20926fb6a5b68d63badd302cc5ae9090",
+          "scripts": "479d462d7dfe743b5e2122a038f38f1b157f8997405d1576d7f1da986c357939",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
-          "benchmarks": "a017cd3d799db03c83693deb1efeb7a8c2fb2e73e532f4fe5ce3895002f7be0a",
+          "benchmarks": "432e7d3d72e02900590fcddc7222cbf268ed918c7fb04159a5b3f444e766faf4",
           "packages/causal-core/tests": "be7509f8646efd6a27d3b142715e440739d17255e7ffc1ebcde5bc05aa95c2b2",
-          "packages/causal-decision/tests": "c7ccd2d2b91e1ec53a3eb456c70f670268b2ec1f8f431e161f399360b94ef7de"
+          "packages/causal-decision/tests": "811166b3dd05cfc3cbd62c7e71fcf1d62666fb738c97dcb65e34725fede4d034"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (self-hosted CI: 5.1 names the triggers, CI_RUNS_ON and the loopback DB; the A0 test change is internal)"
+        "by": "Claude (septa-10: C0 added to the gate table and the seeded-defect list)"
       }
     },
     "docs/UIX.md": {
@@ -355,13 +355,13 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "b3a206babea176dd53fdebe83037e38e66922eeced1def6dbfb248262c2477a6",
-          "conformance/declared_not_implemented.json": "cc3aefae8c5ea3aa635bb0b805ccf1db0e5253c384c8b1ba679822b355098c63",
-          "docs/CURRENT_STAGE.md": "fc5b6d1b7db3a4cae3ded89459aa58661b1946eaf6e8b8807fbc5bc34e674477"
+          "conformance/declared_not_implemented.json": "9bb2f6d221517e55380f01ddbf11b1aea2bb8d4eb0fa255e87afc402e92a230d",
+          "docs/CURRENT_STAGE.md": "e0d1c675b15a2f48c42c2a541741e392a32a8ac2e8f829b2eefd8a7a8d9a0cf9"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (self-hosted CI: CURRENT_STAGE moved; the roadmap makes no claim about CI runners)"
+        "by": "Claude (septa-10: item 5 and the p2 list say the report and its simulated C0 gate are built, real follow-ups are not)"
       }
     },
     "SECURITY.md": {

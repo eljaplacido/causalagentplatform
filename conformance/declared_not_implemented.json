@@ -642,17 +642,21 @@
           "says": "> target outcome \u2014 and is that evidence strong enough to act on without asking a human?"
         }
       ],
-      "reality": "The machinery is built and pinned: every decision seals a follow-up plan carrying the prediction it used, POST /api/v1/decisions/{entry_digest}/followup re-runs that plan's own analysis over a later window, and GET /api/v1/decisions/calibration aggregates. What does not exist is the evidence: no follow-up has been taken on any real operation, so every rate in the report is null. That is the honest state and the report says so rather than reading as a perfect score. This entry leaves the list when a body of follow-ups exists and the thresholds have been moved by what it showed -- which is operational history, not code.",
+      "reality": "The machinery is built and pinned: every decision seals a follow-up plan carrying the prediction it used, POST /api/v1/decisions/{entry_digest}/followup re-runs that plan's own analysis over a later window, and GET /api/v1/decisions/calibration aggregates. Since septa-10 the report is also built to be trusted when evidence arrives, and proven so on SIMULATED decision streams by the pre-registered C0 gate: a rate only from 10 or more follow-ups, each with a Clopper-Pearson interval (coverage of the constructed truth 0.9575-1.0 over 400 streams per design), undecidable follow-ups counted apart and carried into worst-case bounds over every acted decision, and 'could not resolve' (fewer than 6 discordant pairs) reported apart from 'no difference'. What does not exist is the evidence: no follow-up has been taken on any real operation, so on the platform every rate is refused for want of follow-ups, and C0's figures are about simulated streams, not about these thresholds. This entry leaves the list when a body of real follow-ups exists and the thresholds have been moved (or kept, on the record) by what it showed -- which is operational history, not code.",
       "evidence": [
         {
           "at": "packages/causal-decision/src/causal_decision/outcome.py:1",
           "says": "What happened after the verdict, and whether the verdict deserved to be trusted."
+        },
+        {
+          "at": "packages/causal-decision/src/causal_decision/outcome.py:79",
+          "says": "MIN_FOLLOWUPS = 10"
         }
       ],
       "leaves_by": {
         "kind": "test",
         "path": "backend/tests/integration/test_calibration_evidence.py",
-        "asserts": "a pre-registered minimum number of decidable follow-ups exists, each rate is reported with an interval, 'could not resolve' is reported separately from 'no difference' (a paired comparison with too few discordant outcomes cannot reach significance), and docs/CURRENT_STAGE.md cites a measured calibration figure with the run that produced it"
+        "asserts": "at least the pre-registered minimum (C0's min_followups, 10) of decidable follow-ups on REAL operations exists in the store, the report states each rate from them with its interval and 'could not resolve' separately from 'no difference' (the report's arithmetic is C0's), and docs/CURRENT_STAGE.md cites that measured calibration figure with the run that produced it, labelled as real rather than simulated"
       }
     },
     {
