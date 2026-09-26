@@ -3,7 +3,8 @@ Platform operational API.
 
 Computed at request time from the live database (SQLite in local development,
 PostgreSQL deployed), with no static values:
-  GET /api/v1/platform/connectors  — health of each backend component (DB, registry, pipeline)
+  GET /api/v1/platform/connectors  — health of each backend component (DB, registry, pipeline,
+                                     Neo4j graph store)
   GET /api/v1/platform/metrics     — computed operational metrics from audit_log + sessions
   GET /api/v1/platform/drift       — drift alerts derived from recent rejected verdicts
 
@@ -22,6 +23,8 @@ entry, `decision-calibration`.
 
 from __future__ import annotations
 
+import asyncio
+import os
 import time
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -32,6 +35,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 
 from src.db.factory import CloudSqlFactory
+from src.db.neo4j_factory import Neo4jFactory
 from src.db.types import TIMESTAMP, timestamp_text, typed_text
 from src.middleware.auth import get_current_user
 from src.middleware.rbac import guard
@@ -60,6 +64,15 @@ def _as_utc(value: Any) -> datetime | None:
     return moment.replace(tzinfo=UTC) if moment.tzinfo is None else moment.astimezone(UTC)
 
 _registry = SemanticLayerRegistry()
+
+#: How long the connectors check waits for Neo4j to answer before calling it
+#: unreachable. The route answers a dashboard; it must not hang on a dead host.
+NEO4J_CHECK_TIMEOUT_SECONDS = 3.0
+
+#: What the response says when Neo4j is configured and does not answer. Fixed
+#: text: the driver's own error names hosts and ports, and can carry credentials;
+#: it goes to the server log only.
+_NEO4J_UNREACHABLE = "Neo4j is configured (NEO4J_URI) but did not answer a connectivity check."
 
 
 # ── Response models ───────────────────────────────────────────────────────────
@@ -134,7 +147,14 @@ _POLICY_DESCRIPTIONS = {
     "PR-004": "Double-rejection escalation: same payload rejected twice triggers REQUIRES_ESCALATION.",
     "PR-005": "Cycle count limit: cycle_count >= 5 requires REQUIRES_ESCALATION.",
     "PR-006": "DISORDER domain: no verdict can be APPROVED in DISORDER domain.",
-    "PR-007": "Sensitivity analysis: edges without sensitivity_result blocked from APPROVED.",
+    "PR-007": (
+        "Sensitivity analysis: an edge is not APPROVED without a sensitivity result the "
+        "platform recorded for it (RECORD_SENSITIVITY) on an assumption it rests on."
+    ),
+    "PR-010": (
+        "Planner escalation: a run whose lookahead found no safe action "
+        "(plan_outcome no_safe_action) cannot be APPROVED; it requires escalation."
+    ),
 }
 
 
@@ -173,6 +193,8 @@ async def get_connector_health(
       - The database (connection + record counts), named by its dialect
       - Semantic layer registry (entities, fragments, assumptions)
       - Audit log (entry count, last entry timestamp)
+      - Neo4j graph store: unconfigured / reachable / unreachable (optional;
+        never echoes the driver's error text)
       - LangGraph agent pipeline (compiled graph check)
     """
     results: list[ConnectorStatus] = []
@@ -329,7 +351,10 @@ async def get_connector_health(
         )
     )
 
-    # ── 4. LangGraph Agent Pipeline ──────────────────────────────────────────
+    # ── 4. Neo4j graph store ─────────────────────────────────────────────────
+    results.append(await _neo4j_status())
+
+    # ── 5. LangGraph Agent Pipeline ──────────────────────────────────────────
     t0 = time.perf_counter()
     pipeline_healthy = False
     pipeline_error: str | None = None
@@ -370,6 +395,54 @@ async def get_connector_health(
         total=len(results),
     )
     return results
+
+
+async def _neo4j_status() -> ConnectorStatus:
+    """Neo4j as one of three states: unconfigured, reachable, unreachable.
+
+    Neo4j is optional: with NEO4J_URI unset the graph and experience-buffer paths
+    fall back to SQL, so "unconfigured" is healthy. Configured and not answering
+    (no driver, a connectivity error, or no answer within
+    NEO4J_CHECK_TIMEOUT_SECONDS) is unhealthy, reported with a fixed message.
+    """
+    t0 = time.perf_counter()
+    configured = bool(os.getenv("NEO4J_URI"))
+    reachable: bool | None = None
+    if configured:
+        reachable = False
+        driver = Neo4jFactory.get_driver()
+        if driver is None:
+            log.warning("platform.connectors.neo4j_unreachable", reason="no_driver")
+        else:
+            try:
+                await asyncio.wait_for(
+                    driver.verify_connectivity(), timeout=NEO4J_CHECK_TIMEOUT_SECONDS
+                )
+                reachable = True
+            except TimeoutError:
+                log.warning("platform.connectors.neo4j_unreachable", reason="timeout")
+            except Exception as exc:
+                # The error text stays here, in the server log.
+                log.warning(
+                    "platform.connectors.neo4j_unreachable",
+                    reason="connectivity_error",
+                    error_type=type(exc).__name__,
+                    error=str(exc),
+                )
+    status = "unconfigured" if not configured else ("reachable" if reachable else "unreachable")
+    healthy = status != "unreachable"
+    return ConnectorStatus(
+        connector_id="graph-neo4j",
+        connector_name="Neo4j graph store",
+        connector_type="CUSTOM",
+        healthy=healthy,
+        last_successful_sync=_now_iso() if reachable else None,
+        last_attempt_at=_now_iso(),
+        error_message=None if healthy else _NEO4J_UNREACHABLE,
+        objects_mapped=0,
+        sync_duration_ms=round((time.perf_counter() - t0) * 1000),
+        raw_output={"configured": configured, "reachable": reachable, "status": status},
+    )
 
 
 @router.get(

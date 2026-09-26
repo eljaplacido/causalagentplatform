@@ -1,20 +1,32 @@
 """
-Provenance API — trace and export agentic provenance records.
+Provenance API — trace, export and erase agentic provenance records.
 
-Endpoints:
-  GET  /api/v1/provenance/trace/{session_id}   — trace full provenance chain
-  GET  /api/v1/provenance/export/{session_id}  — PROV-JSON export of provenance graph
-  GET  /api/v1/provenance/invocations/{session_id} — LLM invocation metadata
+Endpoints (every one needs a governance role; src/middleware/rbac.py):
+  GET  /api/v1/provenance/trace/{session_id}         — trace full provenance chain
+  GET  /api/v1/provenance/export/{session_id}        — PROV-JSON export of provenance graph
+  GET  /api/v1/provenance/invocations/{session_id}   — LLM invocation metadata
+  POST /api/v1/provenance/session/{session_id}/erasure — tombstone a session's records
+
+The records are durable and append-only (src/semantic_layer/provenance_store.py,
+migration 011_provenance.sql). Nothing here deletes or rewrites one: an erasure
+hides a session's records from these reads and is itself kept, with who, when
+and why, and returned by the trace in their place. The hidden rows remain in the
+database, so an erasure is not GDPR Art. 17 erasure (register gdpr-controls).
+
+Who writes records (ADR-002, as read against the code): session runs
+(src/api/session.py), Guardian checks (GovernanceAgent.check) and decisions
+(src/api/decisions.py, under session ``decision:<entry_digest>``). The LLM
+capture hook in src/agents/llm_factory.py writes invocations here too, but no
+runtime path calls get_llm (register llm-routing-no-callers).
 """
 
 from __future__ import annotations
 
-from typing import Any
-from uuid import UUID
+from typing import TYPE_CHECKING, Any
 
 import structlog
-from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
 
 from src.middleware.rbac import guard
 from src.semantic_layer.provenance import (
@@ -24,47 +36,36 @@ from src.semantic_layer.provenance import (
     ProvenanceRecord,
     ProvenanceRecordType,
 )
+from src.semantic_layer.provenance_store import MIN_REASON_LENGTH, Erasure, ProvenanceStore
+
+if TYPE_CHECKING:
+    from uuid import UUID
 
 log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/api/v1/provenance", tags=["Provenance"])
 
-# ── In-memory store (SQLite-backed in production; session-scoped for dev) ──────
-# Keyed by session_id for simplicity. Production replaces with Neo4j + PostgreSQL.
-
-_provenance_store: dict[str, list[ProvenanceRecord]] = {}
-_invocation_store: dict[str, list[LLMInvocation]] = {}
+_store = ProvenanceStore()
 
 
-# ── Store helpers (called by llm_factory.py and agents) ────────────────────────
-
-
-def store_provenance_record(record: ProvenanceRecord) -> None:
-    """Append a provenance record to the in-memory store for its session."""
-    sid = record.session_id
-    _provenance_store.setdefault(sid, []).append(record)
-
-
-def store_llm_invocation(invocation: LLMInvocation) -> None:
-    """Append an LLM invocation record to the in-memory store for its session."""
-    sid = invocation.session_id
-    _invocation_store.setdefault(sid, []).append(invocation)
-
-
-def get_provenance_graph(session_id: str) -> ProvenanceGraph:
-    """Build a ProvenanceGraph from stored records and invocations."""
-    records = _provenance_store.get(session_id, [])
-    invocations = _invocation_store.get(session_id, [])
-
-    links = _build_links(records)
-    gap_flags = _detect_gaps(records)
-
+def build_graph(
+    session_id: str,
+    records: list[ProvenanceRecord],
+    invocations: list[LLMInvocation],
+) -> ProvenanceGraph:
+    """A ProvenanceGraph over the given records and invocations."""
     return ProvenanceGraph(
         session_id=session_id,
         records=records,
-        links=links,
+        links=_build_links(records),
         llm_invocations=invocations,
-        gap_flags=gap_flags,
+        gap_flags=_detect_gaps(records),
     )
+
+
+async def get_provenance_graph(session_id: str) -> tuple[ProvenanceGraph, list[Erasure]]:
+    """The session's visible graph, and the tombstones that hid the rest."""
+    view = await _store.read(session_id)
+    return build_graph(session_id, view.records, view.invocations), view.erasures
 
 
 def _build_links(records: list[ProvenanceRecord]) -> list[ProvenanceLink]:
@@ -135,6 +136,17 @@ class TraceResponse(BaseModel):
     records: list[dict[str, Any]]
     invocations: list[dict[str, Any]]
     incomplete: bool
+    #: Every erasure of this session: who, when, why, how many entries it hid.
+    #: The hidden entries are absent from `records` and `invocations`.
+    erasures: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class ErasureRequest(BaseModel):
+    reason: str = Field(
+        ...,
+        min_length=MIN_REASON_LENGTH,
+        description="Why this session's provenance is being hidden. Kept with the tombstone.",
+    )
 
 
 class ProvJsonResponse(BaseModel):
@@ -166,7 +178,7 @@ async def trace_provenance(
 
     Includes all ProvenanceRecords and optionally LLM invocations.
     """
-    graph = get_provenance_graph(session_id)
+    graph, erasures = await get_provenance_graph(session_id)
 
     return TraceResponse(
         session_id=graph.session_id,
@@ -180,6 +192,7 @@ async def trace_provenance(
             else []
         ),
         incomplete=not graph.is_complete,
+        erasures=[e.as_json() for e in erasures],
     )
 
 
@@ -197,7 +210,7 @@ async def export_prov_json(
 
     Compatible with standard PROV validators and visualisers.
     """
-    graph = get_provenance_graph(session_id)
+    graph, _ = await get_provenance_graph(session_id)
     records = graph.records
 
     entities = [
@@ -227,24 +240,24 @@ async def export_prov_json(
         activity=activities,
         agent=agents_data,
         wasGeneratedBy=[
-            {"prov:entity": str(l.source), "prov:activity": str(l.target)}
-            for l in links
-            if l.relation_type == "wasGeneratedBy"
+            {"prov:entity": str(link.source), "prov:activity": str(link.target)}
+            for link in links
+            if link.relation_type == "wasGeneratedBy"
         ],
         wasDerivedFrom=[
-            {"prov:generatedEntity": str(l.source), "prov:usedEntity": str(l.target)}
-            for l in links
-            if l.relation_type == "wasDerivedFrom"
+            {"prov:generatedEntity": str(link.source), "prov:usedEntity": str(link.target)}
+            for link in links
+            if link.relation_type == "wasDerivedFrom"
         ],
         wasAttributedTo=[
-            {"prov:entity": str(l.source), "prov:agent": str(l.target)}
-            for l in links
-            if l.relation_type == "wasAttributedTo"
+            {"prov:entity": str(link.source), "prov:agent": str(link.target)}
+            for link in links
+            if link.relation_type == "wasAttributedTo"
         ],
         used=[
-            {"prov:activity": str(l.source), "prov:entity": str(l.target)}
-            for l in links
-            if l.relation_type == "used"
+            {"prov:activity": str(link.source), "prov:entity": str(link.target)}
+            for link in links
+            if link.relation_type == "used"
         ],
     )
 
@@ -262,21 +275,34 @@ async def list_invocations(
     """
     List all LLM invocations for a session, optionally filtered by capability.
     """
-    invocations = _invocation_store.get(session_id, [])
+    invocations = (await _store.read(session_id)).invocations
     if capability:
         invocations = [i for i in invocations if i.capability == capability]
     return [i.model_dump(mode="json") for i in invocations]
 
 
-@router.delete(
-    "/session/{session_id}",
-    status_code=204,
-    summary="Clear provenance data for a session (test cleanup)",
+@router.post(
+    "/session/{session_id}/erasure",
+    status_code=201,
+    summary="Hide a session's provenance behind a tombstone",
 )
-async def clear_session(
+async def erase_session(
     session_id: str,
-    user: dict[str, Any] = Depends(guard("DELETE", "/api/v1/provenance/session/{session_id}")),
-) -> None:
-    """Remove all provenance and invocation data for a session."""
-    _provenance_store.pop(session_id, None)
-    _invocation_store.pop(session_id, None)
+    body: ErasureRequest,
+    user: dict[str, Any] = Depends(
+        guard("POST", "/api/v1/provenance/session/{session_id}/erasure")
+    ),
+) -> dict[str, Any]:
+    """Hide the session's provenance written so far, and keep the fact of it.
+
+    Nothing is deleted. The reads above stop returning the hidden entries and
+    return this tombstone instead; the entries stay in the database.
+    """
+    erased_by = str(user.get("uid") or user.get("email") or "")
+    if not body.reason.strip() or len(body.reason.strip()) < MIN_REASON_LENGTH:
+        raise HTTPException(status_code=422, detail="an erasure needs a reason")
+    if not erased_by:
+        raise HTTPException(status_code=422, detail="the caller has no identity to record")
+    erasure = await _store.erase(session_id, erased_by=erased_by, reason=body.reason)
+    log.info("api.provenance.erased", session_id=session_id, erased_by=erased_by)
+    return erasure.as_json()

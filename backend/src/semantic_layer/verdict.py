@@ -58,10 +58,15 @@ SIGNATURE_VERSION = 1
 
 #: The actions a human review decision is issued for. The action is part of the
 #: signed claim (:func:`claim`), so a verdict records which decision it rules on and
-#: cannot be relabelled: the registry spends a GOVERNANCE_REJECT verdict only on a
-#: rejection, and a GOVERNANCE_APPROVE verdict never on a rejection or a new draft.
+#: cannot be relabelled: the registry promotes an object to APPROVED only on a verdict
+#: issued for GOVERNANCE_APPROVE (septa-60), spends a GOVERNANCE_REJECT verdict only
+#: on a rejection (septa-53), and never spends either on a new draft.
 GOVERNANCE_APPROVE = "GOVERNANCE_APPROVE"
 GOVERNANCE_REJECT = "GOVERNANCE_REJECT"
+#: The action a verdict authorising the platform to record the kernel's sensitivity
+#: analysis of a draft edge is issued for (septa-62,
+#: SemanticLayerRegistry.record_edge_sensitivity). Its subject is the edge.
+RECORD_SENSITIVITY = "RECORD_SENSITIVITY"
 
 _EPHEMERAL_KEY: bytes | None = None
 

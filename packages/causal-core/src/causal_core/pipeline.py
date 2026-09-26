@@ -582,6 +582,12 @@ def _analyze(
             "/sensitivity/robustness_value",
             None,
         )
+        if sens.rosenbaum is not None:
+            claim_fields["rosenbaum.gamma"] = (
+                sens.rosenbaum.gamma_star,
+                "/sensitivity/rosenbaum/gamma_star",
+                None,
+            )
     result = CausalResult(
         status=status,
         query=query,

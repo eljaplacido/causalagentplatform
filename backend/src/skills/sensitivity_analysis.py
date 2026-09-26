@@ -15,6 +15,13 @@ any effect as a log-odds ratio (so the same effect in cents or in dollars gave
 different "robustness"), and returned "Rosenbaum bounds" computed by multiplying
 the estimate by an invented factor. Both are removed.
 
+Rosenbaum bounds need matched data. Given treated-minus-control matched pair
+differences (``pair_differences``), ``rosenbaum_gamma`` is causal-core's
+sensitivity value: the largest Γ at which Wilcoxon's signed-rank test of no
+effect still rejects at ``(1 - ci_level)/2`` one-sided, in the direction of
+``ate`` (Rosenbaum 2002, §4.3.3; pre-registered as T9). Without pairs it is
+``None``; ``causal_core.analyze`` builds the matched design itself from data.
+
 EpistemicState constraints enforced:
 - audit_log_required: sensitivity results logged
 """
@@ -22,16 +29,39 @@ EpistemicState constraints enforced:
 from __future__ import annotations
 
 import math
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
+import numpy as np
 import structlog
-from causal_core.sensitivity import e_value_rr
+from causal_core.sensitivity import e_value_rr, one_sided_alpha, rosenbaum_pairs
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 logger = structlog.get_logger(__name__)
 
 
 class SensitivityAnalysisError(Exception):
     """Raised when sensitivity analysis fails."""
+
+
+def _rosenbaum(
+    pair_differences: Sequence[float] | None, direction: float, ci_level: float
+) -> dict[str, Any]:
+    if pair_differences is None:
+        return {"rosenbaum_gamma": None, "rosenbaum": None}
+    alpha = one_sided_alpha(ci_level)
+    gamma, table = rosenbaum_pairs(np.asarray(pair_differences, dtype=float), alpha, direction)
+    return {
+        "rosenbaum_gamma": None if gamma is None else round(gamma, 4),
+        "rosenbaum": {
+            "alpha": alpha,
+            "alternative": "greater" if direction >= 0 else "less",
+            "n_pairs": len(pair_differences),
+            "p_upper": table,
+            "method": "Wilcoxon signed-rank, Rosenbaum upper bound, normal approximation",
+        },
+    }
 
 
 def _e_values(
@@ -55,16 +85,22 @@ async def sensitivity_analysis(
     outcome_sd: float | None = None,
     outcome_column: str | None = None,
     robust_e_value: float = 2.0,
+    pair_differences: Sequence[float] | None = None,
+    ci_level: float = 0.95,
 ) -> dict[str, Any]:
     """How strong would an unmeasured confounder need to be to explain the effect away?
 
     Returns ``e_value`` (point), ``e_value_ci`` (for the interval bound nearest the
     null; 1.0 when the interval includes the null), ``robust_to_unmeasured_confounding``
     (``e_value_ci >= robust_e_value``, a convention, not a law; ``None`` when not
-    computable), ``method`` and ``reason``. ``rosenbaum_gamma`` is always ``None``:
-    Rosenbaum bounds need matched data and are not implemented.
+    computable), ``method`` and ``reason``; ``rosenbaum_gamma`` and ``rosenbaum`` (the
+    upper-bound p-values by Γ) when ``pair_differences`` are given, else ``None``.
     """
-    base: dict[str, Any] = {"rosenbaum_gamma": None, "robust_threshold": robust_e_value}
+    if pair_differences is not None and len(pair_differences) < 2:
+        raise SensitivityAnalysisError("a Rosenbaum bound needs at least two matched pairs")
+    direction = -1.0 if ate is not None and ate < 0 else 1.0
+    base: dict[str, Any] = {**_rosenbaum(pair_differences, direction, ci_level),
+                            "robust_threshold": robust_e_value}
     if ate is None:
         return {**base, "e_value": None, "e_value_ci": None,
                 "robust_to_unmeasured_confounding": None, "method": "none",

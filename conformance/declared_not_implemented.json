@@ -36,11 +36,11 @@
       "capability": "Counterfactual reasoning over a structural causal model",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:273",
+          "at": "docs/AGENTS.md:276",
           "says": "Structural causal model (SCM), observation, query (intervention or counterfactual)"
         },
         {
-          "at": "docs/AGENTS.md:274",
+          "at": "docs/AGENTS.md:277",
           "says": "Estimated counterfactual distribution"
         },
         {
@@ -74,220 +74,18 @@
       "reality": "The discovery agent proposes one edge between two freshly generated uuid4() nodes with a confidence looked up from the Cynefin domain; conditional_independence_test is a stub that returns None.",
       "evidence": [
         {
-          "at": "backend/src/agents/causal_discovery.py:330",
+          "at": "backend/src/agents/causal_discovery.py:329",
           "says": "source_id = uuid4()"
         },
         {
-          "at": "backend/src/agents/causal_discovery.py:394",
-          "says": "stub — real data required"
+          "at": "backend/src/agents/causal_discovery.py:392",
+          "says": "stub \u2014 real data required"
         }
       ],
       "leaves_by": {
         "kind": "test",
         "path": "backend/tests/causal_correctness/test_discovery.py",
         "asserts": "on data simulated from a known DAG the recovered skeleton/CPDAG is within a pre-registered structural Hamming distance of the truth"
-      }
-    },
-    {
-      "id": "sensitivity-analysis",
-      "status": "partial",
-      "capability": "Sensitivity to unmeasured confounding (E-values, Rosenbaum bounds)",
-      "claimed_in": [
-        {
-          "at": "docs/AGENTS.md:375",
-          "says": "Computes Rosenbaum sensitivity bounds and E-values for unmeasured confounders"
-        },
-        {
-          "at": "docs/CYBERSECURITY.md:412",
-          "says": "- Rosenbaum sensitivity bounds"
-        },
-        {
-          "at": "docs/UIX.md:192",
-          "says": "I want to run a one-click Rosenbaum sensitivity analysis on any approved edge"
-        }
-      ],
-      "reality": "E-values are now correct and scale-aware (causal-core's e_value_rr; risk ratio, or difference plus outcome SD; otherwise null with the reason), and the kernel reports E-values and Cinelli-Hazlett robustness values from data. Rosenbaum bounds are not implemented: rosenbaum_gamma is always null (the previous values came from an invented multiplier).",
-      "evidence": [
-        {
-          "at": "backend/src/skills/sensitivity_analysis.py:67",
-          "says": "base: dict[str, Any] = {\"rosenbaum_gamma\": None"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/unit/test_rosenbaum_bounds.py",
-        "asserts": "Rosenbaum bounds match a published matched-pairs example (E-values are already pinned by backend/tests/unit/test_effect_estimate.py)"
-      }
-    },
-    {
-      "id": "econml-pymc",
-      "status": "declared-not-implemented",
-      "capability": "EconML / PyMC estimation backends",
-      "claimed_in": [
-        {
-          "at": "docs/AGENTS.md:53",
-          "says": "DoWhy / EconML for statistical estimation"
-        },
-        {
-          "at": "docs/AGENTS.md:361",
-          "says": "(DoWhy, PyMC)"
-        },
-        {
-          "at": "docs/AGENTS.md:655",
-          "says": "DoWhy, EconML, statsmodels"
-        },
-        {
-          "at": "docs/CURRENT_STAGE.md@4e036a0:84",
-          "says": "DoWhy/EconML"
-        }
-      ],
-      "reality": "Neither EconML nor PyMC is a dependency; estimation is causal-core (and DoWhy is no longer a backend dependency either). causal-core's plug-in registry is the way to add EconML estimators.",
-      "evidence": [
-        {
-          "at": "backend/pyproject.toml:51",
-          "says": "\"causal-core>=0.11.0\","
-        }
-      ],
-      "leaves_by": {
-        "kind": "retraction",
-        "path": "docs/AGENTS.md",
-        "asserts": "the claims are removed from the docs -- or the dependency is added with a test that exercises an estimator from it"
-      }
-    },
-    {
-      "id": "rust-crates",
-      "status": "declared-not-implemented",
-      "capability": "Rust crates (cynepic-causal, cynepic-bayes) backing DAG operations and belief tracking",
-      "claimed_in": [
-        {
-          "at": "docs/AGENTS.md:53",
-          "says": "`cynepic-causal` crate (Rust) for DAG operations"
-        },
-        {
-          "at": "docs/AGENTS.md:158",
-          "says": "cynepic-bayes Bayesian belief tracking"
-        },
-        {
-          "at": "docs/AGENTS.md:266",
-          "says": "`cynepic-causal` Rust crate"
-        }
-      ],
-      "reality": "This repository contains no Rust code and depends on no crate; the cynepic crates belong to separate projects that were inspiration only.",
-      "evidence": [
-        {
-          "at": "backend/src/agents/causal_discovery.py:312",
-          "says": "cynepic-causal Rust crate"
-        }
-      ],
-      "leaves_by": {
-        "kind": "retraction",
-        "path": "docs/AGENTS.md",
-        "asserts": "the crate references are removed from the docs and the docstrings that repeat them"
-      }
-    },
-    {
-      "id": "llm-routing-no-callers",
-      "status": "declared-not-implemented",
-      "capability": "Capability-based LLM routing used by the agents",
-      "claimed_in": [
-        {
-          "at": "docs/AGENTS.md:24",
-          "says": "Provider-agnostic LLM"
-        },
-        {
-          "at": "docs/AGENTS.md:605",
-          "says": "the LLM factory resolves capability → provider at runtime"
-        },
-        {
-          "at": "docs/AGENTS.md:615",
-          "says": "Routing is handled by `src/agents/llm_factory.py`"
-        },
-        {
-          "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md@13e7d92:99",
-          "says": "`src/agents/llm_factory.py` emits LLMInvocation metadata (implemented)"
-        },
-        {
-          "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md@13e7d92:111",
-          "says": "`src/agents/llm_factory.py` capture hook | Implemented"
-        },
-        {
-          "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md@13e7d92:120",
-          "says": "Every LLM call via `get_llm(session_id=..., agent_id=...)` auto-captures invocation metadata"
-        }
-      ],
-      "reality": "get_llm has no call site outside its own docstring: no agent invokes an LLM, and every agent's reasoning is rule or heuristic code.",
-      "evidence": [
-        {
-          "at": "backend/src/agents/llm_factory.py:145",
-          "says": "def get_llm("
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/unit/test_llm_routing_used.py",
-        "asserts": "an agent path requests a capability through get_llm and its output depends on the (stubbed) model's reply"
-      }
-    },
-    {
-      "id": "review-queue-risk-tier",
-      "status": "declared-not-implemented",
-      "capability": "Review queue ordered by risk tier, showing who submitted each item",
-      "claimed_in": [
-        {
-          "at": "backend/src/api/governance.py:401",
-          "says": "summary=\"List pending drafts ordered by risk tier\""
-        },
-        {
-          "at": "docs/UIX.md:235",
-          "says": "I want a structured review queue of all draft graph changes awaiting approval, ordered by risk tier"
-        }
-      ],
-      "reality": "ReviewQueueItem carries no risk tier and no submitter, the queue is not ordered by risk, and the UI fills riskTier \"MEDIUM\" and submittedBy \"system\" for every item.",
-      "evidence": [
-        {
-          "at": "backend/src/api/governance.py:168",
-          "says": "class ReviewQueueItem(BaseModel):"
-        },
-        {
-          "at": "frontend/src/app/governance/page.tsx:232",
-          "says": "riskTier: \"MEDIUM\","
-        },
-        {
-          "at": "frontend/src/app/governance/page.tsx:233",
-          "says": "submittedBy: \"system\","
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/integration/test_review_queue_risk.py",
-        "asserts": "/review-queue returns risk_tier and submitted_by derived from each object and orders by risk tier"
-      }
-    },
-    {
-      "id": "provenance-store-no-callers",
-      "status": "declared-not-implemented",
-      "capability": "Provenance records written by real platform flows",
-      "claimed_in": [
-        {
-          "at": "docs/CURRENT_STAGE.md@4e036a0:33",
-          "says": "Append-only audit trail"
-        },
-        {
-          "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md:134",
-          "says": "`src/api/provenance.py` | Implemented"
-        }
-      ],
-      "reality": "store_provenance_record has no call site: nothing outside the tests writes a provenance record, so the provenance API serves only what tests put there.",
-      "evidence": [
-        {
-          "at": "backend/src/api/provenance.py:41",
-          "says": "def store_provenance_record(record: ProvenanceRecord) -> None:"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/integration/test_provenance_flow.py",
-        "asserts": "a real flow (e.g. POST /api/v1/session/run) produces a provenance record retrievable from the provenance API"
       }
     },
     {
@@ -323,72 +121,6 @@
         "kind": "ci-run",
         "path": "specs/guardian_policy.tla",
         "asserts": "a CI step runs TLC on specs/guardian_policy.tla with guardian_policy.cfg to completion with no violation, and a deliberately broken copy is rejected"
-      }
-    },
-    {
-      "id": "neo4j-graph-store",
-      "status": "declared-not-implemented",
-      "capability": "Neo4j as the causal graph store (d-separation and backdoor-path queries)",
-      "claimed_in": [
-        {
-          "at": "docs/DATA_LAYER.md:282",
-          "says": "3.1 Neo4j (Graph Store)"
-        },
-        {
-          "at": "docs/DATA_LAYER.md:313",
-          "says": "d-separation query p95 < 50ms"
-        },
-        {
-          "at": "docs/CURRENT_STAGE.md@4e036a0:151",
-          "says": "Neo4j for causal graph storage"
-        }
-      ],
-      "reality": "The semantic layer (fragments, edges) is stored through SQLAlchemy (SQLite/PostgreSQL); Neo4j code exists only for the experience buffer and drift alerts, is exercised only against mocks, and no d-separation or path query runs in Neo4j.",
-      "evidence": [
-        {
-          "at": "backend/src/semantic_layer/registry.py:613",
-          "says": "FROM graph_fragments"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/integration/test_neo4j_live.py",
-        "asserts": "against a real Neo4j (the docker-compose service), the paths that claim Neo4j store and query what they claim to"
-      }
-    },
-    {
-      "id": "kafka-streaming",
-      "status": "declared-not-implemented",
-      "capability": "Kafka event streaming (ingestion bus, alert emission)",
-      "claimed_in": [
-        {
-          "at": "docs/DATA_LAYER.md:22",
-          "says": "Ingestion Bus (Kafka)"
-        },
-        {
-          "at": "docs/DATA_LAYER.md:406",
-          "says": "3.3 Kafka (Event Streaming)"
-        },
-        {
-          "at": "docs/AGENTS.md:134",
-          "says": "Alert emission via Kafka ready for integration"
-        },
-        {
-          "at": "docs/QUICKSTART.md@13e7d92:93",
-          "says": "The platform requires PostgreSQL 16, Neo4j 5, Kafka (KRaft), and Redis."
-        }
-      ],
-      "reality": "No Kafka client is a dependency or imported anywhere; the connector base class carries a comment to replace its stub with a producer. docker-compose starts a broker nothing talks to.",
-      "evidence": [
-        {
-          "at": "backend/src/connectors/base.py:174",
-          "says": "Production: replace with confluent_kafka.Producer."
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/integration/test_kafka_live.py",
-        "asserts": "an alert produced by the platform is consumed from the broker"
       }
     },
     {
@@ -460,29 +192,6 @@
       }
     },
     {
-      "id": "kernel-overlap-detection-limits",
-      "status": "partial",
-      "capability": "Positivity violations detected before estimation",
-      "claimed_in": [
-        {
-          "at": "packages/causal-core/README.md:40",
-          "says": "positivity and overlap"
-        }
-      ],
-      "reality": "The check reads a logistic propensity model. IHDP's by-construction overlap violation (all treated children of non-white mothers removed) was not detected from its 25 covariates in 100/100 realizations; the ATE was answered by extrapolation (coverage stayed >= 0.97).",
-      "evidence": [
-        {
-          "at": "benchmarks/t2-ihdp/PRE-REGISTRATION.md:103",
-          "says": "a refusal needs a detectable overlap violation"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "packages/causal-core/tests/bench/test_ihdp_overlap_refusal.py",
-        "asserts": "a pre-registered IHDP bar that the ATE is refused or flagged for the overlap violation, e.g. via a flexible or covariate-profile overlap check"
-      }
-    },
-    {
       "id": "decision-ledger-not-anchored",
       "status": "partial",
       "capability": "The decision chain's head digest anchored outside the writer's control",
@@ -495,7 +204,7 @@
       "reality": "The chain is built, persisted, served and verified, and decision_records is append-only in the production schema. Both ends of anchoring now exist in code: GET /api/v1/decisions/checkpoint returns the head to publish, and POST /api/v1/decisions/verify-anchored checks the chain against checkpoints kept elsewhere, catching a rewrite that re-seals every later entry (which /verify passes) and a truncation below a checkpoint. What does not exist is the publishing: nothing sends a checkpoint to a store the platform cannot rewrite, so until a deployment does, the ledger still evidences internal consistency only.",
       "evidence": [
         {
-          "at": "backend/src/api/decisions.py:316",
+          "at": "backend/src/api/decisions.py:413",
           "says": "A pass means the chain is *internally* consistent. It cannot mean more than"
         },
         {
@@ -533,11 +242,11 @@
       "capability": "Agent evaluation endpoints (consistency, calibration, decision quality) measure the running platform",
       "claimed_in": [
         {
-          "at": "backend/src/api/platform.py:752",
+          "at": "backend/src/api/platform.py:825",
           "says": "    summary=\"Agent confidence calibration probe\","
         },
         {
-          "at": "backend/src/api/platform.py:794",
+          "at": "backend/src/api/platform.py:867",
           "says": "    summary=\"Composite decision quality index\","
         },
         {
@@ -556,7 +265,7 @@
       "reality": "None of the three observes an agent. /evaluation/consistency scores num_runs identical EMPTY recommendation lists against each other, so the variance it reports is 0 by construction whatever the platform is doing. /evaluation/calibration scores the confidences in the request body, and CalibrationProbe states it uses their variance as a proxy because there is no ground truth -- calibration needs realized outcomes, and nothing records one. /evaluation/decision-quality combines four numbers taken as query parameters, defaulting to 0.75/0.05/0.80/0.70, so its 'index' is whatever the caller passes. The module docstring claimed 'No static or mock values' until 2026-09-24; it now names these three as excluded.",
       "evidence": [
         {
-          "at": "backend/src/api/platform.py:732",
+          "at": "backend/src/api/platform.py:805",
           "says": "    mock_recommendations: list[list[Any]] = [[] for _ in range(num_runs)]"
         },
         {
@@ -564,7 +273,7 @@
           "says": "        - Variance of confidence scores as a proxy for calibration"
         },
         {
-          "at": "backend/src/api/platform.py:800",
+          "at": "backend/src/api/platform.py:873",
           "says": "    calibration_score: float = Query(default=0.70, ge=0.0, le=1.0),"
         }
       ],
@@ -580,7 +289,7 @@
       "capability": "EvidenceGroundingAgent and DomainExpertElicitationAgent produce the outputs AGENTS.md specifies",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:182",
+          "at": "docs/AGENTS.md:185",
           "says": "- Evidence citations with relevance scores"
         },
         {
@@ -616,43 +325,24 @@
       "claimed_in": [
         {
           "at": "docs/ROADMAP.md:12",
-          "says": "> target outcome — and is that evidence strong enough to act on without asking a human?"
+          "says": "> target outcome \u2014 and is that evidence strong enough to act on without asking a human?"
         }
       ],
-      "reality": "The machinery is built and pinned: every decision seals a follow-up plan carrying the prediction it used, POST /api/v1/decisions/{entry_digest}/followup re-runs that plan's own analysis over a later window, and GET /api/v1/decisions/calibration aggregates. What does not exist is the evidence: no follow-up has been taken on any real operation, so every rate in the report is null. That is the honest state and the report says so rather than reading as a perfect score. This entry leaves the list when a body of follow-ups exists and the thresholds have been moved by what it showed -- which is operational history, not code.",
+      "reality": "The machinery is built and pinned: every decision seals a follow-up plan carrying the prediction it used, POST /api/v1/decisions/{entry_digest}/followup re-runs that plan's own analysis over a later window, and GET /api/v1/decisions/calibration aggregates. Since septa-10 the report is also built to be trusted when evidence arrives, and proven so on SIMULATED decision streams by the pre-registered C0 gate: a rate only from 10 or more follow-ups, each with a Clopper-Pearson interval (coverage of the constructed truth 0.9575-1.0 over 400 streams per design), undecidable follow-ups counted apart and carried into worst-case bounds over every acted decision, and 'could not resolve' (fewer than 6 discordant pairs) reported apart from 'no difference'. What does not exist is the evidence: no follow-up has been taken on any real operation, so on the platform every rate is refused for want of follow-ups, and C0's figures are about simulated streams, not about these thresholds. This entry leaves the list when a body of real follow-ups exists and the thresholds have been moved (or kept, on the record) by what it showed -- which is operational history, not code.",
       "evidence": [
         {
           "at": "packages/causal-decision/src/causal_decision/outcome.py:1",
           "says": "What happened after the verdict, and whether the verdict deserved to be trusted."
+        },
+        {
+          "at": "packages/causal-decision/src/causal_decision/outcome.py:79",
+          "says": "MIN_FOLLOWUPS = 10"
         }
       ],
       "leaves_by": {
         "kind": "test",
         "path": "backend/tests/integration/test_calibration_evidence.py",
-        "asserts": "a pre-registered minimum number of decidable follow-ups exists, each rate is reported with an interval, 'could not resolve' is reported separately from 'no difference' (a paired comparison with too few discordant outcomes cannot reach significance), and docs/CURRENT_STAGE.md cites a measured calibration figure with the run that produced it"
-      }
-    },
-    {
-      "id": "prompt-templates-not-loaded",
-      "status": "declared-not-implemented",
-      "capability": "Agents render their prompts from the versioned templates in prompts/",
-      "claimed_in": [
-        {
-          "at": "docs/AGENTS.md:599",
-          "says": "Prompt templates are versioned in `prompts/` alongside their schema contracts. No agent uses ad-hoc prompts at runtime."
-        }
-      ],
-      "reality": "Nothing in backend/src, packages or frontend/src reads prompts/*.yaml, and no runtime path calls an LLM at all (llm-routing-no-callers). The templates are specification artefacts; prompts/README.md now says so. Ten of the fourteen also carried a duplicate top-level `skill:` key, which no loader had ever complained about because none had ever run.",
-      "evidence": [
-        {
-          "at": "prompts/README.md:3",
-          "says": "**Specification artefacts, not runtime inputs.**"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/unit/test_prompt_templates_loaded.py",
-        "asserts": "a runtime agent renders its prompt from the matching prompts/*.yaml template and fails when the template is missing or malformed -- or AGENTS.md:609 is retracted"
+        "asserts": "at least the pre-registered minimum (C0's min_followups, 10) of decidable follow-ups on REAL operations exists in the store, the report states each rate from them with its interval and 'could not resolve' separately from 'no difference' (the report's arithmetic is C0's), and docs/CURRENT_STAGE.md cites that measured calibration figure with the run that produced it, labelled as real rather than simulated"
       }
     },
     {
@@ -662,7 +352,7 @@
       "claimed_in": [
         {
           "at": "backend/src/semantic_layer/registry.py:6",
-          "says": "2. All objects are versioned — no in-place mutation; deprecate and replace."
+          "says": "2. All objects are versioned \u2014 no in-place mutation; deprecate and replace."
         },
         {
           "at": "docs/DATA_LAYER.md@13e7d92:242",
@@ -670,22 +360,26 @@
         },
         {
           "at": "docs/ADR-001-canonical-semantic-layer.md@13e7d92:71",
-          "says": "All objects are versioned — no in-place mutation (Rule #2)"
+          "says": "All objects are versioned \u2014 no in-place mutation (Rule #2)"
         },
         {
           "at": "docs/ADR-001-canonical-semantic-layer.md@13e7d92:91",
           "says": "Version increments on any field change"
         }
       ],
-      "reality": "Approval and rejection UPDATE the object's own row: promote_to_approved rewrites approval_status, approved_at, approved_by, guardian_verdict_ref and lineage, and reject_draft rewrites approval_status (to DEPRECATED) and lineage. The version column keeps its 1.0.0 default, because no code path increments it and no new row is written for a new version. The previous state survives only as lineage entries and audit_log rows. The interventions feedback endpoint likewise UPDATEs interventions in place.",
+      "reality": "Approval and rejection UPDATE the object's own row: promote_to_approved rewrites approval_status, approved_at, approved_by, guardian_verdict_ref and lineage, and reject_draft rewrites approval_status (to DEPRECATED) and lineage, and record_edge_sensitivity (septa-62) rewrites a draft edge's assumption_refs and lineage to add the assumption carrying the kernel's sensitivity result. The version column keeps its 1.0.0 default, because no code path increments it and no new row is written for a new version. The previous state survives only as lineage entries and audit_log rows. The interventions feedback endpoint likewise UPDATEs interventions in place.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:965",
+          "at": "backend/src/semantic_layer/registry.py:1039",
           "says": "\"status\": \"APPROVED\","
         },
         {
-          "at": "backend/src/semantic_layer/registry.py:1047",
+          "at": "backend/src/semantic_layer/registry.py:1121",
           "says": ".values(approval_status=bindparam(\"status\"), lineage=bindparam(\"lineage\")),"
+        },
+        {
+          "at": "backend/src/semantic_layer/registry.py:1241",
+          "says": "assumption_refs=bindparam(\"refs\", type_=UUID_ARRAY),"
         }
       ],
       "leaves_by": {
@@ -704,7 +398,7 @@
           "says": "3. All approved objects carry lineage."
         },
         {
-          "at": "backend/src/api/semantic.py:369",
+          "at": "backend/src/api/semantic.py:430",
           "says": "This satisfies EU AI Act Art. 13 lineage"
         },
         {
@@ -712,14 +406,14 @@
           "says": "This satisfies EU AI Act Article 13 transparency requirements"
         }
       ],
-      "reality": "Approval and rejection each append one step (APPROVED or REJECTED: actor, time, verdict id), and an edge keeps whatever lineage list its submitter sent. Nothing records the data source, the transformation steps or the policy rules into lineage, and no platform code constructs a LineageRecord. An entity's submitted lineage is not stored (the INSERT omits the column). Fragments had no lineage column at all until 006_graph_fragment_lineage.sql, so approving or rejecting one failed outright. The Guardian verdict, its cited rules, and the evidence and assumption ids are linked by reference, so the chain can be partly rebuilt by joins. Nothing shows that this satisfies EU AI Act Art. 13.",
+      "reality": "Approval and rejection each append one step (APPROVED or REJECTED: actor, time, verdict id), recording a sensitivity result appends a MODIFIED step naming the new assumption and the verdict, and an edge keeps whatever lineage list its submitter sent. Nothing records the data source, the transformation steps or the policy rules into lineage, and no platform code constructs a LineageRecord. An entity's submitted lineage is not stored (the INSERT omits the column). Fragments had no lineage column at all until 006_graph_fragment_lineage.sql, so approving or rejecting one failed outright. The Guardian verdict, its cited rules, and the evidence and assumption ids are linked by reference, so the chain can be partly rebuilt by joins. Nothing shows that this satisfies EU AI Act Art. 13.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:933",
+          "at": "backend/src/semantic_layer/registry.py:1007",
           "says": "select(t.c.lineage, t.c.approval_status, t.c.domain).where("
         },
         {
-          "at": "backend/src/semantic_layer/models.py:200",
+          "at": "backend/src/semantic_layer/models.py:213",
           "says": "class LineageRecord(BaseModel):"
         }
       ],
@@ -735,7 +429,7 @@
       "capability": "Continuous distribution, causal, semantic and concept drift monitoring",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:134",
+          "at": "docs/AGENTS.md:137",
           "says": "Production-ready with multi-type drift detection (distribution, causal, semantic, concept)"
         },
         {
@@ -747,25 +441,25 @@
           "says": "| **Concept drift** | Model performance degradation over time | Re-estimation trigger |"
         }
       ],
-      "reality": "The drift functions compute when called directly with data (KL/JS on histograms, a correlation-below-0.5 check labelled causal drift, Jaccard word overlap on definitions, a chi-squared test on labels). DriftMonitorAgent.process, which the periodic sensor runs, hands each skill only a fragment id, so drift_detect returns kl_divergence 0.0 with note no_data_for_comparison, the structure and semantic comparisons return no drift for want of edges and definitions, and concept_drift is passed as False. The pipeline therefore cannot raise a drift alert. Alerts go to an in-process AlertEmitter; the Kafka topic named in its return value has no producer.",
+      "reality": "The drift functions compute when called directly with data (KL/JS on histograms, a correlation-below-0.5 check labelled causal drift, Jaccard word overlap on definitions, a chi-squared test on labels). DriftMonitorAgent.process hands each skill only a fragment id, so drift_detect returns kl_divergence 0.0 with note no_data_for_comparison, the structure and semantic comparisons return no drift for want of edges and definitions, and concept_drift is passed as False. The pipeline therefore cannot raise a drift alert, and nothing runs it on a schedule: the periodic DriftSensor, which no code ever started, was deleted. Alerts go to an in-process AlertEmitter, and the agent's return value names that channel; there is no Kafka producer (until 2026-09-26 it named a platform.drift.alert.v1 topic, and the alert_emit skill claimed an emission it never made).",
       "evidence": [
         {
-          "at": "backend/src/agents/drift_monitor.py:598",
+          "at": "backend/src/agents/drift_monitor.py:606",
           "says": "\"note\": \"no_data_for_comparison\","
         },
         {
-          "at": "backend/src/agents/drift_monitor.py:186",
+          "at": "backend/src/agents/drift_monitor.py:192",
           "says": "concept_drift=False,  # Would need label data"
         },
         {
-          "at": "backend/src/agents/drift_monitor.py:546",
-          "says": "\"topic\": \"platform.drift.alert.v1\","
+          "at": "backend/src/agents/drift_monitor.py:65",
+          "says": "_ALERT_CHANNEL = \"AlertEmitter (in-process)\""
         }
       ],
       "leaves_by": {
         "kind": "test",
         "path": "backend/tests/integration/test_drift_pipeline_data.py",
-        "asserts": "the periodic sensor, run over a fragment whose stored baseline differs from current data by a known shift, raises a drift alert carrying the measured divergence -- and does not for an unshifted copy"
+        "asserts": "the drift pipeline (DriftMonitorAgent.process, and whatever schedules it), run over a fragment whose stored baseline differs from current data by a known shift, raises a drift alert carrying the measured divergence -- and does not for an unshifted copy"
       }
     },
     {
@@ -782,14 +476,14 @@
           "says": "TypeScript interfaces generated from / aligned to the canonical schema"
         }
       ],
-      "reality": "packages/semantic-types/src/entities.ts is written by hand, not generated, and seven of its interfaces declare fields models.py does not have. Treatment, Confounder and Mediator add description, domain, approvalStatus, createdBy, createdAt and lineage; Outcome adds the same plus units; CausalEdge adds createdBy and createdAt; GraphFragment adds approvedBy, approvedAt and lineage; Intervention adds description, domain, graphFragmentRef and approvalReason. A client typed against the package expects fields the API never sends. scripts/contract_parity.py checks only the shared enumerations, not interface fields.",
+      "reality": "packages/semantic-types/src/entities.ts is written by hand, not generated, and seven of its interfaces declare fields models.py does not have. Treatment, Confounder and Mediator add description, domain, approvalStatus, createdBy, createdAt and lineage; Outcome adds the same plus units; CausalEdge adds createdAt, and declares createdBy non-null where the backend's is optional (null for edges drafted before migration 011); GraphFragment adds approvedBy, approvedAt and lineage; Intervention adds description, domain, graphFragmentRef and approvalReason. A client typed against the package expects fields the API never sends. scripts/contract_parity.py checks only the shared enumerations, not interface fields.",
       "evidence": [
         {
           "at": "packages/semantic-types/src/entities.ts:45",
           "says": "  createdBy: UserRef;"
         },
         {
-          "at": "backend/src/semantic_layer/models.py:397",
+          "at": "backend/src/semantic_layer/models.py:410",
           "says": "class CausalEdge(BaseModel):"
         }
       ],
@@ -805,7 +499,7 @@
       "capability": "Runtime data contracts: freshness, schema and semantic checks before agents consume data (Guardian PR-009)",
       "claimed_in": [
         {
-          "at": "docs/AGENTS.md:413",
+          "at": "docs/AGENTS.md:421",
           "says": "Validates a data contract at runtime before agent data consumption, enforcing freshness SLAs, schema compliance, and semantic alignment."
         },
         {
@@ -820,11 +514,11 @@
       "reality": "contracts.py defines the contract, SLA and violation models and a ContractRegistry that can register, look up and remove contracts. Nothing evaluates a contract, nothing produces a ContractViolation, and only the tests instantiate the registry. PR-009 fires only when a caller sends action_type DATA_ACCESS_WITH_CONTRACT, which no code path does, and it reads the violation list from that caller's own payload. So a caller that reports no violations is never blocked.",
       "evidence": [
         {
-          "at": "backend/src/agents/governance.py:428",
+          "at": "backend/src/agents/governance.py:546",
           "says": "if action_type == \"DATA_ACCESS_WITH_CONTRACT\":"
         },
         {
-          "at": "backend/src/agents/governance.py:429",
+          "at": "backend/src/agents/governance.py:547",
           "says": "contract_violations = payload.get(\"contract_violations\", [])"
         },
         {
@@ -845,10 +539,10 @@
       "claimed_in": [
         {
           "at": "backend/src/orchestration/planning.py:7",
-          "says": "1. SimulateAhead   — Forward-simulate action consequences using the approved SCM"
+          "says": "1. SimulateAhead   \u2014 Forward-simulate action consequences using the approved SCM"
         },
         {
-          "at": "docs/AGENTS.md:532",
+          "at": "docs/AGENTS.md:540",
           "says": "SimulateAhead (SCM lookahead)"
         },
         {
@@ -860,18 +554,18 @@
           "says": "SCM used for effect estimation when approved fragment available"
         }
       ],
-      "reality": "_simulate_single_action calls effect_estimate with data=None, and the kernel refuses without data, so no action ever gets an estimate. Under an APPROVED fragment each action's confidence is halved (action.confidence * 0.5, never a failure). Without a fragment it keeps its own confidence and fails below 0.3. The lookahead is therefore arithmetic on the recommendations' own confidences. Under an APPROVED fragment an action needs confidence >= 0.8 to clear the node's 0.4 commit threshold, while without one it needs 0.4: an approved causal model makes the planner escalate more often, not less. SIMULATED_NOT_EXECUTED outcomes are not surfaced, and planning failure sets requires_human_review, not the CHAOTIC domain. When the kernel refuses, the refusal is returned as not-a-failure and the action proceeds at half its prior confidence: a refusal is silently turned into a smaller number instead of reaching the caller.",
+      "reality": "_simulate_single_action calls effect_estimate with data=None, and the kernel refuses without data, so no action ever gets an estimate. Under an APPROVED fragment each action's confidence is halved (action.confidence * 0.5, never a failure). Without a fragment it keeps its own confidence and fails below 0.3. The lookahead is therefore arithmetic on the recommendations' own confidences. Under an APPROVED fragment an action needs confidence >= 0.8 to clear the node's 0.4 commit threshold, while without one it needs 0.4: an approved causal model makes the planner commit less often, not more. SIMULATED_NOT_EXECUTED outcomes are not surfaced. Since 2026-09-26 a plan with no estimate is flagged plan_unsimulated and goes to the Guardian with each recommendation saying it was not simulated (an uncommitted one with requires_human_review); only an estimated failure escalates, and that is not the CHAOTIC domain. When the kernel refuses, the refusal is returned as not-a-failure and the action proceeds at half its prior confidence: a refusal is silently turned into a smaller number instead of reaching the caller.",
       "evidence": [
         {
-          "at": "backend/src/orchestration/planning.py:335",
+          "at": "backend/src/orchestration/planning.py:336",
           "says": "data=None,  # no observational data here: the kernel refuses, ate is None"
         },
         {
-          "at": "backend/src/orchestration/planning.py:343",
+          "at": "backend/src/orchestration/planning.py:344",
           "says": "action.confidence * 0.5,"
         },
         {
-          "at": "backend/src/orchestration/planning.py:397",
+          "at": "backend/src/orchestration/planning.py:403",
           "says": "confidence_threshold=0.4,"
         }
       ],
@@ -879,29 +573,6 @@
         "kind": "test",
         "path": "backend/tests/integration/test_planning_uses_estimates.py",
         "asserts": "given an APPROVED fragment and observational data in which one candidate action's effect is known to be harmful, the planner's simulated effect for it comes from causal-core and that action is not committed -- and the committed choice changes when the data does"
-      }
-    },
-    {
-      "id": "provenance-not-append-only",
-      "status": "declared-not-implemented",
-      "capability": "Append-only provenance records",
-      "claimed_in": [
-        {
-          "at": "docs/ADR-002-agentic-provenance-and-data-contracts.md@13e7d92:84",
-          "says": "Both provenance and contract records are append-only"
-        }
-      ],
-      "reality": "Provenance records live in an in-process dict, lost on restart, and DELETE /api/v1/provenance/session/{id} erases a session's records. Since the role matrix that delete needs a governance role (governance_officer or platform_engineer), but it still erases, so the store is not append-only.",
-      "evidence": [
-        {
-          "at": "backend/src/api/provenance.py:281",
-          "says": "_provenance_store.pop(session_id, None)"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/integration/test_provenance_append_only.py",
-        "asserts": "provenance records are persisted, survive a process restart, and no route or store method removes or rewrites one"
       }
     },
     {
@@ -915,17 +586,17 @@
         },
         {
           "at": "docs/CYBERSECURITY.md@13e7d92:181",
-          "says": "| Art. 17 – Right to erasure | Pseudonymization + key deletion (logical erasure) |"
+          "says": "| Art. 17 \u2013 Right to erasure | Pseudonymization + key deletion (logical erasure) |"
         },
         {
           "at": "docs/CYBERSECURITY.md@13e7d92:182",
-          "says": "| Art. 20 – Data portability | Semantic layer export (JSON-LD format) |"
+          "says": "| Art. 20 \u2013 Data portability | Semantic layer export (JSON-LD format) |"
         }
       ],
-      "reality": "No code pseudonymizes, tokenizes or strips any field, no erasure path exists, and no JSON-LD (or other) export of the semantic layer exists. No connector runs in the platform, so today PII can enter only through API request bodies, and nothing inspects them for it. The Art. 30 row (records of processing) is the one backed by something real: audit_log.",
+      "reality": "No code pseudonymizes, tokenizes or strips any field, no erasure path exists (a provenance erasure, POST /api/v1/provenance/session/{id}/erasure, writes a tombstone that hides a session's provenance from the API and deletes nothing, so it is not Art. 17 erasure), and no JSON-LD (or other) export of the semantic layer exists. No connector runs in the platform, so today PII can enter only through API request bodies, and nothing inspects them for it. The Art. 30 row (records of processing) is the one backed by something real: audit_log.",
       "evidence": [
         {
-          "at": "backend/src/connectors/base.py:146",
+          "at": "backend/src/connectors/base.py:144",
           "says": "def map_to_semantic_objects("
         }
       ],
@@ -933,33 +604,6 @@
         "kind": "test",
         "path": "backend/tests/integration/test_privacy_controls.py",
         "asserts": "a connector run over records containing configured PII fields stores only pseudonymous tokens; deleting a subject's key makes their records unlinkable; and an export endpoint returns the semantic layer in the documented format"
-      }
-    },
-    {
-      "id": "sensitivity-gate-not-enforced",
-      "status": "declared-not-implemented",
-      "capability": "Guardian PR-007: edges without a sensitivity result are blocked from APPROVED",
-      "claimed_in": [
-        {
-          "at": "backend/src/agents/governance.py:59",
-          "says": "\"PR-007\": \"Sensitivity analysis: edges without sensitivity_result blocked from APPROVED.\","
-        },
-        {
-          "at": "docs/CYBERSECURITY.md@13e7d92:219",
-          "says": "Every newly approved edge must pass a sensitivity analysis before it can be used in production simulations"
-        }
-      ],
-      "reality": "PR-007 is in the Guardian's rule table and nowhere in its evaluation: no check reads a sensitivity result, so an edge is approved whether or not any sensitivity analysis was run, and PR-007 is never cited on a verdict. The rules that are evaluated are PR-001 to PR-006, PR-008, and PR-009 (on one action type).",
-      "evidence": [
-        {
-          "at": "backend/src/agents/governance.py:375",
-          "says": "rules_fired.append(\"PR-002\")"
-        }
-      ],
-      "leaves_by": {
-        "kind": "test",
-        "path": "backend/tests/guardian/test_pr007_sensitivity_gate.py",
-        "asserts": "a check whose proposed edge has no sensitivity result is not APPROVED and cites PR-007, and the same edge with a passing result is not refused on PR-007"
       }
     },
     {
@@ -1016,11 +660,11 @@
           "says": "Agents self-classify the domain complexity of a query before selecting a reasoning strategy."
         },
         {
-          "at": "docs/AGENTS.md:209",
+          "at": "docs/AGENTS.md:212",
           "says": "Cynefin domain classification with confidence"
         },
         {
-          "at": "docs/AGENTS.md:548",
+          "at": "docs/AGENTS.md:571",
           "says": "Domain confidence > 0.7"
         },
         {
@@ -1047,7 +691,7 @@
       "capability": "Dynamic application security testing (DAST): a scanner such as OWASP ZAP run against a running API, weekly",
       "claimed_in": [
         {
-          "at": "docs/CYBERSECURITY.md:604",
+          "at": "docs/CYBERSECURITY.md:663",
           "says": "DAST: OWASP ZAP against a staging API (weekly). Not built: there is no staging"
         }
       ],
@@ -1057,6 +701,29 @@
         "kind": "ci-run",
         "path": ".github/workflows/dast.yml",
         "asserts": "a workflow starts the backend (the built image, or a staging deployment) and runs a DAST scanner against its API, failing on findings not in a reviewed allowlist"
+      }
+    },
+    {
+      "id": "sensitivity-one-click-ui",
+      "status": "declared-not-implemented",
+      "capability": "One-click Rosenbaum / E-value sensitivity analysis on an approved edge, in the UI",
+      "claimed_in": [
+        {
+          "at": "docs/UIX.md:192",
+          "says": "I want to run a one-click Rosenbaum sensitivity analysis on any approved edge"
+        }
+      ],
+      "reality": "No UI runs a sensitivity analysis. The kernel reports E-values, robustness values and (for back-door designs with a binary treatment) a Rosenbaum bound on every analysis from data, but nothing in the frontend requests one for an edge; the governance page's sensitivity panel is a hard-coded example whose label conflates the two methods (\"Rosenbaum E-value\").",
+      "evidence": [
+        {
+          "at": "frontend/src/app/governance/page.tsx:89",
+          "says": "testName: \"Rosenbaum E-value\","
+        }
+      ],
+      "leaves_by": {
+        "kind": "test",
+        "path": "frontend/e2e/edge-sensitivity.spec.ts",
+        "asserts": "on an approved edge with data, one action shows the kernel's E-value and Rosenbaum gamma* (or its reason for none) from a live analysis, not a fixture"
       }
     }
   ],
@@ -1262,6 +929,90 @@
       "fixed_in": "b4bddee",
       "pinned_by": "packages/causal-core/tests/t0/test_triangulation_power_moderate_n.py",
       "note": "Implemented as pre-registered in T0 v4 (cc00c42) before the code. It passed its registered run, benchmarks/t0/results/2026-09-26-v4-run1.json (06ce66d, from the clean tree at b4bddee). A pre-computed power analysis showed that no comparison of estimates can reach 0.80 at n <= 5,000, because the misfit inflates the standard error of every difference: AIPW vs regression adjustment 0.08 and a nested quadratic-arm contrast 0.27 at n=2,000. So triangulation's Holm family gains an outcome-model specification test (causal_core.specification). It runs for binary treatments under back-door adjustment, in each arm regression adjustment models (both arms for the ATE, the control arm for the ATT), and adds the squares of the non-binary covariates and of the fitted value (RESET), tested by an HC2 Wald test. A rejection makes the result contested; the estimate is unchanged. Registered run: power 1.00 at n=2,000, counted only when the result is contested (bar 0.80); on the same draws the estimator contrasts alone give 0.035. Primary coverage there was 0.975 (binomial p=0.14). False alarms were 0.011 pooled over six correctly specified designs (bar 0.075), and status consistency 1.0. Seeded defects specification_test_disabled, specification_pooled_arms and triangulation_flag_ignored were each caught. Limit, recorded rather than claimed away: the test asks whether the linear model fits, not whether its misfit biases the effect, and it flagged 100% of runs on harmless_interaction, where regression adjustment is unbiased. Curvature outside its basis passes. No contract change."
+    },
+    {
+      "id": "kernel-overlap-detection-limits",
+      "was": "The positivity check read one main-effects logistic propensity model (share outside propensity_bounds, or separation for the ATE). IHDP's by-construction overlap violation (treated children of non-white mothers removed) was not detected from its 25 covariates in 100/100 realizations; the ATE was answered by extrapolation (coverage stayed >= 0.97).",
+      "fixed_in": "49b97a9",
+      "pinned_by": "packages/causal-core/tests/bench/test_ihdp_overlap_refusal.py",
+      "note": "Implemented as pre-registered in T10 v1 (76c489c; contract paragraph corrected before any run in bdb42d0) and T2 v2 (same commit), before the code (contract 0.13.0; pre-registered and first built as 0.12.0, renumbered at merge because the Rosenbaum fields took 0.12.0 first). Honest overlap regions (causal_core.overlap): a depth-4 Gini tree for the treatment grown on one half of the units, its leaves judged on the other half and swapped; a leaf is a violation region for an arm when the one-sided 95% Clopper-Pearson bound on that arm's probability is below overlap_region_bound = 0.05 (n_min = 59 held-out units). A violation share above max_extreme_propensity_share refuses POSITIVITY naming the regions as rules; a smaller one warns; nothing is trimmed. A limited-overlap flag (share outside [0.1, 0.9], Crump et al. 2009) warns without refusing. Registered runs (c498b9e): T10 v1 run 1 passed -- POSITIVITY refusal 0.992-1.000 in four violation designs the old check refused in none (including a three-way stratum every single covariate hides), false refusals 0-0.002, coverage 0.946-0.958, all six seeded defects caught; T2 v2 run 1 passed -- the IHDP ATE flagged for limited overlap in 100/100 realizations, the ATT in 0/100. Not refused, and correctly so: race is not among IHDP's 25 covariates and no covariate region lacks treated units, so what the removal leaves is limited overlap. Limits, recorded rather than claimed away: a region needs about 118 units to be judged at all; a stratum defined by four or more covariates jointly is usually missed at n = 4,000 (prototype: 0-1% of replications), an exclusive-or pattern defeats the greedy tree, and violations in unmeasured variables are invisible to any check on the adjustment set."
+    },
+    {
+      "id": "llm-routing-no-callers",
+      "was": "get_llm has no call site outside its own docstring: no agent invokes an LLM, and every agent's reasoning is rule or heuristic code.",
+      "fixed_in": "f6b7305",
+      "pinned_by": "backend/tests/unit/test_llm_routing_used.py",
+      "note": "Implemented for language only. Two callers reach get_llm through src/agents/narration.py (the explanation_generate skill): the SimulationAgent's draft_explanation of a kernel outcome, and POST /api/v1/decisions with narrate: true (written after the ledger write, never sealed). The capability comes from the template (causal_reasoning), the provider from the environment, local Ollama first (OLLAMA_BASE_URL, OLLAMA_CAUSAL_MODEL read at call time). The model writes prose citing claim tokens; the reply is kept only if grounding_risk (PR-002, causal_core.claims.verify against the outcome) scores it 0 before and after the tokens are rendered, otherwise the deterministic text is kept and the reason recorded. With no provider configured nothing is attempted. The capture hook records every call as an LLMInvocation with the template id and hash, into the in-memory store of src/api/provenance.py -- the only store on main; the durable provenance store is PR #30. Tests use LangChain's deterministic fake chat model (test_llm_routing_used.py, test_prompt_templates_loaded.py, tests/integration/test_decision_narrative.py); one live test (llm_live, deselected unless LLM_LIVE=1) ran against a local qwen2.5:7b-instruct. Not done: no other agent calls a model; the other capabilities (fast_classification, document_extraction, code_generation, planning) have no caller."
+    },
+    {
+      "id": "prompt-templates-not-loaded",
+      "was": "Nothing in backend/src, packages or frontend/src reads prompts/*.yaml, and no runtime path calls an LLM at all (llm-routing-no-callers). The templates are specification artefacts; prompts/README.md now says so. Ten of the fourteen also carried a duplicate top-level `skill:` key, which no loader had ever complained about because none had ever run.",
+      "fixed_in": "f6b7305",
+      "pinned_by": "backend/tests/unit/test_prompt_templates_loaded.py",
+      "note": "Implemented for the one skill that calls a model. src/agents/prompt_templates.py loads prompts/explanation_generate.yaml (v2.0.0), rejecting a repeated key, a missing part, a non-semver version, a skill other than the file name, an unrouted provider_capability, llm_required: false, and a missing or unexpected render variable; the rendered prompt is the four-part [CONTEXT]/[SKILL]/[CONSTRAINTS]/[OUTPUT_FORMAT] structure of AGENTS.md 6.3, and its id and sha256 are recorded on the LLMInvocation. A template that does not load stops the call (no ad-hoc prompt; the deterministic text is kept). The other thirteen templates stay specifications for skills that call no model, as prompts/README.md says; they are not loaded, and are not claimed to be."
+    },
+    {
+      "id": "sensitivity-analysis",
+      "was": "E-values are now correct and scale-aware (causal-core's e_value_rr; risk ratio, or difference plus outcome SD; otherwise null with the reason), and the kernel reports E-values and Cinelli-Hazlett robustness values from data. Rosenbaum bounds are not implemented: rosenbaum_gamma is always null (the previous values came from an invented multiplier).",
+      "fixed_in": "a633cd8",
+      "pinned_by": "backend/tests/unit/test_rosenbaum_bounds.py",
+      "note": "Implemented, and the UI half split off rather than claimed. Rosenbaum bounds: for a back-door design with a binary treatment, causal_core.analyze builds a 1:1 matched design (greedy nearest neighbour on the propensity-score logit, without replacement, caliper AnalysisPolicy.match_caliper = 0.2 SD) and reports Sensitivity.rosenbaum (contract 0.12.0): Wilcoxon's signed-rank test under Rosenbaum's upper bound (normal approximation, Rosenbaum 2002 4.3.3), the upper-bound p-value by gamma, the matched sample's largest standardized difference, and gamma_star, the largest gamma at which the test -- one-sided in the primary estimate's direction at (1 - ci_level)/2, the level of the primary interval and e_value_ci -- still rejects no effect; randomized designs, non-back-door strategies, continuous treatments and too few pairs get no gamma and a reason (rosenbaum_null_reason). The backend sensitivity_analysis skill takes matched pair_differences and returns rosenbaum_gamma from the kernel. Pinned by test_rosenbaum_bounds.py, which reproduces Rosenbaum's Table 4.3 upper bounds on the Morton et al. (1982) lead pairs (0.0018, 0.0136, 0.0388, 0.0468, 0.0740 at gamma = 2, 3, 4, 4.25, 5), and pre-registered as T9 (730d15c) before the code, first registered run passed (benchmarks/t9-rosenbaum/results/2026-09-26-v1-run1.json, 4f34987): in paired designs drawn from Rosenbaum's model at its worst case, gamma_star reached the planted bias in 2.85% (gamma_0 = 2) and 1.95% (gamma_0 = 4) of runs (bar 3.5%) and retained the conclusion at gamma_0/1.5 in 96.7% and 91.8%; end-to-end with an unmeasured confounder of odds ratio 3, no run claimed gamma_star >= 3 and the median 1.63 tracked the oracle design sensitivity 1.880; three seeded defects caught. Limits: Wilcoxon's statistic only (it understates design sensitivity); greedy 1:1 matching, no full or optimal matching; residual imbalance after inexact matching is bias the bound does not cover; gamma_star speaks to the matched comparison's test of no effect, not to the AIPW/IPW estimate (no marginal sensitivity model for the weighted estimators). The one-click UI of docs/UIX.md US-21 is sensitivity-one-click-ui."
+    },
+    {
+      "id": "sensitivity-gate-not-enforced",
+      "was": "PR-007 is in the Guardian's rule table and nowhere in its evaluation: no check reads a sensitivity result, so an edge is approved whether or not any sensitivity analysis was run, and PR-007 is never cited on a verdict. The rules that are evaluated are PR-001 to PR-006, PR-008, and PR-009 (on one action type).",
+      "fixed_in": "4d68ac5",
+      "pinned_by": "backend/tests/guardian/test_pr007_sensitivity_gate.py",
+      "note": "Implemented for approvals. A /check for GOVERNANCE_APPROVE whose subject is a stored edge reads the edge's sensitivity results from the database (src/agents/governance.py edge_sensitivity) and is REJECTED citing PR-007 when there are none; evaluated after PR-001, before PR-004, and an unreadable edge fails closed. What counts as an edge's sensitivity result: CausalEdge has no field of its own, so it is a valid SensitivityResult (E-value / Rosenbaum) stored on an assumption the edge names in assumption_refs, that assumption not REJECTED in review; the checked payload cannot supply one. The write path it needs was broken too: propose_draft dropped an assumption's sensitivity_result, and the reads did not decode it; both fixed. Pinned with results from causal_core.analyze on simulated data. Limits: PR-007 asks for a result, not a robust one -- a result that says not robust still counts, and the reviewer sees it (the CYBERSECURITY.md claim, since withdrawn, said 'pass'); proposing an edge (the process() path's proposed_edges) is not approving it and is not judged; until septa-62 nothing in the platform recorded the kernel's sensitivity output on an assumption -- a result arrived only with the assumption's draft; since then POST /api/semantic/edges/{edge_id}/sensitivity and SimulationAgent record it, through a Guardian verdict for RECORD_SENSITIVITY, as a new IGNORABILITY assumption on the draft edge (backend/tests/guardian/test_edge_sensitivity_recorded.py). Since 062f57d a result counts only when the platform recorded it: a drafter could attach one to an assumption they draft (computed_by is free text) and satisfy PR-007 with a made-up number, so record_edge_sensitivity now stores the id of the RECORD_SENSITIVITY verdict it spent (assumptions.sensitivity_verdict_id, migration 013, unique) and src/semantic_layer/review_risk.py recorded_sensitivity counts a result for an edge only when that row is APPROVED, for RECORD_SENSITIVITY, signed, names the edge and was spent by the recording; propose_draft never writes the column. The review queue's tiers read the same results."
+    },
+    {
+      "id": "review-queue-risk-tier",
+      "was": "ReviewQueueItem carries no risk tier and no submitter, the queue is not ordered by risk, and the UI fills riskTier \"MEDIUM\" and submittedBy \"system\" for every item.",
+      "fixed_in": "1d1d429",
+      "pinned_by": "backend/tests/integration/test_review_queue_risk.py",
+      "note": "Implemented. GET /api/governance/review-queue returns risk_tier, risk_reasons and submitted_by for each item and orders by tier (CRITICAL, HIGH, MEDIUM, LOW), oldest first within a tier. The tier is derived from stored fields only, by rules defined in backend/src/semantic_layer/review_risk.py: an edge is CRITICAL below stated confidence 0.5, HIGH below 0.8 or when no stored sensitivity result on an assumption it rests on says it is robust (the results Guardian PR-007 reads: since 062f57d only those the platform recorded under a RECORD_SENSITIVITY verdict for the edge), else MEDIUM; a fragment is HIGH while it names an edge that is not APPROVED, else MEDIUM; an entity is LOW. These are this repository's own rules, not a standard: stated confidence is the proposer's number, so it can only raise a tier, never lower one on its own. submitted_by is the id in created_by; edges had no created_by, so CausalEdge gained one (migration 012_edge_created_by.sql, the SQLite DDL, propose_draft, get_edge), and edges drafted before it show null, which the UI renders as 'not recorded'. The frontend maps the three fields (frontend/src/app/governance/page.tsx) and ReviewQueue shows the reasons as the tier badge's title; pinned on that side by frontend/src/components/governance/__tests__/ReviewQueue.test.tsx and the queue test in frontend/src/app/governance/__tests__/page.test.tsx."
+    },
+    {
+      "id": "provenance-not-append-only",
+      "was": "Provenance records live in an in-process dict, lost on restart, and DELETE /api/v1/provenance/session/{id} erases a session's records. Since the role matrix that delete needs a governance role (governance_officer or platform_engineer), but it still erases, so the store is not append-only.",
+      "fixed_in": "8ba6026",
+      "pinned_by": "backend/tests/integration/test_provenance_append_only.py",
+      "note": "Implemented. Migration 011_provenance.sql (and its SQLITE_DDL rendering) stores provenance in provenance_entries (PROV records and LLM invocations, the model as JSON, ordered by sequence) and provenance_erasures; src/semantic_layer/provenance_store.py appends and reads, with no update or delete method. causal_app holds SELECT and INSERT only on both tables, and UPDATE and DELETE are trapped by trigger on PostgreSQL and SQLite, so the owner is refused too. DELETE /api/v1/provenance/session/{id} is gone; POST /api/v1/provenance/session/{id}/erasure (governance roles, a reason of at least ten characters) writes a tombstone -- who, when, why, how many entries -- that hides the session's entries up to that point from trace, export and invocations, which return the tombstone instead. Entries written afterwards are served. The pinning test asserts persistence across a new store, the refusals (and on PostgreSQL causal_app's missing privileges), that no provenance route deletes, the tombstone's hiding and keeping, the reason requirement and the role checks. Not changed: the hidden rows remain in the database, readable by its owner and by causal_governance (causal_readonly is not granted SELECT on the entries), so an erasure is not GDPR Art. 17 erasure -- that is still gdpr-controls. The other half of the withdrawn ADR sentence, contract records, is not append-only either: ContractRegistry is an in-memory store with a remove method, which ADR-002 now says, and no flow uses it (data-contracts-not-enforced)."
+    },
+    {
+      "id": "provenance-store-no-callers",
+      "was": "store_provenance_record has no call site: nothing outside the tests writes a provenance record, so the provenance API serves only what tests put there.",
+      "fixed_in": "8ba6026",
+      "pinned_by": "backend/tests/integration/test_provenance_flow.py",
+      "note": "Implemented for the flows that run. POST /api/v1/session/run and /incident append the run's agent, activity, one activity per reasoning step it added, and its input and output entities (digests of the description, the states and each step's inputs and outputs, not their content); GovernanceAgent.check appends a Guardian activity citing its audit_log row in the same transaction as that row, which covers POST /api/governance/check, approvals, rejections, the triage agent's check and the graph's GuardianCheck node; POST /api/v1/decisions appends the data and graph entities (digests, or the registered model's name, version and digest), the analysis activity and the ledger-entry entity under session decision:<entry_digest> (src/semantic_layer/provenance_capture.py). The pinning test drives each route and reads the records back through GET /api/v1/provenance/trace. Still unwired, and not claimed: LLM invocations -- the llm_factory capture hook now writes to the durable store (tested with a stub model), but no runtime path calls get_llm (llm-routing-no-callers); agents do not write provenance themselves, their reasoning steps are recorded by the session route; and a /session/run whose planner finds no safe action escalates before the GuardianCheck node, so its output cites no audit row."
+    },
+    {
+      "id": "econml-pymc",
+      "was": "EconML / PyMC estimation backends. Neither was ever a dependency; docs/AGENTS.md named them (with DoWhy) as backing the causal-discovery and simulation agents and the effect_estimate and counterfactual skills.",
+      "fixed_in": "4529617",
+      "pinned_by": "backend/tests/unit/test_infra_claims_withdrawn.py",
+      "note": "Left by retraction. Not needed: estimation is packages/causal-core, and a third-party estimator (EconML's among them) would enter through its `causal_core.estimators` entry-point registry with a pre-registered benchmark, not as a backend dependency. docs/AGENTS.md now names causal-core for each agent and skill (DoWhy and y0 appear only in causal-core's optional crosscheck extra, as test-time identification cross-checks); simulation.py's docstrings no longer name DoWhy/PyMC; NOTICE no longer lists EconML or PyMC. test_infra_claims_withdrawn.py fails if a dependency table or lock names econml or pymc, or a withdrawn phrasing returns to the docs, prompts or backend source."
+    },
+    {
+      "id": "rust-crates",
+      "was": "Rust crates (cynepic-causal, cynepic-bayes, cynepic-guardian, cynepic-router) named in docs/AGENTS.md, agent docstrings and prompt headers as backing DAG operations, belief tracking, the Guardian and Cynefin routing.",
+      "fixed_in": "4529617",
+      "pinned_by": "backend/tests/unit/test_infra_claims_withdrawn.py",
+      "note": "Left by retraction. The crates belong to separate projects that were inspiration only; this repository has no Rust. docs/AGENTS.md now names the Python that runs (causal-core for graph checks and identification, GovernanceAgent for the Guardian, the keyword stub for Cynefin; no Bayesian belief tracking exists); the causal_discovery.py and incident_triage.py docstrings and four prompts/*.yaml headers no longer name crates. Attribution of design inspiration (docs/AGENTS.md 9.3, ADR-001, a few code comments) stays. test_infra_claims_withdrawn.py fails on a tracked *.rs or Cargo manifest, or a `cynepic-* crate` phrasing in the docs, prompts or backend source."
+    },
+    {
+      "id": "neo4j-graph-store",
+      "was": "Neo4j as the causal graph store, running d-separation and back-door path queries (docs/DATA_LAYER.md 3.1 with a Cypher schema and a p95 target; docs/AGENTS.md's memory table put graph memory and the semantic registry in Neo4j).",
+      "fixed_in": "4529617",
+      "pinned_by": "backend/tests/unit/test_infra_claims_withdrawn.py",
+      "note": "Left by retraction, not by the live test its leaves_by named: the graph store is not needed. The graph lives in SQL (graph_fragments, causal_edges) and every graph query runs in packages/causal-core. DATA_LAYER 1 and 3.1, AGENTS.md (memory table, ChangeImpactAgent, experience buffer), QUICKSTART, TESTING_CICD and ADR-002 now say so. What stays, documented as optional: Neo4jFactory and the two side stores that use it when NEO4J_URI is set, the experience buffer (TTL and relevance decay) and drift-alert storage, and the compose neo4j service (APOC plugin dropped: nothing used it). Those paths are still tested only against a mocked driver; src/api/health.py's unmounted /neo4j check was deleted later the same day. Its reachability is reported, behind authentication, by the graph-neo4j connector on GET /api/v1/platform/connectors (src/api/platform.py). test_infra_claims_withdrawn.py fails if the graph-store phrasings return or any module outside the factory, the two side stores and that connector check reaches Neo4j."
+    },
+    {
+      "id": "kafka-streaming",
+      "was": "Kafka event streaming: an ingestion bus, drift-alert emission via Kafka, topics and consumer groups (docs/DATA_LAYER.md, docs/AGENTS.md, an earlier QUICKSTART listing Kafka as required). No Kafka client was a dependency; docker-compose started a broker nothing talked to.",
+      "fixed_in": "4529617",
+      "pinned_by": "backend/tests/unit/test_infra_claims_withdrawn.py",
+      "note": "Left by retraction. Not needed: no connector is called by the running platform, and drift alerts go through the in-process AlertEmitter (log, callbacks, deduplication). Removed: the compose kafka, kafka-ui and redis services (the whole idle `future` profile; no Redis client exists either) and their env examples; BaseCausalConnector.subscribe(), a no-op nothing called, and its test; semantic-types' KafkaTopic, KAFKA_TOPICS, KafkaTopicName and CausalConnector.subscribe. DATA_LAYER 3.3 now says there is no event streaming; AGENTS.md, CYBERSECURITY 5.2, QUICKSTART 4 and drift_monitor.py's docstrings say AlertEmitter. test_infra_claims_withdrawn.py fails if compose defines any service but postgres and neo4j, a Kafka or Redis client becomes a dependency, or a Kafka phrasing returns."
     }
   ]
 }
