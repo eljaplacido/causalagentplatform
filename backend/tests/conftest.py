@@ -47,6 +47,7 @@ from src.semantic_layer.models import (
     CausalEdge,
     CausalEntity,
     CausalObjectRef,
+    DataSource,
     EdgeDirection,
     EdgeType,
     EntityType,
@@ -531,6 +532,17 @@ def make_user_ref(uid: str = "test-user-001") -> UserRef:
     return UserRef(id=uid, email=f"{uid}@test.com", name="Test User")
 
 
+def make_data_source(ref: str = "test://fixtures/source.csv") -> DataSource:
+    """Source data for a fixture object. Approval requires one (septa-15)."""
+    return DataSource(
+        kind="dataset", ref=ref, digest="sha256:" + hashlib.sha256(ref.encode()).hexdigest()
+    )
+
+
+#: The same, as the JSON a test that seeds a row directly puts in `source_data`.
+SOURCE_DATA_JSON = make_data_source().model_dump_json()
+
+
 def make_causal_entity(domain: str = "devops") -> CausalEntity:
     return CausalEntity(
         name="test-service",
@@ -539,6 +551,7 @@ def make_causal_entity(domain: str = "devops") -> CausalEntity:
         description="Test service entity",
         ontology_version="1.0.0",
         created_by=make_user_ref(),
+        source_data=make_data_source(),
     )
 
 
@@ -553,6 +566,7 @@ def make_causal_edge(verdict_id: UUID, domain: str = "devops") -> CausalEdge:
         confidence=0.85,
         guardian_verdict_ref=verdict_id,
         domain=domain,
+        source_data=make_data_source(),
     )
 
 
@@ -562,6 +576,7 @@ def make_graph_fragment(domain: str = "devops") -> GraphFragment:
         domain=domain,
         description="Test graph fragment",
         created_by=make_user_ref(),
+        source_data=make_data_source(),
     )
 
 

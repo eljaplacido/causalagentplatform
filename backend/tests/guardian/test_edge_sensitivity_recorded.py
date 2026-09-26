@@ -79,7 +79,7 @@ from src.semantic_layer.models import (
     GraphFragment,
     SensitivityResult,
 )
-from tests.conftest import VerdictFactory, make_user_ref
+from tests.conftest import VerdictFactory, make_data_source, make_user_ref
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -160,8 +160,10 @@ async def _draft_edge(
         assumption_refs=[a.id for a in assumptions],
         guardian_verdict_ref=uuid4(),
         domain="devops",
+        source_data=make_data_source(),
     )
-    await registry.propose_draft(edge, await verdict_for(edge.id))
+    # Source data and a drafter on record: approval needs both (septa-15).
+    await registry.propose_draft(edge, await verdict_for(edge.id), submitted_by=make_user_ref())
     return edge
 
 
@@ -478,6 +480,7 @@ async def test_simulation_records_the_sensitivity_of_the_edge_it_estimated(
         domain="devops",
         edges=[effect.id, to_treatment.id, to_outcome.id],
         created_by=make_user_ref(),
+        source_data=make_data_source(),
     )
     await registry.propose_draft(fragment, await verdict_for(fragment.id))
     await registry.promote_to_approved(

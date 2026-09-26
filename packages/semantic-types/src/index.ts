@@ -50,6 +50,7 @@ export type {
 export type {
   // Core semantic layer objects
   CausalEntity,
+  DataSource,
   Treatment,
   Outcome,
   Confounder,

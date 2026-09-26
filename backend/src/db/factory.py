@@ -181,7 +181,10 @@ CREATE TABLE IF NOT EXISTS causal_entities (
     approved_by         TEXT,
     guardian_verdict_ref TEXT,
     lineage             TEXT NOT NULL DEFAULT '[]',
-    tags                TEXT NOT NULL DEFAULT '[]'
+    tags                TEXT NOT NULL DEFAULT '[]',
+    -- 014_semantic_object_versions.sql: the head's revision, and the data it came from.
+    revision            INTEGER NOT NULL DEFAULT 1 CHECK (revision >= 1),
+    source_data         TEXT
 );
 CREATE TABLE IF NOT EXISTS assumptions (
     id                  TEXT PRIMARY KEY,
@@ -199,7 +202,10 @@ CREATE TABLE IF NOT EXISTS assumptions (
     domain              TEXT NOT NULL,
     -- 013_assumption_sensitivity_verdict.sql: the verdict the platform recorded
     -- sensitivity_result under; NULL for a drafted assumption.
-    sensitivity_verdict_id TEXT REFERENCES audit_log(id)
+    sensitivity_verdict_id TEXT REFERENCES audit_log(id),
+    -- 014_semantic_object_versions.sql: the head's revision, and the data it came from.
+    revision            INTEGER NOT NULL DEFAULT 1 CHECK (revision >= 1),
+    source_data         TEXT
 );
 CREATE UNIQUE INDEX IF NOT EXISTS ux_assumptions_sensitivity_verdict
     ON assumptions (sensitivity_verdict_id);
@@ -223,7 +229,10 @@ CREATE TABLE IF NOT EXISTS causal_edges (
     lineage             TEXT NOT NULL DEFAULT '[]',
     domain              TEXT NOT NULL,
     created_at          TEXT NOT NULL,
-    created_by          TEXT
+    created_by          TEXT,
+    -- 014_semantic_object_versions.sql: the head's revision, and the data it came from.
+    revision            INTEGER NOT NULL DEFAULT 1 CHECK (revision >= 1),
+    source_data         TEXT
 );
 CREATE TABLE IF NOT EXISTS graph_fragments (
     id                  TEXT PRIMARY KEY,
@@ -243,7 +252,10 @@ CREATE TABLE IF NOT EXISTS graph_fragments (
     approved_at         TEXT,
     approved_by         TEXT,
     -- 006_graph_fragment_lineage.sql: approval and rejection append to it.
-    lineage             TEXT NOT NULL DEFAULT '[]'
+    lineage             TEXT NOT NULL DEFAULT '[]',
+    -- 014_semantic_object_versions.sql: the head's revision, and the data it came from.
+    revision            INTEGER NOT NULL DEFAULT 1 CHECK (revision >= 1),
+    source_data         TEXT
 );
 CREATE TABLE IF NOT EXISTS interventions (
     id                      TEXT PRIMARY KEY,
@@ -410,6 +422,85 @@ CREATE TRIGGER IF NOT EXISTS tg_provenance_erasures_no_delete
 BEFORE DELETE ON provenance_erasures
 BEGIN
     SELECT RAISE(ABORT, 'provenance_erasures is append-only: DELETE is not permitted');
+END;
+-- The version history of semantic objects (014_semantic_object_versions.sql): each
+-- row is an object's complete state at one revision; the object's own table holds
+-- the current one. Append-only, and a head row changes only by advancing its
+-- revision by one over a revision already recorded. PostgreSQL also checks, at
+-- commit, that the new revision is recorded; SQLite cannot defer a trigger.
+CREATE TABLE IF NOT EXISTS semantic_object_versions (
+    object_type         TEXT NOT NULL
+        CHECK (object_type IN ('CausalEntity', 'CausalEdge', 'GraphFragment', 'Assumption')),
+    object_id           TEXT NOT NULL,
+    revision            INTEGER NOT NULL CHECK (revision >= 1),
+    change              TEXT NOT NULL
+        CHECK (change IN ('PROPOSED', 'APPROVED', 'REJECTED', 'RECORDED')),
+    state               TEXT NOT NULL,
+    domain              TEXT NOT NULL,
+    actor               TEXT,
+    agent_id            TEXT,
+    agent_version       TEXT,
+    verdict_ref         TEXT REFERENCES audit_log(id),
+    recorded_at         TEXT NOT NULL,
+    PRIMARY KEY (object_type, object_id, revision)
+);
+CREATE TRIGGER IF NOT EXISTS tg_semantic_object_versions_no_update
+BEFORE UPDATE ON semantic_object_versions
+BEGIN
+    SELECT RAISE(ABORT, 'semantic_object_versions is append-only: UPDATE is not permitted');
+END;
+CREATE TRIGGER IF NOT EXISTS tg_semantic_object_versions_no_delete
+BEFORE DELETE ON semantic_object_versions
+BEGIN
+    SELECT RAISE(ABORT, 'semantic_object_versions is append-only: DELETE is not permitted');
+END;
+CREATE TRIGGER IF NOT EXISTS tg_causal_entities_head_advances
+BEFORE UPDATE ON causal_entities
+WHEN NEW.id IS NOT OLD.id
+    OR NEW.revision IS NOT OLD.revision + 1
+    OR NOT EXISTS (
+        SELECT 1 FROM semantic_object_versions v
+        WHERE v.object_type = 'CausalEntity' AND v.object_id = OLD.id
+          AND v.revision = OLD.revision
+    )
+BEGIN
+    SELECT RAISE(ABORT, 'causal_entities: revision must advance by one over a recorded revision');
+END;
+CREATE TRIGGER IF NOT EXISTS tg_causal_edges_head_advances
+BEFORE UPDATE ON causal_edges
+WHEN NEW.id IS NOT OLD.id
+    OR NEW.revision IS NOT OLD.revision + 1
+    OR NOT EXISTS (
+        SELECT 1 FROM semantic_object_versions v
+        WHERE v.object_type = 'CausalEdge' AND v.object_id = OLD.id
+          AND v.revision = OLD.revision
+    )
+BEGIN
+    SELECT RAISE(ABORT, 'causal_edges: revision must advance by one over a recorded revision');
+END;
+CREATE TRIGGER IF NOT EXISTS tg_graph_fragments_head_advances
+BEFORE UPDATE ON graph_fragments
+WHEN NEW.id IS NOT OLD.id
+    OR NEW.revision IS NOT OLD.revision + 1
+    OR NOT EXISTS (
+        SELECT 1 FROM semantic_object_versions v
+        WHERE v.object_type = 'GraphFragment' AND v.object_id = OLD.id
+          AND v.revision = OLD.revision
+    )
+BEGIN
+    SELECT RAISE(ABORT, 'graph_fragments: revision must advance by one over a recorded revision');
+END;
+CREATE TRIGGER IF NOT EXISTS tg_assumptions_head_advances
+BEFORE UPDATE ON assumptions
+WHEN NEW.id IS NOT OLD.id
+    OR NEW.revision IS NOT OLD.revision + 1
+    OR NOT EXISTS (
+        SELECT 1 FROM semantic_object_versions v
+        WHERE v.object_type = 'Assumption' AND v.object_id = OLD.id
+          AND v.revision = OLD.revision
+    )
+BEGIN
+    SELECT RAISE(ABORT, 'assumptions: revision must advance by one over a recorded revision');
 END;
 CREATE TRIGGER IF NOT EXISTS tg_audit_log_no_update
 BEFORE UPDATE ON audit_log

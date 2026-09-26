@@ -16,8 +16,8 @@ database, so an erasure is not GDPR Art. 17 erasure (register gdpr-controls).
 Who writes records (ADR-002, as read against the code): session runs
 (src/api/session.py), Guardian checks (GovernanceAgent.check) and decisions
 (src/api/decisions.py, under session ``decision:<entry_digest>``). The LLM
-capture hook in src/agents/llm_factory.py writes invocations here too, but no
-runtime path calls get_llm (register llm-routing-no-callers).
+capture hook in src/agents/llm_factory.py writes invocations here too, one per
+call made through get_llm (the narration callers, src/agents/narration.py).
 """
 
 from __future__ import annotations

@@ -133,14 +133,14 @@
           "says": "Graph authoring UI (unified)"
         }
       ],
-      "reality": "/workbench composes a GraphFragment draft from existing edges and submits it, classified (a declared Cynefin domain or a session id), to POST /api/semantic/drafts, showing the Guardian's verdict or its 403 reason and whether the review queue lists the draft (pinned by frontend/src/app/workbench/__tests__/page.test.tsx). The route judges a classified draft in the declared or session domain (backend/tests/integration/test_draft_submission_api.py), so a user can submit one for approval. Two things keep it open: new edges and entities cannot be authored here; and the e2e spec stubs the backend and no gate step runs Playwright.",
+      "reality": "/workbench composes a GraphFragment draft from existing edges and submits it, classified (a declared Cynefin domain or a session id), to POST /api/semantic/drafts, showing the Guardian's verdict or its 403 reason and whether the review queue lists the draft (pinned by frontend/src/app/workbench/__tests__/page.test.tsx). The route judges a classified draft in the declared or session domain (backend/tests/integration/test_draft_submission_api.py), so a user can submit one for approval. Three things keep it open: new edges and entities cannot be authored here; a fragment drafted here declares no source data (`sourceData`), so since septa-15 /approve refuses it (422, LineageIncompleteError) until the composer asks for one; and the e2e spec stubs the backend and no gate step runs Playwright.",
       "evidence": [
         {
           "at": "frontend/src/components/graph/FragmentDraftComposer.tsx:107",
           "says": "semanticApi.submitDraft("
         },
         {
-          "at": "backend/src/api/semantic.py:367",
+          "at": "backend/src/api/semantic.py:379",
           "says": "governance_result = await _governance.check(action_payload, state, notes=notes)"
         },
         {
@@ -359,81 +359,44 @@
       }
     },
     {
-      "id": "semantic-objects-mutated-in-place",
+      "id": "interventions-mutated-in-place",
       "status": "declared-not-implemented",
-      "capability": "Semantic objects are versioned: no in-place mutation, deprecate and replace",
+      "capability": "Interventions are versioned: recording an outcome writes a new version, not over the old one",
       "claimed_in": [
         {
-          "at": "backend/src/semantic_layer/registry.py:6",
-          "says": "2. All objects are versioned \u2014 no in-place mutation; deprecate and replace."
-        },
-        {
-          "at": "docs/DATA_LAYER.md@13e7d92:242",
-          "says": "No in-place mutation. Deprecate and replace."
-        },
-        {
-          "at": "docs/ADR-001-canonical-semantic-layer.md@13e7d92:71",
-          "says": "All objects are versioned \u2014 no in-place mutation (Rule #2)"
-        },
-        {
-          "at": "docs/ADR-001-canonical-semantic-layer.md@13e7d92:91",
-          "says": "Version increments on any field change"
+          "at": "docs/ADR-001-canonical-semantic-layer.md:86",
+          "says": "All objects are versioned \u2014 no in-place mutation (Rule #2)."
         }
       ],
-      "reality": "Approval and rejection UPDATE the object's own row: promote_to_approved rewrites approval_status, approved_at, approved_by, guardian_verdict_ref and lineage, and reject_draft rewrites approval_status (to DEPRECATED) and lineage, and record_edge_sensitivity (septa-62) rewrites a draft edge's assumption_refs and lineage to add the assumption carrying the kernel's sensitivity result. The version column keeps its 1.0.0 default, because no code path increments it and no new row is written for a new version. The previous state survives only as lineage entries and audit_log rows. The interventions feedback endpoint likewise UPDATEs interventions in place.",
+      "reality": "Split from semantic-objects-mutated-in-place when the four semantic objects were versioned (014_semantic_object_versions.sql). POST /api/v1/interventions/feedback still UPDATEs the intervention's row (actual_effect, feedback_loop_closed, outcome_observed_at), so its state before the outcome was recorded survives only in audit_log.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:1039",
-          "says": "\"status\": \"APPROVED\","
-        },
-        {
-          "at": "backend/src/semantic_layer/registry.py:1121",
-          "says": ".values(approval_status=bindparam(\"status\"), lineage=bindparam(\"lineage\")),"
-        },
-        {
-          "at": "backend/src/semantic_layer/registry.py:1241",
-          "says": "assumption_refs=bindparam(\"refs\", type_=UUID_ARRAY),"
+          "at": "backend/src/api/interventions.py:237",
+          "says": "\"UPDATE interventions SET \""
         }
       ],
       "leaves_by": {
         "kind": "test",
-        "path": "backend/tests/unit/test_registry_versioning.py",
-        "asserts": "approving or rejecting an object leaves the prior row unchanged and writes a successor with an incremented version -- or the versioning claims are retracted from the registry docstring and the docs"
+        "path": "backend/tests/integration/test_intervention_versioning.py",
+        "asserts": "recording an intervention's outcome leaves its prior state recorded and unchanged and writes a successor version -- or interventions are withdrawn from the versioning claim"
       }
     },
     {
-      "id": "lineage-partial",
-      "status": "partial",
-      "capability": "Every approved semantic object carries lineage from source data to approver",
-      "claimed_in": [
-        {
-          "at": "backend/src/semantic_layer/registry.py:7",
-          "says": "3. All approved objects carry lineage."
-        },
-        {
-          "at": "backend/src/api/semantic.py:430",
-          "says": "This satisfies EU AI Act Art. 13 lineage"
-        },
-        {
-          "at": "docs/DATA_LAYER.md@13e7d92:449",
-          "says": "This satisfies EU AI Act Article 13 transparency requirements"
-        }
-      ],
-      "reality": "Approval and rejection each append one step (APPROVED or REJECTED: actor, time, verdict id), recording a sensitivity result appends a MODIFIED step naming the new assumption and the verdict, and an edge keeps whatever lineage list its submitter sent. Nothing records the data source, the transformation steps or the policy rules into lineage, and no platform code constructs a LineageRecord. An entity's submitted lineage is not stored (the INSERT omits the column). Fragments had no lineage column at all until 006_graph_fragment_lineage.sql, so approving or rejecting one failed outright. The Guardian verdict, its cited rules, and the evidence and assumption ids are linked by reference, so the chain can be partly rebuilt by joins. Nothing shows that this satisfies EU AI Act Art. 13.",
+      "id": "lineage-to-analyses",
+      "status": "planned",
+      "capability": "An approved object's lineage continues to the analyses, simulations and decisions that used it, with durable provenance",
+      "claimed_in": [],
+      "reality": "Split from lineage-partial when the chain from source data to approver was built. The chain ends at the approver: no analysis, simulation or decision record names the semantic object versions it used, so an object cannot list its uses. The skill that transformed an object is named only as the agent id and platform version recorded with each version. Provenance records are now durable (011_provenance.sql) and the chain links those held for its verdicts' sessions; what it lacks is the onward link.",
       "evidence": [
         {
-          "at": "backend/src/semantic_layer/registry.py:1007",
-          "says": "select(t.c.lineage, t.c.approval_status, t.c.domain).where("
-        },
-        {
-          "at": "backend/src/semantic_layer/models.py:213",
-          "says": "class LineageRecord(BaseModel):"
+          "at": "backend/src/api/semantic.py:529",
+          "says": "    \"\"\"The chain from the data the object was drafted from to whoever approved it."
         }
       ],
       "leaves_by": {
         "kind": "test",
-        "path": "backend/tests/integration/test_lineage_chain.py",
-        "asserts": "an object submitted, approved and used in an analysis carries lineage naming its source, each transforming agent/skill and version, the verdict and rules, and the approver -- for edges, entities and fragments alike"
+        "path": "backend/tests/integration/test_lineage_downstream.py",
+        "asserts": "an approved object used in an analysis or simulation lists that use, and the version used, in its lineage chain, with provenance records read from a durable store"
       }
     },
     {
@@ -496,7 +459,7 @@
           "says": "  createdBy: UserRef;"
         },
         {
-          "at": "backend/src/semantic_layer/models.py:410",
+          "at": "backend/src/semantic_layer/models.py:432",
           "says": "class CausalEdge(BaseModel):"
         }
       ],
@@ -704,7 +667,7 @@
       "capability": "Dynamic application security testing (DAST): a scanner such as OWASP ZAP run against a running API, weekly",
       "claimed_in": [
         {
-          "at": "docs/CYBERSECURITY.md:667",
+          "at": "docs/CYBERSECURITY.md:680",
           "says": "DAST: OWASP ZAP against a staging API (weekly). Not built: there is no staging"
         }
       ],
@@ -935,6 +898,20 @@
       "fixed_in": "c5b8251",
       "pinned_by": "packages/causal-core/tests/t8/test_carryover_power.py",
       "note": "Implemented as pre-registered in T8 v2 (46a1eae) before the code, and passed its registered runs (benchmarks/t8-switchback/results/2026-09-26-v2-run1.json, ecfa386, whose git field is 'unknown' because the gate was started outside the checkout; run2, c95af52, repeats it from the checkout, byte-identical otherwise). The check is now the least-squares slope of the outcome over the retained window of each switched block, into- minus out-of-treatment mean slope, Welch on t(K_s - 2), at a new policy level carryover_alpha = 0.05 (contract 0.11.0); a failure makes the result contested, estimate and interval unchanged. Registered run: power 0.918 in material_carryover (tau = 1.5, lambda = 30, washout 20; bias -0.424, coverage 0.122 unchecked), bar 0.8; false alarms 0.054-0.061 in the four designs the washout covers, bar 0.10; every flagged replication contested and no other. Seeded defects carryover_check_blind, check_includes_washout and flag_not_gating each caught by their bar. Limit, recorded rather than claimed away: against v1's long_carryover (tau = 0.3, bias -0.085, a fraction of a standard error) the check fires in 9.5% of runs, and no check on the minutes after the washout can do much better at T8's sizes -- an oracle GLS matched filter knowing lambda and rho has power near 0.13 on paper. The washout must still be chosen from knowledge of the system."
+    },
+    {
+      "id": "semantic-objects-mutated-in-place",
+      "was": "Approval and rejection UPDATE the object's own row: promote_to_approved rewrites approval_status, approved_at, approved_by, guardian_verdict_ref and lineage, and reject_draft rewrites approval_status (to DEPRECATED) and lineage. The version column keeps its 1.0.0 default, because no code path increments it and no new row is written for a new version. The previous state survives only as lineage entries and audit_log rows. The interventions feedback endpoint likewise UPDATEs interventions in place.",
+      "fixed_in": "96fbfde",
+      "pinned_by": "backend/tests/unit/test_registry_versioning.py",
+      "note": "Implemented for CausalEntity, CausalEdge, GraphFragment and Assumption (septa-14). Every state is an append-only row of semantic_object_versions (014_semantic_object_versions.sql): the object's complete row at that revision, the change (PROPOSED, APPROVED, REJECTED, RECORDED), actor, agent, platform version and verdict. The object's own row is the head (the current version, with its revision); it changes only through the registry's _record_change, which records the replaced state if history lacks it, advances the revision by one guarded on the revision read, and records the new one. The database holds the rule on both engines: UPDATE/DELETE of a version row refused; a head UPDATE that does not advance the revision by one over a recorded revision refused; on PostgreSQL an unrecorded new revision fails at commit, causal_app may only SELECT and INSERT the history, and it is under the domain RLS policy. 014 recorded every existing row as revision 1 (RECORDED), idempotently. History: GET /api/semantic/objects/{type}/{id}/versions, registry get_versions / get_object_version. The semver `version` field is not what increments: `revision` counts states. The head is updated under those rules rather than replaced by a new row, so ids stay stable; the prior states live in the version rows. Not versioned: interventions, split out as interventions-mutated-in-place."
+    },
+    {
+      "id": "lineage-partial",
+      "was": "Approval and rejection each append one step (APPROVED or REJECTED: actor, time, verdict id), and an edge keeps whatever lineage list its submitter sent. Nothing records the data source, the transformation steps or the policy rules into lineage, and no platform code constructs a LineageRecord. An entity's submitted lineage is not stored (the INSERT omits the column). Fragments had no lineage column at all until 006_graph_fragment_lineage.sql, so approving or rejecting one failed outright. The Guardian verdict, its cited rules, and the evidence and assumption ids are linked by reference, so the chain can be partly rebuilt by joins. Nothing shows that this satisfies EU AI Act Art. 13.",
+      "fixed_in": "96fbfde",
+      "pinned_by": "backend/tests/integration/test_lineage_chain.py",
+      "note": "Implemented from source data to approver (septa-15). Objects carry source_data {kind, ref, sha256 digest}; approval refuses an object whose source data or drafter is not on record (LineageIncompleteError, 422, verdict not spent). GET /api/semantic/objects/{type}/{id}/lineage assembles the chain from the version history and audit_log: source data, drafter (person, agent, platform version, from revision 1), every verdict and decision record for the object with the revision each was spent on and whether its signature verifies, the approver and approving verdict, the steps, and the provenance records the store holds for the verdicts' sessions; a link never recorded is named in gaps. Entities, edges and fragments alike, through the API, on SQLite and PostgreSQL. An entity's submitted lineage is now stored. The EU AI Act Art. 13 claim in backend/src/api/semantic.py was withdrawn rather than proven. Split out: the link onward to the analyses that used an object, and durable provenance (PR #30), as lineage-to-analyses. The source digest is the submitter's declaration, not checked against the data. POST /api/semantic/drafts refused every draft (its Guardian check ran in DISORDER, PR-006); it now takes cynefin_domain, as /check does."
     },
     {
       "id": "kernel-triangulation-moderate-n",
