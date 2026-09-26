@@ -32,12 +32,12 @@
           "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "09284325923607933fc89de4ccbe72fe7323230dd7e5e0ff08e3ab851c77a80f"
+          "docs/CURRENT_STAGE.md": "f016d577f669e713024683e630627c97e6e9555af799e671b08193ee4f6ee85b"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (CURRENT_STAGE moved only in the decisions row; README and ROADMAP quote nothing from it)"
+        "by": "Claude (merge of versioned objects into the decisions fix: the decisions row keeps its explain-before-seal text and septa-83; versioning rows and TESTING_CICD come from the train tip unchanged; README and ROADMAP re-read)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-09-26",
         "sha256": {
-          "conformance/declared_not_implemented.json": "b597a9acbe915fda9ce07d893d76dd4490f4c30d42b82ed7b02e234518ab114d",
-          "backend/src": "6ed7251cfd9b83a4a9f5588e80a089ec366a618e48d6b6f224f57ff7db7f95ab",
-          "backend/tests": "1d78f75abe2d5c45eb91d78adb8a58e275bcf9f04c4951e868bd887701745b57",
+          "conformance/declared_not_implemented.json": "8b9eb1ccfa6fe36a7999cfdb1664cf67bd2aa39bb94e86bf18178c507b33c038",
+          "backend/src": "56865caceca428560eb835147cf948964a7b72048f46b94ff1106a36f8ae39d5",
+          "backend/tests": "a4ea84ba566c93359dc8194d23f88fe2def830653d461480c9093bba0ef6a3eb",
           "frontend/src": "b466587cba2f440aaacdd3395df8690b5c08971f869236ecd9694a646caf0b31",
-          "packages": "7d705792d9410a99c1d91326fa72b82e67fb5625f3844994476e388aba75cde8",
+          "packages": "f41962f45dc02d0c7d0fed82e375a3f1c65d327fcf995cc8cf4a8753ad5d9174",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (decisions route: explanation verified before the seal, quoted request text not checked as claims; CURRENT_STAGE's decisions row says so and names septa-83 for the writes after the seal; TESTING_CICD's integration row already names the decision ledger tests, nothing else moved)"
+        "by": "Claude (merge of versioned objects into the decisions fix: the decisions row keeps its explain-before-seal text and septa-83; versioning rows and TESTING_CICD come from the train tip unchanged; README and ROADMAP re-read)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -309,12 +309,12 @@
         "on": "2026-09-26",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "1d78f75abe2d5c45eb91d78adb8a58e275bcf9f04c4951e868bd887701745b57",
+          "backend/tests": "a4ea84ba566c93359dc8194d23f88fe2def830653d461480c9093bba0ef6a3eb",
           "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "c488a844dd07e837e2d22c4b661f4efd3becea08b2315052affe794a0cd78fa6",
           ".gnomon/ci.sh": "9bd34338c9fb7a397f25f383bee73cde526105c9217e6e1ee60bf0e8c0802956",
-          "scripts": "e7f6200cc07b79f285380bed4e545ae53e19b998d82a6437ead0fffdac601571",
+          "scripts": "0bd371c4d9f693a52bf29f3f0c1e2d10e38e11b7001473e46be6c9c187b589cc",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "29568520a660ee325cd3ba990a0e9ba6be64e73b9090aab26b5b4d076d85b951",
           "packages/causal-core/tests": "9100d049011c0d40676f25535f0df4dba0cbd7039acc96e7e1c4b8eab1fbfa3d",
@@ -323,7 +323,7 @@
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (decisions route: explanation verified before the seal, quoted request text not checked as claims; CURRENT_STAGE's decisions row says so and names septa-83 for the writes after the seal; TESTING_CICD's integration row already names the decision ledger tests, nothing else moved)"
+        "by": "Claude (merge of versioned objects into the decisions fix: the decisions row keeps its explain-before-seal text and septa-83; versioning rows and TESTING_CICD come from the train tip unchanged; README and ROADMAP re-read)"
       }
     },
     "docs/UIX.md": {
@@ -353,13 +353,13 @@
         "on": "2026-09-26",
         "sha256": {
           "packages/causal-core/src/causal_core": "fee739ab430ee5145e6e125ab755d0e3d2cb6c08bdc4b45c0f58857b21fb7686",
-          "conformance/declared_not_implemented.json": "b597a9acbe915fda9ce07d893d76dd4490f4c30d42b82ed7b02e234518ab114d",
-          "docs/CURRENT_STAGE.md": "09284325923607933fc89de4ccbe72fe7323230dd7e5e0ff08e3ab851c77a80f"
+          "conformance/declared_not_implemented.json": "8b9eb1ccfa6fe36a7999cfdb1664cf67bd2aa39bb94e86bf18178c507b33c038",
+          "docs/CURRENT_STAGE.md": "f016d577f669e713024683e630627c97e6e9555af799e671b08193ee4f6ee85b"
         }
       },
       "last_read": {
         "on": "2026-09-26",
-        "by": "Claude (CURRENT_STAGE moved only in the decisions row; README and ROADMAP quote nothing from it)"
+        "by": "Claude (merge of versioned objects into the decisions fix: the decisions row keeps its explain-before-seal text and septa-83; versioning rows and TESTING_CICD come from the train tip unchanged; README and ROADMAP re-read)"
       }
     },
     "SECURITY.md": {
