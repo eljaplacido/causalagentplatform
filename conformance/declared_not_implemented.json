@@ -556,15 +556,15 @@
       "reality": "The drift functions compute when called directly with data (KL/JS on histograms, a correlation-below-0.5 check labelled causal drift, Jaccard word overlap on definitions, a chi-squared test on labels). DriftMonitorAgent.process, which the periodic sensor runs, hands each skill only a fragment id, so drift_detect returns kl_divergence 0.0 with note no_data_for_comparison, the structure and semantic comparisons return no drift for want of edges and definitions, and concept_drift is passed as False. The pipeline therefore cannot raise a drift alert. Alerts go to an in-process AlertEmitter, and the agent's return value names that channel; there is no Kafka producer (until 2026-09-26 it named a platform.drift.alert.v1 topic, and the alert_emit skill claimed an emission it never made).",
       "evidence": [
         {
-          "at": "backend/src/agents/drift_monitor.py:607",
+          "at": "backend/src/agents/drift_monitor.py:606",
           "says": "\"note\": \"no_data_for_comparison\","
         },
         {
-          "at": "backend/src/agents/drift_monitor.py:193",
+          "at": "backend/src/agents/drift_monitor.py:192",
           "says": "concept_drift=False,  # Would need label data"
         },
         {
-          "at": "backend/src/agents/drift_monitor.py:66",
+          "at": "backend/src/agents/drift_monitor.py:65",
           "says": "_ALERT_CHANNEL = \"AlertEmitter (in-process)\""
         }
       ],
@@ -828,7 +828,7 @@
       "reality": "No UI runs a sensitivity analysis. The kernel reports E-values, robustness values and (for back-door designs with a binary treatment) a Rosenbaum bound on every analysis from data, but nothing in the frontend requests one for an edge; the governance page's sensitivity panel is a hard-coded example whose label conflates the two methods (\"Rosenbaum E-value\").",
       "evidence": [
         {
-          "at": "frontend/src/app/governance/page.tsx:88",
+          "at": "frontend/src/app/governance/page.tsx:89",
           "says": "testName: \"Rosenbaum E-value\","
         }
       ],
