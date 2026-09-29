@@ -152,6 +152,8 @@ ROUTE_ROLES: dict[tuple[str, str], tuple[str, ...]] = {
     ("GET", "/api/v1/incidents/"): ALL_ROLES,
     ("GET", "/api/v1/incidents/{incident_id}"): ALL_ROLES,
     ("GET", "/api/v1/analysis/examples"): ALL_ROLES,
+    ("GET", "/api/v1/brain/suggestions"): ALL_ROLES,
+    ("GET", "/api/v1/brain/suggestions/{hyp_id}/data"): ALL_ROLES,
     ("GET", "/api/v1/analysis/examples/{example_id}"): ALL_ROLES,
     ("GET", "/api/v1/decisions"): ALL_ROLES,
     ("GET", "/api/v1/decisions/verify"): ALL_ROLES,

@@ -34,6 +34,7 @@ from fastapi.responses import JSONResponse
 # between the imports below (which is what made every one of them an E402).
 import src.env_bootstrap  # noqa: F401  # imported for its side effect, first
 from src.api import analysis as analysis_router_module
+from src.api import brain as brain_router_module
 from src.api import decisions as decisions_router_module
 from src.api import governance as governance_router_module
 from src.api import incidents as incidents_router_module
@@ -202,6 +203,10 @@ def create_app() -> FastAPI:
     app.include_router(
         analysis_router_module.router,
         tags=["Analysis"],
+    )
+    app.include_router(
+        brain_router_module.router,
+        tags=["Second brain"],
     )
     app.include_router(
         decisions_router_module.router,

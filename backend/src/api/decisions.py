@@ -45,6 +45,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field, create_model, model_validator
 
 from src.agents.narration import Persona, narrate_outcome
+from src.connectors import agentcenter
 from src.middleware.rbac import guard
 from src.semantic_layer.decision_store import (
     DecisionStore,
@@ -82,6 +83,7 @@ async def _model_version(selector: ModelSelector) -> ModelVersion:
             f"{selector.digest[:19]}... the request insisted on",
         )
     return got
+
 
 Cell = float | int | str | bool | None
 
@@ -165,6 +167,13 @@ class DecideRequest(BaseModel):
     )
     persona: Persona = Field(
         default="ANALYST", description="The reader `narrative` is written for."
+    )
+    origin: str | None = Field(
+        default=None,
+        max_length=300,
+        description="Where the question came from, e.g. `oracle:H-01` for a second-brain "
+        "suggestion. Sent with the decision event to agentcenter when that is configured; not "
+        "part of the sealed ledger entry.",
     )
 
     @model_validator(mode="after")
@@ -250,9 +259,7 @@ async def make_decision(
         # not an assert: python -O strips asserts.
         raise HTTPException(status_code=422, detail="give exactly one of `graph` or `model`")
 
-    outcome = cc.analyze(
-        frame, graph, query=query, policy=body.analysis_policy or AnalysisPolicy()
-    )
+    outcome = cc.analyze(frame, graph, query=query, policy=body.analysis_policy or AnalysisPolicy())
     decision = decide(outcome, request, policy)
     # Written before the entry is sealed: an explanation that fails its own
     # verification is a bug in this layer, and it must not leave a sealed entry
@@ -298,9 +305,7 @@ async def make_decision(
     if version is not None:
         used = query
         if isinstance(outcome, cc.contract.CausalResult) and outcome.certificate.adjustment_set:
-            used = query.model_copy(
-                update={"adjust_for": outcome.certificate.adjustment_set}
-            )
+            used = query.model_copy(update={"adjust_for": outcome.certificate.adjustment_set})
         await _models.record_decision(
             record.entry_digest,
             version.ref(),
@@ -360,6 +365,10 @@ async def make_decision(
         uid=user.get("uid"),
     )
 
+    # A copy for the owner's second brain (agentcenter's event log), when configured.
+    # After the seal and the provenance write: it cannot change or block the record.
+    await agentcenter.emit_decision(_event_payload(body, decision, outcome, record))
+
     narrative: Narrative | None = None
     if body.narrate:
         # After the ledger write, on purpose: the sealed record holds the verdict and the
@@ -394,6 +403,28 @@ async def make_decision(
         record=record,
         narrative=narrative,
     )
+
+
+def _event_payload(
+    body: DecideRequest, decision: Decision, outcome: Any, record: DecisionRecord
+) -> dict[str, Any]:
+    ev = decision.evidence
+    return {
+        "entry_digest": record.entry_digest,
+        "sequence": record.sequence,
+        "recorded_at": record.recorded_at,
+        "action": body.action,
+        "verdict": str(decision.verdict),
+        "treatment": body.treatment,
+        "outcome": body.outcome,
+        "direction": body.direction,
+        "outcome_kind": str(getattr(outcome, "kind", type(outcome).__name__)),
+        "status": ev.status,
+        "benefit": ev.benefit,
+        "benefit_ci": list(ev.benefit_ci) if ev.benefit_ci else None,
+        "refusal_reason": ev.refusal_reason,
+        "origin": body.origin,
+    }
 
 
 @router.get("", response_model=RecordList, summary="List recorded decisions")
@@ -547,9 +578,7 @@ async def record_followup(
     try:
         await _store.save_realization(entry_digest, realization)
     except FollowUpConflictError as exc:  # a concurrent follow-up got there first
-        raise HTTPException(
-            status_code=409, detail=_ALREADY_MEASURED.format(entry_digest)
-        ) from exc
+        raise HTTPException(status_code=409, detail=_ALREADY_MEASURED.format(entry_digest)) from exc
 
     log.info(
         "api.decisions.followup",

@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * Home: start an analysis, try an example, see what was decided lately, and
- * find the rest of the platform.
+ * Home: start an analysis, see what the second brain (agentcenter) suggests,
+ * try an example, see what was decided lately, and find the rest of the platform.
  *
  * This page used to be a role picker that redirected every later visit to the
  * last role's page, so home was unreachable once a role had been picked.
@@ -24,6 +24,7 @@ import {
 import { analysisApi, type ExampleSummary } from "@/lib/analysis";
 import { decisionsApi, type DecisionRecordResponse } from "@/lib/api";
 import { VerdictBadge } from "@/components/decisions/VerdictBadge";
+import { SecondBrainPanel } from "@/components/analysis/SecondBrainPanel";
 
 const PLACES = [
   { href: "/decisions", icon: BookOpen, title: "Decision ledger", text: "Every verdict recorded, tamper-evident; record what actually happened and see whether the platform was right." },
@@ -73,6 +74,8 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
+
+      <SecondBrainPanel />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section aria-labelledby="examples-h">

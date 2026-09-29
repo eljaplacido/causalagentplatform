@@ -159,6 +159,16 @@ cd backend && LLM_LIVE=1 OLLAMA_BASE_URL=http://127.0.0.1:11434 \
   OLLAMA_CAUSAL_MODEL=qwen2.5:7b-instruct pytest -m llm_live -s --no-cov tests/unit/test_llm_routing_used.py
 ```
 
+**Second brain (optional).** With agentcenter and its Oracle running on this machine, the home
+page lists the Oracle's hypotheses (each opens as a prefilled analysis), its next steps and the
+learning radar's improvement targets, and recorded decisions can be reported back as events:
+
+```bash
+AGENTCENTER_URL=http://127.0.0.1:8765
+ORACLE_URL=http://127.0.0.1:8767      # the default once AGENTCENTER_URL is set
+AGENTCENTER_EMIT=true                 # send each recorded decision to agentcenter's event log
+```
+
 > **Security:** never commit `.env` files. They are gitignored.
 
 ### Frontend environment
@@ -230,6 +240,7 @@ The frontend's built-in default API URL is `http://localhost:49234`, the port us
 | Backend health | `curl http://localhost:49234/health` | `{"status":"ok", ...}` |
 | API docs | open `http://localhost:49234/docs` | Swagger UI |
 | Frontend | open `http://localhost:3000` | Next.js dev server |
+| A first analysis | open `http://localhost:3000/analyze?example=email-campaign`, then *Estimate the effect* | an estimate near the example's true effect of 3.0, with the true effect inside the interval |
 | **The gate** | `bash .gnomon/ci.sh` | a per-step summary table, every step PASS or a named SKIPPED (`backend-pytest-postgres` is SKIPPED, "no TEST_DATABASE_URL", unless you give it a PostgreSQL server; see below) |
 
 `.gnomon/ci.sh` runs every suite (backend, frontend, each package with its pre-registered gates),

@@ -73,7 +73,7 @@ Known limits are listed, not hidden: [`docs/CURRENT_STAGE.md`](docs/CURRENT_STAG
 ## What else is in the box
 
 - **Backend** (`backend/`): Python 3.12, FastAPI, SQLAlchemy and LangGraph. `.gnomon/ci.sh` prints the current test count and coverage.
-- **Frontend** (`frontend/`): Next.js, TypeScript and Tailwind. Persona-scoped views: governance, incidents, engineer, analyst and executive; and three analysis views over the kernel's records: `/workbench` (fragments, and proposing one through the governed draft flow, which judges the draft in the domain the drafter classified), `/decisions` (the decision ledger, follow-ups and calibration) and `/registry` (the assumption registry: versions, diffs, impact). One navigation bar above every page links them all. [docs/UIX.md](docs/UIX.md) §2 says what each one does.
+- **Frontend** (`frontend/`): Next.js, TypeScript and Tailwind. `/analyze` asks a causal question of your own data (a CSV, or an example simulated with a known effect): the graph is checked for identification as you write it, the answer shows the estimate, its checks and sensitivity or a refusal with what would help, and the decision can be recorded. The home page also lists what the owner's second brain (agentcenter and its Oracle, when configured) suggests testing, each opening as a prefilled analysis. Persona-scoped views: governance, incidents, engineer, analyst ("Problem triage") and executive; and three analysis views over the kernel's records: `/workbench` (fragments, and proposing one through the governed draft flow, which judges the draft in the domain the drafter classified), `/decisions` (the decision ledger, follow-ups and calibration) and `/registry` (the assumption registry: versions, diffs, impact). One navigation bar above every page links them all. [docs/UIX.md](docs/UIX.md) §2 says what each one does.
 - **One MCP server**: `packages/causal-mcp`, above. The backend's legacy server (`backend/mcp_server/`, console script `causal-platform-mcp`) was deleted in September 2026; a client configuration that still launches `causal-platform-mcp` should launch `causal-mcp` instead.
 - **Docs** (`docs/`): architecture (AGENTS.md), data layer, ADRs, quickstart and testing standards.
 
@@ -96,6 +96,7 @@ npm install
 # 3. Launch (two terminals, both from the repository root)
 bash launch_backend.sh             # backend on :49234
 cd frontend && NEXT_PUBLIC_API_BASE_URL=http://localhost:49234 npm run dev
+# then open http://localhost:3000/analyze?example=email-campaign for a first analysis
 ```
 
 Then open <http://localhost:3000/workbench>.

@@ -11,8 +11,10 @@
  *      nowhere); then, optionally, a verdict sealed into the decision ledger
  *      (POST /api/v1/decisions, which re-runs the analysis itself).
  *
- * `?example=<id>` opens an example; `?graph=&treatment=&outcome=&design=&
- * action=&direction=&mwe=` prefill the form (used by suggestions).
+ * `?example=<id>` opens an example; `?suggestion=oracle:H-01` opens a
+ * second-brain hypothesis (prefilled from its spec, with its data when
+ * agentcenter can serve it); `?graph=&treatment=&outcome=&design=&action=&
+ * direction=&mwe=` prefill the form directly.
  */
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -29,6 +31,7 @@ import {
 } from "lucide-react";
 import {
   analysisApi,
+  brainApi,
   graphFromRoles,
   parseCsv,
   profileColumns,
@@ -41,6 +44,7 @@ import {
   type ExampleData,
   type ExampleSummary,
   type RunResponse,
+  type Suggestion,
 } from "@/lib/analysis";
 import { CausalApiError } from "@/lib/api";
 import { CausalGraphView } from "@/components/analysis/CausalGraphView";
@@ -111,6 +115,7 @@ function errorText(err: unknown): string {
 
 type Source =
   | { kind: "example"; example: ExampleData }
+  | { kind: "brain"; sources: string[]; note: string }
   | { kind: "file"; name: string }
   | { kind: "paste" };
 
@@ -128,6 +133,8 @@ function AnalyzePage() {
   const [pasteText, setPasteText] = useState("");
   const [showPaste, setShowPaste] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
+  const [suggestionError, setSuggestionError] = useState<string | null>(null);
 
   // 2–3 · assumptions and question
   const [treatment, setTreatment] = useState("");
@@ -236,6 +243,45 @@ function AnalyzePage() {
     [applyPrefill, resetDownstream]
   );
 
+  const loadSuggestion = useCallback(
+    async (id: string) => {
+      setLoadingData(true);
+      setSuggestionError(null);
+      try {
+        const all = await brainApi.suggestions();
+        const s = all.suggestions.find((x) => x.id === id || x.id === `oracle:${id}`);
+        if (!s || !s.study) {
+          setSuggestionError(
+            all.enabled
+              ? `No hypothesis ${id} in the second brain right now.`
+              : "The second brain isn't connected (AGENTCENTER_URL)."
+          );
+          return;
+        }
+        setSuggestion(s);
+        applyPrefill({
+          graph: s.study.graph,
+          treatment: s.study.treatment,
+          outcome: s.study.outcome,
+          design: s.study.design,
+          action: s.study.action,
+          direction: s.study.direction,
+          mwe: s.study.minimum_worthwhile_effect,
+        });
+        if (s.data?.fetchable) {
+          const bound = await brainApi.data(s.id);
+          setColumns(bound.columns);
+          setSource({ kind: "brain", sources: bound.sources, note: bound.note });
+        }
+      } catch (err) {
+        setSuggestionError(errorText(err));
+      } finally {
+        setLoadingData(false);
+      }
+    },
+    [applyPrefill]
+  );
+
   // URL prefill, once
   const prefilled = useRef(false);
   useEffect(() => {
@@ -244,6 +290,11 @@ function AnalyzePage() {
     const ex = params.get("example");
     if (ex) {
       void loadExample(ex);
+      return;
+    }
+    const sug = params.get("suggestion");
+    if (sug) {
+      void loadSuggestion(sug);
       return;
     }
     applyPrefill({
@@ -255,7 +306,7 @@ function AnalyzePage() {
       direction: params.get("direction"),
       mwe: params.get("mwe"),
     });
-  }, [params, loadExample, applyPrefill]);
+  }, [params, loadExample, loadSuggestion, applyPrefill]);
 
   function acceptTable(text: string, src: Source) {
     try {
@@ -346,6 +397,7 @@ function AnalyzePage() {
           minimum_worthwhile_effect: Math.max(0, Number(mwe) || 0),
           harm_threshold: Math.max(0, Number(harm) || 0),
           can_randomize: true,
+          origin: suggestion?.id,
         })
       );
     } catch (err) {
@@ -356,6 +408,8 @@ function AnalyzePage() {
   }
 
   function startOver() {
+    setSuggestion(null);
+    setSuggestionError(null);
     setSource(null);
     setColumns(null);
     setTreatment("");
@@ -403,6 +457,37 @@ function AnalyzePage() {
         hint="One row per unit (customer, request, week...), one column per variable."
         done={Boolean(columns)}
       >
+        {suggestionError && (
+          <p role="alert" className="mb-3 text-sm text-red-700 dark:text-red-400">{suggestionError}</p>
+        )}
+        {suggestion?.study && (
+          <div className="mb-4 rounded-lg border border-violet-200 bg-violet-50 p-3 text-sm dark:border-violet-900 dark:bg-violet-950/40">
+            <p className="font-medium text-foreground">
+              From your second brain: {suggestion.id.replace(/^oracle:/, "")} · {suggestion.title}
+            </p>
+            {suggestion.why && <p className="mt-1 text-xs text-muted-foreground">{suggestion.why}</p>}
+            <p className="mt-1.5 text-xs text-foreground">
+              {Object.entries(suggestion.study.arms)
+                .sort(([a], [b]) => b.localeCompare(a))
+                .map(([k, v]) => `${suggestion.study!.treatment} = ${k}: ${v}`)
+                .join(" · ")}
+              {suggestion.study.outcome_label && ` · ${suggestion.study.outcome}: ${suggestion.study.outcome_label}`}
+            </p>
+            {suggestion.data && !suggestion.data.fetchable && (
+              <p className="mt-1.5 text-xs text-amber-800 dark:text-amber-300">Data: {suggestion.data.note}</p>
+            )}
+            {suggestion.detail.length > 0 && (
+              <details className="mt-1.5 text-xs">
+                <summary className="cursor-pointer text-muted-foreground">Caveats and preflight</summary>
+                <ul className="mt-1 list-disc space-y-0.5 pl-5 text-foreground">
+                  {suggestion.detail.map((d) => (
+                    <li key={d}>{d}</li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </div>
+        )}
         {!columns && (
           <div className="space-y-4">
             <div
@@ -504,7 +589,13 @@ function AnalyzePage() {
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <span className="font-medium text-foreground">
-                {example ? example.title : source?.kind === "file" ? source.name : "Pasted data"}
+                {example
+                  ? example.title
+                  : source?.kind === "file"
+                    ? source.name
+                    : source?.kind === "brain"
+                      ? `From agentcenter: ${source.sources.join(", ")}`
+                      : "Pasted data"}
               </span>
               <span className="text-muted-foreground">
                 · {nRows.toLocaleString()} rows · {names.length} columns
@@ -513,6 +604,9 @@ function AnalyzePage() {
                 Change data
               </button>
             </div>
+            {source?.kind === "brain" && (
+              <p className="rounded-md bg-muted/60 p-3 text-sm text-foreground">{source.note}</p>
+            )}
             {example && (
               <p className="rounded-md bg-muted/60 p-3 text-sm text-foreground">
                 <b className="font-medium">What to look for:</b> {example.lesson}
