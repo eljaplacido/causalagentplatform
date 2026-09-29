@@ -4,7 +4,8 @@
  * Term — a word of causal jargon with its meaning one hover or focus away.
  *
  * The glossary is here so every page explains a term the same way. The
- * definition is also the element's accessible description.
+ * definition is the word's accessible description, and is hidden from the
+ * accessibility tree itself so that a label containing a Term keeps a short name.
  */
 
 import { useId } from "react";
@@ -64,6 +65,7 @@ export function Term({
       <span
         id={id}
         role="tooltip"
+        aria-hidden
         className="pointer-events-none invisible absolute left-0 top-full z-50 mt-1 w-72 rounded-md border border-border bg-popover p-2.5 text-xs font-normal normal-case leading-relaxed tracking-normal text-popover-foreground shadow-md opacity-0 transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
       >
         {GLOSSARY[k]}

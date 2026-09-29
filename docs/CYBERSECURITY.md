@@ -256,12 +256,12 @@ granted role does not.
 | `POST /api/v1/models`, `POST /api/v1/models/{name}/versions` | `DRAFT_ROLES` |
 | `POST /api/v1/decisions`, `POST /api/v1/decisions/{digest}/followup` | `analyst`, `governance_officer`, `platform_engineer`, `sre` |
 | `POST /api/v1/interventions/{id}/approve`, `/reject`, `POST /api/v1/interventions/feedback` | `governance_officer`, `platform_engineer`, `sre` (`DECISION_ROLES`) |
-| `POST /api/v1/session/run`, `/incident`, `POST /api/v1/decisions/verify-anchored`, `POST /api/v1/platform/evaluation/calibration` | any platform role |
+| `POST /api/v1/session/run`, `/incident`, `POST /api/v1/decisions/verify-anchored`, `POST /api/v1/platform/evaluation/calibration`, `POST /api/v1/analysis/check`, `POST /api/v1/analysis/run` | any platform role (the analysis routes compute over the request body and record nothing) |
 | `GET /api/v1/provenance/trace/{id}`, `/export/{id}`, `/invocations/{id}`, `POST /api/v1/provenance/session/{id}/erasure` | `GOVERNANCE_ROLES` |
 
 "Any platform role" is one of `viewer`, `analyst`, `graph_author`, `governance_officer`,
 `platform_engineer`, `agent`, `sre`: a valid token with none of them is refused. Every other
-read (decisions, models, incidents, interventions, platform metrics, session state) needs any
+read (decisions, models, incidents, interventions, platform metrics, session state, analysis examples) needs any
 platform role; until 2026-09-26 those 21 reads needed only a valid token. Session state is
 also bounded by ownership: reading, resuming or citing a session in `/check` needs the user
 who started it or a governance role (`rbac.may_use_session`), and a session with no recorded

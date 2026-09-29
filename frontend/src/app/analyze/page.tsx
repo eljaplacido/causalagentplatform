@@ -318,7 +318,7 @@ function AnalyzePage() {
       setRun(
         await analysisApi.run({ graph, treatment, outcome, estimand, data: columns, query: { design } })
       );
-      setTimeout(() => document.getElementById("step-4")?.scrollIntoView({ behavior: "smooth" }), 50);
+      setTimeout(() => document.getElementById("step-4")?.scrollIntoView?.({ behavior: "smooth" }), 50);
     } catch (err) {
       setRunError(errorText(err));
     } finally {
