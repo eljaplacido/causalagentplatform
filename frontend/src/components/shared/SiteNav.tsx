@@ -4,8 +4,9 @@
  * SiteNav — the one navigation bar, rendered by the root layout above every
  * page (the 404 page included).
  *
- * The brand links home; then the five persona pages and the three analysis
- * views that read the kernel's records. The current page is marked with
+ * The brand links home; then the analysis pages (ask a question, and the
+ * records it leaves: decisions, models, graph fragments), then the operations
+ * pages, each labelled exactly as the page titles itself. The current page is marked with
  * aria-current="page". Persona pages and analysis views used to be two
  * unconnected nav systems (a persona dropdown on one set, ViewNav on the
  * other), and /decisions and /registry had no way home.
@@ -19,18 +20,21 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { PERSONA_ROUTES } from "./PersonaSelector";
 
-const PERSONA_LINKS: ReadonlyArray<{ href: string; label: string }> = [
-  { href: PERSONA_ROUTES.OPERATOR, label: "Incidents" },
-  { href: PERSONA_ROUTES.ANALYST, label: "Analyst" },
-  { href: PERSONA_ROUTES.GOVERNANCE, label: "Governance" },
-  { href: PERSONA_ROUTES.ENGINEER, label: "Engineer" },
-  { href: PERSONA_ROUTES.EXECUTIVE, label: "Executive" },
-];
-
-const VIEW_LINKS: ReadonlyArray<{ href: string; label: string }> = [
-  { href: "/workbench", label: "DAG Workbench" },
+/** Asking causal questions, and the records that come of them. */
+const ANALYSIS_LINKS: ReadonlyArray<{ href: string; label: string }> = [
+  { href: "/analyze", label: "Analyze" },
   { href: "/decisions", label: "Decision ledger" },
   { href: "/registry", label: "Assumption registry" },
+  { href: "/workbench", label: "DAG Workbench" },
+];
+
+/** Running the platform day to day. */
+const OPERATIONS_LINKS: ReadonlyArray<{ href: string; label: string }> = [
+  { href: PERSONA_ROUTES.OPERATOR, label: "Incidents" },
+  { href: "/analyst", label: "Problem triage" },
+  { href: PERSONA_ROUTES.GOVERNANCE, label: "Governance" },
+  { href: PERSONA_ROUTES.ENGINEER, label: "Platform Health" },
+  { href: PERSONA_ROUTES.EXECUTIVE, label: "Manager Dashboard" },
 ];
 
 function NavLink({ href, label, current }: { href: string; label: string; current: boolean }) {
@@ -69,11 +73,14 @@ export function SiteNav({ className }: { className?: string }) {
         Causal Platform
       </Link>
       <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
-        {PERSONA_LINKS.map((l) => (
+        {ANALYSIS_LINKS.map((l) => (
           <NavLink key={l.href} {...l} current={isCurrent(l.href)} />
         ))}
         <span aria-hidden className="mx-1 h-4 w-px shrink-0 bg-border" />
-        {VIEW_LINKS.map((l) => (
+        <span className="shrink-0 px-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">
+          Operate
+        </span>
+        {OPERATIONS_LINKS.map((l) => (
           <NavLink key={l.href} {...l} current={isCurrent(l.href)} />
         ))}
       </div>

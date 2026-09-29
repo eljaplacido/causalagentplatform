@@ -125,6 +125,10 @@ ROUTE_ROLES: dict[tuple[str, str], tuple[str, ...]] = {
     ("POST", "/api/v1/interventions/feedback"): DECISION_ROLES,
     ("POST", "/api/v1/interventions/{intervention_id}/approve"): DECISION_ROLES,
     ("POST", "/api/v1/interventions/{intervention_id}/reject"): DECISION_ROLES,
+    # Analysis: the kernel over the request body, recording nothing (deciding is
+    # POST /api/v1/decisions, below). Every role may run one, as with sessions.
+    ("POST", "/api/v1/analysis/check"): ALL_ROLES,
+    ("POST", "/api/v1/analysis/run"): ALL_ROLES,
     # Decision ledger
     ("POST", "/api/v1/decisions"): LEDGER_ROLES,
     ("POST", "/api/v1/decisions/{entry_digest}/followup"): LEDGER_ROLES,
@@ -147,6 +151,8 @@ ROUTE_ROLES: dict[tuple[str, str], tuple[str, ...]] = {
     ("GET", "/api/v1/interventions/accuracy"): ALL_ROLES,
     ("GET", "/api/v1/incidents/"): ALL_ROLES,
     ("GET", "/api/v1/incidents/{incident_id}"): ALL_ROLES,
+    ("GET", "/api/v1/analysis/examples"): ALL_ROLES,
+    ("GET", "/api/v1/analysis/examples/{example_id}"): ALL_ROLES,
     ("GET", "/api/v1/decisions"): ALL_ROLES,
     ("GET", "/api/v1/decisions/verify"): ALL_ROLES,
     ("GET", "/api/v1/decisions/checkpoint"): ALL_ROLES,

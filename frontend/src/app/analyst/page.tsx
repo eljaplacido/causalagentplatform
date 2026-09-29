@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Analyst Workbench — Causal Analyst persona (UIX.md §2.5, US-19–US-23).
+ * Problem triage (formerly Analyst Workbench) — Causal Analyst persona (UIX.md §2.5, US-19–US-23).
  *
  * Layout:
  *   ┌────────────────────────────────────────────────────────────┐
@@ -211,7 +211,7 @@ export default function AnalystPage() {
     <div className="flex min-h-screen flex-col bg-background">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-20 flex items-center gap-4 border-b border-border bg-background/95 px-4 py-2.5 backdrop-blur-sm">
-        <h1 className="text-sm font-bold text-foreground">Analyst Workbench</h1>
+        <h1 className="text-sm font-bold text-foreground">Problem triage</h1>
 
         {sessionState && (
           <div className="flex items-center gap-2 ml-2">

@@ -294,7 +294,7 @@ export default function ExecutivePage() {
           </div>
         ) : metricsQuery.isError ? (
           <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-700 dark:text-red-300 mt-8">
-            Failed to load metrics. Ensure the backend is running at {process.env["NEXT_PUBLIC_API_BASE_URL"] ?? "http://localhost:8000"}.
+            Failed to load metrics. Ensure the backend is running at {process.env["NEXT_PUBLIC_API_BASE_URL"] ?? "http://localhost:49234"}.
           </div>
         ) : (
           <>

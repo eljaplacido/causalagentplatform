@@ -33,6 +33,7 @@ from fastapi.responses import JSONResponse
 # execution order, so this import states that constraint instead of a loop wedged
 # between the imports below (which is what made every one of them an E402).
 import src.env_bootstrap  # noqa: F401  # imported for its side effect, first
+from src.api import analysis as analysis_router_module
 from src.api import decisions as decisions_router_module
 from src.api import governance as governance_router_module
 from src.api import incidents as incidents_router_module
@@ -197,6 +198,10 @@ def create_app() -> FastAPI:
     app.include_router(
         incidents_router_module.router,
         tags=["Incidents"],
+    )
+    app.include_router(
+        analysis_router_module.router,
+        tags=["Analysis"],
     )
     app.include_router(
         decisions_router_module.router,
