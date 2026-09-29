@@ -31,14 +31,30 @@ The platform serves people who are trying to make better decisions under uncerta
 
 Each persona sees a **filtered, task-optimized lens** on the same underlying platform data. The platform does not build separate UIs per persona—it applies a view configuration over a shared component library.
 
-Today there is a page per persona view, `/incidents`, `/analyst`, `/executive`, `/governance` and
-`/engineer`, plus `/workbench`, `/decisions` and `/registry`. One navigation bar (`SiteNav`, in the
-root layout) sits above every page, the 404 page (`frontend/src/app/not-found.tsx`, with a link
-home) included: the brand links home (the role picker, which forwards a returning user to their
-persona's page), then all eight pages, the current one marked. On a persona page `PersonaSelector` switches persona and goes to
-that persona's page (it used to relabel itself and stay). How much of each view's surface below
-is built varies (see §4.2).
+Today there is a page per persona view, `/incidents`, `/analyst` (titled "Problem triage"),
+`/executive`, `/governance` and `/engineer`, plus `/analyze`, `/workbench`, `/decisions` and
+`/registry`. One navigation bar (`SiteNav`, in the root layout) sits above every page, the 404 page
+(`frontend/src/app/not-found.tsx`, with a link home) included: the brand links home, then the
+analysis pages (Analyze, Decision ledger, Assumption registry, DAG Workbench), then the operations
+pages under "Operate", each labelled as the page titles itself, the current one marked. Home (`/`)
+is a start page: start an analysis, open an example, the five most recent decisions, and a card
+per page (it used to be a role picker that forwarded every later visit to the last role's page,
+so home was unreachable). On a persona page `PersonaSelector` switches persona and goes to that
+persona's page. How much of each view's surface below is built varies (see §4.2).
 
+- **`/analyze`** asks a causal question of the user's data in four steps: data (a CSV file or
+  pasted text, parsed in the browser; or an example from `GET /api/v1/analysis/examples`, each
+  simulated from a structural model with a stated true effect), the question (treatment, outcome,
+  randomized or observational, ATE or ATT), the graph (picked from the columns as confounders and
+  other causes of the outcome, or written in the kernel's syntax), and the answer. The graph is
+  checked as it is edited (`POST /api/v1/analysis/check`): identified or not, the adjustment set,
+  what would make it identified, nodes with no column (treated as unmeasured, as the analysis
+  treats them) and unreviewed edges. The answer (`POST /api/v1/analysis/run`, which records
+  nothing) shows the estimate and interval against zero, the worthwhile threshold and, for an
+  example, the true effect; the identification, estimator cross-check, falsification and design
+  checks, E-value and balance; or, for a refusal, the reason and what would make the question
+  answerable. "Decide and record" sends the same inputs to `POST /api/v1/decisions`, which re-runs
+  the analysis and seals the verdict. Jargon carries its definition on hover or focus (`Term`).
 - **`/workbench` (DAG Workbench)** shows the fragments and their edges, and proposes a new fragment
   from existing edges through `POST /api/semantic/drafts`. The drafter must classify the situation
   (a declared Cynefin domain, DISORDER not offered, or a reasoning session's id) and name the
@@ -70,7 +86,7 @@ is built varies (see §4.2).
 | Persona View | Primary Surface | Secondary Surfaces |
 |---|---|---|
 | `OPERATOR` | Incident feed + intervention proposals | Cynefin classification, root-cause drill-down |
-| `ANALYST` | DAG Workbench + simulation results | Assumption registry, evidence browser |
+| `ANALYST` | Analyze (estimate an effect, record a decision) | Decision ledger, assumption registry, DAG Workbench |
 | `EXECUTIVE` | Decision summary + outcome tracking | High-level intervention comparison |
 | `GOVERNANCE` | Assumption review queue + audit trail | Sensitivity results, policy verdicts |
 | `ENGINEER` | Graph fragment library + connector status | Drift alerts, model health |

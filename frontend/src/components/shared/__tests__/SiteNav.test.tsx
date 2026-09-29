@@ -40,6 +40,7 @@ describe("SiteNav", () => {
       .getAllByRole("link")
       .map((a) => a.getAttribute("href"));
     for (const href of [
+      "/analyze",
       "/incidents",
       "/analyst",
       "/governance",

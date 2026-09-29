@@ -218,8 +218,8 @@ cd backend
 ENV=local DEV_AUTH_BYPASS=true .venv/bin/uvicorn src.api.main:app --reload --host 127.0.0.1 --port 49234
 ```
 
-The frontend's built-in default API URL is `http://localhost:8000`; set `NEXT_PUBLIC_API_BASE_URL`
-whenever the backend is on another port.
+The frontend's built-in default API URL is `http://localhost:49234`, the port used above; set
+`NEXT_PUBLIC_API_BASE_URL` whenever the backend is on another port.
 
 ---
 

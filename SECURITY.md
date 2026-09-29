@@ -130,9 +130,10 @@ where the role design is silent, are in `docs/CYBERSECURITY.md` §4.0. In short:
   `graph_author`, `platform_engineer` or `agent`; recording a decision needs
   `analyst`, `sre` or a governance role.
 
-A token with none of the platform roles is refused on every state-changing
-route. Reads outside the semantic layer, the audit log and provenance need only
-a valid token.
+A token with none of the platform roles is refused on every route but the
+liveness probe. Reads outside the semantic layer, the audit log and provenance,
+and the analysis routes (`/api/v1/analysis/check`, `/run`, `/examples`, which
+compute over the request body and record nothing), need any platform role.
 
 **Domain isolation.** The token's `domains` claim (a list) bounds which semantic
 objects a user lists, reads, drafts into, and reviews; an object outside it is

@@ -46,9 +46,9 @@ const PERSONA_META: Record<
   },
   ANALYST: {
     label: "Causal Analyst",
-    description: "DAG workbench, simulation, assumption validation",
+    description: "Estimate effects on your data, record and follow up decisions",
     icon: BarChart3,
-    primarySurface: "/analyst",
+    primarySurface: "/analyze",
   },
   EXECUTIVE: {
     label: "Executive",

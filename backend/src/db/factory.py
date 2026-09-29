@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Any
 
 import structlog
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -682,9 +683,20 @@ class CloudSqlFactory:
         engine = cls.get_engine()
 
         if engine.dialect.name == "sqlite":
-            async with engine.begin() as conn:
-                for stmt in ddl_statements(SQLITE_DDL):
-                    await conn.execute(sa_text(stmt))
+            try:
+                async with engine.begin() as conn:
+                    for stmt in ddl_statements(SQLITE_DDL):
+                        await conn.execute(sa_text(stmt))
+            except OperationalError as exc:
+                # CREATE ... IF NOT EXISTS never alters an existing table, so a
+                # database file made before a migration fails on the first index
+                # over a column it lacks. Say what to do instead of a bare trace.
+                raise RuntimeError(
+                    f"the SQLite database {engine.url.database} predates the current "
+                    f"schema ({exc.orig}). It holds only local development data: move "
+                    "or delete it and restart, and the schema is created afresh "
+                    "(re-seed with backend/scripts/seed_data.py --all)."
+                ) from exc
 
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)

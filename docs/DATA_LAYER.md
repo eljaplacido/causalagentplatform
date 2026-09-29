@@ -333,7 +333,10 @@ grants, row-level security and most `CHECK` constraints exist only on the Postgr
   `causal_app`, not as the owner.
 - **SQLite**: the `SQLITE_DDL` string in `backend/src/db/factory.py`, created by
   `CloudSqlFactory.init_db()` on a SQLite engine (the choice is by the engine's dialect, never
-  run on PostgreSQL). The default test run, and the gate's `backend-pytest` step, use it.
+  run on PostgreSQL). The default test run, and the gate's `backend-pytest` step, use it. Its
+  statements are `CREATE ... IF NOT EXISTS`, which never alter an existing table, so a local
+  database file made before a migration cannot be upgraded in place: startup stops with a message
+  naming the file and saying to move or delete it (`backend/tests/unit/test_stale_sqlite_db.py`).
 
 | Table | PostgreSQL | SQLite | Holds |
 |---|---|---|---|
