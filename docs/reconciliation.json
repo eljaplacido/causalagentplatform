@@ -26,18 +26,18 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-09-26",
+        "on": "2026-09-29",
         "sha256": {
           "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
           "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "d32ddbc9b854d3c2af42ee17a37de2526182a13b87f9f789842edc04f659bae6"
+          "docs/CURRENT_STAGE.md": "2458146c24913c59f4ee10afba498faea7893fa3629f55d017e1efa926d890d2"
         }
       },
       "last_read": {
-        "on": "2026-09-26",
-        "by": "Claude (housekeeping: the only change in the code these docs describe is the ledger id in comments, septa-62 -> septa-70 for the sensitivity recording; the docs' own references were corrected the same way; no claim moved)"
+        "on": "2026-09-29",
+        "by": "Claude (septa-91/92: frontend paragraph and quickstart name /analyze and the second-brain suggestions; ROADMAP's frontend-views status adds them; the rest re-read against CURRENT_STAGE, unchanged)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-09-29",
         "sha256": {
-          "conformance/declared_not_implemented.json": "0baea3a09edfcda8067bd4e8d7c1922b2b164faa0ec94520fdca54f3ff3c2162",
-          "backend/src": "b876bdedde749d5d2e9fcc20d90f2b1143299a7e8b9e40b5d9b606250bdbf704",
-          "backend/tests": "d8136c8484c171f607510a63934f2f09e1e50f9aa517f3814cc4f00d4afd10b3",
-          "frontend/src": "d4535fd4ded6b836f65fbcfd70cff66449421d35181642a93101201d2e5f2418",
+          "conformance/declared_not_implemented.json": "78c12d64bc6400fb9e82c77cae9a6ac2688df48b79d613881f3addf5d48631ff",
+          "backend/src": "5beef0240413a706f0a4e051e7cb3e5f9de98e47d5e58b380d12daed26291a6a",
+          "backend/tests": "5c63921bd97a6a2479736987edca65433f5fa031e1a615ffab8d03e75d04bca2",
+          "frontend/src": "44ba269702f8216ee79387bc427fedf3b54d24cb1f0dfdb7a497b303a9322080",
           "packages": "f41962f45dc02d0c7d0fed82e375a3f1c65d327fcf995cc8cf4a8753ad5d9174",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-09-29",
-        "by": "Claude (septa-91/93: rows added for the analysis endpoints and the /analyze page with their tests; the /analyst row still holds under its new title; UI rows re-read against frontend/src)"
+        "by": "Claude (septa-92: a row for the agentcenter connector and its tests; UIX §2 describes the home panel and ?suggestion=; citations re-cited)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -174,7 +174,7 @@
       "baseline": {
         "on": "2026-09-29",
         "sha256": {
-          "backend/src/middleware": "ac3078aaf5abc666fd960af2bbe04b0462663a637f6a74c5d72e9e7b8306c990",
+          "backend/src/middleware": "382780d8717bb592eb4ddc1d9e21dcd0227129be3ba5c9d60815c0ef4ee7de0a",
           "backend/src/api/governance.py": "c2ab8a061fe056b835dbb9097b147f414437df0ca702708c3e923b23c8d5751c",
           "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
           "backend/src/semantic_layer/registry.py": "fcf26738fc64003c29d3a4964517495cdb2b0267fb39f2c44c3f4311e30c9374",
@@ -187,7 +187,7 @@
       },
       "last_read": {
         "on": "2026-09-29",
-        "by": "Claude (septa-91: read the RBAC sections against rbac.py; four analysis routes added to the §4.0 table and the any-role reads; SECURITY.md's stale 'reads need only a valid token' corrected to any platform role, as the matrix and test_rbac_matrix enforce)"
+        "by": "Claude (septa-92: brain reads added to the any-role list; the connector's outbound calls stated (configured URLs only, decision events without data rows); SECURITY's RBAC section unchanged by two more any-role reads)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -206,7 +206,7 @@
         "on": "2026-09-29",
         "sha256": {
           "backend/src/db": "9f4dc35b1cdc1fe31da03685469dce8d67be6bfe3a4d49574e983750f9b96ac7",
-          "backend/src/connectors": "2b7f65f2acc7f7732deecdad2c8c1b72e4db72caed067285d65631be65c4edfa",
+          "backend/src/connectors": "a1392b68cb6ca4d05b943de26a39eec5d9979e15866bf1f704d84339ac0c6f6b",
           "backend/src/semantic_layer/models.py": "b797d8121087451bbd55dd3489732f7aeabaea2e59c10138e2759f11bbd58960",
           "backend/src/sensors": "37f0b547a27bf3617693225db822302372fe941185153afa65d9cc5296e3360c",
           "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
@@ -217,7 +217,7 @@
       },
       "last_read": {
         "on": "2026-09-29",
-        "by": "Claude (septa-93: the SQLite init section now says an old local file stops startup with a message; the rest of the db section unchanged by factory.py's change)"
+        "by": "Claude (septa-92: re-read; the decisions endpoint's post-seal event is described in CYBERSECURITY and CURRENT_STAGE; the data layer and test layout claims are unchanged)"
       }
     },
     "docs/HANDOFFS.md": {
@@ -309,7 +309,7 @@
         "on": "2026-09-29",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
-          "backend/tests": "d8136c8484c171f607510a63934f2f09e1e50f9aa517f3814cc4f00d4afd10b3",
+          "backend/tests": "5c63921bd97a6a2479736987edca65433f5fa031e1a615ffab8d03e75d04bca2",
           "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "c488a844dd07e837e2d22c4b661f4efd3becea08b2315052affe794a0cd78fa6",
@@ -323,7 +323,7 @@
       },
       "last_read": {
         "on": "2026-09-29",
-        "by": "Claude (septa-91/93: integration row names test_analysis_api.py; the new unit test is covered by the unit row's description)"
+        "by": "Claude (septa-92: re-read; the decisions endpoint's post-seal event is described in CYBERSECURITY and CURRENT_STAGE; the data layer and test layout claims are unchanged)"
       }
     },
     "docs/UIX.md": {
@@ -334,12 +334,12 @@
       "baseline": {
         "on": "2026-09-29",
         "sha256": {
-          "frontend/src": "d4535fd4ded6b836f65fbcfd70cff66449421d35181642a93101201d2e5f2418"
+          "frontend/src": "44ba269702f8216ee79387bc427fedf3b54d24cb1f0dfdb7a497b303a9322080"
         }
       },
       "last_read": {
         "on": "2026-09-29",
-        "by": "Claude (septa-91: §2 rewritten for /analyze, the home page, the regrouped nav and the Problem triage title; persona table's ANALYST row updated; two register citations re-cited)"
+        "by": "Claude (septa-92: a row for the agentcenter connector and its tests; UIX §2 describes the home panel and ?suggestion=; citations re-cited)"
       }
     },
     "docs/ROADMAP.md": {
@@ -350,16 +350,16 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-09-26",
+        "on": "2026-09-29",
         "sha256": {
           "packages/causal-core/src/causal_core": "fee739ab430ee5145e6e125ab755d0e3d2cb6c08bdc4b45c0f58857b21fb7686",
-          "conformance/declared_not_implemented.json": "1f0db627181a27f6d2369de115ae6bad6f98020aa68f04c7a6b75e75d7cc62e9",
-          "docs/CURRENT_STAGE.md": "d32ddbc9b854d3c2af42ee17a37de2526182a13b87f9f789842edc04f659bae6"
+          "conformance/declared_not_implemented.json": "78c12d64bc6400fb9e82c77cae9a6ac2688df48b79d613881f3addf5d48631ff",
+          "docs/CURRENT_STAGE.md": "2458146c24913c59f4ee10afba498faea7893fa3629f55d017e1efa926d890d2"
         }
       },
       "last_read": {
-        "on": "2026-09-26",
-        "by": "Claude (housekeeping: the only change in the code these docs describe is the ledger id in comments, septa-62 -> septa-70 for the sensitivity recording; the docs' own references were corrected the same way; no claim moved)"
+        "on": "2026-09-29",
+        "by": "Claude (septa-91/92: frontend paragraph and quickstart name /analyze and the second-brain suggestions; ROADMAP's frontend-views status adds them; the rest re-read against CURRENT_STAGE, unchanged)"
       }
     },
     "SECURITY.md": {
@@ -375,7 +375,7 @@
       "baseline": {
         "on": "2026-09-29",
         "sha256": {
-          "backend/src/middleware": "ac3078aaf5abc666fd960af2bbe04b0462663a637f6a74c5d72e9e7b8306c990",
+          "backend/src/middleware": "382780d8717bb592eb4ddc1d9e21dcd0227129be3ba5c9d60815c0ef4ee7de0a",
           "backend/src/api/governance.py": "c2ab8a061fe056b835dbb9097b147f414437df0ca702708c3e923b23c8d5751c",
           "backend/src/api/interventions.py": "928915a5bb49c3e1d993fc0da88ca6d1ac05bb1923afc6c3a0f248194d229e43",
           "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
@@ -385,7 +385,7 @@
       },
       "last_read": {
         "on": "2026-09-29",
-        "by": "Claude (septa-91: read the RBAC sections against rbac.py; four analysis routes added to the §4.0 table and the any-role reads; SECURITY.md's stale 'reads need only a valid token' corrected to any platform role, as the matrix and test_rbac_matrix enforce)"
+        "by": "Claude (septa-92: brain reads added to the any-role list; the connector's outbound calls stated (configured URLs only, decision events without data rows); SECURITY's RBAC section unchanged by two more any-role reads)"
       }
     }
   }

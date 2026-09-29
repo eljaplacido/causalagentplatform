@@ -259,9 +259,14 @@ granted role does not.
 | `POST /api/v1/session/run`, `/incident`, `POST /api/v1/decisions/verify-anchored`, `POST /api/v1/platform/evaluation/calibration`, `POST /api/v1/analysis/check`, `POST /api/v1/analysis/run` | any platform role (the analysis routes compute over the request body and record nothing) |
 | `GET /api/v1/provenance/trace/{id}`, `/export/{id}`, `/invocations/{id}`, `POST /api/v1/provenance/session/{id}/erasure` | `GOVERNANCE_ROLES` |
 
+The second-brain connector (`backend/src/connectors/agentcenter.py`) makes outbound requests
+only to `AGENTCENTER_URL` and `ORACLE_URL`, both unset by default: GETs of suggestions and
+benchmark items, and, only with `AGENTCENTER_EMIT=true`, a POST per recorded decision carrying
+its digest, action text, verdict, benefit and interval and `origin` -- no data rows.
+
 "Any platform role" is one of `viewer`, `analyst`, `graph_author`, `governance_officer`,
 `platform_engineer`, `agent`, `sre`: a valid token with none of them is refused. Every other
-read (decisions, models, incidents, interventions, platform metrics, session state, analysis examples) needs any
+read (decisions, models, incidents, interventions, platform metrics, session state, analysis examples, second-brain suggestions) needs any
 platform role; until 2026-09-26 those 21 reads needed only a valid token. Session state is
 also bounded by ownership: reading, resuming or citing a session in `/check` needs the user
 who started it or a governance role (`rbac.may_use_session`), and a session with no recorded

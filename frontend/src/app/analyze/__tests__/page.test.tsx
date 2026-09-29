@@ -18,7 +18,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-const { analysisMock, params } = vi.hoisted(() => ({
+const { analysisMock, brainMock, params } = vi.hoisted(() => ({
+  brainMock: { suggestions: vi.fn(), data: vi.fn() },
   analysisMock: {
     examples: vi.fn(),
     example: vi.fn(),
@@ -31,7 +32,7 @@ const { analysisMock, params } = vi.hoisted(() => ({
 
 vi.mock("@/lib/analysis", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/analysis")>();
-  return { ...actual, analysisApi: analysisMock };
+  return { ...actual, analysisApi: analysisMock, brainApi: brainMock };
 });
 
 vi.mock("next/navigation", () => ({
@@ -112,6 +113,7 @@ const RESULT: CausalResult = {
 
 beforeEach(() => {
   Object.values(analysisMock).forEach((m) => m.mockReset());
+  Object.values(brainMock).forEach((m) => m.mockReset());
   params.value = new URLSearchParams();
   analysisMock.examples.mockResolvedValue([EXAMPLE]);
   analysisMock.example.mockResolvedValue(EXAMPLE);
@@ -120,6 +122,48 @@ beforeEach(() => {
 });
 
 describe("/analyze", () => {
+  it("opens a second-brain hypothesis with its data, and records where it came from", async () => {
+    const user = userEvent.setup();
+    params.value = new URLSearchParams("suggestion=oracle:H-01");
+    brainMock.suggestions.mockResolvedValue({
+      enabled: true, project: "p", emit: true, sources: [],
+      suggestions: [{
+        id: "oracle:H-01", source: "oracle.hypothesis", kind: "experiment",
+        title: "Route code tasks to the dense writer", why: "cheap to try", project: "agentcenter",
+        detail: [], zone: null, rung: null, time: null,
+        study: { graph: "arm -> outcome", treatment: "arm", outcome: "outcome", design: "randomized",
+          estimand: "ate", action: "route code tasks", direction: "increase",
+          minimum_worthwhile_effect: 0.05, arms: { "1": "dense", "0": "MoE" },
+          outcome_label: "item passed" },
+        data: { fetchable: true, builder: "bench_pair", note: "" },
+      }],
+    });
+    const cols = { item: ["a", "a"], arm: [1, 0], outcome: [1, 0] };
+    brainMock.data.mockResolvedValue({ suggestion_id: "oracle:H-01", columns: cols,
+      sources: ["agentcenter:runs:T1 (1 items)"], note: "Both arms answered the same items." });
+    analysisMock.check.mockResolvedValue({ ...checkOk([]), identification: { ...checkOk([]).identification!, certificate: { ...checkOk([]).identification!.certificate!, strategy: "randomized", adjustment_set: [] } } });
+    analysisMock.decide.mockResolvedValue({
+      verdict: "experiment", explanation: "x", decision: { experiment: null, what_would_change_it: [] },
+      outcome: RESULT, record: { sequence: 1, entry_digest: "sha256:0123456789abcdef0123" }, narrative: null,
+    });
+    render(<AnalyzeRoute />);
+
+    expect(await screen.findByText(/from your second brain: H-01/i)).toBeInTheDocument();
+    expect(screen.getByText(/arm = 1: dense · arm = 0: MoE/)).toBeInTheDocument();
+    expect(await screen.findByText(/both arms answered the same items/i)).toBeInTheDocument();
+    expect(brainMock.data).toHaveBeenCalledWith("oracle:H-01");
+    await waitFor(() =>
+      expect(analysisMock.check).toHaveBeenLastCalledWith(
+        expect.objectContaining({ graph: "arm -> outcome", treatment: "arm", outcome: "outcome", query: { design: "randomized" } })
+      )
+    );
+    await user.click(await screen.findByRole("button", { name: /estimate the effect/i }));
+    await user.click(await screen.findByRole("button", { name: /decide and record/i }));
+    expect(analysisMock.decide).toHaveBeenCalledWith(
+      expect.objectContaining({ origin: "oracle:H-01", action: "route code tasks", minimum_worthwhile_effect: 0.05, data: cols })
+    );
+  });
+
   it("runs an example from data to a recorded decision", async () => {
     const user = userEvent.setup();
     params.value = new URLSearchParams("example=email-campaign");

@@ -252,6 +252,8 @@ export interface DecideRequest extends RunRequest {
   harm_threshold: number;
   can_randomize: boolean;
   narrate?: boolean;
+  /** Where the question came from (e.g. `oracle:H-01`); sent on to agentcenter. */
+  origin?: string;
 }
 
 export interface DecideResponse {
@@ -418,3 +420,65 @@ export function fmt(x: number | null | undefined, digits = 3): string {
   if (a >= 1000) return x.toLocaleString(undefined, { maximumFractionDigits: 0 });
   return Number(x.toPrecision(digits)).toString();
 }
+
+// ── Second brain (/api/v1/brain: agentcenter and its Oracle) ─────────────────
+
+export interface StudyPrefill {
+  graph: string;
+  treatment: string;
+  outcome: string;
+  design: Design;
+  estimand: Estimand;
+  action: string | null;
+  direction: Direction | null;
+  minimum_worthwhile_effect: number | null;
+  arms: Record<string, string>;
+  outcome_label: string | null;
+}
+
+export interface Suggestion {
+  id: string;
+  source: "oracle.hypothesis" | "oracle.review" | "radar";
+  kind: "experiment" | "next_step" | "improvement";
+  title: string;
+  why: string;
+  project: string | null;
+  detail: string[];
+  zone: string | null;
+  rung: string | null;
+  study: StudyPrefill | null;
+  data: { fetchable: boolean; builder: string; note: string } | null;
+  time: string | null;
+}
+
+export interface SuggestionSource {
+  name: string;
+  url: string | null;
+  reachable: boolean;
+  error: string | null;
+  count: number;
+}
+
+export interface SuggestionsResponse {
+  enabled: boolean;
+  project: string;
+  emit: boolean;
+  sources: SuggestionSource[];
+  suggestions: Suggestion[];
+}
+
+export interface BoundData {
+  suggestion_id: string;
+  columns: Columns;
+  sources: string[];
+  note: string;
+}
+
+export const brainApi = {
+  suggestions: () => api.get<SuggestionsResponse>("/api/v1/brain/suggestions"),
+  /** `id` is the suggestion id, `oracle:H-01`, or the bare hypothesis id. */
+  data: (id: string) =>
+    api.get<BoundData>(
+      `/api/v1/brain/suggestions/${encodeURIComponent(id.replace(/^oracle:/, ""))}/data`
+    ),
+};

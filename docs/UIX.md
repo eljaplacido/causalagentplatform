@@ -55,6 +55,14 @@ persona's page. How much of each view's surface below is built varies (see §4.2
   checks, E-value and balance; or, for a refusal, the reason and what would make the question
   answerable. "Decide and record" sends the same inputs to `POST /api/v1/decisions`, which re-runs
   the analysis and seals the verdict. Jargon carries its definition on hover or focus (`Term`).
+  `?suggestion=oracle:H-01` opens one of the owner's second-brain hypotheses (below) prefilled
+  from its spec (graph, arms, question, action, worthwhile effect), with its data when
+  agentcenter can serve it, and the recorded decision carries `origin: "oracle:H-01"`.
+- **Home's "From your second brain" panel** shows `GET /api/v1/brain/suggestions`: the
+  agentcenter Oracle's hypotheses (zone, evidence rung, whether their data is available here,
+  "Open as an analysis"), its review queue's next steps (with how), and the latest learning
+  radar's improvement targets, filterable by project; each source's reachability; and whether
+  decisions are reported back. With the connector unconfigured it says which variables to set.
 - **`/workbench` (DAG Workbench)** shows the fragments and their edges, and proposes a new fragment
   from existing edges through `POST /api/semantic/drafts`. The drafter must classify the situation
   (a declared Cynefin domain, DISORDER not offered, or a reasoning session's id) and name the

@@ -155,8 +155,10 @@ priority first, and the priorities put hardening the platform before new estimat
   causal graph store and Kafka streaming were claimed and never built, and are not needed by the
   product, so the claims were withdrawn and the idle Kafka and Redis services removed
   (`econml-pymc`, `rust-crates`, `neo4j-graph-store`, `kafka-streaming` in `left_the_list`).
-  Of the frontend views, the decision ledger (`/decisions`) and the assumption registry
-  (`/registry`) are built (`septa-24`); the DAG Workbench proposes a fragment through the governed
+  Of the frontend views, the analysis page (`/analyze`: data, question, graph checked live,
+  answer, decision; `septa-91`), the decision ledger (`/decisions`) and the assumption registry
+  (`/registry`) are built (`septa-24`), and the owner's second brain (agentcenter) feeds
+  suggestions in and receives recorded decisions (`septa-92`); the DAG Workbench proposes a fragment through the governed
   draft route but stays `partial` (`dag-workbench`): it authors no new edges, and its e2e spec
   stubs the backend.
 
