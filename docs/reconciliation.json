@@ -26,18 +26,18 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-09-26",
+        "on": "2026-09-29",
         "sha256": {
           "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
           "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d",
           "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "d32ddbc9b854d3c2af42ee17a37de2526182a13b87f9f789842edc04f659bae6"
+          "docs/CURRENT_STAGE.md": "6c572beca6fbf203a74c38286ae656bae131f65dfd32abb283c00b2ee8f01160"
         }
       },
       "last_read": {
-        "on": "2026-09-26",
-        "by": "Claude (housekeeping: the only change in the code these docs describe is the ledger id in comments, septa-62 -> septa-70 for the sensitivity recording; the docs' own references were corrected the same way; no claim moved)"
+        "on": "2026-09-29",
+        "by": "Claude (septa-91: re-read against the CURRENT_STAGE rows added for the analysis surface; every README/ROADMAP claim still holds -- they name no /analyze yet, which the stacked second-brain PR adds)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -350,16 +350,16 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-09-26",
+        "on": "2026-09-29",
         "sha256": {
           "packages/causal-core/src/causal_core": "fee739ab430ee5145e6e125ab755d0e3d2cb6c08bdc4b45c0f58857b21fb7686",
-          "conformance/declared_not_implemented.json": "1f0db627181a27f6d2369de115ae6bad6f98020aa68f04c7a6b75e75d7cc62e9",
-          "docs/CURRENT_STAGE.md": "d32ddbc9b854d3c2af42ee17a37de2526182a13b87f9f789842edc04f659bae6"
+          "conformance/declared_not_implemented.json": "0baea3a09edfcda8067bd4e8d7c1922b2b164faa0ec94520fdca54f3ff3c2162",
+          "docs/CURRENT_STAGE.md": "6c572beca6fbf203a74c38286ae656bae131f65dfd32abb283c00b2ee8f01160"
         }
       },
       "last_read": {
-        "on": "2026-09-26",
-        "by": "Claude (housekeeping: the only change in the code these docs describe is the ledger id in comments, septa-62 -> septa-70 for the sensitivity recording; the docs' own references were corrected the same way; no claim moved)"
+        "on": "2026-09-29",
+        "by": "Claude (septa-91: re-read against the CURRENT_STAGE rows added for the analysis surface; every README/ROADMAP claim still holds -- they name no /analyze yet, which the stacked second-brain PR adds)"
       }
     },
     "SECURITY.md": {
