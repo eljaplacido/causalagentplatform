@@ -45,8 +45,13 @@ WORKDIR /app
 # Non-root user (security requirement from CYBERSECURITY.md)
 RUN groupadd -r causal && useradd -r -g causal causal
 
-# Install runtime-only system deps
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install runtime-only system deps, and Debian's security updates: the pinned base
+# image lags the archive (2026-10-01: openssl CVE-2026-75804/-84782 and pcre2
+# CVE-2026-103111 were fixed in deb13u3 while python:3.12-slim still shipped deb13u2,
+# and the image scan fails a HIGH finding that has a fix). The digest still pins
+# everything else; a base-image bump makes this a no-op until the next lag.
+RUN apt-get update && apt-get upgrade -y --no-install-recommends \
+    && apt-get install -y --no-install-recommends \
     libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
