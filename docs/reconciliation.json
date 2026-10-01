@@ -26,18 +26,18 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-09-29",
+        "on": "2026-10-01",
         "sha256": {
           "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
           "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d",
-          "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
+          "frontend/package.json": "b0e15ea1eeb124059f4cb0a864fcd0f7b6ed423a60648fce6aa7e9de5c13ebcd",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docs/CURRENT_STAGE.md": "2458146c24913c59f4ee10afba498faea7893fa3629f55d017e1efa926d890d2"
         }
       },
       "last_read": {
-        "on": "2026-09-29",
-        "by": "Claude (septa-91/92: frontend paragraph and quickstart name /analyze and the second-brain suggestions; ROADMAP's frontend-views status adds them; the rest re-read against CURRENT_STAGE, unchanged)"
+        "on": "2026-10-01",
+        "by": "Claude (npm bumps @types/node 22.20.4, @tanstack/react-query 5.104, lucide-react 0.577: neither doc names these packages or versions; Node prerequisites (>=20, CI on 24) unchanged)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -273,21 +273,21 @@
         "backend/scripts"
       ],
       "baseline": {
-        "on": "2026-09-26",
+        "on": "2026-10-01",
         "sha256": {
           "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
           "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
-          "frontend/package.json": "fd25b98cdf4bc076a84479904efbc1aec51f2085cc3c97067977f7803889215b",
+          "frontend/package.json": "b0e15ea1eeb124059f4cb0a864fcd0f7b6ed423a60648fce6aa7e9de5c13ebcd",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
           ".env.example": "c1b1272a098696c6c0e72ba533fca78db4060da7c549715d14fb1167656e906a",
           "backend/scripts": "adfe996282f443b9f37340ccda7e0e85afae2ad77fbed2455cc8dc6a63dc987b"
         }
       },
       "last_read": {
-        "on": "2026-09-26",
-        "by": "Claude (merge #48 into #49, contract 0.13.0: gate lists name T9, T10 and C0 together (README, benchmarks README, AGENTS, skills, QUICKSTART, TESTING_CICD); ROADMAP robustness row has overlap (T10) and Rosenbaum (T9), positivity moved to done; CURRENT_STAGE gates list adds T10, the kernel-limits bullet keeps this branch's overlap text, package row restored from collected counts 256/146/43)"
+        "on": "2026-10-01",
+        "by": "Claude (npm bumps @types/node 22.20.4, @tanstack/react-query 5.104, lucide-react 0.577: neither doc names these packages or versions; Node prerequisites (>=20, CI on 24) unchanged)"
       }
     },
     "docs/TESTING_CICD.md": {
