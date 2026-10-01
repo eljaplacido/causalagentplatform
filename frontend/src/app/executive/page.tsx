@@ -27,7 +27,6 @@ import {
   GitBranch,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { PersonaSelector } from "@/components/shared/PersonaSelector";
 import { platformApi } from "@/lib/api";
 
 // ─── Local types ──────────────────────────────────────────────────────────────
@@ -277,9 +276,6 @@ export default function ExecutivePage() {
         <h1 className="text-sm font-bold text-foreground">Causal Platform</h1>
         <Briefcase className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
         <span className="text-sm text-muted-foreground">Manager Dashboard</span>
-        <div className="ml-auto">
-          <PersonaSelector layout="dropdown" className="w-48" />
-        </div>
       </header>
 
       <main className="flex-1 overflow-y-auto p-4 space-y-8 max-w-5xl mx-auto w-full">

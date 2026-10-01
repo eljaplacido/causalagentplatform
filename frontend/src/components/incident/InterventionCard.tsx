@@ -5,7 +5,8 @@
  *
  * UX contract (US-11, US-12):
  *   ALWAYS shows approve + reject buttons regardless of Guardian verdict state.
- *   Human agency must always be one click away.
+ *   Human agency must always be one click away -- until a human has decided:
+ *   a recorded decision disables both and is shown (the first decision stands).
  *
  * Progressive disclosure:
  *   Level 0: recommendation + confidence + approve/reject
@@ -21,7 +22,7 @@ import {
   AlertCircle,
   DollarSign,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatTimestamp } from "@/lib/utils";
 import { GuardianVerdictBadge } from "@/components/shared/GuardianVerdictBadge";
 import { EpistemicConfidenceBadge } from "@/components/shared/EpistemicConfidenceBadge";
 import type { Intervention } from "@/lib/types";
@@ -166,7 +167,8 @@ export function InterventionCard({
     await submitDecision("reject");
   }
 
-  const actionDisabled = isSubmitting || isActionInFlight;
+  const decided = intervention.humanDecision;
+  const actionDisabled = isSubmitting || isActionInFlight || Boolean(decided);
 
   return (
     <article
@@ -208,11 +210,21 @@ export function InterventionCard({
         {/* Effect estimate */}
         <EffectEstimateBar intervention={intervention} />
 
-        {/* Confidence */}
-        <EpistemicConfidenceBadge
-          overallConfidence={intervention.confidence}
-          showMeter={true}
-        />
+        {/* Confidence -- the recommendation's own, as the agent stated it. It is
+            not a confidence in an effect: no effect was estimated for it. */}
+        <div className="space-y-1" data-testid="recommendation-confidence">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Recommendation confidence
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            How confident the agent that proposed this is in the recommendation. It is not a
+            confidence in an effect estimate.
+          </p>
+          <EpistemicConfidenceBadge
+            overallConfidence={intervention.confidence}
+            showMeter={true}
+          />
+        </div>
 
         {/* Assumptions count */}
         <button
@@ -295,6 +307,20 @@ export function InterventionCard({
           </p>
         )}
       </div>
+
+      {/* Already decided: the first decision stands, so none is offered again */}
+      {decided && (
+        <p
+          data-testid="intervention-decided"
+          data-decision={decided}
+          className="border-t border-border px-4 pt-3 text-xs text-foreground"
+        >
+          Decided: <strong>{decided === "APPROVED" ? "Approved" : "Rejected"}</strong>
+          {intervention.humanDecisionBy ? ` by ${intervention.humanDecisionBy}` : ""}
+          {intervention.humanDecisionAt ? ` at ${formatTimestamp(intervention.humanDecisionAt)}` : ""}.
+          {" "}A second decision would not be recorded.
+        </p>
+      )}
 
       {/* Action footer — ALWAYS visible per UX contract */}
       <div className="flex items-center gap-2 border-t border-border p-4">

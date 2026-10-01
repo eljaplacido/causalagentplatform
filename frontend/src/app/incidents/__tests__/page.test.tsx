@@ -80,6 +80,7 @@ async function cardVerdict() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  interventionApiMock.decisions.mockResolvedValue([]);
 });
 
 describe("IncidentsPage — intervention decisions", () => {

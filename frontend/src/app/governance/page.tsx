@@ -32,10 +32,10 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ShieldCheck, RefreshCw, AlertTriangle } from "lucide-react";
 import { AuditLogPanel } from "@/components/shared/AuditLogPanel";
-import { PersonaSelector } from "@/components/shared/PersonaSelector";
 import { ReviewQueue } from "@/components/governance/ReviewQueue";
 import { ApprovalPanel } from "@/components/governance/ApprovalPanel";
 import { governanceApi, type ReviewQueueItemResponse } from "@/lib/api";
+import { reviewQueueLabel } from "@/lib/entityNames";
 import { toAuditLogRow } from "@/lib/mappers";
 import type { ReviewQueueItem, AuditLogRow, CynefinDomain } from "@/lib/types";
 
@@ -226,7 +226,7 @@ const MOCK_AUDIT_ENTRIES: AuditLogRow[] = [
 function mapBackendItem(item: ReviewQueueItemResponse): ReviewQueueItem {
   return {
     id: item.id,
-    objectName: item.name,
+    objectName: reviewQueueLabel(item),
     objectType: item.object_type as ReviewQueueItem["objectType"],
     domain: (item.domain?.toUpperCase() ?? "DISORDER") as ReviewQueueItem["domain"],
     riskTier: "MEDIUM",
@@ -481,7 +481,6 @@ export default function GovernancePage() {
               Refresh
             </button>
           )}
-          <PersonaSelector layout="dropdown" className="w-48" />
         </div>
       </header>
 

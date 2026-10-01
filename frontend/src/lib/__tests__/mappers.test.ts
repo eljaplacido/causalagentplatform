@@ -83,11 +83,22 @@ describe("toFragmentCardData — GET /api/semantic/fragments", () => {
     });
   });
 
-  it("derives the verdict from guardianVerdictRef, the only verdict field sent", () => {
+  it("reads APPROVED from guardianVerdictRef only on an APPROVED fragment", () => {
+    // Promotion checks the ref points at an APPROVED verdict, so there it means APPROVED.
     expect(toFragmentCardData(fragment).guardianVerdict).toBe("APPROVED");
     const draft = { ...fragment, approvalStatus: "DRAFT" as const, guardianVerdictRef: null };
-    expect(toFragmentCardData(draft).guardianVerdict).toBe("PENDING");
+    expect(toFragmentCardData(draft).guardianVerdict).toBeNull();
     expect(toFragmentCardData(draft).approvalStatus).toBe("DRAFT");
+  });
+
+  it("claims no verdict for a DRAFT that carries a ref (the seeded drafts' ref is REQUIRES_ESCALATION)", () => {
+    // This rendered as a green "Approved" chip on a DRAFT card: the ref on a
+    // draft was never checked to be an APPROVED verdict.
+    const draft = { ...fragment, approvalStatus: "DRAFT" as const };
+    expect(draft.guardianVerdictRef).not.toBeNull();
+    expect(toFragmentCardData(draft).guardianVerdict).toBeNull();
+    const deprecated = { ...fragment, approvalStatus: "DEPRECATED" as const };
+    expect(toFragmentCardData(deprecated).guardianVerdict).toBeNull();
   });
 
   it("does not invent an approval date the backend never sends", () => {

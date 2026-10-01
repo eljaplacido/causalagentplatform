@@ -14,9 +14,13 @@
  *   - GET /api/v1/models/{name}/impact?to        which recorded decisions a version invalidates
  *   - GET /api/v1/models/{name}/verify           recompute the version history
  *
- * Read-only: registering, revising and reviewing need their role-gated POST
- * routes and are not offered here. Fail-closed: every failed request shows its
- * error; there is no mock registry.
+ * Authoring (components/registry/ModelAuthoring.tsx), each a role-gated POST
+ * whose refusal is shown as the backend words it:
+ *   - POST /api/v1/models                        register a model (name, graph, why)
+ *   - POST /api/v1/models/{name}/versions        revise the head (parent = head digest)
+ *   - POST /api/v1/models/{name}/reviews         approve / refute edges of the head
+ *
+ * Fail-closed: every failed request shows its error; there is no mock registry.
  */
 
 import { useEffect, useState } from "react";
@@ -24,9 +28,13 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Library, RefreshCw, ShieldCheck, ShieldX } from "lucide-react";
 
 import { ImpactReportView } from "@/components/registry/ImpactReportView";
+import {
+  RegisterModelForm,
+  ReviewEdgesForm,
+  ReviseModelForm,
+} from "@/components/registry/ModelAuthoring";
 import { ModelDiffView } from "@/components/registry/ModelDiffView";
 import { ModelVersionView } from "@/components/registry/ModelVersionView";
-import { ViewNav } from "@/components/shared/ViewNav";
 import {
   modelsApi,
   type HistoryReportResponse,
@@ -156,6 +164,14 @@ function ModelPanel({ name }: { name: string }) {
 
       {shown && <ModelVersionView version={shown} />}
 
+      <section aria-label="Revise the model" className="rounded-lg border border-border bg-card p-4">
+        <ReviseModelForm key={head.digest} head={head} />
+      </section>
+
+      <section aria-label="Review edges" className="rounded-lg border border-border bg-card p-4">
+        <ReviewEdgesForm key={head.digest} head={head} />
+      </section>
+
       <section aria-labelledby="diff-heading" className="space-y-2 rounded-lg border border-border bg-card p-4">
         <h2 id="diff-heading" className="text-sm font-bold text-foreground">
           Compare versions
@@ -258,7 +274,6 @@ export default function RegistryPage() {
           <Library className="h-4 w-4 text-muted-foreground" aria-hidden />
           Assumption registry
         </h1>
-        <ViewNav current="registry" className="ml-auto" />
       </header>
 
       <div className="flex flex-1 flex-col lg:flex-row">
@@ -280,7 +295,7 @@ export default function RegistryPage() {
           {models.isError && <ErrorBox what="the registry" error={models.error} />}
           {models.data && list.length === 0 && (
             <p className="text-xs text-muted-foreground" data-testid="models-empty">
-              No model is registered. Models are registered through POST /api/v1/models.
+              No model is registered yet. Register one below.
             </p>
           )}
           <ul className="space-y-1" aria-label="Registered models">
@@ -309,6 +324,9 @@ export default function RegistryPage() {
               </li>
             ))}
           </ul>
+          <div className="rounded-lg border border-border bg-background p-3">
+            <RegisterModelForm onRegistered={setSelected} />
+          </div>
         </aside>
 
         <main className="flex-1 p-4 lg:p-6">

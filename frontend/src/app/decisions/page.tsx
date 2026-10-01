@@ -20,12 +20,12 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, BookLock, RefreshCw, ShieldCheck, ShieldX } from "lucide-react";
+import Link from "next/link";
+import { AlertTriangle, BookLock, FilePlus2, RefreshCw, ShieldCheck, ShieldX } from "lucide-react";
 
 import { CalibrationReportPanel } from "@/components/decisions/CalibrationReportPanel";
 import { DecisionDetail } from "@/components/decisions/DecisionDetail";
 import { VerdictBadge } from "@/components/decisions/VerdictBadge";
-import { ViewNav } from "@/components/shared/ViewNav";
 import {
   decisionsApi,
   type CalibrationReportResponse,
@@ -82,7 +82,14 @@ export default function DecisionsPage() {
           <BookLock className="h-4 w-4 text-muted-foreground" aria-hidden />
           Decision ledger
         </h1>
-        <ViewNav current="decisions" className="ml-auto" />
+        <Link
+          href="/decisions/new"
+          data-testid="new-decision-link"
+          className="ml-auto inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+        >
+          <FilePlus2 className="h-3.5 w-3.5" aria-hidden />
+          New decision
+        </Link>
       </header>
 
       <main className="grid flex-1 gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:p-6">
@@ -155,7 +162,7 @@ export default function DecisionsPage() {
               <p className="text-xs text-muted-foreground" data-testid="records-empty">
                 {action
                   ? `No decision is recorded for the action "${action}".`
-                  : "No decision has been recorded yet. Decisions are made through POST /api/v1/decisions (or causal_decide over MCP)."}
+                  : "No decision has been recorded yet. Start one with New decision (POST /api/v1/decisions), or causal_decide over MCP."}
               </p>
             )}
 

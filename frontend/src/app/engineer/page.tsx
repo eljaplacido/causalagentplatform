@@ -26,7 +26,6 @@ import {
   Loader2,
 } from "lucide-react";
 import { cn, formatTimestamp } from "@/lib/utils";
-import { PersonaSelector } from "@/components/shared/PersonaSelector";
 import { AuditLogPanel } from "@/components/shared/AuditLogPanel";
 import { FragmentCard } from "@/components/graph/FragmentCard";
 import { platformApi, semanticApi, governanceApi } from "@/lib/api";
@@ -387,9 +386,6 @@ export default function EngineerPage() {
         <h1 className="text-sm font-bold text-foreground">Causal Platform</h1>
         <Wrench className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
         <span className="text-sm text-muted-foreground">Platform Health</span>
-        <div className="ml-auto">
-          <PersonaSelector layout="dropdown" className="w-48" />
-        </div>
       </header>
 
       {/* Status summary bar (US-01) */}
@@ -437,7 +433,15 @@ export default function EngineerPage() {
           </>
         )}
         <span className="ml-auto text-muted-foreground">
-          Last checked: {formatTimestamp(new Date().toISOString(), { timeStyle: "short" })}
+          {/* When the connector health was last fetched -- a client-side time, so
+              it is not rendered at build time (a build-time clock would differ
+              from the browser's and break hydration, React error #418). */}
+          <span data-testid="last-checked">
+            Last checked:{" "}
+            {connectorsQuery.dataUpdatedAt > 0
+              ? formatTimestamp(new Date(connectorsQuery.dataUpdatedAt).toISOString(), { timeStyle: "short" })
+              : "not yet"}
+          </span>
         </span>
       </div>
 

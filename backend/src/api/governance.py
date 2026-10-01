@@ -165,6 +165,15 @@ class RejectRequest(BaseModel):
     )
 
 
+class ReviewQueueEndpoint(BaseModel):
+    """One end of a queued edge: the stored id and object type, and the entity's
+    name when the id is a causal entity the caller may see (None otherwise)."""
+
+    id: str
+    object_type: str
+    name: str | None = None
+
+
 class ReviewQueueItem(BaseModel):
     id: str
     object_type: str
@@ -172,6 +181,10 @@ class ReviewQueueItem(BaseModel):
     name: str
     approval_status: str
     created_at: str | None
+    #: A CausalEdge's endpoints -- its `name` is only its edge type. None for
+    #: other object types.
+    source: ReviewQueueEndpoint | None = None
+    target: ReviewQueueEndpoint | None = None
 
 
 class AuditLogResponse(BaseModel):

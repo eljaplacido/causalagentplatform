@@ -23,7 +23,6 @@ import { Plus, Activity, AlertTriangle } from "lucide-react";
 import { cn, formatTimestamp } from "@/lib/utils";
 import { ThinkingIndicator } from "@/components/shared/ThinkingIndicator";
 import { IncidentBrief } from "@/components/incident/IncidentBrief";
-import { PersonaSelector } from "@/components/shared/PersonaSelector";
 import {
   sessionApi,
   interventionApi,
@@ -33,6 +32,7 @@ import {
   type InterventionDecisionResponse,
 } from "@/lib/api";
 import type { Incident, ThinkingStage } from "@/lib/types";
+import { applyInterventionDecisions } from "@/lib/mappers";
 
 
 function recordToIncident(record: IncidentRecord): Incident {
@@ -125,9 +125,19 @@ export default function IncidentsPage() {
     let cancelled = false;
     async function loadIncidents() {
       try {
-        const records = await incidentsApi.list({ limit: 50 });
+        // Recorded human decisions come beside the incidents: a decided
+        // intervention must not offer Approve/Reject again.
+        const [records, decisions] = await Promise.all([
+          incidentsApi.list({ limit: 50 }),
+          interventionApi.decisions({ limit: 500 }).catch((err: unknown) => {
+            console.warn("interventionApi.decisions failed", err instanceof Error ? err.message : String(err));
+            return [];
+          }),
+        ]);
         if (cancelled) return;
-        const mapped = records.map(recordToIncident);
+        const mapped = records
+          .map(recordToIncident)
+          .map((inc) => applyInterventionDecisions(inc, decisions));
         setIncidents(mapped);
         if (mapped.length > 0 && !selectedIncidentId) {
           setSelectedIncidentId(mapped[0]!.id);
@@ -259,6 +269,7 @@ export default function IncidentsPage() {
                   : {
                       ...int,
                       guardianVerdict: decision,
+                      humanDecision: decision,
                       ...(reason !== undefined ? { approvalReason: reason } : {}),
                     }
               ),
@@ -331,9 +342,6 @@ export default function IncidentsPage() {
         <h1 className="text-sm font-bold text-foreground">Causal Platform</h1>
         <Activity className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
         <span className="text-sm text-muted-foreground">Incidents</span>
-        <div className="ml-auto flex items-center gap-3">
-          <PersonaSelector layout="dropdown" className="w-48" />
-        </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden">

@@ -35,8 +35,7 @@ import { GitBranch, RefreshCw, AlertTriangle, Search } from "lucide-react";
 
 import { DAGCanvas, type DAGEdge, type DAGNode } from "@/components/graph/DAGCanvas";
 import { FragmentDraftComposer } from "@/components/graph/FragmentDraftComposer";
-import { PersonaSelector } from "@/components/shared/PersonaSelector";
-import { ViewNav } from "@/components/shared/ViewNav";
+import { useEntityNames } from "@/lib/entityNames";
 import {
   semanticApi,
   type CausalEdgeResponse,
@@ -124,7 +123,8 @@ function objectTypeToNodeType(objectType: string): DAGNode["nodeType"] {
  */
 function buildNodesFromEdges(
   edges: CausalEdgeResponse[],
-  fragment: GraphFragmentResponse | null
+  fragment: GraphFragmentResponse | null,
+  nameOf: (id: string) => string
 ): DAGNode[] {
   const seen = new Map<string, DAGNode>();
   const fragStatus: DAGNode["approvalStatus"] = fragment
@@ -136,7 +136,8 @@ function buildNodesFromEdges(
       if (seen.has(ref.id)) continue;
       seen.set(ref.id, {
         id: ref.id,
-        label: ref.id,
+        // The entity's name, or a short id when no entity has this id (lib/entityNames).
+        label: nameOf(ref.id),
         nodeType: objectTypeToNodeType(ref.objectType),
         domain: fragment?.domain ?? edge.domain,
         approvalStatus: fragStatus,
@@ -169,6 +170,7 @@ export default function WorkbenchPage() {
   const [selectedFragmentId, setSelectedFragmentId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const { nameOf } = useEntityNames();
 
   // ── Fragment list ───────────────────────────────────────────────────────────
   const {
@@ -228,8 +230,8 @@ export default function WorkbenchPage() {
 
   // ── DAG canvas inputs ───────────────────────────────────────────────────────
   const dagNodes: DAGNode[] = useMemo(
-    () => buildNodesFromEdges(edges, effectiveFragment),
-    [edges, effectiveFragment]
+    () => buildNodesFromEdges(edges, effectiveFragment, nameOf),
+    [edges, effectiveFragment, nameOf]
   );
   const dagEdges: DAGEdge[] = useMemo(
     () => edges.map(backendEdgeToDagEdge),
@@ -284,7 +286,6 @@ export default function WorkbenchPage() {
           </span>
         )}
         <div className="ml-auto flex items-center gap-3">
-          <ViewNav current="workbench" />
           {!fragmentsLoading && (
             <button
               type="button"
@@ -296,7 +297,6 @@ export default function WorkbenchPage() {
               Refresh
             </button>
           )}
-          <PersonaSelector layout="dropdown" className="w-48" />
         </div>
       </header>
 
@@ -501,14 +501,14 @@ export default function WorkbenchPage() {
                   <div className="space-y-3">
                     <header className="flex items-baseline gap-2">
                       <h3 className="text-sm font-bold text-foreground">
-                        <span className="font-mono">
-                          {selectedEdge.source.id}
+                        <span className="font-mono" title={selectedEdge.source.id}>
+                          {nameOf(selectedEdge.source.id)}
                         </span>{" "}
                         <span className="text-muted-foreground">
                           —{selectedEdge.edgeType}→
                         </span>{" "}
-                        <span className="font-mono">
-                          {selectedEdge.target.id}
+                        <span className="font-mono" title={selectedEdge.target.id}>
+                          {nameOf(selectedEdge.target.id)}
                         </span>
                       </h3>
                       <span

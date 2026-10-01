@@ -451,6 +451,7 @@ _ASSUMPTIONS = _table("assumptions", *_ASSUMPTION_COLUMNS)
 _CAUSAL_EDGES = _table(
     "causal_edges", "id", "edge_type", "domain", "approval_status", "created_at",
     "approved_at", "approved_by", "guardian_verdict_ref", "lineage",
+    "source_id", "source_type", "target_id", "target_type",
 )
 
 #: The object types a review may approve or reject: their table, and the column
@@ -1070,12 +1071,21 @@ class SemanticLayerRegistry:
         governance review queue.
 
         Returns a list of dicts with keys: id, object_type, domain, name,
-        approval_status, created_at.
+        approval_status, created_at -- and, for a CausalEdge, `source` and
+        `target`: {id, object_type, name}, where name is the causal entity's name
+        when the endpoint is an entity the caller's scope can see, else None. An
+        edge's `name` column is only its edge type ("CAUSES"), which says nothing
+        about what it connects.
         """
         results: list[dict[str, Any]] = []
         async with CloudSqlFactory.get_session_factory()() as session:
             for obj_type, (t, name_col) in _REVIEWABLE_TABLES.items():
                 params: dict[str, Any] = {"reviewable": list(_REVIEWABLE), "lim": limit}
+                endpoints = (
+                    (t.c.source_id, t.c.source_type, t.c.target_id, t.c.target_type)
+                    if obj_type == "CausalEdge"
+                    else ()
+                )
                 rows = await session.execute(
                     select(
                         t.c.id,
@@ -1083,6 +1093,7 @@ class SemanticLayerRegistry:
                         t.c.domain,
                         t.c.approval_status,
                         t.c.created_at,
+                        *endpoints,
                     )
                     .where(
                         t.c.approval_status.in_(bindparam("reviewable", expanding=True)),
@@ -1105,9 +1116,50 @@ class SemanticLayerRegistry:
                                 if hasattr(r["created_at"], "isoformat")
                                 else str(r["created_at"])
                             ) if r["created_at"] else None,
+                            **(
+                                {
+                                    "source": {
+                                        "id": str(r["source_id"]),
+                                        "object_type": r["source_type"],
+                                    },
+                                    "target": {
+                                        "id": str(r["target_id"]),
+                                        "object_type": r["target_type"],
+                                    },
+                                }
+                                if endpoints
+                                else {}
+                            ),
                         }
                     )
+
+            await self._name_edge_endpoints(session, results, domains)
 
         # Sort combined results chronologically (oldest first = highest priority)
         results.sort(key=lambda x: x.get("created_at") or "")
         return results[:limit]
+
+    @staticmethod
+    async def _name_edge_endpoints(
+        session: AsyncSession, rows: list[dict[str, Any]], domains: Collection[str] | None
+    ) -> None:
+        """Set each queued edge endpoint's `name` from causal_entities, within `domains`.
+
+        An endpoint whose id is no entity -- or an entity outside the caller's
+        scope -- keeps name None: the id is all the queue can truthfully show.
+        """
+        ends = [row[k] for row in rows for k in ("source", "target") if k in row]
+        if not ends:
+            return
+        t = _CAUSAL_ENTITIES
+        params: dict[str, Any] = {"ids": sorted({e["id"] for e in ends})}
+        found = await session.execute(
+            select(t.c.id, t.c.name).where(
+                t.c.id.in_(bindparam("ids", expanding=True)),
+                *_domain_filter(t, domains, params),
+            ),
+            params,
+        )
+        names = {str(r["id"]): r["name"] for r in found.mappings()}
+        for e in ends:
+            e["name"] = names.get(e["id"])

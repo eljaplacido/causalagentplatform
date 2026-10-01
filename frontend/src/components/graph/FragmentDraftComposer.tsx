@@ -42,6 +42,7 @@ import {
   type ReviewQueueItemResponse,
 } from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
+import { useEntityNames } from "@/lib/entityNames";
 import type { CynefinDomain, GuardianVerdict } from "@/lib/types";
 
 const KNOWN_VERDICTS: readonly GuardianVerdict[] = [
@@ -55,8 +56,15 @@ function asKnownVerdict(v: string): GuardianVerdict | null {
   return (KNOWN_VERDICTS as readonly string[]).includes(v) ? (v as GuardianVerdict) : null;
 }
 
-export function edgeCaption(e: CausalEdgeResponse): string {
-  return `${e.source.id} —${e.edgeType}→ ${e.target.id}`;
+/**
+ * An edge as "source —TYPE→ target", each end through `nameOf` (the entity's
+ * name, or a short id: lib/entityNames). Without `nameOf`, the ids as stored.
+ */
+export function edgeCaption(
+  e: CausalEdgeResponse,
+  nameOf: (id: string) => string = (id) => id
+): string {
+  return `${nameOf(e.source.id)} —${e.edgeType}→ ${nameOf(e.target.id)}`;
 }
 
 export interface FragmentDraftComposerProps {
@@ -80,6 +88,7 @@ export function FragmentDraftComposer({
 }: FragmentDraftComposerProps) {
   const uid = useId();
   const userId = useAuthStore((s) => s.userId);
+  const { nameOf } = useEntityNames();
 
   const [draftEdges, setDraftEdges] = useState<Record<string, CausalEdgeResponse>>({});
   const [name, setName] = useState("");
@@ -169,7 +178,7 @@ export function FragmentDraftComposer({
         if (!seen.has(ref.id)) {
           seen.set(ref.id, {
             id: ref.id,
-            label: ref.id,
+            label: nameOf(ref.id),
             nodeType: "CausalEntity",
             domain: e.domain,
             approvalStatus: "DRAFT",
@@ -178,7 +187,7 @@ export function FragmentDraftComposer({
       }
     }
     return Array.from(seen.values());
-  }, [edges]);
+  }, [edges, nameOf]);
   const previewEdges: DAGEdge[] = useMemo(
     () =>
       edges.map((e) => ({
@@ -235,7 +244,7 @@ export function FragmentDraftComposer({
                     checked={Boolean(draftEdges[e.id])}
                     onChange={() => toggle(e)}
                   />
-                  <span className="font-mono">{edgeCaption(e)}</span>
+                  <span className="font-mono">{edgeCaption(e, nameOf)}</span>
                   <span className="text-muted-foreground">({e.approvalStatus})</span>
                 </label>
               </li>
@@ -255,12 +264,12 @@ export function FragmentDraftComposer({
             <ul aria-labelledby={`${uid}-draft-edges`} className="space-y-0.5">
               {edges.map((e) => (
                 <li key={e.id} className="flex items-center gap-2 text-xs" data-testid="draft-edge">
-                  <span className="font-mono">{edgeCaption(e)}</span>
+                  <span className="font-mono">{edgeCaption(e, nameOf)}</span>
                   <button
                     type="button"
                     onClick={() => toggle(e)}
                     disabled={locked}
-                    aria-label={`Remove ${edgeCaption(e)} from the draft`}
+                    aria-label={`Remove ${edgeCaption(e, nameOf)} from the draft`}
                     className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
                   >
                     <X className="h-3 w-3" aria-hidden />

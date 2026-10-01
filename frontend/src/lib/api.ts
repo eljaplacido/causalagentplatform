@@ -283,6 +283,20 @@ export interface ReviewQueueItemResponse {
   /** DRAFT or UNDER_REVIEW -- the queue lists only objects pending review. */
   approval_status: ApprovalStatus;
   created_at: string | null;
+  /**
+   * A CausalEdge's endpoints: ids and object types as stored, and the entity
+   * name when the id is a semantic-layer entity (null otherwise). Absent on
+   * other object types, and from a backend that predates them.
+   */
+  source?: ReviewQueueEndpoint | null;
+  target?: ReviewQueueEndpoint | null;
+}
+
+/** One end of a queued edge (governance.py ReviewQueueEndpoint). */
+export interface ReviewQueueEndpoint {
+  id: string;
+  object_type: string;
+  name: string | null;
 }
 
 /**
@@ -741,8 +755,151 @@ export interface CalibrationReportResponse {
   note: string;
 }
 
+// ─── Making a decision (POST /api/v1/decisions) ──────────────────────────────
+
+/** One cell of a data column (decisions.py Cell). */
+export type DecideCell = number | string | boolean | null;
+
+/** decisions.py ModelSelector: a registered model version; the head when version is omitted. */
+export interface ModelSelectorBody {
+  name: string;
+  version?: number;
+  digest?: string;
+}
+
+/**
+ * The fields of decisions.py DecideRequest this client sends. Exactly one of
+ * `graph` (inline text) and `model` (registered) is given; the backend refuses
+ * both or neither with 422. Fields left out take the backend's defaults
+ * (estimand "ate", can_randomize true, no query options, default policies).
+ */
+export interface DecideRequestBody {
+  action: string;
+  graph?: string;
+  model?: ModelSelectorBody;
+  treatment: string;
+  outcome: string;
+  direction: "increase" | "decrease";
+  data: Record<string, DecideCell[]>;
+  risk_class?: "low" | "medium" | "high";
+  reversible?: boolean;
+  /** >= 0 */
+  minimum_worthwhile_effect?: number;
+  /** >= 0 */
+  harm_threshold?: number;
+}
+
+/** causal_core.contract.Claim: a number prose may show, bound to the field it came from. */
+export interface KernelClaim {
+  id: string;
+  value: number;
+  /** The kernel's own rendering of `value` (4 significant digits). */
+  text: string;
+  unit: string | null;
+  /** JSON pointer into the result that holds the value. */
+  path: string;
+}
+
+/** causal_core.contract.Interval */
+export interface KernelInterval {
+  level: number;
+  lo: number;
+  hi: number;
+  method: string;
+}
+
+/** causal_core.contract.EstimateRecord */
+export interface KernelEstimate {
+  estimator: string;
+  family: string;
+  estimand: string;
+  point: number;
+  se: number | null;
+  ci: KernelInterval | null;
+  ci_null_reason?: string | null;
+  n_used: number;
+  assumptions: string[];
+  details: Record<string, number | string>;
+}
+
+/** causal_core.contract.IdentificationCertificate (the fields the page shows; the rest pass through). */
+export interface KernelCertificate {
+  status: string;
+  strategy: string | null;
+  tier: string;
+  estimand: string;
+  adjustment_set: string[];
+  unreviewed_edges: string[];
+  [field: string]: unknown;
+}
+
+/** causal_core.contract.Diagnostics (the fields the page shows; the rest pass through). */
+export interface KernelDiagnostics {
+  n_rows: number;
+  n_used: number;
+  [field: string]: unknown;
+}
+
+/** causal_core.contract.CausalResult */
+export interface KernelResult {
+  kind: "result";
+  status: "supported" | "provisional" | "contested";
+  query: Record<string, unknown>;
+  certificate: KernelCertificate;
+  primary: KernelEstimate;
+  estimates: KernelEstimate[];
+  diagnostics: KernelDiagnostics;
+  refutations: Array<{ name: string; passed: boolean; [field: string]: unknown }>;
+  sensitivity: Record<string, unknown> | null;
+  triangulation: Record<string, unknown> | null;
+  segments: unknown[];
+  heterogeneity: unknown;
+  sequential: unknown;
+  event_study: unknown[];
+  claims: KernelClaim[];
+  warnings: string[];
+  provenance: Record<string, unknown>;
+  result_digest: string | null;
+}
+
+/** causal_core.contract.Abstention -- a refusal is a result, with its reason. */
+export interface KernelRefusal {
+  kind: "refusal";
+  reason: string;
+  detail: string;
+  missing_information: string[];
+  query: Record<string, unknown> | null;
+  certificate: KernelCertificate | null;
+  diagnostics: KernelDiagnostics | null;
+  provenance: Record<string, unknown>;
+}
+
+/** causal_core.contract.ApparatusFailure */
+export interface KernelApparatusFailure {
+  kind: "apparatus_failure";
+  stage: string;
+  error_type: string;
+  detail: string;
+  provenance: Record<string, unknown>;
+}
+
+export type KernelOutcome = KernelResult | KernelRefusal | KernelApparatusFailure;
+
+/** 200 of POST /api/v1/decisions (decisions.py DecideResponse). */
+export interface DecideResponse {
+  verdict: DecisionVerdict;
+  /** causal_decision.explain: the rationale with its claims rendered, then checks and next step. */
+  explanation: string;
+  decision: DecisionResponse;
+  outcome: KernelOutcome;
+  record: DecisionRecordResponse;
+}
+
 /** Decision ledger — records, chain verification, follow-ups, calibration */
 export const decisionsApi = {
+  /** Analyse, rule and seal into the ledger, in one call. */
+  decide: (body: DecideRequestBody) =>
+    api.post<DecideResponse>("/api/v1/decisions", body),
   list: (params?: { action?: string; limit?: number }) =>
     api.get<DecisionRecordList>(`/api/v1/decisions${toQuery(params)}`),
   verify: () => api.get<ChainReportResponse>("/api/v1/decisions/verify"),
@@ -917,7 +1074,43 @@ export const modelsApi = {
     api.get<HistoryReportResponse>(
       `/api/v1/models/${encodeURIComponent(name)}/verify`
     ),
+  /** POST /api/v1/models (models.py CreateModel): version 1 of a new model. */
+  create: (body: { name: string; graph: string; why: string }) =>
+    api.post<ModelVersionResponse>("/api/v1/models", body),
+  /**
+   * POST /api/v1/models/{name}/versions (models.py ReviseModel). parent_digest
+   * is the head the revision was built on; a stale one is refused with 409.
+   */
+  revise: (name: string, body: { parent_digest: string; graph: string; why: string }) =>
+    api.post<ModelVersionResponse>(
+      `/api/v1/models/${encodeURIComponent(name)}/versions`,
+      body
+    ),
+  /**
+   * POST /api/v1/models/{name}/reviews (models.py ReviewModel): approve or
+   * refute edges of the head. A governance role; never your own edges (403).
+   */
+  review: (
+    name: string,
+    body: { parent_digest: string; reviews: EdgeReviewResponse[] }
+  ) =>
+    api.post<ModelVersionResponse>(
+      `/api/v1/models/${encodeURIComponent(name)}/reviews`,
+      body
+    ),
 };
+
+/**
+ * One row of GET /api/semantic/entities — backend CausalEntity, camelCase. The
+ * fields the UI reads; the rest are left out.
+ */
+export interface CausalEntityResponse {
+  id: string;
+  name: string;
+  entityType: string;
+  domain: string;
+  approvalStatus: ApprovalStatus;
+}
 
 /** Semantic layer — entities, fragments, drafts */
 export const semanticApi = {
@@ -929,7 +1122,7 @@ export const semanticApi = {
   fragment: (id: string) =>
     api.get<GraphFragmentResponse>(`/api/semantic/fragments/${id}`),
   entities: (domain?: string) =>
-    api.get(`/api/semantic/entities${domain ? `?domain=${domain}` : ""}`),
+    api.get<CausalEntityResponse[]>(`/api/semantic/entities${toQuery({ domain })}`),
   entity: (id: string) => api.get(`/api/semantic/entities/${id}`),
   edge: (id: string) => api.get<CausalEdgeResponse>(`/api/semantic/edges/${id}`),
   /**

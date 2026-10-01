@@ -11,14 +11,7 @@ import { useRouter } from "next/navigation";
 import { usePersonaStore } from "@/lib/store";
 import { PersonaSelector } from "@/components/shared/PersonaSelector";
 import type { Persona } from "@/lib/types";
-
-const PERSONA_ROUTES: Record<Persona, string> = {
-  OPERATOR: "/incidents",
-  ANALYST: "/analyst",
-  EXECUTIVE: "/executive",
-  GOVERNANCE: "/governance",
-  ENGINEER: "/engineer",
-};
+import { PERSONA_LANDING as PERSONA_ROUTES } from "@/lib/navigation";
 
 export default function RootPage() {
   const router = useRouter();

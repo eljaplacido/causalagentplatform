@@ -207,6 +207,14 @@ export interface Intervention {
   cost?: string;
   riskTier: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   guardianVerdict: GuardianVerdict;
+  /**
+   * The human decision the interventions API recorded (GET
+   * /api/v1/interventions/decisions), if any. The first decision stands: a
+   * decided intervention offers no second one.
+   */
+  humanDecision?: "APPROVED" | "REJECTED";
+  humanDecisionBy?: string;
+  humanDecisionAt?: string;
   approvalReason?: string;
 }
 

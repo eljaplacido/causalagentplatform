@@ -38,7 +38,12 @@ export interface FragmentCardData {
   usageCount: number;
   version: string;
   approvalStatus: FragmentApprovalStatus;
-  guardianVerdict: GuardianVerdict;
+  /**
+   * The Guardian's verdict when one is known for this fragment -- APPROVED on a
+   * promoted fragment. null when the backend states none the UI can read (every
+   * fragment that is not APPROVED): no chip is shown then.
+   */
+  guardianVerdict: GuardianVerdict | null;
   policyRulesCited?: string[];
   tags: string[];
   createdAt: string; // ISO8601
@@ -213,11 +218,18 @@ export function FragmentCard({
 
       {/* Guardian verdict */}
       <div className="flex items-center justify-between pt-1 border-t border-zinc-100 dark:border-zinc-800">
-        <GuardianVerdictBadge
-          verdict={guardianVerdict}
-          policyRulesCited={policyRulesCited}
-          size="sm"
-        />
+        {guardianVerdict ? (
+          <span className="flex items-center gap-1 text-xs text-muted-foreground" data-testid="fragment-guardian-verdict">
+            Guardian
+            <GuardianVerdictBadge
+              verdict={guardianVerdict}
+              policyRulesCited={policyRulesCited}
+              size="sm"
+            />
+          </span>
+        ) : (
+          <span />
+        )}
 
         {/* Actions */}
         <div className="flex items-center gap-1.5">

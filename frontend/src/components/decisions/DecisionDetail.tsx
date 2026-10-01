@@ -25,7 +25,9 @@ import {
   type DecisionRecordResponse,
   type FollowUpColumns,
   type FollowUpResponse,
+  type KernelClaim,
 } from "@/lib/api";
+import { renderClaim, splitRationale } from "@/lib/claims";
 import { formatTimestamp, verbatim } from "@/lib/utils";
 import { VerdictBadge } from "./VerdictBadge";
 
@@ -43,20 +45,34 @@ function Field({ label, children, testId }: { label: string; children: React.Rea
 /**
  * The recorded rationale keeps the analysis's figures as claim markers
  * (⟦claim:effect⟧): causal_decision.explain fills them from the outcome, which
- * the ledger does not store whole. They are shown as named placeholders, not
- * filled in here -- the recorded evidence below carries the numbers.
+ * the ledger does not store whole. A record read back from the ledger has no
+ * outcome, so its markers are shown as named placeholders -- the recorded
+ * evidence below carries the numbers. When the caller holds the outcome that
+ * produced the decision (the "New decision" flow), `claims` fills each marker
+ * from the claim of that id, as causal_core.claims.render does; a marker with
+ * no such claim stays a placeholder (src/lib/claims.ts).
  */
-export function RationaleText({ text }: { text: string }) {
-  const parts = text.split(/⟦claim:([^⟧]+)⟧/);
+export function RationaleText({ text, claims }: { text: string; claims?: Map<string, KernelClaim> }) {
+  const parts = splitRationale(text, claims);
   return (
     <p className="text-sm text-foreground" data-testid="decision-rationale">
       {parts.map((part, i) =>
-        i % 2 === 1 ? (
-          <code key={i} title="a figure of the analysis; see the evidence below" className="rounded bg-muted px-1 font-mono text-[11px] text-muted-foreground">
-            {part}
-          </code>
+        part.kind === "text" ? (
+          <span key={i}>{part.text}</span>
+        ) : part.claim ? (
+          <span
+            key={i}
+            data-testid="claim-filled"
+            data-claim={part.id}
+            title={`claim ${part.id} = ${part.claim.value} (${part.claim.path})`}
+            className="font-mono font-semibold"
+          >
+            {renderClaim(part.claim)}
+          </span>
         ) : (
-          <span key={i}>{part}</span>
+          <code key={i} data-testid="claim-placeholder" title="a figure of the analysis; see the evidence below" className="rounded bg-muted px-1 font-mono text-[11px] text-muted-foreground">
+            {part.id}
+          </code>
         )
       )}
     </p>
@@ -179,7 +195,14 @@ function FollowUpForm({ record }: { record: DecisionRecordResponse }) {
   );
 }
 
-export function DecisionDetail({ record }: { record: DecisionRecordResponse }) {
+export function DecisionDetail({
+  record,
+  claims,
+}: {
+  record: DecisionRecordResponse;
+  /** The claims of the outcome behind this record, when the caller has it; fills the rationale. */
+  claims?: Map<string, KernelClaim>;
+}) {
   const d = record.decision;
   const ev = d.evidence;
   return (
@@ -195,7 +218,7 @@ export function DecisionDetail({ record }: { record: DecisionRecordResponse }) {
         </p>
       </header>
 
-      <RationaleText text={d.rationale} />
+      <RationaleText text={d.rationale} claims={claims} />
 
       <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs sm:grid-cols-3">
         <Field label="Outcome">{d.request.outcome} ({d.request.direction})</Field>

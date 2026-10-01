@@ -34,8 +34,9 @@ import { Play, RefreshCw, GitBranch, Layers, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CausalApiError, semanticApi, sessionApi, type SessionStateResponse } from "@/lib/api";
 import { toFragmentCardData } from "@/lib/mappers";
+import { useEntityNames } from "@/lib/entityNames";
+import { escalationOf, otherDomainsNamed, parseProposedEdge } from "@/lib/session";
 import { ThinkingIndicator } from "@/components/shared/ThinkingIndicator";
-import { PersonaSelector } from "@/components/shared/PersonaSelector";
 import { CynefinBadge } from "@/components/shared/CynefinBadge";
 import { GuardianVerdictBadge } from "@/components/shared/GuardianVerdictBadge";
 import { EpistemicConfidenceBadge } from "@/components/shared/EpistemicConfidenceBadge";
@@ -70,6 +71,7 @@ export default function AnalystPage() {
   const [activeFragment, setActiveFragment] = useState<string | null>(null);
   const [rightTab, setRightTab] = useState<"proposals" | "detail" | "diff">("proposals");
   const [sessionError, setSessionError] = useState<string | null>(null);
+  const { nameOf, withNames } = useEntityNames();
 
   const { register, handleSubmit, formState: { errors } } = useForm<SessionFormValues>({
     resolver: zodResolver(sessionSchema),
@@ -126,12 +128,21 @@ export default function AnalystPage() {
       ]
     : [];
 
-  const edgeProposals: EdgeProposalData[] = (sessionState?.recommendations ?? []).map(
-    (rec, i) => ({
+  // A recommendation that proposes an edge is shown as one, its ends named by
+  // the semantic layer's entities (or short ids when no entity has the id);
+  // any other recommendation is listed as the backend worded it, ids named.
+  const recommendations = sessionState?.recommendations ?? [];
+  const edgeRecs = recommendations.flatMap((rec) => {
+    const edge = parseProposedEdge(rec.action);
+    return edge ? [{ rec, edge }] : [];
+  });
+  const otherRecs = recommendations.filter((rec) => parseProposedEdge(rec.action) === null);
+  const edgeProposals: EdgeProposalData[] = edgeRecs.map(
+    ({ rec, edge }, i) => ({
       id: `proposal-${i}`,
-      sourceLabel: "Root Cause Candidate",
-      targetLabel: "Observed Outcome",
-      edgeType: "CAUSES",
+      sourceLabel: nameOf(edge.source),
+      targetLabel: nameOf(edge.target),
+      edgeType: edge.edgeType,
       confidence: rec.confidence,
       rationale: rec.rationale,
       evidenceCitations: [],
@@ -183,6 +194,13 @@ export default function AnalystPage() {
   );
 
   const isChaotic = sessionState?.cynefin_domain === "CHAOTIC";
+  const escalation = sessionState ? escalationOf(sessionState) : null;
+  const contradicted = sessionState
+    ? otherDomainsNamed(sessionState.cynefin_domain, [
+        sessionState.draft_explanation,
+        ...sessionState.recommendations.map((r) => r.rationale),
+      ])
+    : [];
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -193,15 +211,20 @@ export default function AnalystPage() {
 
         {sessionState && (
           <div className="flex items-center gap-2 ml-2">
+            <span className="text-xs text-muted-foreground">Classified</span>
             <CynefinBadge domain={sessionState.cynefin_domain} size="sm" />
+            {escalation?.escalated && !isChaotic && (
+              <span
+                data-testid="session-escalated"
+                className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
+              >
+                Escalated to a person: {escalation.reason}
+              </span>
+            )}
             <GuardianVerdictBadge verdict={sessionState.guardian_verdict} size="sm" />
             <EpistemicConfidenceBadge score={sessionState.overall_confidence} size="sm" />
           </div>
         )}
-
-        <div className="ml-auto">
-          <PersonaSelector layout="dropdown" className="w-48" />
-        </div>
       </header>
 
       {/* ── CHAOTIC escalation banner ───────────────────────────────────────── */}
@@ -209,6 +232,20 @@ export default function AnalystPage() {
         <EscalationBanner
           incidentId={sessionState!.session_id}
         />
+      )}
+
+      {/* ── Escalated without being CHAOTIC: say which is which ─────────────── */}
+      {sessionState && escalation?.escalated && !isChaotic && (
+        <div role="status" data-testid="escalation-note" className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+          This session is classified <strong>{sessionState.cynefin_domain}</strong> and was handed to a
+          person because {escalation.reason} (flags: {sessionState.flags.join(", ") || "none"}).
+          {contradicted.length > 0 && (
+            <>
+              {" "}The backend&apos;s escalation text below names {contradicted.join(", ")}; the
+              classification above is the session&apos;s <code>cynefin_domain</code>.
+            </>
+          )}
+        </div>
       )}
 
       {/* ── Main layout ────────────────────────────────────────────────────── */}
@@ -368,7 +405,7 @@ export default function AnalystPage() {
           <div className="flex items-center border-b border-border px-2 pt-1">
             {(
               [
-                { key: "proposals", label: "Proposals", count: edgeProposals.length },
+                { key: "proposals", label: "Proposals", count: recommendations.length },
                 { key: "detail", label: "Node", count: undefined },
                 { key: "diff", label: "Diff", count: undefined },
               ] as const
@@ -401,10 +438,26 @@ export default function AnalystPage() {
             {/* Proposals tab */}
             {rightTab === "proposals" && (
               <div className="space-y-2">
+                {otherRecs.length > 0 && (
+                  <ul className="space-y-2" aria-label="Recommendations" data-testid="session-recommendations">
+                    {otherRecs.map((rec, i) => (
+                      <li key={`${rec.rank}-${i}`} className="rounded-md border border-border p-2 text-xs">
+                        <p className="font-semibold text-foreground">{withNames(rec.action)}</p>
+                        <p className="mt-0.5 text-muted-foreground">{withNames(rec.rationale)}</p>
+                        <p className="mt-1 text-[10px] text-muted-foreground">
+                          rank {rec.rank} · risk {rec.risk_tier} · the recommendation&apos;s own confidence{" "}
+                          {Math.round(rec.confidence * 100)}%
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 {edgeProposals.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center pt-8">
-                    No edge proposals yet. Run an analysis to generate candidates.
-                  </p>
+                  otherRecs.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center pt-8">
+                      No edge proposals yet. Run an analysis to generate candidates.
+                    </p>
+                  )
                 ) : (
                   edgeProposals.map((proposal) => (
                     <EdgeProposal
