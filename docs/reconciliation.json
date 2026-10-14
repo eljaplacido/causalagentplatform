@@ -26,18 +26,18 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-10-01",
+        "on": "2026-10-14",
         "sha256": {
           "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
           "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d",
-          "frontend/package.json": "b0e15ea1eeb124059f4cb0a864fcd0f7b6ed423a60648fce6aa7e9de5c13ebcd",
+          "frontend/package.json": "21affd9af891b9586d0007239dd483fb40b2124ef909baa0fb28670a8bb59192",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docs/CURRENT_STAGE.md": "2458146c24913c59f4ee10afba498faea7893fa3629f55d017e1efa926d890d2"
         }
       },
       "last_read": {
-        "on": "2026-10-01",
-        "by": "Claude (npm bumps @types/node 22.20.4, @tanstack/react-query 5.104, lucide-react 0.577: neither doc names these packages or versions; Node prerequisites (>=20, CI on 24) unchanged)"
+        "on": "2026-10-14",
+        "by": "Claude (npm-audit fix 2026-10-14: next/eslint-config-next 15.5.27, sharp 0.35.5 as an optional frontend dependency, braces allowlisted; read for package versions, Node prerequisites and allowlist claims: none of these docs names the changed versions, Node >=20 / CI on 24 unchanged, TESTING_CICD describes the allowlist mechanism without claiming it is empty)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -51,9 +51,9 @@
         "specs"
       ],
       "baseline": {
-        "on": "2026-09-29",
+        "on": "2026-10-14",
         "sha256": {
-          "conformance/declared_not_implemented.json": "78c12d64bc6400fb9e82c77cae9a6ac2688df48b79d613881f3addf5d48631ff",
+          "conformance/declared_not_implemented.json": "c2e3c8e5e2e5795469cb9b1ac05fb450790172f32056ebcb207de387bdcdf86d",
           "backend/src": "5beef0240413a706f0a4e051e7cb3e5f9de98e47d5e58b380d12daed26291a6a",
           "backend/tests": "5c63921bd97a6a2479736987edca65433f5fa031e1a615ffab8d03e75d04bca2",
           "frontend/src": "44ba269702f8216ee79387bc427fedf3b54d24cb1f0dfdb7a497b303a9322080",
@@ -62,8 +62,8 @@
         }
       },
       "last_read": {
-        "on": "2026-09-29",
-        "by": "Claude (septa-92: a row for the agentcenter connector and its tests; UIX §2 describes the home panel and ?suggestion=; citations re-cited)"
+        "on": "2026-10-14",
+        "by": "Claude (2026-10-14: the register changed only by re-citing dni:dast-not-built to docs/CYBERSECURITY.md:688 after the allowlist paragraph grew; no entry changed status -- status_claims still 23 open / 44 left, so no row or roadmap status moves)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -273,21 +273,21 @@
         "backend/scripts"
       ],
       "baseline": {
-        "on": "2026-10-01",
+        "on": "2026-10-14",
         "sha256": {
           "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
           "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
-          "frontend/package.json": "b0e15ea1eeb124059f4cb0a864fcd0f7b6ed423a60648fce6aa7e9de5c13ebcd",
+          "frontend/package.json": "21affd9af891b9586d0007239dd483fb40b2124ef909baa0fb28670a8bb59192",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
           ".env.example": "c1b1272a098696c6c0e72ba533fca78db4060da7c549715d14fb1167656e906a",
           "backend/scripts": "adfe996282f443b9f37340ccda7e0e85afae2ad77fbed2455cc8dc6a63dc987b"
         }
       },
       "last_read": {
-        "on": "2026-10-01",
-        "by": "Claude (npm bumps @types/node 22.20.4, @tanstack/react-query 5.104, lucide-react 0.577: neither doc names these packages or versions; Node prerequisites (>=20, CI on 24) unchanged)"
+        "on": "2026-10-14",
+        "by": "Claude (npm-audit fix 2026-10-14: next/eslint-config-next 15.5.27, sharp 0.35.5 as an optional frontend dependency, braces allowlisted; read for package versions, Node prerequisites and allowlist claims: none of these docs names the changed versions, Node >=20 / CI on 24 unchanged, TESTING_CICD describes the allowlist mechanism without claiming it is empty)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -306,7 +306,7 @@
         "packages/causal-decision/tests"
       ],
       "baseline": {
-        "on": "2026-09-29",
+        "on": "2026-10-14",
         "sha256": {
           ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
           "backend/tests": "5c63921bd97a6a2479736987edca65433f5fa031e1a615ffab8d03e75d04bca2",
@@ -314,7 +314,7 @@
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "c488a844dd07e837e2d22c4b661f4efd3becea08b2315052affe794a0cd78fa6",
           ".gnomon/ci.sh": "9bd34338c9fb7a397f25f383bee73cde526105c9217e6e1ee60bf0e8c0802956",
-          "scripts": "0bd371c4d9f693a52bf29f3f0c1e2d10e38e11b7001473e46be6c9c187b589cc",
+          "scripts": "9aaf1871b80924a387abe4625f1e50d0e44604c653e7dc7875d19a1a54806f27",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "29568520a660ee325cd3ba990a0e9ba6be64e73b9090aab26b5b4d076d85b951",
           "packages/causal-core/tests": "9100d049011c0d40676f25535f0df4dba0cbd7039acc96e7e1c4b8eab1fbfa3d",
@@ -322,8 +322,8 @@
         }
       },
       "last_read": {
-        "on": "2026-09-29",
-        "by": "Claude (septa-92: re-read; the decisions endpoint's post-seal event is described in CYBERSECURITY and CURRENT_STAGE; the data layer and test layout claims are unchanged)"
+        "on": "2026-10-14",
+        "by": "Claude (npm-audit fix 2026-10-14: next/eslint-config-next 15.5.27, sharp 0.35.5 as an optional frontend dependency, braces allowlisted; read for package versions, Node prerequisites and allowlist claims: none of these docs names the changed versions, Node >=20 / CI on 24 unchanged, TESTING_CICD describes the allowlist mechanism without claiming it is empty)"
       }
     },
     "docs/UIX.md": {
@@ -350,16 +350,16 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-09-29",
+        "on": "2026-10-14",
         "sha256": {
           "packages/causal-core/src/causal_core": "fee739ab430ee5145e6e125ab755d0e3d2cb6c08bdc4b45c0f58857b21fb7686",
-          "conformance/declared_not_implemented.json": "78c12d64bc6400fb9e82c77cae9a6ac2688df48b79d613881f3addf5d48631ff",
+          "conformance/declared_not_implemented.json": "c2e3c8e5e2e5795469cb9b1ac05fb450790172f32056ebcb207de387bdcdf86d",
           "docs/CURRENT_STAGE.md": "2458146c24913c59f4ee10afba498faea7893fa3629f55d017e1efa926d890d2"
         }
       },
       "last_read": {
-        "on": "2026-09-29",
-        "by": "Claude (septa-91/92: frontend paragraph and quickstart name /analyze and the second-brain suggestions; ROADMAP's frontend-views status adds them; the rest re-read against CURRENT_STAGE, unchanged)"
+        "on": "2026-10-14",
+        "by": "Claude (2026-10-14: the register changed only by re-citing dni:dast-not-built to docs/CYBERSECURITY.md:688 after the allowlist paragraph grew; no entry changed status -- status_claims still 23 open / 44 left, so no row or roadmap status moves)"
       }
     },
     "SECURITY.md": {

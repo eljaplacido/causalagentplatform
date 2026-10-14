@@ -10,7 +10,18 @@
     "2026-09-25: empty. Every advisory reported against the backend and kernel environments and",
     "package-lock.json was fixed by raising a floor or upgrading (backend/pyproject.toml,",
     "frontend/package.json, the root package.json's overrides); python-jose, unused, was removed",
-    "with its ecdsa dependency, whose CVE-2024-23342 has no fix upstream."
+    "with its ecdsa dependency, whose CVE-2024-23342 has no fix upstream.",
+    "",
+    "2026-10-14: braces (GHSA-vfj7-8cjw-p6xm) allowlisted; next, sharp, shell-quote and source-map-js",
+    "were fixed by upgrading (next 15.5.27, sharp 0.35.5 pinned in the frontend's optionalDependencies)."
   ],
-  "entries": []
+  "entries": [
+    {
+      "id": "GHSA-vfj7-8cjw-p6xm",
+      "ecosystem": "npm",
+      "package": "braces",
+      "reason": "No patched release exists: 3.0.3 is the latest braces and every version is in the advisory's range. It reaches this repository only through eslint-config-next -> @next/eslint-plugin-next -> fast-glob -> micromatch, a lint-time devDependency that expands glob patterns written in this repository's own ESLint config; no runtime path and no untrusted pattern reaches it, and it is not in the frontend image. Leaves with the next 16 + eslint-config-next 16 move (septa-57) or a braces fix, whichever comes first.",
+      "review_by": "2026-11-15"
+    }
+  ]
 }
