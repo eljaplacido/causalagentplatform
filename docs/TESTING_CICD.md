@@ -204,6 +204,12 @@ known defect does not count as a gate. The benchmark results, and the limits the
 the register (for example `kernel-overlap-detection-limits`), and leave it only when a gate closes them
 (`kernel-triangulation-moderate-n`, closed by T0 v4).
 
+`packages/causal-core/tests/test_metamorphic.py` checks relations that need no ground truth:
+- renaming or reordering columns leaves the answer bit-identical;
+- changing the outcome's units scales the estimate and its standard error exactly;
+- shuffling rows or swapping the arm coding moves the estimate by less than 0.25 SE;
+- doubling the data divides the standard error by √2.
+
 These gates run on simulated data whose answers are known. On real decisions, the platform is to be
 measured by **shadow runs**, which [`shadow/README.md`](../shadow/README.md) describes: studies
 proposed by devbrain and agentcenter, verdicts sealed and not acted on, and a follow-up scored
