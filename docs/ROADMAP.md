@@ -141,7 +141,14 @@ priority first, and the priorities put hardening the platform before new estimat
   the review queue ordered by a risk tier derived from stored fields, with who submitted each
   item (`septa-36`). Open: step 3's remaining estimator (`septa-7`), calibration evidence (`septa-10`: the report
   and its simulated C0 gate are built; real follow-ups are not),
-  and anchoring (`septa-11`).
+  and anchoring (`septa-11`). Real follow-ups are to come from **shadow runs**: studies on real
+  decisions, proposed by devbrain and agentcenter, with verdicts sealed and not acted on. Their
+  context pack is built (`shadow/`, `septa-94`). Still to build: a runtime shadow mode that
+  never emits (`septa-95`), and a round runner with a scorecard (`septa-96`). Beside them, three
+  pieces of test work are queued:
+  - a gated browser test of `/analyze` (`septa-97`);
+  - a G0 gate for an LLM agent driving causal-mcp (`septa-98`);
+  - metamorphic tests of the kernel (`septa-99`).
 - **p3 and p4.** Done: provenance is durable and append-only, with erasure as a tombstone, and
   session runs, Guardian checks and decisions write it (`septa-48`, `septa-16`); semantic objects
   are versioned, never rewritten, and carry lineage from source data to approver (`septa-14`,

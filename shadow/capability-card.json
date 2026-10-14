@@ -1,0 +1,164 @@
+{
+  "_comment": [
+    "What the causal platform can answer, for the systems that propose shadow studies (devbrain on",
+    "the RTX 5090 hub, agentcenter and its Oracle on gx10); see shadow/README.md. Plain words first,",
+    "then the exact CausalQuery fields. packages/causal-decision/tests/test_shadow_pack.py fails when",
+    "this card names a field, design, refusal, verdict or gate the code does not have, misses one it",
+    "does have, or was written against another contract version: re-read the card, then bump",
+    "contract_version."
+  ],
+  "card_version": 1,
+  "contract_version": "0.13.0",
+  "question": "Did this action cause that result, and should we take it? The answer is an estimate with an honest interval and a verdict, or a refusal that says what is missing.",
+  "inputs": {
+    "graph": "A cause-and-effect sketch in the kernel's syntax: 'Z -> X -> Y; Z -> Y'. 'X <-> Y' is an unmeasured common cause, and 'latent U' declares an unmeasured node. A graph node with no data column is treated as unmeasured.",
+    "data": "One table: CSV, Parquet, JSON or JSONL. Over MCP, a data_path under CAUSAL_MCP_DATA_ROOTS; over HTTP (POST /api/v1/analysis/run), the rows themselves.",
+    "query": "The causal_core.contract.CausalQuery fields named per design below. Declare segment_by, minimum_worthwhile_effect, direction and risk_class before seeing any answer.",
+    "minimums": "AnalysisPolicy defaults: at least 30 rows (min_n) and 10 per arm (min_per_arm); fewer is a LOW_N refusal."
+  },
+  "designs": [
+    {
+      "id": "observational",
+      "name": "Effect from ordinary business data",
+      "when": "Nobody ran a test; there is historical data on who got the action and what happened.",
+      "example": "Did the email campaign raise spend? (the email-campaign example)",
+      "query": {"design": "observational", "required": ["treatment", "outcome"], "optional": ["estimand", "adjust_for", "instruments", "treatment_proxies", "outcome_proxies", "negative_control_outcomes", "treatment_levels", "segment_by"]},
+      "data_shape": "One row per unit: the treatment, the outcome, and a column for every measured graph node that drives both.",
+      "how": "The kernel identifies the effect from the graph (back-door, front-door, instrumental variable or proximal), estimates it with doubly robust estimators and influence-function intervals, then refutes and triangulates.",
+      "expect_refusals": ["NON_IDENTIFIABLE", "POSITIVITY", "INVALID_ADJUSTMENT_SET", "WEAK_INSTRUMENT", "LOW_N", "NO_ESTIMATOR"],
+      "gates": ["t0", "t2-ihdp", "t3-lalonde", "t10-positivity"],
+      "trust": "Rests on the graph: an unmeasured common cause missing from it biases the answer. The sensitivity checks below say how strong one would have to be."
+    },
+    {
+      "id": "randomized",
+      "name": "A/B test",
+      "when": "Units were assigned to the action at random.",
+      "example": "Does the new checkout convert better? (the checkout-ab-test example)",
+      "query": {"design": "randomized", "required": ["treatment", "outcome"], "optional": ["estimand", "segment_by", "expected_treated_share"]},
+      "data_shape": "One row per unit: assignment and outcome; pre-treatment covariates sharpen the interval.",
+      "how": "Randomization identifies the effect; covariates are used only for precision.",
+      "expect_refusals": ["LOW_N", "DESIGN_CHECK_FAILED"],
+      "gates": ["t0"],
+      "trust": "Strongest design. A broken traffic split (sample-ratio mismatch) is refused when expected_treated_share is given."
+    },
+    {
+      "id": "sequential",
+      "name": "A/B test watched while it runs",
+      "when": "The team wants to look at the test every day and stop as soon as the answer is clear.",
+      "example": "A checkout test read daily, stopped once it is clearly better or clearly worse.",
+      "query": {"design": "randomized", "required": ["treatment", "outcome", "sequence", "expected_treated_share"], "optional": ["segment_by"]},
+      "data_shape": "One row per unit with an arrival-order column.",
+      "how": "An anytime-valid confidence sequence: the interval is valid at every look, so stopping early does not inflate the error rate. A sample-ratio mismatch is refused.",
+      "expect_refusals": ["DESIGN_CHECK_FAILED", "LOW_N"],
+      "gates": ["t6-sequential"],
+      "trust": "Valid at every look; the interval is about 1.5 times as wide as a single fixed-size read."
+    },
+    {
+      "id": "cluster_randomized",
+      "name": "Test by store, team or region",
+      "when": "Whole groups were assigned together, but outcomes are measured on finer units.",
+      "example": "A pricing test where each store is in or out; outcomes are per order.",
+      "query": {"design": "randomized", "required": ["treatment", "outcome", "cluster"], "optional": ["segment_by"]},
+      "data_shape": "One row per measured unit, with the cluster column; treatment constant within each cluster.",
+      "how": "Cluster-robust (CR2) intervals, so the interval reflects how many groups there are, not how many rows.",
+      "expect_refusals": ["DESIGN_CHECK_FAILED", "LOW_N"],
+      "gates": ["t7-cluster"],
+      "trust": "Needs enough clusters; very unequal cluster sizes are refused."
+    },
+    {
+      "id": "switchback",
+      "name": "On and off by time block",
+      "when": "One shared system cannot be split by customer, so the action alternates by hour or day.",
+      "example": "Delivery or marketplace pricing switched on and off by time block.",
+      "query": {"design": "randomized", "required": ["treatment", "outcome", "cluster", "time", "washout"], "optional": []},
+      "data_shape": "One row per observation: the time block (cluster), time within the block, treatment and outcome.",
+      "how": "Drops the first `washout` time units of every block, averages each block, and compares blocks (Welch on t(K - 2)). A carryover check makes the result contested when the effect is still moving after the washout.",
+      "expect_refusals": ["DESIGN_CHECK_FAILED", "LOW_N"],
+      "gates": ["t8-switchback"],
+      "trust": "The carryover check has low power against small carryover, so the washout must come from knowledge of the system."
+    },
+    {
+      "id": "difference_in_differences",
+      "name": "Staged rollout over time",
+      "when": "The action reached different groups at different times and stayed on.",
+      "example": "A feature launched country by country over three months.",
+      "query": {"design": "difference_in_differences", "required": ["treatment", "outcome", "unit", "time"], "optional": ["covariates", "control_group", "estimand"]},
+      "data_shape": "Panel: one row per unit per period; treatment switches on once and stays on.",
+      "how": "Group-time effects against never-treated (or not-yet-treated) units, unit-clustered intervals, an event study, a pre-trends test, and how far parallel trends may fail before the conclusion changes (breakdown).",
+      "expect_refusals": ["DESIGN_CHECK_FAILED", "POSITIVITY", "LOW_N"],
+      "gates": ["t5-did"],
+      "trust": "Tier C: rests on parallel trends, which data cannot prove. The decision layer caps the verdict at experiment when the breakdown is below 1."
+    }
+  ],
+  "checks": [
+    {
+      "id": "segments",
+      "name": "For whom does it work?",
+      "query_fields": ["segment_by"],
+      "what": "An interval per declared subgroup, a wider family-wise interval for looking at several, and one heterogeneity test before any two are compared. The decision layer blocks act when a declared segment is materially harmed.",
+      "example": "A discount that helps new customers but makes loyal ones churn (the discount-churn example).",
+      "gates": ["t4-segments", "d0-decision-policy"]
+    },
+    {
+      "id": "sensitivity",
+      "name": "How strong a hidden factor would have to be",
+      "query_fields": [],
+      "what": "The E-value for every result; Rosenbaum bounds (Gamma*) for back-door designs.",
+      "example": "Ad spend looks great, but demand may have been rising anyway (the ad-spend-hidden-demand example).",
+      "gates": ["t9-rosenbaum"]
+    },
+    {
+      "id": "positivity",
+      "name": "Refuses where there is nothing to compare",
+      "query_fields": [],
+      "what": "A covariate region where one arm never occurs is refused instead of extrapolated; limited overlap is flagged.",
+      "example": "Every enterprise client got the new plan, so there is no comparison for them.",
+      "gates": ["t10-positivity"]
+    },
+    {
+      "id": "assumption_impact",
+      "name": "Which earlier answers a revised graph breaks",
+      "query_fields": [],
+      "what": "Graphs are stored as versions; causal_impact (MCP) and /api/v1/models/.../impact say, per recorded decision, whether its estimate still holds.",
+      "example": "An analyst finds a missing factor: which past answers still stand?",
+      "gates": ["a0-assumption-impact"]
+    },
+    {
+      "id": "calibration",
+      "name": "Were the verdicts right?",
+      "query_fields": [],
+      "what": "A follow-up re-runs a decision's analysis on the later window; the calibration report states a rate only from 10 or more follow-ups, each with a Clopper-Pearson interval, and carries undecidable follow-ups into bounds.",
+      "example": "A quarterly review of how often act was the right call.",
+      "gates": ["c0-calibration"]
+    }
+  ],
+  "refusals": {
+    "NON_IDENTIFIABLE": "The graph does not let the data answer this; it names what would (a measured confounder, an instrument, an experiment).",
+    "POSITIVITY": "Some kind of unit was always (or never) treated, so there is nothing to compare it with.",
+    "LOW_N": "Too few rows, or too few in one arm.",
+    "UNAPPROVED_ASSUMPTION": "The answer would rest on a graph edge nobody has reviewed.",
+    "CI_TOO_WIDE": "The interval is too wide to say anything useful.",
+    "DESIGN_CHECK_FAILED": "The design's own check failed: a broken traffic split, everyone treated, treatment varying within a cluster.",
+    "RUNG_MISMATCH": "The question asks for something other than the effect of an intervention (an association, or a single unit's counterfactual).",
+    "INVALID_ADJUSTMENT_SET": "A user-chosen adjust_for set is not valid in the graph.",
+    "WEAK_INSTRUMENT": "The instrument barely moves the treatment.",
+    "NO_ESTIMATOR": "The effect is identified, but no estimator here handles that identification formula yet.",
+    "INVALID_INPUT": "A column is missing, a value is the wrong type, or a data_path is outside the allowed roots."
+  },
+  "verdicts": {
+    "act": "Evidence is strong enough and the risk class allows acting without sign-off.",
+    "act_with_approval": "Evidence supports acting, but a named person must approve.",
+    "experiment": "Unsettled; the verdict carries the experiment that would settle it (units, size, duration, guardrails).",
+    "refuse": "Do not act: the effect is harmful, too small, or cannot be estimated."
+  },
+  "decision_fields": ["action", "outcome", "direction", "risk_class", "reversible", "minimum_worthwhile_effect", "harm_threshold", "population", "horizon", "can_randomize", "randomization_unit", "units_per_day"],
+  "examples": ["email-campaign", "checkout-ab-test", "discount-churn", "ad-spend-hidden-demand"],
+  "not_yet": [
+    "Finding the graph from data (causal discovery); a person or an expert draws it.",
+    "One unit's counterfactual (what would have happened to this customer).",
+    "Effects that spill between units (neighbouring stores, friends).",
+    "Searching for the subgroups an effect differs across; only declared segments are tested.",
+    "DiD with anticipation windows, repeated cross-sections or time-varying covariates.",
+    "Drift monitoring and plan simulation: promised in docs, not built."
+  ]
+}
