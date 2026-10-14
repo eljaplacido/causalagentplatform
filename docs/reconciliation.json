@@ -32,12 +32,12 @@
           "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d",
           "frontend/package.json": "21affd9af891b9586d0007239dd483fb40b2124ef909baa0fb28670a8bb59192",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "d1c73118875b26fa34fb7c48503d29949c60e4df9ea24728764d6c4250f2550d"
+          "docs/CURRENT_STAGE.md": "ca1d55267ac551552db50a6d17b78d45e78426938b8ab4643ed1a6921a8f013b"
         }
       },
       "last_read": {
         "on": "2026-10-14",
-        "by": "Claude (merge of #75 into septa-94, 2026-10-14: read for both changes -- the npm-audit fix (next/eslint-config-next 15.5.27, sharp 0.35.5 optional, braces allowlisted, dni:dast-not-built re-cited to CYBERSECURITY.md:688, no status change) and the shadow-run pack (one CURRENT_STAGE row, ROADMAP p2 and TESTING_CICD paragraphs); no doc names the changed package versions, Node >=20 / CI on 24 unchanged, TESTING_CICD describes the allowlist without claiming it is empty)"
+        "by": "Claude (septa-99 2026-10-14: one CURRENT_STAGE row and a TESTING_CICD paragraph for packages/causal-core/tests/test_metamorphic.py, the only package change; ROADMAP p2 moves septa-99 from queued to built; README names neither)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -57,13 +57,13 @@
           "backend/src": "5beef0240413a706f0a4e051e7cb3e5f9de98e47d5e58b380d12daed26291a6a",
           "backend/tests": "5c63921bd97a6a2479736987edca65433f5fa031e1a615ffab8d03e75d04bca2",
           "frontend/src": "44ba269702f8216ee79387bc427fedf3b54d24cb1f0dfdb7a497b303a9322080",
-          "packages": "2f43d4e48bf1fa31cf102412d6570f824c55bc015b6300fbc9728a0030bfb432",
+          "packages": "0b98d30bb927abe327929e263ea9e1890e958f7102bd4581d6314734f7ed783f",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-10-14",
-        "by": "Claude (merge of #75 into septa-94, 2026-10-14: read for both changes -- the npm-audit fix (next/eslint-config-next 15.5.27, sharp 0.35.5 optional, braces allowlisted, dni:dast-not-built re-cited to CYBERSECURITY.md:688, no status change) and the shadow-run pack (one CURRENT_STAGE row, ROADMAP p2 and TESTING_CICD paragraphs); no doc names the changed package versions, Node >=20 / CI on 24 unchanged, TESTING_CICD describes the allowlist without claiming it is empty)"
+        "by": "Claude (septa-99 2026-10-14: one CURRENT_STAGE row and a TESTING_CICD paragraph for packages/causal-core/tests/test_metamorphic.py, the only package change; ROADMAP p2 moves septa-99 from queued to built; README names neither)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -317,13 +317,13 @@
           "scripts": "9aaf1871b80924a387abe4625f1e50d0e44604c653e7dc7875d19a1a54806f27",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "29568520a660ee325cd3ba990a0e9ba6be64e73b9090aab26b5b4d076d85b951",
-          "packages/causal-core/tests": "9100d049011c0d40676f25535f0df4dba0cbd7039acc96e7e1c4b8eab1fbfa3d",
+          "packages/causal-core/tests": "bde5308c68e1d41a5dc7368601127804d63706f4a72dcf767bda79531e9ad028",
           "packages/causal-decision/tests": "592751e12ebc3f4902ab68c0d2165f8b6524eb5b7c4d8f135d14d96772e0eef8"
         }
       },
       "last_read": {
         "on": "2026-10-14",
-        "by": "Claude (merge of #75 into septa-94, 2026-10-14: read for both changes -- the npm-audit fix (next/eslint-config-next 15.5.27, sharp 0.35.5 optional, braces allowlisted, dni:dast-not-built re-cited to CYBERSECURITY.md:688, no status change) and the shadow-run pack (one CURRENT_STAGE row, ROADMAP p2 and TESTING_CICD paragraphs); no doc names the changed package versions, Node >=20 / CI on 24 unchanged, TESTING_CICD describes the allowlist without claiming it is empty)"
+        "by": "Claude (septa-99 2026-10-14: one CURRENT_STAGE row and a TESTING_CICD paragraph for packages/causal-core/tests/test_metamorphic.py, the only package change; ROADMAP p2 moves septa-99 from queued to built; README names neither)"
       }
     },
     "docs/UIX.md": {
@@ -354,12 +354,12 @@
         "sha256": {
           "packages/causal-core/src/causal_core": "fee739ab430ee5145e6e125ab755d0e3d2cb6c08bdc4b45c0f58857b21fb7686",
           "conformance/declared_not_implemented.json": "c2e3c8e5e2e5795469cb9b1ac05fb450790172f32056ebcb207de387bdcdf86d",
-          "docs/CURRENT_STAGE.md": "d1c73118875b26fa34fb7c48503d29949c60e4df9ea24728764d6c4250f2550d"
+          "docs/CURRENT_STAGE.md": "ca1d55267ac551552db50a6d17b78d45e78426938b8ab4643ed1a6921a8f013b"
         }
       },
       "last_read": {
         "on": "2026-10-14",
-        "by": "Claude (merge of #75 into septa-94, 2026-10-14: read for both changes -- the npm-audit fix (next/eslint-config-next 15.5.27, sharp 0.35.5 optional, braces allowlisted, dni:dast-not-built re-cited to CYBERSECURITY.md:688, no status change) and the shadow-run pack (one CURRENT_STAGE row, ROADMAP p2 and TESTING_CICD paragraphs); no doc names the changed package versions, Node >=20 / CI on 24 unchanged, TESTING_CICD describes the allowlist without claiming it is empty)"
+        "by": "Claude (septa-99 2026-10-14: one CURRENT_STAGE row and a TESTING_CICD paragraph for packages/causal-core/tests/test_metamorphic.py, the only package change; ROADMAP p2 moves septa-99 from queued to built; README names neither)"
       }
     },
     "SECURITY.md": {

@@ -144,11 +144,11 @@ priority first, and the priorities put hardening the platform before new estimat
   and anchoring (`septa-11`). Real follow-ups are to come from **shadow runs**: studies on real
   decisions, proposed by devbrain and agentcenter, with verdicts sealed and not acted on. Their
   context pack is built (`shadow/`, `septa-94`). Still to build: a runtime shadow mode that
-  never emits (`septa-95`), and a round runner with a scorecard (`septa-96`). Beside them, three
-  pieces of test work are queued:
+  never emits (`septa-95`), and a round runner with a scorecard (`septa-96`). Metamorphic tests
+  of the kernel are built (`septa-99`): they check that renaming, rescaling, reordering and
+  duplicating the data change the answer only as they must. Two pieces of test work are queued:
   - a gated browser test of `/analyze` (`septa-97`);
-  - a G0 gate for an LLM agent driving causal-mcp (`septa-98`);
-  - metamorphic tests of the kernel (`septa-99`).
+  - a G0 gate for an LLM agent driving causal-mcp (`septa-98`).
 - **p3 and p4.** Done: provenance is durable and append-only, with erasure as a tombstone, and
   session runs, Guardian checks and decisions write it (`septa-48`, `septa-16`); semantic objects
   are versioned, never rewritten, and carry lineage from source data to approver (`septa-14`,
