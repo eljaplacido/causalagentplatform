@@ -51,9 +51,9 @@
         "specs"
       ],
       "baseline": {
-        "on": "2026-09-29",
+        "on": "2026-10-14",
         "sha256": {
-          "conformance/declared_not_implemented.json": "78c12d64bc6400fb9e82c77cae9a6ac2688df48b79d613881f3addf5d48631ff",
+          "conformance/declared_not_implemented.json": "c2e3c8e5e2e5795469cb9b1ac05fb450790172f32056ebcb207de387bdcdf86d",
           "backend/src": "5beef0240413a706f0a4e051e7cb3e5f9de98e47d5e58b380d12daed26291a6a",
           "backend/tests": "5c63921bd97a6a2479736987edca65433f5fa031e1a615ffab8d03e75d04bca2",
           "frontend/src": "44ba269702f8216ee79387bc427fedf3b54d24cb1f0dfdb7a497b303a9322080",
@@ -62,8 +62,8 @@
         }
       },
       "last_read": {
-        "on": "2026-09-29",
-        "by": "Claude (septa-92: a row for the agentcenter connector and its tests; UIX §2 describes the home panel and ?suggestion=; citations re-cited)"
+        "on": "2026-10-14",
+        "by": "Claude (2026-10-14: the register changed only by re-citing dni:dast-not-built to docs/CYBERSECURITY.md:688 after the allowlist paragraph grew; no entry changed status -- status_claims still 23 open / 44 left, so no row or roadmap status moves)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -350,16 +350,16 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-09-29",
+        "on": "2026-10-14",
         "sha256": {
           "packages/causal-core/src/causal_core": "fee739ab430ee5145e6e125ab755d0e3d2cb6c08bdc4b45c0f58857b21fb7686",
-          "conformance/declared_not_implemented.json": "78c12d64bc6400fb9e82c77cae9a6ac2688df48b79d613881f3addf5d48631ff",
+          "conformance/declared_not_implemented.json": "c2e3c8e5e2e5795469cb9b1ac05fb450790172f32056ebcb207de387bdcdf86d",
           "docs/CURRENT_STAGE.md": "2458146c24913c59f4ee10afba498faea7893fa3629f55d017e1efa926d890d2"
         }
       },
       "last_read": {
-        "on": "2026-09-29",
-        "by": "Claude (septa-91/92: frontend paragraph and quickstart name /analyze and the second-brain suggestions; ROADMAP's frontend-views status adds them; the rest re-read against CURRENT_STAGE, unchanged)"
+        "on": "2026-10-14",
+        "by": "Claude (2026-10-14: the register changed only by re-citing dni:dast-not-built to docs/CYBERSECURITY.md:688 after the allowlist paragraph grew; no entry changed status -- status_claims still 23 open / 44 left, so no row or roadmap status moves)"
       }
     },
     "SECURITY.md": {
