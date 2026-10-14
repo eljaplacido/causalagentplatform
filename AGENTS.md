@@ -20,6 +20,7 @@ interval and docs marking a phase finished over them.
 | `backend/` | FastAPI platform (governance, semantic layer, API). Its causal skills delegate to the kernel. It serves no MCP tools (its legacy MCP server was deleted in septa-6). |
 | `frontend/` | Next.js UI. |
 | `benchmarks/` | Pre-registered correctness gates (T0, T2–T10, D0, A0, C0) and every run's result. |
+| `shadow/` | The context pack for shadow runs on real decisions, which devbrain and agentcenter use to propose studies. Pinned to the contracts by `packages/causal-decision/tests/test_shadow_pack.py`. |
 | `conformance/` | The claim contract's schemas and the register of known-false claims. |
 | `.gnomon/` | The agent harness surface: roles, tools, skills, and the gate. |
 

@@ -204,6 +204,14 @@ known defect does not count as a gate. The benchmark results, and the limits the
 the register (for example `kernel-overlap-detection-limits`), and leave it only when a gate closes them
 (`kernel-triangulation-moderate-n`, closed by T0 v4).
 
+These gates run on simulated data whose answers are known. On real decisions, the platform is to be
+measured by **shadow runs**, which [`shadow/README.md`](../shadow/README.md) describes: studies
+proposed by devbrain and agentcenter, verdicts sealed and not acted on, and a follow-up scored
+against bars pre-registered from `shadow/PRE-REGISTRATION.template.md`. `shadow/` sits outside
+`benchmarks/` because it is not a gate. Its capability card and study template are pinned to the
+kernel's and the decision layer's contracts by `packages/causal-decision/tests/test_shadow_pack.py`.
+No round has run yet.
+
 Counterfactuals over an SCM and causal discovery have no correctness tests because they are not
 implemented (registers `scm-counterfactuals`, `causal-discovery`). Rosenbaum bounds are gated by
 T9 and pinned to a published example by `backend/tests/unit/test_rosenbaum_bounds.py`.

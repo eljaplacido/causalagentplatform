@@ -1,0 +1,53 @@
+{
+  "_comment": [
+    "One shadow study (see shadow/README.md). The top-level fields are the Oracle's hypothesis spec",
+    "(agentcenter :8767/api/hypotheses), so a hypothesis becomes a study by adding `query` and `shadow`.",
+    "`query` must validate as causal_core.contract.CausalQuery and `decision` (plus `outcome`) as",
+    "causal_decision.DecisionRequest; packages/causal-decision/tests/test_shadow_pack.py checks both.",
+    "Fill `decision` and `query.segment_by` before anyone sees a result: choosing them afterwards is",
+    "the researcher degree of freedom the platform exists to remove."
+  ],
+  "id": "S-001",
+  "title": "Retention discount for customers flagged at risk",
+  "statement": "Offering the retention discount lowers 90-day churn by at least the minimum worthwhile effect, and harms no declared segment",
+  "from": ["devbrain:<decision or record id>"],
+  "arms": {"1": "discount offered", "0": "no discount"},
+  "outcome_label": "churned within 90 days (0/1)",
+  "graph": "tenure -> discount; tenure -> churned; plan -> discount; plan -> churned; discount -> churned",
+  "design": "observational",
+  "estimand": "ate",
+  "query": {
+    "treatment": "discount",
+    "outcome": "churned",
+    "design": "observational",
+    "estimand": "ate",
+    "segment_by": ["plan"]
+  },
+  "decision": {
+    "action": "offer the retention discount to customers flagged at risk",
+    "direction": "decrease",
+    "minimum_worthwhile_effect": 0.03,
+    "harm_threshold": 0.0,
+    "risk_class": "medium",
+    "reversible": true,
+    "horizon": "90d",
+    "can_randomize": true,
+    "randomization_unit": "customer",
+    "units_per_day": 40
+  },
+  "caveats": [
+    "Who was offered the discount was decided by account managers; the graph names what they looked at."
+  ],
+  "shadow": {
+    "kind": "causalplatform",
+    "proposed_by": "devbrain",
+    "data": {
+      "decision_window": "the rows available when the decision was or will be made (a data_path, or a named export)",
+      "follow_up_window": "the later rows the follow-up will be measured on"
+    },
+    "follow_up_after": "90d",
+    "expect": "a verdict",
+    "human_decision": "what the people responsible decided, recorded when known, without the platform's verdict in view",
+    "tag": "shadow-round-1"
+  }
+}
