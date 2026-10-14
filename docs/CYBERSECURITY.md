@@ -590,9 +590,12 @@ published since the last push surfaces without one):
   `scripts/dep_audit.py`).
   Any advisory fails the step unless `scripts/audit-allowlist.json` excuses it with a reason
   and a `review_by` date; an expired entry fails, and so does one whose advisory is no longer
-  reported. The list is empty: every advisory found when the step was added was fixed by
-  raising a floor in `backend/pyproject.toml` (transitive dependencies included) or
-  upgrading in `package-lock.json`. The advisory databases are remote; when one cannot be
+  reported. Every advisory found when the step was added was fixed by raising a floor in
+  `backend/pyproject.toml` (transitive dependencies included) or upgrading in
+  `package-lock.json`. The list holds one entry since 2026-10-14: `braces`
+  (GHSA-vfj7-8cjw-p6xm), which has no patched release and reaches the repository only as a
+  lint-time dependency of `eslint-config-next`, never the frontend image; it is reviewed by
+  2026-11-15 and leaves with the move to Next 16 (septa-57). The advisory databases are remote; when one cannot be
   reached the step is SKIPPED (not measured), which fails CI.
 - **SAST.** `bandit` over `backend/src` and every `packages/*/src`,
   blocking on MEDIUM and HIGH findings, held at zero by the ratchet in
