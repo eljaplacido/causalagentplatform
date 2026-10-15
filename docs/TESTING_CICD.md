@@ -288,7 +288,9 @@ id. Deleting the variable returns every job to hosted runners. A job on a self-h
 on that host as the runner's user, dependency updates included. On self-hosted runners the gate
 jobs run one at a time (a job-level concurrency group): gates side by side on one host contend for
 memory bandwidth, which no timing inside a test can cancel, and the scale test's single-thread CPU
-time went from ~16 s alone to 55-75 s with three at once (septa-100). GitHub keeps one pending job
+time went from ~16 s alone to 55-75 s with three at once (septa-100). That test now bounds user
+CPU time only: system time is the host's page handling, which grew the same call from 15 s to 52 s
+on an idle CPU with little memory free. GitHub keeps one pending job
 per group, so a third gate queued behind a running one replaces the pending one, which shows as
 cancelled and is re-run.
 

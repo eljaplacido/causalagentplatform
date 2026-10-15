@@ -57,13 +57,13 @@
           "backend/src": "5beef0240413a706f0a4e051e7cb3e5f9de98e47d5e58b380d12daed26291a6a",
           "backend/tests": "5c63921bd97a6a2479736987edca65433f5fa031e1a615ffab8d03e75d04bca2",
           "frontend/src": "44ba269702f8216ee79387bc427fedf3b54d24cb1f0dfdb7a497b303a9322080",
-          "packages": "4970ac1b97025a86a965589f5e90f2dac3c031f84e07cae9da05b4c09ccbf889",
+          "packages": "5c9b993aeff9be3bcefbbd8d429e58351bc41e5b324b85b18c6dc3c81eb3cc29",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-10-15",
-        "by": "Claude (septa-100 2026-10-15: TESTING_CICD 5.1 gains the gate concurrency group on self-hosted runners; CYBERSECURITY's where-CI-runs, ORCHESTRATION's .github file table and CURRENT_STAGE (no scale-test row) re-read, unaffected by the concurrency group and the test_scale budget)"
+        "by": "Claude (septa-100 2026-10-15: CURRENT_STAGE has no scale-test row; the test_scale change (user CPU time) touches none of its claims)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -317,13 +317,13 @@
           "scripts": "9aaf1871b80924a387abe4625f1e50d0e44604c653e7dc7875d19a1a54806f27",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "29568520a660ee325cd3ba990a0e9ba6be64e73b9090aab26b5b4d076d85b951",
-          "packages/causal-core/tests": "5c8f3cf3f8a8c9a88a7cd7f0e38da24f6a16aa0191f6aeb5c63db946705e69bb",
+          "packages/causal-core/tests": "3f2874b47caf65fdddd331cced643b884b128d9225eba39f3349c975ad97b7df",
           "packages/causal-decision/tests": "592751e12ebc3f4902ab68c0d2165f8b6524eb5b7c4d8f135d14d96772e0eef8"
         }
       },
       "last_read": {
         "on": "2026-10-15",
-        "by": "Claude (septa-100 2026-10-15: 5.1 gains the gate concurrency group on self-hosted runners, the only claim the change touched; re-read after the edit)"
+        "by": "Claude (septa-100 2026-10-15, second pass: 5.1 says the scale test bounds user CPU time, system time being the host's page handling)"
       }
     },
     "docs/UIX.md": {
