@@ -247,17 +247,17 @@
         ".gnomon"
       ],
       "baseline": {
-        "on": "2026-09-26",
+        "on": "2026-10-15",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9",
           ".github": "db12d364ec234ff9774297f81b08649ec310d368304c47fbfcfa04138f630ac4",
-          ".gnomon": "a558f75c29b7ae1902d14d8ee3bbc557e692c15d06db681da00566b4609b10d2"
+          ".gnomon": "58aab12c319b9dea0c98b0117fba134dd9ca225049ef128cb6e4beaa321c4422"
         }
       },
       "last_read": {
-        "on": "2026-09-26",
-        "by": "Claude (merge of the train into the gate fix: CURRENT_STAGE's package row states the import-origin and identity rules over the train's measured counts; TESTING_CICD's unit row lists both sides' tests; the rest merged cleanly and was re-read for gate-step claims)"
+        "on": "2026-10-15",
+        "by": "Claude (gnomon alignment 2026-10-15: the .gnomon row now says [verify] runs after any turn that changed files (after = change); the rest of the table re-read, still accurate)"
       }
     },
     "docs/QUICKSTART.md": {
