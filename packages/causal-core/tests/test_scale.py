@@ -8,13 +8,23 @@ wall and 151 s CPU with 20 threads, against 11.3 s wall and 11.3 s CPU with one,
 on the same host under load. Wall time measured the neighbours.
 
 So the test pins BLAS/OpenMP to one thread (``threadpoolctl``), which is what
-"on one core" always claimed, and measures ``time.process_time()`` -- CPU time
-of this process, summed over its threads, which with one thread is the kernel's
-own work and is not inflated by other processes waiting for the CPU.
+"on one core" always claimed, and measures ``time.process_time()``.
+
+CPU time of one thread still measures the neighbours, less (septa-100): memory
+bandwidth and shared caches are not isolated. On the gx10 host on 2026-10-15 the
+call took 15.5-16.1 s CPU idle, ~37-47 s beside a parallel Rust build, 42-44 s
+beside one other gate and 110-150 s beside twelve memory-bound processes. Two ways
+of cancelling that inside the test were measured and failed, because no two
+workloads have the same memory intensity: the ratio to a fixed numpy IRLS workload
+moved 34 (idle) -> 16-21 (loaded), and the ratio to the same pipeline on 1e5 rows
+(cache-resident) moved 13 -> 30-47. So contention is removed where it is made --
+CI runs one gate at a time on a shared host (.github/workflows/ci.yml, job
+``gate``) -- and this test bounds what a single gate beside other work costs.
 """
 
 from __future__ import annotations
 
+import os
 import time
 
 import numpy as np
@@ -25,12 +35,13 @@ from threadpoolctl import threadpool_limits
 import causal_core as cc
 
 #: CPU seconds for analyze() on 1e6 rows x 10 confounders, one BLAS thread.
-#: Measured at 11.3 s (2026-09-26, the gx10 host, load average ~8 on 20 cores).
-#: 40 s is ~3.5x that: room for a slower CI core and for what contention still
-#: costs a single thread (shared caches, SMT siblings), while a real regression --
-#: a per-row Python loop, an O(n^2) step, a refuter run twice as often, an
-#: estimator that quadruples its work -- lands well above it.
-CPU_BUDGET_SECONDS = 40.0
+#: Measured at 15.5-16.1 s idle (2026-10-15, gx10; 11.3 s on 2026-09-26, before
+#: Rosenbaum sensitivity, the outcome-model specification test and overlap regions
+#: joined the pipeline) and 42-44 s beside one other gate. 60 s covers the second;
+#: an O(n^2) step, or an estimator or refuter that quadruples the pipeline's work,
+#: lands above it even idle. A regression of 2x or less is not this test's to catch:
+#: on a shared host it is inside the noise.
+CPU_BUDGET_SECONDS = 60.0
 
 
 @pytest.mark.slow
@@ -53,4 +64,8 @@ def test_one_million_rows_binary_backdoor() -> None:
     # Coverage is T0's job; one CI either covers or not 5% of the time by design.
     # Here: a gross-error bound that a correct kernel fails with probability ~1e-6.
     assert abs(out.primary.point - 1.0) < 5 * (out.primary.se or 0)
-    assert cpu < CPU_BUDGET_SECONDS, f"{cpu:.1f}s CPU on one thread ({wall:.1f}s wall)"
+    load = os.getloadavg()[0]
+    assert cpu < CPU_BUDGET_SECONDS, (
+        f"{cpu:.1f}s CPU on one thread ({wall:.1f}s wall), load average {load:.1f} on "
+        f"{os.cpu_count()} cores; ~16s idle on gx10 -- a high load points at contention"
+    )
