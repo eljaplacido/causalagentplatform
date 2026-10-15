@@ -20,11 +20,14 @@ enabled = true
 name = "bash"
 description = "Execute a POSIX sh command (/bin/sh, not bash: no pipefail, [[ ]] or arrays). Runs in the project root every time — cd does not persist between calls, so use absolute paths. To leave a service running past the call, detach it into a log this harness can read: mkdir -p .gnomon-jobs && sh -c 'cmd' </dev/null >.gnomon-jobs/svc.log 2>&1 & — on Linux/macOS prefix 'setsid ' so a cancelled turn does not kill it; Git for Windows ships no setsid, so omit it there."
 enabled = true
-# 300, not the scaffold's 120: the verifier runs .gnomon/ci.sh through this tool,
-# and ci.sh measured ~2m10s on 2026-09-19 (backend suite ~20s, packages/causal-core
-# with its T0 gate ~100s, causal-mcp ~4s). At 120s every verifier run would end as an apparatus
-# failure (timed out) rather than a verdict.
-timeout_seconds = 300
+# 3600, not the scaffold's 120: the verifier runs .gnomon/ci.sh through this tool,
+# and a timeout ends the run as an apparatus failure (timed out), not a verdict.
+# ci.sh measured ~2m10s on 2026-09-19, when 300 was set here; it has grown with the
+# gates (T0, T2-T10, D0, A0, C0, the Postgres suite, the audits): ~18.5 min on
+# 2026-10-15 on an otherwise idle gx10 (causal-core alone 849 s), and 31-44 min on CI
+# with gates side by side. An hour covers a gate on a busy host, inside CI's own
+# 75-minute job timeout.
+timeout_seconds = 3600
 
 # Outside the surface, like sessions and audit: a note changes no behaviour and
 # no hash, it only lets a long run remember what it already tried. Read back as
