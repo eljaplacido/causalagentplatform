@@ -285,7 +285,14 @@ list; unset, jobs run on GitHub's `ubuntu-latest`. While hosted minutes are unav
 self-hosted runners (label `causalplatform-ci`), which run one job each, so several can share a
 host: the database service takes a loopback port Docker chooses, and image tags carry the run
 id. Deleting the variable returns every job to hosted runners. A job on a self-hosted runner runs
-on that host as the runner's user, dependency updates included.
+on that host as the runner's user, dependency updates included. On self-hosted runners the gate
+jobs run one at a time (a job-level concurrency group): gates side by side on one host contend for
+memory bandwidth, which no timing inside a test can cancel, and the scale test's single-thread CPU
+time went from ~16 s alone to 55-75 s with three at once (septa-100). That test now bounds user
+CPU time only: system time is the host's page handling, which grew the same call from 15 s to 52 s
+on an idle CPU with little memory free. GitHub keeps one pending job
+per group, so a third gate queued behind a running one replaces the pending one, which shows as
+cancelled and is re-run.
 
 The gate job:
 

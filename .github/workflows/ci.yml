@@ -36,6 +36,17 @@ jobs:
   gate:
     name: .gnomon/ci.sh
     runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
+    # One gate at a time on self-hosted runners (septa-100): several runners share one
+    # host, and gates side by side contend for memory bandwidth -- the scale test's
+    # single-thread CPU time went from ~16 s alone to 55-75 s with three gates at once,
+    # and no timing taken inside a test cancels that (packages/causal-core/tests/
+    # test_scale.py). A queued gate waits instead of cancelling the running one; GitHub
+    # keeps one pending job per group, so a third gate queued behind it replaces the
+    # pending one, which shows as cancelled and is re-run. Hosted runners are separate
+    # machines: there each run keeps a group of its own.
+    concurrency:
+      group: ${{ vars.CI_RUNS_ON && 'gate-self-hosted' || format('gate-{0}', github.run_id) }}
+      cancel-in-progress: false
     timeout-minutes: 75
     env:
       # Real-data benchmarks (T2 IHDP, T3 LaLonde): fetched by pinned SHA-256, never

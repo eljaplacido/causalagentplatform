@@ -51,19 +51,19 @@
         "specs"
       ],
       "baseline": {
-        "on": "2026-10-14",
+        "on": "2026-10-15",
         "sha256": {
           "conformance/declared_not_implemented.json": "c2e3c8e5e2e5795469cb9b1ac05fb450790172f32056ebcb207de387bdcdf86d",
           "backend/src": "5beef0240413a706f0a4e051e7cb3e5f9de98e47d5e58b380d12daed26291a6a",
           "backend/tests": "5c63921bd97a6a2479736987edca65433f5fa031e1a615ffab8d03e75d04bca2",
           "frontend/src": "44ba269702f8216ee79387bc427fedf3b54d24cb1f0dfdb7a497b303a9322080",
-          "packages": "0b98d30bb927abe327929e263ea9e1890e958f7102bd4581d6314734f7ed783f",
+          "packages": "5c9b993aeff9be3bcefbbd8d429e58351bc41e5b324b85b18c6dc3c81eb3cc29",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
-        "on": "2026-10-14",
-        "by": "Claude (septa-99 2026-10-14: one CURRENT_STAGE row and a TESTING_CICD paragraph for packages/causal-core/tests/test_metamorphic.py, the only package change; ROADMAP p2 moves septa-99 from queued to built; README names neither)"
+        "on": "2026-10-15",
+        "by": "Claude (septa-100 2026-10-15: CURRENT_STAGE has no scale-test row; the test_scale change (user CPU time) touches none of its claims)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -172,7 +172,7 @@
         ".github/workflows"
       ],
       "baseline": {
-        "on": "2026-09-29",
+        "on": "2026-10-15",
         "sha256": {
           "backend/src/middleware": "382780d8717bb592eb4ddc1d9e21dcd0227129be3ba5c9d60815c0ef4ee7de0a",
           "backend/src/api/governance.py": "c2ab8a061fe056b835dbb9097b147f414437df0ca702708c3e923b23c8d5751c",
@@ -182,12 +182,12 @@
           "backend/src/api/provenance.py": "2a308e924c9fd7ea910284fa58a479bdeeb97f260764d9c09c5d7eabeb74cfec",
           "backend/src/db/migrations": "0061d7048117bb0d23b2c6b9dddc771f21ab84dc5076464aa54750aa8ddb05e8",
           "backend/src/semantic_layer/verdict.py": "6a46fcf8331be6953a01541f0f75151246ab50967b6baf2e1ded51ad55a80ae8",
-          ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5"
+          ".github/workflows": "df92cbc4cd1fb0ab0a9abae5093c9fef08c68f605b3cfee3131de043d4d1fdcb"
         }
       },
       "last_read": {
-        "on": "2026-09-29",
-        "by": "Claude (septa-92: brain reads added to the any-role list; the connector's outbound calls stated (configured URLs only, decision events without data rows); SECURITY's RBAC section unchanged by two more any-role reads)"
+        "on": "2026-10-15",
+        "by": "Claude (septa-100 2026-10-15: TESTING_CICD 5.1 gains the gate concurrency group on self-hosted runners; CYBERSECURITY's where-CI-runs, ORCHESTRATION's .github file table and CURRENT_STAGE (no scale-test row) re-read, unaffected by the concurrency group and the test_scale budget)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -247,17 +247,17 @@
         ".gnomon"
       ],
       "baseline": {
-        "on": "2026-09-26",
+        "on": "2026-10-15",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9",
-          ".github": "db12d364ec234ff9774297f81b08649ec310d368304c47fbfcfa04138f630ac4",
+          ".github": "a77f8351dce4603fbbbcee30576b3e042f5fef0dcb8e323b53b05f3c68fa467e",
           ".gnomon": "a558f75c29b7ae1902d14d8ee3bbc557e692c15d06db681da00566b4609b10d2"
         }
       },
       "last_read": {
-        "on": "2026-09-26",
-        "by": "Claude (merge of the train into the gate fix: CURRENT_STAGE's package row states the import-origin and identity rules over the train's measured counts; TESTING_CICD's unit row lists both sides' tests; the rest merged cleanly and was re-read for gate-step claims)"
+        "on": "2026-10-15",
+        "by": "Claude (septa-100 2026-10-15: TESTING_CICD 5.1 gains the gate concurrency group on self-hosted runners; CYBERSECURITY's where-CI-runs, ORCHESTRATION's .github file table and CURRENT_STAGE (no scale-test row) re-read, unaffected by the concurrency group and the test_scale budget)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -306,9 +306,9 @@
         "packages/causal-decision/tests"
       ],
       "baseline": {
-        "on": "2026-10-14",
+        "on": "2026-10-15",
         "sha256": {
-          ".github/workflows": "38702d20ab3b7b2a5311bc2371d7b91c28bc4db3aa365c71a78b6b82f2f2d8d5",
+          ".github/workflows": "df92cbc4cd1fb0ab0a9abae5093c9fef08c68f605b3cfee3131de043d4d1fdcb",
           "backend/tests": "5c63921bd97a6a2479736987edca65433f5fa031e1a615ffab8d03e75d04bca2",
           "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
@@ -317,13 +317,13 @@
           "scripts": "9aaf1871b80924a387abe4625f1e50d0e44604c653e7dc7875d19a1a54806f27",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "29568520a660ee325cd3ba990a0e9ba6be64e73b9090aab26b5b4d076d85b951",
-          "packages/causal-core/tests": "bde5308c68e1d41a5dc7368601127804d63706f4a72dcf767bda79531e9ad028",
+          "packages/causal-core/tests": "3f2874b47caf65fdddd331cced643b884b128d9225eba39f3349c975ad97b7df",
           "packages/causal-decision/tests": "592751e12ebc3f4902ab68c0d2165f8b6524eb5b7c4d8f135d14d96772e0eef8"
         }
       },
       "last_read": {
-        "on": "2026-10-14",
-        "by": "Claude (septa-99 2026-10-14: one CURRENT_STAGE row and a TESTING_CICD paragraph for packages/causal-core/tests/test_metamorphic.py, the only package change; ROADMAP p2 moves septa-99 from queued to built; README names neither)"
+        "on": "2026-10-15",
+        "by": "Claude (septa-100 2026-10-15, second pass: 5.1 says the scale test bounds user CPU time, system time being the host's page handling)"
       }
     },
     "docs/UIX.md": {
