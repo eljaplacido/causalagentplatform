@@ -20,13 +20,15 @@ no network, so a chain can be rebuilt from its records and re-verified anywhere.
 
 from __future__ import annotations
 
+from collections.abc import Collection
+from datetime import datetime
 from typing import Literal
 
 from causal_core.canonical import digest
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from causal_decision.assumptions import ModelRef
-from causal_decision.contract import Decision
+from causal_decision.contract import Decision, Verdict
 
 #: What the first entry points back at. A fixed, recognisable value: an empty
 #: string would be indistinguishable from a missing link.
@@ -83,21 +85,44 @@ class DecisionRecord(_Model):
         "action taken are different events, and conflating them is how a ledger comes "
         "to overstate what happened.",
     )
+    review_by: str | None = Field(
+        default=None,
+        description="ISO 8601, from the caller's clock: when this verdict stops standing on its "
+        "own. By then a follow-up should have measured it, or the question been decided again. "
+        "Evidence describes the population and conditions it was drawn from, and those drift; "
+        "a decision with no date claims to hold forever. None on records sealed before the "
+        "field existed.",
+    )
     prev_digest: str
     entry_digest: str = ""
+
+    @model_validator(mode="after")
+    def _review_after_recording(self) -> DecisionRecord:
+        if self.review_by is None:
+            return self
+        review_by = _parse(self.review_by, "review_by")
+        recorded = _parse(self.recorded_at, "recorded_at")
+        if (review_by.tzinfo is None) != (recorded.tzinfo is None):
+            raise ValueError("review_by and recorded_at must both carry a UTC offset, or neither")
+        if review_by <= recorded:
+            raise ValueError(f"review_by {self.review_by} is not after recorded_at "
+                             f"{self.recorded_at}")
+        return self
 
     def content(self) -> dict[str, object]:
         """The bytes the digest covers: everything except the digest itself.
 
-        ``evidence.model`` is left out when it is None, so every record sealed before
-        the field existed digests exactly as it did then (pinned by
-        tests/fixtures/ledger_chain_before_model_ref.json). A contract may grow; the
-        records already in a ledger must keep verifying.
+        ``evidence.model`` and ``review_by`` are left out when they are None, so every
+        record sealed before those fields existed digests exactly as it did then
+        (pinned by tests/fixtures/ledger_chain_before_model_ref.json). A contract may
+        grow; the records already in a ledger must keep verifying.
         """
         out = self.model_dump(mode="json", exclude={"entry_digest"})
         evidence = out["evidence"]
         if isinstance(evidence, dict) and evidence.get("model") is None:
             evidence.pop("model", None)
+        if out.get("review_by") is None:
+            out.pop("review_by", None)
         return out
 
     def sealed(self) -> DecisionRecord:
@@ -139,6 +164,7 @@ def append(
     approval: Approval | None = None,
     executed: bool = False,
     model: ModelRef | None = None,
+    review_by: str | None = None,
 ) -> DecisionRecord:
     """Seal a new entry onto the chain whose last entry is ``tail``.
 
@@ -155,8 +181,69 @@ def append(
         evidence=_evidence_of(outcome, model),
         approval=approval,
         executed=executed,
+        review_by=review_by,
         prev_digest=GENESIS if tail is None else tail.entry_digest,
     ).sealed()
+
+
+def _parse(stamp: str, name: str) -> datetime:
+    try:
+        return datetime.fromisoformat(stamp)
+    except ValueError as exc:
+        raise ValueError(f"{name} is not ISO 8601: {stamp!r}") from exc
+
+
+class PastReview(_Model):
+    """A decision whose review date has passed with nothing re-checking it."""
+
+    entry_digest: str
+    sequence: int
+    action: str
+    verdict: Verdict
+    review_by: str
+    executed: bool
+
+
+def past_review(
+    records: list[DecisionRecord], measured: Collection[str], as_of: str
+) -> list[PastReview]:
+    """Decisions still standing on evidence nobody has re-checked since their review date.
+
+    A record leaves this list in one of two ways: a follow-up measured it (its entry
+    digest is in ``measured``), or a later record decided the same action again --
+    the newer verdict is the one that stands. Refusals are not listed: they
+    recommended nothing, so nothing rests on them. Records without a review date are
+    not listed either; they predate the field, and inventing a date for them here
+    would put a claim in the report that nobody made.
+    """
+    now = _parse(as_of, "as_of")
+    latest: dict[str, int] = {}
+    for r in records:
+        latest[r.decision.request.action] = max(
+            latest.get(r.decision.request.action, -1), r.sequence
+        )
+    out = []
+    for r in records:
+        if (
+            r.review_by is None
+            or r.decision.verdict is Verdict.refuse
+            or r.entry_digest in measured
+            or latest[r.decision.request.action] != r.sequence
+        ):
+            continue
+        due = _parse(r.review_by, "review_by")
+        if (due.tzinfo is None) != (now.tzinfo is None):
+            raise ValueError("as_of and review_by must both carry a UTC offset, or neither")
+        if due < now:
+            out.append(PastReview(
+                entry_digest=r.entry_digest,
+                sequence=r.sequence,
+                action=r.decision.request.action,
+                verdict=r.decision.verdict,
+                review_by=r.review_by,
+                executed=r.executed,
+            ))
+    return out
 
 
 def verify_chain(records: list[DecisionRecord]) -> ChainReport:

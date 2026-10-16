@@ -83,7 +83,9 @@ persona's page. How much of each view's surface below is built varies (see §4.2
   exact value as the tooltip; an absent value is shown as "—". Each calibration rate is the
   kernel's `RateEstimate`: its counts ("9 of 12") always, the rate and its Clopper-Pearson
   interval only when the report states one (from `min_followups`, ten, up), and otherwise "—"
-  with the report's reason. The rationale's
+  with the report's reason. Below the rates, the report's `past_review` list names each decision
+  whose review date has passed with no follow-up and no newer decision on the same action
+  (its verdict, date and whether it was executed), and the table is absent when none is due. The rationale's
   claim markers (`⟦claim:effect⟧`, the interval's ends, its level, `n`) are filled from the
   record's own evidence, the effect read back from the stored benefit by the requested direction;
   when the record lacks a figure a marker names, the rationale is labelled as a template.

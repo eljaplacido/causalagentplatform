@@ -44,6 +44,9 @@ def test_identify_invalid_adjustment_set_suggests_a_valid_one() -> None:
 def test_check_graph_lists_implications_and_unreviewed_edges() -> None:
     resp = tools.causal_check_graph("A -> X -> Y; B -> Y; B -> X [origin=llm_prior]")
     assert resp.valid and resp.unreviewed_edges == ["B -> X"]
+    assert resp.unreviewed_llm_edges == ["B -> X"]
+    person = tools.causal_check_graph("A -> X -> Y; B -> Y; B -> X [status=proposed]")
+    assert person.unreviewed_edges == ["B -> X"] and person.unreviewed_llm_edges == []
     assert {(i.a, i.b, tuple(i.given)) for i in resp.testable_implications} >= {("A", "B", ())}
     assert not tools.causal_check_graph("A -> B; B -> A").valid
 

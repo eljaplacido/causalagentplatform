@@ -61,6 +61,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from scipy.stats import beta, binom
 
 from causal_decision.contract import CausalOutcome, Decision, Verdict
+from causal_decision.ledger import PastReview
 
 
 class _Model(BaseModel):
@@ -264,6 +265,13 @@ class CalibrationReport(_Model):
         description="Realizations per verdict. The pooled interval rates mix verdicts; this is "
         "how a reader sees what they are pooled over.",
     )
+    past_review: list[PastReview] = Field(
+        default_factory=list,
+        description="Decisions whose review date has passed with no follow-up and no newer "
+        "decision on the same action (causal_decision.ledger.past_review). They are in none of "
+        "the rates above -- nothing measured them -- and they still stand in the ledger on "
+        "evidence about a population and a period that may no longer hold.",
+    )
 
     note: str = Field(
         default="",
@@ -434,6 +442,7 @@ def report(
     level: float = LEVEL,
     min_followups: int | None = None,
     alpha: float = ALPHA,
+    past_review: list[PastReview] | None = None,
 ) -> CalibrationReport:
     """Aggregate realizations: counts always, rates only with enough behind them.
 
@@ -500,6 +509,7 @@ def report(
             if r.verdict not in ACTED and r.cleared_worthwhile
         ),
         by_verdict=dict(Counter(str(r.verdict) for r in realizations)),
+        past_review=past_review or [],
         note=_NOTE,
     )
 

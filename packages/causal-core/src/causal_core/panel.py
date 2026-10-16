@@ -135,9 +135,17 @@ def assumptions(query: CausalQuery | None = None) -> tuple[str, ...]:
 
 
 def certificate(
-    graph_digest: str, engine: str, query: CausalQuery | None = None
+    graph_digest: str,
+    engine: str,
+    query: CausalQuery | None = None,
+    unreviewed: tuple[str, ...] = (),
+    unreviewed_llm: tuple[str, ...] = (),
 ) -> IdentificationCertificate:
-    """The identification certificate a panel design earns: tier C, whatever the graph says."""
+    """The identification certificate a panel design earns: tier C, whatever the graph says.
+
+    The graph does not identify a panel effect, but its review state still travels with
+    the certificate: a decision reads which edges nobody has reviewed from here.
+    """
     nyt = query is not None and query.control_group == NOT_YET_TREATED
     comparison = "C_gt" if nyt else "never treated"
     if query is not None and query.covariates:
@@ -152,6 +160,8 @@ def certificate(
         tier=Tier.C,
         estimand=f"ATT = Σ_{{g, t≥g}} w_gt · ( {cell} ),  w_gt ∝ P(G = g){where}",
         assumptions=assumptions(query),
+        unreviewed_edges=unreviewed,
+        unreviewed_llm_edges=unreviewed_llm,
         engine=engine,
         graph_digest=graph_digest,
     )

@@ -28,7 +28,7 @@ sustainability investment assurance follow, in that order.
 | Decide identified / partially identified / unsupported | Done, except bounds: complete ID, back-door with the optimal adjustment set, front-door, conditional IV, proximal; 11 typed refusals, each with what is missing |
 | Estimate impact and uncertainty | Done for ATE and ATT with coverage-tested intervals; for effects within declared segments with family-wise correction and a heterogeneity test (pre-registered T4); for staggered rollouts by difference-in-differences with unit-clustered intervals and a pre-trends test, against never-treated or not-yet-treated units and, with covariates, doubly robust (T5); for watched randomized rollouts by anytime-valid confidence sequences (T6); for cluster-randomized rollouts with CR2 cluster-robust intervals (T7); and for switchbacks, where the caller chooses a washout that covers the carryover (T8). Missing: policy value, spillovers between units, DiD with anticipation or repeated cross-sections, a carryover check with real power, and subgroup *discovery* |
 | Robustness checks | Done: placebo, negative controls, graph-implied independences with measured power, overlap (honest covariate regions and a limited-overlap flag, T10), balance, E-values, robustness values, and Rosenbaum bounds on a matched design for back-door designs with a binary treatment (T9). Missing: a sensitivity model for the weighted estimators themselves |
-| Decide: act, ask, experiment, refuse | Done: `packages/causal-decision` turns an outcome, a request and a policy into one verdict, deterministically, gated by the pre-registered D0 suite (v3: 19 scenarios, 8 properties, 8 seeded defects). Declared segments reach the verdict -- an action that harms one of them is not automated on a favourable pooled effect -- and so does a difference-in-differences result's parallel-trends breakdown: a conclusion a violation smaller than the pre-adoption ones would flip is sent to an experiment |
+| Decide: act, ask, experiment, refuse | Done: `packages/causal-decision` turns an outcome, a request and a policy into one verdict, deterministically, gated by the pre-registered D0 suite (v4: 22 scenarios, 8 properties, 9 seeded defects). Declared segments reach the verdict -- an action that harms one of them is not automated on a favourable pooled effect -- and so does a difference-in-differences result's parallel-trends breakdown: a conclusion a violation smaller than the pre-adoption ones would flip is sent to an experiment. An unreviewed edge a language model proposed sends the decision to an experiment too (v4) |
 | Evidence record | Partial: every result and every decision carries digests of its inputs and itself, decisions are persisted into a verified hash chain with the observed outcome recorded against them, and the model version a decision used is recorded. Checkpoints of the chain head can be taken and verified against (`/api/v1/decisions/checkpoint`, `/verify-anchored`). Missing: publishing a checkpoint somewhere the writer cannot edit |
 | Recommend the next experiment | Done for the case the layer can size: randomized units, with the minimum detectable effect, per-arm size, duration and guardrails. Clustered, switchback and sequential designs are not sized |
 
@@ -87,7 +87,10 @@ sustainability investment assurance follow, in that order.
    into worst-case bounds, and "could not resolve" kept apart from "no difference". What remains
    is operational history: no follow-up has been taken on a real operation, so every rate is
    refused, and the thresholds are consistent rather than calibrated
-   (`decision-thresholds-uncalibrated`).
+   (`decision-thresholds-uncalibrated`). Every decision is also sealed with a review date (90 days
+   by default), and the report lists those past it that nothing has re-checked (`septa-102`):
+   evidence about one population and period does not stand forever, though nothing yet stops an
+   executor acting on a decision past its date.
 6. **Domain packs.** Operations first, then energy flexibility. Not yet on the ledger.
 
 ## What is next

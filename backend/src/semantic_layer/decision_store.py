@@ -77,6 +77,7 @@ class DecisionStore:
         approval: Approval | None = None,
         executed: bool = False,
         model: ModelRef | None = None,
+        review_by: str | None = None,
     ) -> DecisionRecord:
         """Seal this decision onto the end of the chain and store it."""
         tail = await self.head()
@@ -88,6 +89,7 @@ class DecisionStore:
             approval=approval,
             executed=executed,
             model=model,
+            review_by=review_by,
         )
         async with CloudSqlFactory.get_session_factory()() as session:
             try:
@@ -208,6 +210,14 @@ class DecisionStore:
             rows = await session.execute(text(sql), params)
             raws = [r[0] for r in rows.all()]
         return [Realization.model_validate(_loads(r)) for r in reversed(raws)]
+
+    async def measured_entries(self) -> set[str]:
+        """The entry digests of every decision a follow-up has measured."""
+        async with CloudSqlFactory.get_session_factory()() as session:
+            rows = await session.execute(
+                text("SELECT entry_digest FROM decision_followups WHERE kind = 'realization'")
+            )
+            return {r[0] for r in rows.all()}
 
     async def has_realization(self, entry_digest: str) -> bool:
         async with CloudSqlFactory.get_session_factory()() as session:

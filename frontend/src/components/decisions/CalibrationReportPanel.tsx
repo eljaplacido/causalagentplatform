@@ -7,6 +7,8 @@
  * format with the exact value as the title; a rate the report does not state is
  * "—" with the reason it gives, never 0% or 100%. The undecidable follow-ups are
  * counted beside the rates, by reason, because they are not missing at random.
+ * Decisions past their review date with nothing re-checking them are listed
+ * last: they are in none of the rates, and they still stand in the ledger.
  */
 
 import { AlertTriangle, RefreshCw } from "lucide-react";
@@ -140,6 +142,33 @@ export function CalibrationReportPanel({ report, isLoading, error }: Calibration
             <CountTable caption="Follow-ups per verdict" rows={report.by_verdict} />
             <CountTable caption="Undecidable, by the kernel's reason" rows={report.undecidable_by_reason} />
           </div>
+
+          {report.past_review.length > 0 && (
+            <table className="w-full text-xs" data-testid="calibration-past-review">
+              <caption className="mb-1 text-left font-semibold text-foreground">
+                Past their review date, with no follow-up and no newer decision (
+                {report.past_review.length})
+              </caption>
+              <thead>
+                <tr className="text-left text-muted-foreground">
+                  <th scope="col" className="py-1 font-normal">Action</th>
+                  <th scope="col" className="py-1 font-normal">Verdict</th>
+                  <th scope="col" className="py-1 font-normal">Review by</th>
+                  <th scope="col" className="py-1 font-normal">Executed</th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.past_review.map((p) => (
+                  <tr key={p.entry_digest} className="border-t border-border" data-testid="past-review-row">
+                    <td className="py-1 text-foreground">{p.action}</td>
+                    <td className="py-1 font-mono text-foreground">{p.verdict}</td>
+                    <td className="py-1 font-mono text-foreground">{p.review_by}</td>
+                    <td className="py-1 text-foreground">{p.executed ? "yes" : "no"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
 
           {report.note && (
             <p className="rounded-md bg-muted/50 p-2 text-xs text-muted-foreground">

@@ -14,7 +14,7 @@ supports doing this", never "this was done".
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 import causal_core as cc
@@ -38,6 +38,7 @@ from causal_decision.ledger import (
     Checkpoint,
     DecisionRecord,
     checkpoint,
+    past_review,
     verify_against,
 )
 from causal_decision.outcome import CalibrationReport, Realization, compare, plan, report
@@ -120,6 +121,12 @@ class ModelSelector(BaseModel):
     )
 
 
+#: Days from a decision to its review date when the request names none. A convention:
+#: a quarter is long enough to measure most operational changes and short enough that
+#: a population has rarely changed out from under the evidence. Nothing measured it.
+DEFAULT_REVIEW_DAYS = 90
+
+
 class DecideRequest(BaseModel):
     """What the agent proposes, and the data to judge it on."""
 
@@ -156,6 +163,16 @@ class DecideRequest(BaseModel):
     can_randomize: bool = True
     randomization_unit: str = "unit"
     units_per_day: float | None = Field(default=None, gt=0)
+    review_after_days: int = Field(
+        default=DEFAULT_REVIEW_DAYS,
+        ge=1,
+        le=3650,
+        description="Days until the decision's review date, sealed into its ledger entry. By "
+        "then a follow-up should have measured it or the question been decided again; until "
+        "one of those happens, GET /api/v1/decisions/calibration lists it under past_review. "
+        f"The default of {DEFAULT_REVIEW_DAYS} is a convention, not a judgement about any "
+        "particular population: set it from how fast yours changes.",
+    )
     analysis_policy: AnalysisPolicy | None = None
     decision_policy: DecisionPolicy | None = None
     narrate: bool = Field(
@@ -272,12 +289,14 @@ async def make_decision(
             status_code=500, detail=f"the decision's explanation failed verification: {exc}"
         ) from exc
 
+    now = datetime.now(UTC)
     try:
         record = await _store.record(
             decision,
             outcome,
-            recorded_at=datetime.now(UTC).isoformat(),
+            recorded_at=now.isoformat(),
             model=None if version is None else version.ref(),
+            review_by=(now + timedelta(days=body.review_after_days)).isoformat(),
         )
     except LedgerConflictError as exc:
         # The decision stands; only its place in the line is contested. Saying so is
@@ -626,5 +645,15 @@ async def calibration(
     This is what separates thresholds that are *consistent* from thresholds that
     are *calibrated*, and until enough follow-ups exist the honest reading of this
     endpoint is the counts, not the rates.
+
+    `past_review` lists the decisions whose review date has passed with no
+    follow-up and no newer decision on the same action. Nothing measured them,
+    so they are in none of the rates; they are listed because they still stand
+    in the ledger on evidence that may describe a population that has moved on.
     """
-    return report(await _store.realizations(limit=limit))
+    due = past_review(
+        await _store.all_records(),
+        await _store.measured_entries(),
+        as_of=datetime.now(UTC).isoformat(),
+    )
+    return report(await _store.realizations(limit=limit), past_review=due)

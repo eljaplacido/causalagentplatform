@@ -398,3 +398,17 @@ def test_absurd_standard_error_is_an_apparatus_failure(confounded_binary: pd.Dat
         registry.unregister("unstable")
     assert isinstance(out, cc.ApparatusFailure)
     assert out.error_type == "NumericalInstabilityError" and out.stage == "estimate"
+
+
+def test_the_certificate_names_the_unreviewed_edges_a_language_model_proposed(
+    confounded_binary: pd.DataFrame,
+) -> None:
+    """Only proposed llm_prior edges: not a person's unreviewed edge, not a reviewed LLM one."""
+    graph = (
+        "Z -> X; Z -> Y; X -> Y; W -> Y [origin=llm_prior]; V -> Y [status=proposed]; "
+        "U -> Y [origin=llm_prior, status=approved]"
+    )
+    out = cc.analyze(confounded_binary, graph, treatment="X", outcome="Y")
+    assert isinstance(out, cc.CausalResult) and out.status is ResultStatus.provisional
+    assert set(out.certificate.unreviewed_edges) == {"W -> Y", "V -> Y"}
+    assert out.certificate.unreviewed_llm_edges == ("W -> Y",)

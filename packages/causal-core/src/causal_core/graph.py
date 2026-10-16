@@ -285,3 +285,11 @@ class Graph:
 
     def unreviewed_edges(self) -> list[str]:
         return [self.edge_label(e) for e in self.spec.edges if e.status is EdgeStatus.proposed]
+
+    def unreviewed_llm_edges(self) -> list[str]:
+        """The unreviewed edges a language model proposed: a guess nobody has vouched for."""
+        return [
+            self.edge_label(e)
+            for e in self.spec.edges
+            if e.status is EdgeStatus.proposed and e.origin is EdgeOrigin.llm_prior
+        ]
