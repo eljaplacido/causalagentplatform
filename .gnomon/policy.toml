@@ -59,7 +59,7 @@ network = false
 #
 # [verify]
 # command = "pytest -q"    # or cargo test, make, .gnomon/ci.sh
-# after = "always"         # write | always
+# after = "always"         # write | change | always
 # max_rounds = 1           # times a failure may hand the turn back; 0 = report only
 #
 #   "always" is the example on purpose, and it is not the code default.
@@ -76,6 +76,11 @@ network = false
 #   checked. gnomon now SAYS so when it happens (a verify_skipped_shell_only
 #   degradation, on the terminal and in the trail), but the setting that just
 #   checks every turn is "always", and for most projects that is what you want.
+#
+#   "change" (gnomon cf44f64, after 0.2.3) runs the check when the turn changed
+#   the worktree by ANY route -- write/edit or the shell -- and skips turns that
+#   only read. It closes the heredoc/sed -i hole without paying for read-only
+#   turns.
 #
 # test_must_fail_first = true
 #   Reject a test that would have passed BEFORE the turn wrote it. A test is
@@ -94,14 +99,15 @@ network = false
 # mypy, frontend, gate scope, doc reconciliation -- is .gnomon/ci.sh, which the
 # verifier role runs.
 #
-# after = "write", knowingly. The comment above records the cost: a turn that
-# changes files only through the shell (heredoc, sed -i) is NOT checked, and
-# gnomon says so (verify_skipped_shell_only). "always" would run the unit suite
-# after every read-only turn too. The chain's verifier stage is TOLD to run
-# ci.sh (roles.toml description, system.md) -- that is an instruction to a model,
-# not a gate, so a shell-only change can still pass this check unexamined. The
-# limit is named here rather than implied away.
+# after = "change". Until 2026-10-15 this was "write", knowingly: a turn that
+# changed files only through the shell (heredoc, sed -i) was NOT checked, and
+# "always" would have run the unit suite after every read-only turn too. gnomon's
+# "change" is the setting that was missing: shell-only edits are checked now,
+# read-only turns still cost nothing. What remains true: the chain's verifier
+# stage is TOLD to run ci.sh (roles.toml description, system.md) -- that is an
+# instruction to a model, not a gate -- and this check is the fast subset, not
+# the gate.
 [verify]
 command = ".gnomon/verify.sh"
-after = "write"
+after = "change"
 max_rounds = 1

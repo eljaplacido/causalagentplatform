@@ -1,0 +1,4 @@
+# The gnomon surface is hashed byte for byte (surface_hash on every record), so a
+# checkout that converts line endings -- core.autocrlf on Windows -- would run under
+# a different hash than the one committed. Keep it LF everywhere.
+.gnomon/** text eol=lf
