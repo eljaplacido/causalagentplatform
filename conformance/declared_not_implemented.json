@@ -210,7 +210,7 @@
       "capability": "The decision chain's head digest anchored outside the writer's control",
       "claimed_in": [
         {
-          "at": "packages/causal-decision/README.md:160",
+          "at": "packages/causal-decision/README.md:161",
           "says": "**What the chain does not do.** It makes tampering *detectable*, not impossible"
         }
       ],
@@ -590,7 +590,7 @@
       "reality": "Split from did-extensions when its covariate and not-yet-treated parts left the list (T5 v4). Parallel-trends sensitivity exists since T5 v3 in a simplified, conservative form: relative magnitudes on event-time levels, union-bound intervals, a breakdown multiple. Rambachan & Roth's restriction on consecutive changes and their confidence sets do not exist.",
       "evidence": [
         {
-          "at": "packages/causal-core/src/causal_core/panel.py:587",
+          "at": "packages/causal-core/src/causal_core/panel.py:597",
           "says": "\"relative magnitudes on event-time deviations (after Rambachan & Roth 2023): post-adoption \""
         },
         {
@@ -616,7 +616,7 @@
           "says": "Not offered in this version: time-varying covariates, anticipation windows,"
         },
         {
-          "at": "packages/causal-core/src/causal_core/panel.py:245",
+          "at": "packages/causal-core/src/causal_core/panel.py:255",
           "says": "\"time-invariant, pre-treatment characteristics only; a covariate that changes after \""
         }
       ],
