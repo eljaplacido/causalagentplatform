@@ -12,7 +12,7 @@
         "requirements/backend.in": "f5a611a8f6c34de16b3617de4c55135a94cf5dcfab7a968df680c29eb6b34177",
         "packages/causal-core/pyproject.toml": "d43a9ef58656f9e87bf0498873f75440c1effbc113c3bbae046201e411dcf221",
         "packages/causal-decision/pyproject.toml": "fd2829e39c7632268d5637025c15da6cf6ebb0a082d257f7d2dc7b443ed0df79",
-        "backend/pyproject.toml": "f01d2eb8d1269b027e65a792b20b795014fad1338c7cdf7acd9051ebb717399a"
+        "backend/pyproject.toml": "10012b77ca37a9d518bfc963ab2b33025b08ed31e4f338c37840f51783c14b5f"
       }
     },
     "kernel": {
@@ -32,7 +32,7 @@
         "requirements/image.in": "380000090974c09d6f56e8413e06ac4e75844d6fc82d16a0cdc158933b381370",
         "packages/causal-core/pyproject.toml": "d43a9ef58656f9e87bf0498873f75440c1effbc113c3bbae046201e411dcf221",
         "packages/causal-decision/pyproject.toml": "fd2829e39c7632268d5637025c15da6cf6ebb0a082d257f7d2dc7b443ed0df79",
-        "backend/pyproject.toml": "f01d2eb8d1269b027e65a792b20b795014fad1338c7cdf7acd9051ebb717399a"
+        "backend/pyproject.toml": "10012b77ca37a9d518bfc963ab2b33025b08ed31e4f338c37840f51783c14b5f"
       }
     },
     "release": {
