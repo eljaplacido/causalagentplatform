@@ -162,9 +162,9 @@ bash_allow = [
   '^\.gnomon/(ci|verify)\.sh$',
   '^(backend/)?\.venv/bin/(pytest|ruff|mypy)(\s|$)',
   '^(packages/causal-core/|\.\./causal-core/)\.venv/bin/pytest(\s|$)',
-  '^npx (--no-install )?tsc --noEmit(\s|$)',
-  '^npx (--no-install )?vitest run(\s|$)',
-  '^npx (--no-install )?eslint(\s|$)',
+  '^npx --no-install tsc --noEmit(\s|$)',
+  '^npx --no-install vitest run(\s|$)',
+  '^npx --no-install eslint(\s|$)',
   '^cd (backend|frontend|packages/causal-(core|decision|mcp))$',
 ]
 bash_deny = [
@@ -177,6 +177,17 @@ bash_deny = [
   # Flags that turn an allowed CHECK into a WRITE to source: ruff/eslint --fix,
   # ruff format, vitest snapshot update, --write of any kind.
   '--fix\b', '\bruff\s+format\b', '\bvitest\b[^|;&]*\s(-u|--update)\b', '--write\b',
+  # Flags that swap the program an allowed runner executes for one the caller
+  # names (gnomon 21ac18d, after 0.2.3): vitest and eslint configs are executable
+  # JavaScript, pytest -p loads a plugin module and -c a different ini, and
+  # --rootdir/--confcutdir move where conftest.py is collected from. Each one
+  # cleared the allow-list above with any trailing arguments.
+  '--(config|script-shell|userconfig|globalconfig|rootdir|confcutdir)\b',
+  '\s-(c|p)(\s|$)',
+  # npx without --no-install fetches and runs any package it cannot find locally
+  # (gnomon b5f3ac1): the allow-list names the tools, this makes the local copy
+  # the only one npx may run.
+  '(^|\s)npx\s+(?!--no-install\b)',
 ]
 description = "Runs .gnomon/ci.sh and reports what it measured. Cannot edit what it judges."
 

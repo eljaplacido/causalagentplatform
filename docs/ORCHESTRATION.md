@@ -186,7 +186,7 @@ kept out of version control; nothing here reads it, and a checkout without it is
 | File | Purpose |
 |------|---------|
 | `AGENTS.md` | Entry point for any coding agent: rules, flow, gate |
-| `.gnomon/` | The agent harness surface: `config.toml` `[chain]`, `roles.toml`, `tools.toml`, `policy.toml` (whose `[verify]` runs the fast `verify.sh` after a write), `skills/`, `ci.sh` |
+| `.gnomon/` | The agent harness surface: `config.toml` `[chain]`, `roles.toml`, `tools.toml`, `policy.toml` (whose `[verify]` runs the fast `verify.sh` after any turn that changed files, by write/edit or the shell), `skills/`, `ci.sh` |
 | `.septacore.json` | The declared gate for SeptaCore: `scripts/verify.sh` as a blocking step, with its exit map |
 | `scripts/verify.sh` | Execs `.gnomon/ci.sh` unchanged, so the gate is findable where SeptaCore looks |
 | `.beads/issues.jsonl` | The work ledger `septacore ready` lists open work from |
