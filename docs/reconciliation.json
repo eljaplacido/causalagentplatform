@@ -252,12 +252,12 @@
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9",
           ".github": "a77f8351dce4603fbbbcee30576b3e042f5fef0dcb8e323b53b05f3c68fa467e",
-          ".gnomon": "a558f75c29b7ae1902d14d8ee3bbc557e692c15d06db681da00566b4609b10d2"
+          ".gnomon": "58aab12c319b9dea0c98b0117fba134dd9ca225049ef128cb6e4beaa321c4422"
         }
       },
       "last_read": {
         "on": "2026-10-15",
-        "by": "Claude (septa-100 2026-10-15: TESTING_CICD 5.1 gains the gate concurrency group on self-hosted runners; CYBERSECURITY's where-CI-runs, ORCHESTRATION's .github file table and CURRENT_STAGE (no scale-test row) re-read, unaffected by the concurrency group and the test_scale budget)"
+        "by": "Claude (merge of #81 into the gnomon alignment, 2026-10-15: .github moved only by the gate concurrency group, which the doc's .github table does not describe; .gnomon row says after = change)"
       }
     },
     "docs/QUICKSTART.md": {
