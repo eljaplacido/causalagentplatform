@@ -53,7 +53,7 @@
       "baseline": {
         "on": "2026-10-16",
         "sha256": {
-          "conformance/declared_not_implemented.json": "da292b9b19de9917062a7738d165f4cc9d30bc2f2ac5d2b1a31e78512c69cd49",
+          "conformance/declared_not_implemented.json": "9a295a8d2cf07611dbf98f0823d87f0e00ec46c79803fc67ad263d4b7531417b",
           "backend/src": "528157d568c54f37333315385a1e6ee7b1d25b3e410438f345cfc6c8769c3347",
           "backend/tests": "458578950a789e7fb5e2649bb50c19b62dee5a1587fdfd762d5b453c28d8f288",
           "frontend/src": "e5901779d6330479ba2978a628114cbea9ecd802e5985a6cab80beb5a314918a",
@@ -63,7 +63,7 @@
       },
       "last_read": {
         "on": "2026-10-16",
-        "by": "Claude (septa-102: read for review dates, past_review and causal-decision 0.6.0 -- decisions view, roadmap step 5, ledger and calibration rows)"
+        "by": "Claude (register moved only by two UIX citation line numbers, 195->197 and 246->248; the rows linking those entries are unchanged)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -353,13 +353,13 @@
         "on": "2026-10-16",
         "sha256": {
           "packages/causal-core/src/causal_core": "808b370dd05adaf6520a435312f501533e0b9f82239e15fbe2073c893278180f",
-          "conformance/declared_not_implemented.json": "da292b9b19de9917062a7738d165f4cc9d30bc2f2ac5d2b1a31e78512c69cd49",
+          "conformance/declared_not_implemented.json": "9a295a8d2cf07611dbf98f0823d87f0e00ec46c79803fc67ad263d4b7531417b",
           "docs/CURRENT_STAGE.md": "5b635ab8cbd9f6cb23aeefa75d53ae526efe45d5d41eb0b5abc0af7d8e0dd62b"
         }
       },
       "last_read": {
         "on": "2026-10-16",
-        "by": "Claude (septa-102: read for review dates, past_review and causal-decision 0.6.0 -- decisions view, roadmap step 5, ledger and calibration rows)"
+        "by": "Claude (register moved only by two UIX citation line numbers, 195->197 and 246->248; the rows linking those entries are unchanged)"
       }
     },
     "SECURITY.md": {
