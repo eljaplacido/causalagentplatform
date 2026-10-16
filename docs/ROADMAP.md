@@ -87,7 +87,10 @@ sustainability investment assurance follow, in that order.
    into worst-case bounds, and "could not resolve" kept apart from "no difference". What remains
    is operational history: no follow-up has been taken on a real operation, so every rate is
    refused, and the thresholds are consistent rather than calibrated
-   (`decision-thresholds-uncalibrated`).
+   (`decision-thresholds-uncalibrated`). Every decision is also sealed with a review date (90 days
+   by default), and the report lists those past it that nothing has re-checked (`septa-102`):
+   evidence about one population and period does not stand forever, though nothing yet stops an
+   executor acting on a decision past its date.
 6. **Domain packs.** Operations first, then energy flexibility. Not yet on the ledger.
 
 ## What is next

@@ -210,14 +210,14 @@
       "capability": "The decision chain's head digest anchored outside the writer's control",
       "claimed_in": [
         {
-          "at": "packages/causal-decision/README.md:161",
+          "at": "packages/causal-decision/README.md:170",
           "says": "**What the chain does not do.** It makes tampering *detectable*, not impossible"
         }
       ],
       "reality": "The chain is built, persisted, served and verified, and decision_records is append-only in the production schema. Both ends of anchoring now exist in code: GET /api/v1/decisions/checkpoint returns the head to publish, and POST /api/v1/decisions/verify-anchored checks the chain against checkpoints kept elsewhere, catching a rewrite that re-seals every later entry (which /verify passes) and a truncation below a checkpoint. What does not exist is the publishing: nothing sends a checkpoint to a store the platform cannot rewrite, so until a deployment does, the ledger still evidences internal consistency only.",
       "evidence": [
         {
-          "at": "backend/src/api/decisions.py:454",
+          "at": "backend/src/api/decisions.py:473",
           "says": "A pass means the chain is *internally* consistent. It cannot mean more than"
         },
         {
@@ -348,7 +348,7 @@
           "says": "What happened after the verdict, and whether the verdict deserved to be trusted."
         },
         {
-          "at": "packages/causal-decision/src/causal_decision/outcome.py:79",
+          "at": "packages/causal-decision/src/causal_decision/outcome.py:80",
           "says": "MIN_FOLLOWUPS = 10"
         }
       ],
