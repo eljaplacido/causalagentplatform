@@ -28,16 +28,16 @@
       "baseline": {
         "on": "2026-10-16",
         "sha256": {
-          "backend/pyproject.toml": "4d50f63ea25f61fd255d470628f001d400e2ea97f1798998371ee05236cef65d",
+          "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
           "packages/causal-mcp": "6e8f083e9d327316645eec202dc5f9dbb97e286d8e22b76ed0f4995410bcdd38",
           "frontend/package.json": "21affd9af891b9586d0007239dd483fb40b2124ef909baa0fb28670a8bb59192",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "b345043616d8859a223a86c49decd22eab3a9f510543b5fbbe61fc7feeadf5ad"
+          "docs/CURRENT_STAGE.md": "5b635ab8cbd9f6cb23aeefa75d53ae526efe45d5d41eb0b5abc0af7d8e0dd62b"
         }
       },
       "last_read": {
         "on": "2026-10-16",
-        "by": "Claude (septa-101: read for the LLM-edge cap, contract 0.14.0 and D0 v4 -- counts, verdict ladder, MCP tool rows, card)"
+        "by": "Claude (septa-102: read for review dates, past_review and causal-decision 0.6.0 -- decisions view, roadmap step 5, ledger and calibration rows)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-10-16",
         "sha256": {
-          "conformance/declared_not_implemented.json": "bb3fe0f60fc3488b2594edb8b6329ea047cd113e807dc29c953e358a8e9da1e8",
-          "backend/src": "5beef0240413a706f0a4e051e7cb3e5f9de98e47d5e58b380d12daed26291a6a",
-          "backend/tests": "5c63921bd97a6a2479736987edca65433f5fa031e1a615ffab8d03e75d04bca2",
-          "frontend/src": "44ba269702f8216ee79387bc427fedf3b54d24cb1f0dfdb7a497b303a9322080",
-          "packages": "c9b22c821bf8ad45286042ff08526dd399541a9354c13812953469baf8112963",
+          "conformance/declared_not_implemented.json": "da292b9b19de9917062a7738d165f4cc9d30bc2f2ac5d2b1a31e78512c69cd49",
+          "backend/src": "528157d568c54f37333315385a1e6ee7b1d25b3e410438f345cfc6c8769c3347",
+          "backend/tests": "458578950a789e7fb5e2649bb50c19b62dee5a1587fdfd762d5b453c28d8f288",
+          "frontend/src": "e5901779d6330479ba2978a628114cbea9ecd802e5985a6cab80beb5a314918a",
+          "packages": "b948f55de801f276b6fe81f68196ccdfda697e19821e751a005230ed39c0c541",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-10-16",
-        "by": "Claude (septa-101: read for the LLM-edge cap, contract 0.14.0 and D0 v4 -- counts, verdict ladder, MCP tool rows, card)"
+        "by": "Claude (septa-102: read for review dates, past_review and causal-decision 0.6.0 -- decisions view, roadmap step 5, ledger and calibration rows)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -76,9 +76,9 @@
         "backend/src/orchestration/graph.py"
       ],
       "baseline": {
-        "on": "2026-09-26",
+        "on": "2026-10-16",
         "sha256": {
-          "backend/src/semantic_layer": "8116d29f6f80e0fb17276d50f2450aec39165c4f50dc0bd5c736a6d7c8c9f072",
+          "backend/src/semantic_layer": "03b2e2e7547d7078eceaa7de952f1a2859f12c6e72c7ebd08854c030e532dbe7",
           "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
           "packages/semantic-types/src": "599b141c5312c6940a4479a5400b1113adfbef407f85ff016edeeade864d834c",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
@@ -86,8 +86,8 @@
         }
       },
       "last_read": {
-        "on": "2026-09-26",
-        "by": "Claude (housekeeping: the only change in the code these docs describe is the ledger id in comments, septa-62 -> septa-70 for the sensitivity recording; the docs' own references were corrected the same way; no claim moved)"
+        "on": "2026-10-16",
+        "by": "Claude (septa-102: read for review dates, past_review and causal-decision 0.6.0 -- decisions view, roadmap step 5, ledger and calibration rows)"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -278,7 +278,7 @@
           "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
-          "backend/pyproject.toml": "4d50f63ea25f61fd255d470628f001d400e2ea97f1798998371ee05236cef65d",
+          "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
           "frontend/package.json": "21affd9af891b9586d0007239dd483fb40b2124ef909baa0fb28670a8bb59192",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
           ".env.example": "c1b1272a098696c6c0e72ba533fca78db4060da7c549715d14fb1167656e906a",
@@ -287,7 +287,7 @@
       },
       "last_read": {
         "on": "2026-10-16",
-        "by": "Claude (septa-101: read for the LLM-edge cap, contract 0.14.0 and D0 v4 -- counts, verdict ladder, MCP tool rows, card)"
+        "by": "Claude (septa-102: read for review dates, past_review and causal-decision 0.6.0 -- decisions view, roadmap step 5, ledger and calibration rows)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -309,8 +309,8 @@
         "on": "2026-10-16",
         "sha256": {
           ".github/workflows": "df92cbc4cd1fb0ab0a9abae5093c9fef08c68f605b3cfee3131de043d4d1fdcb",
-          "backend/tests": "5c63921bd97a6a2479736987edca65433f5fa031e1a615ffab8d03e75d04bca2",
-          "backend/pyproject.toml": "4d50f63ea25f61fd255d470628f001d400e2ea97f1798998371ee05236cef65d",
+          "backend/tests": "458578950a789e7fb5e2649bb50c19b62dee5a1587fdfd762d5b453c28d8f288",
+          "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "c488a844dd07e837e2d22c4b661f4efd3becea08b2315052affe794a0cd78fa6",
           ".gnomon/ci.sh": "9bd34338c9fb7a397f25f383bee73cde526105c9217e6e1ee60bf0e8c0802956",
@@ -318,12 +318,12 @@
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "17b15235a74e84e3de54a752eed9d89b9f44d4e6880ba2afceb1129a9650eab5",
           "packages/causal-core/tests": "76e4e4f85b5a4200ea7a723cee8394fd09b751157b4c91bdc9b61e68aa3465ad",
-          "packages/causal-decision/tests": "592751e12ebc3f4902ab68c0d2165f8b6524eb5b7c4d8f135d14d96772e0eef8"
+          "packages/causal-decision/tests": "99e9783c2d5686b21b0bf6afe80c89144ad1a02f2efd329ecde31e3a8b581deb"
         }
       },
       "last_read": {
         "on": "2026-10-16",
-        "by": "Claude (septa-101: read for the LLM-edge cap, contract 0.14.0 and D0 v4 -- counts, verdict ladder, MCP tool rows, card)"
+        "by": "Claude (septa-102: read for review dates, past_review and causal-decision 0.6.0 -- decisions view, roadmap step 5, ledger and calibration rows)"
       }
     },
     "docs/UIX.md": {
@@ -332,14 +332,14 @@
         "frontend/src"
       ],
       "baseline": {
-        "on": "2026-09-29",
+        "on": "2026-10-16",
         "sha256": {
-          "frontend/src": "44ba269702f8216ee79387bc427fedf3b54d24cb1f0dfdb7a497b303a9322080"
+          "frontend/src": "e5901779d6330479ba2978a628114cbea9ecd802e5985a6cab80beb5a314918a"
         }
       },
       "last_read": {
-        "on": "2026-09-29",
-        "by": "Claude (septa-92: a row for the agentcenter connector and its tests; UIX §2 describes the home panel and ?suggestion=; citations re-cited)"
+        "on": "2026-10-16",
+        "by": "Claude (septa-102: read for review dates, past_review and causal-decision 0.6.0 -- decisions view, roadmap step 5, ledger and calibration rows)"
       }
     },
     "docs/ROADMAP.md": {
@@ -353,13 +353,13 @@
         "on": "2026-10-16",
         "sha256": {
           "packages/causal-core/src/causal_core": "808b370dd05adaf6520a435312f501533e0b9f82239e15fbe2073c893278180f",
-          "conformance/declared_not_implemented.json": "bb3fe0f60fc3488b2594edb8b6329ea047cd113e807dc29c953e358a8e9da1e8",
-          "docs/CURRENT_STAGE.md": "b345043616d8859a223a86c49decd22eab3a9f510543b5fbbe61fc7feeadf5ad"
+          "conformance/declared_not_implemented.json": "da292b9b19de9917062a7738d165f4cc9d30bc2f2ac5d2b1a31e78512c69cd49",
+          "docs/CURRENT_STAGE.md": "5b635ab8cbd9f6cb23aeefa75d53ae526efe45d5d41eb0b5abc0af7d8e0dd62b"
         }
       },
       "last_read": {
         "on": "2026-10-16",
-        "by": "Claude (septa-101: read for the LLM-edge cap, contract 0.14.0 and D0 v4 -- counts, verdict ladder, MCP tool rows, card)"
+        "by": "Claude (septa-102: read for review dates, past_review and causal-decision 0.6.0 -- decisions view, roadmap step 5, ledger and calibration rows)"
       }
     },
     "SECURITY.md": {
