@@ -375,7 +375,10 @@ def _analyze(
             frame,
             query,
             policy,
-            cert=panel_certificate(prov["graph_digest"], ENGINE, query),
+            cert=panel_certificate(
+                prov["graph_digest"], ENGINE, query,
+                unreviewed=tuple(unreviewed), unreviewed_llm=tuple(g.unreviewed_llm_edges()),
+            ),
             unreviewed=unreviewed,
             warnings=warnings,
             prov=prov,

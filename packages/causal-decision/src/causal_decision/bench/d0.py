@@ -84,10 +84,26 @@ def weak_effect() -> CausalOutcome:
                       outcome="minutes", estimand="att", policy=FAST)
 
 
-def provisional_effect() -> CausalOutcome:
-    graph = "load -> playbook; load -> minutes [origin=llm_prior]; playbook -> minutes"
+def _marked_effect(mark: str) -> CausalOutcome:
+    """strong_effect's data and graph, with the confounding edge load -> minutes marked."""
+    graph = f"load -> playbook; load -> minutes [{mark}]; playbook -> minutes"
     return cc.analyze(_ops_data(), graph, treatment="playbook", outcome="minutes",
                       estimand="att", policy=FAST)
+
+
+def provisional_effect() -> CausalOutcome:
+    """The confounding edge was proposed by a language model and nobody reviewed it."""
+    return _marked_effect("origin=llm_prior")
+
+
+def provisional_human_effect() -> CausalOutcome:
+    """A person's edge, still unreviewed: provisional, but not a guess (D0 v4)."""
+    return _marked_effect("status=proposed")
+
+
+def reviewed_llm_effect() -> CausalOutcome:
+    """The language model's edge after a person approved it (D0 v4)."""
+    return _marked_effect("origin=llm_prior, status=approved")
 
 
 def contested_effect() -> CausalOutcome:
@@ -249,8 +265,17 @@ SCENARIOS: tuple[Scenario, ...] = (
         "the interval straddles the bar: the evidence cannot say whether it is worth acting"),
     Scenario("contested_result", contested_effect, BASE, Verdict.experiment,
         "a negative control fired: the design is contested, so test it rather than trust it"),
-    Scenario("provisional_graph", provisional_effect, BASE, Verdict.act_with_approval,
-        "an unreviewed LLM-proposed edge means a person reviews before acting"),
+    Scenario("provisional_graph", provisional_effect, BASE, Verdict.experiment,
+        "an unreviewed LLM-proposed edge: the estimate rests on a guessed graph, and a "
+        "randomized test does not"),
+    Scenario("provisional_graph_cannot_test", provisional_effect, BASE.model_copy(
+        update={"can_randomize": False}), Verdict.act_with_approval,
+        "the same guessed graph, and no experiment possible: a person decides"),
+    Scenario("provisional_human_edge", provisional_human_effect, BASE,
+        Verdict.act_with_approval,
+        "a person's unreviewed edge: provisional, so a person reviews before acting"),
+    Scenario("reviewed_llm_edge", reviewed_llm_effect, BASE, Verdict.act,
+        "the LLM's edge after review: nothing caps strong evidence"),
     Scenario("identified_only_by_iv", iv_effect, BASE, Verdict.act_with_approval,
         "tier B: identification rests on assumptions the graph cannot state"),
     Scenario("not_identified_can_test", not_identified, BASE, Verdict.experiment,
@@ -409,6 +434,7 @@ CATCHER: dict[str, Callable[[dict[str, Any]], bool]] = {
     or _scenario_fails("contested_result"),
     "ignore_segments": lambda cfg: _scenario_fails("harmed_segment"),
     "ignore_trend_breakdown": lambda cfg: _scenario_fails("did_fragile_to_trends"),
+    "ignore_llm_edges": lambda cfg: _scenario_fails("provisional_graph"),
 }
 
 

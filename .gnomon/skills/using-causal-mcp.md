@@ -14,7 +14,10 @@ offers its tools, it is running an old checkout -- do not cite it.)
 
 1. `causal_check_graph` -- draft the graph with the user. Read
    `testable_implications` (each is a claim of an absent edge; test them on
-   data before trusting the graph) and `unreviewed_edges`.
+   data before trusting the graph) and `unreviewed_edges`. Mark edges you
+   proposed `[origin=llm_prior]`: while `unreviewed_llm_edges` is non-empty,
+   `causal_decide` answers `experiment`, never `act`; a person approves or
+   refutes them.
 2. `causal_identify` -- is the effect identifiable from the graph alone,
    before any data? A user-chosen `adjust_for` is validated here.
 3. `causal_analyze` -- estimate, or receive a typed refusal.

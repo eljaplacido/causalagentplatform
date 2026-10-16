@@ -8,10 +8,10 @@
     "contract_version."
   ],
   "card_version": 1,
-  "contract_version": "0.13.0",
+  "contract_version": "0.14.0",
   "question": "Did this action cause that result, and should we take it? The answer is an estimate with an honest interval and a verdict, or a refusal that says what is missing.",
   "inputs": {
-    "graph": "A cause-and-effect sketch in the kernel's syntax: 'Z -> X -> Y; Z -> Y'. 'X <-> Y' is an unmeasured common cause, and 'latent U' declares an unmeasured node. A graph node with no data column is treated as unmeasured.",
+    "graph": "A cause-and-effect sketch in the kernel's syntax: 'Z -> X -> Y; Z -> Y'. 'X <-> Y' is an unmeasured common cause, and 'latent U' declares an unmeasured node. A graph node with no data column is treated as unmeasured. Mark an edge a language model proposed: 'Z -> Y [origin=llm_prior]'. Until a person reviews it ('status=approved'), the verdict is at most experiment, or act_with_approval when the action cannot be randomized.",
     "data": "One table: CSV, Parquet, JSON or JSONL. Over MCP, a data_path under CAUSAL_MCP_DATA_ROOTS; over HTTP (POST /api/v1/analysis/run), the rows themselves.",
     "query": "The causal_core.contract.CausalQuery fields named per design below. Declare segment_by, minimum_worthwhile_effect, direction and risk_class before seeing any answer.",
     "minimums": "AnalysisPolicy defaults: at least 30 rows (min_n) and 10 per arm (min_per_arm); fewer is a LOW_N refusal."

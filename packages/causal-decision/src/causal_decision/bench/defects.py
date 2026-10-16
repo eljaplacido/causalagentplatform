@@ -152,6 +152,13 @@ def ignore_trend_breakdown() -> Iterator[None]:
         yield
 
 
+@contextmanager
+def ignore_llm_edges() -> Iterator[None]:
+    """Who proposed an unreviewed edge is not read: a guessed graph is merely "provisional"."""
+    with mock.patch.object(policy_mod, "_llm_edge_check", lambda out: None):
+        yield
+
+
 DEFECTS: dict[str, Callable[[], Any]] = {
     "ignore_reversibility": ignore_reversibility,
     "ignore_risk_class": ignore_risk_class,
@@ -161,4 +168,5 @@ DEFECTS: dict[str, Callable[[], Any]] = {
     "ignore_contested": ignore_contested,
     "ignore_segments": ignore_segments,
     "ignore_trend_breakdown": ignore_trend_breakdown,
+    "ignore_llm_edges": ignore_llm_edges,
 }
