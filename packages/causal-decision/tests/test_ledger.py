@@ -269,3 +269,72 @@ def test_no_checkpoint_for_an_empty_or_broken_chain(outcome: CausalResult) -> No
     records = _chain(outcome)
     with pytest.raises(ValueError):
         checkpoint([records[0], records[2]])
+
+
+# ── review dates ──────────────────────────────────────────────────────────────
+
+LATER = "2026-12-20T09:00:00+00:00"
+AFTER = "2027-01-15T09:00:00+00:00"
+
+
+def test_the_review_date_is_sealed_and_records_without_one_digest_as_before(
+    outcome: CausalResult,
+) -> None:
+    dated = append(None, decide(outcome, BASE), outcome, recorded_at=NOW, review_by=LATER)
+    undated = append(None, decide(outcome, BASE), outcome, recorded_at=NOW)
+    assert dated.entry_digest != undated.entry_digest
+    assert "review_by" not in undated.content(), "an absent date must not enter the digest"
+    moved = dated.model_copy(update={"review_by": AFTER})
+    assert not verify_chain([moved]).ok, "postponing the review must break the seal"
+    assert not verify_chain([dated.model_copy(update={"review_by": None})]).ok
+
+
+def test_a_review_date_must_parse_and_come_after_the_decision(outcome: CausalResult) -> None:
+    decision = decide(outcome, BASE)
+    for bad in ("in a quarter", NOW, "2026-09-01T09:00:00+00:00", "2026-12-20T09:00:00"):
+        with pytest.raises(ValidationError):
+            append(None, decision, outcome, recorded_at=NOW, review_by=bad)
+
+
+def test_decisions_past_their_review_date_are_listed_until_measured_or_redecided(
+    outcome: CausalResult,
+) -> None:
+    from causal_decision.ledger import past_review
+
+    act, refuse, approve = (decide(outcome, r) for r in _REQUESTS)
+    other = decide(outcome, BASE.model_copy(update={"action": "restart the queue"}))
+    r0 = append(None, act, outcome, recorded_at=NOW, review_by=LATER)
+    r1 = append(r0, other, outcome, recorded_at=NOW, review_by=LATER, executed=True)
+    r2 = append(r1, other, outcome, recorded_at=NOW)  # no date: predates the field
+    records = [r0, r1, r2]
+
+    assert past_review(records, set(), as_of=NOW) == [], "nothing is due before its date"
+    due = past_review(records, set(), as_of=AFTER)
+    assert [p.entry_digest for p in due] == [r0.entry_digest], (
+        "r1 was decided again (r2 supersedes it); r2 has no date"
+    )
+    assert due[0].verdict is Verdict.act and due[0].review_by == LATER
+    assert past_review(records, {r0.entry_digest}, as_of=AFTER) == [], "a follow-up clears it"
+
+    redecided = append(r2, refuse, outcome, recorded_at=LATER)
+    assert redecided.decision.request.action == r0.decision.request.action
+    assert past_review([*records, redecided], set(), as_of=AFTER) == []
+
+    refused = append(None, refuse, outcome, recorded_at=NOW, review_by=LATER)
+    waiting = append(refused, approve.model_copy(
+        update={"request": approve.request.model_copy(update={"action": "page on-call"})}
+    ), outcome, recorded_at=NOW, review_by=LATER)
+    assert [p.verdict for p in past_review([refused, waiting], set(), as_of=AFTER)] == [
+        Verdict.act_with_approval
+    ], "a refusal recommended nothing, so nothing rests on it"
+
+
+def test_the_calibration_report_carries_what_is_past_review(outcome: CausalResult) -> None:
+    from causal_decision.ledger import past_review
+    from causal_decision.outcome import report
+
+    r0 = append(None, decide(outcome, BASE), outcome, recorded_at=NOW, review_by=LATER)
+    due = past_review([r0], set(), as_of=AFTER)
+    rep = report([], past_review=due)
+    assert rep.past_review == due and rep.n_decisions == 0
+    assert report([]).past_review == []

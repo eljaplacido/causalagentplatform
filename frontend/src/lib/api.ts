@@ -722,6 +722,8 @@ export interface DecisionRecordResponse {
   evidence: EvidenceRefResponse;
   approval: ApprovalResponse | null;
   executed: boolean;
+  /** ISO 8601: when the verdict stops standing on its own. Absent on records sealed before it existed. */
+  review_by?: string | null;
   prev_digest: string;
   entry_digest: string;
 }
@@ -813,6 +815,16 @@ export interface PairedComparisonResponse {
   detail: string;
 }
 
+/** causal_decision.ledger.PastReview: a decision past its review date, nothing re-checking it. */
+export interface PastReviewResponse {
+  entry_digest: string;
+  sequence: number;
+  action: string;
+  verdict: "act" | "act_with_approval" | "experiment" | "refuse";
+  review_by: string;
+  executed: boolean;
+}
+
 /** GET /api/v1/decisions/calibration (causal_decision.outcome.CalibrationReport). */
 export interface CalibrationReportResponse {
   n_decisions: number;
@@ -830,6 +842,7 @@ export interface CalibrationReportResponse {
   acted_and_harmful: number;
   not_acted_but_worthwhile: number;
   by_verdict: Record<string, number>;
+  past_review: PastReviewResponse[];
   note: string;
 }
 

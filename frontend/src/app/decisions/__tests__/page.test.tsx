@@ -48,6 +48,7 @@ import { CausalApiError } from "@/lib/api";
 import {
   CALIBRATION_EMPTY,
   CALIBRATION_ONE,
+  CALIBRATION_PAST_REVIEW,
   CALIBRATION_TWELVE,
   CHAIN_OK,
   REALIZATION,
@@ -170,6 +171,24 @@ describe("decision ledger page", () => {
     renderPage();
     expect(await screen.findByTestId("records-error")).toHaveTextContent("Authentication required");
     expect(screen.queryAllByTestId("decision-row")).toHaveLength(0);
+  });
+
+  it("lists no decision past its review date when none is due", async () => {
+    renderPage();
+    const panel = await screen.findByTestId("calibration-panel");
+    await within(panel).findByTestId("calibration-empty");
+    expect(within(panel).queryByTestId("calibration-past-review")).toBeNull();
+  });
+
+  it("lists a decision past its review date with its verdict, date and execution", async () => {
+    decisionsApiMock.calibration.mockResolvedValue(CALIBRATION_PAST_REVIEW);
+    renderPage();
+    const rows = await screen.findAllByTestId("past-review-row");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toHaveTextContent("adopt the incident playbook");
+    expect(rows[0]).toHaveTextContent("act");
+    expect(rows[0]).toHaveTextContent("2026-09-29T09:00:00+00:00");
+    expect(rows[0]).toHaveTextContent("yes");
   });
 
   it("shows the calibration error instead of a report when it fails", async () => {
