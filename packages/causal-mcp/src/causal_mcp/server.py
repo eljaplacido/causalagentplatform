@@ -31,6 +31,8 @@ Causal inference as tools (causal-core {cc.__version__}, contract {CONTRACT_VERS
 
 The LLM proposes; statistics decide. Recommended flow:
 1. causal_check_graph -- draft the causal graph with the user; review its testable implications.
+   Mark edges you propose `[origin=llm_prior]`; until a person approves them, causal_decide
+   answers experiment at most.
 2. causal_identify -- confirm the effect is identifiable before asking for data.
 3. causal_analyze -- estimate, or receive a typed refusal (a correct answer, not an error).
 4. causal_verify_narrative -- check your prose before replying: numbers must be claims, and

@@ -102,3 +102,17 @@ def test_a_panel_result_says_how_far_parallel_trends_may_fail(panel: pd.DataFram
     if at is not None:
         assert at.lo <= 0 <= at.hi, "past the breakdown the interval must reach zero"
     assert any(c.id == "pt.breakdown" for c in out.claims)
+
+
+def test_a_panel_certificate_carries_the_graphs_review_state(panel: pd.DataFrame) -> None:
+    """Tier C whatever the graph says, but a decision still reads its unreviewed edges here."""
+    graph = t5.GRAPH + " [origin=llm_prior]"
+    out = cc.analyze(panel, graph, treatment="rollout", outcome="latency", unit="unit",
+                     time="period", estimand="att", design="difference_in_differences")
+    assert isinstance(out, CausalResult), out
+    assert out.certificate.unreviewed_edges == ("rollout -> latency",)
+    assert out.certificate.unreviewed_llm_edges == ("rollout -> latency",)
+    q = CausalQuery(treatment="rollout", outcome="latency", design="difference_in_differences",
+                    unit="unit", time="period", estimand="att")
+    cert = identify(Graph.from_spec(parse_graph(graph)), q)
+    assert cert.unreviewed_llm_edges == ("rollout -> latency",)

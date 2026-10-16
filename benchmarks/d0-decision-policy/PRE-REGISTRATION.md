@@ -2,7 +2,7 @@
 
 **Suite:** D0, the decision procedure on outcomes whose evidence is known by construction
 **System under test:** `packages/causal-decision` (`causal_decision.decide`)
-**Registered:** 2026-09-21, version 1; version 2 on 2026-09-25; version 3 the same day (see Changelog)
+**Registered:** 2026-09-21, version 1; version 2 on 2026-09-25; version 3 the same day; version 4 on 2026-10-16 (see Changelog)
 **Runs:** every PR, via `pytest -m d0` in `packages/causal-decision`
 
 ## Status of this document
@@ -56,6 +56,23 @@ minimum worthwhile effect set to 0.2 and direction `increase`:
   Expected `experiment`: the conclusion rests on trends holding more tightly than the data can
   show, and a randomized test is what settles that.
 
+Four scenarios (v4) read where an unreviewed edge came from. Each is the operations data behind
+`strong_effect`, analysed under the same graph with the edge `load -> minutes` marked:
+
+- `provisional_graph` (registered since v1, verdict changed in v4) — the edge was proposed by a
+  language model (`origin=llm_prior`, which defaults to `status=proposed`). Expected
+  `experiment`: the estimate rests on a graph a model guessed and nobody reviewed; a person
+  approving the action is not reviewing the graph, and a randomized test of the action does not
+  depend on it.
+- `provisional_graph_cannot_test` — the same, with `can_randomize = false`. Expected
+  `act_with_approval`: when no experiment is possible the open question goes to a person, as
+  for every other `experiment` the procedure cannot run.
+- `provisional_human_edge` — the edge is a person's, still unreviewed (`status=proposed`, origin
+  `human`). Expected `act_with_approval`: the provisional-status ceiling, unchanged since v1.
+  The v4 cap is about where structure came from, not about review alone.
+- `reviewed_llm_edge` — the language model's edge after review (`status=approved`). Expected
+  `act`: review lifts the cap, and the evidence is that of `strong_effect_medium_risk`.
+
 **Properties.** Checked on a seeded sweep of requests and policies (`PROPERTIES`), not only on the
 table:
 
@@ -85,14 +102,15 @@ of them, and the table says which check is supposed to catch it.
 | `ignore_contested` | a contested result is treated as supported | property 6, scenario `contested_result` |
 | `ignore_segments` | the segment checks are dropped, so only the pooled effect is read | scenario `harmed_segment` |
 | `ignore_trend_breakdown` | the parallel-trends breakdown is not read (v3) | scenario `did_fragile_to_trends` |
+| `ignore_llm_edges` | an unreviewed edge's origin is not read, so a guessed graph is only "provisional" (v4) | scenario `provisional_graph` |
 
 ## Pass bars
 
 ```toml
 [meta]
 suite = "D0"
-version = 3
-registered = "2026-09-25"
+version = 4
+registered = "2026-10-16"
 
 [table]
 scenarios_must_match = 1.0      # every scenario returns exactly the verdict it names
@@ -105,7 +123,10 @@ strong_effect_irreversible = "act_with_approval"
 effect_below_bar = "refuse"
 uncertain_worth = "experiment"
 contested_result = "experiment"
-provisional_graph = "act_with_approval"
+provisional_graph = "experiment"
+provisional_graph_cannot_test = "act_with_approval"
+provisional_human_edge = "act_with_approval"
+reviewed_llm_edge = "act"
 identified_only_by_iv = "act_with_approval"
 not_identified_can_test = "experiment"
 not_identified_cannot_test = "refuse"
@@ -127,7 +148,7 @@ violations_allowed = 0
 required = [
   "ignore_reversibility", "ignore_risk_class", "best_check_wins",
   "ignore_worthwhile_effect", "refusal_becomes_approval", "ignore_contested",
-  "ignore_segments", "ignore_trend_breakdown",
+  "ignore_segments", "ignore_trend_breakdown", "ignore_llm_edges",
 ]
 ```
 
@@ -210,3 +231,16 @@ on the text being unchanged, which the diff shows.
   `min_trend_breakdown` (default 1: a violation no larger than the pre-adoption deviations already
   seen). Two DiD scenarios and the `ignore_trend_breakdown` defect join the table. Written before
   the check exists; no earlier scenario or bar changed, and the seventeen v2 verdicts stand.
+- **v4 (2026-10-16): an unreviewed edge proposed by a language model caps the verdict at
+  `experiment` (septa-101).** The kernel's certificate now names, among the unreviewed edges, those
+  whose origin is `llm_prior` (contract 0.14.0), and a new check reads them. **One registered
+  verdict changes**, and deliberately: `provisional_graph`, registered as `act_with_approval` since
+  v1, is now `experiment`. Its edge is exactly the case the check exists for. The v1 reasoning —
+  "a person reviews before acting" — conflated two reviews: the person approving an action judges
+  the action with the evidence in front of them, while the estimate's validity is the graph's, and
+  an omitted confounding path is invisible in every number below it. A randomized test of the
+  action does not depend on the graph. Three scenarios bound the change from either side
+  (`provisional_graph_cannot_test`, `provisional_human_edge`, `reviewed_llm_edge`, above), and the
+  `ignore_llm_edges` defect joins the table. Committed before the scenarios exist and before any
+  run; the check's code was drafted alongside this text but had not run. The other eighteen v3
+  verdicts stand, and no other bar changed.

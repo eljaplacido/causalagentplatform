@@ -287,11 +287,13 @@ def identify(g: Graph, query: CausalQuery) -> IdentificationCertificate:
     gdig = digest(g.spec)
     general: IDResult = identify_id(_admg(g), {x}, {y})
     unreviewed = tuple(g.unreviewed_edges())
+    unreviewed_llm = tuple(g.unreviewed_llm_edges())
     base = {
         "engine": ENGINE,
         "graph_digest": gdig,
         "general_id": general.expression,
         "unreviewed_edges": unreviewed,
+        "unreviewed_llm_edges": unreviewed_llm,
     }
 
     def certify(**kw: object) -> IdentificationCertificate:
@@ -309,7 +311,9 @@ def identify(g: Graph, query: CausalQuery) -> IdentificationCertificate:
     if query.design is Design.difference_in_differences:
         from causal_core.panel import certificate as panel_certificate
 
-        return panel_certificate(gdig, ENGINE)
+        return panel_certificate(
+            gdig, ENGINE, unreviewed=unreviewed, unreviewed_llm=unreviewed_llm
+        )
 
     # A user-chosen adjustment set is validated, not replaced.
     if query.adjust_for is not None:

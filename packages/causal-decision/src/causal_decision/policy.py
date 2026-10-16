@@ -304,6 +304,10 @@ def _result_checks(
         detail=f"status {status.value}" + _STATUS_NOTE.get(status, ""),
     ))
 
+    llm = _llm_edge_check(out)
+    if llm is not None:
+        add(llm)
+
     if rule.require_identification_tier_a:
         tier_a = out.certificate.tier is Tier.A
         add(Check(name="identification is nonparametric", passed=tier_a,
@@ -344,6 +348,33 @@ def _result_checks(
                   f"(limit {rule.max_ci_width_over_effect:.2f}x)"))
     checks.extend(_segment_checks(ev, request, trustworthy))
     return checks
+
+
+def _llm_edge_check(out: CausalResult) -> Check | None:
+    """Does the estimate rest on edges a language model guessed and nobody reviewed?
+
+    A provisional graph alone allows ``act_with_approval``: a person signs off with the
+    evidence in front of them. That is not enough when the unreviewed structure came
+    from a language model. The person approving an action is judging the action, not
+    auditing the graph, and the estimate's validity is the graph's: an omitted
+    confounding path is invisible in every number below it. A randomized test of the
+    action does not depend on the graph at all, so it is what this allows; review the
+    edges (approve or refute them) and the cap lifts. Edges from people, data,
+    experiments or the literature are not capped here -- their review state is.
+
+    A seam for the seeded defects: `ignore_llm_edges` makes this return None.
+    """
+    edges = out.certificate.unreviewed_llm_edges
+    if not edges:
+        return None
+    return Check(
+        name="no unreviewed edge was proposed by a language model",
+        passed=False,
+        allows=Verdict.experiment,
+        detail=f"{', '.join(edges)}: proposed by a language model and not reviewed, so the "
+        "estimate rests on a guessed graph; a randomized test does not, and reviewing "
+        "the edges lifts this",
+    )
 
 
 #: What a status means for a decision, in the words the caller sees.

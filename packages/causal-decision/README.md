@@ -83,6 +83,7 @@ recorded whether it passed or failed: *what did you look at* is part of the answ
 | Worth acting on | The interval below the minimum worthwhile effect → `refuse`; straddling it → `experiment` |
 | No material harm | The interval reaching past the harm threshold → `experiment` |
 | Result status | `provisional` (unreviewed graph edges) → `act_with_approval`; `contested` → `experiment` |
+| Edge origin | An unreviewed edge a language model proposed (`origin=llm_prior`) → `experiment`: the person approving an action is not reviewing the graph, and a randomized test does not depend on it. Approving or refuting the edge lifts it |
 | Identification tier | Tier B (assumptions the graph cannot state, such as IV homogeneity) → `act_with_approval` |
 | Falsification tests | A placebo or negative control that fired → `experiment` |
 | Triangulation | Estimators resting on different assumptions disagreeing → `experiment` |

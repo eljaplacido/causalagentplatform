@@ -28,7 +28,7 @@ claim contract, published under `conformance/causal-claims/`.
 
 | Tool | Use it to |
 |---|---|
-| `causal_check_graph` | Draft a causal graph with a user. It validates acyclicity, lists unreviewed (for example LLM-proposed) edges, and lists every testable conditional independence the graph implies. |
+| `causal_check_graph` | Draft a causal graph with a user. It validates acyclicity, lists unreviewed edges and, among them, the ones a language model proposed (while any remain, `causal_decide` answers `experiment`, never `act`), and lists every testable conditional independence the graph implies. |
 | `causal_identify` | Decide *before collecting data* whether the effect is identifiable, and how: back-door, front-door, IV, proximal or general ID. It validates a user-chosen adjustment set. |
 | `causal_analyze` | Estimate the effect, or receive a typed refusal (`NON_IDENTIFIABLE`, `POSITIVITY`, `WEAK_INSTRUMENT`, …) together with what information would help. |
 | `causal_verify_narrative` | Check prose before it reaches a user. Every number must be a claim from the outcome, and causal wording is allowed only for a `supported` result. |
