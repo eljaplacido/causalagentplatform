@@ -26,9 +26,9 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-10-14",
+        "on": "2026-10-15",
         "sha256": {
-          "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
+          "backend/pyproject.toml": "8fda3b82cba613bd1b88767ec2a460085ecc1a38a0a334c1371128ba79a9168b",
           "packages/causal-mcp": "0ff1e417ed366d367d928e9e24d90a183270cc7cee69781021110a024746e66d",
           "frontend/package.json": "21affd9af891b9586d0007239dd483fb40b2124ef909baa0fb28670a8bb59192",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
@@ -36,8 +36,8 @@
         }
       },
       "last_read": {
-        "on": "2026-10-14",
-        "by": "Claude (septa-99 2026-10-14: one CURRENT_STAGE row and a TESTING_CICD paragraph for packages/causal-core/tests/test_metamorphic.py, the only package change; ROADMAP p2 moves septa-99 from queued to built; README names neither)"
+        "on": "2026-10-15",
+        "by": "Claude (fastapi 0.142.4 relock 2026-10-15: read for FastAPI/lock claims; none names a FastAPI version or range, unaffected)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -273,12 +273,12 @@
         "backend/scripts"
       ],
       "baseline": {
-        "on": "2026-10-14",
+        "on": "2026-10-15",
         "sha256": {
           "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
-          "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
+          "backend/pyproject.toml": "8fda3b82cba613bd1b88767ec2a460085ecc1a38a0a334c1371128ba79a9168b",
           "frontend/package.json": "21affd9af891b9586d0007239dd483fb40b2124ef909baa0fb28670a8bb59192",
           "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
           ".env.example": "c1b1272a098696c6c0e72ba533fca78db4060da7c549715d14fb1167656e906a",
@@ -286,8 +286,8 @@
         }
       },
       "last_read": {
-        "on": "2026-10-14",
-        "by": "Claude (merge of #75 into septa-94, 2026-10-14: read for both changes -- the npm-audit fix (next/eslint-config-next 15.5.27, sharp 0.35.5 optional, braces allowlisted, dni:dast-not-built re-cited to CYBERSECURITY.md:688, no status change) and the shadow-run pack (one CURRENT_STAGE row, ROADMAP p2 and TESTING_CICD paragraphs); no doc names the changed package versions, Node >=20 / CI on 24 unchanged, TESTING_CICD describes the allowlist without claiming it is empty)"
+        "on": "2026-10-15",
+        "by": "Claude (fastapi 0.142.4 relock 2026-10-15: read for FastAPI/lock claims; none names a FastAPI version or range, unaffected)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -310,7 +310,7 @@
         "sha256": {
           ".github/workflows": "df92cbc4cd1fb0ab0a9abae5093c9fef08c68f605b3cfee3131de043d4d1fdcb",
           "backend/tests": "5c63921bd97a6a2479736987edca65433f5fa031e1a615ffab8d03e75d04bca2",
-          "backend/pyproject.toml": "4a9689ae815cd911e06867a9901d526c657f1d903ab50c88affcf77da57027de",
+          "backend/pyproject.toml": "8fda3b82cba613bd1b88767ec2a460085ecc1a38a0a334c1371128ba79a9168b",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "c488a844dd07e837e2d22c4b661f4efd3becea08b2315052affe794a0cd78fa6",
           ".gnomon/ci.sh": "9bd34338c9fb7a397f25f383bee73cde526105c9217e6e1ee60bf0e8c0802956",
@@ -323,7 +323,7 @@
       },
       "last_read": {
         "on": "2026-10-15",
-        "by": "Claude (septa-100 2026-10-15, second pass: 5.1 says the scale test bounds user CPU time, system time being the host's page handling)"
+        "by": "Claude (merge of #81's user-CPU-time change into the fastapi relock, 2026-10-15: 5.1 carries the concurrency group and the user-time sentence; no FastAPI version claim)"
       }
     },
     "docs/UIX.md": {
