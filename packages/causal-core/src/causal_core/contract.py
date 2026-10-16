@@ -26,7 +26,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
-CONTRACT_VERSION = "0.13.0"
+CONTRACT_VERSION = "0.14.0"
 
 
 class _Model(BaseModel):
@@ -379,6 +379,12 @@ class IdentificationCertificate(_Model):
         "expression, or 'FAIL: hedge ...'. Every strategy above must agree with it.",
     )
     unreviewed_edges: tuple[str, ...] = ()
+    unreviewed_llm_edges: tuple[str, ...] = Field(
+        default=(),
+        description="The unreviewed edges a language model proposed (origin llm_prior, status "
+        "proposed): a subset of unreviewed_edges. Structure that neither a person, data, an "
+        "experiment nor the literature has vouched for.",
+    )
     engine: str
     graph_digest: str
 

@@ -617,6 +617,15 @@
           },
           "title": "Unreviewed Edges",
           "type": "array"
+        },
+        "unreviewed_llm_edges": {
+          "default": [],
+          "description": "The unreviewed edges a language model proposed (origin llm_prior, status proposed): a subset of unreviewed_edges. Structure that neither a person, data, an experiment nor the literature has vouched for.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Unreviewed Llm Edges",
+          "type": "array"
         }
       },
       "required": [
@@ -865,7 +874,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:causalplatform:claims:0.13.0:abstention",
+  "$id": "urn:causalplatform:claims:0.14.0:abstention",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {

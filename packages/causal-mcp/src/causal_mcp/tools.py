@@ -72,6 +72,12 @@ class GraphCheckResponse(BaseModel):
     observed: list[str] = Field(default_factory=list)
     latent: list[str] = Field(default_factory=list)
     unreviewed_edges: list[str] = Field(default_factory=list)
+    unreviewed_llm_edges: list[str] = Field(
+        default_factory=list,
+        description="The unreviewed edges a language model proposed (origin=llm_prior). While "
+        "any remain, causal_decide answers experiment (act_with_approval when the action cannot "
+        "be randomized), never act; approve or refute them first.",
+    )
     testable_implications: list[Implication] = Field(
         default_factory=list,
         description="Conditional independences the graph implies among observed variables. "
@@ -220,6 +226,7 @@ def causal_check_graph(graph: str, max_implications: int = 50) -> GraphCheckResp
         observed=sorted(g.observed),
         latent=sorted(n for n in g.latent if not n.startswith("⟨")),
         unreviewed_edges=g.unreviewed_edges(),
+        unreviewed_llm_edges=g.unreviewed_llm_edges(),
         testable_implications=[Implication(a=a, b=b, given=list(s)) for a, b, s in imps],
     )
 
