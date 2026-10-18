@@ -51,6 +51,28 @@ def test_a_strong_effect_on_a_reversible_action_is_acted_on() -> None:
     assert resp.decision.decision_digest and resp.decision.policy_digest
 
 
+def test_a_graph_a_language_model_guessed_gets_an_experiment_not_an_action() -> None:
+    """The same evidence as the test above, with its confounding edge an unreviewed LLM guess."""
+    kw: dict[str, Any] = {
+        "graph": "load -> playbook; load -> minutes [origin=llm_prior]; playbook -> minutes",
+        "treatment": "playbook",
+        "outcome": "minutes",
+        "action": "apply remediation playbook X",
+        "direction": "decrease",
+        "data": ops(),
+        "risk_class": "low",
+        "minimum_worthwhile_effect": 5.0,
+        "randomization_unit": "incident",
+        "units_per_day": 40,
+    }
+    resp = tools.causal_decide(**kw)
+    assert resp.decision.verdict == "experiment"
+    assert resp.decision.experiment is not None
+    assert any("language model" in c.name and not c.passed for c in resp.decision.checks)
+    reviewed = kw | {"graph": kw["graph"].replace("llm_prior", "llm_prior, status=approved")}
+    assert tools.causal_decide(**reviewed).decision.verdict == "act"
+
+
 def test_high_risk_always_reaches_a_person_on_the_same_evidence() -> None:
     kw: dict[str, Any] = {
         "graph": GRAPH,

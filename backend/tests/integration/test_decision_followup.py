@@ -305,6 +305,53 @@ async def test_the_database_refuses_a_second_measurement_too(db_session: AsyncSe
         await db_session.commit()
 
 
+# ── review dates ──────────────────────────────────────────────────────────────
+
+
+async def test_every_decision_is_sealed_with_a_review_date(client: AsyncClient) -> None:
+    from datetime import datetime, timedelta
+
+    resp = await client.post("/api/v1/decisions", json=body())
+    assert resp.status_code == 200, resp.text
+    record = resp.json()["record"]
+    at, due = (datetime.fromisoformat(record[k]) for k in ("recorded_at", "review_by"))
+    assert due - at == timedelta(days=90), "the default when the request names none"
+    resp = await client.post("/api/v1/decisions", json=body(review_after_days=14))
+    record = resp.json()["record"]
+    at, due = (datetime.fromisoformat(record[k]) for k in ("recorded_at", "review_by"))
+    assert due - at == timedelta(days=14)
+
+
+async def test_a_decision_past_its_review_date_is_listed_until_measured(
+    client: AsyncClient,
+) -> None:
+    """Decided a year ago with a month to review: calibration lists it until a follow-up."""
+    from datetime import UTC, datetime
+
+    class _YearAgo(datetime):
+        @classmethod
+        def now(cls, tz: object = None) -> datetime:  # type: ignore[override]
+            return datetime(2025, 10, 1, 9, tzinfo=UTC)
+
+    action = "drain the stale queue"
+    with patch("src.api.decisions.datetime", _YearAgo):
+        entry = await _decide(client, action=action, review_after_days=30)
+    fresh = await _decide(client, action="a decision made today")
+
+    listed = (await client.get("/api/v1/decisions/calibration")).json()["past_review"]
+    mine = [p for p in listed if p["action"] == action]
+    assert [p["entry_digest"] for p in mine] == [entry]
+    assert mine[0]["review_by"].startswith("2025-10-31") and mine[0]["verdict"] == "act"
+    assert fresh not in {p["entry_digest"] for p in listed}, "not yet due"
+
+    resp = await client.post(
+        f"/api/v1/decisions/{entry}/followup", json={"data": window(effect=-9.0, seed=1)}
+    )
+    assert resp.status_code == 200, resp.text
+    listed = (await client.get("/api/v1/decisions/calibration")).json()["past_review"]
+    assert entry not in {p["entry_digest"] for p in listed}, "a follow-up re-checked it"
+
+
 async def test_a_calibration_limit_means_the_most_recent_decisions(client: AsyncClient) -> None:
     older = await _decide(client, action="playbook, older")
     await client.post(

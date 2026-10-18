@@ -83,6 +83,7 @@ recorded whether it passed or failed: *what did you look at* is part of the answ
 | Worth acting on | The interval below the minimum worthwhile effect → `refuse`; straddling it → `experiment` |
 | No material harm | The interval reaching past the harm threshold → `experiment` |
 | Result status | `provisional` (unreviewed graph edges) → `act_with_approval`; `contested` → `experiment` |
+| Edge origin | An unreviewed edge a language model proposed (`origin=llm_prior`) → `experiment`: the person approving an action is not reviewing the graph, and a randomized test does not depend on it. Approving or refuting the edge lifts it |
 | Identification tier | Tier B (assumptions the graph cannot state, such as IV homogeneity) → `act_with_approval` |
 | Falsification tests | A placebo or negative control that fired → `experiment` |
 | Triangulation | Estimators resting on different assumptions disagreeing → `experiment` |
@@ -156,6 +157,15 @@ verify_chain(records)   # ok, or exactly which entry stopped holding and why
 what makes it disputable rather than merely stored. A decision to act and an action taken are kept
 as separate facts (`verdict` and `executed`), because conflating them is how a ledger comes to
 overstate what happened.
+
+**A decision has a review date.** Evidence describes the population and the period it was drawn
+from, and both move; a verdict with no date claims to hold forever. `append(..., review_by=...)`
+seals one into the entry (the backend sets it `review_after_days` after deciding, 90 by default —
+a convention, not a measurement). `past_review(records, measured, as_of)` lists the decisions
+whose date has passed while nothing re-checked them: no follow-up measured them and no newer
+record decided the same action again. The calibration report carries that list beside its rates,
+because those decisions are in none of the rates and still stand in the ledger. Records sealed
+before the field existed have no date, digest exactly as they did, and are never listed.
 
 **What the chain does not do.** It makes tampering *detectable*, not impossible: anyone who can
 rewrite the store can rewrite the chain from the altered entry onward, and it will verify again.

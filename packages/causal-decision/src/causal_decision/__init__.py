@@ -43,7 +43,9 @@ from causal_decision.ledger import (
     ChainReport,
     DecisionRecord,
     EvidenceRef,
+    PastReview,
     append,
+    past_review,
     verify_chain,
 )
 from causal_decision.outcome import (
@@ -74,6 +76,7 @@ __all__ = [
     "ExperimentSpec",
     "FollowUp",
     "PairedComparison",
+    "PastReview",
     "RateBounds",
     "RateEstimate",
     "Realization",
@@ -85,6 +88,7 @@ __all__ = [
     "compare",
     "decide",
     "explain",
+    "past_review",
     "plan",
     "report",
     "verify_chain",

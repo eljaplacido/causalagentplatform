@@ -210,14 +210,14 @@
       "capability": "The decision chain's head digest anchored outside the writer's control",
       "claimed_in": [
         {
-          "at": "packages/causal-decision/README.md:160",
+          "at": "packages/causal-decision/README.md:170",
           "says": "**What the chain does not do.** It makes tampering *detectable*, not impossible"
         }
       ],
       "reality": "The chain is built, persisted, served and verified, and decision_records is append-only in the production schema. Both ends of anchoring now exist in code: GET /api/v1/decisions/checkpoint returns the head to publish, and POST /api/v1/decisions/verify-anchored checks the chain against checkpoints kept elsewhere, catching a rewrite that re-seals every later entry (which /verify passes) and a truncation below a checkpoint. What does not exist is the publishing: nothing sends a checkpoint to a store the platform cannot rewrite, so until a deployment does, the ledger still evidences internal consistency only.",
       "evidence": [
         {
-          "at": "backend/src/api/decisions.py:454",
+          "at": "backend/src/api/decisions.py:473",
           "says": "A pass means the chain is *internally* consistent. It cannot mean more than"
         },
         {
@@ -348,7 +348,7 @@
           "says": "What happened after the verdict, and whether the verdict deserved to be trusted."
         },
         {
-          "at": "packages/causal-decision/src/causal_decision/outcome.py:79",
+          "at": "packages/causal-decision/src/causal_decision/outcome.py:80",
           "says": "MIN_FOLLOWUPS = 10"
         }
       ],
@@ -590,7 +590,7 @@
       "reality": "Split from did-extensions when its covariate and not-yet-treated parts left the list (T5 v4). Parallel-trends sensitivity exists since T5 v3 in a simplified, conservative form: relative magnitudes on event-time levels, union-bound intervals, a breakdown multiple. Rambachan & Roth's restriction on consecutive changes and their confidence sets do not exist.",
       "evidence": [
         {
-          "at": "packages/causal-core/src/causal_core/panel.py:587",
+          "at": "packages/causal-core/src/causal_core/panel.py:597",
           "says": "\"relative magnitudes on event-time deviations (after Rambachan & Roth 2023): post-adoption \""
         },
         {
@@ -616,7 +616,7 @@
           "says": "Not offered in this version: time-varying covariates, anticipation windows,"
         },
         {
-          "at": "packages/causal-core/src/causal_core/panel.py:245",
+          "at": "packages/causal-core/src/causal_core/panel.py:255",
           "says": "\"time-invariant, pre-treatment characteristics only; a covariate that changes after \""
         }
       ],
@@ -644,7 +644,7 @@
           "says": "Domain confidence > 0.7"
         },
         {
-          "at": "docs/UIX.md:195",
+          "at": "docs/UIX.md:197",
           "says": "when the Cynefin domain classification is CHAOTIC"
         }
       ],
@@ -685,7 +685,7 @@
       "capability": "One-click Rosenbaum / E-value sensitivity analysis on an approved edge, in the UI",
       "claimed_in": [
         {
-          "at": "docs/UIX.md:246",
+          "at": "docs/UIX.md:248",
           "says": "I want to run a one-click Rosenbaum sensitivity analysis on any approved edge"
         }
       ],

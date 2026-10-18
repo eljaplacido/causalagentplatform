@@ -454,7 +454,7 @@ External agents (Claude Desktop, custom MCP clients, IDE plugins, gnomon) reach 
 
 | MCP tool name | Purpose |
 |---|---|
-| `causal_check_graph` | Validate a drafted graph; list unreviewed edges and its testable implications |
+| `causal_check_graph` | Validate a drafted graph; list unreviewed edges (and which of them a language model proposed, which `causal_decide` will not act on) and its testable implications |
 | `causal_identify` | Identifiable from the graph alone, before data? Returns the certificate or the reason not |
 | `causal_analyze` | Estimate, or return a typed refusal with the missing information (a result, not an error) |
 | `causal_decide` | Only with the `[decision]` extra: analyse and rule in one call — `act`, `act_with_approval`, `experiment` or `refuse` |

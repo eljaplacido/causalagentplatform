@@ -334,6 +334,7 @@ export const CALIBRATION_EMPTY: CalibrationReportResponse = {
   "acted_and_harmful": 0,
   "not_acted_but_worthwhile": 0,
   "by_verdict": {},
+  "past_review": [],
   "note": "Rates are over decidable realizations only, each with a Clopper-Pearson interval, and none is stated below `min_followups`. The undecidable ones are counted beside them because they are not missing at random: a decision that was acted on everywhere is exactly the one whose effect can no longer be measured -- `acted_worthwhile_bounds` carries them as unknowns. `point_in_interval_rate` is not interval coverage of the truth -- the realized figure is itself an estimate, with error this comparison ignores; `interval_overlap_rate` is the weaker statement that accounts for both. Follow-ups are treated as independent; decisions that share incidents or seasons would make every interval here too narrow. The report's arithmetic is gated on simulated streams (C0); no figure here is evidence about real operations until real follow-ups stand behind it."
 };
 
@@ -407,6 +408,7 @@ export const CALIBRATION_ONE: CalibrationReportResponse = {
   "by_verdict": {
     "act": 1
   },
+  "past_review": [],
   "note": "Rates are over decidable realizations only, each with a Clopper-Pearson interval, and none is stated below `min_followups`. The undecidable ones are counted beside them because they are not missing at random: a decision that was acted on everywhere is exactly the one whose effect can no longer be measured -- `acted_worthwhile_bounds` carries them as unknowns. `point_in_interval_rate` is not interval coverage of the truth -- the realized figure is itself an estimate, with error this comparison ignores; `interval_overlap_rate` is the weaker statement that accounts for both. Follow-ups are treated as independent; decisions that share incidents or seasons would make every interval here too narrow. The report's arithmetic is gated on simulated streams (C0); no figure here is evidence about real operations until real follow-ups stand behind it."
 };
 
@@ -495,6 +497,7 @@ export const CALIBRATION_TWELVE: CalibrationReportResponse = {
   "by_verdict": {
     "act": 12
   },
+  "past_review": [],
   "note": "Rates are over decidable realizations only, each with a Clopper-Pearson interval, and none is stated below `min_followups`. The undecidable ones are counted beside them because they are not missing at random: a decision that was acted on everywhere is exactly the one whose effect can no longer be measured -- `acted_worthwhile_bounds` carries them as unknowns. `point_in_interval_rate` is not interval coverage of the truth -- the realized figure is itself an estimate, with error this comparison ignores; `interval_overlap_rate` is the weaker statement that accounts for both. Follow-ups are treated as independent; decisions that share incidents or seasons would make every interval here too narrow. The report's arithmetic is gated on simulated streams (C0); no figure here is evidence about real operations until real follow-ups stand behind it."
 };
 
@@ -684,4 +687,23 @@ export const IMPACT_V1_TO_V2: ImpactResponse = {
   "unreviewed_before": [],
   "unreviewed_after": [],
   "digest": "sha256:5ba7e8ca56a9e4496640d82cd098e547f7c7ba0622ecb23cf7bf9bb71e0834aa"
+};
+
+/**
+ * report() with the past-review list of one decision: the act above, sealed on
+ * 2026-07-01 with review_by 2026-09-29 and executed, with no follow-up and no
+ * newer decision on the action, read on 2026-10-16 (causal_decision.ledger.past_review).
+ */
+export const CALIBRATION_PAST_REVIEW: CalibrationReportResponse = {
+  ...CALIBRATION_EMPTY,
+  "past_review": [
+    {
+      "entry_digest": "sha256:c2a548c26fb8cf3e2d83ef9fc289fd98ab71f8ba3ee8acbf49c908185d37a305",
+      "sequence": 0,
+      "action": "adopt the incident playbook",
+      "verdict": "act",
+      "review_by": "2026-09-29T09:00:00+00:00",
+      "executed": true
+    }
+  ]
 };

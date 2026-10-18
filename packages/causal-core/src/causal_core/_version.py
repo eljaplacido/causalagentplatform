@@ -5,4 +5,4 @@ install time, so a later bump left the running code reporting the old one --
 and causal-core hashes its version into every result's provenance.
 """
 
-__version__ = "0.13.0"
+__version__ = "0.14.0"
