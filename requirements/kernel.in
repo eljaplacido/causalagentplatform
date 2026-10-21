@@ -10,3 +10,9 @@ editables
 -e ./packages/causal-decision[dev]
 -e ./packages/causal-mcp[dev,http,decision]
 httpx
+
+# Advisory floors (2026-10-21): GHSA-6q48-6c7w-9gw2 is fixed in certifi 2026.10.19.
+certifi>=2026.10.19
+# Eight pillow advisories (CVE-2026-112395 and others) are fixed only in 13.0.0;
+# pillow reaches the kernel through matplotlib and statsmodels.
+pillow>=13.0.0

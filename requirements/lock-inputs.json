@@ -9,7 +9,7 @@
       "made_with": "uv 0.11.30",
       "inputs": {
         "options": "c77c3d0d9d9625e0e01c60e5a67d6877dd37c874a3a38e2b2b65c4ded9bf9ae1",
-        "requirements/backend.in": "f5a611a8f6c34de16b3617de4c55135a94cf5dcfab7a968df680c29eb6b34177",
+        "requirements/backend.in": "2507d62850a9feac32c4b946cf4bc1be6b3785c156ebefc0943b3cf69e495d6d",
         "packages/causal-core/pyproject.toml": "d43a9ef58656f9e87bf0498873f75440c1effbc113c3bbae046201e411dcf221",
         "packages/causal-decision/pyproject.toml": "fd2829e39c7632268d5637025c15da6cf6ebb0a082d257f7d2dc7b443ed0df79",
         "backend/pyproject.toml": "987e1c74f8d515d572100b2d6db01caad4fa2e5f18ad60ec02f7e9742f57467d"
@@ -19,7 +19,7 @@
       "made_with": "uv 0.11.30",
       "inputs": {
         "options": "c77c3d0d9d9625e0e01c60e5a67d6877dd37c874a3a38e2b2b65c4ded9bf9ae1",
-        "requirements/kernel.in": "39f2079d503d34efff7abee4854268f01f9ab549f12fc9b47655494aea2edc7a",
+        "requirements/kernel.in": "1692a58912487f07e90a8146afd84f0a5bbf8aa5a3a9163dfb577415599d986a",
         "packages/causal-core/pyproject.toml": "d43a9ef58656f9e87bf0498873f75440c1effbc113c3bbae046201e411dcf221",
         "packages/causal-decision/pyproject.toml": "fd2829e39c7632268d5637025c15da6cf6ebb0a082d257f7d2dc7b443ed0df79",
         "packages/causal-mcp/pyproject.toml": "dc4a52d582fe501f69b56175f4ca3e34324f31d6f1efb602b8c8e0c3498d986c"
@@ -29,7 +29,7 @@
       "made_with": "uv 0.11.30",
       "inputs": {
         "options": "c77c3d0d9d9625e0e01c60e5a67d6877dd37c874a3a38e2b2b65c4ded9bf9ae1",
-        "requirements/image.in": "380000090974c09d6f56e8413e06ac4e75844d6fc82d16a0cdc158933b381370",
+        "requirements/image.in": "35f713d3d56fa0eead844a76d953194cf289b930e79a2df7b00c3bac9cc118ab",
         "packages/causal-core/pyproject.toml": "d43a9ef58656f9e87bf0498873f75440c1effbc113c3bbae046201e411dcf221",
         "packages/causal-decision/pyproject.toml": "fd2829e39c7632268d5637025c15da6cf6ebb0a082d257f7d2dc7b443ed0df79",
         "backend/pyproject.toml": "987e1c74f8d515d572100b2d6db01caad4fa2e5f18ad60ec02f7e9742f57467d"
