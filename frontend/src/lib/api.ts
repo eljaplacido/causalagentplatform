@@ -310,6 +310,13 @@ export interface SessionStateResponse {
   timestamp: string;
 }
 
+/** Response of POST /api/v1/session/incident (backend IncidentSessionResponse):
+ * the triage result, and whether the incident row itself was stored. */
+export interface IncidentSessionResponse extends SessionStateResponse {
+  stored: boolean;
+  store_error: string | null;
+}
+
 /** One row of GET /api/governance/review-queue (governance.py ReviewQueueItem), snake_case. */
 export interface ReviewQueueItemResponse {
   id: string;
@@ -412,7 +419,7 @@ export const sessionApi = {
   run: (body: unknown) =>
     api.post<SessionStateResponse>("/api/v1/session/run", body),
   incident: (body: unknown) =>
-    api.post<SessionStateResponse>("/api/v1/session/incident", body),
+    api.post<IncidentSessionResponse>("/api/v1/session/incident", body),
   getState: (sessionId: string) =>
     api.get<SessionStateResponse>(`/api/v1/session/${sessionId}/state`),
 };

@@ -168,6 +168,7 @@ export default function IncidentsPage() {
   const [isSubmitOpen, setIsSubmitOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [notStored, setNotStored] = useState<string | null>(null);
 
   const {
     register,
@@ -217,6 +218,7 @@ export default function IncidentsPage() {
   async function onSubmitIncident(data: SubmitIncidentForm) {
     // Clear prior error
     setSubmitError(null);
+    setNotStored(null);
 
     // ── UX CONTRACT: ThinkingIndicator must appear within 150ms ──────────────
     // Set isThinking BEFORE the async API call (optimistic, synchronous)
@@ -280,6 +282,14 @@ export default function IncidentsPage() {
         return [newIncident, ...without];
       });
       setSelectedIncidentId(newIncident.id);
+      // The triage ran and its verdict is audited, but the incident row was not
+      // saved: it is shown now and will be gone after a reload, so say so.
+      if (!result.stored) {
+        setNotStored(
+          `${incidentId} was triaged but NOT stored: ${result.store_error ?? "no reason given"}. ` +
+            "It will not be listed after a reload; submit it again."
+        );
+      }
     } catch (err) {
       // ── Fail-closed: surface the error explicitly, do NOT create a fake incident record
       const errorMsg = err instanceof CausalApiError
@@ -519,6 +529,17 @@ export default function IncidentsPage() {
             >
               <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
               <span>{loadError}</span>
+            </div>
+          )}
+
+          {notStored && (
+            <div
+              role="alert"
+              data-testid="incident-not-stored"
+              className="flex items-start gap-2 border-b border-red-200 bg-red-50 p-3 text-xs text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200"
+            >
+              <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
+              <span>{notStored}</span>
             </div>
           )}
 
