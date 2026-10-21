@@ -26,18 +26,18 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-10-16",
+        "on": "2026-10-21",
         "sha256": {
           "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
-          "packages/causal-mcp": "6e8f083e9d327316645eec202dc5f9dbb97e286d8e22b76ed0f4995410bcdd38",
+          "packages/causal-mcp": "35192f39336f9b093e80f90f400af64be1d6423ebdb43a7027bab75073cee240",
           "frontend/package.json": "21affd9af891b9586d0007239dd483fb40b2124ef909baa0fb28670a8bb59192",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "5b635ab8cbd9f6cb23aeefa75d53ae526efe45d5d41eb0b5abc0af7d8e0dd62b"
+          "docs/CURRENT_STAGE.md": "137d71d3a23abd54e762a655507c666aac5efc19fb343c599ef041db8dba5870"
         }
       },
       "last_read": {
-        "on": "2026-10-16",
-        "by": "Claude (septa-102: read for review dates, past_review and causal-decision 0.6.0 -- decisions view, roadmap step 5, ledger and calibration rows)"
+        "on": "2026-10-21",
+        "by": "Claude (septa-55: read for the MCP listing -- AGENTS MCP exposure paragraph, CURRENT_STAGE MCP rows (new row for the listing size), README MCP lines; ROADMAP's MCP mentions unaffected)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -51,19 +51,19 @@
         "specs"
       ],
       "baseline": {
-        "on": "2026-10-16",
+        "on": "2026-10-21",
         "sha256": {
           "conformance/declared_not_implemented.json": "9a295a8d2cf07611dbf98f0823d87f0e00ec46c79803fc67ad263d4b7531417b",
           "backend/src": "528157d568c54f37333315385a1e6ee7b1d25b3e410438f345cfc6c8769c3347",
           "backend/tests": "458578950a789e7fb5e2649bb50c19b62dee5a1587fdfd762d5b453c28d8f288",
           "frontend/src": "e5901779d6330479ba2978a628114cbea9ecd802e5985a6cab80beb5a314918a",
-          "packages": "b948f55de801f276b6fe81f68196ccdfda697e19821e751a005230ed39c0c541",
+          "packages": "c2490d3a0c714d997b07f307aff99272f36a429be9de9af55f8f4011df453ce7",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
-        "on": "2026-10-16",
-        "by": "Claude (register moved only by two UIX citation line numbers, 195->197 and 246->248; the rows linking those entries are unchanged)"
+        "on": "2026-10-21",
+        "by": "Claude (septa-55: read for the MCP listing -- AGENTS MCP exposure paragraph, CURRENT_STAGE MCP rows (new row for the listing size), README MCP lines; ROADMAP's MCP mentions unaffected)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -144,18 +144,18 @@
         "prompts"
       ],
       "baseline": {
-        "on": "2026-10-16",
+        "on": "2026-10-21",
         "sha256": {
           "backend/src/agents": "81a4e9fe97f4324a0456c26edc3dee0238f64f8540ac59be17e046fd4750a48d",
           "backend/src/skills": "b0bcef79c64f6b8d2f35f87f92095d54c52cec7d972a4cf1520b95fcc0d68347",
-          "packages/causal-mcp": "6e8f083e9d327316645eec202dc5f9dbb97e286d8e22b76ed0f4995410bcdd38",
+          "packages/causal-mcp": "35192f39336f9b093e80f90f400af64be1d6423ebdb43a7027bab75073cee240",
           "backend/src/orchestration": "e2eb3496c39122094c47140ed28a932742480b35a2cbe4d2c1a11a40e9a0c6f7",
           "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9"
         }
       },
       "last_read": {
-        "on": "2026-10-16",
-        "by": "Claude (septa-101: read for the LLM-edge cap, contract 0.14.0 and D0 v4 -- counts, verdict ladder, MCP tool rows, card)"
+        "on": "2026-10-21",
+        "by": "Claude (septa-55: read for the MCP listing -- AGENTS MCP exposure paragraph, CURRENT_STAGE MCP rows (new row for the listing size), README MCP lines; ROADMAP's MCP mentions unaffected)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -350,16 +350,16 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-10-16",
+        "on": "2026-10-21",
         "sha256": {
           "packages/causal-core/src/causal_core": "808b370dd05adaf6520a435312f501533e0b9f82239e15fbe2073c893278180f",
           "conformance/declared_not_implemented.json": "9a295a8d2cf07611dbf98f0823d87f0e00ec46c79803fc67ad263d4b7531417b",
-          "docs/CURRENT_STAGE.md": "5b635ab8cbd9f6cb23aeefa75d53ae526efe45d5d41eb0b5abc0af7d8e0dd62b"
+          "docs/CURRENT_STAGE.md": "137d71d3a23abd54e762a655507c666aac5efc19fb343c599ef041db8dba5870"
         }
       },
       "last_read": {
-        "on": "2026-10-16",
-        "by": "Claude (register moved only by two UIX citation line numbers, 195->197 and 246->248; the rows linking those entries are unchanged)"
+        "on": "2026-10-21",
+        "by": "Claude (septa-55: read for the MCP listing -- AGENTS MCP exposure paragraph, CURRENT_STAGE MCP rows (new row for the listing size), README MCP lines; ROADMAP's MCP mentions unaffected)"
       }
     },
     "SECURITY.md": {
