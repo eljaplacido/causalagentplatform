@@ -26,18 +26,18 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-10-16",
+        "on": "2026-10-21",
         "sha256": {
           "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
           "packages/causal-mcp": "6e8f083e9d327316645eec202dc5f9dbb97e286d8e22b76ed0f4995410bcdd38",
           "frontend/package.json": "21affd9af891b9586d0007239dd483fb40b2124ef909baa0fb28670a8bb59192",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "5b635ab8cbd9f6cb23aeefa75d53ae526efe45d5d41eb0b5abc0af7d8e0dd62b"
+          "docs/CURRENT_STAGE.md": "357aefdb1b3bc094074a02343d71b3a20a8a53c790279dadb0e94a9cf50cc9de"
         }
       },
       "last_read": {
-        "on": "2026-10-16",
-        "by": "Claude (septa-102: read for review dates, past_review and causal-decision 0.6.0 -- decisions view, roadmap step 5, ledger and calibration rows)"
+        "on": "2026-10-21",
+        "by": "Claude (septa-97: read for the gated browser golden path -- ROADMAP p2 test work (septa-97 now gated), README's /analyze line unaffected)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -350,16 +350,16 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-10-16",
+        "on": "2026-10-21",
         "sha256": {
           "packages/causal-core/src/causal_core": "808b370dd05adaf6520a435312f501533e0b9f82239e15fbe2073c893278180f",
           "conformance/declared_not_implemented.json": "9a295a8d2cf07611dbf98f0823d87f0e00ec46c79803fc67ad263d4b7531417b",
-          "docs/CURRENT_STAGE.md": "5b635ab8cbd9f6cb23aeefa75d53ae526efe45d5d41eb0b5abc0af7d8e0dd62b"
+          "docs/CURRENT_STAGE.md": "357aefdb1b3bc094074a02343d71b3a20a8a53c790279dadb0e94a9cf50cc9de"
         }
       },
       "last_read": {
-        "on": "2026-10-16",
-        "by": "Claude (register moved only by two UIX citation line numbers, 195->197 and 246->248; the rows linking those entries are unchanged)"
+        "on": "2026-10-21",
+        "by": "Claude (septa-97: read for the gated browser golden path -- ROADMAP p2 test work (septa-97 now gated), README's /analyze line unaffected)"
       }
     },
     "SECURITY.md": {
