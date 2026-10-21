@@ -32,7 +32,7 @@
           "packages/causal-mcp": "ff3535460199623c814f7524892e3716c65e4bab3e929756340321a1789aa907",
           "frontend/package.json": "21affd9af891b9586d0007239dd483fb40b2124ef909baa0fb28670a8bb59192",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "d0e147763f0636701d25fc8e0274e8b0185c67802149e53ef6e2b0a55f0a0b51"
+          "docs/CURRENT_STAGE.md": "164950fa6f26f05ff7b799520009605c674614504ceb00e93f84d3b6543ed493"
         }
       },
       "last_read": {
@@ -87,7 +87,7 @@
       },
       "last_read": {
         "on": "2026-10-21",
-        "by": "Claude (merge train septa-83 + septa-86 + septa-55: the three changes' rows read together -- decisions, provenance, incident stored:false, MCP listing; UIX incidents paragraph)"
+        "by": "Claude (merge train septa-83 + septa-86 + septa-55 + septa-97: the four changes' rows read together -- decisions, provenance, incident stored:false, MCP listing and AGENTS MCP paragraph, frontend-e2e step and roadmap test work)"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -247,17 +247,17 @@
         ".gnomon"
       ],
       "baseline": {
-        "on": "2026-10-16",
+        "on": "2026-10-21",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9",
           ".github": "a77f8351dce4603fbbbcee30576b3e042f5fef0dcb8e323b53b05f3c68fa467e",
-          ".gnomon": "e9e7c35dc5fef3f3791379417977eb0ca04519f4198aabaef3f63045be97ce31"
+          ".gnomon": "5b6f297cd580dcd75c0b5191462467ebb046083612c15fd9c9a511b0ba840236"
         }
       },
       "last_read": {
-        "on": "2026-10-16",
-        "by": "Claude (septa-101: read for the LLM-edge cap, contract 0.14.0 and D0 v4 -- counts, verdict ladder, MCP tool rows, card)"
+        "on": "2026-10-21",
+        "by": "Claude (septa-97: read for the ci.sh change -- the verifier, verify.sh and .gnomon rows still hold; ORCHESTRATION lists no gate steps)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -312,8 +312,8 @@
           "backend/tests": "ed6e8c031488d045d9241d153887965ff1a328843b93b4e8ecef976938ba51aa",
           "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
-          "frontend/playwright.config.ts": "c488a844dd07e837e2d22c4b661f4efd3becea08b2315052affe794a0cd78fa6",
-          ".gnomon/ci.sh": "9bd34338c9fb7a397f25f383bee73cde526105c9217e6e1ee60bf0e8c0802956",
+          "frontend/playwright.config.ts": "5dc65a49d6975444738042f9c292b56050a932ed23932e45498fbcea6285ff3e",
+          ".gnomon/ci.sh": "a203a97aa6b72b34bc2ee7b3dde6d019fb465dd661b1b37d184be14f0ba3134c",
           "scripts": "278a32b7c89005b58823c63b1a555bc3c98a4ec0f83d498eb6e1f990ce58c006",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "17b15235a74e84e3de54a752eed9d89b9f44d4e6880ba2afceb1129a9650eab5",
@@ -323,7 +323,7 @@
       },
       "last_read": {
         "on": "2026-10-21",
-        "by": "Claude (merge train septa-83 + septa-86 + septa-55: the three changes' rows read together -- decisions, provenance, incident stored:false, MCP listing; UIX incidents paragraph)"
+        "by": "Claude (merge train septa-83 + septa-86 + septa-55 + septa-97: the four changes' rows read together -- decisions, provenance, incident stored:false, MCP listing and AGENTS MCP paragraph, frontend-e2e step and roadmap test work)"
       }
     },
     "docs/UIX.md": {
@@ -339,7 +339,7 @@
       },
       "last_read": {
         "on": "2026-10-21",
-        "by": "Claude (merge train septa-83 + septa-86 + septa-55: the three changes' rows read together -- decisions, provenance, incident stored:false, MCP listing; UIX incidents paragraph)"
+        "by": "Claude (merge train septa-83 + septa-86 + septa-55 + septa-97: the four changes' rows read together -- decisions, provenance, incident stored:false, MCP listing and AGENTS MCP paragraph, frontend-e2e step and roadmap test work)"
       }
     },
     "docs/ROADMAP.md": {
@@ -354,12 +354,12 @@
         "sha256": {
           "packages/causal-core/src/causal_core": "808b370dd05adaf6520a435312f501533e0b9f82239e15fbe2073c893278180f",
           "conformance/declared_not_implemented.json": "7b56517d7f6b1ba0ac1ec12bc763c43b0c944e44174eabb7ba437fa54e880906",
-          "docs/CURRENT_STAGE.md": "d0e147763f0636701d25fc8e0274e8b0185c67802149e53ef6e2b0a55f0a0b51"
+          "docs/CURRENT_STAGE.md": "164950fa6f26f05ff7b799520009605c674614504ceb00e93f84d3b6543ed493"
         }
       },
       "last_read": {
         "on": "2026-10-21",
-        "by": "Claude (merge train septa-83 + septa-86 + septa-55: the three changes' rows read together -- decisions, provenance, incident stored:false, MCP listing; UIX incidents paragraph)"
+        "by": "Claude (merge train septa-83 + septa-86 + septa-55 + septa-97: the four changes' rows read together -- decisions, provenance, incident stored:false, MCP listing and AGENTS MCP paragraph, frontend-e2e step and roadmap test work)"
       }
     },
     "SECURITY.md": {
