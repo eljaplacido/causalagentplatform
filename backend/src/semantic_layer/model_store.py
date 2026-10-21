@@ -12,7 +12,7 @@ rebuilds on the new head, so a revision is delayed, never silently merged.
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import structlog
 from causal_core.contract import CausalQuery
@@ -23,6 +23,9 @@ from sqlalchemy.exc import IntegrityError
 
 from src.db.factory import CloudSqlFactory
 from src.db.types import TIMESTAMP, timestamp_text, typed_text
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 log = structlog.get_logger(__name__)
 
@@ -159,28 +162,36 @@ class ModelStore:
         query: CausalQuery,
         unmeasured: tuple[str, ...],
         recorded_at: str,
+        session: AsyncSession | None = None,
     ) -> None:
-        async with CloudSqlFactory.get_session_factory()() as session:
-            await session.execute(
-                typed_text(
-                    "INSERT INTO decision_model_refs (entry_digest, model_name, model_version, "
-                    " model_digest, verdict, action, query, unmeasured, recorded_at) "
-                    "VALUES (:e, :n, :v, :d, :verdict, :action, :q, :u, :at)",
-                    at=TIMESTAMP,
-                ),
-                {
-                    "e": entry_digest,
-                    "n": model.name,
-                    "v": model.version,
-                    "d": model.digest,
-                    "verdict": verdict,
-                    "action": action,
-                    "q": query.model_dump_json(),
-                    "u": json.dumps(list(unmeasured)),
-                    "at": recorded_at,
-                },
-            )
-            await session.commit()
+        """Which version a sealed decision rested on, and what it asked.
+
+        With `session`, the insert joins the caller's transaction and the caller
+        commits. Without it, the store commits its own.
+        """
+        params = {
+            "e": entry_digest,
+            "n": model.name,
+            "v": model.version,
+            "d": model.digest,
+            "verdict": verdict,
+            "action": action,
+            "q": query.model_dump_json(),
+            "u": json.dumps(list(unmeasured)),
+            "at": recorded_at,
+        }
+        insert = typed_text(
+            "INSERT INTO decision_model_refs (entry_digest, model_name, model_version, "
+            " model_digest, verdict, action, query, unmeasured, recorded_at) "
+            "VALUES (:e, :n, :v, :d, :verdict, :action, :q, :u, :at)",
+            at=TIMESTAMP,
+        )
+        if session is not None:
+            await session.execute(insert, params)
+            return
+        async with CloudSqlFactory.get_session_factory()() as own:
+            await own.execute(insert, params)
+            await own.commit()
 
     async def decisions_on(self, name: str, before_version: int | None = None
                            ) -> list[DecisionOnModel]:

@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     from causal_decision.assumptions import ModelRef
     from causal_decision.contract import Decision
     from causal_decision.ledger import Approval
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 log = structlog.get_logger(__name__)
 
@@ -78,8 +79,15 @@ class DecisionStore:
         executed: bool = False,
         model: ModelRef | None = None,
         review_by: str | None = None,
+        *,
+        session: AsyncSession | None = None,
     ) -> DecisionRecord:
-        """Seal this decision onto the end of the chain and store it."""
+        """Seal this decision onto the end of the chain and store it.
+
+        With `session`, the insert joins the caller's transaction and the caller
+        commits: the entry is sealed only when that commit lands, together with
+        whatever else the caller wrote. Without it, the store commits its own.
+        """
         tail = await self.head()
         entry = append(
             tail,
@@ -91,35 +99,23 @@ class DecisionStore:
             model=model,
             review_by=review_by,
         )
-        async with CloudSqlFactory.get_session_factory()() as session:
+        if session is not None:
             try:
-                await session.execute(
-                    typed_text(
-                        "INSERT INTO decision_records "
-                        "(sequence, entry_digest, prev_digest, decision_digest, subject, "
-                        " verdict, recorded_at, record) "
-                        "VALUES (:seq, :entry, :prev, :dd, :subject, :verdict, :at, :record)",
-                        # The sealed record keeps recorded_at as the text it hashed; the
-                        # column is an index over it, typed as the time it names.
-                        at=TIMESTAMP,
-                    ),
-                    {
-                        "seq": entry.sequence,
-                        "entry": entry.entry_digest,
-                        "prev": entry.prev_digest,
-                        "dd": entry.decision.decision_digest,
-                        "subject": entry.decision.request.action,
-                        "verdict": str(entry.decision.verdict),
-                        "at": entry.recorded_at,
-                        "record": json.dumps(entry.model_dump(mode="json")),
-                    },
-                )
-                await session.commit()
-            except Exception as exc:  # noqa: BLE001 - re-raised as a typed conflict below
-                await session.rollback()
+                await _insert_record(session, entry)
+            except IntegrityError as exc:
                 raise LedgerConflictError(
                     f"could not seal decision at sequence {entry.sequence}: {exc}"
                 ) from exc
+        else:
+            async with CloudSqlFactory.get_session_factory()() as own:
+                try:
+                    await _insert_record(own, entry)
+                    await own.commit()
+                except Exception as exc:  # noqa: BLE001 - re-raised as a typed conflict below
+                    await own.rollback()
+                    raise LedgerConflictError(
+                        f"could not seal decision at sequence {entry.sequence}: {exc}"
+                    ) from exc
 
         log.info(
             "ledger.recorded",
@@ -158,15 +154,25 @@ class DecisionStore:
 
     # ── follow-ups: what was going to be re-measured, and what came back ──────
 
-    async def save_plan(self, entry_digest: str, followup: FollowUp) -> None:
+    async def save_plan(
+        self,
+        entry_digest: str,
+        followup: FollowUp,
+        *,
+        session: AsyncSession | None = None,
+    ) -> None:
         """Record, at decision time, what would have to be re-run to score this verdict.
 
         Written now rather than reconstructed later, because the plan carries a
         copy of the prediction the verdict used. Rebuilt afterwards it would carry
         whatever a fresh analysis says today, which is the target moving after the
         result is known.
+
+        With `session`, the insert joins the caller's transaction (see `record`).
         """
-        await self._append_followup(entry_digest, followup.decision_digest, "plan", None, followup)
+        await self._append_followup(
+            entry_digest, followup.decision_digest, "plan", None, followup, session=session
+        )
 
     async def plan_for(self, entry_digest: str) -> FollowUp | None:
         async with CloudSqlFactory.get_session_factory()() as session:
@@ -237,32 +243,31 @@ class DecisionStore:
         kind: str,
         decidable: bool | None,
         payload: FollowUp | Realization,
+        *,
+        session: AsyncSession | None = None,
     ) -> None:
-        async with CloudSqlFactory.get_session_factory()() as session:
+        params = {
+            "e": entry_digest,
+            "d": decision_digest,
+            "k": kind,
+            "ok": decidable,
+            "at": datetime.now(UTC),
+            "p": payload.model_dump_json(),
+        }
+        conflict = f"decision {entry_digest} already has a {kind}; the first one stands"
+        if session is not None:
             try:
-                await session.execute(
-                    typed_text(
-                        "INSERT INTO decision_followups ("
-                        "  entry_digest, decision_digest, kind, decidable, created_at, payload"
-                        ") VALUES (:e, :d, :k, :ok, :at, :p)",
-                        ok=BOOLEAN,
-                        at=TIMESTAMP,
-                    ),
-                    {
-                        "e": entry_digest,
-                        "d": decision_digest,
-                        "k": kind,
-                        "ok": decidable,
-                        "at": datetime.now(UTC),
-                        "p": payload.model_dump_json(),
-                    },
-                )
-                await session.commit()
+                await session.execute(_INSERT_FOLLOWUP, params)
             except IntegrityError as exc:
-                await session.rollback()
-                raise FollowUpConflictError(
-                    f"decision {entry_digest} already has a {kind}; the first one stands"
-                ) from exc
+                raise FollowUpConflictError(conflict) from exc
+        else:
+            async with CloudSqlFactory.get_session_factory()() as own:
+                try:
+                    await own.execute(_INSERT_FOLLOWUP, params)
+                    await own.commit()
+                except IntegrityError as exc:
+                    await own.rollback()
+                    raise FollowUpConflictError(conflict) from exc
         log.info(
             "decision_store.followup_appended",
             entry_digest=entry_digest,
@@ -278,6 +283,39 @@ class DecisionStore:
             )
             raw = row.scalar()
         return None if raw is None else DecisionRecord.model_validate(_loads(raw))
+
+
+_INSERT_FOLLOWUP = typed_text(
+    "INSERT INTO decision_followups ("
+    "  entry_digest, decision_digest, kind, decidable, created_at, payload"
+    ") VALUES (:e, :d, :k, :ok, :at, :p)",
+    ok=BOOLEAN,
+    at=TIMESTAMP,
+)
+
+
+async def _insert_record(session: AsyncSession, entry: DecisionRecord) -> None:
+    await session.execute(
+        typed_text(
+            "INSERT INTO decision_records "
+            "(sequence, entry_digest, prev_digest, decision_digest, subject, "
+            " verdict, recorded_at, record) "
+            "VALUES (:seq, :entry, :prev, :dd, :subject, :verdict, :at, :record)",
+            # The sealed record keeps recorded_at as the text it hashed; the
+            # column is an index over it, typed as the time it names.
+            at=TIMESTAMP,
+        ),
+        {
+            "seq": entry.sequence,
+            "entry": entry.entry_digest,
+            "prev": entry.prev_digest,
+            "dd": entry.decision.decision_digest,
+            "subject": entry.decision.request.action,
+            "verdict": str(entry.decision.verdict),
+            "at": entry.recorded_at,
+            "record": json.dumps(entry.model_dump(mode="json")),
+        },
+    )
 
 
 def _loads(raw: Any) -> dict[str, Any]:
