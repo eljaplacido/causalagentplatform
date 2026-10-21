@@ -29,7 +29,7 @@
         "on": "2026-10-21",
         "sha256": {
           "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
-          "packages/causal-mcp": "35192f39336f9b093e80f90f400af64be1d6423ebdb43a7027bab75073cee240",
+          "packages/causal-mcp": "37f93cdb412bef579209f46d1f12958fbca349325bc0b84b0c71d71d598ee7a0",
           "frontend/package.json": "21affd9af891b9586d0007239dd483fb40b2124ef909baa0fb28670a8bb59192",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docs/CURRENT_STAGE.md": "164950fa6f26f05ff7b799520009605c674614504ceb00e93f84d3b6543ed493"
@@ -37,7 +37,7 @@
       },
       "last_read": {
         "on": "2026-10-21",
-        "by": "Claude (merge train septa-83 + septa-86 + septa-55 + septa-97: the four changes' rows read together -- decisions, provenance, incident stored:false, MCP listing and AGENTS MCP paragraph, frontend-e2e step and roadmap test work)"
+        "by": "Claude (main merged in after #87: packages subjects changed only by #87's CHANGELOGs; this train's rows as blessed for each change)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -57,13 +57,13 @@
           "backend/src": "56ca28dd53e2d20be2d46d32b213d2224f478f2e920c4fe99dafc16ebcdb8bd7",
           "backend/tests": "ed6e8c031488d045d9241d153887965ff1a328843b93b4e8ecef976938ba51aa",
           "frontend/src": "272ae49bda670a7e84235bba75c76ee2c48d95278bd1107281d6daabd1756435",
-          "packages": "c2490d3a0c714d997b07f307aff99272f36a429be9de9af55f8f4011df453ce7",
+          "packages": "920824bbc67975f65a5b84bec99170276fcfe4a57c63b3b68182ca0f98239aab",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-10-21",
-        "by": "Claude (merge train septa-83 + septa-86 + septa-55 + septa-97: the four changes' rows read together -- decisions, provenance, incident stored:false, MCP listing and AGENTS MCP paragraph, frontend-e2e step and roadmap test work)"
+        "by": "Claude (main merged in after #87: packages subjects changed only by #87's CHANGELOGs; this train's rows as blessed for each change)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -148,14 +148,14 @@
         "sha256": {
           "backend/src/agents": "81a4e9fe97f4324a0456c26edc3dee0238f64f8540ac59be17e046fd4750a48d",
           "backend/src/skills": "b0bcef79c64f6b8d2f35f87f92095d54c52cec7d972a4cf1520b95fcc0d68347",
-          "packages/causal-mcp": "35192f39336f9b093e80f90f400af64be1d6423ebdb43a7027bab75073cee240",
+          "packages/causal-mcp": "37f93cdb412bef579209f46d1f12958fbca349325bc0b84b0c71d71d598ee7a0",
           "backend/src/orchestration": "e2eb3496c39122094c47140ed28a932742480b35a2cbe4d2c1a11a40e9a0c6f7",
           "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9"
         }
       },
       "last_read": {
         "on": "2026-10-21",
-        "by": "Claude (merge train septa-83 + septa-86 + septa-55 + septa-97: the four changes' rows read together -- decisions, provenance, incident stored:false, MCP listing and AGENTS MCP paragraph, frontend-e2e step and roadmap test work)"
+        "by": "Claude (main merged in after #87: packages subjects changed only by #87's CHANGELOGs; this train's rows as blessed for each change)"
       }
     },
     "docs/CYBERSECURITY.md": {
