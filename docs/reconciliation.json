@@ -26,18 +26,18 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-10-16",
+        "on": "2026-10-21",
         "sha256": {
           "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
           "packages/causal-mcp": "6e8f083e9d327316645eec202dc5f9dbb97e286d8e22b76ed0f4995410bcdd38",
           "frontend/package.json": "21affd9af891b9586d0007239dd483fb40b2124ef909baa0fb28670a8bb59192",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "5b635ab8cbd9f6cb23aeefa75d53ae526efe45d5d41eb0b5abc0af7d8e0dd62b"
+          "docs/CURRENT_STAGE.md": "e26787d6bbfc255fbd50f35704b2009aae909d1d2dae3181cba9d09a21650d64"
         }
       },
       "last_read": {
-        "on": "2026-10-16",
-        "by": "Claude (septa-102: read for review dates, past_review and causal-decision 0.6.0 -- decisions view, roadmap step 5, ledger and calibration rows)"
+        "on": "2026-10-21",
+        "by": "Claude (septa-83: read for the one-transaction decision write -- decisions/ledger/provenance/outcome rows, model registry note, roadmap step 5; register re-cite decisions.py:473->511)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -51,19 +51,19 @@
         "specs"
       ],
       "baseline": {
-        "on": "2026-10-16",
+        "on": "2026-10-21",
         "sha256": {
-          "conformance/declared_not_implemented.json": "9a295a8d2cf07611dbf98f0823d87f0e00ec46c79803fc67ad263d4b7531417b",
-          "backend/src": "528157d568c54f37333315385a1e6ee7b1d25b3e410438f345cfc6c8769c3347",
-          "backend/tests": "458578950a789e7fb5e2649bb50c19b62dee5a1587fdfd762d5b453c28d8f288",
+          "conformance/declared_not_implemented.json": "7b56517d7f6b1ba0ac1ec12bc763c43b0c944e44174eabb7ba437fa54e880906",
+          "backend/src": "3bf0a5d4bdd22e507e7315a06a8e61991c5a46d1ca07933d4f88cc203dfa916e",
+          "backend/tests": "71a4a6fc9c05174607e5d0e176bbc46328c7307882729cfa5d746bbfb99858bb",
           "frontend/src": "e5901779d6330479ba2978a628114cbea9ecd802e5985a6cab80beb5a314918a",
           "packages": "b948f55de801f276b6fe81f68196ccdfda697e19821e751a005230ed39c0c541",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
-        "on": "2026-10-16",
-        "by": "Claude (register moved only by two UIX citation line numbers, 195->197 and 246->248; the rows linking those entries are unchanged)"
+        "on": "2026-10-21",
+        "by": "Claude (septa-83: read for the one-transaction decision write -- decisions/ledger/provenance/outcome rows, model registry note, roadmap step 5; register re-cite decisions.py:473->511)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -76,9 +76,9 @@
         "backend/src/orchestration/graph.py"
       ],
       "baseline": {
-        "on": "2026-10-16",
+        "on": "2026-10-21",
         "sha256": {
-          "backend/src/semantic_layer": "03b2e2e7547d7078eceaa7de952f1a2859f12c6e72c7ebd08854c030e532dbe7",
+          "backend/src/semantic_layer": "646146562db92f7d82c010bc985f8104b2ae1ad072575c03301b2478a690c95b",
           "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
           "packages/semantic-types/src": "599b141c5312c6940a4479a5400b1113adfbef407f85ff016edeeade864d834c",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
@@ -86,8 +86,8 @@
         }
       },
       "last_read": {
-        "on": "2026-10-16",
-        "by": "Claude (septa-102: read for review dates, past_review and causal-decision 0.6.0 -- decisions view, roadmap step 5, ledger and calibration rows)"
+        "on": "2026-10-21",
+        "by": "Claude (septa-83: read for the one-transaction decision write -- decisions/ledger/provenance/outcome rows, model registry note, roadmap step 5; register re-cite decisions.py:473->511)"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -306,10 +306,10 @@
         "packages/causal-decision/tests"
       ],
       "baseline": {
-        "on": "2026-10-16",
+        "on": "2026-10-21",
         "sha256": {
           ".github/workflows": "df92cbc4cd1fb0ab0a9abae5093c9fef08c68f605b3cfee3131de043d4d1fdcb",
-          "backend/tests": "458578950a789e7fb5e2649bb50c19b62dee5a1587fdfd762d5b453c28d8f288",
+          "backend/tests": "71a4a6fc9c05174607e5d0e176bbc46328c7307882729cfa5d746bbfb99858bb",
           "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "c488a844dd07e837e2d22c4b661f4efd3becea08b2315052affe794a0cd78fa6",
@@ -322,8 +322,8 @@
         }
       },
       "last_read": {
-        "on": "2026-10-16",
-        "by": "Claude (septa-102: read for review dates, past_review and causal-decision 0.6.0 -- decisions view, roadmap step 5, ledger and calibration rows)"
+        "on": "2026-10-21",
+        "by": "Claude (septa-83: read for the one-transaction decision write -- decisions/ledger/provenance/outcome rows, model registry note, roadmap step 5; register re-cite decisions.py:473->511)"
       }
     },
     "docs/UIX.md": {
@@ -350,16 +350,16 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-10-16",
+        "on": "2026-10-21",
         "sha256": {
           "packages/causal-core/src/causal_core": "808b370dd05adaf6520a435312f501533e0b9f82239e15fbe2073c893278180f",
-          "conformance/declared_not_implemented.json": "9a295a8d2cf07611dbf98f0823d87f0e00ec46c79803fc67ad263d4b7531417b",
-          "docs/CURRENT_STAGE.md": "5b635ab8cbd9f6cb23aeefa75d53ae526efe45d5d41eb0b5abc0af7d8e0dd62b"
+          "conformance/declared_not_implemented.json": "7b56517d7f6b1ba0ac1ec12bc763c43b0c944e44174eabb7ba437fa54e880906",
+          "docs/CURRENT_STAGE.md": "e26787d6bbfc255fbd50f35704b2009aae909d1d2dae3181cba9d09a21650d64"
         }
       },
       "last_read": {
-        "on": "2026-10-16",
-        "by": "Claude (register moved only by two UIX citation line numbers, 195->197 and 246->248; the rows linking those entries are unchanged)"
+        "on": "2026-10-21",
+        "by": "Claude (septa-83: read for the one-transaction decision write -- decisions/ledger/provenance/outcome rows, model registry note, roadmap step 5; register re-cite decisions.py:473->511)"
       }
     },
     "SECURITY.md": {
