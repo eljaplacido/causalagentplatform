@@ -13,3 +13,6 @@ editables
 -e ./packages/causal-core
 -e ./packages/causal-decision
 -e ./backend[dev]
+
+# Advisory floors (2026-10-21): GHSA-6q48-6c7w-9gw2 is fixed in certifi 2026.10.19.
+certifi>=2026.10.19
