@@ -287,6 +287,38 @@ async def test_an_explanation_that_cannot_be_written_records_nothing(
     assert count.scalar() == 0
 
 
+async def _count(db_session: AsyncSession, table: str) -> int:
+    rows = await db_session.execute(text(f"SELECT COUNT(*) FROM {table}"))  # noqa: S608 - fixed names
+    return int(rows.scalar() or 0)
+
+
+async def test_a_failure_after_the_seal_records_nothing_and_a_retry_succeeds(
+    client: AsyncClient, db_session: AsyncSession, db_engine: object
+) -> None:
+    """septa-83: the sealed entry, its follow-up plan and its provenance are one
+    transaction. A provenance write failing last used to leave the entry and the plan
+    committed behind a 500; the chain is append-only, so the half-written decision
+    stayed. Now nothing is written, and asking again seals the same decision at 0."""
+    from src.api import decisions
+    from src.semantic_layer.provenance_store import ProvenanceWriteError
+
+    failing = AsyncMock(side_effect=ProvenanceWriteError("provenance write failed: disk full"))
+    with patch.object(decisions._provenance, "append", failing):
+        resp = await client.post("/api/v1/decisions", json=body())
+    assert failing.await_count == 1, "the failure must come after the seal and the plan"
+    assert resp.status_code == 500
+    assert "not recorded" in resp.json()["detail"]
+    for table in ("decision_records", "decision_followups", "provenance_entries"):
+        assert await _count(db_session, table) == 0, f"{table} kept a row of a failed decision"
+
+    again = await client.post("/api/v1/decisions", json=body())
+    assert again.status_code == 200, again.text
+    assert again.json()["record"]["sequence"] == 0
+    assert await _count(db_session, "decision_records") == 1
+    assert await _count(db_session, "decision_followups") == 1
+    assert (await client.get("/api/v1/decisions/verify")).json()["ok"]
+
+
 async def test_the_endpoint_requires_authentication(db_engine: object) -> None:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         resp = await ac.post("/api/v1/decisions", json=body())

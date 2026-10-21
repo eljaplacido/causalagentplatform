@@ -47,6 +47,7 @@ from pydantic import BaseModel, ConfigDict, Field, create_model, model_validator
 
 from src.agents.narration import Persona, narrate_outcome
 from src.connectors import agentcenter
+from src.db.factory import CloudSqlFactory
 from src.middleware.rbac import guard
 from src.semantic_layer.decision_store import (
     DecisionStore,
@@ -59,6 +60,7 @@ from src.semantic_layer.provenance_store import ProvenanceStore
 
 if TYPE_CHECKING:
     from causal_decision.assumptions import ModelVersion
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/api/v1/decisions", tags=["Decision Assurance"])
@@ -290,91 +292,38 @@ async def make_decision(
         ) from exc
 
     now = datetime.now(UTC)
-    try:
-        record = await _store.record(
-            decision,
-            outcome,
-            recorded_at=now.isoformat(),
-            model=None if version is None else version.ref(),
-            review_by=(now + timedelta(days=body.review_after_days)).isoformat(),
-        )
-    except LedgerConflictError as exc:
-        # The decision stands; only its place in the line is contested. Saying so is
-        # better than returning a verdict the ledger does not have.
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
-
-    # The plan is written now, not reconstructed later: it copies the prediction
-    # this verdict used, and a plan rebuilt afterwards would carry whatever a
-    # fresh analysis says today -- the target moving after the result is known.
-    # Only a result can be re-measured; a refusal predicted nothing.
-    if isinstance(outcome, cc.contract.CausalResult):
-        await _store.save_plan(
-            record.entry_digest,
-            plan(
+    # One transaction: the sealed entry, its follow-up plan, the model reference and
+    # the provenance commit together or not at all. Each used to commit on its own,
+    # so a failure after the seal left a decision in the chain without its plan
+    # (never re-measurable) or without its provenance -- and the chain is append-only,
+    # so nothing could put them back. Now a failure anywhere seals nothing, and the
+    # caller who sees the error can ask again.
+    async with CloudSqlFactory.get_session_factory()() as session:
+        try:
+            record = await _store.record(
                 decision,
                 outcome,
-                graph=graph,
-                observe_from=record.recorded_at,
-            ),
-        )
-
-    # Which version this verdict rested on, and what it asked -- with adjust_for
-    # pinned to the set the analysis actually used and the nodes the data lacked,
-    # so a later revision is judged against what was done, not what would be done.
-    if version is not None:
-        used = query
-        if isinstance(outcome, cc.contract.CausalResult) and outcome.certificate.adjustment_set:
-            used = query.model_copy(update={"adjust_for": outcome.certificate.adjustment_set})
-        await _models.record_decision(
-            record.entry_digest,
-            version.ref(),
-            verdict=str(decision.verdict),
-            action=body.action,
-            query=used,
-            unmeasured=tuple(sorted(set(version.graph.nodes) - set(frame.columns))),
-            recorded_at=record.recorded_at,
-        )
-
-    # Provenance: the data and graph this verdict rested on (as digests), the
-    # analysis, and the sealed entry, under session `decision:<entry_digest>`. The
-    # entry is already sealed; a failure here fails the request rather than
-    # returning a verdict whose provenance was silently lost.
-    graph_attrs: dict[str, Any]
-    if version is not None:
-        graph_attrs = {
-            "model_name": version.name,
-            "model_version": version.version,
-            "model_digest": version.digest,
-        }
-    else:
-        graph_attrs = {
-            "graph_sha256": digest(
-                graph if isinstance(graph, str) else graph.model_dump(mode="json")
+                recorded_at=now.isoformat(),
+                model=None if version is None else version.ref(),
+                review_by=(now + timedelta(days=body.review_after_days)).isoformat(),
+                session=session,
             )
-        }
-    _, prov_records = decision_records(
-        entry_digest=record.entry_digest,
-        sequence=record.sequence,
-        verdict=str(decision.verdict),
-        decision_digest=record.decision.decision_digest,
-        outcome_kind=str(getattr(outcome, "kind", type(outcome).__name__)),
-        data={
-            "data_sha256": digest(body.data),
-            "rows": len(frame),
-            "columns": sorted(str(c) for c in frame.columns),
-        },
-        graph=graph_attrs,
-        analysis={
-            "causal_core_version": f"causal_core {cc.__version__}",
-            "causal_decision_version": f"causal_decision {causal_decision.__version__}",
-            "treatment": body.treatment,
-            "outcome": body.outcome,
-            "estimand": str(body.estimand),
-            "action": body.action,
-        },
-        user_id=user.get("uid"),
-    )
-    await _provenance.append(prov_records)
+        except LedgerConflictError as exc:
+            # The decision stands; only its place in the line is contested. Saying so
+            # is better than returning a verdict the ledger does not have.
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        try:
+            await _write_alongside(
+                session, record, body, decision, outcome, graph, version, query, frame, user
+            )
+            await session.commit()
+        except Exception as exc:
+            await session.rollback()
+            log.error("api.decisions.not_recorded", action=body.action, error=str(exc))
+            raise HTTPException(
+                status_code=500,
+                detail=f"the decision was not recorded (nothing was sealed): {exc}",
+            ) from exc
 
     log.info(
         "api.decisions.decided",
@@ -422,6 +371,95 @@ async def make_decision(
         record=record,
         narrative=narrative,
     )
+
+
+async def _write_alongside(
+    session: AsyncSession,
+    record: DecisionRecord,
+    body: DecideRequest,
+    decision: Decision,
+    outcome: Any,
+    graph: str | CausalGraph,
+    version: ModelVersion | None,
+    query: CausalQuery,
+    frame: pd.DataFrame,
+    user: dict[str, Any],
+) -> None:
+    """What is written with the sealed entry, in its transaction (the caller commits)."""
+    # The plan is written now, not reconstructed later: it copies the prediction
+    # this verdict used, and a plan rebuilt afterwards would carry whatever a
+    # fresh analysis says today -- the target moving after the result is known.
+    # Only a result can be re-measured; a refusal predicted nothing.
+    if isinstance(outcome, cc.contract.CausalResult):
+        await _store.save_plan(
+            record.entry_digest,
+            plan(
+                decision,
+                outcome,
+                graph=graph,
+                observe_from=record.recorded_at,
+            ),
+            session=session,
+        )
+
+    # Which version this verdict rested on, and what it asked -- with adjust_for
+    # pinned to the set the analysis actually used and the nodes the data lacked,
+    # so a later revision is judged against what was done, not what would be done.
+    if version is not None:
+        used = query
+        if isinstance(outcome, cc.contract.CausalResult) and outcome.certificate.adjustment_set:
+            used = query.model_copy(update={"adjust_for": outcome.certificate.adjustment_set})
+        await _models.record_decision(
+            record.entry_digest,
+            version.ref(),
+            verdict=str(decision.verdict),
+            action=body.action,
+            query=used,
+            unmeasured=tuple(sorted(set(version.graph.nodes) - set(frame.columns))),
+            recorded_at=record.recorded_at,
+            session=session,
+        )
+
+    # Provenance: the data and graph this verdict rested on (as digests), the
+    # analysis, and the sealed entry, under session `decision:<entry_digest>`. A
+    # failure here fails the request (and the seal with it) rather than returning a
+    # verdict whose provenance was silently lost.
+    graph_attrs: dict[str, Any]
+    if version is not None:
+        graph_attrs = {
+            "model_name": version.name,
+            "model_version": version.version,
+            "model_digest": version.digest,
+        }
+    else:
+        graph_attrs = {
+            "graph_sha256": digest(
+                graph if isinstance(graph, str) else graph.model_dump(mode="json")
+            )
+        }
+    _, prov_records = decision_records(
+        entry_digest=record.entry_digest,
+        sequence=record.sequence,
+        verdict=str(decision.verdict),
+        decision_digest=record.decision.decision_digest,
+        outcome_kind=str(getattr(outcome, "kind", type(outcome).__name__)),
+        data={
+            "data_sha256": digest(body.data),
+            "rows": len(frame),
+            "columns": sorted(str(c) for c in frame.columns),
+        },
+        graph=graph_attrs,
+        analysis={
+            "causal_core_version": f"causal_core {cc.__version__}",
+            "causal_decision_version": f"causal_decision {causal_decision.__version__}",
+            "treatment": body.treatment,
+            "outcome": body.outcome,
+            "estimand": str(body.estimand),
+            "action": body.action,
+        },
+        user_id=user.get("uid"),
+    )
+    await _provenance.append(prov_records, session=session)
 
 
 def _event_payload(

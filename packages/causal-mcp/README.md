@@ -24,7 +24,11 @@ Four tools are always served, and two more, `causal_decide` and `causal_impact`,
 read-only and idempotent, and all return typed structured output. Output schemas carry structure
 only (no descriptions, titles or defaults), which keeps the tool listing under the 64 KiB line limit of stdio clients;
 the full contract, prose included, is served as the `causal://schemas/*` resources. The `outputSchema` is the causal
-claim contract, published under `conformance/causal-claims/`.
+claim contract, published under `conformance/causal-claims/`. The outcome contract is inlined once, in
+`causal_analyze`'s `outputSchema`. `causal_decide`'s `outcome` is listed as the contract's envelope instead (an object whose
+`kind` is one of the outcome kinds, with a `$comment` naming `causal://schemas/outcome`). It is not a `$ref`, because the
+SDK's client resolves references only inside the schema document; validate the outcome against the full contract
+there.
 
 | Tool | Use it to |
 |---|---|
