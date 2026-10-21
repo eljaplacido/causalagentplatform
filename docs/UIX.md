@@ -357,7 +357,10 @@ the recommendation's `confidence`, which the triage agent sets to its heuristic 
 it is labelled "Triage score", not drawn as a confidence meter. The triage agent's `ESCALATE: ...`
 directive is shown as an escalation notice, with no approve or reject: it advises handing the
 incident to a person and is not an intervention. A new incident's id is `INC-` and eight random
-hex digits.
+hex digits. When the triage ran but the incident could not be saved, the response says
+`stored: false` with the reason, and the page shows "triaged but NOT stored" above the list: the
+incident is shown now and will not be listed after a reload (septa-86; it used to be dropped
+silently).
 
 A `FragmentCard`'s footer badge follows the fragment's `approvalStatus`: only an APPROVED fragment
 shows the Guardian's verdict; a draft reads "Draft · awaiting review" and a deprecated one

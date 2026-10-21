@@ -218,6 +218,37 @@ async def test_a_decision_names_the_version_it_rested_on(client: AsyncClient) ->
     assert (await client.get("/api/v1/decisions/verify")).json()["ok"]
 
 
+async def test_a_failed_model_reference_seals_nothing(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """septa-83: the version a verdict rested on is written in the seal's transaction.
+    It used to commit after the entry, so a failure here left a sealed decision that
+    no revision would ever find."""
+    from src.api import decisions
+
+    await register(client)
+    failing = AsyncMock(side_effect=RuntimeError("model reference write failed"))
+    with patch.object(decisions._models, "record_decision", failing):
+        resp = await client.post(
+            "/api/v1/decisions",
+            json={
+                "action": "apply remediation playbook X",
+                "model": {"name": "incident-remediation"},
+                "treatment": "playbook",
+                "outcome": "minutes",
+                "direction": "decrease",
+                "data": data(),
+                "risk_class": "low",
+                "minimum_worthwhile_effect": 2.0,
+            },
+        )
+    assert failing.await_count == 1
+    assert resp.status_code == 500
+    for table in ("decision_records", "decision_followups", "decision_model_refs"):
+        rows = await db_session.execute(text(f"SELECT COUNT(*) FROM {table}"))  # noqa: S608
+        assert rows.scalar() == 0, f"{table} kept a row of a failed decision"
+
+
 async def test_graph_and_model_are_alternatives(client: AsyncClient) -> None:
     await register(client)
     base = {

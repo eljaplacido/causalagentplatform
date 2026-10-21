@@ -203,8 +203,9 @@ describe("IncidentsPage — intervention decisions", () => {
 // guardianVerdict, rank -- no effect estimate. Rows written by
 // backend/scripts/seed_data.py carry SEV1-SEV4. After a human decision the
 // list endpoint adds humanDecision beside the Guardian's guardianVerdict.
-// POST /api/v1/session/incident returns SessionStateResponse, whose
-// recommendations carry no effect estimate either.
+// POST /api/v1/session/incident returns IncidentSessionResponse, whose
+// recommendations carry no effect estimate either, and whose `stored` says
+// whether the incident row was saved (septa-86).
 // Postconditions: every such row renders; severity is shown in one vocabulary
 // (P0-P3); an intervention without an estimate says so and shows no interval;
 // the Guardian verdict and the human decision are shown separately; a new
@@ -232,6 +233,8 @@ function sessionState(overrides: Record<string, unknown> = {}) {
     ],
     cycle_count: 1,
     timestamp: "2026-09-18T10:00:00+00:00",
+    stored: true,
+    store_error: null,
     ...overrides,
   };
 }
@@ -327,6 +330,33 @@ describe("IncidentsPage — a newly triaged incident", () => {
     const card = await screen.findByTestId("intervention-card");
     expect(within(card).getByTestId("no-effect-estimate")).toBeInTheDocument();
     expect(card.textContent).not.toMatch(/95% CI/);
+  });
+
+  it("says a triaged incident was not stored when the backend could not save it", async () => {
+    const user = userEvent.setup();
+    incidentsApiMock.list.mockResolvedValue([]);
+    sessionApiMock.incident.mockResolvedValue(
+      sessionState({ stored: false, store_error: "the incident could not be saved: database is locked" })
+    );
+
+    render(<IncidentsPage />);
+    await submitIncident(user, "Checkout latency spike after deploy");
+
+    const alert = await screen.findByTestId("incident-not-stored");
+    expect(alert).toHaveTextContent(/NOT stored/);
+    expect(alert).toHaveTextContent("database is locked");
+  });
+
+  it("shows no not-stored warning when the backend stored the incident", async () => {
+    const user = userEvent.setup();
+    incidentsApiMock.list.mockResolvedValue([]);
+    sessionApiMock.incident.mockResolvedValue(sessionState());
+
+    render(<IncidentsPage />);
+    await submitIncident(user, "Checkout latency spike after deploy");
+
+    await screen.findByTestId("intervention-card");
+    expect(screen.queryByTestId("incident-not-stored")).not.toBeInTheDocument();
   });
 
   it("gets an id that does not collide with a listed incident, and a fresh one each time", async () => {
