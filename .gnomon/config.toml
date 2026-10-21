@@ -144,8 +144,8 @@ gate = "on_check"
 # declares, and it is hashed with everything else. One escape hatch exists —
 # GNOMON_MODEL_URL overrides this url — and the prompt loop prints a note at
 # startup when it is set, so an override cannot be mistaken for the surface.
-url = "http://127.0.0.1:11434/api/chat"
-kind = "ollama"
+url = "http://127.0.0.1:18080/v1/chat/completions"
+kind = "openai"
 
 # Declared, but inert until a role names one. An endpoint costs nothing to
 # declare: nothing reaches it unless roles.toml says endpoint = "<name>".
