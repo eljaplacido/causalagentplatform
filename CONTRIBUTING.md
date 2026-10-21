@@ -173,6 +173,39 @@ Details: [`.gnomon/skills/register-hygiene.md`](.gnomon/skills/register-hygiene.
 - A [Developer Certificate of Origin](https://developercertificate.org/) sign-off
   (`git commit -s`) is welcome but not required; nothing checks for it.
 
+### How `main` is protected
+
+`main` carries a GitHub ruleset; the owner sets it once, in the repository's Settings, Rules:
+
+- changes reach `main` only through a pull request;
+- the status check `.gnomon/ci.sh` (the `gate` job of `.github/workflows/ci.yml`) is required
+  and must pass on the branch as it would merge;
+- force-pushes and branch deletion are blocked;
+- the allowed merge method is merge commit (squash and rebase-merge off), for the reason above.
+
+### Releases
+
+`causal-core`, `causal-decision` and `causal-mcp` are published to PyPI together by
+`.github/workflows/release.yml` when a `v*` tag is pushed. Authentication is Trusted Publishing
+(OIDC); no token is stored anywhere. Once, before the first release, the owner:
+
+1. adds a trusted publisher on PyPI for each of the three projects: owner `eljaplacido`,
+   repository `causalagentplatform`, workflow `release.yml`, environment `pypi`;
+2. creates the `pypi` environment in the GitHub repository (optionally with a required reviewer).
+
+Each release:
+
+1. bump `_version.py` in each package that changed, and move that package's `CHANGELOG.md`
+   entry from *unreleased* to the version and date, in a PR that passes the gate;
+2. run the release workflow by hand (`workflow_dispatch`) on the merged commit: a dry run that
+   gates, builds and writes the SBOM, and cannot publish;
+3. tag that merge commit `vYYYY.MM.DD` (the tag names the release; each package keeps its own
+   version) and push the tag. The workflow re-runs the kernel's gates on the tagged commit,
+   publishes, and attaches the CycloneDX SBOM to the GitHub release.
+
+A published version is never re-used: PyPI refuses it, and causal-core hashes its version into
+every result's provenance.
+
 ## What kind of contributions we want
 
 **High value**
