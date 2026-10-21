@@ -450,7 +450,7 @@ Negotiates semantic alignment between two domain ontologies at runtime. Determin
 
 External agents (Claude Desktop, custom MCP clients, IDE plugins, gnomon) reach the platform's causal reasoning through its one Model Context Protocol server. Internal LangGraph workflows still invoke skills directly.
 
-**The server: `packages/causal-mcp`** (console script `causal-mcp`; MCP SDK v2; stdio, or stateless HTTP with `--http`). It serves the `packages/causal-core` kernel: typed structured output whose `outputSchema` is the claim contract, every tool annotated read-only, and the contract's JSON Schemas as resources. Setup and tool reference: [`packages/causal-mcp/README.md`](../packages/causal-mcp/README.md). Tests: `packages/causal-mcp/tests/`.
+**The server: `packages/causal-mcp`** (console script `causal-mcp`; MCP SDK v2; stdio, or stateless HTTP with `--http`). It serves the `packages/causal-core` kernel: typed structured output whose `outputSchema` is the claim contract (inlined once, in `causal_analyze`; `causal_decide`'s outcome names it rather than repeating it), every tool annotated read-only, and the contract's JSON Schemas as resources. Setup and tool reference: [`packages/causal-mcp/README.md`](../packages/causal-mcp/README.md). Tests: `packages/causal-mcp/tests/`.
 
 | MCP tool name | Purpose |
 |---|---|

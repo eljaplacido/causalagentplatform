@@ -200,13 +200,15 @@ def test_the_tool_listing_stays_small_enough_for_line_limited_clients() -> None:
 
     The guard was 55,000 bytes until contract 0.13.0, when the Rosenbaum and overlap fields
     together reached 56,092 and the lossless rewrites in _slim_output_schema brought it to
-    55,845. It is 57,000 now, 8.5 KB under the line limit; the structural fix (output schemas
-    that reference the published contract instead of inlining it) is ledger item septa-55."""
+    55,845; then 57,000. septa-55 inlines the outcome contract once (causal_analyze) and
+    gives causal_decide's outcome a reference to it, which took the listing from 56,109 to
+    about 43,000 bytes. The guard is 48,000: room for a few contract fields, and a failure
+    long before the 65,536-byte line limit."""
     import asyncio
 
     listed = asyncio.run(server.build_server().list_tools())
     size = sum(len(t.model_dump_json(exclude_none=True, by_alias=True)) for t in listed)
-    assert size < 57_000, f"tools/list is {size} bytes; the stdio line limit is 65,536"
+    assert size < 48_000, f"tools/list is {size} bytes; the stdio line limit is 65,536"
     assert all(t.input_schema for t in listed)
     decide = next(t for t in listed if t.name == "causal_decide")
     assert "segment_by" in (decide.description or ""), "the tool's own prose is untouched"
@@ -252,6 +254,61 @@ def test_a_rollout_with_covariates_and_no_never_treated_units_is_analysed_over_m
     listed = asyncio.run(server.build_server().list_tools())
     schema = next(t for t in listed if t.name == "causal_analyze").output_schema
     jsonschema.validate(out.model_dump(mode="json"), schema)
+
+
+def _as_the_sdk_client_validates(schema: dict[str, Any], value: Any) -> None:
+    """How mcp's ClientSession checks structured output: the listed schema, compiled with an
+    empty registry, so a `$ref` resolves only inside the document."""
+    from jsonschema.validators import validator_for
+    from referencing import Registry
+
+    cls = validator_for(schema)
+    cls.check_schema(schema)
+    cls(schema, registry=Registry()).validate(value)
+
+
+@pytest.mark.parametrize("effect", [-9.0, 0.0])
+def test_a_decision_validates_against_its_listing_and_its_outcome_against_the_contract(
+    effect: float,
+) -> None:
+    """septa-55: causal_decide lists its outcome as the contract's envelope instead of a
+    second inlined copy of it. A client that validates against the listing still accepts
+    every decision (an act and a refusal-or-experiment here), and the outcome it carries is
+    valid under the full contract that causal_analyze's listing inlines."""
+    import asyncio
+
+    listed = {t.name: t for t in asyncio.run(server.build_server().list_tools())}
+    decide_schema = listed["causal_decide"].output_schema
+    analyze_schema = listed["causal_analyze"].output_schema
+    assert decide_schema is not None and analyze_schema is not None
+    envelope = decide_schema["properties"]["outcome"]
+    assert envelope["properties"]["kind"]["enum"] == sorted(
+        analyze_schema["properties"]["outcome"]["discriminator"]["mapping"]
+    ), "the envelope names every outcome kind of the contract"
+    assert "causal://schemas/outcome" in envelope["$comment"]
+    assert "CausalResult" not in decide_schema.get("$defs", {}), "no second copy"
+
+    resp = tools.causal_decide(
+        graph=GRAPH,
+        treatment="playbook",
+        outcome="minutes",
+        action="apply remediation playbook X",
+        direction="decrease",
+        data=ops(effect=effect),
+        risk_class="low",
+        minimum_worthwhile_effect=5.0,
+        randomization_unit="incident",
+        units_per_day=40,
+    )
+    dumped = resp.model_dump(mode="json")
+    _as_the_sdk_client_validates(decide_schema, dumped)
+    _as_the_sdk_client_validates(
+        analyze_schema, {"outcome": dumped["outcome"], "report": resp.explanation}
+    )
+
+    broken = {**dumped, "outcome": {**dumped["outcome"], "kind": "verdict"}}
+    with pytest.raises(Exception, match="verdict"):
+        _as_the_sdk_client_validates(decide_schema, broken)
 
 
 def test_merged_type_unions_accept_exactly_what_the_long_form_accepts() -> None:

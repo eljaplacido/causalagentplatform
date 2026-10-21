@@ -248,6 +248,66 @@ def _slim_output_schema(server: MCPServer, name: str) -> None:
         )
 
 
+#: Tools whose ``outcome`` is the outcome contract that causal_analyze's output schema already
+#: inlines in full (septa-55). Theirs names it instead of carrying a second copy.
+_OUTCOME_BY_REFERENCE = frozenset({"causal_decide"})
+
+
+def _local_refs(node: Any) -> set[str]:
+    """The ``#/$defs/<name>`` names a schema fragment refers to (``$ref`` or a discriminator
+    mapping), not following them."""
+    found: set[str] = set()
+    if isinstance(node, dict):
+        for k, v in node.items():
+            if k == "$ref" and isinstance(v, str) and v.startswith("#/$defs/"):
+                found.add(v.removeprefix("#/$defs/"))
+            elif k == "mapping" and isinstance(v, dict):
+                found |= {
+                    r.removeprefix("#/$defs/")
+                    for r in v.values()
+                    if isinstance(r, str) and r.startswith("#/$defs/")
+                }
+            else:
+                found |= _local_refs(v)
+    elif isinstance(node, list):
+        for v in node:
+            found |= _local_refs(v)
+    return found
+
+
+def _outcome_by_reference(schema: dict[str, Any]) -> dict[str, Any]:
+    """The schema with its ``outcome`` property as the contract's envelope -- an object whose
+    ``kind`` is one of the outcome kinds -- and the ``$defs`` only that property used dropped.
+
+    Why not a ``$ref`` to ``causal://schemas/outcome``: the SDK's client validates structured
+    output with an empty registry, so a ``$ref`` outside the document fails every call. The
+    full outcome contract is in the same listing (causal_analyze's ``outputSchema``), in the
+    ``causal://schemas/outcome`` resource and in ``conformance/causal-claims``; one inlined
+    copy of it was 12 KB of a listing capped by the stdio line limit.
+    """
+    props = dict(schema["properties"])
+    kinds = sorted(props["outcome"]["discriminator"]["mapping"])
+    props["outcome"] = {
+        "type": "object",
+        "required": ["kind"],
+        "properties": {"kind": {"enum": kinds}},
+        "$comment": f"causal://schemas/outcome, contract {CONTRACT_VERSION}",
+    }
+    out = {**schema, "properties": props}
+    defs = schema.get("$defs", {})
+    keep: set[str] = set()
+    todo = _local_refs({k: v for k, v in out.items() if k != "$defs"})
+    while todo:
+        name = todo.pop()
+        if name not in keep and name in defs:
+            keep.add(name)
+            todo |= _local_refs(defs[name])
+    out["$defs"] = {k: v for k, v in defs.items() if k in keep}
+    if not out["$defs"]:
+        out.pop("$defs")
+    return out
+
+
 def build_server() -> MCPServer:
     server = MCPServer(
         "causal-core",
@@ -266,6 +326,10 @@ def build_server() -> MCPServer:
             structured_output=True,
         )
         _slim_output_schema(server, name)
+        if name in _OUTCOME_BY_REFERENCE:
+            tool = server._tool_manager.get_tool(name)  # private, as in _slim_output_schema
+            if tool is not None and tool.output_schema is not None:
+                tool.__dict__["output_schema"] = _outcome_by_reference(tool.output_schema)
 
     schemas = json_schemas()
 
