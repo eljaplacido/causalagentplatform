@@ -152,6 +152,18 @@ class SessionStateResponse(BaseModel):
     timestamp: str
 
 
+class IncidentSessionResponse(SessionStateResponse):
+    """The triage result, and whether the incident itself was stored.
+
+    Triage and its Guardian verdict are recorded either way (audit log, session
+    store, provenance); `stored` says whether the incident row the dashboard lists
+    was written. It used to be dropped silently on failure: 200, nothing stored.
+    """
+
+    stored: bool
+    store_error: str | None = None
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
@@ -351,7 +363,7 @@ async def run_session(
 
 @router.post(
     "/incident",
-    response_model=SessionStateResponse,
+    response_model=IncidentSessionResponse,
     status_code=status.HTTP_200_OK,
     summary="Triage an operational incident",
     description=(
@@ -359,13 +371,15 @@ async def run_session(
         "Creates an EpistemicState from the incident payload, runs IncidentTriageAgent "
         "directly, then routes to the full platform graph for GuardianCheck + Output. "
         "CHAOTIC-domain incidents escalate without AI analysis; the escalation is "
-        "ruled on by the Guardian and recorded in the audit log."
+        "ruled on by the Guardian and recorded in the audit log. `stored` is false "
+        "(with `store_error`) when the incident itself could not be saved: the triage "
+        "stands, but the incident will not be listed."
     ),
 )
 async def triage_incident(
     body: IncidentSessionRequest,
     user: dict[str, Any] = Depends(guard("POST", "/api/v1/session/incident")),
-) -> SessionStateResponse:
+) -> IncidentSessionResponse:
     """
     Dedicated incident triage endpoint for the SRE / Incident Commander persona.
 
@@ -432,7 +446,7 @@ async def triage_incident(
         user=user,
         resumed=False,
     )
-    await _persist_incident(body, final, user)
+    store_error = await _persist_incident(body, final, user)
 
     log.info(
         "session.incident.complete",
@@ -440,9 +454,14 @@ async def triage_incident(
         incident_id=body.incident_id,
         verdict=final.guardian_verdict,
         domain=final.cynefin_domain,
+        stored=store_error is None,
     )
 
-    return _state_to_response(final)
+    return IncidentSessionResponse(
+        **_state_to_response(final).model_dump(),
+        stored=store_error is None,
+        store_error=store_error,
+    )
 
 
 def _submitter(user: dict[str, Any]) -> str:
@@ -454,8 +473,12 @@ async def _persist_incident(
     body: IncidentSessionRequest,
     state: EpistemicState,
     user: dict[str, Any],
-) -> None:
-    """Durably store the incident row so the dashboard rehydrates after reload."""
+) -> str | None:
+    """Durably store the incident row so the dashboard rehydrates after reload.
+
+    Returns None when it was stored, else why not. The triage response still
+    goes out (its verdict is already audited), saying the incident was not stored.
+    """
     from src.api.incidents import save_incident  # lazy import — avoids circular dependency
 
     proposed_interventions = [
@@ -483,7 +506,7 @@ async def _persist_incident(
         else []
     )
     try:
-        await save_incident(
+        saved = await save_incident(
             incident_id=body.incident_id,
             title=body.title,
             severity=body.severity,
@@ -500,12 +523,19 @@ async def _persist_incident(
             requires_human_review=state.requires_human_review,
         )
     except Exception as exc:
-        # Persistence failure must not break the triage response — log and continue
-        log.warning(
+        # The triage response still goes out -- its verdict is audited -- but says
+        # the incident was not stored, instead of a 200 with nothing behind it.
+        log.error(
             "incident.persist_failed",
             incident_id=body.incident_id,
             error=str(exc),
         )
+        return f"the incident could not be saved: {type(exc).__name__}: {exc}"
+    if not saved:
+        # Another submitter took the id between the route's 409 check and the save.
+        log.error("incident.persist_refused", incident_id=body.incident_id)
+        return f"incident '{body.incident_id}' is stored under another submitter"
+    return None
 
 
 @router.get(
