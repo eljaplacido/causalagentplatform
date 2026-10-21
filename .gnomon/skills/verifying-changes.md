@@ -49,6 +49,10 @@ register entry moved to `left_the_list`.
 - the frontend: `semantic-types-build`, `frontend-tsc`, `frontend-vitest` and
   `frontend-eslint` (held at zero by the lint baseline) -- SKIPPED unless its
   tools resolve inside the repo after `npm ci`;
+- `frontend-e2e`: the browser golden path (`frontend/e2e/golden-path.spec.ts`)
+  against a live backend the step starts on a fresh SQLite file -- SKIPPED
+  without uvicorn in the backend toolchain or Playwright's Chromium
+  (`cd frontend && npx playwright install chromium`);
 - one row per Python package under `packages/`, with its own mypy row
   (`causal-core` first, then causal-decision and causal-mcp -- the set is
   derived from the directory, not listed). A row passes only if pytest exits

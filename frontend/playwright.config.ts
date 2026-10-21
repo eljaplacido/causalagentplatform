@@ -4,8 +4,10 @@ import { defineConfig, devices } from "@playwright/test";
  * Playwright E2E configuration for the Causal Platform frontend.
  *
  * Assumes:
- *   - Frontend: http://localhost:3000 (Next.js dev server)
- *   - Backend:  http://localhost:8888 (uvicorn, ENV=local, DEV_AUTH_BYPASS=true)
+ *   - Frontend: http://localhost:3000 (Next.js dev server), or E2E_PORT
+ *   - Backend:  E2E_API_BASE_URL (uvicorn, ENV=local, DEV_AUTH_BYPASS=true), for
+ *     specs that talk to one; the gate's frontend-e2e step (.gnomon/ci.sh) starts
+ *     it and a production build for e2e/golden-path.spec.ts
  *
  * Run: npx playwright test
  * UI:  npx playwright test --ui

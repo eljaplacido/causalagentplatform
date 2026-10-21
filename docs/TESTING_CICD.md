@@ -53,6 +53,7 @@ it does not block on is **ADVISORY** (today only `doc-reconciliation`).
 | `frontend-tsc` | `tsc --noEmit` in `frontend/` | Exit 0 over at least its floor of project files |
 | `frontend-vitest` | `vitest run` in `frontend/` | Exit 0, pass count above its floor, every test file reported |
 | `frontend-eslint` | The eslint ratchet over `frontend/src/` with `frontend/eslint.config.mjs` (Next's core-web-vitals and TypeScript rule sets) | Findings ≤ its `eslint` entry in `scripts/lint-baseline.json`, which is 0. Without a config file the step is SKIPPED |
+| `frontend-e2e` | The browser golden path, `frontend/e2e/golden-path.spec.ts`, in Chromium against a live backend the step starts (ENV=local, `DEV_AUTH_BYPASS`, a fresh SQLite file under the log directory) and a production build that names it (`next build`, then `next start`): upload data simulated with a known effect, the graph checked, estimate, decide, verify the ledger | Exit 0 with at least one test passed, one attempt (no retries). The spec asserts the 95% interval contains the simulated effect and excludes zero, the page shows that interval, and the decision appears in a ledger whose chain verifies. SKIPPED without the frontend toolchain, uvicorn in the backend toolchain, or Playwright's Chromium |
 | one step per `packages/*/pyproject.toml` | That package's own `pytest`, in its own environment, with the `junit_markers` plugin (`scripts/ci_pytest_plugins/`) writing each test's markers into the JUnit report | Exit 0, at least one test passed, and **no test skipped**: every skip these suites can produce is a registered gate that did not run, so a skip fails the step. And two identity checks on the report, run even when pytest failed: `gate_scope.py package-files` (every `packages/<name>/tests/**/test_*.py` reported a test) and `gate_scope.py gate-markers` (every pre-registered gate marker of the package, from the gate table in `.gnomon/skills/verifying-changes.md` and its `pyproject.toml`, has a passed test; `real_data` only when the T2/T3 data is cached). `causal-core` is always named in the summary, RAN or NOT RUN |
 | `<package>-mypy`, one per package | mypy with the package's own strict config, via the ratchet | Findings ≤ its `mypy-<package>` entry in `scripts/lint-baseline.json`, which is 0 for all three; a package with no entry fails |
 | `python-lock` | `scripts/py_lock.py check` over the hash-pinned locks `requirements/{backend,kernel,image,release}.txt` (§5.4), with the environments this run tests | Every lock pins each distribution `==` with its sha256 hashes; every lock is current (the fingerprint of its inputs, the `.in` file and the dependency tables of each `pyproject.toml` it names, equals the one `relock` recorded in `requirements/lock-inputs.json`, so a dependency edit without a re-lock fails); every lock satisfies its local packages' requirements; and the backend toolchain and each package environment **equal** their lock (`backend.txt`, `kernel.txt`: the same distributions at the same versions, nothing missing or extra) with `pip check` clean. SKIPPED without the backend toolchain or a package environment |
@@ -246,9 +247,11 @@ T9 and pinned to a published example by `backend/tests/unit/test_rosenbaum_bound
   stored incidents with P0–P3 or seeded SEV1–SEV4 severities and no effect estimate, and a
   session result with only a proposed-edge count.
   There is no coverage threshold.
-- **Playwright** (`frontend/e2e/`, config `frontend/playwright.config.ts`). **Not part of the
-  gate or of CI**; run by hand with `npx playwright test` in `frontend/`. `platform.spec.ts`
-  expects a live backend. `workbench-authoring.spec.ts` drives the real frontend in Chromium with
+- **Playwright** (`frontend/e2e/`, config `frontend/playwright.config.ts`). The gate's
+  `frontend-e2e` step runs `golden-path.spec.ts` against a live backend it starts (septa-97;
+  the spec's header says how to run it by hand). `workbench-authoring.spec.ts` is not in the
+  gate; run it by hand with `npx playwright test e2e/workbench-authoring.spec.ts` in `frontend/`.
+  It drives the real frontend in Chromium with
   the backend stubbed at the network boundary (`page.route`), so it checks the drafting surface,
   not that the backend accepts a draft. `E2E_PORT` moves the server off 3000, and `E2E_PROD=1`
   serves a production build (`next build` first) instead of the dev server, which fails on a host
@@ -370,7 +373,8 @@ environment.
   2026-09-26 the backend image had 44 HIGH ones, all in Debian 13 base packages, and the
   frontend image none.
 - TLC model checking of `specs/guardian_policy.tla` (register `tla-spec-not-checked`),
-  Playwright, and any performance or load test.
+  Playwright beyond the golden path (`workbench-authoring.spec.ts`), and any performance or load
+  test.
 
 ### 5.4 Python locks, and how to add a dependency
 

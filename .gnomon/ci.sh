@@ -377,6 +377,74 @@ else
     fi
 fi
 
+# The golden path in a browser (septa-97): frontend/e2e/golden-path.spec.ts drives the
+# real app in Chromium against a live backend (ENV=local, DEV_AUTH_BYPASS, a fresh SQLite
+# file under $LOG_DIR) -- upload simulated data, graph checked, interval covers the known
+# effect, decide, ledger verifies. A production build, not `next dev`: the dev server
+# needs a file watcher per directory and fails on a host at its inotify limit, and
+# NEXT_PUBLIC_API_BASE_URL is baked in at build time, so the build names this backend.
+header "frontend: browser golden path (Playwright)"
+e2e_chromium() {
+    ( cd frontend && node -e "const p=require('playwright-core').chromium.executablePath();
+        process.exit(require('fs').existsSync(p)?0:1)" ) >/dev/null 2>&1
+}
+if ! frontend_toolchain; then
+    record frontend-e2e SKIPPED "frontend toolchain absent -- run npm ci at the repo root" 0
+elif [ -z "$PYBIN" ] || [ ! -x "$PYBIN/uvicorn" ]; then
+    record frontend-e2e SKIPPED "no uvicorn in the backend toolchain (set BACKEND_VENV)" 0
+elif ! e2e_chromium; then
+    record frontend-e2e SKIPPED "Playwright's Chromium is not installed (cd frontend && npx playwright install chromium)" 0
+else
+    t0=$SECONDS
+    read -r E2E_API_PORT E2E_WEB_PORT < <("$PY" -c "
+import socket
+socks = [socket.socket() for _ in range(2)]
+for s in socks: s.bind(('127.0.0.1', 0))
+print(*(s.getsockname()[1] for s in socks))
+for s in socks: s.close()")
+    rm -f "$LOG_DIR/e2e.db"
+    ( cd backend && SQLITE_PATH="$LOG_DIR/e2e.db" ENV=local DEV_AUTH_BYPASS=true \
+        CORS_ALLOWED_ORIGINS="http://localhost:$E2E_WEB_PORT" PYTHONPATH="$ROOT/backend:${PYTHONPATH:-}" \
+        exec "$PYBIN/python" -m uvicorn src.api.main:app --host 127.0.0.1 --port "$E2E_API_PORT" ) \
+        > "$LOG_DIR/e2e-backend.log" 2>&1 &
+    E2E_BACKEND_PID=$!
+    up=""
+    for _ in $(seq 90); do
+        if "$PY" -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:$E2E_API_PORT/health', timeout=2)" 2>/dev/null; then up=1; break; fi
+        kill -0 "$E2E_BACKEND_PID" 2>/dev/null || break
+        sleep 1
+    done
+    if [ -z "$up" ]; then
+        show_tail "$LOG_DIR/e2e-backend.log" 25
+        record frontend-e2e FAIL "the backend did not answer /health on :$E2E_API_PORT" $((SECONDS - t0))
+    else
+        ( cd frontend && NEXT_PUBLIC_API_BASE_URL="http://localhost:$E2E_API_PORT" \
+            npx --no-install next build ) > "$LOG_DIR/e2e-build.log" 2>&1
+        rc=$?
+        if [ "$rc" -ne 0 ]; then
+            show_tail "$LOG_DIR/e2e-build.log" 25
+            record frontend-e2e FAIL "next build exit $rc" $((SECONDS - t0))
+        else
+            # CI unset: the config's CI mode retries (which would hide a flaky path) and
+            # writes an HTML report; here one attempt, listed.
+            ( cd frontend && env -u CI E2E_PROD=1 E2E_PORT="$E2E_WEB_PORT" \
+                E2E_API_BASE_URL="http://localhost:$E2E_API_PORT" \
+                npx --no-install playwright test e2e/golden-path.spec.ts --retries=0 --reporter=list ) \
+                > "$LOG_DIR/frontend-e2e.log" 2>&1
+            rc=$?
+            n="$(grep -oE '^ *[0-9]+ passed' "$LOG_DIR/frontend-e2e.log" | grep -oE '[0-9]+' | tail -1 || true)"
+            if [ "$rc" -eq 0 ] && [ "${n:-0}" -gt 0 ]; then
+                record frontend-e2e PASS "$n passed: upload, graph checked, interval covers the known effect, decide, ledger verifies (live backend)" $((SECONDS - t0))
+            else
+                show_tail "$LOG_DIR/frontend-e2e.log" 40
+                record frontend-e2e FAIL "exit $rc, ${n:-0} passed" $((SECONDS - t0))
+            fi
+        fi
+    fi
+    kill "$E2E_BACKEND_PID" 2>/dev/null
+    wait "$E2E_BACKEND_PID" 2>/dev/null
+fi
+
 # ── 4. Python packages under packages/ ─────────────────────────────────────
 # Every packages/<name>/pyproject.toml gets its own suite run here. The set is
 # derived by listing the directory, not written down, so a package is gated the
