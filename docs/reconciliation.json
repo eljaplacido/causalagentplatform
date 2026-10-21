@@ -29,7 +29,7 @@
         "on": "2026-10-21",
         "sha256": {
           "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
-          "packages/causal-mcp": "6e8f083e9d327316645eec202dc5f9dbb97e286d8e22b76ed0f4995410bcdd38",
+          "packages/causal-mcp": "5569d88ad6f4ade4046b98f6fa990e99c73730e8b1b986c6ee67cb1d7e5e1f62",
           "frontend/package.json": "21affd9af891b9586d0007239dd483fb40b2124ef909baa0fb28670a8bb59192",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docs/CURRENT_STAGE.md": "026619c5fc486affbf69b29790f8c8a75d949f429a3e8203fdb478fd5d9935e9"
@@ -37,7 +37,7 @@
       },
       "last_read": {
         "on": "2026-10-21",
-        "by": "Claude (merge train septa-83 + septa-86: both changes' rows read together -- decisions one-transaction row, provenance row, incident stored:false row; the rest as blessed for each)"
+        "by": "Claude (main merged in after #87: packages subjects changed only by #87's CHANGELOGs; this train's rows as blessed for each change)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -57,13 +57,13 @@
           "backend/src": "56ca28dd53e2d20be2d46d32b213d2224f478f2e920c4fe99dafc16ebcdb8bd7",
           "backend/tests": "ed6e8c031488d045d9241d153887965ff1a328843b93b4e8ecef976938ba51aa",
           "frontend/src": "272ae49bda670a7e84235bba75c76ee2c48d95278bd1107281d6daabd1756435",
-          "packages": "b948f55de801f276b6fe81f68196ccdfda697e19821e751a005230ed39c0c541",
+          "packages": "1252a7f97cc1531da69a0ef47501dc4dacfa34349b18ea2e61566b89d5ba1994",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-10-21",
-        "by": "Claude (merge train septa-83 + septa-86: both changes' rows read together -- decisions one-transaction row, provenance row, incident stored:false row; the rest as blessed for each)"
+        "by": "Claude (main merged in after #87: packages subjects changed only by #87's CHANGELOGs; this train's rows as blessed for each change)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -144,18 +144,18 @@
         "prompts"
       ],
       "baseline": {
-        "on": "2026-10-16",
+        "on": "2026-10-21",
         "sha256": {
           "backend/src/agents": "81a4e9fe97f4324a0456c26edc3dee0238f64f8540ac59be17e046fd4750a48d",
           "backend/src/skills": "b0bcef79c64f6b8d2f35f87f92095d54c52cec7d972a4cf1520b95fcc0d68347",
-          "packages/causal-mcp": "6e8f083e9d327316645eec202dc5f9dbb97e286d8e22b76ed0f4995410bcdd38",
+          "packages/causal-mcp": "5569d88ad6f4ade4046b98f6fa990e99c73730e8b1b986c6ee67cb1d7e5e1f62",
           "backend/src/orchestration": "e2eb3496c39122094c47140ed28a932742480b35a2cbe4d2c1a11a40e9a0c6f7",
           "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9"
         }
       },
       "last_read": {
-        "on": "2026-10-16",
-        "by": "Claude (septa-101: read for the LLM-edge cap, contract 0.14.0 and D0 v4 -- counts, verdict ladder, MCP tool rows, card)"
+        "on": "2026-10-21",
+        "by": "Claude (main merged in after #87: packages subjects changed only by #87's CHANGELOGs; this train's rows as blessed for each change)"
       }
     },
     "docs/CYBERSECURITY.md": {
