@@ -16,7 +16,7 @@ dependencies = [
     # (they stay behind a lazy wrapper instead of being flattened into app.routes).
     # The suite passes on it, so the range includes it; the next minor gets tested
     # before the ceiling moves.
-    "fastapi>=0.115,<0.143",
+    "fastapi>=0.115,<0.162",
     "uvicorn[standard]>=0.30.0",
     # SQLAlchemy async
     "sqlalchemy[asyncio]>=2.0.35",
