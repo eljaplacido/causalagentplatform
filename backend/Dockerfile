@@ -6,7 +6,7 @@
 # `pip install .`, which cannot build a package whose sources are absent.)
 
 # ── Build stage ────────────────────────────────────────────────────────────
-FROM python:3.12-slim@sha256:f77ac9e44ae96ef2c90b8053ea08c31f8be030f824196b0ae4db6d462c84e51f AS builder
+FROM python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704 AS builder
 
 WORKDIR /build
 
@@ -38,7 +38,7 @@ RUN pip install --no-cache-dir --no-deps --no-build-isolation \
     && python -m pip uninstall --yes --quiet pip
 
 # ── Production stage (distroless-style slim) ───────────────────────────────
-FROM python:3.12-slim@sha256:f77ac9e44ae96ef2c90b8053ea08c31f8be030f824196b0ae4db6d462c84e51f AS production
+FROM python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704 AS production
 
 WORKDIR /app
 
