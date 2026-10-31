@@ -20,7 +20,7 @@
       "id": "GHSA-vfj7-8cjw-p6xm",
       "ecosystem": "npm",
       "package": "braces",
-      "reason": "No patched release exists: 3.0.3 is the latest braces and every version is in the advisory's range. It reaches this repository only through eslint-config-next -> @next/eslint-plugin-next -> fast-glob -> micromatch, a lint-time devDependency that expands glob patterns written in this repository's own ESLint config; no runtime path and no untrusted pattern reaches it, and it is not in the frontend image. Leaves with the next 16 + eslint-config-next 16 move (septa-57) or a braces fix, whichever comes first.",
+      "reason": "No patched release exists: 3.0.3 is the latest braces and every version is in the advisory's range. It reaches this repository only through eslint-config-next -> @next/eslint-plugin-next -> fast-glob -> micromatch, a lint-time devDependency that expands glob patterns written in this repository's own ESLint config; no runtime path and no untrusted pattern reaches it, and it is not in the frontend image. It did not leave with the next 16 + eslint-config-next 16 move (septa-57): eslint-config-next 16.4.3 still reaches it the same way (@next/eslint-plugin-next 16.4.3 -> fast-glob 3.3.1 -> micromatch 4.0.8 -> braces 3.0.3). Leaves with a braces fix or a @next/eslint-plugin-next that drops fast-glob 3.",
       "review_by": "2026-11-15"
     }
   ]

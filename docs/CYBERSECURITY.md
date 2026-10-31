@@ -595,7 +595,8 @@ published since the last push surfaces without one):
   `package-lock.json`. The list holds one entry since 2026-10-14: `braces`
   (GHSA-vfj7-8cjw-p6xm), which has no patched release and reaches the repository only as a
   lint-time dependency of `eslint-config-next`, never the frontend image; it is reviewed by
-  2026-11-15 and leaves with the move to Next 16 (septa-57). The advisory databases are remote; when one cannot be
+  2026-11-15. It did not leave with the move to Next 16 (septa-57): eslint-config-next 16.4.3
+  still reaches it through `@next/eslint-plugin-next` -> `fast-glob` 3.3.1 -> `micromatch`. The advisory databases are remote; when one cannot be
   reached the step is SKIPPED (not measured), which fails CI.
 - **SAST.** `bandit` over `backend/src` and every `packages/*/src`,
   blocking on MEDIUM and HIGH findings, held at zero by the ratchet in
