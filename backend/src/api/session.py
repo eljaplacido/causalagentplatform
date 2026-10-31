@@ -23,10 +23,11 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, model_validator
 
+from src.agents.governance import GovernanceAgent
 from src.agents.incident_triage import IncidentTriageAgent
 from src.exceptions import CircuitBreakerError
 from src.middleware.rbac import guard, may_use_session
-from src.orchestration.graph import PlatformState, compile_platform_graph
+from src.orchestration.graph import INCIDENT_TRIAGE, PlatformState, compile_platform_graph
 from src.orchestration.session_store import SessionStateStore
 from src.semantic_layer.models import (
     CynefinDomain,
@@ -158,10 +159,15 @@ class IncidentSessionResponse(SessionStateResponse):
     Triage and its Guardian verdict are recorded either way (audit log, session
     store, provenance); `stored` says whether the incident row the dashboard lists
     was written. It used to be dropped silently on failure: 200, nothing stored.
+
+    `interventions` are the proposed interventions as the incident row stores them,
+    each with the verdict the Guardian gave that intervention (`guardianVerdict`)
+    and the audit_log row it wrote (`guardianVerdictRef`).
     """
 
     stored: bool
     store_error: str | None = None
+    interventions: list[dict[str, Any]] = Field(default_factory=list)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -197,9 +203,22 @@ def _state_to_response(state: EpistemicState) -> SessionStateResponse:
     )
 
 
-async def _run_graph(initial_state: EpistemicState, description: str) -> EpistemicState:
+#: The agent_id of the unsigned audit row a fallback in _run_graph writes.
+_FALLBACK_RECORDER = "session-graph-fallback"
+
+
+async def _run_graph(
+    initial_state: EpistemicState,
+    description: str,
+    *,
+    analysis: str | None = None,
+) -> tuple[EpistemicState, str | None]:
     """
     Run the platform LangGraph pipeline on the problem ``description``.
+
+    Returns the final state and this run's plan outcome (None when the run never
+    planned). ``analysis`` selects the analysis a classified run gets
+    (graph.PlatformState).
 
     Every path through the graph ends GuardianCheck → Output, so a returned state
     carries a Guardian verdict that was written to audit_log.
@@ -207,7 +226,10 @@ async def _run_graph(initial_state: EpistemicState, description: str) -> Epistem
     Wraps circuit breaker and graph errors into a terminal EpistemicState rather
     than raising HTTP exceptions — the state itself communicates the outcome. Such
     a state never reached the Guardian, so it carries no recommendation: nothing
-    ungoverned is presented.
+    ungoverned is presented. Its verdict is the API's, not a ruling, and is written
+    to audit_log as one: unsigned, with why (GovernanceAgent.record_unruled). It
+    used to leave no record at all. If that row cannot be written, the run fails
+    (AuditWriteError) rather than answer with a verdict nothing records.
     """
     platform_state: PlatformState = {
         "epistemic": initial_state,
@@ -215,11 +237,12 @@ async def _run_graph(initial_state: EpistemicState, description: str) -> Epistem
         "description": description,
         "plan_outcome": None,
         "escalation_reason": None,
+        "analysis": analysis,
     }
 
     try:
         result: PlatformState = await _graph.ainvoke(platform_state)  # type: ignore[arg-type]
-        final: EpistemicState = result["epistemic"]
+        return result["epistemic"], result.get("plan_outcome")
     except CircuitBreakerError as exc:
         log.warning(
             "session.circuit_breaker",
@@ -237,6 +260,12 @@ async def _run_graph(initial_state: EpistemicState, description: str) -> Epistem
                 ),
                 "guardian_verdict": GuardianVerdict.REQUIRES_ESCALATION,
             }
+        )
+        action_type = "GRAPH_CIRCUIT_BREAKER"
+        why = (
+            f"Session run stopped by the circuit breaker after {exc.cycle_count} cycles, "
+            "before GuardianCheck: no policy ran. REQUIRES_ESCALATION was set by the "
+            "session API, not ruled by the Guardian."
         )
     except Exception as exc:
         log.error(
@@ -256,8 +285,20 @@ async def _run_graph(initial_state: EpistemicState, description: str) -> Epistem
                 "guardian_verdict": GuardianVerdict.REJECTED,
             }
         )
+        action_type = "GRAPH_INTERNAL_ERROR"
+        why = (
+            f"Session run failed before GuardianCheck ({type(exc).__name__}: {exc}): "
+            "no policy ran. REJECTED was set by the session API, not ruled by the "
+            "Guardian."
+        )
 
-    return final
+    await GovernanceAgent(agent_id=_FALLBACK_RECORDER).record_unruled(
+        action_type=action_type,
+        verdict=final.guardian_verdict,
+        notes=why,
+        session_id=final.session_id,
+    )
+    return final, None
 
 
 async def _owned_session(session_id: str, user: dict[str, Any]) -> EpistemicState | None:
@@ -283,6 +324,34 @@ async def _remember(state: EpistemicState, user: dict[str, Any]) -> None:
     _session_cache[state.session_id] = state
     _session_owner.setdefault(state.session_id, user.get("uid"))
     await _session_store.save(state, user.get("uid"))
+
+
+def _resumed(existing: EpistemicState, body: RunSessionRequest) -> EpistemicState:
+    """The state a resumed run starts from: the session's context, not its last result.
+
+    A run's outputs -- flags, recommendations, proposed edges, verdict, the
+    review flag -- and its cycle count are the run's own, and start afresh. They
+    used to carry into the next run and pile up: every resume added its flags and
+    recommendations to the last run's, and the cycle count grew until PR-005
+    escalated (and the circuit breaker refused) every run of the session, five
+    runs in. The session keeps what it is a session for: its graph fragment,
+    assumptions and evidence, and its history (reasoning steps, tool calls).
+    """
+    return existing.model_copy(
+        update={
+            "draft_explanation": body.description,
+            "agent_id": body.agent_id,
+            "flags": [],
+            "recommendations": [],
+            "proposed_edges": [],
+            "simulation_results": [],
+            "cycle_count": 0,
+            "guardian_verdict": GuardianVerdict.PENDING,
+            "policy_rules_cited": [],
+            "requires_human_review": False,
+            "overall_confidence": 0.0,
+        }
+    )
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -316,12 +385,7 @@ async def run_session(
     existing = await _owned_session(session_id, user)
 
     if existing:
-        initial_state = existing.model_copy(
-            update={
-                "draft_explanation": body.description,
-                "agent_id": body.agent_id,
-            }
-        )
+        initial_state = _resumed(existing, body)
     else:
         initial_state = EpistemicState(
             session_id=session_id,
@@ -339,7 +403,7 @@ async def run_session(
         resumed=existing is not None,
     )
 
-    final = await _run_graph(initial_state, body.description)
+    final, _ = await _run_graph(initial_state, body.description)
 
     # Cache for potential continuation
     await _remember(final, user)
@@ -368,8 +432,10 @@ async def run_session(
     summary="Triage an operational incident",
     description=(
         "Fast-path incident triage endpoint for the DevOps vertical. "
-        "Creates an EpistemicState from the incident payload, runs IncidentTriageAgent "
-        "directly, then routes to the full platform graph for GuardianCheck + Output. "
+        "Creates an EpistemicState from the incident payload and runs it through the "
+        "platform graph, whose IncidentTriage node is the incident's one analysis, "
+        "then GuardianCheck + Output. Each proposed intervention gets a Guardian "
+        "verdict of its own (`interventions`). "
         "CHAOTIC-domain incidents escalate without AI analysis; the escalation is "
         "ruled on by the Guardian and recorded in the audit log. `stored` is false "
         "(with `store_error`) when the incident itself could not be saved: the triage "
@@ -419,25 +485,17 @@ async def triage_incident(
         user_id=user.get("uid", "unknown"),
     )
 
-    # Run IncidentTriageAgent first (builds root-cause proposals + cynefin domain)
-    triage_agent = IncidentTriageAgent(agent_id=body.agent_id)
-    try:
-        triaged_state = await triage_agent.process(initial_state)
-    except CircuitBreakerError:
-        triaged_state = initial_state.model_copy(
-            update={
-                "requires_human_review": True,
-                "flags": ["circuit_breaker_open"],
-                "guardian_verdict": GuardianVerdict.REQUIRES_ESCALATION,
-                "draft_explanation": "Circuit breaker: escalating to human.",
-            }
-        )
-
-    # Every incident goes through the graph, CHAOTIC included: the graph classifies
-    # the incident description (not the triage narrative), and every path ends in a
-    # Guardian verdict written to audit_log. CHAOTIC used to skip the graph, and so
-    # returned the triage agent's escalation with no verdict and no audit record.
-    final = await _run_graph(triaged_state, description)
+    # Every incident goes through the graph, CHAOTIC included, and every path ends
+    # in a Guardian verdict written to audit_log. The triage is the graph's analysis
+    # (its IncidentTriage node), so an incident is analysed once and ruled on once.
+    # It used to be analysed twice -- IncidentTriageAgent.process here, with a
+    # Guardian check of its own, then the graph's CausalAnalysis over its output,
+    # with another -- and CHAOTIC incidents used to skip the graph entirely.
+    final, plan_outcome = await _run_graph(
+        initial_state, description, analysis=INCIDENT_TRIAGE
+    )
+    if "pipeline_complete" in final.flags and final.cynefin_domain in _TRIAGED_DOMAINS:
+        await IncidentTriageAgent(agent_id=body.agent_id).store_experience(final)
     await _remember(final, user)
     await _record_provenance(
         initial_state,
@@ -446,7 +504,8 @@ async def triage_incident(
         user=user,
         resumed=False,
     )
-    store_error = await _persist_incident(body, final, user)
+    interventions = await _intervention_verdicts(final, plan_outcome)
+    store_error = await _persist_incident(body, final, user, interventions)
 
     log.info(
         "session.incident.complete",
@@ -461,7 +520,67 @@ async def triage_incident(
         **_state_to_response(final).model_dump(),
         stored=store_error is None,
         store_error=store_error,
+        interventions=interventions,
     )
+
+
+#: The domains an incident run analyses (IncidentTriage); the rest escalate.
+_TRIAGED_DOMAINS = (CynefinDomain.CLEAR, CynefinDomain.COMPLICATED, CynefinDomain.COMPLEX)
+
+#: The agent_id of the Guardian checks that rule on each proposed intervention.
+_INTERVENTION_GUARDIAN = "guardian-intervention-check"
+
+
+async def _intervention_verdicts(
+    state: EpistemicState, plan_outcome: str | None
+) -> list[dict[str, Any]]:
+    """The run's proposed interventions, each with a Guardian verdict of its own.
+
+    The Guardian rules on every intervention the incident row will store, one
+    check and one audit_log row each, on a payload that names that intervention
+    beside the run's context (domain, edges, assumptions, plan outcome) -- the
+    same context the run's own check was given, so an intervention is never
+    judged on less. Each stored intervention used to carry the whole session's
+    verdict instead, which the Guardian had never given that intervention.
+
+    The checks name no subject: their verdicts are read, never spent on a write.
+    """
+    guardian = GovernanceAgent(agent_id=_INTERVENTION_GUARDIAN)
+    context = {
+        "cynefin_domain": state.cynefin_domain,
+        "hallucination_risk_score": state.hallucination_risk_score,
+        "cycle_count": state.cycle_count,
+        "proposed_edges": [e.model_dump() for e in state.proposed_edges],
+        "active_assumptions": [a.model_dump() for a in state.active_assumptions],
+        "plan_outcome": plan_outcome,
+    }
+    interventions: list[dict[str, Any]] = []
+    for rec in state.recommendations[:10]:
+        intervention = {
+            "id": f"int-{rec.rank}-{state.session_id}",
+            "title": rec.action,
+            "description": rec.rationale,
+            "confidence": rec.confidence,
+            "riskTier": rec.risk_tier,
+            "rank": rec.rank,
+        }
+        result = await guardian.check(
+            {
+                "action_type": "INCIDENT_INTERVENTION_CHECK",
+                "intervention": intervention,
+                **context,
+            },
+            state,
+        )
+        interventions.append(
+            {
+                **intervention,
+                "guardianVerdict": str(result.verdict),
+                "guardianVerdictRef": str(result.audit_entry_id),
+                "policyRulesCited": list(result.policy_rules_cited),
+            }
+        )
+    return interventions
 
 
 def _submitter(user: dict[str, Any]) -> str:
@@ -473,6 +592,7 @@ async def _persist_incident(
     body: IncidentSessionRequest,
     state: EpistemicState,
     user: dict[str, Any],
+    proposed_interventions: list[dict[str, Any]],
 ) -> str | None:
     """Durably store the incident row so the dashboard rehydrates after reload.
 
@@ -481,18 +601,6 @@ async def _persist_incident(
     """
     from src.api.incidents import save_incident  # lazy import — avoids circular dependency
 
-    proposed_interventions = [
-        {
-            "id": f"int-{rec.rank}-{state.session_id}",
-            "title": rec.action,
-            "description": rec.rationale,
-            "confidence": rec.confidence,
-            "riskTier": rec.risk_tier,
-            "guardianVerdict": str(state.guardian_verdict),
-            "rank": rec.rank,
-        }
-        for rec in state.recommendations[:10]
-    ]
     causal_hypotheses = (
         [
             {

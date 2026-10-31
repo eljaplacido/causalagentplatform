@@ -351,7 +351,9 @@ script wrote as SEV1 to SEV4 are shown as P0 to P3). No endpoint returns an effe
 incident's interventions, so `InterventionCard` says "No effect estimate" rather than drawing an
 interval. The Guardian's verdict and a person's recorded decision are shown side by side as two
 labelled facts ("Guardian verdict", "Human decision"); the incidents API returns the decision as
-`humanDecision` and leaves `guardianVerdict` as the Guardian issued it. Once a decision is
+`humanDecision` and leaves `guardianVerdict` as the Guardian issued it. That verdict is the
+Guardian's ruling on that intervention, one check each, not the session's verdict copied onto
+every card (the triage response carries the same verdicts as `interventions`). Once a decision is
 recorded the card closes approve and reject and says what was decided. The number on a card is
 the recommendation's `confidence`, which the triage agent sets to its heuristic triage score, so
 it is labelled "Triage score", not drawn as a confidence meter. The triage agent's `ESCALATE: ...`

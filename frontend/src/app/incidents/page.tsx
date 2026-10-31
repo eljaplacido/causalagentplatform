@@ -265,16 +265,22 @@ export default function IncidentsPage() {
               },
             ]
           : [],
-        proposedInterventions: result.recommendations.map((rec) => ({
-          id: `int-${rec.rank}-${result.session_id}`,
-          title: rec.action,
-          description: rec.rationale,
-          // SessionStateResponse carries no effect estimate: none is shown.
-          confidence: rec.confidence,
-          assumptions: [],
-          riskTier: rec.risk_tier as "LOW" | "MEDIUM" | "HIGH" | "CRITICAL",
-          guardianVerdict: result.guardian_verdict as Incident["proposedInterventions"][0]["guardianVerdict"],
-        })),
+        proposedInterventions: result.recommendations.map((rec) => {
+          const id = `int-${rec.rank}-${result.session_id}`;
+          // Each intervention's own Guardian verdict, as the incident row stores it.
+          // The session's verdict is not that intervention's; fail-closed: PENDING.
+          const ruled = (result.interventions ?? []).find((i) => i.id === id);
+          return {
+            id,
+            title: rec.action,
+            description: rec.rationale,
+            // SessionStateResponse carries no effect estimate: none is shown.
+            confidence: rec.confidence,
+            assumptions: [],
+            riskTier: rec.risk_tier as "LOW" | "MEDIUM" | "HIGH" | "CRITICAL",
+            guardianVerdict: ruled?.guardianVerdict ?? "PENDING",
+          };
+        }),
       };
 
       setIncidents((prev) => {
