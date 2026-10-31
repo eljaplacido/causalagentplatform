@@ -276,3 +276,61 @@ def test_prepare_schema_creates_nothing_outside_local(monkeypatch: pytest.Monkey
     monkeypatch.setenv("ENV", "production")
     monkeypatch.setattr(CloudSqlFactory, "init_db", _must_not_run)
     assert seed_data.prepare_schema() is False
+
+
+# ── The seeder's schema includes the drift-alert record (merge train #100 + #102) ──
+#
+# Preconditions: ENV=local, a brand-new SQLITE_PATH that only the seeder has touched
+# (prepare_schema, septa-110, is what created its schema).
+# Postconditions: the drift_alerts table (015_drift_alerts.sql, septa-62) exists on
+# it, so a drift alert raised against a freshly seeded database leaves a record: it
+# is written and read back through DriftAlertLog, and the table stays append-only
+# (an UPDATE is refused). Two branches met here: setup-and-ui made the seeder build
+# the schema itself, semantic-surface added the table to that schema.
+
+
+def test_a_database_only_the_seeder_built_records_drift_alerts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from sqlalchemy.exc import DBAPIError
+
+    from src.sensors.drift_alert_log import DriftAlertLog
+
+    db = tmp_path / "seeded-only.db"
+    monkeypatch.setenv("ENV", "local")
+    monkeypatch.setenv("SQLITE_PATH", str(db))
+    monkeypatch.setattr("sys.argv", ["seed_data", "--all"])
+    CloudSqlFactory.reset()
+    try:
+        seed_data.main()
+    finally:
+        engine = CloudSqlFactory._engine
+        if engine is not None:
+            asyncio.run(engine.dispose())
+        CloudSqlFactory.reset()
+
+    engine = create_async_engine(f"sqlite+aiosqlite:///{db}", poolclass=NullPool)
+    _use_engine(engine)
+    try:
+        alert_id = asyncio.run(
+            DriftAlertLog().record(
+                alert_type="CAUSAL_STRUCTURE_DRIFT",
+                severity="HIGH",
+                drift_type="causal",
+                drift_score=0.37,
+                description="edge latency -> error_rate no longer holds",
+                agent_id="seeded-db-test",
+            )
+        )
+        stored = asyncio.run(_rows(engine, "SELECT id, severity, drift_score FROM drift_alerts"))
+        assert [(r[0], r[1], r[2]) for r in stored] == [(alert_id, "HIGH", 0.37)]
+
+        async def _update() -> None:
+            async with engine.begin() as conn:
+                await conn.execute(text("UPDATE drift_alerts SET severity = 'LOW'"))
+
+        with pytest.raises(DBAPIError, match="append-only"):
+            asyncio.run(_update())
+    finally:
+        asyncio.run(engine.dispose())
+        CloudSqlFactory.reset()

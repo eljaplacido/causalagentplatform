@@ -998,7 +998,7 @@ def seed_incidents(engine: Any) -> dict[str, Any]:
 #   incidents                         submitted_by is the seeder
 #
 # It never touches an append-only table -- audit_log, decision_records,
-# decision_followups, causal_model_versions, decision_model_refs -- whose
+# decision_followups, causal_model_versions, decision_model_refs, drift_alerts -- whose
 # triggers refuse a DELETE on both backends (and on PostgreSQL no role is
 # granted one). The seeder's audit rows therefore stay, by design, and --clear
 # reports how many it kept. Seeding again adds new ones.
