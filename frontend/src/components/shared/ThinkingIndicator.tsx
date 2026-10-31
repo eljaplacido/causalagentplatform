@@ -38,10 +38,13 @@ export function ThinkingIndicator({
 }: ThinkingIndicatorProps) {
   // Tick elapsed time internally if consumer doesn't update it continuously
   const [localElapsed, setLocalElapsed] = useState(elapsed);
-
-  useEffect(() => {
+  // A new elapsed from the consumer resets the local count, adjusted during render
+  // (https://react.dev/learn/you-might-not-need-an-effect), not in an effect.
+  const [syncedElapsed, setSyncedElapsed] = useState(elapsed);
+  if (elapsed !== syncedElapsed) {
+    setSyncedElapsed(elapsed);
     setLocalElapsed(elapsed);
-  }, [elapsed]);
+  }
 
   useEffect(() => {
     const interval = setInterval(() => {
