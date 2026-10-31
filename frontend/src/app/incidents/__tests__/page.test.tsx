@@ -397,6 +397,19 @@ describe("IncidentsPage — a newly triaged incident", () => {
     expect(["P0", "P1", "P2", "P3"]).toContain(body.severity);
     expect(await screen.findByTestId("incident-severity")).toHaveTextContent(body.severity);
   });
+
+  // The form's schema (zod) reaches react-hook-form through @hookform/resolvers;
+  // the other tests here only pass it. This one pins the refusal path.
+  it("refuses a title under 10 characters with the schema's message, and sends nothing", async () => {
+    const user = userEvent.setup();
+    incidentsApiMock.list.mockResolvedValue([]);
+
+    render(<IncidentsPage />);
+    await submitIncident(user, "Too short");
+
+    expect(await screen.findByText("Title must be at least 10 characters")).toBeInTheDocument();
+    expect(sessionApiMock.incident).not.toHaveBeenCalled();
+  });
 });
 
 // ─── Phone width (the tour, 2026-09-26) ───────────────────────────────────────

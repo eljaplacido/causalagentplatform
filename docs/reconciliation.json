@@ -53,7 +53,7 @@
       "baseline": {
         "on": "2026-10-31",
         "sha256": {
-          "conformance/declared_not_implemented.json": "7b56517d7f6b1ba0ac1ec12bc763c43b0c944e44174eabb7ba437fa54e880906",
+          "conformance/declared_not_implemented.json": "85a6f40c126c70a36f43286c3575e3509447dd00b379035182551cac290199db",
           "backend/src": "56ca28dd53e2d20be2d46d32b213d2224f478f2e920c4fe99dafc16ebcdb8bd7",
           "backend/tests": "3343e3687e96f039c3b7fe15ef9fab1ada6f7d144cdf40ad8fb8b897c31342b8",
           "frontend/src": "c2d28d0fb9611396d2b4963700664423fd3f1ade514dc741ed25c005746f9e6d",
@@ -172,7 +172,7 @@
         ".github/workflows"
       ],
       "baseline": {
-        "on": "2026-10-15",
+        "on": "2026-10-31",
         "sha256": {
           "backend/src/middleware": "382780d8717bb592eb4ddc1d9e21dcd0227129be3ba5c9d60815c0ef4ee7de0a",
           "backend/src/api/governance.py": "c2ab8a061fe056b835dbb9097b147f414437df0ca702708c3e923b23c8d5751c",
@@ -182,12 +182,12 @@
           "backend/src/api/provenance.py": "2a308e924c9fd7ea910284fa58a479bdeeb97f260764d9c09c5d7eabeb74cfec",
           "backend/src/db/migrations": "0061d7048117bb0d23b2c6b9dddc771f21ab84dc5076464aa54750aa8ddb05e8",
           "backend/src/semantic_layer/verdict.py": "6a46fcf8331be6953a01541f0f75151246ab50967b6baf2e1ded51ad55a80ae8",
-          ".github/workflows": "df92cbc4cd1fb0ab0a9abae5093c9fef08c68f605b3cfee3131de043d4d1fdcb"
+          ".github/workflows": "dda91d5921d692ddf3c2cb61ede9c6cf00b576478eda4736820ea0a442099d80"
         }
       },
       "last_read": {
-        "on": "2026-10-15",
-        "by": "Claude (septa-100 2026-10-15: TESTING_CICD 5.1 gains the gate concurrency group on self-hosted runners; CYBERSECURITY's where-CI-runs, ORCHESTRATION's .github file table and CURRENT_STAGE (no scale-test row) re-read, unaffected by the concurrency group and the test_scale budget)"
+        "on": "2026-10-31",
+        "by": "Claude (frontend-majors branch)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -247,17 +247,17 @@
         ".gnomon"
       ],
       "baseline": {
-        "on": "2026-10-21",
+        "on": "2026-10-31",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9",
-          ".github": "a77f8351dce4603fbbbcee30576b3e042f5fef0dcb8e323b53b05f3c68fa467e",
+          ".github": "4b74b1a83ae2f5e19dcb91aaadede98f9a69ec46f66facfcaf642f2e74a5261e",
           ".gnomon": "5b6f297cd580dcd75c0b5191462467ebb046083612c15fd9c9a511b0ba840236"
         }
       },
       "last_read": {
-        "on": "2026-10-21",
-        "by": "Claude (septa-97: read for the ci.sh change -- the verifier, verify.sh and .gnomon rows still hold; ORCHESTRATION lists no gate steps)"
+        "on": "2026-10-31",
+        "by": "Claude (frontend-majors branch)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -280,7 +280,7 @@
           "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
           "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
           "frontend/package.json": "e8643138a56fbb63f49b2b2df1508fd19b76f811f99239fe316947cf8fca4b4d",
-          "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
+          "package.json": "833bce1de1e6a72e2d906799e3265db59290a9ba3833b745a1a943e567113f46",
           ".env.example": "c1b1272a098696c6c0e72ba533fca78db4060da7c549715d14fb1167656e906a",
           "backend/scripts": "097dcb6a137bc57ec08b586e935683b9dfa17e2fffa50ccb1d3d23ba6a9810a6"
         }
@@ -308,13 +308,13 @@
       "baseline": {
         "on": "2026-10-31",
         "sha256": {
-          ".github/workflows": "df92cbc4cd1fb0ab0a9abae5093c9fef08c68f605b3cfee3131de043d4d1fdcb",
+          ".github/workflows": "dda91d5921d692ddf3c2cb61ede9c6cf00b576478eda4736820ea0a442099d80",
           "backend/tests": "3343e3687e96f039c3b7fe15ef9fab1ada6f7d144cdf40ad8fb8b897c31342b8",
           "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5dc65a49d6975444738042f9c292b56050a932ed23932e45498fbcea6285ff3e",
           ".gnomon/ci.sh": "a203a97aa6b72b34bc2ee7b3dde6d019fb465dd661b1b37d184be14f0ba3134c",
-          "scripts": "278a32b7c89005b58823c63b1a555bc3c98a4ec0f83d498eb6e1f990ce58c006",
+          "scripts": "83d60b3507bd31d90b889e8c02a22a6f573f180676e953e344d8050f15c68e11",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "17b15235a74e84e3de54a752eed9d89b9f44d4e6880ba2afceb1129a9650eab5",
           "packages/causal-core/tests": "76e4e4f85b5a4200ea7a723cee8394fd09b751157b4c91bdc9b61e68aa3465ad",
@@ -350,16 +350,16 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-10-21",
+        "on": "2026-10-31",
         "sha256": {
           "packages/causal-core/src/causal_core": "808b370dd05adaf6520a435312f501533e0b9f82239e15fbe2073c893278180f",
-          "conformance/declared_not_implemented.json": "7b56517d7f6b1ba0ac1ec12bc763c43b0c944e44174eabb7ba437fa54e880906",
+          "conformance/declared_not_implemented.json": "85a6f40c126c70a36f43286c3575e3509447dd00b379035182551cac290199db",
           "docs/CURRENT_STAGE.md": "164950fa6f26f05ff7b799520009605c674614504ceb00e93f84d3b6543ed493"
         }
       },
       "last_read": {
-        "on": "2026-10-21",
-        "by": "Claude (merge train septa-83 + septa-86 + septa-55 + septa-97: the four changes' rows read together -- decisions, provenance, incident stored:false, MCP listing and AGENTS MCP paragraph, frontend-e2e step and roadmap test work)"
+        "on": "2026-10-31",
+        "by": "Claude (frontend-majors branch)"
       }
     },
     "SECURITY.md": {

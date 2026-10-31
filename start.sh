@@ -85,7 +85,7 @@ start_backend() {
 # ── Frontend ──────────────────────────────────────────────────────────────────
 
 start_frontend() {
-  info "Starting frontend (Next.js 15) on http://localhost:3000 (loopback only)"
+  info "Starting frontend (Next.js 16) on http://localhost:3000 (loopback only)"
 
   cd "$FRONTEND_DIR"
 
