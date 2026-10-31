@@ -27,7 +27,6 @@ function makeItem(overrides: Partial<ReviewQueueItem> = {}): ReviewQueueItem {
     submittedBy: "ryo.tanaka",
     submittedAt: new Date().toISOString(),
     status: "PENDING",
-    evidenceCitations: [],
     sensitivityResults: [],
     assumptions: [],
     ...overrides,

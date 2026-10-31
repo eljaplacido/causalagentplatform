@@ -16,3 +16,9 @@ published.
 - **Score the decisions:** outcome follow-up plans and a calibration report whose rates carry
   Clopper-Pearson intervals.
 - **Evidence:** the pre-registered gates D0, A0 and C0, each with seeded defects.
+- **Shadow decisions:** `DecisionRecord.shadow`, a sealed shadow tag (left out of the digest when
+  absent, so earlier chains verify unchanged); `causal_decision.shadow` (`emittable`, which refuses
+  a shadow record, and `select` for listing real and shadow apart); `past_review` keeps the newest
+  decision per action and tag, so a shadow decision never retires a real one.
+- **Shadow rounds:** `causal_decision.shadow_round` seals a round's studies through the kernel as
+  shadow decisions and scores them against the round's pre-registered bars.

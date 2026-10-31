@@ -30,7 +30,7 @@
         "sha256": {
           "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
           "packages/causal-mcp": "ff3535460199623c814f7524892e3716c65e4bab3e929756340321a1789aa907",
-          "frontend/package.json": "21affd9af891b9586d0007239dd483fb40b2124ef909baa0fb28670a8bb59192",
+          "frontend/package.json": "e8643138a56fbb63f49b2b2df1508fd19b76f811f99239fe316947cf8fca4b4d",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docs/CURRENT_STAGE.md": "c8db28357f897010ffccab58cd8cbdaa9ddb92a38e3a46bb04d7a9dcdd2e69af"
         }
@@ -53,10 +53,10 @@
       "baseline": {
         "on": "2026-10-31",
         "sha256": {
-          "conformance/declared_not_implemented.json": "7b56517d7f6b1ba0ac1ec12bc763c43b0c944e44174eabb7ba437fa54e880906",
-          "backend/src": "56ca28dd53e2d20be2d46d32b213d2224f478f2e920c4fe99dafc16ebcdb8bd7",
-          "backend/tests": "ed6e8c031488d045d9241d153887965ff1a328843b93b4e8ecef976938ba51aa",
-          "frontend/src": "272ae49bda670a7e84235bba75c76ee2c48d95278bd1107281d6daabd1756435",
+          "conformance/declared_not_implemented.json": "835b0cf23119d7a9947070cfbde2bc343d3b53f3f07cbdb1bd5b4002377f3197",
+          "backend/src": "8e28b76ae299503ab532049db086f4af54ee458b1f0e3186fbcfa0c8ad2e481f",
+          "backend/tests": "02e17e45f436027d74b3887711a8592bddf779f8da364644da462700de73dc29",
+          "frontend/src": "d9a9f88d5d0ee80db6eaf1bbeea488e416827c0c8aaf4eb539a264217c2e9f43",
           "packages": "d62c04ee6022885dd8470c8a123a7f55417d2ead66ae060399e29490d5912953",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
@@ -76,18 +76,18 @@
         "backend/src/orchestration/graph.py"
       ],
       "baseline": {
-        "on": "2026-10-21",
+        "on": "2026-10-31",
         "sha256": {
-          "backend/src/semantic_layer": "646146562db92f7d82c010bc985f8104b2ae1ad072575c03301b2478a690c95b",
-          "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
+          "backend/src/semantic_layer": "31dc43f7ac22d37a1e506f734cfb4a412b825a13508d1a6a37a60c78873b0745",
+          "backend/src/agents/governance.py": "5b3f9564c2bb422416fc77075f2aa7d9245c3e49a3edcd769d407c236c30d747",
           "packages/semantic-types/src": "599b141c5312c6940a4479a5400b1113adfbef407f85ff016edeeade864d834c",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
-          "backend/src/orchestration/graph.py": "9e75a97dcfccf2e649b77e2b52bd0bc1ae8d11aaf7a3af5c072d4bcb2e09d7e8"
+          "backend/src/orchestration/graph.py": "ea022b48aa7ff980206c495d9d9395a0a84859b8270d9983108d545faf17b3c9"
         }
       },
       "last_read": {
-        "on": "2026-10-21",
-        "by": "Claude (merge train septa-83 + septa-86 + septa-55 + septa-97: the four changes' rows read together -- decisions, provenance, incident stored:false, MCP listing and AGENTS MCP paragraph, frontend-e2e step and roadmap test work)"
+        "on": "2026-10-31",
+        "by": "Claude (shadow-runtime branch)"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -100,18 +100,18 @@
         "backend/src/agents/governance.py"
       ],
       "baseline": {
-        "on": "2026-09-26",
+        "on": "2026-10-31",
         "sha256": {
           "backend/src/semantic_layer/provenance.py": "c912fb0af67442b984325d80528867c559ccb0332ac7725ac448e48f87164c89",
           "backend/src/semantic_layer/contracts.py": "96357377af27b488fd82e05c2601a907cbf99afe7cd9ae71819ee37c7e284068",
           "backend/src/api/provenance.py": "2a308e924c9fd7ea910284fa58a479bdeeb97f260764d9c09c5d7eabeb74cfec",
           "backend/src/agents/llm_factory.py": "e10b999f795c944f596ff9d2f113bc56a5f07e5b64b464fee712dc08e4a1f9ed",
-          "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3"
+          "backend/src/agents/governance.py": "5b3f9564c2bb422416fc77075f2aa7d9245c3e49a3edcd769d407c236c30d747"
         }
       },
       "last_read": {
-        "on": "2026-09-26",
-        "by": "Claude (merge of the train into septa-14/15: header no longer says no LLM is called; api/provenance.py docstring names the narration callers; lineage chain reads the durable store through async get_provenance_graph)"
+        "on": "2026-10-31",
+        "by": "Claude (incident-integrity branch): septa-79/80/85 -- read the passages on the session graph, Guardian checks and audit rows, incidents and interventions, resumed sessions and circuit breaker against graph.py, session.py, governance.py, incident_triage.py and the incidents page; ADR-003 resumed-flags line reworded, AGENTS 5.1/5.2, UIX, TESTING_CICD and CURRENT_STAGE updated"
       }
     },
     "docs/ADR-003-hierarchical-planning-and-evaluation.md": {
@@ -122,16 +122,16 @@
         "backend/src/api/platform.py"
       ],
       "baseline": {
-        "on": "2026-09-26",
+        "on": "2026-10-31",
         "sha256": {
-          "backend/src/orchestration": "e2eb3496c39122094c47140ed28a932742480b35a2cbe4d2c1a11a40e9a0c6f7",
+          "backend/src/orchestration": "1c89092d1341d3ac23a45b8f05b6dfc97978a8d1479f11d14367cb62afec0b13",
           "backend/src/evaluation": "9a2708b95f3bae7f8b05075e62815c7f51cb3f6e7939a585c1c2c26e5b500b07",
           "backend/src/api/platform.py": "8f665907da4fe188cce83f5fc32f47288489fbab312b59ae667438f67131c0ea"
         }
       },
       "last_read": {
-        "on": "2026-09-26",
-        "by": "Claude (UIX tour fixes: UIX §2/§4.2 re-read for SiteNav, the 404 page, the navigating persona dropdown, the workbench's classified drafts, the decisions page's number format, rationale binding and RateEstimate calibration, FragmentCard, InterventionCard, analyst, governance and mobile layout; CURRENT_STAGE's weekly-metrics, decision-ledger, incidents and analyst rows updated; TESTING_CICD's vitest paragraph names the new tests and no longer says the ledger is verbatim; ADR-003's platform.py row states only the evaluation endpoints, which this change did not touch)"
+        "on": "2026-10-31",
+        "by": "Claude (incident-integrity branch): septa-79/80/85 -- read the passages on the session graph, Guardian checks and audit rows, incidents and interventions, resumed sessions and circuit breaker against graph.py, session.py, governance.py, incident_triage.py and the incidents page; ADR-003 resumed-flags line reworded, AGENTS 5.1/5.2, UIX, TESTING_CICD and CURRENT_STAGE updated"
       }
     },
     "docs/AGENTS.md": {
@@ -144,18 +144,18 @@
         "prompts"
       ],
       "baseline": {
-        "on": "2026-10-21",
+        "on": "2026-10-31",
         "sha256": {
-          "backend/src/agents": "81a4e9fe97f4324a0456c26edc3dee0238f64f8540ac59be17e046fd4750a48d",
+          "backend/src/agents": "79da5c5a0e422a489eaeb7074452bd0bea00ad8233cbc8e22355dab333093988",
           "backend/src/skills": "b0bcef79c64f6b8d2f35f87f92095d54c52cec7d972a4cf1520b95fcc0d68347",
           "packages/causal-mcp": "ff3535460199623c814f7524892e3716c65e4bab3e929756340321a1789aa907",
-          "backend/src/orchestration": "e2eb3496c39122094c47140ed28a932742480b35a2cbe4d2c1a11a40e9a0c6f7",
+          "backend/src/orchestration": "1c89092d1341d3ac23a45b8f05b6dfc97978a8d1479f11d14367cb62afec0b13",
           "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9"
         }
       },
       "last_read": {
-        "on": "2026-10-21",
-        "by": "Claude (septa-55: causal-mcp CHANGELOG gained the tool-listing line; no other claim moved)"
+        "on": "2026-10-31",
+        "by": "Claude (semantic-surface branch): septa-62/72/87/88 -- drift_alerts table (015, append-only) and its SQL fallback, CausalEdge.created_at, review queue assumptions + recorded sensitivity (no evidence citations), NodeDetail in the workbench, EdgeProposal/GraphDiff deleted; re-read for those claims and fixed DATA_LAYER, QUICKSTART, AGENTS, UIX, ADR-001, CYBERSECURITY, TESTING_CICD, CURRENT_STAGE; README, SECURITY, HANDOFFS, ROADMAP unaffected"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -175,12 +175,12 @@
         "on": "2026-10-31",
         "sha256": {
           "backend/src/middleware": "382780d8717bb592eb4ddc1d9e21dcd0227129be3ba5c9d60815c0ef4ee7de0a",
-          "backend/src/api/governance.py": "c2ab8a061fe056b835dbb9097b147f414437df0ca702708c3e923b23c8d5751c",
-          "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
-          "backend/src/semantic_layer/registry.py": "fcf26738fc64003c29d3a4964517495cdb2b0267fb39f2c44c3f4311e30c9374",
+          "backend/src/api/governance.py": "64ed8722f8567c738245b1750a3a42826994687b2fe1862034f4044ca3624610",
+          "backend/src/agents/governance.py": "5b3f9564c2bb422416fc77075f2aa7d9245c3e49a3edcd769d407c236c30d747",
+          "backend/src/semantic_layer/registry.py": "9d804b796fa34109248f431edf709c8b9ef0bbf400be4ca4cde40651085c8108",
           "backend/src/api/interventions.py": "928915a5bb49c3e1d993fc0da88ca6d1ac05bb1923afc6c3a0f248194d229e43",
           "backend/src/api/provenance.py": "2a308e924c9fd7ea910284fa58a479bdeeb97f260764d9c09c5d7eabeb74cfec",
-          "backend/src/db/migrations": "0061d7048117bb0d23b2c6b9dddc771f21ab84dc5076464aa54750aa8ddb05e8",
+          "backend/src/db/migrations": "9cbd338ee6c9369a61e0c67b179da8dbaef9f0ec23b32079c39bac21a1ee9dc2",
           "backend/src/semantic_layer/verdict.py": "6a46fcf8331be6953a01541f0f75151246ab50967b6baf2e1ded51ad55a80ae8",
           ".github/workflows": "6748da2736484d3371c7d8c8093fba7fef776ded155ac3e8183949935762fb6d"
         }
@@ -203,21 +203,21 @@
         "backend/src/skills/drift_detect.py"
       ],
       "baseline": {
-        "on": "2026-09-29",
+        "on": "2026-10-31",
         "sha256": {
-          "backend/src/db": "9f4dc35b1cdc1fe31da03685469dce8d67be6bfe3a4d49574e983750f9b96ac7",
-          "backend/src/connectors": "a1392b68cb6ca4d05b943de26a39eec5d9979e15866bf1f704d84339ac0c6f6b",
-          "backend/src/semantic_layer/models.py": "b797d8121087451bbd55dd3489732f7aeabaea2e59c10138e2759f11bbd58960",
-          "backend/src/sensors": "37f0b547a27bf3617693225db822302372fe941185153afa65d9cc5296e3360c",
+          "backend/src/db": "6199cb9b090d14aac3c7db2df3a560417f7ba8673acddd5208c3b808514a68b8",
+          "backend/src/connectors": "48489f6f7a9a5e193136873213223aef2e7c4c900a6c80b22d402b1d7fd3d83f",
+          "backend/src/semantic_layer/models.py": "faa1f82a78cfb0338fdccf3f3711d93abd873eb87f6625219f15191f7ae87c43",
+          "backend/src/sensors": "157d56ba253af8e684dc2e2f00d9a937b817a13ce4c42ef85929f2be4c1631ce",
           "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
-          "backend/src/semantic_layer/registry.py": "fcf26738fc64003c29d3a4964517495cdb2b0267fb39f2c44c3f4311e30c9374",
-          "backend/src/agents/drift_monitor.py": "3e5807b7fcc88cb7215e1126cbf5461c293020fb2153937fbbd923ca085b2c9f",
+          "backend/src/semantic_layer/registry.py": "9d804b796fa34109248f431edf709c8b9ef0bbf400be4ca4cde40651085c8108",
+          "backend/src/agents/drift_monitor.py": "f9a9912af225beead5d29f7fe5ec9707cfdb1aa33b586bab4b36df8e740d8ad6",
           "backend/src/skills/drift_detect.py": "9432982258b155287a90701d76dc9bf331dd8c65fbc692ad37fcd124fcab7111"
         }
       },
       "last_read": {
-        "on": "2026-09-29",
-        "by": "Claude (septa-92: re-read; the decisions endpoint's post-seal event is described in CYBERSECURITY and CURRENT_STAGE; the data layer and test layout claims are unchanged)"
+        "on": "2026-10-31",
+        "by": "Claude (shadow-runtime branch)"
       }
     },
     "docs/HANDOFFS.md": {
@@ -227,15 +227,15 @@
         "backend/src/semantic_layer/models.py"
       ],
       "baseline": {
-        "on": "2026-09-26",
+        "on": "2026-10-31",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
-          "backend/src/semantic_layer/models.py": "b797d8121087451bbd55dd3489732f7aeabaea2e59c10138e2759f11bbd58960"
+          "backend/src/semantic_layer/models.py": "faa1f82a78cfb0338fdccf3f3711d93abd873eb87f6625219f15191f7ae87c43"
         }
       },
       "last_read": {
-        "on": "2026-09-26",
-        "by": "Claude (merge of the train into septa-14/15: re-read after models.py gained created_by on edges and the RECORDED meaning; its EpistemicState constraints still hold)"
+        "on": "2026-10-31",
+        "by": "Claude (semantic-surface branch): septa-62/72/87/88 -- drift_alerts table (015, append-only) and its SQL fallback, CausalEdge.created_at, review queue assumptions + recorded sensitivity (no evidence citations), NodeDetail in the workbench, EdgeProposal/GraphDiff deleted; re-read for those claims and fixed DATA_LAYER, QUICKSTART, AGENTS, UIX, ADR-001, CYBERSECURITY, TESTING_CICD, CURRENT_STAGE; README, SECURITY, HANDOFFS, ROADMAP unaffected"
       }
     },
     "docs/ORCHESTRATION.md": {
@@ -273,21 +273,21 @@
         "backend/scripts"
       ],
       "baseline": {
-        "on": "2026-10-16",
+        "on": "2026-10-31",
         "sha256": {
-          "start.sh": "8131e8e6170aeeca96146f31cdbfe5e463566ddaf09609a008ef1b0cf7e6e410",
+          "start.sh": "c34683e88fdaec9fcf39395227ee41012eff7837e8ce461242f8820b43626362",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
           "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
-          "frontend/package.json": "21affd9af891b9586d0007239dd483fb40b2124ef909baa0fb28670a8bb59192",
-          "package.json": "2083b66670861291163ed2492261f830cb4f384c8d3da91ab5261639f6604b66",
+          "frontend/package.json": "e8643138a56fbb63f49b2b2df1508fd19b76f811f99239fe316947cf8fca4b4d",
+          "package.json": "833bce1de1e6a72e2d906799e3265db59290a9ba3833b745a1a943e567113f46",
           ".env.example": "c1b1272a098696c6c0e72ba533fca78db4060da7c549715d14fb1167656e906a",
-          "backend/scripts": "adfe996282f443b9f37340ccda7e0e85afae2ad77fbed2455cc8dc6a63dc987b"
+          "backend/scripts": "097dcb6a137bc57ec08b586e935683b9dfa17e2fffa50ccb1d3d23ba6a9810a6"
         }
       },
       "last_read": {
-        "on": "2026-10-16",
-        "by": "Claude (septa-102: read for review dates, past_review and causal-decision 0.6.0 -- decisions view, roadmap step 5, ledger and calibration rows)"
+        "on": "2026-10-31",
+        "by": "Claude (setup-ui branch)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -309,12 +309,12 @@
         "on": "2026-10-31",
         "sha256": {
           ".github/workflows": "6748da2736484d3371c7d8c8093fba7fef776ded155ac3e8183949935762fb6d",
-          "backend/tests": "ed6e8c031488d045d9241d153887965ff1a328843b93b4e8ecef976938ba51aa",
+          "backend/tests": "02e17e45f436027d74b3887711a8592bddf779f8da364644da462700de73dc29",
           "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5dc65a49d6975444738042f9c292b56050a932ed23932e45498fbcea6285ff3e",
           ".gnomon/ci.sh": "a203a97aa6b72b34bc2ee7b3dde6d019fb465dd661b1b37d184be14f0ba3134c",
-          "scripts": "278a32b7c89005b58823c63b1a555bc3c98a4ec0f83d498eb6e1f990ce58c006",
+          "scripts": "ce2881bbdf7c5f77d9d5ba1a3f5f3bff03f9b1cdcdb202da6b2bf75599d1d3c3",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "17b15235a74e84e3de54a752eed9d89b9f44d4e6880ba2afceb1129a9650eab5",
           "packages/causal-core/tests": "76e4e4f85b5a4200ea7a723cee8394fd09b751157b4c91bdc9b61e68aa3465ad",
@@ -332,14 +332,14 @@
         "frontend/src"
       ],
       "baseline": {
-        "on": "2026-10-21",
+        "on": "2026-10-31",
         "sha256": {
-          "frontend/src": "272ae49bda670a7e84235bba75c76ee2c48d95278bd1107281d6daabd1756435"
+          "frontend/src": "d9a9f88d5d0ee80db6eaf1bbeea488e416827c0c8aaf4eb539a264217c2e9f43"
         }
       },
       "last_read": {
-        "on": "2026-10-21",
-        "by": "Claude (merge train septa-83 + septa-86 + septa-55 + septa-97: the four changes' rows read together -- decisions, provenance, incident stored:false, MCP listing and AGENTS MCP paragraph, frontend-e2e step and roadmap test work)"
+        "on": "2026-10-31",
+        "by": "Claude (shadow-runtime branch)"
       }
     },
     "docs/ROADMAP.md": {
@@ -353,7 +353,7 @@
         "on": "2026-10-31",
         "sha256": {
           "packages/causal-core/src/causal_core": "00a6f1e878bb72be3082bc2a271584df37130ccb618ae874015ffe72273047f8",
-          "conformance/declared_not_implemented.json": "7b56517d7f6b1ba0ac1ec12bc763c43b0c944e44174eabb7ba437fa54e880906",
+          "conformance/declared_not_implemented.json": "835b0cf23119d7a9947070cfbde2bc343d3b53f3f07cbdb1bd5b4002377f3197",
           "docs/CURRENT_STAGE.md": "c8db28357f897010ffccab58cd8cbdaa9ddb92a38e3a46bb04d7a9dcdd2e69af"
         }
       },
@@ -373,19 +373,19 @@
         "backend/src/semantic_layer/verdict.py"
       ],
       "baseline": {
-        "on": "2026-09-29",
+        "on": "2026-10-31",
         "sha256": {
           "backend/src/middleware": "382780d8717bb592eb4ddc1d9e21dcd0227129be3ba5c9d60815c0ef4ee7de0a",
-          "backend/src/api/governance.py": "c2ab8a061fe056b835dbb9097b147f414437df0ca702708c3e923b23c8d5751c",
+          "backend/src/api/governance.py": "64ed8722f8567c738245b1750a3a42826994687b2fe1862034f4044ca3624610",
           "backend/src/api/interventions.py": "928915a5bb49c3e1d993fc0da88ca6d1ac05bb1923afc6c3a0f248194d229e43",
-          "backend/src/agents/governance.py": "8e98540be6e0122bc5cf4fcfb3fc05c9e2293c9423ada0a7e207003e149e9bd3",
-          "backend/src/semantic_layer/registry.py": "fcf26738fc64003c29d3a4964517495cdb2b0267fb39f2c44c3f4311e30c9374",
+          "backend/src/agents/governance.py": "5b3f9564c2bb422416fc77075f2aa7d9245c3e49a3edcd769d407c236c30d747",
+          "backend/src/semantic_layer/registry.py": "9d804b796fa34109248f431edf709c8b9ef0bbf400be4ca4cde40651085c8108",
           "backend/src/semantic_layer/verdict.py": "6a46fcf8331be6953a01541f0f75151246ab50967b6baf2e1ded51ad55a80ae8"
         }
       },
       "last_read": {
-        "on": "2026-09-29",
-        "by": "Claude (septa-92: brain reads added to the any-role list; the connector's outbound calls stated (configured URLs only, decision events without data rows); SECURITY's RBAC section unchanged by two more any-role reads)"
+        "on": "2026-10-31",
+        "by": "Claude (semantic-surface branch): septa-62/72/87/88 -- drift_alerts table (015, append-only) and its SQL fallback, CausalEdge.created_at, review queue assumptions + recorded sensitivity (no evidence citations), NodeDetail in the workbench, EdgeProposal/GraphDiff deleted; re-read for those claims and fixed DATA_LAYER, QUICKSTART, AGENTS, UIX, ADR-001, CYBERSECURITY, TESTING_CICD, CURRENT_STAGE; README, SECURITY, HANDOFFS, ROADMAP unaffected"
       }
     },
     "shadow/README.md": {
@@ -398,18 +398,18 @@
         "packages/causal-decision/src/causal_decision/contract.py"
       ],
       "baseline": {
-        "on": "2026-10-16",
+        "on": "2026-10-31",
         "sha256": {
           "shadow/capability-card.json": "396f48e5ccc14c2465fa1a90f8bf015e42a4e4ad696587f8a6c94c520984a0f9",
-          "shadow/study-template.json": "83ba4ab56c575ee617e4b1200b377eb0a4a91775e7cfadfd9a15509de499b8a8",
+          "shadow/study-template.json": "14e71ffb993bc5f44ac402f8c98492af881787ed95a70f352d65edf5381dfe2d",
           "shadow/PRE-REGISTRATION.template.md": "c5a4e0709b371106cdeb5f0bb2c2f0b1bf581e530d98d886a2cc6e2ca1b13623",
-          "backend/src/connectors/agentcenter.py": "5a4190cd6088af24e0f6738a7b6be3c6115745474fc6dfe125324849148d73ac",
+          "backend/src/connectors/agentcenter.py": "1a2661fbda3f6ebd43423685a566b7c2580607aef79df936373b198f6f9f3490",
           "packages/causal-decision/src/causal_decision/contract.py": "41dc326570433840bd26527de4b0c54b6506f462fda7aaaf4ac0e11925179b0a"
         }
       },
       "last_read": {
-        "on": "2026-10-16",
-        "by": "Claude (septa-101: read for the LLM-edge cap, contract 0.14.0 and D0 v4 -- counts, verdict ladder, MCP tool rows, card)"
+        "on": "2026-10-31",
+        "by": "Claude (shadow-runtime branch)"
       }
     }
   }

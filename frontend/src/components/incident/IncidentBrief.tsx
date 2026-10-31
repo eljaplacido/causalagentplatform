@@ -71,8 +71,15 @@ export function IncidentBrief({
   className,
 }: IncidentBriefProps) {
   // ThinkingIndicator elapsed time tracked locally
-  const [elapsed, setElapsed] = useState(loadingElapsed);
+  const [elapsed, setElapsed] = useState(isLoading ? loadingElapsed : 0);
   const startedAtRef = useRef<number | null>(null);
+  // Loading finished: the count goes back to zero, adjusted during render
+  // (https://react.dev/learn/you-might-not-need-an-effect), not in an effect.
+  const [wasLoading, setWasLoading] = useState(isLoading);
+  if (isLoading !== wasLoading) {
+    setWasLoading(isLoading);
+    if (!isLoading) setElapsed(0);
+  }
 
   useEffect(() => {
     if (isLoading) {
@@ -85,7 +92,6 @@ export function IncidentBrief({
       return () => clearInterval(tick);
     } else {
       startedAtRef.current = null;
-      setElapsed(0);
     }
   }, [isLoading]);
 

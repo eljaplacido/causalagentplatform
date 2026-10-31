@@ -31,7 +31,7 @@ import {
   type FollowUpResponse,
 } from "@/lib/api";
 import { formatFigure, formatKernelNumber, formatTimestamp, verbatim } from "@/lib/utils";
-import { VerdictBadge } from "./VerdictBadge";
+import { ShadowBadge, VerdictBadge } from "./VerdictBadge";
 
 function Field({ label, children, testId }: { label: string; children: React.ReactNode; testId?: string }) {
   return (
@@ -261,11 +261,19 @@ export function DecisionDetail({ record }: { record: DecisionRecordResponse }) {
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="text-sm font-bold text-foreground">{d.request.action}</h3>
           <VerdictBadge verdict={d.verdict} />
+          {record.shadow && <ShadowBadge tag={record.shadow} />}
         </div>
         <p className="text-xs text-muted-foreground">
           #{record.sequence} · recorded {formatTimestamp(record.recorded_at)} ·{" "}
           {record.executed ? "executed" : "not recorded as executed"}
         </p>
+        {record.shadow && (
+          <p data-testid="shadow-note" className="rounded-md border border-dashed border-violet-300 bg-violet-50 p-2 text-xs text-violet-900 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-200">
+            Shadow decision ({record.shadow}): sealed and followed up like any other, but never
+            sent to agentcenter, and nobody acts on it because of the platform. Its follow-up is
+            scored against the shadow round&apos;s own pre-registered bars.
+          </p>
+        )}
       </header>
 
       <RationaleText text={d.rationale} evidence={ev} request={d.request} />

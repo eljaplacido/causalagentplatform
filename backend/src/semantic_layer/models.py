@@ -12,7 +12,7 @@ React frontend without transformation.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 from uuid import UUID, uuid4
@@ -459,6 +459,11 @@ class CausalEdge(BaseModel):
     #: Who drafted the edge. POST /api/semantic/drafts stamps it from the token, as
     #: it does for entities and fragments; None for edges drafted before 012.
     created_by: UserRef | None = None
+    #: When the edge was drafted. Server-kept: propose_draft stamps the stored row
+    #: with the time of the insert, whatever a submitted payload says, and every
+    #: read returns that stored value (causal_edges.created_at, NOT NULL in both
+    #: schemas). The default only stands for an edge not yet stored.
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     #: Server-kept: 1 at the draft, +1 per recorded state change. Every revision is
     #: a row in semantic_object_versions; this row is the current one.
     revision: int = Field(1, ge=1)
