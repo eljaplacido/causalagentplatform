@@ -57,6 +57,7 @@ from causal_core.identification import (
     identify,
     missing_information,
 )
+from causal_core.numerics import pinned
 from causal_core.panel import analyze_panel
 from causal_core.panel import certificate as panel_certificate
 from causal_core.refute import RefutationContext, holm
@@ -274,9 +275,12 @@ def analyze(
         )
 
     try:
-        return _analyze(
-            data, graph, treatment, outcome, query, policy, query_fields, stage, prov, refuse
-        )
+        # One BLAS thread, so the digests do not depend on the host's thread count
+        # (causal_core.numerics says why, and what it does not cover).
+        with pinned():
+            return _analyze(
+                data, graph, treatment, outcome, query, policy, query_fields, stage, prov, refuse
+            )
     except Exception as exc:
         return ApparatusFailure(
             stage=stage.name,

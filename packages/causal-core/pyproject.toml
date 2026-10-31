@@ -25,6 +25,7 @@ dependencies = [
     "pandas>=2.1",
     "networkx>=3.3",
     "pydantic>=2.7",
+    "threadpoolctl>=3.1",  # causal_core.numerics pins BLAS to one thread (septa-89)
 ]
 
 [project.urls]
@@ -45,7 +46,6 @@ dev = [
     "pyarrow>=15",
     "packaging>=23",  # scripts/check_licenses.py
     "polars>=1.0",
-    "threadpoolctl>=3.1",  # tests/test_scale.py pins BLAS to one thread
 ]
 
 [project.scripts]
@@ -80,7 +80,7 @@ strict = true
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["scipy.*", "networkx.*", "sklearn.*", "pandas.*", "y0.*", "dowhy.*"]
+module = ["scipy.*", "networkx.*", "sklearn.*", "pandas.*", "y0.*", "dowhy.*", "threadpoolctl.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

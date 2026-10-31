@@ -297,6 +297,13 @@ on an idle CPU with little memory free. GitHub keeps one pending job
 per group, so a third gate queued behind a running one replaces the pending one, which shows as
 cancelled and is re-run.
 
+**BLAS threads.** Both workflows set `OMP_NUM_THREADS`, `OPENBLAS_NUM_THREADS` and
+`MKL_NUM_THREADS` from the repository variable `CI_BLAS_THREADS`, else 2 (septa-90): unset, each
+numpy process takes a thread per core, and runners sharing a host oversubscribe it. The number
+changes how hard a job leans on the host, not what it finds: `causal_core.analyze` runs BLAS on
+one thread regardless (`causal_core.numerics`, septa-89), so a result or decision digest is the
+same at any setting (`packages/causal-decision/tests/test_digest_reproducible.py`).
+
 The gate job:
 
 1. Check out with full history. The register cites some claims at the revision where they were

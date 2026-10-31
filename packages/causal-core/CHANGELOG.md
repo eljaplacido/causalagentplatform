@@ -19,5 +19,9 @@ milestones inside the repository and were never published.
 - **Segments:** declared subgroups with family-wise intervals and Cochran's Q.
 - **Claims and provenance:** every number is a claim bound to a field (`cc.verify`); RFC 8785
   digests of graph, query, data, policy and result.
+- **Reproducible digests:** `analyze` runs BLAS on one thread (`causal_core.numerics`, new
+  runtime dependency `threadpoolctl`) and the ID expression lists its c-components in sorted
+  order, so a result digest no longer depends on the host's thread count or the string hash
+  seed (septa-89). Same build and CPU family only; the digest format is unchanged.
 - **Evidence:** the pre-registered gates T0 and T4-T10, each with seeded defects, pass on the
   tagged commit before anything is published (`.github/workflows/release.yml`).
