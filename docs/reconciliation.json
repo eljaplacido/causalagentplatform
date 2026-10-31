@@ -32,12 +32,12 @@
           "packages/causal-mcp": "ff3535460199623c814f7524892e3716c65e4bab3e929756340321a1789aa907",
           "frontend/package.json": "90091605609635e84200d37acfeeafd37a63e7271a725463bc536857284747f7",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "6edecee5a846e4d3bfe3706e529a1e0c45dc634253368090adac31fcde1e8de6"
+          "docs/CURRENT_STAGE.md": "cd9e2f67b62af78a5214095583ff6db3965b8e9c1dba000d8f15115312832193"
         }
       },
       "last_read": {
         "on": "2026-10-31",
-        "by": "Claude (shadow-runtime branch)"
+        "by": "Claude (merge train): link 5 = shadow-runtime + links 1-4 merged; its migration renumbered 016_decision_shadow.sql after semantic-surface's 015_drift_alerts.sql (DATA_LAYER range and decision_records row, factory comment); re-read DATA_LAYER, CYBERSECURITY (append-only tables, shadow never emitted), ADR-001, UIX (decisions Shadow switch beside the governance/incidents changes), TESTING_CICD (shadow round, drift and seed tests), CURRENT_STAGE/ROADMAP register re-cites and README pointers; claims hold"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-10-31",
         "sha256": {
-          "conformance/declared_not_implemented.json": "835b0cf23119d7a9947070cfbde2bc343d3b53f3f07cbdb1bd5b4002377f3197",
-          "backend/src": "8e28b76ae299503ab532049db086f4af54ee458b1f0e3186fbcfa0c8ad2e481f",
-          "backend/tests": "02e17e45f436027d74b3887711a8592bddf779f8da364644da462700de73dc29",
-          "frontend/src": "d9a9f88d5d0ee80db6eaf1bbeea488e416827c0c8aaf4eb539a264217c2e9f43",
-          "packages": "5678581dace7efb72b4eed5d91361868899ec6f0559d6327d2f5ebf5de3b900c",
+          "conformance/declared_not_implemented.json": "3fb427123b1a9ddcac2bd3606cedf673ed2cd52fea60d5d7a5e38bf6cbca094a",
+          "backend/src": "783f26b65a502b14052c9550cb1b1ca2f6e4b626140c1d8859a1f27dda748a95",
+          "backend/tests": "3f32c2ff51f700489d4092776a8cfd49200d72bfe98ba2e6bf294fe789043cec",
+          "frontend/src": "12507553edb66ff362fc88e8a63d0b4e7bdb677bf8f3a2bb207574324a2b0834",
+          "packages": "43dccf66f15f7930180dd6798b761bc77b5b42cdfb2445dd9bc8986702091af1",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-10-31",
-        "by": "Claude (shadow-runtime branch)"
+        "by": "Claude (merge train): link 5 = shadow-runtime + links 1-4 merged; its migration renumbered 016_decision_shadow.sql after semantic-surface's 015_drift_alerts.sql (DATA_LAYER range and decision_records row, factory comment); re-read DATA_LAYER, CYBERSECURITY (append-only tables, shadow never emitted), ADR-001, UIX (decisions Shadow switch beside the governance/incidents changes), TESTING_CICD (shadow round, drift and seed tests), CURRENT_STAGE/ROADMAP register re-cites and README pointers; claims hold"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -78,7 +78,7 @@
       "baseline": {
         "on": "2026-10-31",
         "sha256": {
-          "backend/src/semantic_layer": "31dc43f7ac22d37a1e506f734cfb4a412b825a13508d1a6a37a60c78873b0745",
+          "backend/src/semantic_layer": "517fb1b2d51ae4342931b07e45282b9585e70028f1a7eee055effd95d398e3a6",
           "backend/src/agents/governance.py": "5b3f9564c2bb422416fc77075f2aa7d9245c3e49a3edcd769d407c236c30d747",
           "packages/semantic-types/src": "599b141c5312c6940a4479a5400b1113adfbef407f85ff016edeeade864d834c",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
@@ -87,7 +87,7 @@
       },
       "last_read": {
         "on": "2026-10-31",
-        "by": "Claude (shadow-runtime branch)"
+        "by": "Claude (merge train): link 5 = shadow-runtime + links 1-4 merged; its migration renumbered 016_decision_shadow.sql after semantic-surface's 015_drift_alerts.sql (DATA_LAYER range and decision_records row, factory comment); re-read DATA_LAYER, CYBERSECURITY (append-only tables, shadow never emitted), ADR-001, UIX (decisions Shadow switch beside the governance/incidents changes), TESTING_CICD (shadow round, drift and seed tests), CURRENT_STAGE/ROADMAP register re-cites and README pointers; claims hold"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -180,14 +180,14 @@
           "backend/src/semantic_layer/registry.py": "9d804b796fa34109248f431edf709c8b9ef0bbf400be4ca4cde40651085c8108",
           "backend/src/api/interventions.py": "928915a5bb49c3e1d993fc0da88ca6d1ac05bb1923afc6c3a0f248194d229e43",
           "backend/src/api/provenance.py": "2a308e924c9fd7ea910284fa58a479bdeeb97f260764d9c09c5d7eabeb74cfec",
-          "backend/src/db/migrations": "9cbd338ee6c9369a61e0c67b179da8dbaef9f0ec23b32079c39bac21a1ee9dc2",
+          "backend/src/db/migrations": "a690806c2c1ff37bc81aadb53d96f3c8ff8b77e79d8fc61a6f50bf4ff16e2bb3",
           "backend/src/semantic_layer/verdict.py": "6a46fcf8331be6953a01541f0f75151246ab50967b6baf2e1ded51ad55a80ae8",
           ".github/workflows": "dda91d5921d692ddf3c2cb61ede9c6cf00b576478eda4736820ea0a442099d80"
         }
       },
       "last_read": {
         "on": "2026-10-31",
-        "by": "Claude (shadow-runtime branch)"
+        "by": "Claude (merge train): link 5 = shadow-runtime + links 1-4 merged; its migration renumbered 016_decision_shadow.sql after semantic-surface's 015_drift_alerts.sql (DATA_LAYER range and decision_records row, factory comment); re-read DATA_LAYER, CYBERSECURITY (append-only tables, shadow never emitted), ADR-001, UIX (decisions Shadow switch beside the governance/incidents changes), TESTING_CICD (shadow round, drift and seed tests), CURRENT_STAGE/ROADMAP register re-cites and README pointers; claims hold"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -205,7 +205,7 @@
       "baseline": {
         "on": "2026-10-31",
         "sha256": {
-          "backend/src/db": "6199cb9b090d14aac3c7db2df3a560417f7ba8673acddd5208c3b808514a68b8",
+          "backend/src/db": "b0ddb9b8fadb97994259032c012cb49dfb2aff47e805d0a2d4bfc93e4accca93",
           "backend/src/connectors": "48489f6f7a9a5e193136873213223aef2e7c4c900a6c80b22d402b1d7fd3d83f",
           "backend/src/semantic_layer/models.py": "faa1f82a78cfb0338fdccf3f3711d93abd873eb87f6625219f15191f7ae87c43",
           "backend/src/sensors": "157d56ba253af8e684dc2e2f00d9a937b817a13ce4c42ef85929f2be4c1631ce",
@@ -217,7 +217,7 @@
       },
       "last_read": {
         "on": "2026-10-31",
-        "by": "Claude (shadow-runtime branch)"
+        "by": "Claude (merge train): link 5 = shadow-runtime + links 1-4 merged; its migration renumbered 016_decision_shadow.sql after semantic-surface's 015_drift_alerts.sql (DATA_LAYER range and decision_records row, factory comment); re-read DATA_LAYER, CYBERSECURITY (append-only tables, shadow never emitted), ADR-001, UIX (decisions Shadow switch beside the governance/incidents changes), TESTING_CICD (shadow round, drift and seed tests), CURRENT_STAGE/ROADMAP register re-cites and README pointers; claims hold"
       }
     },
     "docs/HANDOFFS.md": {
@@ -309,7 +309,7 @@
         "on": "2026-10-31",
         "sha256": {
           ".github/workflows": "dda91d5921d692ddf3c2cb61ede9c6cf00b576478eda4736820ea0a442099d80",
-          "backend/tests": "02e17e45f436027d74b3887711a8592bddf779f8da364644da462700de73dc29",
+          "backend/tests": "3f32c2ff51f700489d4092776a8cfd49200d72bfe98ba2e6bf294fe789043cec",
           "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5dc65a49d6975444738042f9c292b56050a932ed23932e45498fbcea6285ff3e",
@@ -318,12 +318,12 @@
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "17b15235a74e84e3de54a752eed9d89b9f44d4e6880ba2afceb1129a9650eab5",
           "packages/causal-core/tests": "76e4e4f85b5a4200ea7a723cee8394fd09b751157b4c91bdc9b61e68aa3465ad",
-          "packages/causal-decision/tests": "77bcd3c5f1454f851fea83eeb2a5794a40fbf06792acfa6abfdd1ee2323b7124"
+          "packages/causal-decision/tests": "f56c42a4e82af3b4e00b7a73282bafdbb0c28aa96e54142d720b0980590f363a"
         }
       },
       "last_read": {
         "on": "2026-10-31",
-        "by": "Claude (shadow-runtime branch)"
+        "by": "Claude (merge train): link 5 = shadow-runtime + links 1-4 merged; its migration renumbered 016_decision_shadow.sql after semantic-surface's 015_drift_alerts.sql (DATA_LAYER range and decision_records row, factory comment); re-read DATA_LAYER, CYBERSECURITY (append-only tables, shadow never emitted), ADR-001, UIX (decisions Shadow switch beside the governance/incidents changes), TESTING_CICD (shadow round, drift and seed tests), CURRENT_STAGE/ROADMAP register re-cites and README pointers; claims hold"
       }
     },
     "docs/UIX.md": {
@@ -334,12 +334,12 @@
       "baseline": {
         "on": "2026-10-31",
         "sha256": {
-          "frontend/src": "d9a9f88d5d0ee80db6eaf1bbeea488e416827c0c8aaf4eb539a264217c2e9f43"
+          "frontend/src": "12507553edb66ff362fc88e8a63d0b4e7bdb677bf8f3a2bb207574324a2b0834"
         }
       },
       "last_read": {
         "on": "2026-10-31",
-        "by": "Claude (shadow-runtime branch)"
+        "by": "Claude (merge train): link 5 = shadow-runtime + links 1-4 merged; its migration renumbered 016_decision_shadow.sql after semantic-surface's 015_drift_alerts.sql (DATA_LAYER range and decision_records row, factory comment); re-read DATA_LAYER, CYBERSECURITY (append-only tables, shadow never emitted), ADR-001, UIX (decisions Shadow switch beside the governance/incidents changes), TESTING_CICD (shadow round, drift and seed tests), CURRENT_STAGE/ROADMAP register re-cites and README pointers; claims hold"
       }
     },
     "docs/ROADMAP.md": {
@@ -353,13 +353,13 @@
         "on": "2026-10-31",
         "sha256": {
           "packages/causal-core/src/causal_core": "808b370dd05adaf6520a435312f501533e0b9f82239e15fbe2073c893278180f",
-          "conformance/declared_not_implemented.json": "835b0cf23119d7a9947070cfbde2bc343d3b53f3f07cbdb1bd5b4002377f3197",
-          "docs/CURRENT_STAGE.md": "6edecee5a846e4d3bfe3706e529a1e0c45dc634253368090adac31fcde1e8de6"
+          "conformance/declared_not_implemented.json": "3fb427123b1a9ddcac2bd3606cedf673ed2cd52fea60d5d7a5e38bf6cbca094a",
+          "docs/CURRENT_STAGE.md": "cd9e2f67b62af78a5214095583ff6db3965b8e9c1dba000d8f15115312832193"
         }
       },
       "last_read": {
         "on": "2026-10-31",
-        "by": "Claude (shadow-runtime branch)"
+        "by": "Claude (merge train): link 5 = shadow-runtime + links 1-4 merged; its migration renumbered 016_decision_shadow.sql after semantic-surface's 015_drift_alerts.sql (DATA_LAYER range and decision_records row, factory comment); re-read DATA_LAYER, CYBERSECURITY (append-only tables, shadow never emitted), ADR-001, UIX (decisions Shadow switch beside the governance/incidents changes), TESTING_CICD (shadow round, drift and seed tests), CURRENT_STAGE/ROADMAP register re-cites and README pointers; claims hold"
       }
     },
     "SECURITY.md": {
