@@ -592,11 +592,12 @@ published since the last push surfaces without one):
   and a `review_by` date; an expired entry fails, and so does one whose advisory is no longer
   reported. Every advisory found when the step was added was fixed by raising a floor in
   `backend/pyproject.toml` (transitive dependencies included) or upgrading in
-  `package-lock.json`. The list holds one entry since 2026-10-14: `braces`
-  (GHSA-vfj7-8cjw-p6xm), which has no patched release and reaches the repository only as a
-  lint-time dependency of `eslint-config-next`, never the frontend image; it is reviewed by
-  2026-11-15. It did not leave with the move to Next 16 (septa-57): eslint-config-next 16.4.3
-  still reaches it through `@next/eslint-plugin-next` -> `fast-glob` 3.3.1 -> `micromatch`. The advisory databases are remote; when one cannot be
+  `package-lock.json`. The list held one entry from 2026-10-14, `braces`
+  (GHSA-vfj7-8cjw-p6xm), until GitHub withdrew that advisory on 2026-10-23. It holds one since
+  2026-10-31: `minimatch` (GHSA-g3hv-75wg-m249), whose only patched release opens a new major
+  that the lint toolchain (eslint 9 and its plugins, typescript-eslint) has not moved to; every
+  path to it is a lint-time devDependency, never the frontend image; it is reviewed by
+  2026-11-30 and leaves when the toolchain moves to a patched minimatch (septa-130). The advisory databases are remote; when one cannot be
   reached the step is SKIPPED (not measured), which fails CI.
 - **SAST.** `bandit` over `backend/src` and every `packages/*/src`,
   blocking on MEDIUM and HIGH findings, held at zero by the ratchet in
