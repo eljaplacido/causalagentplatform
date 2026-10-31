@@ -103,10 +103,11 @@ updates:
       interval: weekly
       day: monday
     ignore:
-      # Node on an LTS line only (the frontend is on 24). 25 is never LTS; 26 is
-      # Current until it enters LTS in October 2026 -- then lift this (septa-59).
+      # Node on an LTS line only (the frontend is on 26, Active LTS since 2026-10-28;
+      # septa-59). 27 is never LTS; 28 is Current until it enters LTS in October
+      # 2028 -- then lift this to the next odd line.
       - dependency-name: node
-        versions: [">=25"]
+        versions: [">=27"]
     groups:
       base-images:
         patterns: ["*"]

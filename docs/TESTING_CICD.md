@@ -301,7 +301,7 @@ The gate job:
 
 1. Check out with full history. The register cites some claims at the revision where they were
    made (`file@rev:line`), and a shallow clone cannot verify those.
-2. Set up Python 3.12 and Node 24 (LTS; 20 reached end of life in April 2026); cache the benchmark data (keyed on the pre-registrations).
+2. Set up Python 3.12 and Node 26 (LTS since October 2026; 20 reached end of life in April 2026); cache the benchmark data (keyed on the pre-registrations).
    A `postgres:16-alpine` service container (health-checked with `pg_isready`, a CI-only
    throwaway password, listening on loopback only) runs beside the job for
    `backend-pytest-postgres`.
