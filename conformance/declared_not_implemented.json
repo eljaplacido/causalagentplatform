@@ -420,15 +420,15 @@
       "reality": "The drift functions compute when called directly with data (KL/JS on histograms, a correlation-below-0.5 check labelled causal drift, Jaccard word overlap on definitions, a chi-squared test on labels). DriftMonitorAgent.process hands each skill only a fragment id, so drift_detect returns kl_divergence 0.0 with note no_data_for_comparison, the structure and semantic comparisons return no drift for want of edges and definitions, and concept_drift is passed as False. The pipeline therefore cannot raise a drift alert, and nothing runs it on a schedule: the periodic DriftSensor, which no code ever started, was deleted. Alerts go to an in-process AlertEmitter, and the agent's return value names that channel; there is no Kafka producer (until 2026-09-26 it named a platform.drift.alert.v1 topic, and the alert_emit skill claimed an emission it never made).",
       "evidence": [
         {
-          "at": "backend/src/agents/drift_monitor.py:606",
+          "at": "backend/src/agents/drift_monitor.py:649",
           "says": "\"note\": \"no_data_for_comparison\","
         },
         {
-          "at": "backend/src/agents/drift_monitor.py:192",
+          "at": "backend/src/agents/drift_monitor.py:196",
           "says": "concept_drift=False,  # Would need label data"
         },
         {
-          "at": "backend/src/agents/drift_monitor.py:65",
+          "at": "backend/src/agents/drift_monitor.py:68",
           "says": "_ALERT_CHANNEL = \"AlertEmitter (in-process)\""
         }
       ],
@@ -452,7 +452,7 @@
           "says": "TypeScript interfaces generated from / aligned to the canonical schema"
         }
       ],
-      "reality": "packages/semantic-types/src/entities.ts is written by hand, not generated, and seven of its interfaces declare fields models.py does not have. Treatment, Confounder and Mediator add description, domain, approvalStatus, createdBy, createdAt and lineage; Outcome adds the same plus units; CausalEdge adds createdAt, and declares createdBy non-null where the backend's is optional (null for edges drafted before migration 011); GraphFragment adds approvedBy, approvedAt and lineage; Intervention adds description, domain, graphFragmentRef and approvalReason. A client typed against the package expects fields the API never sends. scripts/contract_parity.py checks only the shared enumerations, not interface fields.",
+      "reality": "packages/semantic-types/src/entities.ts is written by hand, not generated, and seven of its interfaces declare fields models.py does not have. Treatment, Confounder and Mediator add description, domain, approvalStatus, createdBy, createdAt and lineage; Outcome adds the same plus units; CausalEdge declares createdBy non-null where the backend's is optional (null for edges drafted before migration 011); GraphFragment adds approvedBy, approvedAt and lineage; Intervention adds description, domain, graphFragmentRef and approvalReason. A client typed against the package expects fields the API never sends. scripts/contract_parity.py checks only the shared enumerations, not interface fields.",
       "evidence": [
         {
           "at": "packages/semantic-types/src/entities.ts:45",
@@ -689,11 +689,11 @@
           "says": "I want to run a one-click Rosenbaum sensitivity analysis on any approved edge"
         }
       ],
-      "reality": "No UI runs a sensitivity analysis. The kernel reports E-values, robustness values and (for back-door designs with a binary treatment) a Rosenbaum bound on every analysis from data, but nothing in the frontend requests one for an edge; the governance page's sensitivity panel is a hard-coded example whose label conflates the two methods (\"Rosenbaum E-value\").",
+      "reality": "No UI runs a sensitivity analysis. The kernel reports E-values, robustness values and (for back-door designs with a binary treatment) a Rosenbaum bound on every analysis from data, but nothing in the frontend requests one for an edge. The governance page shows the results the platform recorded for a pending edge (since septa-88, as GET /api/governance/review-queue sends them; until then its panel was a hard-coded example labelled \"Rosenbaum E-value\"), but offers no action that runs one: recording one is an API call, POST /api/semantic/edges/{id}/sensitivity.",
       "evidence": [
         {
-          "at": "frontend/src/app/governance/page.tsx:95",
-          "says": "testName: \"Rosenbaum E-value\","
+          "at": "frontend/src/components/governance/ApprovalPanel.tsx:102",
+          "says": "Recorded sensitivity results ({results.length})"
         }
       ],
       "leaves_by": {

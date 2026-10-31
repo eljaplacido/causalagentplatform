@@ -148,7 +148,7 @@ Agents do not generate outputs directly. They generate **EpistemicState transiti
 - Identified drift type: distribution, causal, semantic, or concept drift
 - Per-feature divergence scores
 - Suggested re-validation trigger
-- Alerts stored in Neo4j with TTL and acknowledgment tracking, when `NEO4J_URI` is set
+- Alerts stored in Neo4j with TTL and acknowledgment tracking, when `NEO4J_URI` is set; every alert Neo4j did not store is a row in the SQL `drift_alerts` table (no acknowledgement there)
 
 **Constraints:**
 - Alerts must include the statistical evidence (KL divergence value, chi-squared result, etc.)

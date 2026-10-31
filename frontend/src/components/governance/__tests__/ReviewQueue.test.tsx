@@ -24,7 +24,6 @@ function makeItem(overrides: Partial<ReviewQueueItem>): ReviewQueueItem {
     submittedBy: "someone",
     submittedAt: "2026-09-01T10:00:00Z",
     status: "PENDING",
-    evidenceCitations: [],
     sensitivityResults: [],
     assumptions: [],
     ...overrides,
