@@ -26,18 +26,18 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-10-21",
+        "on": "2026-10-31",
         "sha256": {
           "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
           "packages/causal-mcp": "ff3535460199623c814f7524892e3716c65e4bab3e929756340321a1789aa907",
           "frontend/package.json": "21affd9af891b9586d0007239dd483fb40b2124ef909baa0fb28670a8bb59192",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "164950fa6f26f05ff7b799520009605c674614504ceb00e93f84d3b6543ed493"
+          "docs/CURRENT_STAGE.md": "c8db28357f897010ffccab58cd8cbdaa9ddb92a38e3a46bb04d7a9dcdd2e69af"
         }
       },
       "last_read": {
-        "on": "2026-10-21",
-        "by": "Claude (septa-55: causal-mcp CHANGELOG gained the tool-listing line; no other claim moved)"
+        "on": "2026-10-31",
+        "by": "Claude (digest branch)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -51,19 +51,19 @@
         "specs"
       ],
       "baseline": {
-        "on": "2026-10-21",
+        "on": "2026-10-31",
         "sha256": {
           "conformance/declared_not_implemented.json": "7b56517d7f6b1ba0ac1ec12bc763c43b0c944e44174eabb7ba437fa54e880906",
           "backend/src": "56ca28dd53e2d20be2d46d32b213d2224f478f2e920c4fe99dafc16ebcdb8bd7",
           "backend/tests": "ed6e8c031488d045d9241d153887965ff1a328843b93b4e8ecef976938ba51aa",
           "frontend/src": "272ae49bda670a7e84235bba75c76ee2c48d95278bd1107281d6daabd1756435",
-          "packages": "485abc5597839cc433bd35a3a142bd78124ac884d0fcd13f3c0a4482c805f738",
+          "packages": "d62c04ee6022885dd8470c8a123a7f55417d2ead66ae060399e29490d5912953",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
-        "on": "2026-10-21",
-        "by": "Claude (septa-55: causal-mcp CHANGELOG gained the tool-listing line; no other claim moved)"
+        "on": "2026-10-31",
+        "by": "Claude (digest branch)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -172,7 +172,7 @@
         ".github/workflows"
       ],
       "baseline": {
-        "on": "2026-10-15",
+        "on": "2026-10-31",
         "sha256": {
           "backend/src/middleware": "382780d8717bb592eb4ddc1d9e21dcd0227129be3ba5c9d60815c0ef4ee7de0a",
           "backend/src/api/governance.py": "c2ab8a061fe056b835dbb9097b147f414437df0ca702708c3e923b23c8d5751c",
@@ -182,12 +182,12 @@
           "backend/src/api/provenance.py": "2a308e924c9fd7ea910284fa58a479bdeeb97f260764d9c09c5d7eabeb74cfec",
           "backend/src/db/migrations": "0061d7048117bb0d23b2c6b9dddc771f21ab84dc5076464aa54750aa8ddb05e8",
           "backend/src/semantic_layer/verdict.py": "6a46fcf8331be6953a01541f0f75151246ab50967b6baf2e1ded51ad55a80ae8",
-          ".github/workflows": "df92cbc4cd1fb0ab0a9abae5093c9fef08c68f605b3cfee3131de043d4d1fdcb"
+          ".github/workflows": "6748da2736484d3371c7d8c8093fba7fef776ded155ac3e8183949935762fb6d"
         }
       },
       "last_read": {
-        "on": "2026-10-15",
-        "by": "Claude (septa-100 2026-10-15: TESTING_CICD 5.1 gains the gate concurrency group on self-hosted runners; CYBERSECURITY's where-CI-runs, ORCHESTRATION's .github file table and CURRENT_STAGE (no scale-test row) re-read, unaffected by the concurrency group and the test_scale budget)"
+        "on": "2026-10-31",
+        "by": "Claude (digest branch)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -247,17 +247,17 @@
         ".gnomon"
       ],
       "baseline": {
-        "on": "2026-10-21",
+        "on": "2026-10-31",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9",
-          ".github": "a77f8351dce4603fbbbcee30576b3e042f5fef0dcb8e323b53b05f3c68fa467e",
+          ".github": "b127daf32075cd80af779a91a522aa04ebd1c8d8e8c3b43448f7c8b98be31a47",
           ".gnomon": "5b6f297cd580dcd75c0b5191462467ebb046083612c15fd9c9a511b0ba840236"
         }
       },
       "last_read": {
-        "on": "2026-10-21",
-        "by": "Claude (septa-97: read for the ci.sh change -- the verifier, verify.sh and .gnomon rows still hold; ORCHESTRATION lists no gate steps)"
+        "on": "2026-10-31",
+        "by": "Claude (digest branch)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -306,9 +306,9 @@
         "packages/causal-decision/tests"
       ],
       "baseline": {
-        "on": "2026-10-21",
+        "on": "2026-10-31",
         "sha256": {
-          ".github/workflows": "df92cbc4cd1fb0ab0a9abae5093c9fef08c68f605b3cfee3131de043d4d1fdcb",
+          ".github/workflows": "6748da2736484d3371c7d8c8093fba7fef776ded155ac3e8183949935762fb6d",
           "backend/tests": "ed6e8c031488d045d9241d153887965ff1a328843b93b4e8ecef976938ba51aa",
           "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
@@ -318,12 +318,12 @@
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "17b15235a74e84e3de54a752eed9d89b9f44d4e6880ba2afceb1129a9650eab5",
           "packages/causal-core/tests": "76e4e4f85b5a4200ea7a723cee8394fd09b751157b4c91bdc9b61e68aa3465ad",
-          "packages/causal-decision/tests": "99e9783c2d5686b21b0bf6afe80c89144ad1a02f2efd329ecde31e3a8b581deb"
+          "packages/causal-decision/tests": "e28f59bdcd07a6c628bbdda2175bcea11c448862fd700843fca2435bbdafccf2"
         }
       },
       "last_read": {
-        "on": "2026-10-21",
-        "by": "Claude (merge train septa-83 + septa-86 + septa-55 + septa-97: the four changes' rows read together -- decisions, provenance, incident stored:false, MCP listing and AGENTS MCP paragraph, frontend-e2e step and roadmap test work)"
+        "on": "2026-10-31",
+        "by": "Claude (digest branch)"
       }
     },
     "docs/UIX.md": {
@@ -350,16 +350,16 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-10-21",
+        "on": "2026-10-31",
         "sha256": {
-          "packages/causal-core/src/causal_core": "808b370dd05adaf6520a435312f501533e0b9f82239e15fbe2073c893278180f",
+          "packages/causal-core/src/causal_core": "00a6f1e878bb72be3082bc2a271584df37130ccb618ae874015ffe72273047f8",
           "conformance/declared_not_implemented.json": "7b56517d7f6b1ba0ac1ec12bc763c43b0c944e44174eabb7ba437fa54e880906",
-          "docs/CURRENT_STAGE.md": "164950fa6f26f05ff7b799520009605c674614504ceb00e93f84d3b6543ed493"
+          "docs/CURRENT_STAGE.md": "c8db28357f897010ffccab58cd8cbdaa9ddb92a38e3a46bb04d7a9dcdd2e69af"
         }
       },
       "last_read": {
-        "on": "2026-10-21",
-        "by": "Claude (merge train septa-83 + septa-86 + septa-55 + septa-97: the four changes' rows read together -- decisions, provenance, incident stored:false, MCP listing and AGENTS MCP paragraph, frontend-e2e step and roadmap test work)"
+        "on": "2026-10-31",
+        "by": "Claude (digest branch)"
       }
     },
     "SECURITY.md": {
