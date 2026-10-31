@@ -77,7 +77,8 @@ sustainability investment assurance follow, in that order.
 5. **Outcome capture and calibration.** *Machinery built; evidence not yet gathered.* Every
    decision now seals a follow-up plan carrying the prediction it used;
    `POST /api/v1/decisions/{entry_digest}/followup` re-runs that plan's own analysis over a
-   later window and scores it; `GET /api/v1/decisions/calibration` aggregates. The hard part
+   later window and scores it; `GET /api/v1/decisions/calibration` aggregates (over real
+   decisions; shadow ones only when asked). The hard part
    was not the arithmetic: calibrating a causal prediction needs a causal estimate afterwards,
    and an action rolled out to everybody leaves no comparison group. That case is the kernel's
    own refusal, recorded as an undecidable measurement and counted beside the rates rather than

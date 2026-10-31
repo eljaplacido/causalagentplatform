@@ -59,14 +59,16 @@ python -m causal_decision.shadow_round score shadow/rounds/<N>   # steps 4-5: du
 ```
 
 `seal` refuses a round whose follow-up data already exists, and seals a round once per
-pre-registration version, into `results/`. `score` refuses a seal whose bars or studies changed
+pre-registration version, into `results/`: the round's own hash chain of shadow-tagged records,
+which recomputes anywhere and is separate from the platform's ledger. `score` refuses a seal whose bars or studies changed
 afterwards (only `shadow.human_decision` and `shadow.human_acted` may be filled in later), takes a
 follow-up only once it is due, never re-measures one, and writes a new file under `scorecards/`
 every time, failed or not. It exits 0 when the round passed, 1 when it failed and 2 while bars are
 pending. `packages/causal-decision/README.md` ("Trying it in shadow") has the details.
 
 A study can also be decided through the API: `POST /api/v1/decisions` with `"shadow": "<tag>"`
-seals it into the platform's ledger as a shadow decision. Either way, a shadow decision is never
+seals it into the platform's ledger as a shadow decision (the runner does not post to the API).
+Either way, a shadow decision is never
 emitted to agentcenter as `causalplatform.decision.recorded` -- the connector refuses the sealed
 record whatever `AGENTCENTER_EMIT` says (`causal_decision.shadow.emittable`) -- and it is listed
 apart from real decisions: `GET /api/v1/decisions?scope=shadow` (or `tag=<tag>`), the Shadow

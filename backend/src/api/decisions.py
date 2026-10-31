@@ -43,7 +43,9 @@ from causal_decision.ledger import (
     verify_against,
 )
 from causal_decision.outcome import CalibrationReport, Realization, compare, plan, report
-from causal_decision.shadow import Scope  # noqa: TC002 -- FastAPI and pydantic resolve it at runtime
+from causal_decision.shadow import (
+    Scope,  # noqa: TC002 -- FastAPI and pydantic resolve it at runtime
+)
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field, create_model, model_validator
 
