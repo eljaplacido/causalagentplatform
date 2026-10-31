@@ -490,11 +490,11 @@
       "reality": "contracts.py defines the contract, SLA and violation models and a ContractRegistry that can register, look up and remove contracts. Nothing evaluates a contract, nothing produces a ContractViolation, and only the tests instantiate the registry. PR-009 fires only when a caller sends action_type DATA_ACCESS_WITH_CONTRACT, which no code path does, and it reads the violation list from that caller's own payload. So a caller that reports no violations is never blocked.",
       "evidence": [
         {
-          "at": "backend/src/agents/governance.py:546",
+          "at": "backend/src/agents/governance.py:584",
           "says": "if action_type == \"DATA_ACCESS_WITH_CONTRACT\":"
         },
         {
-          "at": "backend/src/agents/governance.py:547",
+          "at": "backend/src/agents/governance.py:585",
           "says": "contract_violations = payload.get(\"contract_violations\", [])"
         },
         {
@@ -640,7 +640,7 @@
           "says": "Cynefin domain classification with confidence"
         },
         {
-          "at": "docs/AGENTS.md:571",
+          "at": "docs/AGENTS.md:589",
           "says": "Domain confidence > 0.7"
         },
         {
@@ -651,7 +651,7 @@
       "reality": "IncidentTriageAgent._skill_cynefin_classify is a keyword stub. Run on an external labelled corpus of 456 incident-style queries (the CARF Under Test lab's spine/test_set.jsonl, 5 domains), it labels 454 of 456 COMPLEX when no assumptions are active and 449 COMPLICATED when one is: macro F1 0.07, below always guessing the most common domain (0.11), and 0 of 50 CHAOTIC items recalled -- so the CHAOTIC-to-human escalation the docs describe depends on keywords that almost never fire; a TF-IDF naive Bayes baseline reaches 0.92 on the same corpus. It never outputs CLEAR or DISORDER, so the DisorderProtocol branch is unreachable from it. Its confidences are constants (0.60-0.85), so 'domain confidence > 0.7' measures which branch fired, not how likely the label is. Since 2026-09-25 a description no keyword matches is classified DISORDER with confidence 0 (it was COMPLEX, or COMPLICATED when an assumption was active), so the stub's commonest answer now routes to a person instead of to analysis; the two-word keywords could never match until the same day.",
       "evidence": [
         {
-          "at": "backend/src/agents/incident_triage.py:404",
+          "at": "backend/src/agents/incident_triage.py:447",
           "says": "A HEURISTIC STUB, and measured as one"
         }
       ],
@@ -667,7 +667,7 @@
       "capability": "Dynamic application security testing (DAST): a scanner such as OWASP ZAP run against a running API, weekly",
       "claimed_in": [
         {
-          "at": "docs/CYBERSECURITY.md:688",
+          "at": "docs/CYBERSECURITY.md:690",
           "says": "DAST: OWASP ZAP against a staging API (weekly). Not built: there is no staging"
         }
       ],
