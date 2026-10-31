@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-10-31",
         "sha256": {
-          "conformance/declared_not_implemented.json": "8dc0c076b817851a27ba1f74d13dc49926b9add211ec9148544399ae06b21f79",
+          "conformance/declared_not_implemented.json": "8a83a36457873265f0dedc95b56cf6b8ad076f55c3a77defdc463e03f4b6d9e5",
           "backend/src": "2086b55f401955acc33b3b0c511c9f943588b96fe95ddfe9e580cea87a4c80a7",
-          "backend/tests": "ded15c5f1f4cf171c745823cf4dff56614aabb61f476fba98920e821f8ca335d",
-          "frontend/src": "b1e7661b8317e95bbd34557d70753ac90be34bd62e384062a1bc82167ed21aa2",
+          "backend/tests": "6bdd324a96328037db6e55e4952adc91bcada3b833078673c120e1de7ca38347",
+          "frontend/src": "8d936e4bb3a2f8c111e8ea671e41d5247e2461bbf6649ca6fdf27b7c05d5b228",
           "packages": "776a105208fa2c9b739b09ab3589d41e453fc6ebc937de3bbd7b0f48574309c0",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-10-31",
-        "by": "Claude (incident-integrity branch): septa-79/80/85 -- read the passages on the session graph, Guardian checks and audit rows, incidents and interventions, resumed sessions and circuit breaker against graph.py, session.py, governance.py, incident_triage.py and the incidents page; ADR-003 resumed-flags line reworded, AGENTS 5.1/5.2, UIX, TESTING_CICD and CURRENT_STAGE updated"
+        "by": "Claude (merge train): link 3 = incident-integrity + links 1-2 merged; re-read the incidents passages (UIX severities P0-P3 from the seeder with per-intervention Guardian verdicts, TESTING_CICD's vitest list), CURRENT_STAGE rows 121/190 and the register re-cites (ROADMAP); both changes hold side by side"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -309,12 +309,12 @@
         "on": "2026-10-31",
         "sha256": {
           ".github/workflows": "dda91d5921d692ddf3c2cb61ede9c6cf00b576478eda4736820ea0a442099d80",
-          "backend/tests": "ded15c5f1f4cf171c745823cf4dff56614aabb61f476fba98920e821f8ca335d",
+          "backend/tests": "6bdd324a96328037db6e55e4952adc91bcada3b833078673c120e1de7ca38347",
           "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5dc65a49d6975444738042f9c292b56050a932ed23932e45498fbcea6285ff3e",
           ".gnomon/ci.sh": "a203a97aa6b72b34bc2ee7b3dde6d019fb465dd661b1b37d184be14f0ba3134c",
-          "scripts": "ce2881bbdf7c5f77d9d5ba1a3f5f3bff03f9b1cdcdb202da6b2bf75599d1d3c3",
+          "scripts": "01cf915d56be93411b6699dbb18608a142ee247f77fb858a5015e42ae1ffbed4",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "17b15235a74e84e3de54a752eed9d89b9f44d4e6880ba2afceb1129a9650eab5",
           "packages/causal-core/tests": "76e4e4f85b5a4200ea7a723cee8394fd09b751157b4c91bdc9b61e68aa3465ad",
@@ -323,7 +323,7 @@
       },
       "last_read": {
         "on": "2026-10-31",
-        "by": "Claude (incident-integrity branch): septa-79/80/85 -- read the passages on the session graph, Guardian checks and audit rows, incidents and interventions, resumed sessions and circuit breaker against graph.py, session.py, governance.py, incident_triage.py and the incidents page; ADR-003 resumed-flags line reworded, AGENTS 5.1/5.2, UIX, TESTING_CICD and CURRENT_STAGE updated"
+        "by": "Claude (merge train): link 3 = incident-integrity + links 1-2 merged; re-read the incidents passages (UIX severities P0-P3 from the seeder with per-intervention Guardian verdicts, TESTING_CICD's vitest list), CURRENT_STAGE rows 121/190 and the register re-cites (ROADMAP); both changes hold side by side"
       }
     },
     "docs/UIX.md": {
@@ -334,12 +334,12 @@
       "baseline": {
         "on": "2026-10-31",
         "sha256": {
-          "frontend/src": "b1e7661b8317e95bbd34557d70753ac90be34bd62e384062a1bc82167ed21aa2"
+          "frontend/src": "8d936e4bb3a2f8c111e8ea671e41d5247e2461bbf6649ca6fdf27b7c05d5b228"
         }
       },
       "last_read": {
         "on": "2026-10-31",
-        "by": "Claude (incident-integrity branch): septa-79/80/85 -- read the passages on the session graph, Guardian checks and audit rows, incidents and interventions, resumed sessions and circuit breaker against graph.py, session.py, governance.py, incident_triage.py and the incidents page; ADR-003 resumed-flags line reworded, AGENTS 5.1/5.2, UIX, TESTING_CICD and CURRENT_STAGE updated"
+        "by": "Claude (merge train): link 3 = incident-integrity + links 1-2 merged; re-read the incidents passages (UIX severities P0-P3 from the seeder with per-intervention Guardian verdicts, TESTING_CICD's vitest list), CURRENT_STAGE rows 121/190 and the register re-cites (ROADMAP); both changes hold side by side"
       }
     },
     "docs/ROADMAP.md": {
@@ -353,13 +353,13 @@
         "on": "2026-10-31",
         "sha256": {
           "packages/causal-core/src/causal_core": "808b370dd05adaf6520a435312f501533e0b9f82239e15fbe2073c893278180f",
-          "conformance/declared_not_implemented.json": "8dc0c076b817851a27ba1f74d13dc49926b9add211ec9148544399ae06b21f79",
+          "conformance/declared_not_implemented.json": "8a83a36457873265f0dedc95b56cf6b8ad076f55c3a77defdc463e03f4b6d9e5",
           "docs/CURRENT_STAGE.md": "58c2b29ebe0ed3e32fb0bd3e6b1f30d10d41af55c99c849973a5fc51edf277c9"
         }
       },
       "last_read": {
         "on": "2026-10-31",
-        "by": "Claude (incident-integrity branch): septa-79/80/85 -- read the passages on the session graph, Guardian checks and audit rows, incidents and interventions, resumed sessions and circuit breaker against graph.py, session.py, governance.py, incident_triage.py and the incidents page; ADR-003 resumed-flags line reworded, AGENTS 5.1/5.2, UIX, TESTING_CICD and CURRENT_STAGE updated"
+        "by": "Claude (merge train): link 3 = incident-integrity + links 1-2 merged; re-read the incidents passages (UIX severities P0-P3 from the seeder with per-intervention Guardian verdicts, TESTING_CICD's vitest list), CURRENT_STAGE rows 121/190 and the register re-cites (ROADMAP); both changes hold side by side"
       }
     },
     "SECURITY.md": {
