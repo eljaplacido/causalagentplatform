@@ -19,7 +19,7 @@
  * error; there is no mock registry.
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Library, RefreshCw, ShieldCheck, ShieldX } from "lucide-react";
 
@@ -75,13 +75,16 @@ function ModelPanel({ name }: { name: string }) {
   const [verifyRequested, setVerifyRequested] = useState(false);
 
   // Defaults follow the history once it arrives: compare the head with its parent.
-  useEffect(() => {
-    if (!head) return;
+  // Adjusted during render when the head changes
+  // (https://react.dev/learn/you-might-not-need-an-effect), not in an effect.
+  const [seenHead, setSeenHead] = useState<typeof head>(undefined);
+  if (head && head !== seenHead) {
+    setSeenHead(head);
     setShownVersion(head.version);
     setDiffTo(head.version);
     setDiffFrom(Math.max(1, head.version - 1));
     setImpactTo(head.version);
-  }, [head]);
+  }
 
   const version = useQuery<ModelVersionResponse>({
     queryKey: ["models", "version", name, shownVersion],

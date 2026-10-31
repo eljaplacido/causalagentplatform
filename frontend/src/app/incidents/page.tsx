@@ -46,9 +46,10 @@ import type {
 const SEVERITIES: readonly IncidentSeverity[] = ["P0", "P1", "P2", "P3"];
 
 /**
- * Rows written by backend/scripts/seed_data.py carry SEV1-SEV4; the triage
- * endpoint stores P0-P3. Both are shown as P0-P3 (the same mapping the page
- * used to apply when sending), so the feed speaks one vocabulary.
+ * The triage endpoint stores P0-P3, and so does backend/scripts/seed_data.py
+ * since septa-84. A database seeded before that still carries SEV1-SEV4 rows
+ * (the seeder upserts its incidents, so re-seeding rewrites them): those are
+ * shown as P0-P3 too, so the feed speaks one vocabulary.
  */
 const SEED_SEVERITY: Readonly<Record<string, IncidentSeverity>> = {
   SEV1: "P0",

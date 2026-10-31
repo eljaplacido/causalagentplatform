@@ -16,3 +16,8 @@ certifi>=2026.10.19
 # Eight pillow advisories (CVE-2026-112395 and others) are fixed only in 13.0.0;
 # pillow reaches the kernel through matplotlib and statsmodels.
 pillow>=13.0.0
+
+# Advisory floors (2026-10-31): opentelemetry-api CVE-2026-114603 is fixed in 1.45.1
+# (via mcp); setuptools GHSA-xmj3-9gf7-h52w is fixed in 84.1.0 (via osqp).
+opentelemetry-api>=1.45.1
+setuptools>=84.1.0
