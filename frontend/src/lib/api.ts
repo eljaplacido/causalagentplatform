@@ -731,14 +731,24 @@ export interface DecisionRecordResponse {
   executed: boolean;
   /** ISO 8601: when the verdict stops standing on its own. Absent on records sealed before it existed. */
   review_by?: string | null;
+  /**
+   * The shadow tag (a shadow round) the decision was sealed under; absent or null for a
+   * real decision. A shadow decision is never emitted to agentcenter and nobody acts on it.
+   */
+  shadow?: string | null;
   prev_digest: string;
   entry_digest: string;
 }
+
+/** Which decisions a listing covers (causal_decision.shadow.Scope). */
+export type DecisionScope = "real" | "shadow" | "all";
 
 /** GET /api/v1/decisions (decisions.py RecordList). */
 export interface DecisionRecordList {
   records: DecisionRecordResponse[];
   total: number;
+  scope?: DecisionScope;
+  tag?: string | null;
 }
 
 /** GET /api/v1/decisions/verify (causal_decision.ledger.ChainReport). */
@@ -855,10 +865,10 @@ export interface CalibrationReportResponse {
 
 /** Decision ledger — records, chain verification, follow-ups, calibration */
 export const decisionsApi = {
-  list: (params?: { action?: string; limit?: number }) =>
+  list: (params?: { action?: string; limit?: number; scope?: DecisionScope; tag?: string }) =>
     api.get<DecisionRecordList>(`/api/v1/decisions${toQuery(params)}`),
   verify: () => api.get<ChainReportResponse>("/api/v1/decisions/verify"),
-  calibration: (params?: { limit?: number }) =>
+  calibration: (params?: { limit?: number; scope?: DecisionScope; tag?: string }) =>
     api.get<CalibrationReportResponse>(
       `/api/v1/decisions/calibration${toQuery(params)}`
     ),

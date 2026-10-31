@@ -262,7 +262,10 @@ granted role does not.
 The second-brain connector (`backend/src/connectors/agentcenter.py`) makes outbound requests
 only to `AGENTCENTER_URL` and `ORACLE_URL`, both unset by default: GETs of suggestions and
 benchmark items, and, only with `AGENTCENTER_EMIT=true`, a POST per recorded decision carrying
-its digest, action text, verdict, benefit and interval and `origin` -- no data rows.
+its digest, action text, verdict, benefit and interval and `origin` -- no data rows. A decision
+recorded in shadow (`shadow` on `POST /api/v1/decisions`) is never sent, whatever
+`AGENTCENTER_EMIT` says: `emit_decision` takes the sealed record and refuses a shadow one
+(`causal_decision.shadow.emittable`).
 
 "Any platform role" is one of `viewer`, `analyst`, `graph_author`, `governance_officer`,
 `platform_engineer`, `agent`, `sre`: a valid token with none of them is refused. Every other

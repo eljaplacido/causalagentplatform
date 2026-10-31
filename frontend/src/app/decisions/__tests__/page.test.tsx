@@ -19,7 +19,10 @@
  *     (already measured) is shown as the backend worded it;
  *   - a decision whose analysis refused offers no follow-up (the backend holds
  *     no plan for it);
- *   - chain verification shows the backend's ChainReport.
+ *   - chain verification shows the backend's ChainReport;
+ *   - real and shadow decisions are listed apart: the page asks for real ones
+ *     (and their calibration) unless "Shadow" is chosen, and then asks for shadow
+ *     ones; a shadow record carries its tag and says it is never emitted.
  *
  * Undefined here: layout, ordering beyond "newest sequence first", styling.
  */
@@ -55,6 +58,7 @@ import {
   REALIZATION_EXPLANATION,
   RECORD_ACT,
   RECORD_REFUSED,
+  RECORD_SHADOW,
 } from "@/test-fixtures/kernel";
 
 function renderPage() {
@@ -215,7 +219,52 @@ describe("decision ledger page", () => {
     expect(decisionsApiMock.list).toHaveBeenLastCalledWith({
       action: "adopt the incident playbook",
       limit: 100,
+      scope: "real",
     });
+  });
+
+  it("asks for real decisions by default, and for shadow ones apart", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findAllByTestId("decision-row");
+    expect(decisionsApiMock.list).toHaveBeenLastCalledWith({ action: undefined, limit: 50, scope: "real" });
+    expect(decisionsApiMock.calibration).toHaveBeenLastCalledWith({ scope: "real" });
+    expect(screen.queryByTestId("shadow-badge")).not.toBeInTheDocument();
+    expect(screen.getByTestId("scope-real")).toHaveAttribute("aria-checked", "true");
+
+    decisionsApiMock.list.mockResolvedValue({
+      records: [RECORD_SHADOW], total: 1, scope: "shadow", tag: null,
+    });
+    await user.click(screen.getByTestId("scope-shadow"));
+    expect(decisionsApiMock.list).toHaveBeenLastCalledWith({ action: undefined, limit: 50, scope: "shadow" });
+    expect(decisionsApiMock.calibration).toHaveBeenLastCalledWith({ scope: "shadow" });
+    expect(screen.getByRole("heading", { name: "Shadow decisions" })).toBeInTheDocument();
+    expect(screen.getByTestId("shadow-explainer")).toHaveTextContent("never sent to agentcenter");
+
+    const rows = await screen.findAllByTestId("decision-row");
+    expect(rows).toHaveLength(1);
+    expect(within(rows[0]!).getByTestId("shadow-badge")).toHaveTextContent("shadow · shadow-round-1");
+    await user.click(rows[0]!);
+    const detail = screen.getByTestId("decision-detail");
+    expect(within(detail).getByTestId("shadow-badge")).toHaveTextContent("shadow-round-1");
+    expect(within(detail).getByTestId("shadow-note")).toHaveTextContent("never sent to agentcenter");
+  });
+
+  it("says so when no shadow decision is recorded", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findAllByTestId("decision-row");
+    decisionsApiMock.list.mockResolvedValue({ records: [], total: 0, scope: "shadow", tag: null });
+    await user.click(screen.getByTestId("scope-shadow"));
+    expect(await screen.findByTestId("records-empty")).toHaveTextContent("No shadow decision has been recorded");
+  });
+
+  it("marks no real decision as shadow", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const rows = await screen.findAllByTestId("decision-row");
+    await user.click(rows[1]!);
+    expect(screen.queryByTestId("shadow-note")).not.toBeInTheDocument();
   });
 
   it("records a follow-up and shows the realization the backend returned", async () => {

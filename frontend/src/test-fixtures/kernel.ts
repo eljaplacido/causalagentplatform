@@ -234,6 +234,128 @@ export const RECORD_REFUSED: DecisionRecordResponse = {
   "entry_digest": "sha256:5f919d406b1c19312ace88a1f7924f0650734a802e093fa82fa469e79853e744"
 };
 
+/**
+ * RECORD_ACT's decision and evidence sealed again as entry 2, in shadow (tag
+ * "shadow-round-1", sealed by causal_decision.ledger.DecisionRecord.sealed): the chain
+ * RECORD_ACT, RECORD_REFUSED, RECORD_SHADOW verifies, and the tag is under its digest.
+ */
+export const RECORD_SHADOW: DecisionRecordResponse = {
+  "sequence": 2,
+  "recorded_at": "2026-09-22T09:00:00+00:00",
+  "decision": {
+    "verdict": "act",
+    "request": {
+      "action": "adopt the incident playbook",
+      "outcome": "minutes",
+      "direction": "decrease",
+      "risk_class": "medium",
+      "reversible": true,
+      "minimum_worthwhile_effect": 2.0,
+      "harm_threshold": 0.5,
+      "population": null,
+      "horizon": null,
+      "can_randomize": true,
+      "randomization_unit": "unit",
+      "units_per_day": null
+    },
+    "evidence": {
+      "kind": "result",
+      "status": "supported",
+      "refusal_reason": null,
+      "estimator": "aipw",
+      "estimand": "ATE: E[Y(T=1) - Y(T=0)]",
+      "identification_strategy": "backdoor",
+      "identification_tier": "A",
+      "benefit": 9.09615087806273,
+      "benefit_ci": [
+        8.5148727454821,
+        9.67742901064336
+      ],
+      "ci_level": 0.95,
+      "e_value_ci": 3.8199538302429303,
+      "refuters_failed": [],
+      "triangulation_agree": true,
+      "n_used": 2000,
+      "outcome_sd": 9.84092537544467,
+      "result_digest": "sha256:4a52518f18b3e641db7cfba675290cc512ecdc42a96fe7128e7b2192543cc717",
+      "segments": [],
+      "heterogeneity_differs": null
+    },
+    "checks": [
+      {
+        "name": "the whole interval clears the minimum worthwhile effect",
+        "passed": true,
+        "allows": "act",
+        "detail": "interval [8.515, 9.677] against 2"
+      },
+      {
+        "name": "the interval excludes material harm",
+        "passed": true,
+        "allows": "act",
+        "detail": "lower bound 8.515 against a harm threshold of -0.5"
+      },
+      {
+        "name": "the result is supported",
+        "passed": true,
+        "allows": "act",
+        "detail": "status supported"
+      },
+      {
+        "name": "identification is nonparametric",
+        "passed": true,
+        "allows": "act",
+        "detail": "tier A"
+      },
+      {
+        "name": "falsification tests passed",
+        "passed": true,
+        "allows": "act",
+        "detail": "all passed"
+      },
+      {
+        "name": "estimators with different assumptions agree",
+        "passed": true,
+        "allows": "act",
+        "detail": "agree"
+      },
+      {
+        "name": "robust to unmeasured confounding",
+        "passed": true,
+        "allows": "act",
+        "detail": "E-value for the interval bound 3.82 against a bar of 1.5"
+      },
+      {
+        "name": "the estimate is precise enough to act on",
+        "passed": true,
+        "allows": "act",
+        "detail": "interval width is 0.13x the effect (limit 1.00x)"
+      }
+    ],
+    "rationale": "Act: adopt the incident playbook. The estimate is ⟦claim:effect⟧ on minutes (⟦claim:ci.level⟧ CI ⟦claim:effect.ci.lo⟧ to ⟦claim:effect.ci.hi⟧, n = ⟦claim:n⟧, estimator aipw), read as a benefit of 8.515 to 9.677 in the requested direction (decrease).",
+    "experiment": null,
+    "what_would_change_it": [],
+    "policy_digest": "sha256:e9a67b273e75d454e30b3a380415e765c2573cb1d07650d4359c3147c675e8eb",
+    "request_digest": "sha256:2e83a809abefebb8ee74a0811603f6282664ecb3cf2b761f3e73212ee513e3b8",
+    "decision_digest": "sha256:79bd2523e3295f93edca758e6f9d3b3af782f854403e800f68ec0334322f502d"
+  },
+  "evidence": {
+    "outcome_kind": "result",
+    "result_digest": "sha256:4a52518f18b3e641db7cfba675290cc512ecdc42a96fe7128e7b2192543cc717",
+    "graph_digest": "sha256:6f4ff00f87a192dfbe3c1f756e1dc008062e9c0e5d8c9697dde019c2614f0518",
+    "data_digest": "sha256:f8fb7cdc52c3dc50757cd2ec22383805e4f87a39fd93beb7b0a28fd57cb3c129",
+    "query_digest": "sha256:c09c955d6f701f61eb6b8886c6f480e790e9c7e39430074aa4787a1ee59b61eb",
+    "contract_version": "0.11.0",
+    "core_version": "0.11.0",
+    "model": null
+  },
+  "approval": null,
+  "executed": false,
+  "review_by": "2026-12-21T09:00:00+00:00",
+  "shadow": "shadow-round-1",
+  "prev_digest": "sha256:5f919d406b1c19312ace88a1f7924f0650734a802e093fa82fa469e79853e744",
+  "entry_digest": "sha256:92c864c2fb44d930c1c804ca4ebcda244abacd9d178c34e996819916d04838cb"
+};
+
 export const CHAIN_OK: ChainReportResponse = {
   "ok": true,
   "length": 2,

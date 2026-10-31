@@ -1,0 +1,48 @@
+{
+  "id": "S-003",
+  "title": "send the win-back email",
+  "statement": "send the win-back email",
+  "from": [
+    "devbrain:fixture"
+  ],
+  "arms": {
+    "1": "treated",
+    "0": "control"
+  },
+  "outcome_label": "y",
+  "graph": "u -> t; u -> y; t -> y",
+  "design": "observational",
+  "estimand": "ate",
+  "query": {
+    "treatment": "t",
+    "outcome": "y",
+    "design": "observational",
+    "estimand": "ate"
+  },
+  "decision": {
+    "action": "send the win-back email",
+    "direction": "increase",
+    "minimum_worthwhile_effect": 0.3,
+    "harm_threshold": 0.0,
+    "risk_class": "low",
+    "reversible": true,
+    "horizon": "30d",
+    "can_randomize": true,
+    "randomization_unit": "customer",
+    "units_per_day": 40
+  },
+  "caveats": [],
+  "shadow": {
+    "kind": "causalplatform",
+    "proposed_by": "devbrain",
+    "data": {
+      "decision_window": "data/S-003-before.csv",
+      "follow_up_window": "data/S-003-after.csv"
+    },
+    "follow_up_after": "30d",
+    "expect": "NON_IDENTIFIABLE",
+    "human_decision": null,
+    "human_acted": null,
+    "tag": "shadow-fixture"
+  }
+}

@@ -166,7 +166,7 @@ learning radar's improvement targets, and recorded decisions can be reported bac
 ```bash
 AGENTCENTER_URL=http://127.0.0.1:8765
 ORACLE_URL=http://127.0.0.1:8767      # the default once AGENTCENTER_URL is set
-AGENTCENTER_EMIT=true                 # send each recorded decision to agentcenter's event log
+AGENTCENTER_EMIT=true                 # send each recorded decision (never a shadow one) to agentcenter's event log
 ```
 
 > **Security:** never commit `.env` files. They are gitignored.

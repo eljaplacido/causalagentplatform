@@ -6,7 +6,7 @@
  * the verdict is not conveyed by colour alone.
  */
 
-import { CheckCircle2, FlaskConical, ShieldAlert, UserCheck } from "lucide-react";
+import { CheckCircle2, EyeOff, FlaskConical, ShieldAlert, UserCheck } from "lucide-react";
 import type { DecisionVerdict } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -41,6 +41,24 @@ export function VerdictBadge({ verdict }: { verdict: DecisionVerdict }) {
     >
       <Icon className="h-3 w-3" aria-hidden />
       {verdict}
+    </span>
+  );
+}
+
+/**
+ * ShadowBadge — marks a decision sealed in shadow (causal_decision.shadow): never
+ * emitted to agentcenter, and nobody acts on it because of the platform. The tag
+ * is the record's own, shown verbatim.
+ */
+export function ShadowBadge({ tag }: { tag: string }) {
+  return (
+    <span
+      data-testid="shadow-badge"
+      title="A shadow decision: sealed and followed up like any other, never emitted, not acted on"
+      className="inline-flex items-center gap-1 rounded-full border border-dashed border-violet-300 bg-violet-50 px-2 py-0.5 font-mono text-[11px] font-semibold text-violet-800 dark:border-violet-700 dark:bg-violet-950 dark:text-violet-300"
+    >
+      <EyeOff className="h-3 w-3" aria-hidden />
+      shadow · {tag}
     </span>
   );
 }

@@ -8,9 +8,14 @@
  *
  * Data (all from the backend; numbers in the kernel's 4-significant-digit format
  * with the exact value as the title, and nothing here estimates a number):
- *   - GET  /api/v1/decisions?action=&limit=      the sealed records, newest chain
+ *   - GET  /api/v1/decisions?action=&limit=&scope=   the sealed records, newest chain
  *   - GET  /api/v1/decisions/verify               recompute the hash chain
- *   - GET  /api/v1/decisions/calibration          predicted vs measured
+ *   - GET  /api/v1/decisions/calibration?scope=   predicted vs measured
+ *
+ * Real and shadow decisions are listed apart (septa-95): the page shows real ones
+ * unless "Shadow" is chosen, and the calibration report follows the same choice,
+ * so a shadow round is never read as decisions taken. The chain is one: /verify
+ * recomputes both.
  *   - POST /api/v1/decisions/{entry_digest}/followup   (in DecisionDetail)
  *
  * Fail-closed: a failed request shows its error; there is no mock ledger. The
@@ -25,33 +30,39 @@ import { AlertTriangle, BookLock, RefreshCw, ShieldCheck, ShieldX } from "lucide
 
 import { CalibrationReportPanel } from "@/components/decisions/CalibrationReportPanel";
 import { DecisionDetail } from "@/components/decisions/DecisionDetail";
-import { VerdictBadge } from "@/components/decisions/VerdictBadge";
+import { ShadowBadge, VerdictBadge } from "@/components/decisions/VerdictBadge";
 import {
   decisionsApi,
   type CalibrationReportResponse,
   type ChainReportResponse,
   type DecisionRecordList,
+  type DecisionScope,
 } from "@/lib/api";
 import { cn, formatTimestamp } from "@/lib/utils";
 
 const LIMITS = [25, 50, 100, 500] as const;
+const SCOPES: { value: Exclude<DecisionScope, "all">; label: string }[] = [
+  { value: "real", label: "Real" },
+  { value: "shadow", label: "Shadow" },
+];
 
 export default function DecisionsPage() {
   const [actionInput, setActionInput] = useState("");
   const [action, setAction] = useState<string | undefined>(undefined);
   const [limit, setLimit] = useState<number>(50);
+  const [scope, setScope] = useState<Exclude<DecisionScope, "all">>("real");
   const [selectedDigest, setSelectedDigest] = useState<string | null>(null);
   const [verifyRequested, setVerifyRequested] = useState(false);
 
   const records = useQuery<DecisionRecordList>({
-    queryKey: ["decisions", "list", action ?? null, limit],
-    queryFn: () => decisionsApi.list({ action, limit }),
+    queryKey: ["decisions", "list", action ?? null, limit, scope],
+    queryFn: () => decisionsApi.list({ action, limit, scope }),
     retry: 1,
   });
 
   const calibration = useQuery<CalibrationReportResponse>({
-    queryKey: ["decisions", "calibration"],
-    queryFn: () => decisionsApi.calibration(),
+    queryKey: ["decisions", "calibration", scope],
+    queryFn: () => decisionsApi.calibration({ scope }),
     retry: 1,
   });
 
@@ -89,8 +100,29 @@ export default function DecisionsPage() {
           <section aria-labelledby="records-heading" className="space-y-3 rounded-lg border border-border bg-card p-4">
             <div className="flex flex-wrap items-center gap-2">
               <h2 id="records-heading" className="text-sm font-bold text-foreground">
-                Recorded decisions
+                {scope === "shadow" ? "Shadow decisions" : "Recorded decisions"}
               </h2>
+              <div role="radiogroup" aria-label="Which decisions" className="flex overflow-hidden rounded-md border border-border text-xs">
+                {SCOPES.map((s) => (
+                  <button
+                    key={s.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={scope === s.value}
+                    data-testid={`scope-${s.value}`}
+                    onClick={() => {
+                      setScope(s.value);
+                      setSelectedDigest(null);
+                    }}
+                    className={cn(
+                      "px-2 py-1 font-semibold",
+                      scope === s.value ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted"
+                    )}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
               {records.data && (
                 <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground" data-testid="records-total">
                   {records.data.total} returned
@@ -136,6 +168,14 @@ export default function DecisionsPage() {
               </button>
             </form>
 
+            {scope === "shadow" && (
+              <p data-testid="shadow-explainer" className="text-xs text-muted-foreground">
+                Shadow decisions are sealed and followed up like any other, but they are never
+                sent to agentcenter and nobody acts on them because of the platform. A shadow
+                round is scored against its own pre-registered bars.
+              </p>
+            )}
+
             {records.isLoading && (
               <p role="status" className="flex items-center gap-2 text-xs text-muted-foreground">
                 <RefreshCw className="h-3.5 w-3.5 animate-spin" aria-hidden />
@@ -152,9 +192,13 @@ export default function DecisionsPage() {
 
             {records.data && rows.length === 0 && (
               <p className="text-xs text-muted-foreground" data-testid="records-empty">
-                {action
-                  ? `No decision is recorded for the action "${action}".`
-                  : "No decision has been recorded yet. Decisions are made through POST /api/v1/decisions (or causal_decide over MCP)."}
+                {scope === "shadow"
+                  ? action
+                    ? `No shadow decision is recorded for the action "${action}".`
+                    : "No shadow decision has been recorded. A shadow round seals them with a shadow tag (POST /api/v1/decisions with `shadow`)."
+                  : action
+                    ? `No decision is recorded for the action "${action}".`
+                    : "No decision has been recorded yet. Decisions are made through POST /api/v1/decisions (or causal_decide over MCP)."}
               </p>
             )}
 
@@ -179,6 +223,7 @@ export default function DecisionsPage() {
                           {r.decision.request.action}
                         </span>
                         <VerdictBadge verdict={r.decision.verdict} />
+                        {r.shadow && <ShadowBadge tag={r.shadow} />}
                         <span className="text-muted-foreground">{formatTimestamp(r.recorded_at)}</span>
                       </button>
                     </li>

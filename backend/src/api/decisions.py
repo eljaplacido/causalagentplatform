@@ -33,6 +33,7 @@ from causal_decision import (
 )
 from causal_decision.contract import CausalOutcome  # noqa: TC002 -- pydantic resolves it at runtime
 from causal_decision.ledger import (
+    SHADOW_TAG,
     AnchorReport,
     ChainReport,
     Checkpoint,
@@ -42,6 +43,7 @@ from causal_decision.ledger import (
     verify_against,
 )
 from causal_decision.outcome import CalibrationReport, Realization, compare, plan, report
+from causal_decision.shadow import Scope  # noqa: TC002 -- FastAPI and pydantic resolve it at runtime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field, create_model, model_validator
 
@@ -194,6 +196,16 @@ class DecideRequest(BaseModel):
         "suggestion. Sent with the decision event to agentcenter when that is configured; not "
         "part of the sealed ledger entry.",
     )
+    shadow: str | None = Field(
+        default=None,
+        max_length=100,
+        pattern=SHADOW_TAG,
+        description="Record this as a shadow decision under this tag (a shadow round, e.g. "
+        "`shadow-round-1`; shadow/README.md). It is analysed, ruled on, sealed and given a "
+        "follow-up plan like any other, but it is never emitted to agentcenter, nobody acts on "
+        "it because of the platform, and it is listed apart: `GET /api/v1/decisions?scope=shadow`. "
+        "The tag is sealed into the ledger entry.",
+    )
 
     @model_validator(mode="after")
     def _one_graph(self) -> DecideRequest:
@@ -226,6 +238,11 @@ class DecideResponse(BaseModel):
 class RecordList(BaseModel):
     records: list[DecisionRecord]
     total: int
+    scope: Scope = Field(
+        default="real",
+        description="Which decisions are listed: real ones (the default), shadow ones, or all.",
+    )
+    tag: str | None = Field(default=None, description="The one shadow tag listed, if asked.")
 
 
 @router.post("", response_model=DecideResponse, summary="Decide whether an action is justified")
@@ -306,6 +323,7 @@ async def make_decision(
                 recorded_at=now.isoformat(),
                 model=None if version is None else version.ref(),
                 review_by=(now + timedelta(days=body.review_after_days)).isoformat(),
+                shadow=body.shadow,
                 session=session,
             )
         except LedgerConflictError as exc:
@@ -330,12 +348,14 @@ async def make_decision(
         action=body.action,
         verdict=str(decision.verdict),
         sequence=record.sequence,
+        shadow=record.shadow,
         uid=user.get("uid"),
     )
 
     # A copy for the owner's second brain (agentcenter's event log), when configured.
     # After the seal and the provenance write: it cannot change or block the record.
-    await agentcenter.emit_decision(_event_payload(body, decision, outcome, record))
+    # The connector withholds a shadow decision itself, from the sealed record.
+    await agentcenter.emit_decision(record, _event_payload(body, decision, outcome, record))
 
     narrative: Narrative | None = None
     if body.narrate:
@@ -484,18 +504,38 @@ def _event_payload(
     }
 
 
+_SCOPE = Query(
+    description="real (the default): decisions the platform recorded for acting on; shadow: "
+    "those recorded in shadow (never emitted, not acted on); all: both, in one chain."
+)
+_TAG = Query(
+    max_length=100,
+    pattern=SHADOW_TAG,
+    description="Only the shadow decisions recorded under this tag (one shadow round).",
+)
+
+
 @router.get("", response_model=RecordList, summary="List recorded decisions")
 async def list_decisions(
     action: Annotated[str | None, Query(description="Filter to one action")] = None,
     limit: Annotated[int, Query(ge=1, le=500)] = 50,
+    scope: Annotated[Scope, _SCOPE] = "real",
+    tag: Annotated[str | None, _TAG] = None,
     user: dict[str, Any] = Depends(guard("GET", "/api/v1/decisions")),
 ) -> RecordList:
+    """The sealed records, real ones unless `scope` or `tag` asks for shadow ones.
+
+    Shadow decisions sit in the same chain as real ones (`/verify` recomputes both)
+    and are listed apart, so a shadow round never reads as decisions taken.
+    """
     records = (
-        await _store.for_subject(action, limit=limit)
+        await _store.for_subject(action, limit=limit, scope=scope, tag=tag)
         if action
-        else await _store.all_records(limit=limit)
+        else await _store.all_records(limit=limit, scope=scope, tag=tag)
     )
-    return RecordList(records=records, total=len(records))
+    return RecordList(
+        records=records, total=len(records), scope="shadow" if tag else scope, tag=tag
+    )
 
 
 @router.get(
@@ -667,6 +707,8 @@ async def record_followup(
 )
 async def calibration(
     limit: Annotated[int | None, Query(ge=1, le=5000)] = None,
+    scope: Annotated[Scope, _SCOPE] = "real",
+    tag: Annotated[str | None, _TAG] = None,
     user: dict[str, Any] = Depends(guard("GET", "/api/v1/decisions/calibration")),
 ) -> CalibrationReport:
     """Predicted against measured, over every follow-up taken.
@@ -688,10 +730,17 @@ async def calibration(
     follow-up and no newer decision on the same action. Nothing measured them,
     so they are in none of the rates; they are listed because they still stand
     in the ledger on evidence that may describe a population that has moved on.
+
+    Real decisions only, by default: a shadow round's follow-ups are scored against
+    its own pre-registered bars (`python -m causal_decision.shadow_round score`) and
+    are reported here only with `scope=shadow` or its `tag`, never pooled with the
+    real ones.
     """
     due = past_review(
-        await _store.all_records(),
+        await _store.all_records(scope=scope, tag=tag),
         await _store.measured_entries(),
         as_of=datetime.now(UTC).isoformat(),
     )
-    return report(await _store.realizations(limit=limit), past_review=due)
+    return report(
+        await _store.realizations(limit=limit, scope=scope, tag=tag), past_review=due
+    )

@@ -17,8 +17,10 @@ Reads are GETs with short timeouts; each source fails on its own and is reported
 as unreachable, never raised. The one write is optional (`AGENTCENTER_EMIT`): a
 recorded decision is sent to agentcenter's `POST /events/emit`, which lands in the
 Central Brain's event log and outbox -- the channel agentcenter documents for
-results. Pre-registrations and verdicts in the Oracle stay human-only; nothing here
-writes them.
+results. A shadow decision (shadow/README.md) is never sent, whatever the
+configuration says: `emit_decision` takes the sealed record and passes it through
+`causal_decision.shadow.emittable` before anything leaves. Pre-registrations and
+verdicts in the Oracle stay human-only; nothing here writes them.
 
 Configuration (environment):
     AGENTCENTER_URL   agentcenter base URL; unset disables the connector
@@ -33,11 +35,15 @@ from __future__ import annotations
 import os
 import re
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import httpx
 import structlog
+from causal_decision.shadow import DECISION_EVENT, ShadowEmissionError, emittable
 from pydantic import BaseModel, Field
+
+if TYPE_CHECKING:
+    from causal_decision.ledger import DecisionRecord
 
 log = structlog.get_logger(__name__)
 
@@ -369,21 +375,35 @@ async def bound_data(hyp_id: str, cfg: Config | None = None) -> BoundData:
 # ── Reporting decisions back ─────────────────────────────────────────────────
 
 
-async def emit_decision(payload: dict[str, Any], cfg: Config | None = None) -> bool:
+async def emit_decision(
+    record: DecisionRecord, payload: dict[str, Any], cfg: Config | None = None
+) -> bool:
     """Send a recorded decision to agentcenter's event log. Never raises.
 
     Returns whether agentcenter accepted it. A failure is logged and otherwise
     ignored: the decision is already sealed in this platform's ledger, which is
     the record of truth; the event is a copy for the second brain.
+
+    Takes the sealed `record`, not only the payload built from it, so the shadow
+    tag cannot be lost on the way: a shadow decision is withheld here, before the
+    configuration is even read, and never reaches agentcenter (septa-95). The
+    payload's `entry_digest` is the record's, so a payload cannot speak for a
+    different decision than the one that was checked.
     """
+    try:
+        emittable(record)
+    except ShadowEmissionError as exc:
+        log.info("agentcenter.emit.shadow_withheld", entry_digest=record.entry_digest,
+                 shadow=record.shadow, reason=str(exc)[:200])
+        return False
     cfg = cfg or config()
     if not (cfg.enabled and cfg.emit):
         return False
     body = {
-        "kind": "causalplatform.decision.recorded",
+        "kind": DECISION_EVENT,
         "project": cfg.project,
         "agent": "causalplatform",
-        "payload": payload,
+        "payload": {**payload, "entry_digest": record.entry_digest},
     }
     try:
         async with _client() as client:
