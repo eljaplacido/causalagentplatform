@@ -377,7 +377,7 @@ outside the caller's domains:
   append-only, and use the sequences; it has no `DELETE` or `TRUNCATE` anywhere, and the
   append-only triggers stay. The append-only surfaces: `audit_log`, `verdict_consumption`,
   `decision_records`, `decision_followups`, `causal_model_versions`, `decision_model_refs`,
-  `provenance_entries` and `provenance_erasures` (011), and `semantic_object_versions` (014). The semantic head tables are updatable only under 014's
+  `provenance_entries` and `provenance_erasures` (011), `semantic_object_versions` (014), and `drift_alerts` (015). The semantic head tables are updatable only under 014's
   rule: advance `revision` by one over a recorded revision, the new one recorded by commit. `backend/tests/integration/test_rls_domain_isolation.py` pins all
   of this on PostgreSQL, including negative controls with a policy dropped, RLS disabled, and
   the owner's connection.

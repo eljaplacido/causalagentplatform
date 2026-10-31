@@ -16,8 +16,11 @@
 -- uuid4 as TEXT, minted for the row; the AlertEmitter's own alert id, when the
 -- alert was emitted, is in context.emitted_alert_id.
 --
--- Append-only, by grant: a record of an alert is not edited afterwards. There
--- is no acknowledgement column; acknowledging is a Neo4j-only feature.
+-- Append-only, like audit_log and provenance_entries: a record of an alert is
+-- not edited afterwards. causal_app has only SELECT and INSERT, and UPDATE and
+-- DELETE are trapped by triggers whoever connects (SQLITE_DDL carries the same
+-- triggers). There is no acknowledgement column; acknowledging is a Neo4j-only
+-- feature.
 -- ===========================================================================
 
 CREATE TABLE IF NOT EXISTS drift_alerts (
@@ -39,7 +42,7 @@ CREATE TABLE IF NOT EXISTS drift_alerts (
 
 COMMENT ON TABLE drift_alerts IS
     'Every drift alert DriftMonitorAgent raised that Neo4j did not store. '
-    'Append-only by grant.';
+    'Append-only: UPDATE and DELETE are revoked and trapped.';
 
 CREATE INDEX IF NOT EXISTS ix_drift_alerts_created_at ON drift_alerts (created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_drift_alerts_fragment   ON drift_alerts (fragment_id, created_at DESC);
@@ -48,3 +51,21 @@ REVOKE ALL   ON drift_alerts FROM PUBLIC;
 GRANT  SELECT, INSERT ON drift_alerts TO causal_app;
 GRANT  SELECT, INSERT ON drift_alerts TO causal_governance;
 GRANT  SELECT         ON drift_alerts TO causal_readonly;
+
+CREATE OR REPLACE FUNCTION fn_drift_alerts_no_mutation()
+RETURNS TRIGGER AS $$
+BEGIN
+    RAISE EXCEPTION '% is append-only: % is not permitted', TG_TABLE_NAME, TG_OP
+        USING ERRCODE = '42501';
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS tg_drift_alerts_no_update ON drift_alerts;
+CREATE TRIGGER tg_drift_alerts_no_update
+    BEFORE UPDATE ON drift_alerts
+    FOR EACH ROW EXECUTE FUNCTION fn_drift_alerts_no_mutation();
+
+DROP TRIGGER IF EXISTS tg_drift_alerts_no_delete ON drift_alerts;
+CREATE TRIGGER tg_drift_alerts_no_delete
+    BEFORE DELETE ON drift_alerts
+    FOR EACH ROW EXECUTE FUNCTION fn_drift_alerts_no_mutation();

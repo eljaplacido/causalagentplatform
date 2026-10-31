@@ -9,7 +9,8 @@ the write failed) to the ``drift_alerts`` table here, so every alert leaves a
 record in the platform's own database (``015_drift_alerts.sql``, and the
 ``SQLITE_DDL`` rendering of it).
 
-The table is append-only: a record is inserted once and never edited. There is
+The table is append-only: a record is inserted once and never edited (UPDATE
+and DELETE are refused by triggers on both engines, and causal_app has neither). There is
 no acknowledgement here; acknowledging an alert is a Neo4j-only feature.
 """
 

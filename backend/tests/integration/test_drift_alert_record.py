@@ -187,3 +187,20 @@ async def test_a_severe_drift_found_by_process_leaves_a_critical_row(
     assert critical[0]["drift_score"] == pytest.approx(0.8)
     assert critical[0]["drift_type"] == "distribution"
     assert critical[0]["fragment_id"] == state.active_graph_fragment_id
+
+
+async def test_a_recorded_alert_cannot_be_rewritten_or_deleted(db_engine: object) -> None:
+    """The record is append-only: the app's own connection cannot UPDATE or DELETE it."""
+    from sqlalchemy.exc import DBAPIError
+
+    from src.db.factory import CloudSqlFactory
+
+    agent = DriftMonitorAgent(enable_neo4j_storage=False, enable_alert_emission=False)
+    result = await _raise(agent, _state())
+    for statement in (
+        "UPDATE drift_alerts SET severity = 'LOW' WHERE id = :i",
+        "DELETE FROM drift_alerts WHERE id = :i",
+    ):
+        async with CloudSqlFactory.get_session_factory()() as session:
+            with pytest.raises(DBAPIError):
+                await session.execute(text(statement), {"i": result["record_id"]})
