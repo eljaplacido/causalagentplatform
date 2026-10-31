@@ -69,14 +69,14 @@ updates:
     open-pull-requests-limit: 5
     # npm majors are ledger work, as pyproject majors are: each needs its own
     # migration and review, and five bot PRs at once held every CI runner (#32-#36).
-    # The typescript entry names its ledger item.
+    # TypeScript is on two majors on purpose (septa-58): 7 in frontend/ (tsc and
+    # next 16's build, which runs TS 7's CLI), 6 at the root and in
+    # packages/semantic-types for the tools that import TypeScript's JS API, which
+    # 7 does not ship (typescript-eslint, peer <6.1; tsup's dts build). The rule
+    # above keeps the bot from moving those to 7.
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
-      # septa-58: TypeScript 7 (tsc TS2882 on the CSS import; next 15 cannot load
-      # next.config.ts with it, #21).
-      - dependency-name: typescript
-        versions: [">=7"]
     groups:
       npm-dev:
         dependency-type: development
