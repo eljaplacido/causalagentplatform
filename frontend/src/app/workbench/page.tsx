@@ -7,6 +7,8 @@
  *   - Fragment list grouped by domain (left panel)
  *   - Selected fragment rendered on DAGCanvas (top-right)
  *   - Edge detail when a canvas edge is clicked (bottom-right)
+ *   - Node detail (NodeDetail) when a canvas node is clicked: what the fragment's
+ *     edges say about it -- its object type, domain and the edges touching it
  *   - FragmentDraftComposer: propose a new fragment from the edges of the
  *     fragments opened here, classified, through the governed draft flow
  *
@@ -35,6 +37,7 @@ import { GitBranch, RefreshCw, AlertTriangle, Search } from "lucide-react";
 
 import { DAGCanvas, type DAGEdge, type DAGNode } from "@/components/graph/DAGCanvas";
 import { FragmentDraftComposer } from "@/components/graph/FragmentDraftComposer";
+import { NodeDetail } from "@/components/graph/NodeDetail";
 import { PersonaSelector } from "@/components/shared/PersonaSelector";
 import {
   semanticApi,
@@ -79,6 +82,7 @@ const MOCK_EDGES: Record<string, CausalEdgeResponse> = {
     guardianVerdictRef: "audit-mock-1",
     version: "1.0.0",
     domain: "devops",
+    createdAt: new Date().toISOString(),
   },
   "mock-edge-002": {
     id: "mock-edge-002",
@@ -95,6 +99,7 @@ const MOCK_EDGES: Record<string, CausalEdgeResponse> = {
     guardianVerdictRef: "audit-mock-2",
     version: "1.0.0",
     domain: "devops",
+    createdAt: new Date().toISOString(),
   },
 };
 
@@ -167,6 +172,7 @@ function confidenceTone(c: number): string {
 export default function WorkbenchPage() {
   const [selectedFragmentId, setSelectedFragmentId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   // ── Fragment list ───────────────────────────────────────────────────────────
@@ -259,6 +265,9 @@ export default function WorkbenchPage() {
   // ── Selected edge (for detail pane) ─────────────────────────────────────────
   const selectedEdge: CausalEdgeResponse | null =
     edges.find((e) => e.id === selectedEdgeId) ?? null;
+  // A node of the graph on the canvas; one from a fragment no longer shown is none.
+  const selectedNode: DAGNode | null =
+    dagNodes.find((n) => n.id === selectedNodeId) ?? null;
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
@@ -478,8 +487,19 @@ export default function WorkbenchPage() {
                   nodes={dagNodes}
                   edges={dagEdges}
                   onEdgeSelect={(edge) => setSelectedEdgeId(edge.id)}
+                  onNodeSelect={(node) => setSelectedNodeId(node.id)}
                   width={760}
                   height={460}
+                />
+              )}
+
+              {selectedNode && (
+                <NodeDetail
+                  node={selectedNode}
+                  allNodes={dagNodes}
+                  allEdges={dagEdges}
+                  onClose={() => setSelectedNodeId(null)}
+                  onNavigateTo={setSelectedNodeId}
                 />
               )}
 

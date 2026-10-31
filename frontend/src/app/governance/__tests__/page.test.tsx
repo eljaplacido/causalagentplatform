@@ -54,6 +54,8 @@ const backendQueueItem = {
   risk_tier: "HIGH",
   risk_reasons: ["no stored sensitivity result on an assumption it rests on"],
   submitted_by: "ryo.tanaka",
+  assumptions: [],
+  sensitivity_results: [],
 };
 
 // AuditEntry serialises camelCase (alias_generator=_camel); the AuditLogResponse
@@ -545,6 +547,8 @@ describe("GovernancePage — the queue shows the backend's risk tier and submitt
     risk_tier: "LOW",
     risk_reasons: ["an entity asserts no causal relationship"],
     submitted_by: "ana",
+    assumptions: [],
+    sensitivity_results: [],
   };
   const criticalEdge = {
     id: "22222222-2222-4222-8222-222222222222",
@@ -556,6 +560,8 @@ describe("GovernancePage — the queue shows the backend's risk tier and submitt
     risk_tier: "CRITICAL",
     risk_reasons: ["stated confidence 0.40 is below 0.5"],
     submitted_by: null,
+    assumptions: [],
+    sensitivity_results: [],
   };
 
   it("renders each item's tier and submitter, most at risk first", async () => {
@@ -628,6 +634,85 @@ describe("GovernancePage — edge titles and the audit count", () => {
     await waitFor(() =>
       expect(within(panel).getByTestId("audit-log-count")).toHaveTextContent("latest 50 of 267")
     );
+  });
+});
+
+// ─── What an item shows of an edge's assumptions and sensitivity (septa-88) ─────
+//
+// ReviewQueueItem declared evidenceCitations, sensitivityResults and assumptions
+// the endpoint never sent, so every live item read "No sensitivity tests run yet"
+// -- also an edge whose recorded robust result had put it in MEDIUM. The endpoint
+// now sends an edge's stored assumptions and the sensitivity results the platform
+// recorded for it; there is no evidence store, so evidence citations are gone.
+// Postconditions: the panel shows what the item carries, as sent (statement, type,
+// review status; method, robustness, e-value, who computed it); an edge with none
+// recorded says so; a fragment shows no sensitivity section; no evidence section.
+describe("GovernancePage — an item's assumptions and recorded sensitivity, as sent", () => {
+  const recordedEdge = {
+    ...backendQueueItem,
+    risk_tier: "MEDIUM",
+    risk_reasons: ["a recorded sensitivity result says it is robust"],
+    assumptions: [
+      {
+        id: "a1a1a1a1-0000-4000-8000-000000000001",
+        statement: "No unmeasured cause of both latency and conversion",
+        assumption_type: "IGNORABILITY",
+        review_status: "PENDING",
+        last_reviewed_at: null,
+      },
+    ],
+    sensitivity_results: [
+      {
+        e_value: 3.1,
+        rosenbaum_gamma: null,
+        robust_to_unmeasured_confounding: true,
+        analysis_method: "e_value",
+        computed_at: "2026-09-18T09:00:00Z",
+        computed_by: "causal-core",
+      },
+    ],
+  };
+
+  it("shows the edge's stored assumptions and its recorded result", async () => {
+    const user = userEvent.setup();
+    governanceApiMock.reviewQueue.mockResolvedValue([recordedEdge]);
+    governanceApiMock.auditLog.mockResolvedValue(auditResponse([]));
+    renderPage();
+    await user.click(await screen.findByTestId("first-review-item"));
+
+    const sensitivity = await screen.findByTestId("sensitivity-result");
+    expect(sensitivity).toHaveTextContent("Recorded sensitivity results (1)");
+    expect(sensitivity).toHaveTextContent("Robust to unmeasured confounding");
+    expect(sensitivity).toHaveTextContent("E-value: 3.10");
+    expect(sensitivity).toHaveTextContent("causal-core");
+    const assumptions = screen.getByTestId("assumption-list");
+    expect(assumptions).toHaveTextContent("No unmeasured cause of both latency and conversion");
+    expect(assumptions).toHaveTextContent("IGNORABILITY");
+    expect(assumptions).toHaveTextContent("PENDING");
+    expect(screen.queryByTestId("evidence-citations")).toBeNull();
+  });
+
+  it("says when an edge has no recorded result, and shows a fragment none", async () => {
+    const user = userEvent.setup();
+    const fragment = {
+      ...backendQueueItem,
+      id: "33333333-3333-4333-8333-333333333333",
+      object_type: "GraphFragment",
+      name: "checkout-fragment",
+      risk_tier: "MEDIUM",
+    };
+    governanceApiMock.reviewQueue.mockResolvedValue([backendQueueItem, fragment]);
+    governanceApiMock.auditLog.mockResolvedValue(auditResponse([]));
+    renderPage();
+
+    await user.click(await screen.findByTestId("first-review-item"));
+    expect(await screen.findByTestId("sensitivity-result")).toHaveTextContent(
+      /no sensitivity result recorded for this edge/i
+    );
+    expect(screen.queryByTestId("assumption-list")).toBeNull();
+
+    await user.click(screen.getByTestId("review-item"));
+    await waitFor(() => expect(screen.queryByTestId("sensitivity-result")).toBeNull());
   });
 });
 

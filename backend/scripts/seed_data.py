@@ -93,6 +93,10 @@ async def _insert_seed_edge(
     that the DAG Workbench (and any downstream skill / MCP tool) can fetch.
     Without this, fragments are referentially broken and the DAG canvas renders
     empty against seeded data.
+
+    created_by is the seeder, as on the entities and fragments it seeds: the
+    governance review queue names an edge's submitter from that column (migration
+    012), and an edge seeded without it showed "not recorded".
     """
     edge_id = uuid4()
     approved_at = created_at if approval_status == "APPROVED" else None
@@ -103,12 +107,12 @@ async def _insert_seed_edge(
             "id, source_id, source_type, target_id, target_type, "
             "edge_type, direction, confidence, evidence_refs, assumption_refs, "
             "approval_status, approved_by, approved_at, guardian_verdict_ref, "
-            "version, lineage, domain, created_at"
+            "version, lineage, domain, created_by, created_at"
             ") VALUES ("
             ":id, :sid, :stype, :tid, :ttype, "
             ":etype, :dir, :conf, :evidence, :assumptions, "
             ":status, :approved_by, :approved_at, :verdict, "
-            ":version, :lineage, :domain, :created_at"
+            ":version, :lineage, :domain, :created_by, :created_at"
             ")",
             evidence=UUID_ARRAY,
             assumptions=UUID_ARRAY,
@@ -133,6 +137,7 @@ async def _insert_seed_edge(
             "version": "1.0.0",
             "lineage": "[]",
             "domain": domain,
+            "created_by": _SEEDER_USER.model_dump_json(),
             "created_at": created_at,
         },
     )
@@ -751,7 +756,7 @@ SEED_INCIDENTS = [
     {
         "id": "INC-SEED-001",
         "title": "Payment-svc p99 latency spike after v3.2 rollout",
-        "severity": "SEV1",
+        "severity": "P0",
         "affected_services": ["payment-service", "api-gateway"],
         "status": "ACTIVE",
         "session_id": "seed-session-001",
@@ -773,7 +778,7 @@ SEED_INCIDENTS = [
     {
         "id": "INC-SEED-002",
         "title": "Notification queue depth runaway",
-        "severity": "SEV2",
+        "severity": "P1",
         "affected_services": ["notification-service"],
         "status": "INVESTIGATING",
         "session_id": "seed-session-002",
@@ -794,7 +799,7 @@ SEED_INCIDENTS = [
     {
         "id": "INC-SEED-003",
         "title": "Auth-service session token regression",
-        "severity": "SEV2",
+        "severity": "P1",
         "affected_services": ["auth-service", "api-gateway"],
         "status": "INVESTIGATING",
         "session_id": "seed-session-003",
@@ -814,7 +819,7 @@ SEED_INCIDENTS = [
     {
         "id": "INC-SEED-004",
         "title": "Inventory-svc stockout on three SKUs",
-        "severity": "SEV3",
+        "severity": "P2",
         "affected_services": ["inventory-service", "order-service"],
         "status": "INVESTIGATING",
         "session_id": "seed-session-004",
@@ -834,7 +839,7 @@ SEED_INCIDENTS = [
     {
         "id": "INC-SEED-005",
         "title": "API-gateway TLS handshake failures (region eu-west-1)",
-        "severity": "SEV1",
+        "severity": "P0",
         "affected_services": ["api-gateway"],
         "status": "ACTIVE",
         "session_id": "seed-session-005",
@@ -988,11 +993,12 @@ def seed_incidents(engine: Any) -> dict[str, Any]:
 #
 #   graph_fragments, causal_entities  created_by is the seeder's UserRef
 #   causal_edges                      guardian_verdict_ref is a seeder audit row
-#                                     (edges carry no created_by)
+#                                     (edges seeded before they carried created_by
+#                                     have none, so the verdict is what marks them)
 #   incidents                         submitted_by is the seeder
 #
 # It never touches an append-only table -- audit_log, decision_records,
-# decision_followups, causal_model_versions, decision_model_refs -- whose
+# decision_followups, causal_model_versions, decision_model_refs, drift_alerts -- whose
 # triggers refuse a DELETE on both backends (and on PostgreSQL no role is
 # granted one). The seeder's audit rows therefore stay, by design, and --clear
 # reports how many it kept. Seeding again adds new ones.
@@ -1095,6 +1101,28 @@ def clear_seeded_data(engine: Any) -> dict[str, Any]:
 import json
 
 
+def prepare_schema() -> bool:
+    """Create the local schema the way the app's startup does, before any write.
+
+    The API's lifespan (src/api/main.py) runs ``CloudSqlFactory.init_db()`` when
+    ``ENV`` is ``local``: on SQLite that is SQLITE_DDL plus the ORM metadata, all
+    ``IF NOT EXISTS``, so it is a no-op on a database that already has the schema.
+    Without it here, seeding a brand-new SQLite file failed on its first INSERT
+    (``no such table: audit_log``) unless the backend had been started once.
+
+    Anywhere else the schema is src/db/migrations/*.sql, applied by whoever
+    provisions the database, and the app's startup creates nothing: neither does
+    this. Returns whether it created (or checked) the schema.
+    """
+    import asyncio
+    import os
+
+    if os.getenv("ENV", "local") != "local":
+        return False
+    asyncio.run(CloudSqlFactory.init_db())
+    return True
+
+
 def main() -> None:
     # The seeder acts for no user and writes into several domains: it declares a
     # service scope, which the RLS policies let see every domain. Without it,
@@ -1115,6 +1143,11 @@ def _main() -> None:
     parser.add_argument("--all", action="store_true", help="Seed all domains")
     parser.add_argument("--clear", action="store_true", help="Clear seeded data")
     args = parser.parse_args()
+
+    if args.clear or any(
+        [args.devops, args.marketing, args.evaluation, args.reviews, args.incidents, args.all]
+    ):
+        prepare_schema()
 
     if args.clear:
         print(json.dumps(clear_seeded_data(None), indent=2))

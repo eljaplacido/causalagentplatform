@@ -22,6 +22,7 @@ REST API / MCP tools ──► Causal Semantic Layer (PostgreSQL, SQLite locally
                           Runtime & agents ──► packages/causal-core (identification, estimation)
                                 │
                                 ├──► audit_log, decision ledger (same database)
+                                ├──► drift_alerts (same database): every drift alert Neo4j did not store
                                 └──► optional Neo4j (NEO4J_URI): experience buffer, drift alerts
 ```
 
@@ -302,7 +303,10 @@ claim was withdrawn (register `neo4j-graph-store`, in `left_the_list`). When `NE
   (`EXPERIENCE_BUFFER_DECAY_HALF_LIFE`). Without Neo4j, `experience_buffer.py` reads the SQL
   `session_state` snapshots instead, and storing an incident returns `stored: false`.
 - **Drift alerts** (`backend/src/skills/drift_detect.py`): `(:DriftAlert)` nodes with a TTL and an
-  acknowledged flag. Without Neo4j, alerts are emitted (§5.1) but not stored.
+  acknowledged flag. Every alert Neo4j did not store (no `NEO4J_URI`, storage disabled, or the
+  write failed) is written to the SQL `drift_alerts` table instead (§3.2, septa-62), and
+  `DriftMonitorAgent.get_recent_alerts` reads it back when there is no Neo4j; there is no
+  acknowledgement in SQL (`backend/tests/integration/test_drift_alert_record.py`).
 
 Whether that optional Neo4j answers is reported by the authenticated
 `GET /api/v1/platform/connectors` (connector `graph-neo4j`): `unconfigured` (no `NEO4J_URI`;
@@ -323,7 +327,7 @@ grants, row-level security and most `CHECK` constraints exist only on the Postgr
 (SQLite keeps three: `audit_log.guardian_verdict`, `decision_followups.kind` and
 `causal_model_versions.version`).
 
-- **PostgreSQL**: `backend/src/db/migrations/001_initial.sql` to `013_assumption_sensitivity_verdict.sql`, applied in
+- **PostgreSQL**: `backend/src/db/migrations/001_initial.sql` to `015_drift_alerts.sql`, applied in
   filename order. Two things in this repository apply them: `docker-compose.yml`, whose init
   script (`backend/src/db/docker/initdb.sh`) runs them when the container's volume is first
   created and then gives `causal_app` its local-dev login, and the test fixtures when
@@ -345,12 +349,13 @@ grants, row-level security and most `CHECK` constraints exist only on the Postgr
 | `causal_entities`, `causal_edges`, `graph_fragments`, `assumptions` | 001 (+002 for `causal_entities.guardian_verdict_ref`, +006 for `graph_fragments.lineage`, +012 for `causal_edges.created_by`, +013 for `assumptions.sensitivity_verdict_id`, +014 for `revision` and `source_data`) | yes | The semantic layer objects of §2: each row the current version of its object. A row changes only by advancing `revision` by one over a recorded revision (014's triggers, on both engines) |
 | `semantic_object_versions` | 014 | yes | Every version of every semantic object: its complete row at a revision (`state`), the change (`PROPOSED`, `APPROVED`, `REJECTED`, `RECORDED`), actor, agent and platform version, and verdict. Append-only; domain-scoped by RLS on PostgreSQL. 014 recorded each existing row as revision 1 |
 | `interventions` | 001 | yes | Intervention log: expected vs actual effect, feedback closure |
-| `decision_records` | 003 (+015 for `shadow`) | yes | The decision ledger's hash chain, one sealed record per row. Append-only. `shadow` is an index over the tag sealed in the record (NULL for a real decision), so real and shadow decisions are listed apart |
+| `decision_records` | 003 (+016 for `shadow`) | yes | The decision ledger's hash chain, one sealed record per row. Append-only. `shadow` is an index over the tag sealed in the record (NULL for a real decision), so real and shadow decisions are listed apart |
 | `decision_followups` | 004, 005 | yes | The follow-up plan written at decision time, and each later realization. Append-only; 005 allows one row per decision and kind, so a decision is measured once |
 | `causal_model_versions`, `decision_model_refs` | 007 | yes | The assumption registry: immutable model versions (content-addressed, each naming its parent), and which decision used which version. Append-only |
 | `session_state` | 008 | yes | Latest `EpistemicState` snapshot per session (`orchestration/session_store.py`), upserted on `session_id`; also what the incident triage agent's experience buffer reads back |
 | (row-level security) | 001, replaced by 010 (+014) | no | Not a table: 010 puts a domain policy on `causal_entities`, `causal_edges` and `graph_fragments` (014 adds `semantic_object_versions`), fed by the settings `backend/src/db/scope.py` sets on every transaction (docs/CYBERSECURITY.md §4.2), and grants `causal_app` the sequence 004 created after 001's grant |
 | `incidents` | 009 | yes | Incident records (`api/incidents.py`), upserted on `id` with `INSERT ... ON CONFLICT`, keeping the first `created_at`. Decisions on their interventions are `audit_log` rows, joined in on read |
+| `drift_alerts` | 015 | yes | Every drift alert `DriftMonitorAgent` raised that Neo4j did not store (`sensors/drift_alert_log.py`): type, severity, drift type, score, drifted features, fragment, session. Append-only (`causal_app` has `SELECT` and `INSERT`; `UPDATE` and `DELETE` are trapped by triggers on both engines) |
 | `provenance_entries`, `provenance_erasures` | 011 | yes | W3C PROV records and LLM invocations per session (`semantic_layer/provenance_store.py`, §6), and the tombstones that hide a session's records from the provenance API. Append-only; `causal_readonly` gets no `SELECT` on the entries |
 
 Until 008 and 009 (septa-52) `session_state` and `incidents` existed only in the SQLite schema,
@@ -573,7 +578,7 @@ recorded by the capture hook in `backend/src/agents/llm_factory.py`, one per cal
 | CausalDiscoveryAgent | Semantic layer (read) | `audit_write` records (PENDING, unsigned) | Proposes; does not persist semantic objects itself |
 | GovernanceAgent | The action payload and `EpistemicState` it is given | `audit_log` (every verdict, signed) | Its verdict is what `propose_draft` / `promote_to_approved` / `reject_draft` / `record_edge_sensitivity` require |
 | SimulationAgent | APPROVED graph fragments | `EpistemicState.simulation_results` (in memory; the `session_state` snapshot); given data, the kernel's sensitivity result on the fragment's draft Treatment -> Outcome edge (a new `assumptions` row, appended to the edge's `assumption_refs`) | That one write under a Guardian verdict for `RECORD_SENSITIVITY` on the edge; otherwise read-only on the semantic layer |
-| DriftMonitorAgent | Whatever its skills are handed (see §5) | In-process `AlertEmitter`; `(:DriftAlert)` nodes in Neo4j when `NEO4J_URI` is set | No semantic-layer writes; no message broker |
+| DriftMonitorAgent | Whatever its skills are handed (see §5) | In-process `AlertEmitter`; `(:DriftAlert)` nodes in Neo4j when `NEO4J_URI` is set, and a `drift_alerts` row for every alert Neo4j did not store | No semantic-layer writes; no message broker |
 | `GET /api/semantic/*` | Entities, edges, fragments inside the user's domain scope; APPROVED only for a `viewer`. `/objects/{type}/{id}/versions` and `/lineage` read the history and the chain (§6) under the same rule | -- | Outside the scope is 404 (CYBERSECURITY.md §4.2) |
 | `POST /api/semantic/drafts` | -- | `causal_edges` / `graph_fragments` / `causal_entities` / `assumptions` as DRAFT, and its revision 1 in `semantic_object_versions` | A drafting role, a domain inside the user's scope, then a GovernanceAgent check in the named session's Cynefin domain or the caller's declared one (recorded with its source in the audit row's notes; nothing declared is DISORDER, refused by PR-006); status forced to DRAFT; an assumption's `sensitivity_verdict_id` is never written, so a drafted sensitivity result counts for nothing |
 | `POST /api/semantic/edges/{id}/sensitivity` | The edge, inside the user's scope | A new IGNORABILITY `assumptions` row carrying the kernel's sensitivity result and the id of the verdict it was recorded under (`sensitivity_verdict_id`, migration 013: what makes PR-007 count it), recorded as its revision 1 (`PROPOSED`); the draft edge's next revision (`RECORDED`: its `assumption_refs` and lineage), with the version rows, in the same transaction | A drafting role; a Guardian verdict for `RECORD_SENSITIVITY` on the edge; never an APPROVED or DEPRECATED edge (409) |

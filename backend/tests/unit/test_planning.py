@@ -18,8 +18,8 @@ import pytest
 
 from src.orchestration import planning
 from src.orchestration.graph import (
+    compile_platform_graph,
     route_after_cynefin,
-    route_after_disorder,
     route_after_plan_ahead,
 )
 from src.orchestration.planning import (
@@ -398,9 +398,31 @@ def test_route_after_plan_ahead_ignores_flags_a_resumed_session_carries() -> Non
 
 def test_disorder_is_retried_once_then_escalated() -> None:
     """DisorderProtocol re-classifies once (AGENTS.md §5.1); a second DISORDER escalates."""
+    state = {"epistemic": _make_epistemic_state(), "disorder_retries": 0}
+    assert route_after_cynefin(state) == "disorder_protocol"  # type: ignore[arg-type]
     state = {"epistemic": _make_epistemic_state(), "disorder_retries": 1}
-    assert route_after_disorder(state) == "cynefin_classify"  # type: ignore[arg-type]
     assert route_after_cynefin(state) == "escalate_human"  # type: ignore[arg-type]
+
+
+async def test_unclassifiable_run_is_reclassified_once_then_escalated(
+    db_engine: object,
+) -> None:
+    """Through the compiled graph: one retry, then EscalateHuman says why (septa-80).
+
+    Preconditions: a description with no keyword the classifier knows (DISORDER).
+    Postconditions (graph.py docstring, AGENTS.md §5.1): DisorderProtocol runs once
+    and goes back to CynefinClassify; the second DISORDER escalates with reason
+    disorder_unresolved, and the run ends at GuardianCheck -> Output.
+    """
+    state = _make_epistemic_state().model_copy(update={"cynefin_domain": "DISORDER"})
+    result = await compile_platform_graph().ainvoke(
+        {"epistemic": state, "disorder_retries": 0, "description": "the dashboard looks odd"}
+    )
+    flags = result["epistemic"].flags
+    assert result["disorder_retries"] == 1
+    assert [f for f in flags if f.startswith("disorder_retry_")] == ["disorder_retry_1"]
+    assert "escalation:disorder_unresolved" in flags
+    assert "pipeline_complete" in flags
 
 
 async def test_plan_with_approved_fragment() -> None:

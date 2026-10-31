@@ -32,7 +32,7 @@ print(explain(d, out))
 ```
 
 ```text
-ACT: Act: apply remediation playbook X. The estimate is -8.899 on minutes (95% CI -9.495 to
+ACT: Go ahead: apply remediation playbook X. The estimate is -8.899 on minutes (95% CI -9.495 to
 -8.303, n = 4000, estimator aipw), read as a benefit of 8.303 to 9.495 in the requested
 direction (decrease).
 

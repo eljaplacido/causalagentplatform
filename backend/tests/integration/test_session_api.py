@@ -16,7 +16,7 @@ Invariants tested:
   3.  POST /run produces a well-formed SessionStateResponse
   4.  GET /{id}/state returns 200 for a previously cached session
   5.  GET /unknown-id/state returns 404
-  6.  Resuming an existing session_id produces a higher cycle_count
+  6.  Resuming an existing session_id starts a fresh run: nothing accumulates
   7.  Missing Authorization header returns 401
   8.  All required response fields are present and have correct types
   9.  POST /run with a CHAOTIC description short-circuits with no edges
@@ -248,42 +248,46 @@ async def test_get_unknown_session_returns_404(auth_client: AsyncClient) -> None
     assert response.status_code == 404, response.text
 
 
-# ── 6. Resume session → cycle_count increases ─────────────────────────────────
+# ── 6. Resume session → a fresh run, nothing accumulates ──────────────────────
 
 
-async def test_resume_session_increases_cycle_count(auth_client: AsyncClient) -> None:
+async def test_resumed_session_does_not_accumulate(auth_client: AsyncClient) -> None:
     """
-    Providing the same session_id on a second POST /run must resume the
-    cached session.  The cycle_count must be higher in the second response.
+    Resuming a session (same session_id) runs the graph afresh on the session's
+    context; it does not pile one run's outputs onto the last (septa-80).
 
-    This validates the in-process session cache and state continuation contract.
+    Preconditions: the same COMPLICATED description, run once and resumed past
+    the circuit breaker's limit (MAX_CYCLES = 5 runs).
+    Postconditions: every run has the first run's cycle count, recommendation
+    count and flags (no flag twice), and none is escalated by PR-005 or stopped
+    by the circuit breaker. It used to be: the cycle count grew by one per run,
+    flags and recommendations were appended to the last run's, and the fifth
+    resume tripped PR-005.
+    Undefined: the verdict itself, beyond not being PR-005's.
+
+    (This test replaced test_resume_session_increases_cycle_count, which asserted
+    the accumulation as the contract.)
     """
     description = "deployment latency timeout cpu"
 
-    # First run — creates new session
-    first_resp = await auth_client.post(
-        "/api/v1/session/run",
-        json=_run_body(description),
-    )
+    first_resp = await auth_client.post("/api/v1/session/run", json=_run_body(description))
     assert first_resp.status_code == 200
-    first_data = first_resp.json()
-    session_id = first_data["session_id"]
-    cycle_after_first = first_data["cycle_count"]
+    first = first_resp.json()
+    session_id = first["session_id"]
+    assert len(first["flags"]) == len(set(first["flags"])), first["flags"]
 
-    # Second run — resumes the same session
-    second_resp = await auth_client.post(
-        "/api/v1/session/run",
-        json=_run_body(description, session_id=session_id),
-    )
-    assert second_resp.status_code == 200
-    second_data = second_resp.json()
-
-    assert second_data["session_id"] == session_id, (
-        "Resumed session must carry the same session_id"
-    )
-    assert second_data["cycle_count"] > cycle_after_first, (
-        "Resumed session must have a higher cycle_count than the first run"
-    )
+    for _ in range(6):
+        resp = await auth_client.post(
+            "/api/v1/session/run", json=_run_body(description, session_id=session_id)
+        )
+        assert resp.status_code == 200, resp.text
+        run = resp.json()
+        assert run["session_id"] == session_id
+        assert run["cycle_count"] == first["cycle_count"]
+        assert run["recommendation_count"] == first["recommendation_count"]
+        assert run["flags"] == first["flags"]
+        assert "PR-005" not in run["policy_rules_cited"]
+        assert "circuit_breaker_open" not in run["flags"]
 
 
 # ── 7. Missing Authorization → 401 ────────────────────────────────────────────

@@ -120,7 +120,7 @@ export const RECORD_ACT: DecisionRecordResponse = {
         "detail": "interval width is 0.13x the effect (limit 1.00x)"
       }
     ],
-    "rationale": "Act: adopt the incident playbook. The estimate is ⟦claim:effect⟧ on minutes (⟦claim:ci.level⟧ CI ⟦claim:effect.ci.lo⟧ to ⟦claim:effect.ci.hi⟧, n = ⟦claim:n⟧, estimator aipw), read as a benefit of 8.515 to 9.677 in the requested direction (decrease).",
+    "rationale": "Go ahead: adopt the incident playbook. The estimate is ⟦claim:effect⟧ on minutes (⟦claim:ci.level⟧ CI ⟦claim:effect.ci.lo⟧ to ⟦claim:effect.ci.hi⟧, n = ⟦claim:n⟧, estimator aipw), read as a benefit of 8.515 to 9.677 in the requested direction (decrease).",
     "experiment": null,
     "what_would_change_it": [],
     "policy_digest": "sha256:e9a67b273e75d454e30b3a380415e765c2573cb1d07650d4359c3147c675e8eb",
