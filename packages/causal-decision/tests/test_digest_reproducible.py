@@ -77,9 +77,11 @@ request = DecisionRequest(action="ship x", outcome="y", direction="increase",
                           minimum_worthwhile_effect=1.0, harm_threshold=0.0)
 d = decide(out, request)
 rec = append(None, d, out, recorded_at="2026-10-31T00:00:00+00:00")
+# The same decision sealed as a shadow one (septa-95): its tag is in the record.
+shadow = append(None, d, out, recorded_at="2026-10-31T00:00:00+00:00", shadow="S-089")
 print(json.dumps({"point": out.primary.point, "verdict": d.verdict.value,
                   "result": out.result_digest, "decision": d.decision_digest,
-                  "entry": rec.entry_digest}))
+                  "entry": rec.entry_digest, "shadow_entry": shadow.entry_digest}))
 """.replace("TRUE_EFFECT", repr(TRUE_EFFECT))
 
 
@@ -101,7 +103,7 @@ def run(threads: int, hash_seed: str, defect: str = "") -> dict[str, object]:
 
 
 def digests(r: dict[str, object]) -> tuple[object, ...]:
-    return r["result"], r["decision"], r["entry"]
+    return r["result"], r["decision"], r["entry"], r["shadow_entry"]
 
 
 #: (threads, hash seed): every thread count the bead names, each with a different seed,
@@ -127,6 +129,17 @@ def test_the_digested_decision_is_about_the_effect_the_model_sets(
     r = pinned_runs[RUNS[0]]
     assert abs(float(r["point"]) - TRUE_EFFECT) < 0.05  # type: ignore[arg-type]
     assert r["verdict"] == "act"
+
+
+def test_a_shadow_record_reproduces_too_and_its_tag_is_sealed(
+    pinned_runs: dict[tuple[int, str], dict[str, object]],
+) -> None:
+    """The shadow tag (septa-95) is part of the entry digest, so a shadow record of the
+    same decision has an entry digest of its own -- and reproduces like the real one
+    (the first test compares it across every run). An absent tag is left out of the
+    sealed record, so it cannot move a real record's digest."""
+    r = pinned_runs[RUNS[0]]
+    assert r["shadow_entry"] != r["entry"]
 
 
 def test_negative_control_unpinned_blas_moves_the_digest_with_the_thread_count() -> None:
