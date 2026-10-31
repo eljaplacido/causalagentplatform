@@ -201,7 +201,8 @@ describe("IncidentsPage — intervention decisions", () => {
 // the severity the page sent (P0-P3) and interventions shaped by
 // session.py _persist_incident: id, title, description, confidence, riskTier,
 // guardianVerdict, rank -- no effect estimate. Rows written by
-// backend/scripts/seed_data.py carry SEV1-SEV4. After a human decision the
+// backend/scripts/seed_data.py carry P0-P3 since septa-84; a database seeded
+// before that still holds SEV1-SEV4 rows. After a human decision the
 // list endpoint adds humanDecision beside the Guardian's guardianVerdict.
 // POST /api/v1/session/incident returns IncidentSessionResponse, whose
 // recommendations carry no effect estimate either, and whose `stored` says
@@ -255,7 +256,7 @@ describe("IncidentsPage — renders stored incidents as the backend stores them"
     expect(await screen.findByTestId("incident-severity")).toHaveTextContent("P1");
   });
 
-  it("renders a seeded incident whose severity is SEV1 in the same P0-P3 vocabulary", async () => {
+  it("renders an incident seeded before septa-84, severity SEV1, in the same P0-P3 vocabulary", async () => {
     incidentsApiMock.list.mockResolvedValue([
       { ...makeRecord({ guardianVerdict: "APPROVED" }), severity: "SEV1" },
     ]);
