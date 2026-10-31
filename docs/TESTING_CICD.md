@@ -437,8 +437,11 @@ the two base images. How they are handled:
 - **Majors are ledger items.** A semver-major is ignored by the bot, in pyprojects and in npm
   alike: each needs its own migration and review, and a round of npm majors once held every CI
   runner (#32-#36). A major is taken as a ledger item that records what it needs (next and
-  eslint-config-next 16: septa-57; TypeScript 7: septa-58; the npm majors round: septa-82). The node base image stays on an LTS
-  line; the rule ignoring newer lines names septa-59.
+  eslint-config-next 16: septa-57; TypeScript 7: septa-58; the npm majors round: septa-82). TypeScript
+  is on two majors on purpose: 7 in `frontend/` (tsc, and next 16's build through TS 7's CLI), 6 at
+  the root and in `packages/semantic-types` for the tools that import its JS API, which 7 does not
+  ship (typescript-eslint, tsup's dts build). The node base image stays on an LTS line (26 since
+  septa-59); the rule ignoring newer lines names septa-59.
 - **Pins the ratchets depend on are never moved by the bot.** ruff, mypy, bandit and pip-audit
   are pinned to a minor because the lint and security ratchets (§4) count findings per version.
   The pyproject blocks ignore them entirely. Moving one is done by hand, with the baseline
