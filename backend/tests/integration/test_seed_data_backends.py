@@ -278,7 +278,7 @@ def test_prepare_schema_creates_nothing_outside_local(monkeypatch: pytest.Monkey
     assert seed_data.prepare_schema() is False
 
 
-# ── The seeder's schema includes the drift-alert record (merge train #100 + #102) ──
+# ── The seeder's schema includes the drift-alert record (merge train #101 + #103) ──
 #
 # Preconditions: ENV=local, a brand-new SQLITE_PATH that only the seeder has touched
 # (prepare_schema, septa-110, is what created its schema).
