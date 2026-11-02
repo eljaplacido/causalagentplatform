@@ -51,19 +51,19 @@
         "specs"
       ],
       "baseline": {
-        "on": "2026-10-31",
+        "on": "2026-11-02",
         "sha256": {
           "conformance/declared_not_implemented.json": "12b29435016e57e37064a3e4ffe0f474cf275ed153ab783aba5b32d6b77e7aca",
           "backend/src": "416f8f6af2b48a52e5b7ce3c3d3bc3cd6f0f2ea34804dbaa139c8b3cd3ef4732",
-          "backend/tests": "f01b22c9d55481abdb2713dd13803ad59cdcdc0a63dc80e090ddf4f77feb6aba",
+          "backend/tests": "62e4e3d876f06e89c344901c7830ed96d197df9eb6c7641c5ab49f67ee4936c0",
           "frontend/src": "9ae3cdee608d082d1cdc5c6757f3b6a2fe17c709802e735cddfd59d487735c9a",
           "packages": "776a105208fa2c9b739b09ab3589d41e453fc6ebc937de3bbd7b0f48574309c0",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
-        "on": "2026-10-31",
-        "by": "Claude (merge train): link 4 = semantic-surface + links 1-3 merged; re-read AGENTS (drift_alerts SQL record beside the single-analysis incident run and per-intervention verdicts), QUICKSTART's seeder paragraph (its init_db schema now includes drift_alerts; pinned by test_a_database_only_the_seeder_built_records_drift_alerts), UIX (governance review panel and incidents page), TESTING_CICD, CURRENT_STAGE/ROADMAP register rows and README's status pointers; claims hold"
+        "on": "2026-11-02",
+        "by": "Claude (merge train renumber, 2026-11-02): only a test comment changed in backend/tests (planned PR numbers #100+#102 -> #101+#103); re-read the drift-alert and seeder-test passages, claims hold"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -306,10 +306,10 @@
         "packages/causal-decision/tests"
       ],
       "baseline": {
-        "on": "2026-10-31",
+        "on": "2026-11-02",
         "sha256": {
           ".github/workflows": "dda91d5921d692ddf3c2cb61ede9c6cf00b576478eda4736820ea0a442099d80",
-          "backend/tests": "f01b22c9d55481abdb2713dd13803ad59cdcdc0a63dc80e090ddf4f77feb6aba",
+          "backend/tests": "62e4e3d876f06e89c344901c7830ed96d197df9eb6c7641c5ab49f67ee4936c0",
           "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5dc65a49d6975444738042f9c292b56050a932ed23932e45498fbcea6285ff3e",
@@ -322,8 +322,8 @@
         }
       },
       "last_read": {
-        "on": "2026-10-31",
-        "by": "Claude (merge train): link 4 = semantic-surface + links 1-3 merged; re-read AGENTS (drift_alerts SQL record beside the single-analysis incident run and per-intervention verdicts), QUICKSTART's seeder paragraph (its init_db schema now includes drift_alerts; pinned by test_a_database_only_the_seeder_built_records_drift_alerts), UIX (governance review panel and incidents page), TESTING_CICD, CURRENT_STAGE/ROADMAP register rows and README's status pointers; claims hold"
+        "on": "2026-11-02",
+        "by": "Claude (merge train renumber, 2026-11-02): only a test comment changed in backend/tests (planned PR numbers #100+#102 -> #101+#103); re-read the drift-alert and seeder-test passages, claims hold"
       }
     },
     "docs/UIX.md": {
