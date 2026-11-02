@@ -51,19 +51,19 @@
         "specs"
       ],
       "baseline": {
-        "on": "2026-10-31",
+        "on": "2026-11-02",
         "sha256": {
           "conformance/declared_not_implemented.json": "3fb427123b1a9ddcac2bd3606cedf673ed2cd52fea60d5d7a5e38bf6cbca094a",
           "backend/src": "783f26b65a502b14052c9550cb1b1ca2f6e4b626140c1d8859a1f27dda748a95",
-          "backend/tests": "3f32c2ff51f700489d4092776a8cfd49200d72bfe98ba2e6bf294fe789043cec",
+          "backend/tests": "517445af1871784d79d5f4ab139e35c3fd5511491d5fa3af01d9e314bb5ac0a5",
           "frontend/src": "12507553edb66ff362fc88e8a63d0b4e7bdb677bf8f3a2bb207574324a2b0834",
           "packages": "3ee2e575cec950e1e1042cf56f1a1d835b82d1b4b1b9accb8bb8d48228c19fb5",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
-        "on": "2026-10-31",
-        "by": "Claude (merge train): link 6 = digest-reproducible + links 1-5 merged; locks re-made on the merged tree (threadpoolctl 3.7.0 in backend/image/release; release.in floors opentelemetry-api>=1.45.1, now 1.45.2); re-read the CI/release workflow passages (BLAS thread env beside link 1's node 26 changes) in TESTING_CICD, CYBERSECURITY and ORCHESTRATION, CURRENT_STAGE's digest row, ROADMAP and README pointers; test_digest_reproducible now also seals a shadow record; claims hold"
+        "on": "2026-11-02",
+        "by": "Claude (merge train renumber, 2026-11-02): only a test comment changed in backend/tests (planned PR numbers #100+#102 -> #101+#103); re-read the drift-alert and seeder-test passages, claims hold"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -306,10 +306,10 @@
         "packages/causal-decision/tests"
       ],
       "baseline": {
-        "on": "2026-10-31",
+        "on": "2026-11-02",
         "sha256": {
           ".github/workflows": "0f689efe7d76845c07b001243e615c2361cccf2a102846bf6b75a4eb2ff507e0",
-          "backend/tests": "3f32c2ff51f700489d4092776a8cfd49200d72bfe98ba2e6bf294fe789043cec",
+          "backend/tests": "517445af1871784d79d5f4ab139e35c3fd5511491d5fa3af01d9e314bb5ac0a5",
           "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5dc65a49d6975444738042f9c292b56050a932ed23932e45498fbcea6285ff3e",
@@ -322,8 +322,8 @@
         }
       },
       "last_read": {
-        "on": "2026-10-31",
-        "by": "Claude (merge train): link 6 = digest-reproducible + links 1-5 merged; locks re-made on the merged tree (threadpoolctl 3.7.0 in backend/image/release; release.in floors opentelemetry-api>=1.45.1, now 1.45.2); re-read the CI/release workflow passages (BLAS thread env beside link 1's node 26 changes) in TESTING_CICD, CYBERSECURITY and ORCHESTRATION, CURRENT_STAGE's digest row, ROADMAP and README pointers; test_digest_reproducible now also seals a shadow record; claims hold"
+        "on": "2026-11-02",
+        "by": "Claude (merge train renumber, 2026-11-02): only a test comment changed in backend/tests (planned PR numbers #100+#102 -> #101+#103); re-read the drift-alert and seeder-test passages, claims hold"
       }
     },
     "docs/UIX.md": {
