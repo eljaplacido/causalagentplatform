@@ -18,8 +18,8 @@
 # enforced by the tool list, not by asking the model nicely.
 
 [roles.coordinator]
-model = "qwen3.6:35b"
-endpoint = "local"
+model = "beam-free"
+endpoint = "go"
 temperature = 0.2
 top_p = 0.9
 max_steps = 20
@@ -59,8 +59,8 @@ write_allow = ["docs/**", "specs/**", "conformance/**", "benchmarks/**/PRE-REGIS
 description = "Intent and contracts: turns a request into a spec, a contract, or a declared_not_implemented entry"
 
 [roles.implementor]
-model = "qwen3.6:35b"
-endpoint = "local"
+model = "beam-free"
+endpoint = "go"
 temperature = 0.3
 top_p = 0.95
 max_steps = 32
@@ -112,8 +112,8 @@ bash_deny = [
 description = "Tests first (against a known ground truth for any causal number), then the code that satisfies them"
 
 [roles.verifier]
-model = "qwen3.6:35b"
-endpoint = "local"
+model = "beam-free"
+endpoint = "go"
 temperature = 0.1
 top_p = 0.9
 max_steps = 20
@@ -200,8 +200,8 @@ description = "Runs .gnomon/ci.sh and reports what it measured. Cannot edit what
 # added, not a live limit) and the same MCP servers.
 
 [roles.plan]
-model = "qwen3.6:35b"
-endpoint = "local"
+model = "glm-5.3"
+endpoint = "go"
 temperature = 0.2
 top_p = 0.9
 max_steps = 20
@@ -235,8 +235,8 @@ bash_deny = [
 description = "Hardest reasoning, lowest call volume"
 
 [roles.implement]
-model = "qwen3.6:35b"
-endpoint = "local"
+model = "deepseek-v4.1-flash"
+endpoint = "go"
 temperature = 0.3
 top_p = 0.95
 max_steps = 28
@@ -272,7 +272,7 @@ bash_deny = [
 description = "Highest token volume — where local hosting pays off"
 
 [roles.critique]
-model = "qwen3.6:35b"
+model = "qwen3.6-35b"
 endpoint = "local"
 temperature = 0.1
 top_p = 0.9
@@ -306,7 +306,7 @@ bash_deny = [
 description = "Must not share context with the implementer"
 
 [roles.smol]
-model = "qwen2.5:7b-instruct"
+model = "qwen3.6-35b"
 endpoint = "local"
 temperature = 0.2
 top_p = 0.95
