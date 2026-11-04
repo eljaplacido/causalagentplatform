@@ -19,7 +19,7 @@ from contextlib import contextmanager
 from typing import Any
 from unittest import mock
 
-from causal_core.contract import CausalResult, ResultStatus
+from causal_core.contract import AbstentionReason, CausalResult, ResultStatus
 
 import causal_decision.policy as policy_mod
 from causal_decision.contract import (
@@ -159,6 +159,37 @@ def ignore_llm_edges() -> Iterator[None]:
         yield
 
 
+@contextmanager
+def constant_treatment_refused() -> Iterator[None]:
+    """A treatment that never varied is read as a broken design no experiment resolves (v5)."""
+    narrower = policy_mod.EXPERIMENTABLE - {AbstentionReason.NO_VARIATION}
+    with mock.patch.object(policy_mod, "EXPERIMENTABLE", narrower):
+        yield
+
+
+@contextmanager
+def every_design_failure_testable() -> Iterator[None]:
+    """The over-broad fix: every failed design check is treated as experimentable (v5)."""
+    wider = policy_mod.EXPERIMENTABLE | {AbstentionReason.DESIGN_CHECK_FAILED}
+    with mock.patch.object(policy_mod, "EXPERIMENTABLE", wider):
+        yield
+
+
+@contextmanager
+def ignore_population() -> Iterator[None]:
+    """Where the evidence comes from is not compared with where the action applies (v5)."""
+    with mock.patch.object(policy_mod, "_population_check", lambda ev, request: None):
+        yield
+
+
+@contextmanager
+def unpaired_sizing() -> Iterator[None]:
+    """Paired evidence is sized as independent units (v5)."""
+    with mock.patch.object(policy_mod, "_paired_pairs",
+                           lambda paired, mde, policy: (None, None, "")):
+        yield
+
+
 DEFECTS: dict[str, Callable[[], Any]] = {
     "ignore_reversibility": ignore_reversibility,
     "ignore_risk_class": ignore_risk_class,
@@ -169,4 +200,8 @@ DEFECTS: dict[str, Callable[[], Any]] = {
     "ignore_segments": ignore_segments,
     "ignore_trend_breakdown": ignore_trend_breakdown,
     "ignore_llm_edges": ignore_llm_edges,
+    "constant_treatment_refused": constant_treatment_refused,
+    "every_design_failure_testable": every_design_failure_testable,
+    "ignore_population": ignore_population,
+    "unpaired_sizing": unpaired_sizing,
 }
