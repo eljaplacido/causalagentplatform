@@ -185,6 +185,7 @@ data, the metric, the pass threshold and the seeded defects the suite must catch
 | T8: switchback designs | [`benchmarks/t8-switchback/PRE-REGISTRATION.md`](../benchmarks/t8-switchback/PRE-REGISTRATION.md) | `causal_core.cluster`, through `causal_core.analyze` | Every PR (`pytest -m t8`) |
 | T9: Rosenbaum sensitivity | [`benchmarks/t9-rosenbaum/PRE-REGISTRATION.md`](../benchmarks/t9-rosenbaum/PRE-REGISTRATION.md) | `causal_core.sensitivity`, directly and through `causal_core.analyze` | Every PR (`pytest -m t9`) |
 | T10: positivity and overlap | [`benchmarks/t10-positivity/PRE-REGISTRATION.md`](../benchmarks/t10-positivity/PRE-REGISTRATION.md) | `causal_core.design` and `causal_core.overlap`, through `causal_core.analyze` | Every PR (`pytest -m t10`) |
+| T11: blocked and paired designs | [`benchmarks/t11-blocked/PRE-REGISTRATION.md`](../benchmarks/t11-blocked/PRE-REGISTRATION.md) | `causal_core.blocked`, through `causal_core.analyze` | Every PR (`pytest -m t11`) |
 | D0: the decision procedure | [`benchmarks/d0-decision-policy/PRE-REGISTRATION.md`](../benchmarks/d0-decision-policy/PRE-REGISTRATION.md) | `causal_decision.decide` | Every PR (`pytest -m d0` in `packages/causal-decision`) |
 | A0: whether a graph revision invalidates an estimate | [`benchmarks/a0-assumption-impact/PRE-REGISTRATION.md`](../benchmarks/a0-assumption-impact/PRE-REGISTRATION.md) | `causal_decision.assumptions.impact` | Every PR (`pytest -m a0` in `packages/causal-decision`) |
 | C0: whether the calibration report is honest about what follow-ups can say (simulated streams) | [`benchmarks/c0-calibration/PRE-REGISTRATION.md`](../benchmarks/c0-calibration/PRE-REGISTRATION.md) | `causal_decision.outcome.report` | Every PR (`pytest -m c0` in `packages/causal-decision`) |
@@ -200,7 +201,7 @@ the registration requires recorded as caught, fails the test. Failing runs stay 
 commit of the checkout its code was imported from, not the working directory's.
 
 The seeded-defect tests (`tests/t0/test_seeded_defects.py`, `tests/t4/…`, `tests/t5/…`, `tests/t6/…`, `tests/t7/…`, `tests/t8/…`,
-`tests/t9/…`, `tests/t10/…`, `tests/d0/…`, `tests/a0/…`, `tests/c0/…`) break the system under test on purpose and assert that the gate fails. A gate that cannot see a
+`tests/t9/…`, `tests/t10/…`, `tests/t11/…`, `tests/d0/…`, `tests/a0/…`, `tests/c0/…`) break the system under test on purpose and assert that the gate fails. A gate that cannot see a
 known defect does not count as a gate. The benchmark results, and the limits they found, are on
 the register (for example `kernel-overlap-detection-limits`), and leave it only when a gate closes them
 (`kernel-triangulation-moderate-n`, closed by T0 v4).

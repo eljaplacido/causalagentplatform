@@ -8,7 +8,7 @@
     "contract_version."
   ],
   "card_version": 1,
-  "contract_version": "0.14.0",
+  "contract_version": "0.15.0",
   "question": "Did this action cause that result, and should we take it? The answer is an estimate with an honest interval and a verdict, or a refusal that says what is missing.",
   "inputs": {
     "graph": "A cause-and-effect sketch in the kernel's syntax: 'Z -> X -> Y; Z -> Y'. 'X <-> Y' is an unmeasured common cause, and 'latent U' declares an unmeasured node. A graph node with no data column is treated as unmeasured. Mark an edge a language model proposed: 'Z -> Y [origin=llm_prior]'. Until a person reviews it ('status=approved'), the verdict is at most experiment, or act_with_approval when the action cannot be randomized.",
@@ -25,7 +25,7 @@
       "query": {"design": "observational", "required": ["treatment", "outcome"], "optional": ["estimand", "adjust_for", "instruments", "treatment_proxies", "outcome_proxies", "negative_control_outcomes", "treatment_levels", "segment_by"]},
       "data_shape": "One row per unit: the treatment, the outcome, and a column for every measured graph node that drives both.",
       "how": "The kernel identifies the effect from the graph (back-door, front-door, instrumental variable or proximal), estimates it with doubly robust estimators and influence-function intervals, then refutes and triangulates.",
-      "expect_refusals": ["NON_IDENTIFIABLE", "POSITIVITY", "INVALID_ADJUSTMENT_SET", "WEAK_INSTRUMENT", "LOW_N", "NO_ESTIMATOR"],
+      "expect_refusals": ["NON_IDENTIFIABLE", "POSITIVITY", "INVALID_ADJUSTMENT_SET", "WEAK_INSTRUMENT", "LOW_N", "NO_ESTIMATOR", "NO_VARIATION"],
       "gates": ["t0", "t2-ihdp", "t3-lalonde", "t10-positivity"],
       "trust": "Rests on the graph: an unmeasured common cause missing from it biases the answer. The sensitivity checks below say how strong one would have to be."
     },
@@ -37,9 +37,21 @@
       "query": {"design": "randomized", "required": ["treatment", "outcome"], "optional": ["estimand", "segment_by", "expected_treated_share"]},
       "data_shape": "One row per unit: assignment and outcome; pre-treatment covariates sharpen the interval.",
       "how": "Randomization identifies the effect; covariates are used only for precision.",
-      "expect_refusals": ["LOW_N", "DESIGN_CHECK_FAILED"],
+      "expect_refusals": ["LOW_N", "DESIGN_CHECK_FAILED", "NO_VARIATION"],
       "gates": ["t0"],
       "trust": "Strongest design. A broken traffic split (sample-ratio mismatch) is refused when expected_treated_share is given."
+    },
+    {
+      "id": "paired",
+      "name": "The same task under both arms",
+      "when": "Each task, case or customer was run (or matched) once with the action and once without, the arm assigned at random within the pair or block.",
+      "example": "Benchmark tasks each run with and without a harness change; solved or not.",
+      "query": {"design": "randomized", "required": ["treatment", "outcome", "block"], "optional": ["negative_control_outcomes"]},
+      "data_shape": "One row per run: the block (pair) id, treatment and outcome; both arms in every block (policy.missing='drop' leaves out blocks with one arm, counted).",
+      "how": "Within-block differences averaged by block size, blocks as the independent observations, t(K - 1). A solved/failed outcome in pairs gets an interval consistent with McNemar's test, with the discordant pairs and the exact McNemar p-value beside it. The decision layer sizes a paired follow-up from the observed discordance.",
+      "expect_refusals": ["NO_VARIATION", "DESIGN_CHECK_FAILED", "LOW_N"],
+      "gates": ["t11-blocked"],
+      "trust": "As strong as randomization within the pairs; much narrower than an unpaired analysis when pairs agree often. At least 10 complete blocks."
     },
     {
       "id": "sequential",
@@ -116,6 +128,14 @@
       "gates": ["t10-positivity"]
     },
     {
+      "id": "population",
+      "name": "Is this evidence about the population we would act on?",
+      "query_fields": ["population", "target_population"],
+      "what": "Declared, not implemented: the kernel has no transport analysis. A result measured on one population (a local lane) with a declared target (a hosted lane) says it was not transported, and the decision layer caps the verdict at experiment, to be run in the target.",
+      "example": "A harness change tested on a local model, proposed for hosted endpoints.",
+      "gates": ["d0-decision-policy"]
+    },
+    {
       "id": "assumption_impact",
       "name": "Which earlier answers a revised graph breaks",
       "query_fields": [],
@@ -138,7 +158,8 @@
     "LOW_N": "Too few rows, or too few in one arm.",
     "UNAPPROVED_ASSUMPTION": "The answer would rest on a graph edge nobody has reviewed.",
     "CI_TOO_WIDE": "The interval is too wide to say anything useful.",
-    "DESIGN_CHECK_FAILED": "The design's own check failed: a broken traffic split, everyone treated, treatment varying within a cluster.",
+    "DESIGN_CHECK_FAILED": "The design's own check failed: a broken traffic split, missing values, treatment varying within a cluster, a block with only one arm. More of the same data would not repair it.",
+    "NO_VARIATION": "The treatment took one value in every row (a lever nobody has tried, or everyone treated): nothing to compare. An experiment that sets it answers this; the decision layer returns one, sized from the outcome's spread.",
     "RUNG_MISMATCH": "The question asks for something other than the effect of an intervention (an association, or a single unit's counterfactual).",
     "INVALID_ADJUSTMENT_SET": "A user-chosen adjust_for set is not valid in the graph.",
     "WEAK_INSTRUMENT": "The instrument barely moves the treatment.",
@@ -159,6 +180,7 @@
     "Effects that spill between units (neighbouring stores, friends).",
     "Searching for the subgroups an effect differs across; only declared segments are tested.",
     "DiD with anticipation windows, repeated cross-sections or time-varying covariates.",
-    "Drift monitoring and plan simulation: promised in docs, not built."
+    "Drift monitoring and plan simulation: promised in docs, not built.",
+    "Transporting an effect from one population to another (a local lane to a hosted lane): a declared target population is stated on the result, and the verdict says not transported."
   ]
 }

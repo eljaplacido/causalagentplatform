@@ -1,0 +1,244 @@
+{
+  "suite": "D0",
+  "prereg_sha256": "sha256:f9d06afbaf709f7bd92096c44343b3108f47d80ecf4bcbcc4aa7da5a2b3d4d80",
+  "prereg_version": 5,
+  "git": "5c81f2d449c3003abd3c674addd77e2d7a9bcb06",
+  "table": [
+    {
+      "id": "strong_effect_low_risk",
+      "expected": "act",
+      "got": "act",
+      "passed": true,
+      "why": "a precise, supported, robust effect well past the bar, on a reversible low-risk action"
+    },
+    {
+      "id": "strong_effect_medium_risk",
+      "expected": "act",
+      "got": "act",
+      "passed": true,
+      "why": "the same evidence clears the stricter medium-risk rule"
+    },
+    {
+      "id": "strong_effect_high_risk",
+      "expected": "act_with_approval",
+      "got": "act_with_approval",
+      "passed": true,
+      "why": "high risk always goes to a person, however good the evidence"
+    },
+    {
+      "id": "strong_effect_irreversible",
+      "expected": "act_with_approval",
+      "got": "act_with_approval",
+      "passed": true,
+      "why": "an irreversible action is never automated"
+    },
+    {
+      "id": "effect_below_bar",
+      "expected": "refuse",
+      "got": "refuse",
+      "passed": true,
+      "why": "the whole interval lies below what would make acting worthwhile: do nothing"
+    },
+    {
+      "id": "uncertain_worth",
+      "expected": "experiment",
+      "got": "experiment",
+      "passed": true,
+      "why": "the interval straddles the bar: the evidence cannot say whether it is worth acting"
+    },
+    {
+      "id": "contested_result",
+      "expected": "experiment",
+      "got": "experiment",
+      "passed": true,
+      "why": "a negative control fired: the design is contested, so test it rather than trust it"
+    },
+    {
+      "id": "provisional_graph",
+      "expected": "experiment",
+      "got": "experiment",
+      "passed": true,
+      "why": "an unreviewed LLM-proposed edge: the estimate rests on a guessed graph, and a randomized test does not"
+    },
+    {
+      "id": "provisional_graph_cannot_test",
+      "expected": "act_with_approval",
+      "got": "act_with_approval",
+      "passed": true,
+      "why": "the same guessed graph, and no experiment possible: a person decides"
+    },
+    {
+      "id": "provisional_human_edge",
+      "expected": "act_with_approval",
+      "got": "act_with_approval",
+      "passed": true,
+      "why": "a person's unreviewed edge: provisional, so a person reviews before acting"
+    },
+    {
+      "id": "reviewed_llm_edge",
+      "expected": "act",
+      "got": "act",
+      "passed": true,
+      "why": "the LLM's edge after review: nothing caps strong evidence"
+    },
+    {
+      "id": "identified_only_by_iv",
+      "expected": "act_with_approval",
+      "got": "act_with_approval",
+      "passed": true,
+      "why": "tier B: identification rests on assumptions the graph cannot state"
+    },
+    {
+      "id": "not_identified_can_test",
+      "expected": "experiment",
+      "got": "experiment",
+      "passed": true,
+      "why": "nothing in the data identifies the effect, but the action can be randomized"
+    },
+    {
+      "id": "not_identified_cannot_test",
+      "expected": "refuse",
+      "got": "refuse",
+      "passed": true,
+      "why": "no identification and no experiment: there is nothing to act on"
+    },
+    {
+      "id": "no_overlap_can_test",
+      "expected": "experiment",
+      "got": "experiment",
+      "passed": true,
+      "why": "load decides the playbook outright, so only an experiment separates them"
+    },
+    {
+      "id": "broken_question",
+      "expected": "refuse",
+      "got": "refuse",
+      "passed": true,
+      "why": "a counterfactual question this kernel does not answer: fix the question"
+    },
+    {
+      "id": "unreviewed_assumptions",
+      "expected": "refuse",
+      "got": "refuse",
+      "passed": true,
+      "why": "the analysis refused for a reason no experiment resolves"
+    },
+    {
+      "id": "analysis_failed",
+      "expected": "refuse",
+      "got": "refuse",
+      "passed": true,
+      "why": "the apparatus failed, so there is no evidence either way"
+    },
+    {
+      "id": "harmed_segment",
+      "expected": "refuse",
+      "got": "refuse",
+      "passed": true,
+      "why": "pooled, every check passes; a declared segment is still made materially worse"
+    },
+    {
+      "id": "uniform_segments",
+      "expected": "act",
+      "got": "act",
+      "passed": true,
+      "why": "declared segments that agree cap nothing"
+    },
+    {
+      "id": "did_robust_to_trends",
+      "expected": "act_with_approval",
+      "got": "act_with_approval",
+      "passed": true,
+      "why": "robust to large trend violations, but tier C never automates"
+    },
+    {
+      "id": "did_fragile_to_trends",
+      "expected": "experiment",
+      "got": "experiment",
+      "passed": true,
+      "why": "a violation smaller than the pre-adoption ones would reach zero"
+    },
+    {
+      "id": "never_varied_can_test",
+      "expected": "experiment",
+      "got": "experiment",
+      "passed": true,
+      "why": "a lever nobody has tried: an experiment is exactly what settles it"
+    },
+    {
+      "id": "never_varied_cannot_test",
+      "expected": "refuse",
+      "got": "refuse",
+      "passed": true,
+      "why": "never tried and cannot be tried: nothing to act on"
+    },
+    {
+      "id": "sample_ratio_mismatch",
+      "expected": "refuse",
+      "got": "refuse",
+      "passed": true,
+      "why": "a broken assignment: more of the same pipeline would not repair it"
+    },
+    {
+      "id": "other_population",
+      "expected": "experiment",
+      "got": "experiment",
+      "passed": true,
+      "why": "strong evidence from cluster A is not evidence about cluster B: not transported"
+    },
+    {
+      "id": "other_population_cannot_test",
+      "expected": "act_with_approval",
+      "got": "act_with_approval",
+      "passed": true,
+      "why": "not transported, and no experiment possible: a person decides"
+    },
+    {
+      "id": "same_population",
+      "expected": "act",
+      "got": "act",
+      "passed": true,
+      "why": "evidence from the population the action targets: naming it caps nothing"
+    },
+    {
+      "id": "source_population_unstated",
+      "expected": "act_with_approval",
+      "got": "act_with_approval",
+      "passed": true,
+      "why": "the action names a population the evidence never states it is about"
+    },
+    {
+      "id": "paired_strong_effect",
+      "expected": "act",
+      "got": "act",
+      "passed": true,
+      "why": "a matched-pair randomized result passes the same checks as any other"
+    },
+    {
+      "id": "paired_uncertain_worth",
+      "expected": "experiment",
+      "got": "experiment",
+      "passed": true,
+      "why": "a matched-pair result straddling the bar: a paired experiment settles it"
+    }
+  ],
+  "scenarios_matched": 1.0,
+  "property_violations": [],
+  "seeded_defects_caught": {
+    "best_check_wins": true,
+    "constant_treatment_refused": true,
+    "every_design_failure_testable": true,
+    "ignore_contested": true,
+    "ignore_llm_edges": true,
+    "ignore_population": true,
+    "ignore_reversibility": true,
+    "ignore_risk_class": true,
+    "ignore_segments": true,
+    "ignore_trend_breakdown": true,
+    "ignore_worthwhile_effect": true,
+    "refusal_becomes_approval": true,
+    "unpaired_sizing": true
+  },
+  "failures": [],
+  "passed": true
+}
