@@ -644,7 +644,7 @@
           "says": "Domain confidence > 0.7"
         },
         {
-          "at": "docs/UIX.md:197",
+          "at": "docs/UIX.md:198",
           "says": "when the Cynefin domain classification is CHAOTIC"
         }
       ],
@@ -685,7 +685,7 @@
       "capability": "One-click Rosenbaum / E-value sensitivity analysis on an approved edge, in the UI",
       "claimed_in": [
         {
-          "at": "docs/UIX.md:248",
+          "at": "docs/UIX.md:249",
           "says": "I want to run a one-click Rosenbaum sensitivity analysis on any approved edge"
         }
       ],
