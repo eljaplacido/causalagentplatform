@@ -26,18 +26,18 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-11-04",
+        "on": "2026-11-06",
         "sha256": {
           "backend/pyproject.toml": "f7fbeb2dafb5635e8bc3d4ff461bb5b65a7091ed592a2b03c1442d2e6a74df5d",
           "packages/causal-mcp": "a6e19b07b09b94989ff60e6b66cbfea208918f186d53b5d6c58e26cd80f4ab2d",
           "frontend/package.json": "21affd9af891b9586d0007239dd483fb40b2124ef909baa0fb28670a8bb59192",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "e50d05617946f1e7e1fe3c94f91eec17f86d92478e89cb65db634feddba19d8d"
+          "docs/CURRENT_STAGE.md": "9bc4b9fc8e68df635c35c58daa2819b621f4c1a05583959ce221beee3fed3e2c"
         }
       },
       "last_read": {
-        "on": "2026-11-04",
-        "by": "Claude (fix/decision-gaps: read for NO_VARIATION, block designs and T11, target_population, D0 v5 and contract 0.15.0 -- refusal counts, gate tables and enumerations, D0 figures, sizing row, capability card; AGENTS/ORCHESTRATION/UIX/shadow README: no claim moved)"
+        "on": "2026-11-06",
+        "by": "Claude (fix/analyze-xlsx: register change is two UIX line re-citations; README, ROADMAP and CURRENT_STAGE rows for those entries link the register id, status unchanged, no claim moved)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,7 +53,7 @@
       "baseline": {
         "on": "2026-11-06",
         "sha256": {
-          "conformance/declared_not_implemented.json": "52ae1e47f773b1107920a8976d716662643837e3a773587fbbdecd6509a41901",
+          "conformance/declared_not_implemented.json": "0eac1a5f2f741b62dd228e50801c4898fadbf877fbebdd08024f28539b0dfeeb",
           "backend/src": "56ca28dd53e2d20be2d46d32b213d2224f478f2e920c4fe99dafc16ebcdb8bd7",
           "backend/tests": "ed6e8c031488d045d9241d153887965ff1a328843b93b4e8ecef976938ba51aa",
           "frontend/src": "9fa8f57035ba05119bb700696a2ec0fdeee652efaca1937e12a2a698aa6e4261",
@@ -63,7 +63,7 @@
       },
       "last_read": {
         "on": "2026-11-06",
-        "by": "Claude (fix/analyze-xlsx: read the /analyze data step in UIX and its CURRENT_STAGE row; both updated for .xlsx and Excel CSVs, no other claim moved)"
+        "by": "Claude (fix/analyze-xlsx: register change is two UIX line re-citations; README, ROADMAP and CURRENT_STAGE rows for those entries link the register id, status unchanged, no claim moved)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -350,16 +350,16 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-11-04",
+        "on": "2026-11-06",
         "sha256": {
           "packages/causal-core/src/causal_core": "28552dab1a30eeec7b4d4591f06cd8c26f9843a609357f6cedf577a114abc55d",
-          "conformance/declared_not_implemented.json": "52ae1e47f773b1107920a8976d716662643837e3a773587fbbdecd6509a41901",
-          "docs/CURRENT_STAGE.md": "e50d05617946f1e7e1fe3c94f91eec17f86d92478e89cb65db634feddba19d8d"
+          "conformance/declared_not_implemented.json": "0eac1a5f2f741b62dd228e50801c4898fadbf877fbebdd08024f28539b0dfeeb",
+          "docs/CURRENT_STAGE.md": "9bc4b9fc8e68df635c35c58daa2819b621f4c1a05583959ce221beee3fed3e2c"
         }
       },
       "last_read": {
-        "on": "2026-11-04",
-        "by": "Claude (fix/decision-gaps: read for NO_VARIATION, block designs and T11, target_population, D0 v5 and contract 0.15.0 -- refusal counts, gate tables and enumerations, D0 figures, sizing row, capability card; AGENTS/ORCHESTRATION/UIX/shadow README: no claim moved)"
+        "on": "2026-11-06",
+        "by": "Claude (fix/analyze-xlsx: register change is two UIX line re-citations; README, ROADMAP and CURRENT_STAGE rows for those entries link the register id, status unchanged, no claim moved)"
       }
     },
     "SECURITY.md": {
