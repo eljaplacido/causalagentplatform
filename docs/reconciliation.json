@@ -51,19 +51,19 @@
         "specs"
       ],
       "baseline": {
-        "on": "2026-11-04",
+        "on": "2026-11-06",
         "sha256": {
           "conformance/declared_not_implemented.json": "52ae1e47f773b1107920a8976d716662643837e3a773587fbbdecd6509a41901",
           "backend/src": "56ca28dd53e2d20be2d46d32b213d2224f478f2e920c4fe99dafc16ebcdb8bd7",
           "backend/tests": "ed6e8c031488d045d9241d153887965ff1a328843b93b4e8ecef976938ba51aa",
-          "frontend/src": "4aa3a5d459007dfaa803732ed5f6b3e60b5faaf9dd473e67c2e3997924312b60",
+          "frontend/src": "9fa8f57035ba05119bb700696a2ec0fdeee652efaca1937e12a2a698aa6e4261",
           "packages": "cd13a5d64b6cd4d03c23f697668b3a42a34444f87148668e87af08a5fac41eda",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
-        "on": "2026-11-04",
-        "by": "Claude (fix/decision-gaps: read for NO_VARIATION, block designs and T11, target_population, D0 v5 and contract 0.15.0 -- refusal counts, gate tables and enumerations, D0 figures, sizing row, capability card; AGENTS/ORCHESTRATION/UIX/shadow README: no claim moved)"
+        "on": "2026-11-06",
+        "by": "Claude (fix/analyze-xlsx: read the /analyze data step in UIX and its CURRENT_STAGE row; both updated for .xlsx and Excel CSVs, no other claim moved)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -332,14 +332,14 @@
         "frontend/src"
       ],
       "baseline": {
-        "on": "2026-11-04",
+        "on": "2026-11-06",
         "sha256": {
-          "frontend/src": "4aa3a5d459007dfaa803732ed5f6b3e60b5faaf9dd473e67c2e3997924312b60"
+          "frontend/src": "9fa8f57035ba05119bb700696a2ec0fdeee652efaca1937e12a2a698aa6e4261"
         }
       },
       "last_read": {
-        "on": "2026-11-04",
-        "by": "Claude (fix/decision-gaps: read for NO_VARIATION, block designs and T11, target_population, D0 v5 and contract 0.15.0 -- refusal counts, gate tables and enumerations, D0 figures, sizing row, capability card; AGENTS/ORCHESTRATION/UIX/shadow README: no claim moved)"
+        "on": "2026-11-06",
+        "by": "Claude (fix/analyze-xlsx: read the /analyze data step in UIX and its CURRENT_STAGE row; both updated for .xlsx and Excel CSVs, no other claim moved)"
       }
     },
     "docs/ROADMAP.md": {
