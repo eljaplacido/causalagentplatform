@@ -69,20 +69,14 @@ updates:
     open-pull-requests-limit: 5
     # npm majors are ledger work, as pyproject majors are: each needs its own
     # migration and review, and five bot PRs at once held every CI runner (#32-#36).
-    # The next/eslint-config-next and typescript entries name their ledger items.
+    # TypeScript is on two majors on purpose (septa-58): 7 in frontend/ (tsc and
+    # next 16's build, which runs TS 7's CLI), 6 at the root and in
+    # packages/semantic-types for the tools that import TypeScript's JS API, which
+    # 7 does not ship (typescript-eslint, peer <6.1; tsup's dts build). The rule
+    # above keeps the bot from moving those to 7.
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
-      # septa-57: next 16 and eslint-config-next 16 move together (eslint-config-next
-      # 16 crashes eslint on next 15, #20), dropping the next-15 postcss override.
-      - dependency-name: next
-        versions: [">=16"]
-      - dependency-name: eslint-config-next
-        versions: [">=16"]
-      # septa-58: TypeScript 7 (tsc TS2882 on the CSS import; next 15 cannot load
-      # next.config.ts with it, #21).
-      - dependency-name: typescript
-        versions: [">=7"]
     groups:
       npm-dev:
         dependency-type: development
@@ -109,10 +103,11 @@ updates:
       interval: weekly
       day: monday
     ignore:
-      # Node on an LTS line only (the frontend is on 24). 25 is never LTS; 26 is
-      # Current until it enters LTS in October 2026 -- then lift this (septa-59).
+      # Node on an LTS line only (the frontend is on 26, Active LTS since 2026-10-28;
+      # septa-59). 27 is never LTS; 28 is Current until it enters LTS in October
+      # 2028 -- then lift this to the next odd line.
       - dependency-name: node
-        versions: [">=25"]
+        versions: [">=27"]
     groups:
       base-images:
         patterns: ["*"]

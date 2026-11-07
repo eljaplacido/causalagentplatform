@@ -415,6 +415,44 @@ class GovernanceAgent(BaseAgent, metaclass=_BypassGuard):
             authority=False,
         )
 
+    # ── record_unruled() — an outcome the Guardian never ruled on ────────────
+
+    async def record_unruled(
+        self,
+        *,
+        action_type: str,
+        verdict: GuardianVerdict,
+        notes: str,
+        session_id: str | None,
+    ) -> UUID:
+        """Record, as history, a verdict that was set without a Guardian ruling.
+
+        When a session run fails before GuardianCheck (src/api/session.py
+        ``_run_graph``), the API still answers with a verdict of its own making --
+        REQUIRES_ESCALATION for an open circuit breaker, REJECTED for an internal
+        error -- so the caller gets a closed answer. That verdict is not a ruling:
+        no policy ran on anything. This writes it to audit_log *unsigned*, with
+        ``notes`` saying why, so the trail shows the run and its outcome instead
+        of nothing, and so the row can never be spent as authority (the registry
+        reads an unsigned row as history, as with record_decision).
+        """
+        payload = {
+            "action_type": action_type,
+            "session_id": session_id,
+            "verdict": str(verdict),
+            "notes": notes,
+        }
+        return await self._write_audit_entry(
+            agent_id=self.agent_id,
+            action_type=action_type,
+            payload_hash=self._hash_payload(payload),
+            verdict=verdict,
+            policy_rules_cited=[],
+            session_id=session_id,
+            notes=notes,
+            authority=False,
+        )
+
     # ── Policy evaluation ─────────────────────────────────────────────────────
 
     def _evaluate_policies(

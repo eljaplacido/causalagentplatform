@@ -127,10 +127,13 @@ function ConnectorCard({
   isChecking,
 }: ConnectorCardProps) {
   const [jsonExpanded, setJsonExpanded] = useState(false);
+  // "Synced ... ago" is measured from when the card mounted: Date.now() in the render
+  // body is impure (react-hooks/purity), a lazy state initialiser runs once.
+  const [now] = useState(() => Date.now());
 
   const syncAgo = connector.lastSuccessfulSync
     ? (() => {
-        const ms = Date.now() - new Date(connector.lastSuccessfulSync).getTime();
+        const ms = now - new Date(connector.lastSuccessfulSync).getTime();
         const mins = Math.floor(ms / 60000);
         if (mins < 60) return `${mins}m ago`;
         const hrs = Math.floor(mins / 60);

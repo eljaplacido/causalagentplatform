@@ -310,11 +310,27 @@ export interface SessionStateResponse {
   timestamp: string;
 }
 
+/** One proposed intervention as POST /api/v1/session/incident returns and stores it:
+ * with the verdict the Guardian gave that intervention, and its audit_log row. */
+export interface IncidentInterventionResponse {
+  id: string;
+  title: string;
+  description: string;
+  confidence: number;
+  riskTier: string;
+  rank: number;
+  guardianVerdict: GuardianVerdict;
+  guardianVerdictRef: string;
+  policyRulesCited: string[];
+}
+
 /** Response of POST /api/v1/session/incident (backend IncidentSessionResponse):
- * the triage result, and whether the incident row itself was stored. */
+ * the triage result, whether the incident row itself was stored, and each
+ * proposed intervention with a Guardian verdict of its own. */
 export interface IncidentSessionResponse extends SessionStateResponse {
   stored: boolean;
   store_error: string | null;
+  interventions: IncidentInterventionResponse[];
 }
 
 /** One row of GET /api/governance/review-queue (governance.py ReviewQueueItem), snake_case. */

@@ -346,12 +346,15 @@ the audit panel and leaves decisions enabled. Across the governance, incidents a
 a 401 or 403 (other than a Guardian block) reads "not authorised", not "backend unavailable" or
 an empty list.
 
-The incidents page speaks the backend's severity vocabulary, P0 to P3, end to end (rows the seed
-script wrote as SEV1 to SEV4 are shown as P0 to P3). No endpoint returns an effect estimate for an
+The incidents page speaks the backend's severity vocabulary, P0 to P3, end to end. The seed
+script writes P0 to P3 too; rows it wrote as SEV1 to SEV4 before septa-84, still in a database
+seeded then, are shown as P0 to P3. No endpoint returns an effect estimate for an
 incident's interventions, so `InterventionCard` says "No effect estimate" rather than drawing an
 interval. The Guardian's verdict and a person's recorded decision are shown side by side as two
 labelled facts ("Guardian verdict", "Human decision"); the incidents API returns the decision as
-`humanDecision` and leaves `guardianVerdict` as the Guardian issued it. Once a decision is
+`humanDecision` and leaves `guardianVerdict` as the Guardian issued it. That verdict is the
+Guardian's ruling on that intervention, one check each, not the session's verdict copied onto
+every card (the triage response carries the same verdicts as `interventions`). Once a decision is
 recorded the card closes approve and reject and says what was decided. The number on a card is
 the recommendation's `confidence`, which the triage agent sets to its heuristic triage score, so
 it is labelled "Triage score", not drawn as a confidence meter. The triage agent's `ESCALATE: ...`

@@ -179,7 +179,43 @@ class IncidentTriageAgent(BaseAgent):
             return state
 
         # ── Full triage pipeline (CLEAR / COMPLICATED / COMPLEX) ─────────────
+        state = await self._triage(
+            state, classified_domain, domain_confidence, guardian_check=True
+        )
+        await self.store_experience(state)
+        return state
 
+    async def analyse(self, state: EpistemicState) -> EpistemicState:
+        """
+        Triage an incident the platform graph has already classified.
+
+        The platform graph's IncidentTriage node runs this as the run's one
+        analysis (POST /api/v1/session/incident), on the domain CynefinClassify
+        gave it, and without a Guardian check of its own: the graph's GuardianCheck
+        rules on the result and writes the run's one verdict. /incident used to run
+        process() and then the graph's CausalAnalysis over its output -- two
+        analyses and two Guardian rows for one incident.
+
+        CHAOTIC and DISORDER never reach it: the graph escalates them.
+        """
+        state = self._check_circuit_breaker(state)
+        state = self._check_hallucination_risk(state)
+        return await self._triage(
+            state, state.cynefin_domain, state.domain_confidence, guardian_check=False
+        )
+
+    async def _triage(
+        self,
+        state: EpistemicState,
+        classified_domain: CynefinDomain,
+        domain_confidence: float,
+        *,
+        guardian_check: bool,
+    ) -> EpistemicState:
+        """Steps 2-6 of process() on a classified (CLEAR/COMPLICATED/COMPLEX) incident.
+
+        ``guardian_check`` False leaves the ruling to the caller (analyse()).
+        """
         # Step 2: Experience buffer — retrieve similar past incidents
         experience_outputs, state = await self._call_skill(
             "experience_buffer_query",
@@ -235,7 +271,7 @@ class IncidentTriageAgent(BaseAgent):
             )
 
         # Step 5: Guardian check on proposed interventions
-        if interventions:
+        if interventions and guardian_check:
             guardian_payload = {
                 "action_type": "INCIDENT_TRIAGE_INTERVENTIONS",
                 "proposed_edges": [e.model_dump() for e in candidate_edges],
@@ -345,23 +381,6 @@ class IncidentTriageAgent(BaseAgent):
             },
         )
 
-        # Store incident in experience buffer for future retrieval
-        try:
-            await store_incident_experience(
-                incident_id=state.session_id,
-                description=state.draft_explanation,
-                domain=str(classified_domain),
-                severity="P1" if classified_domain == CynefinDomain.CHAOTIC else "P2",
-                services=[],  # Could extract from graph context in future
-                metrics=[],  # Could populate from incident signals in future
-                resolution=recommendations[0].action if recommendations else None,
-                cynefin_domain=str(classified_domain),
-                guardian_verdict=str(state.guardian_verdict),
-            )
-        except Exception as e:
-            # Non-blocking: log but don't fail triage if storage fails
-            self._log.warning("incident_triage.storage_failed", error=str(e))
-
         self._log.info(
             "incident_triage.complete",
             session_id=state.session_id,
@@ -370,6 +389,30 @@ class IncidentTriageAgent(BaseAgent):
             recommendations=len(recommendations),
         )
         return state
+
+    async def store_experience(self, state: EpistemicState) -> None:
+        """Store a triaged incident in the experience buffer, with its verdict.
+
+        Non-blocking: a failed store is logged, never raised. Called once the
+        incident's Guardian verdict is known -- by process() after its own check,
+        and by POST /incident after the graph's.
+        """
+        domain = str(state.cynefin_domain)
+        try:
+            await store_incident_experience(
+                incident_id=state.session_id,
+                description=state.draft_explanation,
+                domain=domain,
+                severity="P1" if state.cynefin_domain == CynefinDomain.CHAOTIC else "P2",
+                services=[],  # Could extract from graph context in future
+                metrics=[],  # Could populate from incident signals in future
+                resolution=state.recommendations[0].action if state.recommendations else None,
+                cynefin_domain=domain,
+                guardian_verdict=str(state.guardian_verdict),
+            )
+        except Exception as e:
+            # Non-blocking: log but don't fail triage if storage fails
+            self._log.warning("incident_triage.storage_failed", error=str(e))
 
     # ── Skill dispatch ────────────────────────────────────────────────────────
 
