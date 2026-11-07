@@ -70,6 +70,7 @@
       "type": "object"
     },
     "AbstentionReason": {
+      "description": "Why no estimate was produced. Each is a correct answer, not an error.\n\n``NO_VARIATION`` and ``DESIGN_CHECK_FAILED`` are kept apart on purpose. A treatment that\ntakes one value in the data leaves nothing to compare, but nothing about the data is\nbroken: setting the treatment by experiment is exactly what answers the question (a\nconfiguration lever nobody has tried). A failed design check -- a sample-ratio mismatch,\nmissing values, treatment varying inside a cluster -- says the data are not what the\nanalysis assumes, and running more of the same does not repair that.",
       "enum": [
         "NON_IDENTIFIABLE",
         "POSITIVITY",
@@ -77,6 +78,7 @@
         "UNAPPROVED_ASSUMPTION",
         "CI_TOO_WIDE",
         "DESIGN_CHECK_FAILED",
+        "NO_VARIATION",
         "RUNG_MISMATCH",
         "INVALID_ADJUSTMENT_SET",
         "WEAK_INSTRUMENT",
@@ -151,6 +153,111 @@
       "title": "BalanceRow",
       "type": "object"
     },
+    "BlockSummary": {
+      "additionalProperties": false,
+      "description": "Blocked (paired) randomized designs: what the within-block comparison rests on.",
+      "properties": {
+        "column": {
+          "description": "The block column (`CausalQuery.block`).",
+          "title": "Column",
+          "type": "string"
+        },
+        "discordant_control": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Binary outcome, pairs: pairs in which only the control unit has the outcome.",
+          "title": "Discordant Control"
+        },
+        "discordant_treated": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Binary outcome, pairs: pairs in which only the treated unit has the outcome.",
+          "title": "Discordant Treated"
+        },
+        "incomplete_blocks": {
+          "default": 0,
+          "description": "Blocks in which only one arm was observed. They refuse under policy.missing='error'; under 'drop' they are left out and counted here.",
+          "title": "Incomplete Blocks",
+          "type": "integer"
+        },
+        "mcnemar_exact_p": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Binary outcome, pairs: the exact two-sided McNemar p-value (the conditional binomial test on the discordant pairs). The interval excludes zero only when this is below 1 - ci_level.",
+          "title": "Mcnemar Exact P"
+        },
+        "n_blocks": {
+          "description": "Blocks with both arms: the independent observations.",
+          "title": "N Blocks",
+          "type": "integer"
+        },
+        "pairs": {
+          "description": "Every block is one treated and one control unit: a matched-pair design.",
+          "title": "Pairs",
+          "type": "boolean"
+        },
+        "sd_difference": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Standard deviation, across blocks, of the within-block difference (treated mean minus control mean). What sizes a paired follow-up for a continuous outcome.",
+          "title": "Sd Difference"
+        },
+        "unblocked_se": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The standard error an analysis ignoring the blocks would report on the same units (Neyman difference in means). Beside the primary standard error, it shows what blocking bought.",
+          "title": "Unblocked Se"
+        },
+        "units_left_out": {
+          "default": 0,
+          "description": "Units in the incomplete blocks.",
+          "title": "Units Left Out",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "column",
+        "n_blocks",
+        "pairs"
+      ],
+      "title": "BlockSummary",
+      "type": "object"
+    },
     "CausalQuery": {
       "additionalProperties": false,
       "properties": {
@@ -169,6 +276,19 @@
           "default": null,
           "description": "A user-chosen adjustment set. It is validated against the graph and refused if it is not a valid adjustment set.",
           "title": "Adjust For"
+        },
+        "block": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Randomized designs only: the column identifying the block within which treatment was randomized -- a matched pair (the same task run under both arms) or a stratum. The effect is then estimated within blocks and averaged by block size, with blocks as the independent observations; a binary outcome in pairs gets an interval consistent with McNemar's test (T11).",
+          "title": "Block"
         },
         "cluster": {
           "anyOf": [
@@ -287,6 +407,7 @@
             }
           ],
           "default": null,
+          "description": "The population the data come from (a lane, a fleet, a cohort), in words. The estimate is about this population.",
           "title": "Population"
         },
         "rung": {
@@ -314,6 +435,19 @@
           "default": null,
           "description": "Randomized designs only: the column giving each unit's arrival order. When set, the effect is reported as an anytime-valid confidence sequence at every look, so the analysis may be read -- and stopped -- as often as wanted without inflating its error rate. Needs `expected_treated_share`, the known allocation probability.",
           "title": "Sequence"
+        },
+        "target_population": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Declared only: the population the answer is meant for, when it differs from `population`. The kernel has no transport analysis, so it does not carry the estimate there; the result says it is not transported, and the decision layer does not treat it as evidence about the target (register: transportability).",
+          "title": "Target Population"
         },
         "time": {
           "anyOf": [
@@ -401,6 +535,18 @@
     "CausalResult": {
       "additionalProperties": false,
       "properties": {
+        "blocks": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BlockSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Blocked designs only (`CausalQuery.block`): the blocks, discordant pairs and what blocking bought."
+        },
         "certificate": {
           "$ref": "#/$defs/IdentificationCertificate"
         },
@@ -1944,7 +2090,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:causalplatform:claims:0.14.0:outcome",
+  "$id": "urn:causalplatform:claims:0.15.0:outcome",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "discriminator": {
     "mapping": {

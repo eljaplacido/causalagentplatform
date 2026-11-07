@@ -162,16 +162,16 @@
     },
     {
       "doc": "README.md",
-      "says": "22/22 scenarios return the verdict",
-      "figure": "22",
+      "says": "31/31 scenarios return the verdict",
+      "figure": "31",
       "bench": "d0-decision-policy",
       "path": "/table",
       "agg": "count"
     },
     {
       "doc": "README.md",
-      "says": "each of 9 seeded defects makes the gate fail",
-      "figure": "9",
+      "says": "each of 13 seeded defects makes the gate fail",
+      "figure": "13",
       "bench": "d0-decision-policy",
       "path": "/seeded_defects_caught",
       "agg": "count_true"
@@ -868,6 +868,82 @@
       "bench": "t10-positivity",
       "path": "/designs[id=clean|clean_highdim|limited_overlap|small_violation|att_never_treated]/refusal_rate",
       "agg": "max"
+    },
+    {
+      "doc": "README.md",
+      "says": "coverage 0.941–0.951 across five continuous designs",
+      "figure": "0.941",
+      "bench": "t11-blocked",
+      "path": "/designs[id=pairs_continuous|pairs_few|pairs_heterogeneous|blocks_unequal|blocks_varying_allocation]/coverage",
+      "agg": "min",
+      "round": "outward"
+    },
+    {
+      "doc": "README.md",
+      "says": "coverage 0.941–0.951 across five continuous designs",
+      "figure": "0.951",
+      "bench": "t11-blocked",
+      "path": "/designs[id=pairs_continuous|pairs_few|pairs_heterogeneous|blocks_unequal|blocks_varying_allocation]/coverage",
+      "agg": "max",
+      "round": "outward"
+    },
+    {
+      "doc": "README.md",
+      "says": "binary pairs 0.987–0.9995 (conservative by design)",
+      "figure": "0.987",
+      "bench": "t11-blocked",
+      "path": "/designs[id=binary_pairs_correlated|binary_pairs_null|binary_pairs_one_sided|binary_pairs_s1_like]/coverage",
+      "agg": "min",
+      "round": "outward"
+    },
+    {
+      "doc": "README.md",
+      "says": "binary pairs 0.987–0.9995 (conservative by design)",
+      "figure": "0.9995",
+      "bench": "t11-blocked",
+      "path": "/designs[id=binary_pairs_correlated|binary_pairs_null|binary_pairs_one_sided|binary_pairs_s1_like]/coverage",
+      "agg": "max",
+      "round": "outward"
+    },
+    {
+      "doc": "README.md",
+      "says": "the interval is 0.57 (continuous pairs)",
+      "figure": "0.57",
+      "bench": "t11-blocked",
+      "path": "/designs[id=pairs_continuous]/width_ratio",
+      "agg": "one"
+    },
+    {
+      "doc": "README.md",
+      "says": "and 0.83 (binary pairs) of the unpaired one's width",
+      "figure": "0.83",
+      "bench": "t11-blocked",
+      "path": "/designs[id=binary_pairs_correlated]/width_ratio",
+      "agg": "one"
+    },
+    {
+      "doc": "README.md",
+      "says": "Reproduces gnomon's S1 table exactly (30 pairs",
+      "figure": "30",
+      "bench": "t11-blocked",
+      "path": "/s1/pairs",
+      "agg": "one"
+    },
+    {
+      "doc": "README.md",
+      "says": "exact McNemar p = 0.125). Each of 3",
+      "figure": "0.125",
+      "bench": "t11-blocked",
+      "path": "/s1/mcnemar_exact_p",
+      "agg": "one"
+    },
+    {
+      "doc": "README.md",
+      "says": "Each of 3 seeded defects fails its bar",
+      "figure": "3",
+      "bench": "t11-blocked",
+      "path": "/seeded_defects_caught",
+      "agg": "count_true"
     }
   ]
 }

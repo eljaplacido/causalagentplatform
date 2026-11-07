@@ -16,7 +16,7 @@ So the follow-up is not a new statistical instrument. It is **the same analysis,
 re-run over the window after the decision**, and the kernel's own refusals do the
 hard part:
 
-    everyone treated  -> DESIGN_CHECK_FAILED   the rollout removed the comparison
+    everyone treated  -> NO_VARIATION          the rollout removed the comparison
     99.5% treated     -> POSITIVITY            what is left cannot carry the weight
     too few rows      -> LOW_N
     normal mix        -> a result, and a comparison worth making

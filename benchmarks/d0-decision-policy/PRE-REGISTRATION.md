@@ -2,7 +2,7 @@
 
 **Suite:** D0, the decision procedure on outcomes whose evidence is known by construction
 **System under test:** `packages/causal-decision` (`causal_decision.decide`)
-**Registered:** 2026-09-21, version 1; version 2 on 2026-09-25; version 3 the same day; version 4 on 2026-10-16 (see Changelog)
+**Registered:** 2026-09-21, version 1; version 2 on 2026-09-25; version 3 the same day; version 4 on 2026-10-16; version 5 on 2026-11-04 (see Changelog)
 **Runs:** every PR, via `pytest -m d0` in `packages/causal-decision`
 
 ## Status of this document
@@ -73,6 +73,38 @@ Four scenarios (v4) read where an unreviewed edge came from. Each is the operati
 - `reviewed_llm_edge` — the language model's edge after review (`status=approved`). Expected
   `act`: review lifts the cap, and the evidence is that of `strong_effect_medium_risk`.
 
+Nine scenarios (v5) come from analysing gnomon's benchmark trails (gnomon
+`benchmarks/results/causal-2026-11/REPORT.md`), where three things went wrong:
+
+- `never_varied_can_test` — the operations data with the playbook never applied: the treatment
+  takes one value, so the kernel refuses `NO_VARIATION` (contract 0.15.0), carrying the outcome's
+  spread. Expected `experiment`, sized: a lever nobody has tried is exactly what an experiment
+  settles. Until v5 this refusal was `DESIGN_CHECK_FAILED`, which the procedure maps to `refuse`
+  ("an experiment would not resolve this") — the wrong answer for gnomon's reasoning-replay and
+  context-window levers.
+- `never_varied_cannot_test` — the same, with `can_randomize = false`. Expected `refuse`, as for
+  every other refusal no experiment can resolve here.
+- `sample_ratio_mismatch` — a randomized design whose treated share is 0.5 where 0.3 was declared:
+  `DESIGN_CHECK_FAILED`. Expected `refuse`: a broken assignment or logging fault is not something a
+  further experiment of the same pipeline settles. This pins the existing semantics the v5 change
+  must not widen.
+- `other_population` — `strong_effect`'s data, the analysis stating it is about one population and
+  the request targeting another. Expected `experiment`: the kernel has no transport analysis, so
+  the estimate is not evidence about the target, and the decision says "not transported" rather
+  than act on it.
+- `other_population_cannot_test` — the same, `can_randomize = false`. Expected
+  `act_with_approval`: the open question goes to a person.
+- `same_population` — both state the same population. Expected `act`: naming a population caps
+  nothing by itself.
+- `source_population_unstated` — the request names a population and the analysis states none.
+  Expected `act_with_approval`: nothing shows the evidence is about that population, and a person
+  who knows where the data came from can say.
+- `paired_strong_effect` — a matched-pair randomized experiment (`block`, contract 0.15.0) with a
+  large, precise effect. Expected `act`: a blocked result passes the same checks as any other.
+- `paired_uncertain_worth` — a matched-pair experiment whose interval straddles the worthwhile
+  bar. Expected `experiment`, and (`[experiments]`) the experiment returned is a paired one, sized
+  from the observed pairs rather than as independent units.
+
 **Properties.** Checked on a seeded sweep of requests and policies (`PROPERTIES`), not only on the
 table:
 
@@ -103,14 +135,18 @@ of them, and the table says which check is supposed to catch it.
 | `ignore_segments` | the segment checks are dropped, so only the pooled effect is read | scenario `harmed_segment` |
 | `ignore_trend_breakdown` | the parallel-trends breakdown is not read (v3) | scenario `did_fragile_to_trends` |
 | `ignore_llm_edges` | an unreviewed edge's origin is not read, so a guessed graph is only "provisional" (v4) | scenario `provisional_graph` |
+| `constant_treatment_refused` | a treatment that never varied is still read as a broken design an experiment cannot resolve (v5) | scenario `never_varied_can_test` |
+| `every_design_failure_testable` | the over-broad fix: every failed design check is treated as experimentable (v5) | scenario `sample_ratio_mismatch` |
+| `ignore_population` | where the evidence comes from is not compared with where the action applies (v5) | scenario `other_population` |
+| `unpaired_sizing` | paired evidence is sized as independent units (v5) | `[experiments]`, scenario `paired_uncertain_worth` |
 
 ## Pass bars
 
 ```toml
 [meta]
 suite = "D0"
-version = 4
-registered = "2026-10-16"
+version = 5
+registered = "2026-11-04"
 
 [table]
 scenarios_must_match = 1.0      # every scenario returns exactly the verdict it names
@@ -138,6 +174,20 @@ harmed_segment = "refuse"
 uniform_segments = "act"
 did_robust_to_trends = "act_with_approval"
 did_fragile_to_trends = "experiment"
+never_varied_can_test = "experiment"
+never_varied_cannot_test = "refuse"
+sample_ratio_mismatch = "refuse"
+other_population = "experiment"
+other_population_cannot_test = "act_with_approval"
+same_population = "act"
+source_population_unstated = "act_with_approval"
+paired_strong_effect = "act"
+paired_uncertain_worth = "experiment"
+
+[experiments]                   # scenario id -> the design of the experiment it must return,
+                                # sized (units_per_arm computed, not left unknown)
+never_varied_can_test = "randomized_units"
+paired_uncertain_worth = "paired_units"
 
 [properties]
 sweep = 400                     # random (request, policy) pairs per property
@@ -149,6 +199,8 @@ required = [
   "ignore_reversibility", "ignore_risk_class", "best_check_wins",
   "ignore_worthwhile_effect", "refusal_becomes_approval", "ignore_contested",
   "ignore_segments", "ignore_trend_breakdown", "ignore_llm_edges",
+  "constant_treatment_refused", "every_design_failure_testable", "ignore_population",
+  "unpaired_sizing",
 ]
 ```
 
@@ -244,3 +296,19 @@ on the text being unchanged, which the diff shows.
   `ignore_llm_edges` defect joins the table. Committed before the scenarios exist and before any
   run; the check's code was drafted alongside this text but had not run. The other eighteen v3
   verdicts stand, and no other bar changed.
+- **v5 (2026-11-04): a treatment that never varied is experimentable; transport is not assumed;
+  paired evidence gets a paired experiment.** Three gaps found when the kernel and this layer
+  analysed gnomon's benchmark trails (gnomon `benchmarks/results/causal-2026-11/REPORT.md`, "Tool
+  findings"). (1) A constant treatment was `DESIGN_CHECK_FAILED`, which this layer maps to
+  `refuse`; the kernel now refuses it as `NO_VARIATION` (contract 0.15.0), with the outcome's
+  spread, and `NO_VARIATION` joins the refusals an experiment can resolve. Every other
+  `DESIGN_CHECK_FAILED` still refuses (`sample_ratio_mismatch` pins it). (2) The kernel has no
+  transport analysis; when the evidence states one population and the action targets another,
+  the verdict is capped at `experiment` with "not transported" in the check, and at
+  `act_with_approval` when the evidence states none. (3) A matched-pair result (`block`, contract
+  0.15.0) is sized as a paired experiment from its discordance (binary) or its within-pair spread
+  (continuous); the new `[experiments]` table registers the design each sized scenario must return.
+  Nine scenarios and four seeded defects join; written before any of the code exists and before any
+  run. The twenty-two v4 verdicts stand, and no other bar changed. Disclosure: `paired_strong_effect`
+  and `paired_uncertain_worth` are predictions from the policy's stated checks applied to a
+  blocked result (tier A, supported, an E-value computed), not observed outputs.
