@@ -103,6 +103,67 @@ def smd(x: np.ndarray, t: np.ndarray, w: np.ndarray | None = None) -> float:
     return float((m1 - m0) / pooled) if pooled > 0 else 0.0
 
 
+def no_variation_diagnostics(
+    query: CausalQuery, tv: np.ndarray, yv: np.ndarray, n_rows: int
+) -> tuple[Diagnostics, str]:
+    """What a refusal for a treatment that never varies can still say: the rows, the one level
+    observed, and the outcome's spread -- the number a follow-up experiment is sized from."""
+    n = int(tv.shape[0])
+    value = float(tv[0])
+    control, treated = query.treatment_levels or (0.0, 1.0)
+    at_treated = n if value == treated else 0 if value == control else None
+    detail = f"all {n} rows have {query.treatment} = {value:g}"
+    diag = Diagnostics(
+        n_rows=n_rows,
+        n_used=0,
+        n_dropped_missing=n_rows - n,
+        treatment_kind="binary",
+        n_treated=at_treated,
+        n_control=None if at_treated is None else n - at_treated,
+        outcome_sd=float(np.std(yv, ddof=1)) if n > 1 else None,
+        checks=(DesignCheck(name="treatment varies", passed=False, detail=detail),),
+    )
+    return diag, detail
+
+
+def no_variation_refusal(
+    query: CausalQuery, detail: str, value: float
+) -> tuple[str, tuple[str, ...]]:
+    """The detail and the missing information of a NO_VARIATION refusal, shared by every design."""
+    x = query.treatment
+    return (
+        f"treatment {x!r} does not vary: {detail}, so there is no contrast to learn its effect "
+        "from",
+        (
+            f"rows in which {x} takes another value: set it by experiment, randomizing {x} "
+            f"between {value:g} and the value under consideration on the units these rows "
+            "describe",
+            f"or observational rows where {x} was set differently, with the causes of that "
+            "choice measured and in the graph",
+        ),
+    )
+
+
+def no_variation(
+    frame: pd.DataFrame,
+    query: CausalQuery,
+    tv: np.ndarray,
+    yv: np.ndarray,
+    n_rows: int,
+    warnings: list[str],
+) -> DesignResult:
+    """The treatment takes one value: nothing to compare, and nothing broken.
+
+    Not ``DESIGN_CHECK_FAILED``: those are data that are not what the analysis assumes, and
+    more of the same would not repair them. Here the data are fine and simply never tried
+    the other arm, which is the case an experiment answers -- so the refusal says so, and
+    carries the outcome's spread for sizing it (contract 0.15.0).
+    """
+    diag, detail = no_variation_diagnostics(query, tv, yv, n_rows)
+    text, fix = no_variation_refusal(query, detail, float(tv[0]))
+    return _refuse(frame, AbstentionReason.NO_VARIATION, text, fix, diag, warnings)
+
+
 def prepare(
     data: pd.DataFrame,
     query: CausalQuery,
@@ -167,7 +228,7 @@ def prepare(
     yv = frame[y].astype(float).to_numpy()
     uniq = np.unique(tv)
     if len(uniq) < 2:
-        return refuse(AbstentionReason.DESIGN_CHECK_FAILED, f"treatment {x!r} does not vary")
+        return no_variation(frame, query, tv, yv, n_rows, warnings)
     if np.ptp(yv) == 0:
         return refuse(AbstentionReason.DESIGN_CHECK_FAILED, f"outcome {y!r} does not vary")
 
