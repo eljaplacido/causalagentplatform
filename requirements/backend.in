@@ -16,3 +16,17 @@ editables
 
 # Advisory floors (2026-10-21): GHSA-6q48-6c7w-9gw2 is fixed in certifi 2026.10.19.
 certifi>=2026.10.19
+
+# Advisory floors (2026-10-31): fixed releases for advisories published since 21 Oct.
+# filelock: CVE-2026-112907 and thirteen more, all fixed by 4.2.1 (via cachecontrol).
+filelock>=4.2.1
+# dnspython: CVE-2026-114605, fixed in 2.9.0 (via email-validator).
+dnspython>=2.9.0
+# langgraph-sdk: CVE-2026-118667, fixed in 0.4.6.
+langgraph-sdk>=0.4.6
+# msgpack: CVE-2026-114613, fixed in 1.2.3.
+msgpack>=1.2.3
+# opentelemetry-api: CVE-2026-114603, fixed in 1.45.1 (via fastapi, google-api-core).
+opentelemetry-api>=1.45.1
+# pyasn1: CVE-2026-119194..119197, fixed in 0.6.5.
+pyasn1>=0.6.5

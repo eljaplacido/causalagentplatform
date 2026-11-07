@@ -27,7 +27,7 @@ says so.
 
 ## Setting up
 
-Python 3.12 and Node 24 LTS, as CI uses. Two Python environments, one per lock, as CI builds them: the
+Python 3.12 and Node 26 LTS, as CI uses. Two Python environments, one per lock, as CI builds them: the
 backend's, and the kernel's (the three kernel packages, with causal-mcp on MCP SDK v2 and the kernel
 suites' own test dependencies):
 
