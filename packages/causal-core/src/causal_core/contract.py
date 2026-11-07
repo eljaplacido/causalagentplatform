@@ -26,7 +26,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
-CONTRACT_VERSION = "0.14.0"
+CONTRACT_VERSION = "0.15.0"
 
 
 class _Model(BaseModel):
@@ -109,12 +109,24 @@ class Tier(StrEnum):
 
 
 class AbstentionReason(StrEnum):
+    """Why no estimate was produced. Each is a correct answer, not an error.
+
+    ``NO_VARIATION`` and ``DESIGN_CHECK_FAILED`` are kept apart on purpose. A treatment that
+    takes one value in the data leaves nothing to compare, but nothing about the data is
+    broken: setting the treatment by experiment is exactly what answers the question (a
+    configuration lever nobody has tried). A failed design check -- a sample-ratio mismatch,
+    missing values, treatment varying inside a cluster -- says the data are not what the
+    analysis assumes, and running more of the same does not repair that.
+    """
+
     NON_IDENTIFIABLE = "NON_IDENTIFIABLE"
     POSITIVITY = "POSITIVITY"
     LOW_N = "LOW_N"
     UNAPPROVED_ASSUMPTION = "UNAPPROVED_ASSUMPTION"
     CI_TOO_WIDE = "CI_TOO_WIDE"
     DESIGN_CHECK_FAILED = "DESIGN_CHECK_FAILED"
+    #: The treatment never varies in the analysed rows: no contrast to learn the effect from.
+    NO_VARIATION = "NO_VARIATION"
     RUNG_MISMATCH = "RUNG_MISMATCH"
     INVALID_ADJUSTMENT_SET = "INVALID_ADJUSTMENT_SET"
     WEAK_INSTRUMENT = "WEAK_INSTRUMENT"
@@ -241,7 +253,26 @@ class CausalQuery(_Model):
         "treated; not_yet_treated adds cohorts not yet treated at that period, for rollouts "
         "that reach every unit.",
     )
-    population: str | None = None
+    block: str | None = Field(
+        default=None,
+        description="Randomized designs only: the column identifying the block within which "
+        "treatment was randomized -- a matched pair (the same task run under both arms) or a "
+        "stratum. The effect is then estimated within blocks and averaged by block size, with "
+        "blocks as the independent observations; a binary outcome in pairs gets an interval "
+        "consistent with McNemar's test (T11).",
+    )
+    population: str | None = Field(
+        default=None,
+        description="The population the data come from (a lane, a fleet, a cohort), in words. "
+        "The estimate is about this population.",
+    )
+    target_population: str | None = Field(
+        default=None,
+        description="Declared only: the population the answer is meant for, when it differs from "
+        "`population`. The kernel has no transport analysis, so it does not carry the estimate "
+        "there; the result says it is not transported, and the decision layer does not treat it "
+        "as evidence about the target (register: transportability).",
+    )
     horizon: str | None = None
 
 
@@ -684,6 +715,46 @@ class SequentialSummary(_Model):
     )
 
 
+class BlockSummary(_Model):
+    """Blocked (paired) randomized designs: what the within-block comparison rests on."""
+
+    column: str = Field(description="The block column (`CausalQuery.block`).")
+    n_blocks: int = Field(description="Blocks with both arms: the independent observations.")
+    pairs: bool = Field(description="Every block is one treated and one control unit: a "
+                        "matched-pair design.")
+    incomplete_blocks: int = Field(
+        default=0,
+        description="Blocks in which only one arm was observed. They refuse under "
+        "policy.missing='error'; under 'drop' they are left out and counted here.",
+    )
+    units_left_out: int = Field(default=0, description="Units in the incomplete blocks.")
+    sd_difference: float | None = Field(
+        default=None,
+        description="Standard deviation, across blocks, of the within-block difference (treated "
+        "mean minus control mean). What sizes a paired follow-up for a continuous outcome.",
+    )
+    discordant_treated: int | None = Field(
+        default=None,
+        description="Binary outcome, pairs: pairs in which only the treated unit has the outcome.",
+    )
+    discordant_control: int | None = Field(
+        default=None,
+        description="Binary outcome, pairs: pairs in which only the control unit has the outcome.",
+    )
+    mcnemar_exact_p: float | None = Field(
+        default=None,
+        description="Binary outcome, pairs: the exact two-sided McNemar p-value (the conditional "
+        "binomial test on the discordant pairs). The interval excludes zero only when this is "
+        "below 1 - ci_level.",
+    )
+    unblocked_se: float | None = Field(
+        default=None,
+        description="The standard error an analysis ignoring the blocks would report on the same "
+        "units (Neyman difference in means). Beside the primary standard error, it shows what "
+        "blocking bought.",
+    )
+
+
 class CausalResult(_Model):
     kind: Literal["result"] = "result"
     status: ResultStatus
@@ -706,6 +777,11 @@ class CausalResult(_Model):
         default=(),
         description="Panel designs only: the effect by periods since adoption, pre-periods "
         "included as placebos.",
+    )
+    blocks: BlockSummary | None = Field(
+        default=None,
+        description="Blocked designs only (`CausalQuery.block`): the blocks, discordant pairs and "
+        "what blocking bought.",
     )
     claims: tuple[Claim, ...] = ()
     warnings: tuple[str, ...] = ()

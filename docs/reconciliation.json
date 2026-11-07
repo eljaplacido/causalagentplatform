@@ -26,18 +26,18 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-10-31",
+        "on": "2026-11-04",
         "sha256": {
-          "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
-          "packages/causal-mcp": "ff3535460199623c814f7524892e3716c65e4bab3e929756340321a1789aa907",
+          "backend/pyproject.toml": "f7fbeb2dafb5635e8bc3d4ff461bb5b65a7091ed592a2b03c1442d2e6a74df5d",
+          "packages/causal-mcp": "a6e19b07b09b94989ff60e6b66cbfea208918f186d53b5d6c58e26cd80f4ab2d",
           "frontend/package.json": "ac359e5e20646cc62485f3b8237c63c331e66413423c6618349d11488d17da5f",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "164950fa6f26f05ff7b799520009605c674614504ceb00e93f84d3b6543ed493"
+          "docs/CURRENT_STAGE.md": "e50d05617946f1e7e1fe3c94f91eec17f86d92478e89cb65db634feddba19d8d"
         }
       },
       "last_read": {
-        "on": "2026-10-31",
-        "by": "Claude (frontend-majors branch)"
+        "on": "2026-11-04",
+        "by": "Claude (fix/decision-gaps: read for NO_VARIATION, block designs and T11, target_population, D0 v5 and contract 0.15.0 -- refusal counts, gate tables and enumerations, D0 figures, sizing row, capability card; AGENTS/ORCHESTRATION/UIX/shadow README: no claim moved)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -51,19 +51,19 @@
         "specs"
       ],
       "baseline": {
-        "on": "2026-10-31",
+        "on": "2026-11-07",
         "sha256": {
-          "conformance/declared_not_implemented.json": "85a6f40c126c70a36f43286c3575e3509447dd00b379035182551cac290199db",
+          "conformance/declared_not_implemented.json": "0ab82df90f259eee11aa4531b8f2222cbcc41ff2f9b72d4e94a8d70cb68f977e",
           "backend/src": "56ca28dd53e2d20be2d46d32b213d2224f478f2e920c4fe99dafc16ebcdb8bd7",
           "backend/tests": "ed6e8c031488d045d9241d153887965ff1a328843b93b4e8ecef976938ba51aa",
-          "frontend/src": "a043dfce374d1eca3072b4bb8ee029d522cf99f3def2be01aaf8aa83284437e1",
-          "packages": "2b75f5a4a9c24f0dd0594893b4ac97801a54928bf96e16867a1a23772ee126ea",
+          "frontend/src": "5704ea6971366bc477d396112a49a9b2db09e3a98e70738175f6cf305914e38d",
+          "packages": "c1eab24b1ffb373fe080f2ab0677850a85c13fdbfac9603971a78ee81f09c35f",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
-        "on": "2026-10-31",
-        "by": "Claude (frontend-majors branch)"
+        "on": "2026-11-07",
+        "by": "Claude (train/1 main-merge of #107: read CURRENT_STAGE rows 47-52/86-88 (T10/T11/NO_VARIATION/transportability) against the merged register (dast re-cite + transportability entry both kept); ROADMAP lines 26-31 (12 typed refusals = AbstentionReason incl. NO_VARIATION, D0 v5); TESTING_CICD gate table incl. T11 row 188 and the Node 26/TS 7 dependency notes; UIX component table vs ResultView NO_VARIATION text and the frontend-majors edits: no claim moved)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -144,18 +144,18 @@
         "prompts"
       ],
       "baseline": {
-        "on": "2026-10-21",
+        "on": "2026-11-04",
         "sha256": {
           "backend/src/agents": "81a4e9fe97f4324a0456c26edc3dee0238f64f8540ac59be17e046fd4750a48d",
           "backend/src/skills": "b0bcef79c64f6b8d2f35f87f92095d54c52cec7d972a4cf1520b95fcc0d68347",
-          "packages/causal-mcp": "ff3535460199623c814f7524892e3716c65e4bab3e929756340321a1789aa907",
+          "packages/causal-mcp": "a6e19b07b09b94989ff60e6b66cbfea208918f186d53b5d6c58e26cd80f4ab2d",
           "backend/src/orchestration": "e2eb3496c39122094c47140ed28a932742480b35a2cbe4d2c1a11a40e9a0c6f7",
           "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9"
         }
       },
       "last_read": {
-        "on": "2026-10-21",
-        "by": "Claude (septa-55: causal-mcp CHANGELOG gained the tool-listing line; no other claim moved)"
+        "on": "2026-11-04",
+        "by": "Claude (fix/decision-gaps: read for NO_VARIATION, block designs and T11, target_population, D0 v5 and contract 0.15.0 -- refusal counts, gate tables and enumerations, D0 figures, sizing row, capability card; AGENTS/ORCHESTRATION/UIX/shadow README: no claim moved)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -247,17 +247,17 @@
         ".gnomon"
       ],
       "baseline": {
-        "on": "2026-10-31",
+        "on": "2026-11-04",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9",
           ".github": "4b74b1a83ae2f5e19dcb91aaadede98f9a69ec46f66facfcaf642f2e74a5261e",
-          ".gnomon": "5b6f297cd580dcd75c0b5191462467ebb046083612c15fd9c9a511b0ba840236"
+          ".gnomon": "ee147e3edf82b9371953e17ac4c663f28983c116ed09e0625fb7c451162ee5d8"
         }
       },
       "last_read": {
-        "on": "2026-10-31",
-        "by": "Claude (frontend-majors branch)"
+        "on": "2026-11-04",
+        "by": "Claude (fix/decision-gaps: read for NO_VARIATION, block designs and T11, target_population, D0 v5 and contract 0.15.0 -- refusal counts, gate tables and enumerations, D0 figures, sizing row, capability card; AGENTS/ORCHESTRATION/UIX/shadow README: no claim moved)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -273,12 +273,12 @@
         "backend/scripts"
       ],
       "baseline": {
-        "on": "2026-10-31",
+        "on": "2026-11-04",
         "sha256": {
           "start.sh": "a44c4631216644b7223150fb5ffea1ba1f241b90c038d4be07e0b42571be5af1",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
-          "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
+          "backend/pyproject.toml": "f7fbeb2dafb5635e8bc3d4ff461bb5b65a7091ed592a2b03c1442d2e6a74df5d",
           "frontend/package.json": "ac359e5e20646cc62485f3b8237c63c331e66413423c6618349d11488d17da5f",
           "package.json": "833bce1de1e6a72e2d906799e3265db59290a9ba3833b745a1a943e567113f46",
           ".env.example": "c1b1272a098696c6c0e72ba533fca78db4060da7c549715d14fb1167656e906a",
@@ -286,8 +286,8 @@
         }
       },
       "last_read": {
-        "on": "2026-10-31",
-        "by": "Claude (frontend-majors branch)"
+        "on": "2026-11-04",
+        "by": "Claude (fix/decision-gaps: read for NO_VARIATION, block designs and T11, target_population, D0 v5 and contract 0.15.0 -- refusal counts, gate tables and enumerations, D0 figures, sizing row, capability card; AGENTS/ORCHESTRATION/UIX/shadow README: no claim moved)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -306,24 +306,24 @@
         "packages/causal-decision/tests"
       ],
       "baseline": {
-        "on": "2026-10-31",
+        "on": "2026-11-07",
         "sha256": {
           ".github/workflows": "dda91d5921d692ddf3c2cb61ede9c6cf00b576478eda4736820ea0a442099d80",
           "backend/tests": "ed6e8c031488d045d9241d153887965ff1a328843b93b4e8ecef976938ba51aa",
-          "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
+          "backend/pyproject.toml": "f7fbeb2dafb5635e8bc3d4ff461bb5b65a7091ed592a2b03c1442d2e6a74df5d",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5dc65a49d6975444738042f9c292b56050a932ed23932e45498fbcea6285ff3e",
           ".gnomon/ci.sh": "a203a97aa6b72b34bc2ee7b3dde6d019fb465dd661b1b37d184be14f0ba3134c",
-          "scripts": "83d60b3507bd31d90b889e8c02a22a6f573f180676e953e344d8050f15c68e11",
+          "scripts": "dccde11eaeb1291555897367fb5678830e588b8dfbb1fce13fa1275c6ac631e4",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
-          "benchmarks": "17b15235a74e84e3de54a752eed9d89b9f44d4e6880ba2afceb1129a9650eab5",
-          "packages/causal-core/tests": "76e4e4f85b5a4200ea7a723cee8394fd09b751157b4c91bdc9b61e68aa3465ad",
-          "packages/causal-decision/tests": "99e9783c2d5686b21b0bf6afe80c89144ad1a02f2efd329ecde31e3a8b581deb"
+          "benchmarks": "18f87f3832f78cb09851f14d4dbb13138036998b913eb74868dbe598a09479e8",
+          "packages/causal-core/tests": "06c4404c64460ffa20bade9cd9fc594e877cf94ab042444a4f562b7332ff057a",
+          "packages/causal-decision/tests": "abcda507471f8fbe990f2cbc613feed9cee70d44c66ed93de15a2f85257a4041"
         }
       },
       "last_read": {
-        "on": "2026-10-31",
-        "by": "Claude (frontend-majors branch)"
+        "on": "2026-11-07",
+        "by": "Claude (train/1 main-merge of #107: read CURRENT_STAGE rows 47-52/86-88 (T10/T11/NO_VARIATION/transportability) against the merged register (dast re-cite + transportability entry both kept); ROADMAP lines 26-31 (12 typed refusals = AbstentionReason incl. NO_VARIATION, D0 v5); TESTING_CICD gate table incl. T11 row 188 and the Node 26/TS 7 dependency notes; UIX component table vs ResultView NO_VARIATION text and the frontend-majors edits: no claim moved)"
       }
     },
     "docs/UIX.md": {
@@ -332,14 +332,14 @@
         "frontend/src"
       ],
       "baseline": {
-        "on": "2026-10-31",
+        "on": "2026-11-07",
         "sha256": {
-          "frontend/src": "a043dfce374d1eca3072b4bb8ee029d522cf99f3def2be01aaf8aa83284437e1"
+          "frontend/src": "5704ea6971366bc477d396112a49a9b2db09e3a98e70738175f6cf305914e38d"
         }
       },
       "last_read": {
-        "on": "2026-10-31",
-        "by": "Claude (frontend-majors branch)"
+        "on": "2026-11-07",
+        "by": "Claude (train/1 main-merge of #107: read CURRENT_STAGE rows 47-52/86-88 (T10/T11/NO_VARIATION/transportability) against the merged register (dast re-cite + transportability entry both kept); ROADMAP lines 26-31 (12 typed refusals = AbstentionReason incl. NO_VARIATION, D0 v5); TESTING_CICD gate table incl. T11 row 188 and the Node 26/TS 7 dependency notes; UIX component table vs ResultView NO_VARIATION text and the frontend-majors edits: no claim moved)"
       }
     },
     "docs/ROADMAP.md": {
@@ -350,16 +350,16 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-10-31",
+        "on": "2026-11-07",
         "sha256": {
-          "packages/causal-core/src/causal_core": "808b370dd05adaf6520a435312f501533e0b9f82239e15fbe2073c893278180f",
-          "conformance/declared_not_implemented.json": "85a6f40c126c70a36f43286c3575e3509447dd00b379035182551cac290199db",
-          "docs/CURRENT_STAGE.md": "164950fa6f26f05ff7b799520009605c674614504ceb00e93f84d3b6543ed493"
+          "packages/causal-core/src/causal_core": "28552dab1a30eeec7b4d4591f06cd8c26f9843a609357f6cedf577a114abc55d",
+          "conformance/declared_not_implemented.json": "0ab82df90f259eee11aa4531b8f2222cbcc41ff2f9b72d4e94a8d70cb68f977e",
+          "docs/CURRENT_STAGE.md": "e50d05617946f1e7e1fe3c94f91eec17f86d92478e89cb65db634feddba19d8d"
         }
       },
       "last_read": {
-        "on": "2026-10-31",
-        "by": "Claude (frontend-majors branch)"
+        "on": "2026-11-07",
+        "by": "Claude (train/1 main-merge of #107: read CURRENT_STAGE rows 47-52/86-88 (T10/T11/NO_VARIATION/transportability) against the merged register (dast re-cite + transportability entry both kept); ROADMAP lines 26-31 (12 typed refusals = AbstentionReason incl. NO_VARIATION, D0 v5); TESTING_CICD gate table incl. T11 row 188 and the Node 26/TS 7 dependency notes; UIX component table vs ResultView NO_VARIATION text and the frontend-majors edits: no claim moved)"
       }
     },
     "SECURITY.md": {
@@ -398,18 +398,18 @@
         "packages/causal-decision/src/causal_decision/contract.py"
       ],
       "baseline": {
-        "on": "2026-10-16",
+        "on": "2026-11-04",
         "sha256": {
-          "shadow/capability-card.json": "396f48e5ccc14c2465fa1a90f8bf015e42a4e4ad696587f8a6c94c520984a0f9",
+          "shadow/capability-card.json": "4d2b87fa74d4eaa02e520b387d67f2aca8b7088751b1da44778e95e8c34f69b1",
           "shadow/study-template.json": "83ba4ab56c575ee617e4b1200b377eb0a4a91775e7cfadfd9a15509de499b8a8",
           "shadow/PRE-REGISTRATION.template.md": "c5a4e0709b371106cdeb5f0bb2c2f0b1bf581e530d98d886a2cc6e2ca1b13623",
           "backend/src/connectors/agentcenter.py": "5a4190cd6088af24e0f6738a7b6be3c6115745474fc6dfe125324849148d73ac",
-          "packages/causal-decision/src/causal_decision/contract.py": "41dc326570433840bd26527de4b0c54b6506f462fda7aaaf4ac0e11925179b0a"
+          "packages/causal-decision/src/causal_decision/contract.py": "bf4d754e10881989248e8061a8a74800b0ce3ba43895c997acbe2a80e05b3c27"
         }
       },
       "last_read": {
-        "on": "2026-10-16",
-        "by": "Claude (septa-101: read for the LLM-edge cap, contract 0.14.0 and D0 v4 -- counts, verdict ladder, MCP tool rows, card)"
+        "on": "2026-11-04",
+        "by": "Claude (fix/decision-gaps: read for NO_VARIATION, block designs and T11, target_population, D0 v5 and contract 0.15.0 -- refusal counts, gate tables and enumerations, D0 figures, sizing row, capability card; AGENTS/ORCHESTRATION/UIX/shadow README: no claim moved)"
       }
     }
   }

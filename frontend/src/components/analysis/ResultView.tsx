@@ -37,6 +37,8 @@ const REASON_TEXT: Record<string, string> = {
   UNAPPROVED_ASSUMPTION: "The graph contains edges nobody has reviewed yet.",
   CI_TOO_WIDE: "The estimate is too imprecise to be useful.",
   DESIGN_CHECK_FAILED: "A check of the study design failed.",
+  NO_VARIATION:
+    "The treatment never varied in this data, so there is nothing to compare. An experiment that sets it would answer this.",
   RUNG_MISMATCH: "The question asks for more than this kind of data can answer.",
   INVALID_ADJUSTMENT_SET: "The variables chosen for adjustment don't block every confounding path.",
   WEAK_INSTRUMENT: "The instrument barely moves the treatment.",
