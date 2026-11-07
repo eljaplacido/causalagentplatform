@@ -660,6 +660,18 @@ def _to_model(object_type: str, row: Any) -> SemanticObject:
     return Assumption.model_validate(raw)
 
 
+def _queue_sensitivity(result: SensitivityResult) -> dict[str, Any]:
+    """A recorded sensitivity result as the review queue sends it: its stored fields."""
+    return {
+        "e_value": result.e_value,
+        "rosenbaum_gamma": result.rosenbaum_gamma,
+        "robust_to_unmeasured_confounding": result.robust_to_unmeasured_confounding,
+        "analysis_method": result.analysis_method,
+        "computed_at": timestamp_text(result.computed_at),
+        "computed_by": result.computed_by,
+    }
+
+
 def _object_type_of(obj: SemanticObject) -> str:
     return type(obj).__name__
 
@@ -1760,7 +1772,12 @@ class SemanticLayerRegistry:
         Return the DRAFT / UNDER_REVIEW objects inside `domains`, most at risk first.
 
         Each dict has id, object_type, domain, name, approval_status, created_at,
-        risk_tier, risk_reasons and submitted_by. The tier is derived from stored
+        risk_tier, risk_reasons, submitted_by, assumptions and sensitivity_results.
+        For an edge, `assumptions` are the stored assumptions it references (inside
+        `domains`, in the order the edge lists them) and `sensitivity_results` the
+        results the platform recorded for it -- the ones its tier and Guardian PR-007
+        read, not every result an assumption carries; both are empty for fragments
+        and entities, which reference no assumptions. The tier is derived from stored
         fields by src/semantic_layer/review_risk.py (edges by stated confidence and
         the sensitivity results the platform recorded for them, fragments by
         whether they carry an unapproved edge, entities LOW); the queue is ordered
@@ -1803,12 +1820,18 @@ class SemanticLayerRegistry:
                 },
             )
             edge_status = await self._edge_status(session, pending, domains)
+            assumptions = await self._queue_assumptions(session, pending, domains)
 
         results: list[dict[str, Any]] = []
         for row in pending:
+            rests_on: list[dict[str, Any]] = []
+            recorded: list[dict[str, Any]] = []
             if row["object_type"] == "CausalEdge":
                 found = sensitivity[str(row["id"])]
                 tier, reasons = edge_risk(float(row["confidence"]), found)
+                refs = [str(a) for a in (json_value(row["assumption_refs"], []) or [])]
+                rests_on = [assumptions[a] for a in refs if a in assumptions]
+                recorded = [_queue_sensitivity(r) for r in found]
             elif row["object_type"] == "GraphFragment":
                 edge_ids = [str(e) for e in (json_value(row["edge_ids"], []) or [])]
                 tier, reasons = fragment_risk(edge_ids, edge_status)
@@ -1830,11 +1853,55 @@ class SemanticLayerRegistry:
                         if isinstance(creator, dict) and creator.get("id")
                         else None
                     ),
+                    "assumptions": rests_on,
+                    "sensitivity_results": recorded,
                 }
             )
 
         results.sort(key=lambda x: (TIER_RANK[RiskTier(x["risk_tier"])], _moment(x["created_at"])))
         return results[:limit]
+
+    @staticmethod
+    async def _queue_assumptions(
+        session: AsyncSession, pending: list[dict[str, Any]], domains: Collection[str] | None
+    ) -> dict[str, dict[str, Any]]:
+        """The stored assumptions the pending edges rest on, inside `domains`, by id.
+
+        What the review queue shows of each: its statement, type, review status and
+        when it was last reviewed -- the columns of `assumptions`, nothing derived.
+        """
+        ids = sorted(
+            {
+                str(a)
+                for row in pending
+                if row["object_type"] == "CausalEdge"
+                for a in (json_value(row["assumption_refs"], []) or [])
+            }
+        )
+        if not ids:
+            return {}
+        t = _ASSUMPTIONS
+        params: dict[str, Any] = {"ids": ids}
+        rows = await session.execute(
+            select(
+                t.c.id, t.c.statement, t.c.assumption_type, t.c.review_status,
+                t.c.last_reviewed_at,
+            ).where(
+                t.c.id.in_(bindparam("ids", expanding=True)),
+                *_domain_filter(t, domains, params),
+            ),
+            params,
+        )
+        return {
+            str(r["id"]): {
+                "id": str(r["id"]),
+                "statement": r["statement"],
+                "assumption_type": str(r["assumption_type"]),
+                "review_status": str(r["review_status"]),
+                "last_reviewed_at": timestamp_text(r["last_reviewed_at"]),
+            }
+            for r in rows.mappings()
+        }
 
     @staticmethod
     async def _edge_status(

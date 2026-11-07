@@ -173,6 +173,27 @@ class RejectRequest(BaseModel):
     )
 
 
+class ReviewQueueAssumption(BaseModel):
+    """A stored assumption a pending edge rests on, as `assumptions` holds it."""
+
+    id: str
+    statement: str
+    assumption_type: str
+    review_status: str
+    last_reviewed_at: str | None
+
+
+class ReviewQueueSensitivity(BaseModel):
+    """A sensitivity result the platform recorded for a pending edge (its stored fields)."""
+
+    e_value: float | None
+    rosenbaum_gamma: float | None
+    robust_to_unmeasured_confounding: bool
+    analysis_method: str
+    computed_at: str | None
+    computed_by: str
+
+
 class ReviewQueueItem(BaseModel):
     """One pending object in GET /api/governance/review-queue.
 
@@ -182,6 +203,12 @@ class ReviewQueueItem(BaseModel):
     while it names an edge that is not APPROVED, else MEDIUM; an entity is LOW.
     ``risk_reasons`` names the facts that decided it. ``submitted_by`` is the id in
     the object's ``created_by``, or null where none was recorded.
+
+    ``assumptions`` and ``sensitivity_results`` (septa-88) are, for an edge, the
+    stored assumptions it references that the reviewer may see and the sensitivity
+    results the platform recorded for it (the ones the tier and Guardian PR-007
+    read); for a fragment or an entity both are empty. There are no evidence
+    citations: an edge's evidence_refs are ids, and no evidence is stored to cite.
     """
 
     id: str
@@ -193,6 +220,8 @@ class ReviewQueueItem(BaseModel):
     risk_tier: RiskTier
     risk_reasons: list[str]
     submitted_by: str | None
+    assumptions: list[ReviewQueueAssumption] = Field(default_factory=list)
+    sensitivity_results: list[ReviewQueueSensitivity] = Field(default_factory=list)
 
 
 class AuditLogResponse(BaseModel):

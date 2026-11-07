@@ -104,7 +104,8 @@ As implemented in `backend/src/orchestration/planning.py`:
 - The Guardian's side of that contract is rule PR-010 (`src/agents/governance.py`): a check
   whose payload carries `plan_outcome: "no_safe_action"` is `REQUIRES_ESCALATION`, never
   APPROVED. It reads the payload of the check, not the state's `no_safe_action_found` flag,
-  which a resumed session carries from earlier runs. The GuardianCheck node forwards the
+  which a resumed session used to carry from earlier runs (since septa-80 a resumed run
+  starts with no flags). The GuardianCheck node forwards the
   plan's outcome, and an escalation now reaches it, so a no-safe-action run is ruled
   `REQUIRES_ESCALATION` citing PR-010 and recorded
 - Effect estimation from the approved fragment: attempted, always refused for lack of data (see

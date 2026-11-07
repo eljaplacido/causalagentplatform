@@ -46,9 +46,10 @@ import type {
 const SEVERITIES: readonly IncidentSeverity[] = ["P0", "P1", "P2", "P3"];
 
 /**
- * Rows written by backend/scripts/seed_data.py carry SEV1-SEV4; the triage
- * endpoint stores P0-P3. Both are shown as P0-P3 (the same mapping the page
- * used to apply when sending), so the feed speaks one vocabulary.
+ * The triage endpoint stores P0-P3, and so does backend/scripts/seed_data.py
+ * since septa-84. A database seeded before that still carries SEV1-SEV4 rows
+ * (the seeder upserts its incidents, so re-seeding rewrites them): those are
+ * shown as P0-P3 too, so the feed speaks one vocabulary.
  */
 const SEED_SEVERITY: Readonly<Record<string, IncidentSeverity>> = {
   SEV1: "P0",
@@ -265,16 +266,22 @@ export default function IncidentsPage() {
               },
             ]
           : [],
-        proposedInterventions: result.recommendations.map((rec) => ({
-          id: `int-${rec.rank}-${result.session_id}`,
-          title: rec.action,
-          description: rec.rationale,
-          // SessionStateResponse carries no effect estimate: none is shown.
-          confidence: rec.confidence,
-          assumptions: [],
-          riskTier: rec.risk_tier as "LOW" | "MEDIUM" | "HIGH" | "CRITICAL",
-          guardianVerdict: result.guardian_verdict as Incident["proposedInterventions"][0]["guardianVerdict"],
-        })),
+        proposedInterventions: result.recommendations.map((rec) => {
+          const id = `int-${rec.rank}-${result.session_id}`;
+          // Each intervention's own Guardian verdict, as the incident row stores it.
+          // The session's verdict is not that intervention's; fail-closed: PENDING.
+          const ruled = (result.interventions ?? []).find((i) => i.id === id);
+          return {
+            id,
+            title: rec.action,
+            description: rec.rationale,
+            // SessionStateResponse carries no effect estimate: none is shown.
+            confidence: rec.confidence,
+            assumptions: [],
+            riskTier: rec.risk_tier as "LOW" | "MEDIUM" | "HIGH" | "CRITICAL",
+            guardianVerdict: ruled?.guardianVerdict ?? "PENDING",
+          };
+        }),
       };
 
       setIncidents((prev) => {
