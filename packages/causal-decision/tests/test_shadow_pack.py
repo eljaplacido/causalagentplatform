@@ -111,6 +111,25 @@ def test_study_template_is_an_oracle_spec_the_platform_accepts(study: dict) -> N
     assert study["shadow"]["kind"] == "causalplatform"
 
 
+def test_study_template_is_a_study_the_round_runner_reads(study: dict) -> None:
+    from causal_decision.shadow_round import Study
+
+    parsed = Study.model_validate(study)
+    assert not parsed.planted  # "a verdict"
+    assert parsed.shadow.tag == study["shadow"]["tag"]
+
+
+def test_preregistration_template_is_what_the_scorer_judges(tmp_path: Path) -> None:
+    from causal_decision.shadow_round import BARS, METRICS, load_prereg
+
+    (tmp_path / "PRE-REGISTRATION.md").write_text(
+        (SHADOW / "PRE-REGISTRATION.template.md").read_text()
+    )
+    bars, _ = load_prereg(tmp_path)  # every bar it sets is one the scorer evaluates
+    assert set(bars.bars) == set(BARS)
+    assert set(bars.reported) == set(METRICS)
+
+
 def test_preregistration_template_bars_parse() -> None:
     text = (SHADOW / "PRE-REGISTRATION.template.md").read_text()
     blocks = re.findall(r"```toml\n(.*?)```", text, re.S)

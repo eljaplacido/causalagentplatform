@@ -27,7 +27,7 @@ says so.
 
 ## Setting up
 
-Python 3.12 and Node 24 LTS, as CI uses. Two Python environments, one per lock, as CI builds them: the
+Python 3.12 and Node 26 LTS, as CI uses. Two Python environments, one per lock, as CI builds them: the
 backend's, and the kernel's (the three kernel packages, with causal-mcp on MCP SDK v2 and the kernel
 suites' own test dependencies):
 
@@ -201,7 +201,9 @@ Each release:
    gates, builds and writes the SBOM, and cannot publish;
 3. tag that merge commit `vYYYY.MM.DD` (the tag names the release; each package keeps its own
    version) and push the tag. The workflow re-runs the kernel's gates on the tagged commit,
-   publishes, and attaches the CycloneDX SBOM to the GitHub release.
+   publishes, and attaches the CycloneDX SBOM to the GitHub release. A package whose version
+   did not change is already on PyPI and is skipped. Building and publishing run on GitHub's
+   hosted runners, never self-hosted ones.
 
 A published version is never re-used: PyPI refuses it, and causal-core hashes its version into
 every result's provenance.

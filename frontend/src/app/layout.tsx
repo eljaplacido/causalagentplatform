@@ -12,7 +12,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "Unified Enterprise Causal Platform",
+    default: "Causal Platform",
     template: "%s | Causal Platform",
   },
   description:

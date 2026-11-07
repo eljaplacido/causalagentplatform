@@ -629,8 +629,12 @@ def _rationale(verdict: Verdict, ev: Evidence, request: DecisionRequest) -> str:
     the tail carrying numbers -- an E-value bar, an interval-width ratio -- that no claim
     of the analysis backed, inside prose that promises the opposite.
     """
+    # The lead clause says what to do in words. It must not repeat the verdict's own
+    # name: ``explain`` already heads the text with it ("ACT: ..."), and a lead of
+    # "Act: ..." rendered as "ACT: Act: send the email campaign." (platform run,
+    # 2026-10-27).
     head = {
-        Verdict.act: f"Act: {request.action}.",
+        Verdict.act: f"Go ahead: {request.action}.",
         Verdict.act_with_approval: f"Ask a person to approve: {request.action}.",
         Verdict.experiment: f"Run an experiment before acting: {request.action}.",
         Verdict.refuse: f"Do not act: {request.action}.",

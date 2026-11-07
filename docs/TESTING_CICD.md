@@ -98,7 +98,7 @@ Only 0 is done. `.septacore.json` maps the same codes to `passed`, `failed`,
 | Directory | What it holds |
 |---|---|
 | `unit/` | Skills, agents, the registry, the DB factory, connectors (HTTP mocked), provenance and contract models, planning, evaluation, the incidents API's decision merge (a human decision beside the Guardian verdict, `test_incident_decision_merge.py`), and negative controls for the gate's own scripts (`test_contract_parity.py`, `test_secret_scan.py`, `test_dep_audit.py`, `test_skill_refs.py`, `test_doc_figures.py`, `test_import_origin.py`, `test_gate_scope_package_rows.py`), and for the supply-chain checks outside it (`test_py_lock.py`, `test_image_scan.py`, `test_sbom_check.py`) |
-| `integration/` | FastAPI routes through `httpx`: draft submission end to end (`test_draft_submission_api.py`: a declared or session domain is judged, nothing declared is PR-006, CHAOTIC is PR-003), governance approval flow, the reject authority (an APPROVED verdict for `GOVERNANCE_REJECT`, and the governance page's own reject bodies end to end, `test_governance_reject_verdict.py`), recorded reasons, the review queue's risk tiers and submitters (`test_review_queue_risk.py`), intervention roles, the role matrix and domain isolation (`test_rbac_matrix.py`: every route but the liveness probe has a row, reads included, and is refused without a granted role), session ownership (`test_session_ownership.py`), incident overwrites (`test_incident_overwrite.py`), intervention decisions by exact id (`test_intervention_decision_identity.py`), the database's own domain isolation on PostgreSQL (`test_rls_domain_isolation.py`), session API and store (a caller-declared Cynefin domain refused: `test_session_domain_not_declared.py`), the analysis endpoints (`test_analysis_api.py`: each example's stated true effect inside the returned interval, the hidden-confounder example refused), the decision ledger (checkpoints and anchored verification included) and follow-ups, the assumption registry (`/api/v1/models`), provenance written by the running flows and kept append-only with erasure as a tombstone (`test_provenance_flow.py`, `test_provenance_append_only.py`), and the MCP server over stdio |
+| `integration/` | FastAPI routes through `httpx`: draft submission end to end (`test_draft_submission_api.py`: a declared or session domain is judged, nothing declared is PR-006, CHAOTIC is PR-003), governance approval flow, the reject authority (an APPROVED verdict for `GOVERNANCE_REJECT`, and the governance page's own reject bodies end to end, `test_governance_reject_verdict.py`), recorded reasons, the review queue's risk tiers and submitters (`test_review_queue_risk.py`), intervention roles, the role matrix and domain isolation (`test_rbac_matrix.py`: every route but the liveness probe has a row, reads included, and is refused without a granted role), session ownership (`test_session_ownership.py`), incident overwrites (`test_incident_overwrite.py`), what an incident or a failed session run leaves in the audit trail (`test_incident_integrity.py`: one analysis and one run verdict per incident, a verdict per stored intervention, an unsigned row saying why for a run that failed before the Guardian), intervention decisions by exact id (`test_intervention_decision_identity.py`), the database's own domain isolation on PostgreSQL (`test_rls_domain_isolation.py`), session API and store (a caller-declared Cynefin domain refused: `test_session_domain_not_declared.py`), the analysis endpoints (`test_analysis_api.py`: each example's stated true effect inside the returned interval, the hidden-confounder example refused), the decision ledger (checkpoints and anchored verification included) and follow-ups, the assumption registry (`/api/v1/models`), provenance written by the running flows and kept append-only with erasure as a tombstone (`test_provenance_flow.py`, `test_provenance_append_only.py`), and the MCP server over stdio |
 | `guardian/` | Guardian bypass prevention, verdict binding (signed, subject-bound, single-use, and for approval bound to `GOVERNANCE_APPROVE`), drafts that cannot approve themselves, PR-007 (no edge approved without a sensitivity result the platform recorded under a `RECORD_SENSITIVITY` verdict; a drafter's own result, or a forged verdict reference, does not count) and the kernel's sensitivity analysis recorded where it reads it, PR-010 (no approval of a plan with no safe action), a risk score and cycle count the caller cannot supply, the `audit_write` skill, and `audit_log` refusing UPDATE and DELETE |
 
 The backend suite runs against one of two schemas, chosen by `TEST_DATABASE_URL`
@@ -152,7 +152,8 @@ docker rm -f causal-pg-test
 ```
 
 The optional Neo4j code paths (experience buffer, drift-alert storage) are tested only with a
-mocked driver; Neo4j is not the causal graph store (`neo4j-graph-store` was retracted). No backend test asserts a causal estimate against ground truth:
+mocked driver (the SQL record a drift alert leaves without Neo4j, `drift_alerts`, is tested on both
+schemas: `test_drift_alert_record.py`); Neo4j is not the causal graph store (`neo4j-graph-store` was retracted). No backend test asserts a causal estimate against ground truth:
 the backend delegates estimation to `packages/causal-core`, and that is where estimates are
 gated (§3.2); the narration tests check the kernel's interval covers
 the effect their simulated data were built with only as a premise, before testing what the LLM
@@ -218,7 +219,13 @@ proposed by devbrain and agentcenter, verdicts sealed and not acted on, and a fo
 against bars pre-registered from `shadow/PRE-REGISTRATION.template.md`. `shadow/` sits outside
 `benchmarks/` because it is not a gate. Its capability card and study template are pinned to the
 kernel's and the decision layer's contracts by `packages/causal-decision/tests/test_shadow_pack.py`.
-No round has run yet.
+The round runner and scorecard (`causal_decision.shadow_round`) are tested on a five-study fixture
+round whose data is simulated with the effects set
+(`packages/causal-decision/tests/test_shadow_round.py`): a reversed effect fails the round as a
+confident wrong answer, and the failed scorecard is kept. A planted every-unit-treated study is
+sealed as `NO_VARIATION` with an experiment verdict, and a study whose data come from another
+population than its declared target is sealed as an experiment in the target, not scored as acted.
+No round on real decisions has run yet.
 
 Counterfactuals over an SCM and causal discovery have no correctness tests because they are not
 implemented (registers `scm-counterfactuals`, `causal-discovery`). Rosenbaum bounds are gated by
@@ -245,7 +252,8 @@ T9 and pinned to a published example by `backend/tests/unit/test_rosenbaum_bound
   only backend-confirmed decisions and audit rows, and the incidents page leaves a decision
   unchanged and shows the error when the API call fails. They also pin that each page renders
   data shaped as the backend sends it and invents none: registry rows with a business domain,
-  stored incidents with P0–P3 or seeded SEV1–SEV4 severities and no effect estimate, and a
+  stored incidents with P0–P3 severities (or SEV1–SEV4, from a database seeded before septa-84)
+  and no effect estimate, and a
   session result with only a proposed-edge count.
   There is no coverage threshold.
 - **Playwright** (`frontend/e2e/`, config `frontend/playwright.config.ts`). The gate's
@@ -298,11 +306,18 @@ on an idle CPU with little memory free. GitHub keeps one pending job
 per group, so a third gate queued behind a running one replaces the pending one, which shows as
 cancelled and is re-run.
 
+**BLAS threads.** Both workflows set `OMP_NUM_THREADS`, `OPENBLAS_NUM_THREADS` and
+`MKL_NUM_THREADS` from the repository variable `CI_BLAS_THREADS`, else 2 (septa-90): unset, each
+numpy process takes a thread per core, and runners sharing a host oversubscribe it. The number
+changes how hard a job leans on the host, not what it finds: `causal_core.analyze` runs BLAS on
+one thread regardless (`causal_core.numerics`, septa-89), so a result or decision digest is the
+same at any setting (`packages/causal-decision/tests/test_digest_reproducible.py`).
+
 The gate job:
 
 1. Check out with full history. The register cites some claims at the revision where they were
    made (`file@rev:line`), and a shallow clone cannot verify those.
-2. Set up Python 3.12 and Node 24 (LTS; 20 reached end of life in April 2026); cache the benchmark data (keyed on the pre-registrations).
+2. Set up Python 3.12 and Node 26 (LTS since October 2026; 20 reached end of life in April 2026); cache the benchmark data (keyed on the pre-registrations).
    A `postgres:16-alpine` service container (health-checked with `pg_isready`, a CI-only
    throwaway password, listening on loopback only) runs beside the job for
    `backend-pytest-postgres`.
@@ -354,13 +369,17 @@ python3 scripts/image_scan.py scan/trivy-backend.json --image backend
 
 On a `v*` tag: re-run the three packages' full suites (with `CAUSAL_FETCH=1`, so T2 and T3 run;
 T0 and D0 as their own steps) in the environment of `requirements/kernel.txt`, installed as CI
-installs it, and the licence check. Then build sdists and wheels (with `build`, `twine` and
-`cyclonedx-bom` at pinned versions), install the wheels into a fresh environment that holds only
+installs it, and the licence check. Then, on GitHub's hosted runners whatever `CI_RUNS_ON` says
+(the jobs that build and hold the PyPI upload token never run on a self-hosted host), check that
+each package's `LICENSE` and `NOTICE` are the repository's, build sdists and wheels (with
+`build`, `twine` and `cyclonedx-bom` at pinned versions) and check that each one carries both
+files (Apache-2.0 §4), install the wheels into a fresh environment that holds only
 them and `requirements/release.txt` (their runtime dependencies, hash-pinned), and write a
 **CycloneDX 1.6 SBOM** of that environment. `cyclonedx-py` validates it against the schema as it
 writes, and `scripts/sbom_check.py` then checks it: it parses, and lists every locked pin at its
 version, the three packages, and nothing else. Then publish `causal-core`, `causal-decision` and
-`causal-mcp` to PyPI with Trusted Publishing (OIDC, no stored token), and attach the SBOM to the
+`causal-mcp` to PyPI with Trusted Publishing (OIDC, no stored token; a package whose version is
+already on PyPI is skipped, since each keeps its own version under a dated `v*` tag), and attach the SBOM to the
 tag's GitHub release (creating the release if the tag has none). A manual run does all of this
 except publishing and attaching; the SBOM is kept as the `sbom` artifact either way. The backend and frontend
 are not published or deployed. The repository has no deployment pipeline and no staging
@@ -438,8 +457,11 @@ the two base images. How they are handled:
 - **Majors are ledger items.** A semver-major is ignored by the bot, in pyprojects and in npm
   alike: each needs its own migration and review, and a round of npm majors once held every CI
   runner (#32-#36). A major is taken as a ledger item that records what it needs (next and
-  eslint-config-next 16: septa-57; TypeScript 7: septa-58; the npm majors round: septa-82). The node base image stays on an LTS
-  line; the rule ignoring newer lines names septa-59.
+  eslint-config-next 16: septa-57; TypeScript 7: septa-58; the npm majors round: septa-82). TypeScript
+  is on two majors on purpose: 7 in `frontend/` (tsc, and next 16's build through TS 7's CLI), 6 at
+  the root and in `packages/semantic-types` for the tools that import its JS API, which 7 does not
+  ship (typescript-eslint, tsup's dts build). The node base image stays on an LTS line (26 since
+  septa-59); the rule ignoring newer lines names septa-59.
 - **Pins the ratchets depend on are never moved by the bot.** ruff, mypy, bandit and pip-audit
   are pinned to a minor because the lint and security ratchets (§4) count findings per version.
   The pyproject blocks ignore them entirely. Moving one is done by hand, with the baseline

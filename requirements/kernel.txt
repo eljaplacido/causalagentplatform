@@ -1358,10 +1358,12 @@ numpy==2.5.3 \
     #   scs
     #   sparsediffpy
     #   statsmodels
-opentelemetry-api==1.45.0 \
-    --hash=sha256:711ede81773c8025c2c03dac0450bc89f3d30aea6eabcc815c570d4e35a963f7 \
-    --hash=sha256:80e068aba7cd56c8b58512d6a36f8d25cb1dfaa0c0a4cc1c938ccf9f362d9cb3
-    # via mcp
+opentelemetry-api==1.45.2 \
+    --hash=sha256:2cbd737377e710ee740d261c94e93fa0f08e6d037c18f17513cc0a2d94479a34 \
+    --hash=sha256:d7b0008e21e5fd61cbe7a7f34ca3b6905a78ab677d9bc395e299359c75cda6b4
+    # via
+    #   -r requirements/kernel.in
+    #   mcp
 osqp==1.1.3 \
     --hash=sha256:0a168153f6058075d017e713d20eb4214c5daeb957b497c3c31340d0e63e1288 \
     --hash=sha256:0f30aee462d990a29ae9718e6b967db0c6527e0570b3d92db6b46fc6632d0c16 \
@@ -2217,10 +2219,12 @@ scs==3.3.1 \
     --hash=sha256:f95c78da2dedcbcee4ab998bacbee8f19af6803193dfab18c5d0debe0a7765f8 \
     --hash=sha256:fc10932f33c97d9a490be30eb8720e2012931e014bf9259980dcd23e57db6dba
     # via cvxpy
-setuptools==84.0.0 \
-    --hash=sha256:51a52592b3b99e102b609654876bd65f19f999935166d1352678931132b0c670 \
-    --hash=sha256:f4695c21257f0d9b537ec2692c941d02ee143b7cc1276941349a546573b2ef73
-    # via osqp
+setuptools==84.2.1 \
+    --hash=sha256:3ff8b3b5492a0aa66960f4419365a86b84e013070d4313e4d4a6894f5d64d6bc \
+    --hash=sha256:ca140b45d5325a9478f880e351484f62fef15f336462e449ca0c03c873d589c2
+    # via
+    #   -r requirements/kernel.in
+    #   osqp
 six==1.17.0 \
     --hash=sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274 \
     --hash=sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81

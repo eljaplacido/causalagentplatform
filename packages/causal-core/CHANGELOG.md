@@ -20,6 +20,12 @@ Contract 0.15.0. 0.14.0 was never published; this entry and the next are one rel
   `missing_information`.
 - **`target_population`:** declared, not implemented. The result keeps its own population and
   says the estimate was not transported (register: transportability).
+- **Reproducible digests:** `analyze` runs BLAS on one thread (`causal_core.numerics`, new
+  runtime dependency `threadpoolctl`) and the ID expression lists its c-components in sorted
+  order, so a result digest no longer depends on the host's thread count or the string hash
+  seed (septa-89). The pin covers every path `analyze` takes, the blocked and paired designs
+  and the not-transported warning included. Same build and CPU family only; the digest format
+  is unchanged.
 
 ## 0.14.0 (never published; folded into 0.15.0)
 

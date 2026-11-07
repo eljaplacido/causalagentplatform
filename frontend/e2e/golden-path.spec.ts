@@ -79,7 +79,7 @@ test("upload, check, estimate, decide and verify the ledger", async ({ page }) =
   await page.goto(`/analyze?${query.toString()}`);
 
   // 1 · Upload.
-  await page.getByLabel("CSV file").setInputFiles({
+  await page.getByLabel("CSV or Excel file").setInputFiles({
     name: "golden-path.csv",
     mimeType: "text/csv",
     buffer: Buffer.from(simulatedCsv()),

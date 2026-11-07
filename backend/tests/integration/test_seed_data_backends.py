@@ -46,6 +46,7 @@ from sqlalchemy.pool import NullPool
 from scripts import seed_data
 from src.db.factory import CloudSqlFactory
 from src.db.scope import install_scope_listener, service_scope
+from src.semantic_layer.registry import SemanticLayerRegistry
 from tests.conftest import PostgresTestDatabase, postgres_only
 
 if TYPE_CHECKING:
@@ -98,6 +99,11 @@ def _check_seeded(engine: AsyncEngine, result: dict[str, Any]) -> None:
         result["reviews"]["entities"]
     )
 
+    # Incident severities in the API's vocabulary (P0-P3, src/api/session.py), not
+    # SEV1-SEV4, which the UI had to translate (septa-84).
+    severities = {r[0] for r in asyncio.run(_rows(engine, "SELECT severity FROM incidents"))}
+    assert severities <= {"P0", "P1", "P2", "P3"}, severities
+
     # Arrays hold the values, not their JSON text.
     tags = asyncio.run(
         _rows(engine, "SELECT tags FROM causal_entities WHERE name = 'api-gateway'")
@@ -119,6 +125,24 @@ def _check_seeded(engine: AsyncEngine, result: dict[str, Any]) -> None:
         listed = _as_list(ids)
         assert listed, name
         assert set(listed) <= edge_ids, name
+
+
+def _check_queue_names_the_seeder() -> None:
+    """Every seeded object in the governance review queue names its submitter.
+
+    Precondition: the seeder wrote the review-queue objects (--reviews, inside
+    --all), through CloudSqlFactory. Postcondition: GET
+    /api/governance/review-queue's source, list_pending_review_queue, reports
+    ``submitted_by`` = the seeder for every pending item, edges included -- the
+    queue reads an edge's submitter from causal_edges.created_by (migration 012),
+    which the seeder left NULL, so seeded edges showed "not recorded" (platform
+    run, 2026-10-27). Undefined: the order within a tier, the risk reasons.
+    """
+    queue = asyncio.run(SemanticLayerRegistry().list_pending_review_queue(limit=200))
+    assert {"CausalEdge", "GraphFragment", "CausalEntity"} <= {i["object_type"] for i in queue}
+    missing = [(i["object_type"], i["name"]) for i in queue if i["submitted_by"] is None]
+    assert not missing, f"queue items with no recorded submitter: {missing}"
+    assert {i["submitted_by"] for i in queue} == {seed_data._SEEDER_USER.id}
 
 
 # ── SQLite ────────────────────────────────────────────────────────────────────
@@ -147,6 +171,7 @@ def sqlite_file_engine(tmp_path: Path) -> Generator[AsyncEngine, None, None]:
 def test_seed_all_on_sqlite_and_again(sqlite_file_engine: AsyncEngine) -> None:
     result = _seed_all()
     _check_seeded(sqlite_file_engine, result)
+    _check_queue_names_the_seeder()
     # A second run adds new semantic rows and upserts the fixed-id incidents.
     _seed_all()
     counts = asyncio.run(_counts(sqlite_file_engine))
@@ -182,6 +207,8 @@ def test_seed_all_on_postgres_as_causal_app(
         result = _seed_all()
         # Read back as the owner, whom row-level security does not bind.
         _check_seeded(owner, result)
+        with service_scope("test: the review queue over seeded objects"):
+            _check_queue_names_the_seeder()
         timestamps = asyncio.run(
             _rows(owner, "SELECT pg_typeof(created_at)::text FROM incidents LIMIT 1")
         )
@@ -199,3 +226,111 @@ def test_seed_all_on_postgres_as_causal_app(
         asyncio.run(_truncate(owner))
         asyncio.run(app.dispose())
         asyncio.run(owner.dispose())
+
+
+# ── A brand-new SQLite file, through the CLI ─────────────────────────────────
+#
+# Preconditions: ENV=local, SQLITE_PATH names a file that does not exist yet, and
+# the backend has never started against it (so nothing has created the schema).
+# Postconditions: `python -m scripts.seed_data --all` (its main()) exits normally
+# and every table it seeds holds rows -- the seeder creates the schema the way the
+# app's startup does (CloudSqlFactory.init_db when ENV is local). Found on a
+# platform run (2026-10-27): it failed with "no such table: audit_log" unless the
+# backend had been started once. Undefined: log lines, the order of the output.
+# About SQLite itself: it runs on its own file on both gate backends.
+
+
+def test_seed_all_creates_the_schema_on_a_brand_new_sqlite_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    db = tmp_path / "brand-new.db"
+    assert not db.exists()
+    monkeypatch.setenv("ENV", "local")
+    monkeypatch.setenv("SQLITE_PATH", str(db))
+    monkeypatch.setattr("sys.argv", ["seed_data", "--all"])
+    CloudSqlFactory.reset()
+    try:
+        seed_data.main()
+    finally:
+        engine = CloudSqlFactory._engine
+        if engine is not None:
+            asyncio.run(engine.dispose())
+        CloudSqlFactory.reset()
+
+    reader = create_async_engine(f"sqlite+aiosqlite:///{db}", poolclass=NullPool)
+    try:
+        counts = asyncio.run(_counts(reader))
+    finally:
+        asyncio.run(reader.dispose())
+    for table in _TABLES:
+        assert counts[table] > 0, f"the seeder wrote nothing to {table}"
+    assert counts["incidents"] == len(seed_data.SEED_INCIDENTS)
+
+
+def test_prepare_schema_creates_nothing_outside_local(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Outside ENV=local the schema is the migrations', applied by whoever
+    # provisions the database; the app's startup creates nothing there, nor may this.
+    async def _must_not_run() -> None:
+        raise AssertionError("init_db ran outside ENV=local")
+
+    monkeypatch.setenv("ENV", "production")
+    monkeypatch.setattr(CloudSqlFactory, "init_db", _must_not_run)
+    assert seed_data.prepare_schema() is False
+
+
+# ── The seeder's schema includes the drift-alert record (merge train #101 + #103) ──
+#
+# Preconditions: ENV=local, a brand-new SQLITE_PATH that only the seeder has touched
+# (prepare_schema, septa-110, is what created its schema).
+# Postconditions: the drift_alerts table (015_drift_alerts.sql, septa-62) exists on
+# it, so a drift alert raised against a freshly seeded database leaves a record: it
+# is written and read back through DriftAlertLog, and the table stays append-only
+# (an UPDATE is refused). Two branches met here: setup-and-ui made the seeder build
+# the schema itself, semantic-surface added the table to that schema.
+
+
+def test_a_database_only_the_seeder_built_records_drift_alerts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from sqlalchemy.exc import DBAPIError
+
+    from src.sensors.drift_alert_log import DriftAlertLog
+
+    db = tmp_path / "seeded-only.db"
+    monkeypatch.setenv("ENV", "local")
+    monkeypatch.setenv("SQLITE_PATH", str(db))
+    monkeypatch.setattr("sys.argv", ["seed_data", "--all"])
+    CloudSqlFactory.reset()
+    try:
+        seed_data.main()
+    finally:
+        engine = CloudSqlFactory._engine
+        if engine is not None:
+            asyncio.run(engine.dispose())
+        CloudSqlFactory.reset()
+
+    engine = create_async_engine(f"sqlite+aiosqlite:///{db}", poolclass=NullPool)
+    _use_engine(engine)
+    try:
+        alert_id = asyncio.run(
+            DriftAlertLog().record(
+                alert_type="CAUSAL_STRUCTURE_DRIFT",
+                severity="HIGH",
+                drift_type="causal",
+                drift_score=0.37,
+                description="edge latency -> error_rate no longer holds",
+                agent_id="seeded-db-test",
+            )
+        )
+        stored = asyncio.run(_rows(engine, "SELECT id, severity, drift_score FROM drift_alerts"))
+        assert [(r[0], r[1], r[2]) for r in stored] == [(alert_id, "HIGH", 0.37)]
+
+        async def _update() -> None:
+            async with engine.begin() as conn:
+                await conn.execute(text("UPDATE drift_alerts SET severity = 'LOW'"))
+
+        with pytest.raises(DBAPIError, match="append-only"):
+            asyncio.run(_update())
+    finally:
+        asyncio.run(engine.dispose())
+        CloudSqlFactory.reset()

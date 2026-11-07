@@ -1,5 +1,5 @@
 """
-LangGraph StateGraph for the Unified Enterprise Causal Platform.
+LangGraph StateGraph for the Causal Platform.
 
 Topology (AGENTS.md §5.1):
 
@@ -9,6 +9,10 @@ Topology (AGENTS.md §5.1):
         ├── COMPLEX      → CausalDiscovery ─┘             └→ EscalateHuman → GuardianCheck → Output
         ├── CHAOTIC      → EscalateHuman → GuardianCheck → Output
         └── DISORDER     → DisorderProtocol → CynefinClassify [retry once, then EscalateHuman]
+
+    An incident run (POST /api/v1/session/incident, ``analysis="incident_triage"``)
+    takes IncidentTriage → PlanAhead in place of the three analysis nodes: the
+    triage is the run's one analysis, and GuardianCheck its one verdict.
 
 Security invariants:
   - Every path ends GuardianCheck → Output: nothing reaches the caller without a
@@ -68,6 +72,13 @@ class PlatformState(TypedDict):
     plan_outcome: NotRequired[str | None]
     # Set by EscalateHuman: why this run went to a person. GuardianCheck records it.
     escalation_reason: NotRequired[str | None]
+    # Which analysis a classified run gets: None, the domain's own node, or
+    # "incident_triage" (IncidentTriageAgent, for POST /incident). Set by the caller.
+    analysis: NotRequired[str | None]
+
+
+#: PlatformState["analysis"] for an incident run: IncidentTriage is its analysis node.
+INCIDENT_TRIAGE = "incident_triage"
 
 
 # ── Node implementations ──────────────────────────────────────────────────────
@@ -203,6 +214,30 @@ async def node_causal_discovery(state: PlatformState) -> PlatformState:
                 "requires_human_review": True,
             }
         )
+    except CircuitBreakerError:
+        epistemic = _circuit_breaker_escalation(epistemic)
+    return {"epistemic": epistemic, "disorder_retries": state.get("disorder_retries", 0)}
+
+
+async def node_incident_triage(state: PlatformState) -> PlatformState:
+    """
+    IncidentTriage node -- a classified incident's one analysis (POST /incident).
+
+    Runs IncidentTriageAgent.analyse on the domain CynefinClassify gave, with no
+    Guardian check of its own: GuardianCheck rules on what it proposes. A COMPLEX
+    incident goes to a person after the Guardian, as CausalDiscovery's runs do.
+    """
+    epistemic = state["epistemic"]
+    agent = IncidentTriageAgent(agent_id=epistemic.agent_id)
+    try:
+        epistemic = await agent.analyse(epistemic)
+        if epistemic.cynefin_domain == CynefinDomain.COMPLEX:
+            epistemic = epistemic.model_copy(
+                update={
+                    "flags": [*epistemic.flags, "complex_domain_expert_review_required"],
+                    "requires_human_review": True,
+                }
+            )
     except CircuitBreakerError:
         epistemic = _circuit_breaker_escalation(epistemic)
     return {"epistemic": epistemic, "disorder_retries": state.get("disorder_retries", 0)}
@@ -365,35 +400,25 @@ async def node_escalate_human(state: PlatformState) -> PlatformState:
 
 async def node_disorder_protocol(state: PlatformState) -> PlatformState:
     """
-    DisorderProtocol node — DISORDER domain.
+    DisorderProtocol node — DISORDER domain: count the retry, then re-classify.
 
-    Prompts for re-classification. After _MAX_DISORDER_RETRIES, escalates to human.
+    It always goes back to CynefinClassify. It does not escalate:
+    ``route_after_cynefin`` sends a run to it only while fewer than
+    _MAX_DISORDER_RETRIES retries have been spent, and escalates a DISORDER that
+    comes back after that (EscalateHuman, reason ``disorder_unresolved``). The
+    escalating branch this node used to carry could not be reached.
     """
     epistemic = state["epistemic"]
     retries = state.get("disorder_retries", 0) + 1
-
-    if retries > _MAX_DISORDER_RETRIES:
-        # Too many retries — escalate
-        epistemic = epistemic.model_copy(
-            update={
-                "requires_human_review": True,
-                "flags": [*epistemic.flags, "disorder_max_retries"],
-                "draft_explanation": (
-                    "DISORDER domain unresolved after re-classification attempt. "
-                    "Escalating to human for domain clarification."
-                ),
-            }
-        )
-    else:
-        epistemic = epistemic.model_copy(
-            update={
-                "flags": [*epistemic.flags, f"disorder_retry_{retries}"],
-                "draft_explanation": (
-                    "DISORDER domain: gathering more signal before classification. "
-                    "Please provide additional context."
-                ),
-            }
-        )
+    epistemic = epistemic.model_copy(
+        update={
+            "flags": [*epistemic.flags, f"disorder_retry_{retries}"],
+            "draft_explanation": (
+                "DISORDER domain: gathering more signal before classification. "
+                "Please provide additional context."
+            ),
+        }
+    )
     log.info(
         "graph.disorder_protocol",
         session_id=epistemic.session_id,
@@ -451,12 +476,26 @@ async def node_output(state: PlatformState) -> PlatformState:
 def route_after_cynefin(
     state: PlatformState,
 ) -> Literal[
-    "direct_answer", "causal_analysis", "causal_discovery", "escalate_human", "disorder_protocol"
+    "direct_answer",
+    "causal_analysis",
+    "causal_discovery",
+    "incident_triage",
+    "escalate_human",
+    "disorder_protocol",
 ]:
-    """Route to the appropriate analysis node based on Cynefin domain."""
+    """Route to the appropriate analysis node based on Cynefin domain.
+
+    An incident run's classified domains all go to IncidentTriage: its one analysis.
+    """
     domain = state["epistemic"].cynefin_domain
     retries = state.get("disorder_retries", 0)
 
+    if state.get("analysis") == INCIDENT_TRIAGE and domain in (
+        CynefinDomain.CLEAR,
+        CynefinDomain.COMPLICATED,
+        CynefinDomain.COMPLEX,
+    ):
+        return "incident_triage"
     if domain == CynefinDomain.CLEAR:
         return "direct_answer"
     elif domain == CynefinDomain.COMPLICATED:
@@ -469,20 +508,6 @@ def route_after_cynefin(
         if retries >= _MAX_DISORDER_RETRIES:
             return "escalate_human"
         return "disorder_protocol"
-
-
-def route_after_disorder(
-    state: PlatformState,
-) -> Literal["cynefin_classify", "escalate_human"]:
-    """After disorder protocol, retry classify once; escalate past the retry limit.
-
-    This escalated whenever ``retries >= 1`` -- which it always is here, the
-    protocol having just counted itself -- so the documented retry never ran.
-    ``route_after_cynefin`` escalates a second DISORDER.
-    """
-    if state.get("disorder_retries", 0) > _MAX_DISORDER_RETRIES:
-        return "escalate_human"
-    return "cynefin_classify"
 
 
 def route_after_plan_ahead(
@@ -525,6 +550,7 @@ def build_platform_graph() -> StateGraph:
     graph.add_node("direct_answer", node_direct_answer)
     graph.add_node("causal_analysis", node_causal_analysis)
     graph.add_node("causal_discovery", node_causal_discovery)
+    graph.add_node("incident_triage", node_incident_triage)
     graph.add_node("plan_ahead", node_plan_ahead)             # Phase 2C: FLARE planning
     graph.add_node("guardian_check", node_guardian_check)
     graph.add_node("escalate_human", node_escalate_human)
@@ -545,15 +571,17 @@ def build_platform_graph() -> StateGraph:
             "direct_answer": "direct_answer",
             "causal_analysis": "causal_analysis",
             "causal_discovery": "causal_discovery",
+            "incident_triage": "incident_triage",
             "escalate_human": "escalate_human",
             "disorder_protocol": "disorder_protocol",
         },
     )
 
-    # CLEAR / COMPLICATED / COMPLEX all flow to plan_ahead before guardian
+    # CLEAR / COMPLICATED / COMPLEX (and an incident's triage) flow to plan_ahead
     graph.add_edge("direct_answer", "plan_ahead")
     graph.add_edge("causal_analysis", "plan_ahead")
     graph.add_edge("causal_discovery", "plan_ahead")
+    graph.add_edge("incident_triage", "plan_ahead")
 
     # Plan ahead → guardian (or escalate if no safe action)
     graph.add_conditional_edges(
@@ -575,15 +603,9 @@ def build_platform_graph() -> StateGraph:
     # (PR-003 for CHAOTIC, PR-006 for DISORDER) before the run returns.
     graph.add_edge("escalate_human", "guardian_check")
 
-    # DISORDER retry loop
-    graph.add_conditional_edges(
-        "disorder_protocol",
-        route_after_disorder,
-        {
-            "cynefin_classify": "cynefin_classify",
-            "escalate_human": "escalate_human",
-        },
-    )
+    # DISORDER retry loop: always back to classify; route_after_cynefin escalates
+    # a DISORDER that returns once the retry is spent.
+    graph.add_edge("disorder_protocol", "cynefin_classify")
 
     return graph
 

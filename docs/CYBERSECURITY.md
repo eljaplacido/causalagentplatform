@@ -1,6 +1,6 @@
 # Cybersecurity, Governance & Compliance
 
-> **Scope:** Security architecture, threat model, access control, data privacy, AI governance, and compliance posture for the Unified Enterprise Causal Platform.
+> **Scope:** Security architecture, threat model, access control, data privacy, AI governance, and compliance posture for the Causal Platform.
 >
 > **This is the target security design, not a description of the running code.** The threat
 > model (§2) and incident classes (§9) are the reference for triage. Most controls in the other
@@ -262,7 +262,10 @@ granted role does not.
 The second-brain connector (`backend/src/connectors/agentcenter.py`) makes outbound requests
 only to `AGENTCENTER_URL` and `ORACLE_URL`, both unset by default: GETs of suggestions and
 benchmark items, and, only with `AGENTCENTER_EMIT=true`, a POST per recorded decision carrying
-its digest, action text, verdict, benefit and interval and `origin` -- no data rows.
+its digest, action text, verdict, benefit and interval and `origin` -- no data rows. A decision
+recorded in shadow (`shadow` on `POST /api/v1/decisions`) is never sent, whatever
+`AGENTCENTER_EMIT` says: `emit_decision` takes the sealed record and refuses a shadow one
+(`causal_decision.shadow.emittable`).
 
 "Any platform role" is one of `viewer`, `analyst`, `graph_author`, `governance_officer`,
 `platform_engineer`, `agent`, `sre`: a valid token with none of them is refused. Every other
@@ -377,7 +380,7 @@ outside the caller's domains:
   append-only, and use the sequences; it has no `DELETE` or `TRUNCATE` anywhere, and the
   append-only triggers stay. The append-only surfaces: `audit_log`, `verdict_consumption`,
   `decision_records`, `decision_followups`, `causal_model_versions`, `decision_model_refs`,
-  `provenance_entries` and `provenance_erasures` (011), and `semantic_object_versions` (014). The semantic head tables are updatable only under 014's
+  `provenance_entries` and `provenance_erasures` (011), `semantic_object_versions` (014), and `drift_alerts` (015). The semantic head tables are updatable only under 014's
   rule: advance `revision` by one over a recorded revision, the new one recorded by commit. `backend/tests/integration/test_rls_domain_isolation.py` pins all
   of this on PostgreSQL, including negative controls with a policy dropped, RLS disabled, and
   the owner's connection.
@@ -560,12 +563,16 @@ access inside the platform.
 ### 8.3 Container Security
 
 - **In place:** backend and frontend images run as non-root users (`USER causal`,
-  `USER nextjs`). The backend image is `python:3.12-slim`, the frontend image `node:24-alpine`,
+  `USER nextjs`). The backend image is `python:3.12-slim`, the frontend image `node:26-alpine`,
   each pinned by digest (Dependabot moves the digest). The backend installs its Python packages
   from the hash-pinned lock `requirements/image.txt` (§8.4) and keeps no pip at run time; the
   frontend installs `package-lock.json` with `npm ci` and runs Next's standalone server with npm
   removed. Both build from the repository root; the frontend's Dockerfile did not build at all
-  until septa-49 (it built from `frontend/`, which has no lock).
+  until septa-49 (it built from `frontend/`, which has no lock). The backend image sets
+  `ENV=production`, so a container started without its secrets exits instead of serving in
+  local mode on SQLite with the dev token bypass available. The local Compose stack publishes
+  PostgreSQL and Neo4j, whose passwords are throwaway values in `docker-compose.yml`, on
+  127.0.0.1 only.
 - **Image scan (CI job `images`, `.github/workflows/ci.yml`).** Every push, pull request and
   weekly run builds both images and scans them with Trivy 0.74.0 (the `aquasec/trivy` image,
   pinned by digest). A HIGH or CRITICAL vulnerability **with a published fix** fails the job
@@ -592,10 +599,12 @@ published since the last push surfaces without one):
   and a `review_by` date; an expired entry fails, and so does one whose advisory is no longer
   reported. Every advisory found when the step was added was fixed by raising a floor in
   `backend/pyproject.toml` (transitive dependencies included) or upgrading in
-  `package-lock.json`. The list holds one entry since 2026-10-14: `braces`
-  (GHSA-vfj7-8cjw-p6xm), which has no patched release and reaches the repository only as a
-  lint-time dependency of `eslint-config-next`, never the frontend image; it is reviewed by
-  2026-11-15 and leaves with the move to Next 16 (septa-57). The advisory databases are remote; when one cannot be
+  `package-lock.json`. The list held one entry from 2026-10-14, `braces`
+  (GHSA-vfj7-8cjw-p6xm), until GitHub withdrew that advisory on 2026-10-23. It holds one since
+  2026-10-31: `minimatch` (GHSA-g3hv-75wg-m249), whose only patched release opens a new major
+  that the lint toolchain (eslint 9 and its plugins, typescript-eslint) has not moved to; every
+  path to it is a lint-time devDependency, never the frontend image; it is reviewed by
+  2026-11-30 and leaves when the toolchain moves to a patched minimatch (septa-130). The advisory databases are remote; when one cannot be
   reached the step is SKIPPED (not measured), which fails CI.
 - **SAST.** `bandit` over `backend/src` and every `packages/*/src`,
   blocking on MEDIUM and HIGH findings, held at zero by the ratchet in
@@ -632,13 +641,16 @@ published since the last push surfaces without one):
   exactly that (`scripts/sbom_check.py`), and attaches it to the tag's GitHub release.
 - **Update PRs.** `.github/dependabot.yml`: weekly, grouped, for the Python locks and ranges,
   npm, the GitHub Actions and the base images. It ignores the pins the ratchets count per
-  version (ruff, mypy, bandit, pip-audit), semver-majors in pyprojects and npm (ledger work), node lines that are not LTS, and
-  the specific majors whose ledger items are open (TESTING_CICD.md §5.4).
+  version (ruff, mypy, bandit, pip-audit), semver-majors in pyprojects and npm (ledger work, TESTING_CICD.md §5.4), and node
+  lines that are not LTS.
 - **Where CI runs.** Jobs run where the repository variable `CI_RUNS_ON` says: GitHub's hosted
   runners when it is unset, otherwise self-hosted runners (label `causalplatform-ci`). A
   self-hosted job executes the repository's code, including a dependency update's install
-  scripts, on that host as the runner's user; the repository is private, so no outside party can
-  open a pull request that runs there. The job's database listens on loopback only.
+  scripts, on that host as the runner's user. The repository is public, so a fork's pull request
+  could run there: workflows from outside collaborators wait for the owner's approval (the
+  repository's Actions setting), and the release's build and publish jobs, which hold the PyPI
+  upload token, always run on GitHub's hosted runners. The job's database listens on loopback
+  only.
 - The Python build tools the release uses (`build`, `twine`, `cyclonedx-bom`) are pinned by
   version, not by hash. `safety` is not run; `pip-audit` covers the same advisories.
 

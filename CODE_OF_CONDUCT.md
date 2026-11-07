@@ -6,7 +6,7 @@ The full text is available at the link above and is incorporated here by referen
 
 ## Reporting
 
-Concerns about behaviour in project spaces (issues, pull requests, discussions) can be reported privately to the repository maintainer via **GitHub** — open a draft Security Advisory or send a direct message to the repository owner.
+Concerns about behaviour in project spaces (issues, pull requests, discussions) can be reported privately to the repository maintainer through GitHub's private reporting form: the repository's *Security* tab → *Report a vulnerability*, with a title starting "Conduct:". Only the maintainer sees it. GitHub has no direct messages, so do not wait for a reply to a mention.
 
 Reports will be reviewed and responded to within 7 days where possible. The reporter's identity will be kept confidential unless they consent to disclosure.
 

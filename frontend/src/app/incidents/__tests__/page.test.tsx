@@ -201,7 +201,8 @@ describe("IncidentsPage — intervention decisions", () => {
 // the severity the page sent (P0-P3) and interventions shaped by
 // session.py _persist_incident: id, title, description, confidence, riskTier,
 // guardianVerdict, rank -- no effect estimate. Rows written by
-// backend/scripts/seed_data.py carry SEV1-SEV4. After a human decision the
+// backend/scripts/seed_data.py carry P0-P3 since septa-84; a database seeded
+// before that still holds SEV1-SEV4 rows. After a human decision the
 // list endpoint adds humanDecision beside the Guardian's guardianVerdict.
 // POST /api/v1/session/incident returns IncidentSessionResponse, whose
 // recommendations carry no effect estimate either, and whose `stored` says
@@ -235,6 +236,12 @@ function sessionState(overrides: Record<string, unknown> = {}) {
     timestamp: "2026-09-18T10:00:00+00:00",
     stored: true,
     store_error: null,
+    interventions: [
+      { id: "int-1-sess-new-1", title: "Roll back payment-api",
+        description: "Deploy correlates with onset.", confidence: 0.7, riskTier: "MEDIUM",
+        rank: 1, guardianVerdict: "REQUIRES_ESCALATION", guardianVerdictRef: "audit-1",
+        policyRulesCited: ["PR-004"] },
+    ],
     ...overrides,
   };
 }
@@ -255,7 +262,7 @@ describe("IncidentsPage — renders stored incidents as the backend stores them"
     expect(await screen.findByTestId("incident-severity")).toHaveTextContent("P1");
   });
 
-  it("renders a seeded incident whose severity is SEV1 in the same P0-P3 vocabulary", async () => {
+  it("renders an incident seeded before septa-84, severity SEV1, in the same P0-P3 vocabulary", async () => {
     incidentsApiMock.list.mockResolvedValue([
       { ...makeRecord({ guardianVerdict: "APPROVED" }), severity: "SEV1" },
     ]);
@@ -332,6 +339,44 @@ describe("IncidentsPage — a newly triaged incident", () => {
     expect(card.textContent).not.toMatch(/95% CI/);
   });
 
+  it("shows each intervention's own Guardian verdict, not the session's (septa-85)", async () => {
+    const user = userEvent.setup();
+    incidentsApiMock.list.mockResolvedValue([]);
+    const rec = (rank: number, action: string) => ({
+      rank, action, rationale: "r", confidence: 0.7, risk_tier: "MEDIUM",
+    });
+    const ruled = (rank: number, verdict: string) => ({
+      id: `int-${rank}-sess-new-1`, title: "t", description: "r", confidence: 0.7,
+      riskTier: "MEDIUM", rank, guardianVerdict: verdict, guardianVerdictRef: `audit-${rank}`,
+      policyRulesCited: [],
+    });
+    sessionApiMock.incident.mockResolvedValue(
+      sessionState({
+        guardian_verdict: "APPROVED",
+        recommendation_count: 3,
+        recommendations: [rec(1, "Roll back"), rec(2, "Scale out"), rec(3, "Page owner")],
+        // Rank 3 has no verdict of its own in the response: it shows PENDING.
+        interventions: [ruled(1, "APPROVED"), ruled(2, "REJECTED")],
+      })
+    );
+
+    render(<IncidentsPage />);
+    await submitIncident(user, "Checkout latency spike after deploy");
+
+    await screen.findAllByTestId("intervention-card");
+    const verdicts = screen
+      .getAllByTestId("intervention-card")
+      .map((card) => [
+        card.getAttribute("data-intervention-id"),
+        within(card).getByTestId("guardian-verdict-badge").getAttribute("data-verdict"),
+      ]);
+    expect(verdicts).toEqual([
+      ["int-1-sess-new-1", "APPROVED"],
+      ["int-2-sess-new-1", "REJECTED"],
+      ["int-3-sess-new-1", "PENDING"],
+    ]);
+  });
+
   it("says a triaged incident was not stored when the backend could not save it", async () => {
     const user = userEvent.setup();
     incidentsApiMock.list.mockResolvedValue([]);
@@ -395,6 +440,19 @@ describe("IncidentsPage — a newly triaged incident", () => {
     const body = sessionApiMock.incident.mock.calls[0]![0] as { severity: string };
     expect(["P0", "P1", "P2", "P3"]).toContain(body.severity);
     expect(await screen.findByTestId("incident-severity")).toHaveTextContent(body.severity);
+  });
+
+  // The form's schema (zod) reaches react-hook-form through @hookform/resolvers;
+  // the other tests here only pass it. This one pins the refusal path.
+  it("refuses a title under 10 characters with the schema's message, and sends nothing", async () => {
+    const user = userEvent.setup();
+    incidentsApiMock.list.mockResolvedValue([]);
+
+    render(<IncidentsPage />);
+    await submitIncident(user, "Too short");
+
+    expect(await screen.findByText("Title must be at least 10 characters")).toBeInTheDocument();
+    expect(sessionApiMock.incident).not.toHaveBeenCalled();
   });
 });
 

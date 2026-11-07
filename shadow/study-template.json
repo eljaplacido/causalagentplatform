@@ -5,7 +5,11 @@
     "`query` must validate as causal_core.contract.CausalQuery and `decision` (plus `outcome`) as",
     "causal_decision.DecisionRequest; packages/causal-decision/tests/test_shadow_pack.py checks both.",
     "Fill `decision` and `query.segment_by` before anyone sees a result: choosing them afterwards is",
-    "the researcher degree of freedom the platform exists to remove."
+    "the researcher degree of freedom the platform exists to remove. `shadow.human_acted` (true or false,",
+    "filled in once known) is what the scorecard compares the verdict with; the data paths are relative",
+    "to shadow/rounds/<N>: `decision_window` the rows available when the decision was or will be made,",
+    "`follow_up_window` the later rows, which must not exist yet when the round is sealed",
+    "(`python -m causal_decision.shadow_round`, shadow/README.md)."
   ],
   "id": "S-001",
   "title": "Retention discount for customers flagged at risk",
@@ -42,12 +46,13 @@
     "kind": "causalplatform",
     "proposed_by": "devbrain",
     "data": {
-      "decision_window": "the rows available when the decision was or will be made (a data_path, or a named export)",
-      "follow_up_window": "the later rows the follow-up will be measured on"
+      "decision_window": "data/S-001-before.csv",
+      "follow_up_window": "data/S-001-after.csv"
     },
     "follow_up_after": "90d",
     "expect": "a verdict",
     "human_decision": "what the people responsible decided, recorded when known, without the platform's verdict in view",
+    "human_acted": null,
     "tag": "shadow-round-1"
   }
 }
