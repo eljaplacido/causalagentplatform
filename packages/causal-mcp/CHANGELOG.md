@@ -6,6 +6,8 @@ published.
 ## 0.5.0 -- first PyPI release (unreleased)
 
 - An MCP server (Python SDK v2), stdio by default and stateless HTTP with the `[http]` extra.
+- Its analysis parameters are the kernel's `CausalQuery` fields, so with causal-core 0.15.0 the tools
+  also take `block` (paired and blocked designs) and `target_population` (declared, not transported).
 - Four tools always: `causal_check_graph`, `causal_identify`, `causal_analyze`,
   `causal_verify_narrative`. Two more with the `[decision]` extra: `causal_decide` and
   `causal_impact`.

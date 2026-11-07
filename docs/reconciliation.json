@@ -26,18 +26,18 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-10-31",
+        "on": "2026-11-07",
         "sha256": {
-          "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
-          "packages/causal-mcp": "ff3535460199623c814f7524892e3716c65e4bab3e929756340321a1789aa907",
+          "backend/pyproject.toml": "f7fbeb2dafb5635e8bc3d4ff461bb5b65a7091ed592a2b03c1442d2e6a74df5d",
+          "packages/causal-mcp": "a6e19b07b09b94989ff60e6b66cbfea208918f186d53b5d6c58e26cd80f4ab2d",
           "frontend/package.json": "90091605609635e84200d37acfeeafd37a63e7271a725463bc536857284747f7",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "58c2b29ebe0ed3e32fb0bd3e6b1f30d10d41af55c99c849973a5fc51edf277c9"
+          "docs/CURRENT_STAGE.md": "01eed7df507754bebe59c16989bfc3c5ab9a31b466b7e675d4a76f327a6af2ba"
         }
       },
       "last_read": {
-        "on": "2026-10-31",
-        "by": "Claude (incident-integrity branch): septa-79/80/85 -- read the passages on the session graph, Guardian checks and audit rows, incidents and interventions, resumed sessions and circuit breaker against graph.py, session.py, governance.py, incident_triage.py and the incidents page; ADR-003 resumed-flags line reworded, AGENTS 5.1/5.2, UIX, TESTING_CICD and CURRENT_STAGE updated"
+        "on": "2026-11-07",
+        "by": "Claude (train/3 merge of train/2 after #107: read README status pointers and CURRENT_STAGE incident-integrity row vs the T11/NO_VARIATION/transportability rows; register merged by id (governance/AGENTS/incident_triage re-cites + transportability entry, 0 drifted); ROADMAP rows 26-31; TESTING_CICD gate table and lint ratchet note vs scripts/lint-baseline.json (train/3 values kept, main did not touch it); UIX incidents/Guardian-verdict paragraph -- Guardian verdicts are a separate vocabulary from causal-decision verdicts, NO_VARIATION/target_population do not reach incidents: no claim moved)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -51,19 +51,19 @@
         "specs"
       ],
       "baseline": {
-        "on": "2026-10-31",
+        "on": "2026-11-07",
         "sha256": {
-          "conformance/declared_not_implemented.json": "8a83a36457873265f0dedc95b56cf6b8ad076f55c3a77defdc463e03f4b6d9e5",
+          "conformance/declared_not_implemented.json": "29e0cad37ee26f476ac01d368e03f6fc0564a086434c11b2e815b20984d4a76c",
           "backend/src": "2086b55f401955acc33b3b0c511c9f943588b96fe95ddfe9e580cea87a4c80a7",
           "backend/tests": "6bdd324a96328037db6e55e4952adc91bcada3b833078673c120e1de7ca38347",
-          "frontend/src": "8d936e4bb3a2f8c111e8ea671e41d5247e2461bbf6649ca6fdf27b7c05d5b228",
-          "packages": "776a105208fa2c9b739b09ab3589d41e453fc6ebc937de3bbd7b0f48574309c0",
+          "frontend/src": "509473ccbced9cee65c687fac792c25d8ea8cd0428beafaf3079d9ea4aae092e",
+          "packages": "05cc6e5f8b4972f73a145b3049ddebfc9d0c0eb5715b2e86d5243ef7fa86541b",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
-        "on": "2026-10-31",
-        "by": "Claude (merge train): link 3 = incident-integrity + links 1-2 merged; re-read the incidents passages (UIX severities P0-P3 from the seeder with per-intervention Guardian verdicts, TESTING_CICD's vitest list), CURRENT_STAGE rows 121/190 and the register re-cites (ROADMAP); both changes hold side by side"
+        "on": "2026-11-07",
+        "by": "Claude (train/3 merge of train/2 after #107: read README status pointers and CURRENT_STAGE incident-integrity row vs the T11/NO_VARIATION/transportability rows; register merged by id (governance/AGENTS/incident_triage re-cites + transportability entry, 0 drifted); ROADMAP rows 26-31; TESTING_CICD gate table and lint ratchet note vs scripts/lint-baseline.json (train/3 values kept, main did not touch it); UIX incidents/Guardian-verdict paragraph -- Guardian verdicts are a separate vocabulary from causal-decision verdicts, NO_VARIATION/target_population do not reach incidents: no claim moved)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -144,18 +144,18 @@
         "prompts"
       ],
       "baseline": {
-        "on": "2026-10-31",
+        "on": "2026-11-04",
         "sha256": {
           "backend/src/agents": "b0d812c42df4fc73969970eec49ccb123a4b9f2453df61b4d8db95792c557b57",
           "backend/src/skills": "b0bcef79c64f6b8d2f35f87f92095d54c52cec7d972a4cf1520b95fcc0d68347",
-          "packages/causal-mcp": "ff3535460199623c814f7524892e3716c65e4bab3e929756340321a1789aa907",
+          "packages/causal-mcp": "a6e19b07b09b94989ff60e6b66cbfea208918f186d53b5d6c58e26cd80f4ab2d",
           "backend/src/orchestration": "1c89092d1341d3ac23a45b8f05b6dfc97978a8d1479f11d14367cb62afec0b13",
           "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9"
         }
       },
       "last_read": {
-        "on": "2026-10-31",
-        "by": "Claude (incident-integrity branch): septa-79/80/85 -- read the passages on the session graph, Guardian checks and audit rows, incidents and interventions, resumed sessions and circuit breaker against graph.py, session.py, governance.py, incident_triage.py and the incidents page; ADR-003 resumed-flags line reworded, AGENTS 5.1/5.2, UIX, TESTING_CICD and CURRENT_STAGE updated"
+        "on": "2026-11-04",
+        "by": "Claude (fix/decision-gaps: read for NO_VARIATION, block designs and T11, target_population, D0 v5 and contract 0.15.0 -- refusal counts, gate tables and enumerations, D0 figures, sizing row, capability card; AGENTS/ORCHESTRATION/UIX/shadow README: no claim moved)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -247,17 +247,17 @@
         ".gnomon"
       ],
       "baseline": {
-        "on": "2026-10-31",
+        "on": "2026-11-04",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9",
           ".github": "4b74b1a83ae2f5e19dcb91aaadede98f9a69ec46f66facfcaf642f2e74a5261e",
-          ".gnomon": "5b6f297cd580dcd75c0b5191462467ebb046083612c15fd9c9a511b0ba840236"
+          ".gnomon": "ee147e3edf82b9371953e17ac4c663f28983c116ed09e0625fb7c451162ee5d8"
         }
       },
       "last_read": {
-        "on": "2026-10-31",
-        "by": "Claude (frontend-majors branch)"
+        "on": "2026-11-04",
+        "by": "Claude (fix/decision-gaps: read for NO_VARIATION, block designs and T11, target_population, D0 v5 and contract 0.15.0 -- refusal counts, gate tables and enumerations, D0 figures, sizing row, capability card; AGENTS/ORCHESTRATION/UIX/shadow README: no claim moved)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -273,12 +273,12 @@
         "backend/scripts"
       ],
       "baseline": {
-        "on": "2026-10-31",
+        "on": "2026-11-04",
         "sha256": {
           "start.sh": "c023b8e3f6954333aed3f2e56ebe4e73db617d7678a556f6459fbc748431e5f3",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
-          "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
+          "backend/pyproject.toml": "f7fbeb2dafb5635e8bc3d4ff461bb5b65a7091ed592a2b03c1442d2e6a74df5d",
           "frontend/package.json": "90091605609635e84200d37acfeeafd37a63e7271a725463bc536857284747f7",
           "package.json": "833bce1de1e6a72e2d906799e3265db59290a9ba3833b745a1a943e567113f46",
           ".env.example": "c1b1272a098696c6c0e72ba533fca78db4060da7c549715d14fb1167656e906a",
@@ -286,8 +286,8 @@
         }
       },
       "last_read": {
-        "on": "2026-10-31",
-        "by": "Claude (merge train): link 2 = setup-and-ui + advisories/frontend-majors merged; re-read for the merged frontend/package.json (loopback --hostname, build:types pre-hooks, eslint src/ lint for next 16), start.sh (Next.js 16, loopback), the incidents page and seeder severities (P0-P3) and the 'Go ahead' rationale lead; claims hold (type-check and lint scripts run on the merged tree)"
+        "on": "2026-11-04",
+        "by": "Claude (fix/decision-gaps: read for NO_VARIATION, block designs and T11, target_population, D0 v5 and contract 0.15.0 -- refusal counts, gate tables and enumerations, D0 figures, sizing row, capability card; AGENTS/ORCHESTRATION/UIX/shadow README: no claim moved)"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -306,24 +306,24 @@
         "packages/causal-decision/tests"
       ],
       "baseline": {
-        "on": "2026-10-31",
+        "on": "2026-11-07",
         "sha256": {
           ".github/workflows": "dda91d5921d692ddf3c2cb61ede9c6cf00b576478eda4736820ea0a442099d80",
           "backend/tests": "6bdd324a96328037db6e55e4952adc91bcada3b833078673c120e1de7ca38347",
-          "backend/pyproject.toml": "305dc828232a781003308612f28fe0ee065113275ba83ab7d8fffbadd6b563c2",
+          "backend/pyproject.toml": "f7fbeb2dafb5635e8bc3d4ff461bb5b65a7091ed592a2b03c1442d2e6a74df5d",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5dc65a49d6975444738042f9c292b56050a932ed23932e45498fbcea6285ff3e",
           ".gnomon/ci.sh": "a203a97aa6b72b34bc2ee7b3dde6d019fb465dd661b1b37d184be14f0ba3134c",
-          "scripts": "01cf915d56be93411b6699dbb18608a142ee247f77fb858a5015e42ae1ffbed4",
+          "scripts": "8816c436092377a6250d7d9814dc3bd5d703111114cbc5746970b6d5d6ef3822",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
-          "benchmarks": "17b15235a74e84e3de54a752eed9d89b9f44d4e6880ba2afceb1129a9650eab5",
-          "packages/causal-core/tests": "76e4e4f85b5a4200ea7a723cee8394fd09b751157b4c91bdc9b61e68aa3465ad",
-          "packages/causal-decision/tests": "b67f99a3229ba1d724a7942919e478b32224a573b116c0af896affdcd0f5bf55"
+          "benchmarks": "18f87f3832f78cb09851f14d4dbb13138036998b913eb74868dbe598a09479e8",
+          "packages/causal-core/tests": "06c4404c64460ffa20bade9cd9fc594e877cf94ab042444a4f562b7332ff057a",
+          "packages/causal-decision/tests": "f8893495eb1947470bbc24d4924b3670f26526de253d1d12a5c93321e28e99b6"
         }
       },
       "last_read": {
-        "on": "2026-10-31",
-        "by": "Claude (merge train): link 3 = incident-integrity + links 1-2 merged; re-read the incidents passages (UIX severities P0-P3 from the seeder with per-intervention Guardian verdicts, TESTING_CICD's vitest list), CURRENT_STAGE rows 121/190 and the register re-cites (ROADMAP); both changes hold side by side"
+        "on": "2026-11-07",
+        "by": "Claude (train/3 merge of train/2 after #107: read README status pointers and CURRENT_STAGE incident-integrity row vs the T11/NO_VARIATION/transportability rows; register merged by id (governance/AGENTS/incident_triage re-cites + transportability entry, 0 drifted); ROADMAP rows 26-31; TESTING_CICD gate table and lint ratchet note vs scripts/lint-baseline.json (train/3 values kept, main did not touch it); UIX incidents/Guardian-verdict paragraph -- Guardian verdicts are a separate vocabulary from causal-decision verdicts, NO_VARIATION/target_population do not reach incidents: no claim moved)"
       }
     },
     "docs/UIX.md": {
@@ -332,14 +332,14 @@
         "frontend/src"
       ],
       "baseline": {
-        "on": "2026-10-31",
+        "on": "2026-11-07",
         "sha256": {
-          "frontend/src": "8d936e4bb3a2f8c111e8ea671e41d5247e2461bbf6649ca6fdf27b7c05d5b228"
+          "frontend/src": "509473ccbced9cee65c687fac792c25d8ea8cd0428beafaf3079d9ea4aae092e"
         }
       },
       "last_read": {
-        "on": "2026-10-31",
-        "by": "Claude (merge train): link 3 = incident-integrity + links 1-2 merged; re-read the incidents passages (UIX severities P0-P3 from the seeder with per-intervention Guardian verdicts, TESTING_CICD's vitest list), CURRENT_STAGE rows 121/190 and the register re-cites (ROADMAP); both changes hold side by side"
+        "on": "2026-11-07",
+        "by": "Claude (train/3 merge of train/2 after #107: read README status pointers and CURRENT_STAGE incident-integrity row vs the T11/NO_VARIATION/transportability rows; register merged by id (governance/AGENTS/incident_triage re-cites + transportability entry, 0 drifted); ROADMAP rows 26-31; TESTING_CICD gate table and lint ratchet note vs scripts/lint-baseline.json (train/3 values kept, main did not touch it); UIX incidents/Guardian-verdict paragraph -- Guardian verdicts are a separate vocabulary from causal-decision verdicts, NO_VARIATION/target_population do not reach incidents: no claim moved)"
       }
     },
     "docs/ROADMAP.md": {
@@ -350,16 +350,16 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-10-31",
+        "on": "2026-11-07",
         "sha256": {
-          "packages/causal-core/src/causal_core": "808b370dd05adaf6520a435312f501533e0b9f82239e15fbe2073c893278180f",
-          "conformance/declared_not_implemented.json": "8a83a36457873265f0dedc95b56cf6b8ad076f55c3a77defdc463e03f4b6d9e5",
-          "docs/CURRENT_STAGE.md": "58c2b29ebe0ed3e32fb0bd3e6b1f30d10d41af55c99c849973a5fc51edf277c9"
+          "packages/causal-core/src/causal_core": "28552dab1a30eeec7b4d4591f06cd8c26f9843a609357f6cedf577a114abc55d",
+          "conformance/declared_not_implemented.json": "29e0cad37ee26f476ac01d368e03f6fc0564a086434c11b2e815b20984d4a76c",
+          "docs/CURRENT_STAGE.md": "01eed7df507754bebe59c16989bfc3c5ab9a31b466b7e675d4a76f327a6af2ba"
         }
       },
       "last_read": {
-        "on": "2026-10-31",
-        "by": "Claude (merge train): link 3 = incident-integrity + links 1-2 merged; re-read the incidents passages (UIX severities P0-P3 from the seeder with per-intervention Guardian verdicts, TESTING_CICD's vitest list), CURRENT_STAGE rows 121/190 and the register re-cites (ROADMAP); both changes hold side by side"
+        "on": "2026-11-07",
+        "by": "Claude (train/3 merge of train/2 after #107: read README status pointers and CURRENT_STAGE incident-integrity row vs the T11/NO_VARIATION/transportability rows; register merged by id (governance/AGENTS/incident_triage re-cites + transportability entry, 0 drifted); ROADMAP rows 26-31; TESTING_CICD gate table and lint ratchet note vs scripts/lint-baseline.json (train/3 values kept, main did not touch it); UIX incidents/Guardian-verdict paragraph -- Guardian verdicts are a separate vocabulary from causal-decision verdicts, NO_VARIATION/target_population do not reach incidents: no claim moved)"
       }
     },
     "SECURITY.md": {
@@ -398,18 +398,18 @@
         "packages/causal-decision/src/causal_decision/contract.py"
       ],
       "baseline": {
-        "on": "2026-10-16",
+        "on": "2026-11-04",
         "sha256": {
-          "shadow/capability-card.json": "396f48e5ccc14c2465fa1a90f8bf015e42a4e4ad696587f8a6c94c520984a0f9",
+          "shadow/capability-card.json": "4d2b87fa74d4eaa02e520b387d67f2aca8b7088751b1da44778e95e8c34f69b1",
           "shadow/study-template.json": "83ba4ab56c575ee617e4b1200b377eb0a4a91775e7cfadfd9a15509de499b8a8",
           "shadow/PRE-REGISTRATION.template.md": "c5a4e0709b371106cdeb5f0bb2c2f0b1bf581e530d98d886a2cc6e2ca1b13623",
           "backend/src/connectors/agentcenter.py": "5a4190cd6088af24e0f6738a7b6be3c6115745474fc6dfe125324849148d73ac",
-          "packages/causal-decision/src/causal_decision/contract.py": "41dc326570433840bd26527de4b0c54b6506f462fda7aaaf4ac0e11925179b0a"
+          "packages/causal-decision/src/causal_decision/contract.py": "bf4d754e10881989248e8061a8a74800b0ce3ba43895c997acbe2a80e05b3c27"
         }
       },
       "last_read": {
-        "on": "2026-10-16",
-        "by": "Claude (septa-101: read for the LLM-edge cap, contract 0.14.0 and D0 v4 -- counts, verdict ladder, MCP tool rows, card)"
+        "on": "2026-11-04",
+        "by": "Claude (fix/decision-gaps: read for NO_VARIATION, block designs and T11, target_population, D0 v5 and contract 0.15.0 -- refusal counts, gate tables and enumerations, D0 figures, sizing row, capability card; AGENTS/ORCHESTRATION/UIX/shadow README: no claim moved)"
       }
     }
   }

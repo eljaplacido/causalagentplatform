@@ -78,6 +78,30 @@ Three rules make segment claims worth something:
 A segment too small to estimate, or with no treated units, gets its own typed refusal — it is not
 dropped, and not guessed.
 
+## The same task under both arms
+
+When every task is run once with a change and once without, compare within the task. Name the
+pair (or a larger block inside which treatment was randomized) and the kernel does:
+
+```python
+out = cc.analyze(runs, "delivered -> solved", treatment="delivered", outcome="solved",
+                 design="randomized", block="pair")
+out.blocks   # n_blocks, discordant pairs, exact McNemar p, and the unblocked standard error
+```
+
+The effect is the size-weighted average of within-block differences, with blocks as the
+independent observations (t(K − 1)). For a solved/failed outcome in pairs the interval is the
+score interval for a paired difference of proportions with a continuity correction (Tango 1998),
+which excludes zero only when McNemar's test rejects: with few discordant pairs the paired t
+interval is confidently wrong, and this one is conservative instead. Blocks in which only one arm
+was observed refuse unless `policy.missing="drop"`, which leaves them out and counts them. The
+decision layer sizes a paired follow-up from the observed discordance. Gated by T11.
+
+**Where the evidence comes from.** `population` says which population the data describe;
+`target_population` declares the one an answer is meant for. The kernel has no transport
+analysis: it does not carry an estimate across, it says so in a warning, and the decision layer
+caps its verdict at an experiment in the target.
+
 ## What it refuses to do, and says so
 
 A refusal is a correct answer, not an error. Each one has a typed reason:
@@ -86,6 +110,9 @@ A refusal is a correct answer, not an error. Each one has a typed reason:
 - `POSITIVITY`
 - `LOW_N`
 - `DESIGN_CHECK_FAILED` (for example a sample-ratio mismatch or missing data)
+- `NO_VARIATION` (the treatment takes one value in the data: nothing to compare, and nothing
+  broken. A lever nobody has tried is answered by an experiment that sets it, and the refusal
+  carries the outcome's spread to size one; the decision layer returns it)
 - `INVALID_ADJUSTMENT_SET`
 - `WEAK_INSTRUMENT`
 - `UNAPPROVED_ASSUMPTION` (unreviewed LLM-proposed edges under a strict policy)
@@ -172,6 +199,15 @@ before any run. It runs on every change:
   answer, including a never-treated stratum under the ATT, which needs overlap one way only.
   Coverage 0.946–0.958 where it answers; a violation below the 5% tolerance is answered with a
   warning in 88% of runs. Nothing is trimmed silently.
+- **T11 (blocked and paired designs):** five continuous designs (pairs, few pairs, effects that
+  vary by pair, unequal blocks with size-dependent effects, a treated share that varies by block)
+  and four binary-pair designs (strongly concordant, null, an effect that only ever helps, and
+  the population of gnomon's S1 steering experiment), each against its truth; the width of the
+  blocked interval against the unblocked one; for binary pairs, no interval that excludes zero
+  where the exact McNemar test does not reject; S1's table reproduced exactly (30 pairs,
+  discordant 0–4, point −4/30, exact McNemar p = 0.125); and the refusals. Each of three seeded
+  defects (an unpaired variance, the paired t interval for binary pairs, fixed-effects weights)
+  fails the bar it was registered against.
 
 **Overlap.** For a binary treatment with an adjustment set, after the logistic check, a
 classification tree for the treatment (depth `overlap_region_depth` = 4) is grown on one half of
@@ -260,6 +296,11 @@ Data can be pandas, a dict of columns, pyarrow, polars, or any dataframe-interch
 - For difference-in-differences: anticipation windows, repeated cross-sections, time-varying
   covariates, and the full Rambachan & Roth machinery (the kernel's parallel-trends sensitivity is
   a simplified, conservative form)
+- Transport of an effect from the population it was measured in to another (selection diagrams,
+  reweighting to a target): a declared `target_population` is stated on the result, never
+  estimated for
+- For blocked designs: covariate adjustment within blocks, blocks combined with clusters,
+  sequences or segments, and an exact unconditional interval for binary pairs
 
 Each is listed in the repository's `conformance/declared_not_implemented.json`, and leaves that
 list only by being implemented and tested.
