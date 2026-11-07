@@ -13,14 +13,14 @@
 | S-001 | devbrain | randomized | a verdict | 30d | +1.0 before; +1.0 (holds) or -1.0 (reversed) after |
 | S-002 | agentcenter | observational | a verdict | 30d | +1.0 before; everyone treated after (undecidable) |
 | S-003 | devbrain | observational | NON_IDENTIFIABLE | 30d | a confounder `u` with no data column |
-| S-004 | agentcenter | randomized | DESIGN_CHECK_FAILED | 30d | every unit treated |
+| S-004 | agentcenter | randomized | NO_VARIATION | 30d | every unit treated |
 | S-005 | devbrain | randomized | a verdict | 30d | -1.0 before and after (harmful) |
 
 ## Bars
 
 ```toml
 [round]
-version = 1
+version = 2
 min_studies = 5
 min_planted_share = 0.25
 
@@ -38,3 +38,6 @@ metrics = ["act_right_rate", "experiment_share", "refusal_share_by_reason", "agr
 ## Changelog
 
 - v1 (2026-10-31): the fixture for septa-96.
+- v2 (2026-11-07): S-004 (every unit treated) expects `NO_VARIATION`, not `DESIGN_CHECK_FAILED`:
+  contract 0.15.0 (#107) names a treatment that never varies apart from a failed design check, and
+  its verdict is `experiment`, not `refuse`. No bar moved.

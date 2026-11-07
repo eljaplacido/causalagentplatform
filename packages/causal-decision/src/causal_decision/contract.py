@@ -80,7 +80,12 @@ class DecisionRequest(_Model):
         description="How much movement against the desired direction counts as harm, in outcome "
         "units. 0 means any adverse movement counts.",
     )
-    population: str | None = None
+    population: str | None = Field(
+        default=None,
+        description="The population the action would apply to. When the evidence states a "
+        "different one, it is not treated as evidence about this one (no transport analysis "
+        "exists): the verdict is capped at `experiment`.",
+    )
     horizon: str | None = None
     can_randomize: bool = Field(
         default=True,
@@ -147,7 +152,17 @@ def _default_rules() -> dict[RiskClass, RiskRule]:
 
 
 #: Evidence fields introduced after the first decisions were recorded.
-_LATE_FIELDS = ("trend_breakdown",)
+_LATE_FIELDS = ("trend_breakdown", "population", "target_population", "paired")
+#: ExperimentSpec fields introduced after the first decisions were recorded.
+_LATE_SPEC_FIELDS = ("pairs", "discordance", "sd_difference", "population")
+
+
+def _omit(data: dict[str, Any], fields: tuple[str, ...]) -> dict[str, Any]:
+    """Leave late fields out when unset, so records sealed before they existed digest as before."""
+    for late in fields:
+        if data.get(late) is None:
+            data.pop(late, None)
+    return data
 
 
 class DecisionPolicy(_Model):
@@ -200,6 +215,24 @@ class SegmentEvidence(_Model):
     refusal: str | None = None
 
 
+class PairedEvidence(_Model):
+    """A matched-pair result (`CausalQuery.block`, every block one treated and one control
+    unit): what sizing a paired follow-up needs. Copied from the kernel's `BlockSummary`."""
+
+    n_pairs: int
+    binary_outcome: bool
+    discordance: float | None = Field(
+        default=None,
+        description="Binary outcome: the share of pairs whose two units disagreed. Only "
+        "discordant pairs carry information about the effect, so this, not the outcome's "
+        "spread, sizes a paired trial.",
+    )
+    sd_difference: float | None = Field(
+        default=None,
+        description="Continuous outcome: the standard deviation of the within-pair difference.",
+    )
+
+
 class Evidence(_Model):
     """The part of the causal outcome the verdict rested on, copied so a record stands alone."""
 
@@ -208,11 +241,7 @@ class Evidence(_Model):
         # Fields added after decisions were first recorded are left out when unset, so a
         # decision re-made from the same inputs, and every ledger entry sealed earlier,
         # digests exactly as before (pinned by tests/test_ledger.py's fixture chain).
-        data: dict[str, Any] = handler(self)
-        for late in _LATE_FIELDS:
-            if data.get(late) is None:
-                data.pop(late, None)
-        return data
+        return _omit(handler(self), _LATE_FIELDS)
 
     kind: Literal["result", "refusal", "apparatus_failure"]
     status: str | None = None
@@ -250,13 +279,37 @@ class Evidence(_Model):
         description="Cochran's Q across the segments: True when they can be told apart, False "
         "when they cannot, None when no segments were examined.",
     )
+    population: str | None = Field(
+        default=None,
+        description="The population the analysis says its data come from (`query.population`). "
+        "Absent when it states none.",
+    )
+    target_population: str | None = Field(
+        default=None,
+        description="A target population the analysis declared (`query.target_population`). The "
+        "kernel does not transport, so the estimate is not evidence about it.",
+    )
+    paired: PairedEvidence | None = Field(
+        default=None,
+        description="Present when the result is a matched-pair analysis: a follow-up is then "
+        "sized as matched pairs.",
+    )
 
 
 class ExperimentSpec(_Model):
-    """The smallest experiment that would settle the question the evidence left open."""
+    """The smallest experiment that would settle the question the evidence left open.
+
+    ``randomized_units``: independent units, each randomized to one arm. ``paired_units``:
+    matched pairs (the evidence was paired), each pair one unit in each arm, assigned at
+    random; ``units_per_arm`` is then the number of pairs.
+    """
+
+    @model_serializer(mode="wrap")
+    def _omit_absent(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
+        return _omit(handler(self), _LATE_SPEC_FIELDS)
 
     question: str
-    design: Literal["randomized_units"]
+    design: Literal["randomized_units", "paired_units"]
     unit: str
     arms: tuple[str, str] = ("control", "treated")
     allocation: float = 0.5
@@ -266,6 +319,18 @@ class ExperimentSpec(_Model):
     estimated_days: float | None = None
     guardrails: tuple[str, ...] = ()
     note: str = ""
+    pairs: int | None = Field(default=None, description="paired_units: pairs to run.")
+    discordance: float | None = Field(
+        default=None, description="paired_units, binary outcome: the discordance it was sized for."
+    )
+    sd_difference: float | None = Field(
+        default=None,
+        description="paired_units, continuous outcome: the within-pair spread it was sized for.",
+    )
+    population: str | None = Field(
+        default=None,
+        description="Where to run it, when the evidence came from another population.",
+    )
 
 
 class Decision(_Model):

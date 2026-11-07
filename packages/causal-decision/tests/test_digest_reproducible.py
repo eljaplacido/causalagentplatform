@@ -18,6 +18,9 @@ Postconditions (from the bead and ``ledger.replays``'s docstring: "re-deciding p
 the same verdict, byte for byte"). Every run yields the same ``result_digest``,
 ``decision_digest`` and ledger ``entry_digest``; and the decision is about the effect the
 structural model sets (2.0 by construction), so the digests agree on a correct answer.
+The same holds on #107's paths (contract 0.15.0): a paired design, a treatment that never
+varied (NO_VARIATION, an experiment) and an estimate declared for another population (not
+transported, an experiment there).
 
 Undefined here. The same digests on another CPU family or BLAS build (an OpenBLAS with
 DYNAMIC_ARCH picks kernels per CPU; causal_core.numerics says so) -- nothing is asserted.
@@ -60,6 +63,19 @@ elif defect == "hash_ordered_components":
             a, b = tuple(p); g.add_edge(a, b)
         return [frozenset(c) for c in nx.connected_components(g)]
     ADMG.c_components = c_components
+elif defect == "hash_ordered_transport_note":
+    # The not-transported warning naming its populations in set order (#107's path).
+    from causal_core.contract import CausalResult
+    from causal_core.canonical import digest
+    def _not_transported(out):
+        q = getattr(out, "query", None)
+        if not isinstance(out, CausalResult) or not q.target_population:
+            return out
+        note = "not transported: " + " / ".join({q.population, q.target_population})
+        res = out.model_copy(update={"warnings": (*out.warnings, note)})
+        return res.model_copy(update={"result_digest": digest(
+            res.model_dump(mode="json", exclude={"result_digest"}))})
+    pipeline._not_transported = _not_transported
 
 # The structural model: twelve confounders, a binary treatment, effect TRUE_EFFECT.
 n, k = 50_000, 12
@@ -79,9 +95,47 @@ d = decide(out, request)
 rec = append(None, d, out, recorded_at="2026-10-31T00:00:00+00:00")
 # The same decision sealed as a shadow one (septa-95): its tag is in the record.
 shadow = append(None, d, out, recorded_at="2026-10-31T00:00:00+00:00", shadow="S-089")
+
+# #107's paths, through the same pinned analyze: a paired design (2,000 pairs, effect
+# TRUE_EFFECT within each pair), a treatment that never varied (NO_VARIATION -> an
+# experiment), and the first analysis declared for another population (not transported
+# -> an experiment there). Each is decided and sealed like the first.
+def sealed(o, req):
+    dd = decide(o, req)
+    return dd, append(None, dd, o, recorded_at="2026-10-31T00:00:00+00:00")
+
+pairs = 2_000
+pair_effect = rng.normal(size=pairs)
+pf = pd.DataFrame({
+    "pair": np.repeat(np.arange(pairs), 2),
+    "x": np.tile([0.0, 1.0], pairs),
+})
+pf["y"] = np.repeat(pair_effect, 2) + TRUE_EFFECT * pf["x"] + rng.normal(size=2 * pairs)
+blocked = cc.analyze(pf, "x -> y", treatment="x", outcome="y", design="randomized",
+                     block="pair")
+db, rb = sealed(blocked, request)
+
+flat = df.assign(x=1.0)
+novar = cc.analyze(flat, graph, treatment="x", outcome="y")
+dn, rn = sealed(novar, DecisionRequest(action="ship x", outcome="y", direction="increase",
+                                       minimum_worthwhile_effect=1.0, harm_threshold=0.0,
+                                       can_randomize=True, randomization_unit="customer",
+                                       units_per_day=400))
+
+away = cc.analyze(df, graph, treatment="x", outcome="y", population="local lane",
+                  target_population="hosted lane")
+dt, rt = sealed(away, request)
+
 print(json.dumps({"point": out.primary.point, "verdict": d.verdict.value,
                   "result": out.result_digest, "decision": d.decision_digest,
-                  "entry": rec.entry_digest, "shadow_entry": shadow.entry_digest}))
+                  "entry": rec.entry_digest, "shadow_entry": shadow.entry_digest,
+                  "blocked": [blocked.primary.point, db.verdict.value, blocked.result_digest,
+                              db.decision_digest, rb.entry_digest],
+                  "no_variation": [getattr(novar, "reason", None), dn.verdict.value,
+                                   dn.decision_digest, rn.entry_digest],
+                  "not_transported": [away.warnings[-1], dt.verdict.value,
+                                      away.result_digest, dt.decision_digest,
+                                      rt.entry_digest]}))
 """.replace("TRUE_EFFECT", repr(TRUE_EFFECT))
 
 
@@ -103,7 +157,13 @@ def run(threads: int, hash_seed: str, defect: str = "") -> dict[str, object]:
 
 
 def digests(r: dict[str, object]) -> tuple[object, ...]:
-    return r["result"], r["decision"], r["entry"], r["shadow_entry"]
+    return r["result"], r["decision"], r["entry"], r["shadow_entry"], *new_paths(r)
+
+
+def new_paths(r: dict[str, object]) -> tuple[object, ...]:
+    """The digests of #107's paths: blocked/paired, NO_VARIATION, not transported."""
+    b, nv, nt = r["blocked"], r["no_variation"], r["not_transported"]
+    return (*b[2:], *nv[2:], *nt[2:])  # type: ignore[index]
 
 
 #: (threads, hash seed): every thread count the bead names, each with a different seed,
@@ -131,6 +191,22 @@ def test_the_digested_decision_is_about_the_effect_the_model_sets(
     assert r["verdict"] == "act"
 
 
+def test_the_new_paths_reproduce_and_are_about_the_answers_they_should_give(
+    pinned_runs: dict[tuple[int, str], dict[str, object]],
+) -> None:
+    """#107's paths go through the same pinned ``analyze``: a paired design, a treatment
+    that never varied, and an estimate declared for another population. Their digests are
+    compared across every run by the first test; here each says what its design calls for.
+    """
+    r = pinned_runs[RUNS[0]]
+    b, nv, nt = r["blocked"], r["no_variation"], r["not_transported"]
+    assert abs(float(b[0]) - TRUE_EFFECT) < 0.15 and b[1] == "act"  # type: ignore[index]
+    assert nv[0] == "NO_VARIATION" and nv[1] == "experiment"  # type: ignore[index]
+    assert str(nt[0]).startswith("not transported") and nt[1] == "experiment"  # type: ignore[index]
+    # Declaring a target population is digested: it is not the first analysis's result.
+    assert nt[2] != r["result"]  # type: ignore[index]
+
+
 def test_a_shadow_record_reproduces_too_and_its_tag_is_sealed(
     pinned_runs: dict[tuple[int, str], dict[str, object]],
 ) -> None:
@@ -151,6 +227,11 @@ def test_negative_control_unpinned_blas_moves_the_digest_with_the_thread_count()
     """
     one, eight = run(1, "0", "unpinned_blas"), run(8, "0", "unpinned_blas")
     assert digests(one) != digests(eight), "the host's BLAS gave the same bits at 1 and 8 threads"
+    # #107's not-transported path re-digests the result after _analyze; the merge put it
+    # inside the pin, and without the pin it moves too. (The paired and NO_VARIATION
+    # paths do no thread-split reductions at this size: their digests are compared by
+    # the first test, and the hash-seed control below covers the declared-target path.)
+    assert one["not_transported"][2:] != eight["not_transported"][2:]  # type: ignore[index]
     # The defect is in the last bits, not the answer: the verdict does not move.
     assert one["verdict"] == eight["verdict"]
 
@@ -163,3 +244,13 @@ def test_negative_control_hash_ordered_components_move_the_digest_with_the_hash_
     """
     a, b = run(1, "0", "hash_ordered_components"), run(1, "1", "hash_ordered_components")
     assert a["result"] != b["result"]
+
+
+def test_negative_control_hash_ordered_transport_note_moves_the_digest_with_the_hash_seed(
+) -> None:
+    """A not-transported warning that names its populations in set order: hash seeds 0
+    and 1 disagree on that path's digests, so the first test does inspect #107's path."""
+    a = run(1, "0", "hash_ordered_transport_note")
+    b = run(1, "1", "hash_ordered_transport_note")
+    assert a["not_transported"][2] != b["not_transported"][2]  # type: ignore[index]
+    assert a["result"] == b["result"]  # the defect is confined to the declared-target path
