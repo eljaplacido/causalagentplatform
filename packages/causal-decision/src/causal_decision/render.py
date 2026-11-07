@@ -76,7 +76,7 @@ def _declared_numbers(decision: Decision) -> tuple[str, ...]:
 def _without_quotes(text: str, decision: Decision) -> str:
     """The rationale with the request's own free text taken out before it is checked.
 
-    The rationale quotes the requester ("Act: cut price 30%."); a digit or a causal verb
+    The rationale quotes the requester ("Go ahead: cut price 30%."); a digit or a causal verb
     in that quote is theirs, not a claim of the analysis, so it is neither bound nor
     refused. Only the quoted text is removed: the same number anywhere else is checked.
     """

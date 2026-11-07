@@ -20,6 +20,11 @@ longer say. An action applied to everybody leaves nothing to compare against, an
 that case is counted rather than quietly dropped. The report states each rate
 with a Clopper-Pearson interval, and none at all from fewer than ten follow-ups.
 
+And they can be tried in shadow: ``causal_decision.shadow`` seals a verdict with a
+shadow tag that is never emitted and is listed apart from real decisions, and
+``causal_decision.shadow_round`` seals a round of shadow studies and scores it
+against the bars the round pre-registered.
+
 The verdict is a pure function of (outcome, request, policy), so a recorded decision
 can be replayed and disputed.
 """
@@ -61,6 +66,7 @@ from causal_decision.outcome import (
 )
 from causal_decision.policy import decide
 from causal_decision.render import explain
+from causal_decision.shadow import ShadowEmissionError, emittable
 
 __all__ = [
     "Approval",
@@ -82,11 +88,13 @@ __all__ = [
     "Realization",
     "RiskClass",
     "RiskRule",
+    "ShadowEmissionError",
     "Verdict",
     "__version__",
     "append",
     "compare",
     "decide",
+    "emittable",
     "explain",
     "past_review",
     "plan",

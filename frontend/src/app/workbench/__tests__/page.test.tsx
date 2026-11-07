@@ -89,6 +89,7 @@ function edge(id: string, source: string, target: string, confidence: number): C
     guardianVerdictRef: "8f14e45f-ceea-467a-9575-8b1f0d6a4c2e",
     version: "1.0.0",
     domain: "devops",
+    createdAt: "2026-09-10T08:30:00Z",
   };
 }
 
@@ -347,6 +348,41 @@ describe("workbench fragment authoring", () => {
     const composer = await screen.findByTestId("fragment-draft-composer");
     expect(await within(composer).findByRole("note")).toHaveTextContent(/drafting is disabled/i);
     expect(within(composer).getByRole("button", { name: /submit draft for review/i })).toBeDisabled();
+  });
+});
+
+// ─── NodeDetail on the canvas (septa-87) ───────────────────────────────────────
+//
+// NodeDetail was built and no page rendered it. The workbench now shows it for a
+// node clicked on the canvas, with only what the fragment's edges say about the
+// node: the object type they reference it as, the domain, and the edges into and
+// out of it (relation, stated confidence, approval status). Postconditions: the
+// panel names the node and lists exactly the edges touching it; following an
+// edge selects the node at its other end; closing removes it. It claims no
+// approval status or Guardian verdict for the node itself.
+describe("workbench node detail", () => {
+  it("shows the edges touching a clicked node, follows them, and closes", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(await screen.findByRole("button", { name: /deployment_latency_attribution/ }));
+    await user.click(await screen.findByTestId(`dag-node-${LATENCY}`));
+
+    const detail = await screen.findByTestId("node-detail");
+    expect(detail).toHaveAttribute("data-node-id", LATENCY);
+    const edges = within(detail).getAllByRole("listitem");
+    expect(edges).toHaveLength(2);
+    expect(edges[0]).toHaveTextContent(`from ${DEPLOY}`);
+    expect(edges[0]).toHaveTextContent("82% stated");
+    expect(edges[1]).toHaveTextContent(`to ${CHECKOUT}`);
+    expect(edges[1]).toHaveTextContent("74% stated");
+    expect(within(detail).queryByText(/guardian/i)).toBeNull();
+
+    await user.click(within(detail).getByRole("button", { name: `to ${CHECKOUT}` }));
+    expect(screen.getByTestId("node-detail")).toHaveAttribute("data-node-id", CHECKOUT);
+    expect(within(screen.getByTestId("node-detail")).getAllByRole("listitem")).toHaveLength(1);
+
+    await user.click(screen.getByRole("button", { name: /close node detail/i }));
+    expect(screen.queryByTestId("node-detail")).toBeNull();
   });
 });
 

@@ -25,6 +25,19 @@ on:
 permissions:
   contents: read
 
+# BLAS and OpenMP threads per job (septa-90): the repository variable CI_BLAS_THREADS,
+# else 2. Left unset, every numpy/scipy/sklearn process takes one thread per core, so
+# several self-hosted runners on one host -- and T0's process pool on any of them --
+# ask for many times the host's cores. No digest or gate verdict depends on the
+# number: causal_core.analyze runs BLAS on one thread whatever this says (septa-89,
+# packages/causal-decision/tests/test_digest_reproducible.py), and the D0, C0 and T0
+# reports came out identical at 1 and 8 threads. It only sets how hard a job leans on
+# the host.
+env:
+  OMP_NUM_THREADS: ${{ vars.CI_BLAS_THREADS || '2' }}
+  OPENBLAS_NUM_THREADS: ${{ vars.CI_BLAS_THREADS || '2' }}
+  MKL_NUM_THREADS: ${{ vars.CI_BLAS_THREADS || '2' }}
+
 jobs:
   verify:
     name: Gates before publishing

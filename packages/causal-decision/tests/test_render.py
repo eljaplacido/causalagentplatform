@@ -78,7 +78,7 @@ def test_the_thresholds_a_request_declared_are_allowed_but_invented_numbers_are_
 
 
 def test_numbers_and_words_quoted_from_the_request_are_not_claims(strong: CausalResult) -> None:
-    """The request's own text is quoted into the rationale ("Act: cut price 30%."), so a
+    """The request's own text is quoted into the rationale ("Go ahead: cut price 30%."), so a
     digit or a causal verb in it is the requester's, not the analysis's. It used to fail
     verification, and POST /api/v1/decisions answered 500 after sealing the entry."""
     request = BASE.model_copy(
@@ -91,3 +91,26 @@ def test_numbers_and_words_quoted_from_the_request_are_not_claims(strong: Causal
     tampered = d.model_copy(update={"rationale": d.rationale + " It saves 30 minutes."})
     with pytest.raises(ValueError, match="failed verification"):
         explain(tampered, strong)
+
+
+def test_the_verdict_is_named_once_at_the_head_of_the_explanation(strong: CausalResult) -> None:
+    """The explanation opens with the verdict's name ("ACT: ...") and then the rationale.
+
+    Precondition: a decision for each verdict these fixtures reach (act, experiment,
+    refuse). Postcondition: the verdict's name heads the text once; the sentence after it
+    does not open with that name again. Found on a platform run (2026-10-27): /analyze
+    showed "ACT: Act: Send the email campaign ..." because the act rationale opened with
+    "Act:". Undefined: the wording of the lead clause itself.
+    """
+    cases = [
+        (decide(strong, BASE), strong),
+        (decide(weak_effect(), BASE), weak_effect()),
+        (decide(apparatus_failure(), BASE), apparatus_failure()),
+    ]
+    assert {d.verdict for d, _ in cases} >= {Verdict.act, Verdict.experiment, Verdict.refuse}
+    for d, out in cases:
+        name = d.verdict.value.upper().replace("_", " ")
+        first = explain(d, out).splitlines()[0]
+        assert first.startswith(f"{name}: "), first
+        rest = first[len(name) + 2 :]
+        assert not rest.casefold().startswith(name.casefold()), first

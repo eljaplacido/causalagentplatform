@@ -291,6 +291,9 @@ function AnalyzePage() {
     prefilled.current = true;
     const ex = params.get("example");
     if (ex) {
+      // A one-shot initialisation from the URL (guarded by the ref above) that starts a
+      // fetch; it cannot be state derived during render, which is what this rule asks for.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       void loadExample(ex);
       return;
     }
@@ -341,14 +344,18 @@ function AnalyzePage() {
   }
 
   // Live check of graph + question
+  // No graph, no check: cleared during render
+  // (https://react.dev/learn/you-might-not-need-an-effect), not in the effect below.
+  if (!graph && (check !== null || checking)) {
+    setCheck(null);
+    setChecking(false);
+  }
   useEffect(() => {
-    if (!graph) {
-      setCheck(null);
-      return;
-    }
+    if (!graph) return;
     let cancelled = false;
-    setChecking(true);
     const handle = setTimeout(() => {
+      // "Checking" from when the debounced request goes out, set in the timer's callback.
+      setChecking(true);
       analysisApi
         .check({
           graph,

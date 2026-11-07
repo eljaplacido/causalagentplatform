@@ -77,7 +77,8 @@ sustainability investment assurance follow, in that order.
 5. **Outcome capture and calibration.** *Machinery built; evidence not yet gathered.* Every
    decision now seals a follow-up plan carrying the prediction it used;
    `POST /api/v1/decisions/{entry_digest}/followup` re-runs that plan's own analysis over a
-   later window and scores it; `GET /api/v1/decisions/calibration` aggregates. The hard part
+   later window and scores it; `GET /api/v1/decisions/calibration` aggregates (over real
+   decisions; shadow ones only when asked). The hard part
    was not the arithmetic: calibrating a causal prediction needs a causal estimate afterwards,
    and an action rolled out to everybody leaves no comparison group. That case is the kernel's
    own refusal, recorded as an undecidable measurement and counted beside the rates rather than
@@ -146,8 +147,10 @@ priority first, and the priorities put hardening the platform before new estimat
   and its simulated C0 gate are built; real follow-ups are not),
   and anchoring (`septa-11`). Real follow-ups are to come from **shadow runs**: studies on real
   decisions, proposed by devbrain and agentcenter, with verdicts sealed and not acted on. Their
-  context pack is built (`shadow/`, `septa-94`). Still to build: a runtime shadow mode that
-  never emits (`septa-95`), and a round runner with a scorecard (`septa-96`). Metamorphic tests
+  context pack is built (`shadow/`, `septa-94`), and so is the runtime: a decision recorded
+  with a shadow tag is sealed, never emitted and listed apart (`septa-95`), and
+  `causal_decision.shadow_round` seals a round's studies and scores them against the round's
+  pre-registered bars (`septa-96`). No round on real decisions has run yet. Metamorphic tests
   of the kernel are built (`septa-99`): they check that renaming, rescaling, reordering and
   duplicating the data change the answer only as they must. The browser golden path is gated
   (`septa-97`): the gate's `frontend-e2e` step drives `/analyze` in Chromium against a live
