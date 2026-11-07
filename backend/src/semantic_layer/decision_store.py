@@ -15,7 +15,9 @@ Two rules the store holds to:
     few columns to walk and filter by. Those columns are an index over the record,
     never a source of truth: verification parses the record and recomputes the
     digests, so a row whose columns were edited to say something else does not
-    verify.
+    verify. The same holds for listing real and shadow decisions apart: the
+    `shadow` column narrows the query, and the sealed tag in each record decides
+    (causal_decision.shadow.select).
 """
 
 from __future__ import annotations
@@ -27,6 +29,7 @@ from typing import TYPE_CHECKING, Any
 import structlog
 from causal_decision.ledger import ChainReport, DecisionRecord, append, verify_chain
 from causal_decision.outcome import FollowUp, Realization
+from causal_decision.shadow import Scope, in_scope, select
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
@@ -79,10 +82,14 @@ class DecisionStore:
         executed: bool = False,
         model: ModelRef | None = None,
         review_by: str | None = None,
+        shadow: str | None = None,
         *,
         session: AsyncSession | None = None,
     ) -> DecisionRecord:
         """Seal this decision onto the end of the chain and store it.
+
+        `shadow` seals it as a shadow decision (causal_decision.shadow): in the same
+        chain, listed apart, never emitted.
 
         With `session`, the insert joins the caller's transaction and the caller
         commits: the entry is sealed only when that commit lands, together with
@@ -98,6 +105,7 @@ class DecisionStore:
             executed=executed,
             model=model,
             review_by=review_by,
+            shadow=shadow,
         )
         if session is not None:
             try:
@@ -122,35 +130,42 @@ class DecisionStore:
             sequence=entry.sequence,
             verdict=str(entry.decision.verdict),
             entry_digest=entry.entry_digest,
+            shadow=entry.shadow,
         )
         return entry
 
-    async def all_records(self, limit: int | None = None) -> list[DecisionRecord]:
-        sql = "SELECT record FROM decision_records ORDER BY sequence ASC"
-        params: dict[str, Any] = {}
+    async def all_records(
+        self, limit: int | None = None, scope: Scope = "all", tag: str | None = None
+    ) -> list[DecisionRecord]:
+        """The chain in order -- all of it by default, which is what verification needs.
+
+        A listing passes `scope` ("real" or "shadow") or a shadow `tag`; the column
+        narrows the query and each record's sealed tag decides.
+        """
+        key, params = _scope_key(scope, tag)
+        sql = _ALL_RECORDS[key]
         if limit is not None:
             sql += " LIMIT :limit"
             params["limit"] = limit
         async with CloudSqlFactory.get_session_factory()() as session:
             rows = await session.execute(text(sql), params)
             raws = [r[0] for r in rows.all()]
-        return [DecisionRecord.model_validate(_loads(r)) for r in raws]
+        return select((DecisionRecord.model_validate(_loads(r)) for r in raws), scope, tag)
 
     async def verify(self) -> ChainReport:
         """Recompute the whole chain from the stored records."""
         return verify_chain(await self.all_records())
 
-    async def for_subject(self, action: str, limit: int = 50) -> list[DecisionRecord]:
+    async def for_subject(
+        self, action: str, limit: int = 50, scope: Scope = "all", tag: str | None = None
+    ) -> list[DecisionRecord]:
+        key, params = _scope_key(scope, tag)
         async with CloudSqlFactory.get_session_factory()() as session:
             rows = await session.execute(
-                text(
-                    "SELECT record FROM decision_records WHERE subject = :s "
-                    "ORDER BY sequence DESC LIMIT :limit"
-                ),
-                {"s": action, "limit": limit},
+                text(_FOR_SUBJECT[key]), {**params, "s": action, "limit": limit}
             )
             raws = [r[0] for r in rows.all()]
-        return [DecisionRecord.model_validate(_loads(r)) for r in raws]
+        return select((DecisionRecord.model_validate(_loads(r)) for r in raws), scope, tag)
 
     # ── follow-ups: what was going to be re-measured, and what came back ──────
 
@@ -195,27 +210,32 @@ class DecisionStore:
             realization,
         )
 
-    async def realizations(self, limit: int | None = None) -> list[Realization]:
-        """Every measurement taken, decidable or not.
+    async def realizations(
+        self, limit: int | None = None, scope: Scope = "all", tag: str | None = None
+    ) -> list[Realization]:
+        """Every measurement taken, decidable or not -- of real decisions, shadow ones, or all.
 
         Undecidable ones come back with the rest. They are not missing at random --
         an action rolled out to everybody is precisely the one whose effect can no
         longer be estimated -- so filtering them here would quietly select the
-        flattering subset.
+        flattering subset. Scoping by real or shadow is a different cut: by what
+        the decision was, never by what its measurement found.
         """
         # With a limit, the most recent N -- "LIMIT" on an ascending scan returned
         # the oldest, which is never what a caller asking for a window means.
-        sql = (
-            "SELECT payload FROM decision_followups WHERE kind = 'realization' ORDER BY id DESC"
-        )
-        params: dict[str, Any] = {}
+        key, params = _scope_key(scope, tag)
+        sql = _REALIZATIONS[key]
         if limit is not None:
             sql += " LIMIT :limit"
             params["limit"] = limit
         async with CloudSqlFactory.get_session_factory()() as session:
             rows = await session.execute(text(sql), params)
-            raws = [r[0] for r in rows.all()]
-        return [Realization.model_validate(_loads(r)) for r in reversed(raws)]
+            pairs = [(r[0], r[1]) for r in rows.all()]
+        return [
+            Realization.model_validate(_loads(payload))
+            for payload, record in reversed(pairs)
+            if in_scope(DecisionRecord.model_validate(_loads(record)), scope, tag)
+        ]
 
     async def measured_entries(self) -> set[str]:
         """The entry digests of every decision a follow-up has measured."""
@@ -299,8 +319,8 @@ async def _insert_record(session: AsyncSession, entry: DecisionRecord) -> None:
         typed_text(
             "INSERT INTO decision_records "
             "(sequence, entry_digest, prev_digest, decision_digest, subject, "
-            " verdict, recorded_at, record) "
-            "VALUES (:seq, :entry, :prev, :dd, :subject, :verdict, :at, :record)",
+            " verdict, recorded_at, record, shadow) "
+            "VALUES (:seq, :entry, :prev, :dd, :subject, :verdict, :at, :record, :shadow)",
             # The sealed record keeps recorded_at as the text it hashed; the
             # column is an index over it, typed as the time it names.
             at=TIMESTAMP,
@@ -314,8 +334,54 @@ async def _insert_record(session: AsyncSession, entry: DecisionRecord) -> None:
             "verdict": str(entry.decision.verdict),
             "at": entry.recorded_at,
             "record": json.dumps(entry.model_dump(mode="json")),
+            "shadow": entry.shadow,
         },
     )
+
+
+# Real or shadow, one shadow tag, or everything: each query is written out whole for
+# each, so no SQL is assembled from strings (bandit B608, septa-50) and the tag is
+# always a bound value. The `shadow` column narrows; the sealed tag in each record
+# decides (`select` / `in_scope` after the read).
+_ALL_RECORDS = {
+    "all": "SELECT record FROM decision_records ORDER BY sequence ASC",
+    "real": "SELECT record FROM decision_records WHERE shadow IS NULL ORDER BY sequence ASC",
+    "shadow": "SELECT record FROM decision_records WHERE shadow IS NOT NULL "
+    "ORDER BY sequence ASC",
+    "tag": "SELECT record FROM decision_records WHERE shadow = :shadow_tag "
+    "ORDER BY sequence ASC",
+}
+_FOR_SUBJECT = {
+    "all": "SELECT record FROM decision_records WHERE subject = :s "
+    "ORDER BY sequence DESC LIMIT :limit",
+    "real": "SELECT record FROM decision_records WHERE subject = :s AND shadow IS NULL "
+    "ORDER BY sequence DESC LIMIT :limit",
+    "shadow": "SELECT record FROM decision_records WHERE subject = :s AND shadow IS NOT NULL "
+    "ORDER BY sequence DESC LIMIT :limit",
+    "tag": "SELECT record FROM decision_records WHERE subject = :s AND shadow = :shadow_tag "
+    "ORDER BY sequence DESC LIMIT :limit",
+}
+_REALIZATIONS = {
+    "all": "SELECT f.payload, r.record FROM decision_followups f "
+    "JOIN decision_records r ON r.entry_digest = f.entry_digest "
+    "WHERE f.kind = 'realization' ORDER BY f.id DESC",
+    "real": "SELECT f.payload, r.record FROM decision_followups f "
+    "JOIN decision_records r ON r.entry_digest = f.entry_digest "
+    "WHERE f.kind = 'realization' AND r.shadow IS NULL ORDER BY f.id DESC",
+    "shadow": "SELECT f.payload, r.record FROM decision_followups f "
+    "JOIN decision_records r ON r.entry_digest = f.entry_digest "
+    "WHERE f.kind = 'realization' AND r.shadow IS NOT NULL ORDER BY f.id DESC",
+    "tag": "SELECT f.payload, r.record FROM decision_followups f "
+    "JOIN decision_records r ON r.entry_digest = f.entry_digest "
+    "WHERE f.kind = 'realization' AND r.shadow = :shadow_tag ORDER BY f.id DESC",
+}
+
+
+def _scope_key(scope: Scope, tag: str | None) -> tuple[str, dict[str, Any]]:
+    """Which of the written-out queries serves `scope` / `tag`, and its bound values."""
+    if tag is not None:
+        return "tag", {"shadow_tag": tag}
+    return scope, {}
 
 
 def _loads(raw: Any) -> dict[str, Any]:

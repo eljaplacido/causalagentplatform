@@ -34,7 +34,10 @@ which data exists, and the platform does not.
 1. **Propose 10–20 studies**, each filled in from `study-template.json`. Spread them across the
    designs in the card, and plant some questions the platform should refuse: a confounder with
    no data column, a segment where every unit was treated, a rollout with no comparison group.
-   Each planted case names its expected refusal in `shadow.expect`.
+   Each planted case names its expected refusal in `shadow.expect`. A treatment that never
+   varied (every unit treated, no comparison group) is `NO_VARIATION` since contract 0.15.0: the
+   kernel still refuses to estimate, but the verdict is an experiment sized from the outcome's
+   spread, not a refusal to act.
 2. **Pre-register.** Copy `PRE-REGISTRATION.template.md` to the round's directory, fill in the
    study list and the bars, and have the owner approve it. Commit it before the first run.
 3. **Run in shadow.** Each study goes through the normal flow: check the graph, then identify,
@@ -46,15 +49,32 @@ which data exists, and the platform does not.
    undecidable rather than guessed.
 5. **Score** against the bars. A failed round is kept, never deleted, as every benchmark run is.
 
-## What is not built yet
+## Running a round
 
-The pack (this directory) is built. The runtime side is ledger work:
+A round lives in `shadow/rounds/<N>/`: its `PRE-REGISTRATION.md`, one file per study under
+`studies/`, each study's data at the paths its `shadow.data` names (relative to the round
+directory; CSV, Parquet, JSON or JSONL), and a `reviews/<id>.md` for each disagreement with the
+human decision. Then, in two steps, because verdicts are sealed before any follow-up data exists:
 
-- a shadow tag on recorded decisions;
-- the guarantee that shadow decisions are never emitted;
-- a round runner;
-- the scorecard.
+```bash
+python -m causal_decision.shadow_round seal  shadow/rounds/<N>   # step 3: check, identify, decide, seal
+python -m causal_decision.shadow_round score shadow/rounds/<N>   # steps 4-5: due follow-ups, the bars
+```
 
-Until those exist, a round can be run by hand. Run the backend with `AGENTCENTER_EMIT` unset
-(emission is off unless it is `1`, `true` or `yes`; `backend/src/connectors/agentcenter.py`),
-and keep the recorded decisions' digests in the round's directory.
+`seal` refuses a round whose follow-up data already exists, and seals a round once per
+pre-registration version, into `results/`: the round's own hash chain of shadow-tagged records,
+which recomputes anywhere and is separate from the platform's ledger. `score` refuses a seal whose bars or studies changed
+afterwards (only `shadow.human_decision` and `shadow.human_acted` may be filled in later), takes a
+follow-up only once it is due, never re-measures one, and writes a new file under `scorecards/`
+every time, failed or not. It exits 0 when the round passed, 1 when it failed and 2 while bars are
+pending. `packages/causal-decision/README.md` ("Trying it in shadow") has the details.
+
+A study can also be decided through the API: `POST /api/v1/decisions` with `"shadow": "<tag>"`
+seals it into the platform's ledger as a shadow decision (the runner does not post to the API).
+Either way, a shadow decision is never
+emitted to agentcenter as `causalplatform.decision.recorded` -- the connector refuses the sealed
+record whatever `AGENTCENTER_EMIT` says (`causal_decision.shadow.emittable`) -- and it is listed
+apart from real decisions: `GET /api/v1/decisions?scope=shadow` (or `tag=<tag>`), the Shadow
+switch on the `/decisions` page, and a calibration report of its own (`scope=shadow`).
+
+No round on real decisions has run yet.

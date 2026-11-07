@@ -217,7 +217,7 @@
       "reality": "The chain is built, persisted, served and verified, and decision_records is append-only in the production schema. Both ends of anchoring now exist in code: GET /api/v1/decisions/checkpoint returns the head to publish, and POST /api/v1/decisions/verify-anchored checks the chain against checkpoints kept elsewhere, catching a rewrite that re-seals every later entry (which /verify passes) and a truncation below a checkpoint. What does not exist is the publishing: nothing sends a checkpoint to a store the platform cannot rewrite, so until a deployment does, the ledger still evidences internal consistency only.",
       "evidence": [
         {
-          "at": "backend/src/api/decisions.py:511",
+          "at": "backend/src/api/decisions.py:553",
           "says": "A pass means the chain is *internally* consistent. It cannot mean more than"
         },
         {
@@ -420,15 +420,15 @@
       "reality": "The drift functions compute when called directly with data (KL/JS on histograms, a correlation-below-0.5 check labelled causal drift, Jaccard word overlap on definitions, a chi-squared test on labels). DriftMonitorAgent.process hands each skill only a fragment id, so drift_detect returns kl_divergence 0.0 with note no_data_for_comparison, the structure and semantic comparisons return no drift for want of edges and definitions, and concept_drift is passed as False. The pipeline therefore cannot raise a drift alert, and nothing runs it on a schedule: the periodic DriftSensor, which no code ever started, was deleted. Alerts go to an in-process AlertEmitter, and the agent's return value names that channel; there is no Kafka producer (until 2026-09-26 it named a platform.drift.alert.v1 topic, and the alert_emit skill claimed an emission it never made).",
       "evidence": [
         {
-          "at": "backend/src/agents/drift_monitor.py:606",
+          "at": "backend/src/agents/drift_monitor.py:649",
           "says": "\"note\": \"no_data_for_comparison\","
         },
         {
-          "at": "backend/src/agents/drift_monitor.py:192",
+          "at": "backend/src/agents/drift_monitor.py:196",
           "says": "concept_drift=False,  # Would need label data"
         },
         {
-          "at": "backend/src/agents/drift_monitor.py:65",
+          "at": "backend/src/agents/drift_monitor.py:68",
           "says": "_ALERT_CHANNEL = \"AlertEmitter (in-process)\""
         }
       ],
@@ -452,7 +452,7 @@
           "says": "TypeScript interfaces generated from / aligned to the canonical schema"
         }
       ],
-      "reality": "packages/semantic-types/src/entities.ts is written by hand, not generated, and seven of its interfaces declare fields models.py does not have. Treatment, Confounder and Mediator add description, domain, approvalStatus, createdBy, createdAt and lineage; Outcome adds the same plus units; CausalEdge adds createdAt, and declares createdBy non-null where the backend's is optional (null for edges drafted before migration 011); GraphFragment adds approvedBy, approvedAt and lineage; Intervention adds description, domain, graphFragmentRef and approvalReason. A client typed against the package expects fields the API never sends. scripts/contract_parity.py checks only the shared enumerations, not interface fields.",
+      "reality": "packages/semantic-types/src/entities.ts is written by hand, not generated, and seven of its interfaces declare fields models.py does not have. Treatment, Confounder and Mediator add description, domain, approvalStatus, createdBy, createdAt and lineage; Outcome adds the same plus units; CausalEdge declares createdBy non-null where the backend's is optional (null for edges drafted before migration 011); GraphFragment adds approvedBy, approvedAt and lineage; Intervention adds description, domain, graphFragmentRef and approvalReason. A client typed against the package expects fields the API never sends. scripts/contract_parity.py checks only the shared enumerations, not interface fields.",
       "evidence": [
         {
           "at": "packages/semantic-types/src/entities.ts:45",
@@ -490,11 +490,11 @@
       "reality": "contracts.py defines the contract, SLA and violation models and a ContractRegistry that can register, look up and remove contracts. Nothing evaluates a contract, nothing produces a ContractViolation, and only the tests instantiate the registry. PR-009 fires only when a caller sends action_type DATA_ACCESS_WITH_CONTRACT, which no code path does, and it reads the violation list from that caller's own payload. So a caller that reports no violations is never blocked.",
       "evidence": [
         {
-          "at": "backend/src/agents/governance.py:546",
+          "at": "backend/src/agents/governance.py:584",
           "says": "if action_type == \"DATA_ACCESS_WITH_CONTRACT\":"
         },
         {
-          "at": "backend/src/agents/governance.py:547",
+          "at": "backend/src/agents/governance.py:585",
           "says": "contract_violations = payload.get(\"contract_violations\", [])"
         },
         {
@@ -640,18 +640,18 @@
           "says": "Cynefin domain classification with confidence"
         },
         {
-          "at": "docs/AGENTS.md:571",
+          "at": "docs/AGENTS.md:589",
           "says": "Domain confidence > 0.7"
         },
         {
-          "at": "docs/UIX.md:197",
+          "at": "docs/UIX.md:200",
           "says": "when the Cynefin domain classification is CHAOTIC"
         }
       ],
       "reality": "IncidentTriageAgent._skill_cynefin_classify is a keyword stub. Run on an external labelled corpus of 456 incident-style queries (the CARF Under Test lab's spine/test_set.jsonl, 5 domains), it labels 454 of 456 COMPLEX when no assumptions are active and 449 COMPLICATED when one is: macro F1 0.07, below always guessing the most common domain (0.11), and 0 of 50 CHAOTIC items recalled -- so the CHAOTIC-to-human escalation the docs describe depends on keywords that almost never fire; a TF-IDF naive Bayes baseline reaches 0.92 on the same corpus. It never outputs CLEAR or DISORDER, so the DisorderProtocol branch is unreachable from it. Its confidences are constants (0.60-0.85), so 'domain confidence > 0.7' measures which branch fired, not how likely the label is. Since 2026-09-25 a description no keyword matches is classified DISORDER with confidence 0 (it was COMPLEX, or COMPLICATED when an assumption was active), so the stub's commonest answer now routes to a person instead of to analysis; the two-word keywords could never match until the same day.",
       "evidence": [
         {
-          "at": "backend/src/agents/incident_triage.py:404",
+          "at": "backend/src/agents/incident_triage.py:447",
           "says": "A HEURISTIC STUB, and measured as one"
         }
       ],
@@ -667,7 +667,7 @@
       "capability": "Dynamic application security testing (DAST): a scanner such as OWASP ZAP run against a running API, weekly",
       "claimed_in": [
         {
-          "at": "docs/CYBERSECURITY.md:688",
+          "at": "docs/CYBERSECURITY.md:693",
           "says": "DAST: OWASP ZAP against a staging API (weekly). Not built: there is no staging"
         }
       ],
@@ -685,15 +685,15 @@
       "capability": "One-click Rosenbaum / E-value sensitivity analysis on an approved edge, in the UI",
       "claimed_in": [
         {
-          "at": "docs/UIX.md:248",
+          "at": "docs/UIX.md:251",
           "says": "I want to run a one-click Rosenbaum sensitivity analysis on any approved edge"
         }
       ],
-      "reality": "No UI runs a sensitivity analysis. The kernel reports E-values, robustness values and (for back-door designs with a binary treatment) a Rosenbaum bound on every analysis from data, but nothing in the frontend requests one for an edge; the governance page's sensitivity panel is a hard-coded example whose label conflates the two methods (\"Rosenbaum E-value\").",
+      "reality": "No UI runs a sensitivity analysis. The kernel reports E-values, robustness values and (for back-door designs with a binary treatment) a Rosenbaum bound on every analysis from data, but nothing in the frontend requests one for an edge. The governance page shows the results the platform recorded for a pending edge (since septa-88, as GET /api/governance/review-queue sends them; until then its panel was a hard-coded example labelled \"Rosenbaum E-value\"), but offers no action that runs one: recording one is an API call, POST /api/semantic/edges/{id}/sensitivity.",
       "evidence": [
         {
-          "at": "frontend/src/app/governance/page.tsx:95",
-          "says": "testName: \"Rosenbaum E-value\","
+          "at": "frontend/src/components/governance/ApprovalPanel.tsx:102",
+          "says": "Recorded sensitivity results ({results.length})"
         }
       ],
       "leaves_by": {
@@ -715,7 +715,7 @@
       "reality": "Declared, not implemented. CausalQuery carries `population` (where the data come from) and `target_population` (where the answer is meant for). When they differ the kernel estimates for the data's population only and adds a 'not transported' warning to the result; the decision layer compares the evidence's population with the request's and the declared target, caps the verdict at `experiment` with 'not transported; evidence is from <population>' in the check, and sizes the experiment to run in the target. Nothing estimates the effect in the target population, and nothing judges whether a result would carry over. Added after gnomon's benchmark analysis (2026-11-04) could only state its local-to-hosted transport (its R4).",
       "evidence": [
         {
-          "at": "packages/causal-core/src/causal_core/pipeline.py:250",
+          "at": "packages/causal-core/src/causal_core/pipeline.py:251",
           "says": "f\"not transported: the estimate is about {source}. The declared target population \""
         },
         {

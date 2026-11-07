@@ -8,12 +8,14 @@ Responsibilities (AGENTS.md §2.1 DriftMonitorAgent):
   - Detect concept drift (model performance degradation)
   - Emit drift alerts through the in-process AlertEmitter (logging, callbacks,
     deduplication; there is no message broker)
-  - Store drift alerts in Neo4j for audit and tracking, when NEO4J_URI is set
+  - Store drift alerts in Neo4j for audit and tracking, when NEO4J_URI is set;
+    every alert Neo4j does not store is written to the SQL drift_alerts table
   - NEVER write to the semantic layer (alert-only, no graph modifications)
 
 Implemented skills:
   drift_detect              — compute KL divergence on feature distributions
-  store_drift_alert         — persist alerts to Neo4j (optional)
+  store_drift_alert         — persist alerts to Neo4j (optional; the SQL
+                              drift_alerts table otherwise, src/sensors/drift_alert_log.py)
   get_recent_drift_alerts   — retrieve recent alerts
   causal_structure_compare  — compare graph edges against live data patterns
   alert_emit                — emit a drift alert through AlertEmitter
@@ -26,7 +28,8 @@ EpistemicState constraints enforced:
 Production readiness:
   - Configurable thresholds via constructor parameters
   - Drift severity scoring with multi-factor analysis
-  - Optional Neo4j alert storage with TTL (NEO4J_URI; tested against mocks only)
+  - Optional Neo4j alert storage with TTL (NEO4J_URI; tested against mocks only),
+    and the SQL drift_alerts record for every alert Neo4j did not store
   - Integration with experience buffer for pattern learning
 """
 
@@ -70,8 +73,9 @@ class DriftMonitorAgent(BaseAgent):
     Continuous monitoring agent that detects and alerts on drift.
 
     This agent is read-only with respect to the semantic layer.
-    It emits alerts through the in-process AlertEmitter and, when NEO4J_URI
-    is set, stores them in Neo4j for audit.
+    It emits alerts through the in-process AlertEmitter and stores them for
+    audit: in Neo4j when NEO4J_URI is set, and in the SQL drift_alerts table
+    whenever Neo4j did not store one.
     Flags the EpistemicState for human review when severe drift is detected.
 
     Designed to run as a background agent (maps to OpenFang automate lane).
@@ -136,7 +140,7 @@ class DriftMonitorAgent(BaseAgent):
           3. Causal structure comparison
           4. Semantic drift detection (if entity definitions available)
           5. Severity classification and alert emission
-          6. Store drift alerts in Neo4j
+          6. Store drift alerts (Neo4j when configured, else SQL)
           7. Return updated state with drift flags and recommendations
         """
         state = self._check_circuit_breaker(state)
@@ -424,7 +428,8 @@ class DriftMonitorAgent(BaseAgent):
         recommendation: str,
         evidence: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Emit the alert through AlertEmitter and store it in Neo4j (if configured)."""
+        """Emit the alert through AlertEmitter and store it: in Neo4j when configured,
+        otherwise (or when that write fails) in the SQL drift_alerts table."""
         alert_result = {
             "alert_type": alert_type,
             "severity": severity,
@@ -469,7 +474,7 @@ class DriftMonitorAgent(BaseAgent):
                     metadata={
                         "session_id": state.session_id,
                         "agent_id": self.agent_id,
-                        "cynefin_domain": state.cynefin_domain.value,
+                        "cynefin_domain": str(state.cynefin_domain),
                         "evidence": evidence,
                     },
                 )
@@ -481,6 +486,44 @@ class DriftMonitorAgent(BaseAgent):
             except Exception as e:
                 self._log.error("drift_alert.storage_error", error=str(e), alert_type=alert_type)
                 alert_result["storage_error"] = str(e)
+
+        # The SQL record (septa-62): every alert Neo4j did not store -- not
+        # configured, storage disabled, or the write failed -- is written to the
+        # drift_alerts table, so every alert leaves a record in the platform's own
+        # database. Neo4j is an optional side store; this is not.
+        if not alert_result["stored"]:
+            from src.sensors.drift_alert_log import DriftAlertLog
+
+            try:
+                recorded_id = await DriftAlertLog().record(
+                    alert_type=alert_type,
+                    severity=severity,
+                    drift_type=drift_type,
+                    drift_score=drift_score,
+                    description=description,
+                    agent_id=self.agent_id,
+                    fragment_id=state.active_graph_fragment_id,
+                    drifted_features=drifted_features,
+                    recommendation=recommendation,
+                    session_id=state.session_id,
+                    context={
+                        "cynefin_domain": str(state.cynefin_domain),
+                        "emitted": alert_result["emitted"],
+                        "emitted_alert_id": alert_result.get("alert_id"),
+                        "evidence": evidence,
+                    },
+                )
+                alert_result["stored"] = True
+                alert_result["stored_in"] = "sql"
+                alert_result["record_id"] = recorded_id
+                alert_result["alert_id"] = alert_result.get("alert_id") or recorded_id
+            except Exception as e:
+                self._log.error(
+                    "drift_alert.sql_record_failed", error=str(e), alert_type=alert_type
+                )
+                alert_result["sql_record_error"] = str(e)
+        else:
+            alert_result["stored_in"] = "neo4j"
 
         # Guard: at least one of emit or store succeeded, or we surface the failure.
         if not alert_result["emitted"] and not alert_result["stored"]:
@@ -753,13 +796,22 @@ class DriftMonitorAgent(BaseAgent):
 
         Public API for sensors and monitoring dashboards.
         """
-        return await get_recent_drift_alerts(
+        found = await get_recent_drift_alerts(
             fragment_id=fragment_id,
             drift_type=drift_type,
             severity=severity,
             limit=limit,
             include_acknowledged=False,
         )
+        if found.get("retrieval_source") != "neo4j_not_available":
+            return found
+        # Without Neo4j the alerts are in SQL (septa-62): read them from there.
+        from src.sensors.drift_alert_log import DriftAlertLog
+
+        alerts = await DriftAlertLog().recent(
+            fragment_id=fragment_id, drift_type=drift_type, severity=severity, limit=limit
+        )
+        return {"alerts": alerts, "retrieval_source": "sql_drift_alerts", "count": len(alerts)}
 
     async def acknowledge_alert(self, alert_id: str) -> dict[str, Any]:
         """

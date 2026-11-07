@@ -34,6 +34,10 @@ from causal_decision.contract import Decision, Verdict
 #: string would be indistinguishable from a missing link.
 GENESIS = "sha256:" + "0" * 64
 
+#: What a shadow tag may look like: a short identifier, never prose. It is matched
+#: and filtered on, so it must not carry anything a reader could mistake for content.
+SHADOW_TAG = r"^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+
 
 class _Model(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, allow_inf_nan=False)
@@ -93,6 +97,18 @@ class DecisionRecord(_Model):
         "a decision with no date claims to hold forever. None on records sealed before the "
         "field existed.",
     )
+    shadow: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=100,
+        pattern=SHADOW_TAG,
+        description="The shadow tag (a shadow round, e.g. 'shadow-round-1') this decision was "
+        "recorded under, or None for a real decision. A shadow decision is never emitted to the "
+        "second brain and nobody acts on it because of the platform (causal_decision.shadow). "
+        "Sealed, so a shadow verdict cannot later be passed off as a real one, nor a real one "
+        "filed away as shadow, without breaking the chain. Left out of the digest when None, as "
+        "review_by is, so records sealed before the field existed verify unchanged.",
+    )
     prev_digest: str
     entry_digest: str = ""
 
@@ -112,8 +128,8 @@ class DecisionRecord(_Model):
     def content(self) -> dict[str, object]:
         """The bytes the digest covers: everything except the digest itself.
 
-        ``evidence.model`` and ``review_by`` are left out when they are None, so every
-        record sealed before those fields existed digests exactly as it did then
+        ``evidence.model``, ``review_by`` and ``shadow`` are left out when they are None, so
+        every record sealed before those fields existed digests exactly as it did then
         (pinned by tests/fixtures/ledger_chain_before_model_ref.json). A contract may
         grow; the records already in a ledger must keep verifying.
         """
@@ -121,8 +137,9 @@ class DecisionRecord(_Model):
         evidence = out["evidence"]
         if isinstance(evidence, dict) and evidence.get("model") is None:
             evidence.pop("model", None)
-        if out.get("review_by") is None:
-            out.pop("review_by", None)
+        for late in ("review_by", "shadow"):
+            if out.get(late) is None:
+                out.pop(late, None)
         return out
 
     def sealed(self) -> DecisionRecord:
@@ -165,8 +182,14 @@ def append(
     executed: bool = False,
     model: ModelRef | None = None,
     review_by: str | None = None,
+    shadow: str | None = None,
 ) -> DecisionRecord:
     """Seal a new entry onto the chain whose last entry is ``tail``.
+
+    ``shadow`` tags the entry as a shadow decision (causal_decision.shadow): sealed
+    like the verdict, never emitted, and not acted on. A shadow entry sits in the
+    same chain as the real ones -- one line of what the platform concluded, in the
+    order it concluded it -- and is told apart by this tag, not by a second ledger.
 
     ``model`` names the registered model version the analysis ran on. It sits beside
     ``graph_digest``, which covers the graph the kernel actually analysed (a model
@@ -182,6 +205,7 @@ def append(
         approval=approval,
         executed=executed,
         review_by=review_by,
+        shadow=shadow,
         prev_digest=GENESIS if tail is None else tail.entry_digest,
     ).sealed()
 
@@ -211,24 +235,25 @@ def past_review(
 
     A record leaves this list in one of two ways: a follow-up measured it (its entry
     digest is in ``measured``), or a later record decided the same action again --
-    the newer verdict is the one that stands. Refusals are not listed: they
-    recommended nothing, so nothing rests on them. Records without a review date are
-    not listed either; they predate the field, and inventing a date for them here
-    would put a claim in the report that nobody made.
+    the newer verdict is the one that stands. "Again" means under the same shadow
+    tag: a shadow round asking about an action is not a new real decision on it, so
+    it never retires a real verdict (nor a real one a shadow verdict). Refusals are
+    not listed: they recommended nothing, so nothing rests on them. Records without
+    a review date are not listed either; they predate the field, and inventing a
+    date for them here would put a claim in the report that nobody made.
     """
     now = _parse(as_of, "as_of")
-    latest: dict[str, int] = {}
+    latest: dict[tuple[str, str | None], int] = {}
     for r in records:
-        latest[r.decision.request.action] = max(
-            latest.get(r.decision.request.action, -1), r.sequence
-        )
+        key = (r.decision.request.action, r.shadow)
+        latest[key] = max(latest.get(key, -1), r.sequence)
     out = []
     for r in records:
         if (
             r.review_by is None
             or r.decision.verdict is Verdict.refuse
             or r.entry_digest in measured
-            or latest[r.decision.request.action] != r.sequence
+            or latest[(r.decision.request.action, r.shadow)] != r.sequence
         ):
             continue
         due = _parse(r.review_by, "review_by")

@@ -289,3 +289,40 @@ async def test_a_malformed_source_digest_is_refused(client: AsyncClient) -> None
         json={"object_type": "CausalEntity", "payload": payload, "cynefin_domain": "COMPLICATED"},
     )
     assert resp.status_code == 422, resp.text
+
+
+async def test_an_edge_says_when_it_was_drafted_and_the_server_says_it(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """septa-72: CausalEdge carries created_at, as the TypeScript contract declares.
+
+    Preconditions: an edge drafted through the route, its payload claiming a
+    creation time of its own (2001).
+    Postconditions: the stored causal_edges.created_at is the server's time of the
+    insert (between the request's start and end), not the claimed one; GET
+    /api/semantic/edges/{id} returns `createdAt` equal to that stored instant.
+    Undefined: the text form of the instant beyond ISO 8601 (compared as instants).
+    """
+    from datetime import UTC, datetime
+
+    from src.db.types import timestamp_text
+
+    payload = {**_edge_payload(), "createdAt": "2001-01-01T00:00:00+00:00"}
+    before = datetime.now(UTC)
+    resp = await client.post(
+        "/api/semantic/drafts",
+        json={"object_type": "CausalEdge", "payload": payload, "cynefin_domain": "COMPLEX"},
+    )
+    after = datetime.now(UTC)
+    assert resp.status_code == 201, resp.text
+
+    row = await db_session.execute(
+        text("SELECT created_at FROM causal_edges WHERE id = :i"), {"i": payload["id"]}
+    )
+    stored = datetime.fromisoformat(timestamp_text(row.scalar_one()) or "")
+    assert before <= stored <= after
+
+    got = await client.get(f"/api/semantic/edges/{payload['id']}")
+    assert got.status_code == 200, got.text
+    assert "createdAt" in got.json(), "the edge's API shape has no createdAt"
+    assert datetime.fromisoformat(got.json()["createdAt"]) == stored
