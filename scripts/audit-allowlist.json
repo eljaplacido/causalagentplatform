@@ -13,15 +13,17 @@
     "with its ecdsa dependency, whose CVE-2024-23342 has no fix upstream.",
     "",
     "2026-10-14: braces (GHSA-vfj7-8cjw-p6xm) allowlisted; next, sharp, shell-quote and source-map-js",
-    "were fixed by upgrading (next 15.5.27, sharp 0.35.5 pinned in the frontend's optionalDependencies)."
+    "were fixed by upgrading (next 15.5.27, sharp 0.35.5 pinned in the frontend's optionalDependencies).",
+    "",
+    "2026-10-31: minimatch (GHSA-g3hv-75wg-m249, published 2026-10-30) allowlisted; next (GHSA-2464-fhr4-w9xw, GHSA-p3m5-59mp-jv5r), @vitest/mocker (GHSA-qxg6-89mg-rqv8, GHSA-xp26-3454-mjgp) and zod (GHSA-mrhx-c7xc-m3w5), all published after main was last gated, were fixed by upgrading (next 16.4.3, vitest 5.0.5, zod 4.6.7). braces (GHSA-vfj7-8cjw-p6xm) is struck off: GitHub withdrew the advisory on 2026-10-23 and npm audit no longer reports it (braces 3.0.3 is still in the tree, through @next/eslint-plugin-next -> fast-glob 3.3.1 -> micromatch)."
   ],
   "entries": [
     {
-      "id": "GHSA-vfj7-8cjw-p6xm",
+      "id": "GHSA-g3hv-75wg-m249",
       "ecosystem": "npm",
-      "package": "braces",
-      "reason": "No patched release exists: 3.0.3 is the latest braces and every version is in the advisory's range. It reaches this repository only through eslint-config-next -> @next/eslint-plugin-next -> fast-glob -> micromatch, a lint-time devDependency that expands glob patterns written in this repository's own ESLint config; no runtime path and no untrusted pattern reaches it, and it is not in the frontend image. Leaves with the next 16 + eslint-config-next 16 move (septa-57) or a braces fix, whichever comes first.",
-      "review_by": "2026-11-15"
+      "package": "minimatch",
+      "reason": "The only patched release is minimatch 11.0.1, published 2026-10-27 and inside a major whose CommonJS export is no longer the callable function the 3.x line exports; nothing in the lint toolchain has moved to it. The tree holds minimatch 3.1.5 (eslint 9.39 and @eslint/eslintrc, @eslint/config-array 0.21, eslint-plugin-import 2.32.0, eslint-plugin-jsx-a11y 6.10.2, eslint-plugin-react 7.37.5 -- each the latest release, each on ^3.1.2) and 10.2.6 (@typescript-eslint/typescript-estree 8.72.1, latest, on ^10.2.2), and an override to 11 would break the ^3 callers. Every path is a lint-time devDependency (npm ls minimatch --omit=dev is empty), so it is not in the frontend image, and the globs it expands are this repository's own ESLint config and file patterns, not untrusted input. Leaves when eslint and its plugins move to a patched minimatch (septa-130).",
+      "review_by": "2026-11-30"
     }
   ]
 }
