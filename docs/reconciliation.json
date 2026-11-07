@@ -29,7 +29,7 @@
         "on": "2026-11-07",
         "sha256": {
           "backend/pyproject.toml": "f7fbeb2dafb5635e8bc3d4ff461bb5b65a7091ed592a2b03c1442d2e6a74df5d",
-          "packages/causal-mcp": "a6e19b07b09b94989ff60e6b66cbfea208918f186d53b5d6c58e26cd80f4ab2d",
+          "packages/causal-mcp": "b3c2f2571bde0365a7c3897c41571b922e12324dab9471c3a20ac6075dbfd0d9",
           "frontend/package.json": "90091605609635e84200d37acfeeafd37a63e7271a725463bc536857284747f7",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docs/CURRENT_STAGE.md": "1e320045831892902de67da0a3ab6e4f9124e09fb1bdbeabdec10ec4b8c9986a"
@@ -37,7 +37,7 @@
       },
       "last_read": {
         "on": "2026-11-07",
-        "by": "Claude (fix/analyze-xlsx merged onto train/6: CURRENT_STAGE analysis-page row and UIX /analyze paragraph are this branch's .xlsx/encoding text, checked against spreadsheet.ts and its tests; register change is two UIX re-citations (200, 251); README and ROADMAP rows link those register ids, status unchanged, no claim moved)"
+        "by": "Claude (release/oss-prep: read the release passages (TESTING_CICD 5.2, CYBERSECURITY where-CI-runs and SBOM, CONTRIBUTING Releases) against release.yml: build/publish/attach on hosted runners, LICENSE/NOTICE checks, skip-existing; container (CYBERSECURITY 8.3, README, QUICKSTART 208-238) against backend/Dockerfile ENV=production (startup refusal checked: SigningKeyError) and compose loopback ports; QUICKSTART prerequisites and launch lines (Node 26, NEXT_PUBLIC_ENVIRONMENT=local, root npm ci); product name 'Unified Enterprise Causal Platform' -> 'Causal Platform' in AGENTS/UIX/DATA_LAYER/CYBERSECURITY/HANDOFFS scope lines only; ADR-001/003, ORCHESTRATION, ROADMAP, CURRENT_STAGE: no claim moved (CORS-outermost and semantic-types private=true change no row; register re-cite CYBERSECURITY:696))"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-11-07",
         "sha256": {
-          "conformance/declared_not_implemented.json": "19fce26026495a934c465e9b4a5de6472548e01e2cc7ad75ba73315dd15beb6f",
-          "backend/src": "783f26b65a502b14052c9550cb1b1ca2f6e4b626140c1d8859a1f27dda748a95",
-          "backend/tests": "517445af1871784d79d5f4ab139e35c3fd5511491d5fa3af01d9e314bb5ac0a5",
-          "frontend/src": "20491f5b0669c5358adab5e85f291c92bf993e18c7dbb8995708519de636a3c1",
-          "packages": "dafd969ee9e0feff47e0b7abe4aee29dd94f61886714010557f631e7c2f50efc",
+          "conformance/declared_not_implemented.json": "e6abd422c47f90bc85ad8000f7a60e4a1680fdc5714a6fc3134a049790965e63",
+          "backend/src": "b814fc16c9b945483b5b7aa263a5aae14e442478d160bffceffd90b4e3fc9d0b",
+          "backend/tests": "6523531ca601548892c50443bc84754b96c49b67d895cbbb80f199444aa65234",
+          "frontend/src": "0c21f8826d22ec03c713ab92ea12a77979b6247a4f56ce9c3e89f6306271a471",
+          "packages": "49ac44522a0f67faa1d8e9925ab5cf182ee16969ce0f7293a0e0b8497a87952e",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-11-07",
-        "by": "Claude (fix/analyze-xlsx merged onto train/6: CURRENT_STAGE analysis-page row and UIX /analyze paragraph are this branch's .xlsx/encoding text, checked against spreadsheet.ts and its tests; register change is two UIX re-citations (200, 251); README and ROADMAP rows link those register ids, status unchanged, no claim moved)"
+        "by": "Claude (release/oss-prep: register re-cite dast-not-built CYBERSECURITY.md:700 after the where-CI-runs and container paragraphs grew; no claim moved)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -76,18 +76,18 @@
         "backend/src/orchestration/graph.py"
       ],
       "baseline": {
-        "on": "2026-10-31",
+        "on": "2026-11-07",
         "sha256": {
           "backend/src/semantic_layer": "517fb1b2d51ae4342931b07e45282b9585e70028f1a7eee055effd95d398e3a6",
           "backend/src/agents/governance.py": "5b3f9564c2bb422416fc77075f2aa7d9245c3e49a3edcd769d407c236c30d747",
-          "packages/semantic-types/src": "599b141c5312c6940a4479a5400b1113adfbef407f85ff016edeeade864d834c",
+          "packages/semantic-types/src": "7e815062c3cacd24e9c0f9657548a1b3b86b1b3e197a1a8bfd3772ace83a2175",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
-          "backend/src/orchestration/graph.py": "ea022b48aa7ff980206c495d9d9395a0a84859b8270d9983108d545faf17b3c9"
+          "backend/src/orchestration/graph.py": "d3a0481bd0603bcca51a94425acb977bdd4f2819da8e9d802ae799667c60aee6"
         }
       },
       "last_read": {
-        "on": "2026-10-31",
-        "by": "Claude (merge train): link 5 = shadow-runtime + links 1-4 merged; its migration renumbered 016_decision_shadow.sql after semantic-surface's 015_drift_alerts.sql (DATA_LAYER range and decision_records row, factory comment); re-read DATA_LAYER, CYBERSECURITY (append-only tables, shadow never emitted), ADR-001, UIX (decisions Shadow switch beside the governance/incidents changes), TESTING_CICD (shadow round, drift and seed tests), CURRENT_STAGE/ROADMAP register re-cites and README pointers; claims hold"
+        "on": "2026-11-07",
+        "by": "Claude (release/oss-prep: read the release passages (TESTING_CICD 5.2, CYBERSECURITY where-CI-runs and SBOM, CONTRIBUTING Releases) against release.yml: build/publish/attach on hosted runners, LICENSE/NOTICE checks, skip-existing; container (CYBERSECURITY 8.3, README, QUICKSTART 208-238) against backend/Dockerfile ENV=production (startup refusal checked: SigningKeyError) and compose loopback ports; QUICKSTART prerequisites and launch lines (Node 26, NEXT_PUBLIC_ENVIRONMENT=local, root npm ci); product name 'Unified Enterprise Causal Platform' -> 'Causal Platform' in AGENTS/UIX/DATA_LAYER/CYBERSECURITY/HANDOFFS scope lines only; ADR-001/003, ORCHESTRATION, ROADMAP, CURRENT_STAGE: no claim moved (CORS-outermost and semantic-types private=true change no row; register re-cite CYBERSECURITY:696))"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -122,16 +122,16 @@
         "backend/src/api/platform.py"
       ],
       "baseline": {
-        "on": "2026-10-31",
+        "on": "2026-11-07",
         "sha256": {
-          "backend/src/orchestration": "1c89092d1341d3ac23a45b8f05b6dfc97978a8d1479f11d14367cb62afec0b13",
+          "backend/src/orchestration": "a91bcdf61c9b453e873bcaea1147d0fd12a45b1030fb3356be731e599062a8b1",
           "backend/src/evaluation": "9a2708b95f3bae7f8b05075e62815c7f51cb3f6e7939a585c1c2c26e5b500b07",
           "backend/src/api/platform.py": "8f665907da4fe188cce83f5fc32f47288489fbab312b59ae667438f67131c0ea"
         }
       },
       "last_read": {
-        "on": "2026-10-31",
-        "by": "Claude (incident-integrity branch): septa-79/80/85 -- read the passages on the session graph, Guardian checks and audit rows, incidents and interventions, resumed sessions and circuit breaker against graph.py, session.py, governance.py, incident_triage.py and the incidents page; ADR-003 resumed-flags line reworded, AGENTS 5.1/5.2, UIX, TESTING_CICD and CURRENT_STAGE updated"
+        "on": "2026-11-07",
+        "by": "Claude (release/oss-prep: read the release passages (TESTING_CICD 5.2, CYBERSECURITY where-CI-runs and SBOM, CONTRIBUTING Releases) against release.yml: build/publish/attach on hosted runners, LICENSE/NOTICE checks, skip-existing; container (CYBERSECURITY 8.3, README, QUICKSTART 208-238) against backend/Dockerfile ENV=production (startup refusal checked: SigningKeyError) and compose loopback ports; QUICKSTART prerequisites and launch lines (Node 26, NEXT_PUBLIC_ENVIRONMENT=local, root npm ci); product name 'Unified Enterprise Causal Platform' -> 'Causal Platform' in AGENTS/UIX/DATA_LAYER/CYBERSECURITY/HANDOFFS scope lines only; ADR-001/003, ORCHESTRATION, ROADMAP, CURRENT_STAGE: no claim moved (CORS-outermost and semantic-types private=true change no row; register re-cite CYBERSECURITY:696))"
       }
     },
     "docs/AGENTS.md": {
@@ -144,18 +144,18 @@
         "prompts"
       ],
       "baseline": {
-        "on": "2026-11-04",
+        "on": "2026-11-07",
         "sha256": {
           "backend/src/agents": "cb4abf2b3e0d5c5dda8cfbd954ba6d05f7b82fb12b7884db11cc6cf2d0667498",
           "backend/src/skills": "b0bcef79c64f6b8d2f35f87f92095d54c52cec7d972a4cf1520b95fcc0d68347",
-          "packages/causal-mcp": "a6e19b07b09b94989ff60e6b66cbfea208918f186d53b5d6c58e26cd80f4ab2d",
-          "backend/src/orchestration": "1c89092d1341d3ac23a45b8f05b6dfc97978a8d1479f11d14367cb62afec0b13",
+          "packages/causal-mcp": "b3c2f2571bde0365a7c3897c41571b922e12324dab9471c3a20ac6075dbfd0d9",
+          "backend/src/orchestration": "a91bcdf61c9b453e873bcaea1147d0fd12a45b1030fb3356be731e599062a8b1",
           "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9"
         }
       },
       "last_read": {
-        "on": "2026-11-04",
-        "by": "Claude (fix/decision-gaps: read for NO_VARIATION, block designs and T11, target_population, D0 v5 and contract 0.15.0 -- refusal counts, gate tables and enumerations, D0 figures, sizing row, capability card; AGENTS/ORCHESTRATION/UIX/shadow README: no claim moved)"
+        "on": "2026-11-07",
+        "by": "Claude (release/oss-prep: read the release passages (TESTING_CICD 5.2, CYBERSECURITY where-CI-runs and SBOM, CONTRIBUTING Releases) against release.yml: build/publish/attach on hosted runners, LICENSE/NOTICE checks, skip-existing; container (CYBERSECURITY 8.3, README, QUICKSTART 208-238) against backend/Dockerfile ENV=production (startup refusal checked: SigningKeyError) and compose loopback ports; QUICKSTART prerequisites and launch lines (Node 26, NEXT_PUBLIC_ENVIRONMENT=local, root npm ci); product name 'Unified Enterprise Causal Platform' -> 'Causal Platform' in AGENTS/UIX/DATA_LAYER/CYBERSECURITY/HANDOFFS scope lines only; ADR-001/003, ORCHESTRATION, ROADMAP, CURRENT_STAGE: no claim moved (CORS-outermost and semantic-types private=true change no row; register re-cite CYBERSECURITY:696))"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -172,7 +172,7 @@
         ".github/workflows"
       ],
       "baseline": {
-        "on": "2026-10-31",
+        "on": "2026-11-07",
         "sha256": {
           "backend/src/middleware": "382780d8717bb592eb4ddc1d9e21dcd0227129be3ba5c9d60815c0ef4ee7de0a",
           "backend/src/api/governance.py": "64ed8722f8567c738245b1750a3a42826994687b2fe1862034f4044ca3624610",
@@ -182,12 +182,12 @@
           "backend/src/api/provenance.py": "2a308e924c9fd7ea910284fa58a479bdeeb97f260764d9c09c5d7eabeb74cfec",
           "backend/src/db/migrations": "a690806c2c1ff37bc81aadb53d96f3c8ff8b77e79d8fc61a6f50bf4ff16e2bb3",
           "backend/src/semantic_layer/verdict.py": "6a46fcf8331be6953a01541f0f75151246ab50967b6baf2e1ded51ad55a80ae8",
-          ".github/workflows": "0f689efe7d76845c07b001243e615c2361cccf2a102846bf6b75a4eb2ff507e0"
+          ".github/workflows": "7ad526352adee5b1aff5e79ea895d0cca3ebe9a915990a096ea9344fed1be924"
         }
       },
       "last_read": {
-        "on": "2026-10-31",
-        "by": "Claude (merge train): link 6 = digest-reproducible + links 1-5 merged; locks re-made on the merged tree (threadpoolctl 3.7.0 in backend/image/release; release.in floors opentelemetry-api>=1.45.1, now 1.45.2); re-read the CI/release workflow passages (BLAS thread env beside link 1's node 26 changes) in TESTING_CICD, CYBERSECURITY and ORCHESTRATION, CURRENT_STAGE's digest row, ROADMAP and README pointers; test_digest_reproducible now also seals a shadow record; claims hold"
+        "on": "2026-11-07",
+        "by": "Claude (release/oss-prep: read the release passages (TESTING_CICD 5.2, CYBERSECURITY where-CI-runs and SBOM, CONTRIBUTING Releases) against release.yml: build/publish/attach on hosted runners, LICENSE/NOTICE checks, skip-existing; container (CYBERSECURITY 8.3, README, QUICKSTART 208-238) against backend/Dockerfile ENV=production (startup refusal checked: SigningKeyError) and compose loopback ports; QUICKSTART prerequisites and launch lines (Node 26, NEXT_PUBLIC_ENVIRONMENT=local, root npm ci); product name 'Unified Enterprise Causal Platform' -> 'Causal Platform' in AGENTS/UIX/DATA_LAYER/CYBERSECURITY/HANDOFFS scope lines only; ADR-001/003, ORCHESTRATION, ROADMAP, CURRENT_STAGE: no claim moved (CORS-outermost and semantic-types private=true change no row; register re-cite CYBERSECURITY:696))"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -203,21 +203,21 @@
         "backend/src/skills/drift_detect.py"
       ],
       "baseline": {
-        "on": "2026-10-31",
+        "on": "2026-11-07",
         "sha256": {
           "backend/src/db": "b0ddb9b8fadb97994259032c012cb49dfb2aff47e805d0a2d4bfc93e4accca93",
           "backend/src/connectors": "48489f6f7a9a5e193136873213223aef2e7c4c900a6c80b22d402b1d7fd3d83f",
           "backend/src/semantic_layer/models.py": "faa1f82a78cfb0338fdccf3f3711d93abd873eb87f6625219f15191f7ae87c43",
           "backend/src/sensors": "157d56ba253af8e684dc2e2f00d9a937b817a13ce4c42ef85929f2be4c1631ce",
-          "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
+          "docker-compose.yml": "8a8b7346d9d91e4b7c7143e96aa1538d87893669d45fce777ade09651cd2a1bd",
           "backend/src/semantic_layer/registry.py": "9d804b796fa34109248f431edf709c8b9ef0bbf400be4ca4cde40651085c8108",
           "backend/src/agents/drift_monitor.py": "f9a9912af225beead5d29f7fe5ec9707cfdb1aa33b586bab4b36df8e740d8ad6",
           "backend/src/skills/drift_detect.py": "9432982258b155287a90701d76dc9bf331dd8c65fbc692ad37fcd124fcab7111"
         }
       },
       "last_read": {
-        "on": "2026-10-31",
-        "by": "Claude (merge train): link 5 = shadow-runtime + links 1-4 merged; its migration renumbered 016_decision_shadow.sql after semantic-surface's 015_drift_alerts.sql (DATA_LAYER range and decision_records row, factory comment); re-read DATA_LAYER, CYBERSECURITY (append-only tables, shadow never emitted), ADR-001, UIX (decisions Shadow switch beside the governance/incidents changes), TESTING_CICD (shadow round, drift and seed tests), CURRENT_STAGE/ROADMAP register re-cites and README pointers; claims hold"
+        "on": "2026-11-07",
+        "by": "Claude (release/oss-prep: read the release passages (TESTING_CICD 5.2, CYBERSECURITY where-CI-runs and SBOM, CONTRIBUTING Releases) against release.yml: build/publish/attach on hosted runners, LICENSE/NOTICE checks, skip-existing; container (CYBERSECURITY 8.3, README, QUICKSTART 208-238) against backend/Dockerfile ENV=production (startup refusal checked: SigningKeyError) and compose loopback ports; QUICKSTART prerequisites and launch lines (Node 26, NEXT_PUBLIC_ENVIRONMENT=local, root npm ci); product name 'Unified Enterprise Causal Platform' -> 'Causal Platform' in AGENTS/UIX/DATA_LAYER/CYBERSECURITY/HANDOFFS scope lines only; ADR-001/003, ORCHESTRATION, ROADMAP, CURRENT_STAGE: no claim moved (CORS-outermost and semantic-types private=true change no row; register re-cite CYBERSECURITY:696))"
       }
     },
     "docs/HANDOFFS.md": {
@@ -247,17 +247,17 @@
         ".gnomon"
       ],
       "baseline": {
-        "on": "2026-11-04",
+        "on": "2026-11-07",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9",
-          ".github": "bcb2c997c10719b31e42bb0e38b6500092a3555c543b9cb8acd59c43e69ed039",
+          ".github": "248037fe5cf37efd57d0b7c1ee640ab005627429e8ef2598a6ddd90b432dc4f5",
           ".gnomon": "ee147e3edf82b9371953e17ac4c663f28983c116ed09e0625fb7c451162ee5d8"
         }
       },
       "last_read": {
-        "on": "2026-11-04",
-        "by": "Claude (fix/decision-gaps: read for NO_VARIATION, block designs and T11, target_population, D0 v5 and contract 0.15.0 -- refusal counts, gate tables and enumerations, D0 figures, sizing row, capability card; AGENTS/ORCHESTRATION/UIX/shadow README: no claim moved)"
+        "on": "2026-11-07",
+        "by": "Claude (release/oss-prep: read the release passages (TESTING_CICD 5.2, CYBERSECURITY where-CI-runs and SBOM, CONTRIBUTING Releases) against release.yml: build/publish/attach on hosted runners, LICENSE/NOTICE checks, skip-existing; container (CYBERSECURITY 8.3, README, QUICKSTART 208-238) against backend/Dockerfile ENV=production (startup refusal checked: SigningKeyError) and compose loopback ports; QUICKSTART prerequisites and launch lines (Node 26, NEXT_PUBLIC_ENVIRONMENT=local, root npm ci); product name 'Unified Enterprise Causal Platform' -> 'Causal Platform' in AGENTS/UIX/DATA_LAYER/CYBERSECURITY/HANDOFFS scope lines only; ADR-001/003, ORCHESTRATION, ROADMAP, CURRENT_STAGE: no claim moved (CORS-outermost and semantic-types private=true change no row; register re-cite CYBERSECURITY:696))"
       }
     },
     "docs/QUICKSTART.md": {
@@ -273,21 +273,21 @@
         "backend/scripts"
       ],
       "baseline": {
-        "on": "2026-11-04",
+        "on": "2026-11-07",
         "sha256": {
           "start.sh": "c023b8e3f6954333aed3f2e56ebe4e73db617d7678a556f6459fbc748431e5f3",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
+          "docker-compose.yml": "8a8b7346d9d91e4b7c7143e96aa1538d87893669d45fce777ade09651cd2a1bd",
           "backend/pyproject.toml": "f7fbeb2dafb5635e8bc3d4ff461bb5b65a7091ed592a2b03c1442d2e6a74df5d",
           "frontend/package.json": "90091605609635e84200d37acfeeafd37a63e7271a725463bc536857284747f7",
-          "package.json": "833bce1de1e6a72e2d906799e3265db59290a9ba3833b745a1a943e567113f46",
+          "package.json": "065442b70ece6f9a22c4c699b0462d254ba81c2736b301cbaa13e882434ffd8a",
           ".env.example": "c1b1272a098696c6c0e72ba533fca78db4060da7c549715d14fb1167656e906a",
           "backend/scripts": "2f49e9b1e5c0e10e6d50ba69cabf3e265404308b1bd11b498d6b1fe8d2074ecb"
         }
       },
       "last_read": {
-        "on": "2026-11-04",
-        "by": "Claude (fix/decision-gaps: read for NO_VARIATION, block designs and T11, target_population, D0 v5 and contract 0.15.0 -- refusal counts, gate tables and enumerations, D0 figures, sizing row, capability card; AGENTS/ORCHESTRATION/UIX/shadow README: no claim moved)"
+        "on": "2026-11-07",
+        "by": "Claude (release/oss-prep: read the release passages (TESTING_CICD 5.2, CYBERSECURITY where-CI-runs and SBOM, CONTRIBUTING Releases) against release.yml: build/publish/attach on hosted runners, LICENSE/NOTICE checks, skip-existing; container (CYBERSECURITY 8.3, README, QUICKSTART 208-238) against backend/Dockerfile ENV=production (startup refusal checked: SigningKeyError) and compose loopback ports; QUICKSTART prerequisites and launch lines (Node 26, NEXT_PUBLIC_ENVIRONMENT=local, root npm ci); product name 'Unified Enterprise Causal Platform' -> 'Causal Platform' in AGENTS/UIX/DATA_LAYER/CYBERSECURITY/HANDOFFS scope lines only; ADR-001/003, ORCHESTRATION, ROADMAP, CURRENT_STAGE: no claim moved (CORS-outermost and semantic-types private=true change no row; register re-cite CYBERSECURITY:696))"
       }
     },
     "docs/TESTING_CICD.md": {
@@ -308,8 +308,8 @@
       "baseline": {
         "on": "2026-11-07",
         "sha256": {
-          ".github/workflows": "0f689efe7d76845c07b001243e615c2361cccf2a102846bf6b75a4eb2ff507e0",
-          "backend/tests": "517445af1871784d79d5f4ab139e35c3fd5511491d5fa3af01d9e314bb5ac0a5",
+          ".github/workflows": "7ad526352adee5b1aff5e79ea895d0cca3ebe9a915990a096ea9344fed1be924",
+          "backend/tests": "6523531ca601548892c50443bc84754b96c49b67d895cbbb80f199444aa65234",
           "backend/pyproject.toml": "f7fbeb2dafb5635e8bc3d4ff461bb5b65a7091ed592a2b03c1442d2e6a74df5d",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5dc65a49d6975444738042f9c292b56050a932ed23932e45498fbcea6285ff3e",
@@ -323,7 +323,7 @@
       },
       "last_read": {
         "on": "2026-11-07",
-        "by": "Claude (train/6 merge of train/5 after #107: pipeline.analyze now pins BLAS around _not_transported(_analyze(...)); read CURRENT_STAGE row 85 (digest reproducibility, amended to name the paired, NO_VARIATION and not-transported paths the extended test covers) and the shadow rows; TESTING_CICD BLAS-threads paragraph 309-314 and gate table incl. T11; ROADMAP rows 26-33 vs pipeline.py (target_population warning unchanged, only wrapped in pinned()); README pointers; causal-core CHANGELOG digest bullet moved to the 0.15.0 section: no other claim moved)"
+        "by": "Claude (release/oss-prep: read the release passages (TESTING_CICD 5.2, CYBERSECURITY where-CI-runs and SBOM, CONTRIBUTING Releases) against release.yml: build/publish/attach on hosted runners, LICENSE/NOTICE checks, skip-existing; container (CYBERSECURITY 8.3, README, QUICKSTART 208-238) against backend/Dockerfile ENV=production (startup refusal checked: SigningKeyError) and compose loopback ports; QUICKSTART prerequisites and launch lines (Node 26, NEXT_PUBLIC_ENVIRONMENT=local, root npm ci); product name 'Unified Enterprise Causal Platform' -> 'Causal Platform' in AGENTS/UIX/DATA_LAYER/CYBERSECURITY/HANDOFFS scope lines only; ADR-001/003, ORCHESTRATION, ROADMAP, CURRENT_STAGE: no claim moved (CORS-outermost and semantic-types private=true change no row; register re-cite CYBERSECURITY:696))"
       }
     },
     "docs/UIX.md": {
@@ -334,12 +334,12 @@
       "baseline": {
         "on": "2026-11-07",
         "sha256": {
-          "frontend/src": "20491f5b0669c5358adab5e85f291c92bf993e18c7dbb8995708519de636a3c1"
+          "frontend/src": "0c21f8826d22ec03c713ab92ea12a77979b6247a4f56ce9c3e89f6306271a471"
         }
       },
       "last_read": {
         "on": "2026-11-07",
-        "by": "Claude (fix/analyze-xlsx merged onto train/6: CURRENT_STAGE analysis-page row and UIX /analyze paragraph are this branch's .xlsx/encoding text, checked against spreadsheet.ts and its tests; register change is two UIX re-citations (200, 251); README and ROADMAP rows link those register ids, status unchanged, no claim moved)"
+        "by": "Claude (release/oss-prep: read the release passages (TESTING_CICD 5.2, CYBERSECURITY where-CI-runs and SBOM, CONTRIBUTING Releases) against release.yml: build/publish/attach on hosted runners, LICENSE/NOTICE checks, skip-existing; container (CYBERSECURITY 8.3, README, QUICKSTART 208-238) against backend/Dockerfile ENV=production (startup refusal checked: SigningKeyError) and compose loopback ports; QUICKSTART prerequisites and launch lines (Node 26, NEXT_PUBLIC_ENVIRONMENT=local, root npm ci); product name 'Unified Enterprise Causal Platform' -> 'Causal Platform' in AGENTS/UIX/DATA_LAYER/CYBERSECURITY/HANDOFFS scope lines only; ADR-001/003, ORCHESTRATION, ROADMAP, CURRENT_STAGE: no claim moved (CORS-outermost and semantic-types private=true change no row; register re-cite CYBERSECURITY:696))"
       }
     },
     "docs/ROADMAP.md": {
@@ -353,13 +353,13 @@
         "on": "2026-11-07",
         "sha256": {
           "packages/causal-core/src/causal_core": "b687c297357776c340e6dc43fb906e0e5ba9f61d29f386250204cb4524b10568",
-          "conformance/declared_not_implemented.json": "19fce26026495a934c465e9b4a5de6472548e01e2cc7ad75ba73315dd15beb6f",
+          "conformance/declared_not_implemented.json": "e6abd422c47f90bc85ad8000f7a60e4a1680fdc5714a6fc3134a049790965e63",
           "docs/CURRENT_STAGE.md": "1e320045831892902de67da0a3ab6e4f9124e09fb1bdbeabdec10ec4b8c9986a"
         }
       },
       "last_read": {
         "on": "2026-11-07",
-        "by": "Claude (fix/analyze-xlsx merged onto train/6: CURRENT_STAGE analysis-page row and UIX /analyze paragraph are this branch's .xlsx/encoding text, checked against spreadsheet.ts and its tests; register change is two UIX re-citations (200, 251); README and ROADMAP rows link those register ids, status unchanged, no claim moved)"
+        "by": "Claude (release/oss-prep: register re-cite dast-not-built CYBERSECURITY.md:700 after the where-CI-runs and container paragraphs grew; no claim moved)"
       }
     },
     "SECURITY.md": {

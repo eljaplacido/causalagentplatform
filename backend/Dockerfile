@@ -76,6 +76,10 @@ USER causal
 
 # Cloud Run listens on $PORT (default 8080)
 ENV PORT=8080
+# A deployment, not local development: without the signing key, the privacy key and a
+# PostgreSQL URL the app refuses to start, and the dev token bypass is off (it needs
+# ENV=local exactly). Run the image with -e ENV=local only for a throwaway try-out.
+ENV ENV=production
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 

@@ -1,6 +1,6 @@
 # Cybersecurity, Governance & Compliance
 
-> **Scope:** Security architecture, threat model, access control, data privacy, AI governance, and compliance posture for the Unified Enterprise Causal Platform.
+> **Scope:** Security architecture, threat model, access control, data privacy, AI governance, and compliance posture for the Causal Platform.
 >
 > **This is the target security design, not a description of the running code.** The threat
 > model (§2) and incident classes (§9) are the reference for triage. Most controls in the other
@@ -568,7 +568,11 @@ access inside the platform.
   from the hash-pinned lock `requirements/image.txt` (§8.4) and keeps no pip at run time; the
   frontend installs `package-lock.json` with `npm ci` and runs Next's standalone server with npm
   removed. Both build from the repository root; the frontend's Dockerfile did not build at all
-  until septa-49 (it built from `frontend/`, which has no lock).
+  until septa-49 (it built from `frontend/`, which has no lock). The backend image sets
+  `ENV=production`, so a container started without its secrets exits instead of serving in
+  local mode on SQLite with the dev token bypass available. The local Compose stack publishes
+  PostgreSQL and Neo4j, whose passwords are throwaway values in `docker-compose.yml`, on
+  127.0.0.1 only.
 - **Image scan (CI job `images`, `.github/workflows/ci.yml`).** Every push, pull request and
   weekly run builds both images and scans them with Trivy 0.74.0 (the `aquasec/trivy` image,
   pinned by digest). A HIGH or CRITICAL vulnerability **with a published fix** fails the job
@@ -642,8 +646,11 @@ published since the last push surfaces without one):
 - **Where CI runs.** Jobs run where the repository variable `CI_RUNS_ON` says: GitHub's hosted
   runners when it is unset, otherwise self-hosted runners (label `causalplatform-ci`). A
   self-hosted job executes the repository's code, including a dependency update's install
-  scripts, on that host as the runner's user; the repository is private, so no outside party can
-  open a pull request that runs there. The job's database listens on loopback only.
+  scripts, on that host as the runner's user. The repository is public, so a fork's pull request
+  could run there: workflows from outside collaborators wait for the owner's approval (the
+  repository's Actions setting), and the release's build and publish jobs, which hold the PyPI
+  upload token, always run on GitHub's hosted runners. The job's database listens on loopback
+  only.
 - The Python build tools the release uses (`build`, `twine`, `cyclonedx-bom`) are pinned by
   version, not by hash. `safety` is not run; `pip-audit` covers the same advisories.
 

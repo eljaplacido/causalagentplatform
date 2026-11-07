@@ -1,7 +1,13 @@
 name: Release to PyPI
 
 # Publishes packages/causal-core, packages/causal-decision and packages/causal-mcp when a
-# v* tag is pushed.
+# v* tag (vYYYY.MM.DD, CONTRIBUTING.md "Releases") is pushed. Each package goes out at its
+# own version; one already on PyPI at that version (unchanged since the last release) is
+# skipped, not re-uploaded.
+#
+# Only the verify job may use the self-hosted runners (vars.CI_RUNS_ON). Building and
+# publishing run on GitHub-hosted runners: the job that holds the PyPI upload token never
+# runs on a machine that other workflows' code has run on.
 #
 # Authentication is PyPI Trusted Publishing (OIDC): no API token is stored in this
 # repository, in an environment, or anywhere on a laptop. Each project must have a
@@ -86,7 +92,7 @@ jobs:
   build:
     name: Build distributions
     needs: verify
-    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -95,24 +101,37 @@ jobs:
       # The release tooling, each at a pinned version (cyclonedx-bom writes the SBOM;
       # packaging reads the lock's markers in scripts/sbom_check.py).
       - run: python -m pip install -q build==1.6.1 twine==7.0.0 cyclonedx-bom==7.4.0 packaging==26.3
+      - name: Each package ships the repository's LICENSE and NOTICE (Apache-2.0 section 4)
+        run: |
+          for p in causal-core causal-decision causal-mcp; do
+            cmp LICENSE "packages/$p/LICENSE" && cmp NOTICE "packages/$p/NOTICE"
+          done
       - name: Build sdist and wheel for all three packages
         run: |
           python -m build --outdir dist/causal-core packages/causal-core
           python -m build --outdir dist/causal-decision packages/causal-decision
           python -m build --outdir dist/causal-mcp packages/causal-mcp
           python -m twine check --strict dist/*/*
+          for w in dist/*/*.whl; do
+            unzip -l "$w" | grep -q 'dist-info/licenses/LICENSE$' && unzip -l "$w" | grep -q 'dist-info/licenses/NOTICE$' \
+              || { echo "$w lacks LICENSE or NOTICE"; exit 1; }
+          done
+          for t in dist/*/*.tar.gz; do
+            tar tzf "$t" | grep -Eq '^[^/]+/LICENSE$' && tar tzf "$t" | grep -Eq '^[^/]+/NOTICE$' \
+              || { echo "$t lacks LICENSE or NOTICE"; exit 1; }
+          done
       - name: The built wheels install and report the versions they were built as
         # The tests above ran against editable installs; this is what users get. The
         # environment holds only the wheels and their runtime dependencies, from the
         # hash-pinned lock requirements/release.txt (no pip of its own: the runner's pip
         # installs into it), so the SBOM below describes exactly that.
         run: |
-          python -m venv --without-pip /tmp/wheels
-          python -m pip --python /tmp/wheels/bin/python install -q --require-hashes --no-deps \
+          python -m venv --without-pip "$RUNNER_TEMP/wheels"
+          python -m pip --python "$RUNNER_TEMP/wheels/bin/python" install -q --require-hashes --no-deps \
             -r requirements/release.txt
-          python -m pip --python /tmp/wheels/bin/python install -q --no-deps dist/*/*.whl
-          python -m pip --python /tmp/wheels/bin/python check
-          /tmp/wheels/bin/python - <<'PY'
+          python -m pip --python "$RUNNER_TEMP/wheels/bin/python" install -q --no-deps dist/*/*.whl
+          python -m pip --python "$RUNNER_TEMP/wheels/bin/python" check
+          "$RUNNER_TEMP/wheels/bin/python" - <<'PY'
           import importlib.metadata as m, causal_core, causal_decision, causal_mcp
           for dist, mod in [("causal-core", causal_core), ("causal-decision", causal_decision),
                             ("causal-mcp", causal_mcp)]:
@@ -126,7 +145,7 @@ jobs:
         run: |
           mkdir -p sbom
           cyclonedx-py environment --sv 1.6 --of JSON --output-reproducible \
-            -o sbom/causal-packages.cdx.json /tmp/wheels/bin/python
+            -o sbom/causal-packages.cdx.json "$RUNNER_TEMP/wheels/bin/python"
           python scripts/sbom_check.py sbom/causal-packages.cdx.json --lock release \
             --package causal-core --package causal-decision --package causal-mcp
       - uses: actions/upload-artifact@v7
@@ -142,7 +161,7 @@ jobs:
     name: Attach the SBOM to the GitHub release
     needs: publish
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
+    runs-on: ubuntu-latest
     permissions:
       contents: write # create the release for this tag if absent, and upload to it
     steps:
@@ -164,7 +183,7 @@ jobs:
     name: Publish ${{ matrix.package }}
     needs: build
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
+    runs-on: ubuntu-latest
     environment: pypi
     permissions:
       id-token: write # the OIDC token Trusted Publishing exchanges for an upload token
@@ -182,3 +201,6 @@ jobs:
         with:
           packages-dir: dist/${{ matrix.package }}
           print-hash: true
+          # Each package keeps its own version: one unchanged since the last release is
+          # already on PyPI and is skipped.
+          skip-existing: true

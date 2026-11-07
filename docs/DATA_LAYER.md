@@ -1,6 +1,6 @@
 # Data Layer, Semantic Layer & Integrations
 
-> **Scope:** Canonical specification for all data storage, causal semantic objects, integration patterns, and event streaming in the Unified Enterprise Causal Platform. All platform components must read and write data through the interfaces defined here.
+> **Scope:** Canonical specification for all data storage, causal semantic objects, integration patterns, and event streaming in the Causal Platform. All platform components must read and write data through the interfaces defined here.
 >
 > **Status (read against the code 2026-09-25):** §2 (the object model) matches
 > `backend/src/semantic_layer/models.py`. Every other section says what exists, or is marked as a

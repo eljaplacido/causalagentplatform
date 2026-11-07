@@ -11,8 +11,8 @@
 | Tool | Minimum version | Verify |
 |---|---|---|
 | Python | 3.12 | `python3 --version` |
-| Node.js | 20.x | `node --version` |
-| npm | 10.x | `npm --version` |
+| Node.js | 26 (LTS, as CI) | `node --version` |
+| npm | the one bundled with Node | `npm --version` |
 | Docker + Compose (optional) | 24.x | `docker compose version` |
 
 ---
@@ -224,13 +224,13 @@ expose a backend that has the bypass on.
 
 ```bash
 bash launch_backend.sh                         # backend on http://127.0.0.1:49234
-cd frontend && NEXT_PUBLIC_API_BASE_URL=http://localhost:49234 npm run dev
+cd frontend && NEXT_PUBLIC_ENVIRONMENT=local NEXT_PUBLIC_API_BASE_URL=http://localhost:49234 npm run dev
 ```
 
 A production build of the frontend, still local:
 
 ```bash
-cd frontend && NEXT_PUBLIC_API_BASE_URL=http://localhost:49234 npm run build
+cd frontend && NEXT_PUBLIC_ENVIRONMENT=local NEXT_PUBLIC_API_BASE_URL=http://localhost:49234 npm run build
 npm run start                                  # http://localhost:3000, loopback only
 ```
 
