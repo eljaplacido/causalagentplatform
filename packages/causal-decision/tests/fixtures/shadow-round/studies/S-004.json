@@ -1,0 +1,48 @@
+{
+  "id": "S-004",
+  "title": "enable the enterprise plan for everyone",
+  "statement": "enable the enterprise plan for everyone",
+  "from": [
+    "agentcenter:fixture"
+  ],
+  "arms": {
+    "1": "treated",
+    "0": "control"
+  },
+  "outcome_label": "y",
+  "graph": "t -> y",
+  "design": "randomized",
+  "estimand": "ate",
+  "query": {
+    "treatment": "t",
+    "outcome": "y",
+    "design": "randomized",
+    "estimand": "ate"
+  },
+  "decision": {
+    "action": "enable the enterprise plan for everyone",
+    "direction": "increase",
+    "minimum_worthwhile_effect": 0.3,
+    "harm_threshold": 0.0,
+    "risk_class": "low",
+    "reversible": true,
+    "horizon": "30d",
+    "can_randomize": true,
+    "randomization_unit": "customer",
+    "units_per_day": 40
+  },
+  "caveats": [],
+  "shadow": {
+    "kind": "causalplatform",
+    "proposed_by": "agentcenter",
+    "data": {
+      "decision_window": "data/S-004-before.csv",
+      "follow_up_window": "data/S-004-after.csv"
+    },
+    "follow_up_after": "30d",
+    "expect": "NO_VARIATION",
+    "human_decision": null,
+    "human_acted": null,
+    "tag": "shadow-fixture"
+  }
+}

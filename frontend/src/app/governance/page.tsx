@@ -68,37 +68,18 @@ const MOCK_REVIEW_ITEMS: ReviewQueueItem[] = [
     objectType: "CausalEdge",
     businessDomain: "payments",
     cynefinDomain: "COMPLICATED",
-    riskTier: "HIGH",
+    riskTier: "MEDIUM",
     submittedBy: "ryo.tanaka",
     submittedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     status: "PENDING",
-    evidenceCitations: [
-      {
-        id: "ev-g1",
-        type: "STATISTICAL_TEST",
-        source: "A/B experiment 2024-Q3",
-        snippet:
-          "Pearson r = -0.72 between p99 payment latency and same-session checkout conversion rate (n=14,200, p<0.001)",
-        relevanceScore: 0.91,
-      },
-      {
-        id: "ev-g2",
-        type: "DOCUMENT",
-        source: "Q3 Post-Mortem: Checkout Degradation",
-        snippet:
-          "During the August outage, checkout conversion dropped 34% in direct correlation with payment API degradation.",
-        relevanceScore: 0.84,
-      },
-    ],
     sensitivityResults: [
       {
-        testName: "Rosenbaum E-value",
-        statistic: 3.2,
-        pValue: null,
         eValue: 3.2,
-        significant: true,
-        interpretation:
-          "An unmeasured confounder would need to increase the odds of the outcome by 3.2× to fully explain this association.",
+        rosenbaumGamma: null,
+        robust: true,
+        analysisMethod: "e_value",
+        computedAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+        computedBy: "causal-core",
       },
     ],
     assumptions: [
@@ -106,12 +87,9 @@ const MOCK_REVIEW_ITEMS: ReviewQueueItem[] = [
         id: "ass-g1",
         statement:
           "There are no unmeasured third variables that simultaneously cause payment latency increases and checkout abandonment",
-        strength: "MODERATE",
-        reviewStatus: "CURRENT",
+        assumptionType: "IGNORABILITY",
+        reviewStatus: "ACCEPTED",
         lastReviewedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-        reviewedBy: "olu.adeyemi",
-        scope: "payment-checkout domain",
-        linkedEdgeIds: ["edge-pc-1"],
       },
     ],
   },
@@ -121,32 +99,19 @@ const MOCK_REVIEW_ITEMS: ReviewQueueItem[] = [
     objectType: "CausalEdge",
     businessDomain: "devops",
     cynefinDomain: "CLEAR",
-    riskTier: "LOW",
+    riskTier: "HIGH",
     submittedBy: "mihail.popescu",
     submittedAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
     status: "PENDING",
-    evidenceCitations: [
-      {
-        id: "ev-g3",
-        type: "EXPERT_KNOWLEDGE",
-        source: "Platform Engineering runbook v4.2",
-        snippet:
-          "Connection pool saturation is a known cause of API latency spikes across all services using the shared PostgreSQL cluster.",
-        relevanceScore: 0.95,
-      },
-    ],
     sensitivityResults: [],
     assumptions: [
       {
         id: "ass-g2",
         statement:
           "The connection pool is the binding constraint on API throughput (not CPU or memory)",
-        strength: "STRONG",
-        reviewStatus: "CURRENT",
-        lastReviewedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-        reviewedBy: "mihail.popescu",
-        scope: "database layer",
-        linkedEdgeIds: ["edge-db-1"],
+        assumptionType: "EXCLUSION_RESTRICTION",
+        reviewStatus: "PENDING",
+        lastReviewedAt: null,
       },
     ],
   },
@@ -160,50 +125,8 @@ const MOCK_REVIEW_ITEMS: ReviewQueueItem[] = [
     submittedBy: "priya.sharma",
     submittedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
     status: "UNDER_REVIEW",
-    evidenceCitations: [
-      {
-        id: "ev-g4",
-        type: "STATISTICAL_TEST",
-        source: "Causal forest estimate — Q4 cohort",
-        snippet:
-          "CATE estimate: −0.12 churn probability per $1000 additional marketing spend (95% CI: −0.21, −0.03)",
-        relevanceScore: 0.77,
-      },
-    ],
-    sensitivityResults: [
-      {
-        testName: "Rosenbaum E-value",
-        statistic: 1.8,
-        pValue: null,
-        eValue: 1.8,
-        significant: false,
-        interpretation:
-          "A confounder of only 1.8× strength would explain away the observed effect. High sensitivity — treat with caution.",
-      },
-    ],
-    assumptions: [
-      {
-        id: "ass-g3",
-        statement:
-          "Marketing spend is the primary driver of reactivation — not concurrent product improvements",
-        strength: "WEAK",
-        reviewStatus: "OVERDUE",
-        lastReviewedAt: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString(),
-        reviewedBy: "ryo.tanaka",
-        scope: "marketing domain",
-        linkedEdgeIds: ["edge-mkt-1"],
-      },
-      {
-        id: "ass-g4",
-        statement: "The causal structure is stable across the customer cohort",
-        strength: "SPECULATIVE",
-        reviewStatus: "DUE_REVIEW",
-        lastReviewedAt: new Date(Date.now() - 80 * 24 * 60 * 60 * 1000).toISOString(),
-        reviewedBy: null,
-        scope: "marketing domain",
-        linkedEdgeIds: ["edge-mkt-1"],
-      },
-    ],
+    sensitivityResults: [],
+    assumptions: [],
   },
 ];
 
@@ -264,9 +187,24 @@ function mapBackendItem(item: ReviewQueueItemResponse): ReviewQueueItem {
       : item.approval_status === "UNDER_REVIEW"
       ? "UNDER_REVIEW"
       : (item.approval_status as ReviewQueueItem["status"]),
-    evidenceCitations: [],
-    sensitivityResults: [],
-    assumptions: [],
+    // For an edge, what the backend stored: the assumptions it rests on and the
+    // sensitivity results the platform recorded for it (septa-88). No evidence
+    // citations: the backend stores none to send.
+    sensitivityResults: (item.sensitivity_results ?? []).map((r) => ({
+      eValue: r.e_value,
+      rosenbaumGamma: r.rosenbaum_gamma,
+      robust: r.robust_to_unmeasured_confounding,
+      analysisMethod: r.analysis_method,
+      computedAt: r.computed_at,
+      computedBy: r.computed_by,
+    })),
+    assumptions: (item.assumptions ?? []).map((a) => ({
+      id: a.id,
+      statement: a.statement,
+      assumptionType: a.assumption_type,
+      reviewStatus: a.review_status,
+      lastReviewedAt: a.last_reviewed_at,
+    })),
   };
 }
 

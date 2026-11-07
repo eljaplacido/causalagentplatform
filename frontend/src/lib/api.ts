@@ -310,11 +310,27 @@ export interface SessionStateResponse {
   timestamp: string;
 }
 
+/** One proposed intervention as POST /api/v1/session/incident returns and stores it:
+ * with the verdict the Guardian gave that intervention, and its audit_log row. */
+export interface IncidentInterventionResponse {
+  id: string;
+  title: string;
+  description: string;
+  confidence: number;
+  riskTier: string;
+  rank: number;
+  guardianVerdict: GuardianVerdict;
+  guardianVerdictRef: string;
+  policyRulesCited: string[];
+}
+
 /** Response of POST /api/v1/session/incident (backend IncidentSessionResponse):
- * the triage result, and whether the incident row itself was stored. */
+ * the triage result, whether the incident row itself was stored, and each
+ * proposed intervention with a Guardian verdict of its own. */
 export interface IncidentSessionResponse extends SessionStateResponse {
   stored: boolean;
   store_error: string | null;
+  interventions: IncidentInterventionResponse[];
 }
 
 /** One row of GET /api/governance/review-queue (governance.py ReviewQueueItem), snake_case. */
@@ -335,6 +351,35 @@ export interface ReviewQueueItemResponse {
   risk_reasons: string[];
   /** The id in the object's created_by; null where none was recorded. */
   submitted_by: string | null;
+  /**
+   * For an edge: the stored assumptions it references that the reviewer may see,
+   * in the edge's order. Empty for fragments and entities (septa-88).
+   */
+  assumptions: ReviewQueueAssumptionResponse[];
+  /**
+   * For an edge: the sensitivity results the platform recorded for it (the ones
+   * its tier and Guardian PR-007 read). Empty for fragments and entities.
+   */
+  sensitivity_results: ReviewQueueSensitivityResponse[];
+}
+
+/** governance.py ReviewQueueAssumption: the stored columns of `assumptions`. */
+export interface ReviewQueueAssumptionResponse {
+  id: string;
+  statement: string;
+  assumption_type: string;
+  review_status: string;
+  last_reviewed_at: string | null;
+}
+
+/** governance.py ReviewQueueSensitivity: a recorded SensitivityResult's fields. */
+export interface ReviewQueueSensitivityResponse {
+  e_value: number | null;
+  rosenbaum_gamma: number | null;
+  robust_to_unmeasured_confounding: boolean;
+  analysis_method: string;
+  computed_at: string | null;
+  computed_by: string;
 }
 
 /**
@@ -400,6 +445,8 @@ export interface CausalEdgeResponse {
   guardianVerdictRef: string;
   version: string;
   domain: string;
+  /** When the edge was drafted: the server's time of the insert (septa-72). */
+  createdAt: string;
 }
 
 /** Build `?a=1&b=2` from the defined entries of `params`; "" when there are none. */
@@ -731,14 +778,24 @@ export interface DecisionRecordResponse {
   executed: boolean;
   /** ISO 8601: when the verdict stops standing on its own. Absent on records sealed before it existed. */
   review_by?: string | null;
+  /**
+   * The shadow tag (a shadow round) the decision was sealed under; absent or null for a
+   * real decision. A shadow decision is never emitted to agentcenter and nobody acts on it.
+   */
+  shadow?: string | null;
   prev_digest: string;
   entry_digest: string;
 }
+
+/** Which decisions a listing covers (causal_decision.shadow.Scope). */
+export type DecisionScope = "real" | "shadow" | "all";
 
 /** GET /api/v1/decisions (decisions.py RecordList). */
 export interface DecisionRecordList {
   records: DecisionRecordResponse[];
   total: number;
+  scope?: DecisionScope;
+  tag?: string | null;
 }
 
 /** GET /api/v1/decisions/verify (causal_decision.ledger.ChainReport). */
@@ -855,10 +912,10 @@ export interface CalibrationReportResponse {
 
 /** Decision ledger — records, chain verification, follow-ups, calibration */
 export const decisionsApi = {
-  list: (params?: { action?: string; limit?: number }) =>
+  list: (params?: { action?: string; limit?: number; scope?: DecisionScope; tag?: string }) =>
     api.get<DecisionRecordList>(`/api/v1/decisions${toQuery(params)}`),
   verify: () => api.get<ChainReportResponse>("/api/v1/decisions/verify"),
-  calibration: (params?: { limit?: number }) =>
+  calibration: (params?: { limit?: number; scope?: DecisionScope; tag?: string }) =>
     api.get<CalibrationReportResponse>(
       `/api/v1/decisions/calibration${toQuery(params)}`
     ),
