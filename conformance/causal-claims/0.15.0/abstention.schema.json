@@ -1,6 +1,7 @@
 {
   "$defs": {
     "AbstentionReason": {
+      "description": "Why no estimate was produced. Each is a correct answer, not an error.\n\n``NO_VARIATION`` and ``DESIGN_CHECK_FAILED`` are kept apart on purpose. A treatment that\ntakes one value in the data leaves nothing to compare, but nothing about the data is\nbroken: setting the treatment by experiment is exactly what answers the question (a\nconfiguration lever nobody has tried). A failed design check -- a sample-ratio mismatch,\nmissing values, treatment varying inside a cluster -- says the data are not what the\nanalysis assumes, and running more of the same does not repair that.",
       "enum": [
         "NON_IDENTIFIABLE",
         "POSITIVITY",
@@ -8,6 +9,7 @@
         "UNAPPROVED_ASSUMPTION",
         "CI_TOO_WIDE",
         "DESIGN_CHECK_FAILED",
+        "NO_VARIATION",
         "RUNG_MISMATCH",
         "INVALID_ADJUSTMENT_SET",
         "WEAK_INSTRUMENT",
@@ -66,6 +68,19 @@
           "default": null,
           "description": "A user-chosen adjustment set. It is validated against the graph and refused if it is not a valid adjustment set.",
           "title": "Adjust For"
+        },
+        "block": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Randomized designs only: the column identifying the block within which treatment was randomized -- a matched pair (the same task run under both arms) or a stratum. The effect is then estimated within blocks and averaged by block size, with blocks as the independent observations; a binary outcome in pairs gets an interval consistent with McNemar's test (T11).",
+          "title": "Block"
         },
         "cluster": {
           "anyOf": [
@@ -184,6 +199,7 @@
             }
           ],
           "default": null,
+          "description": "The population the data come from (a lane, a fleet, a cohort), in words. The estimate is about this population.",
           "title": "Population"
         },
         "rung": {
@@ -211,6 +227,19 @@
           "default": null,
           "description": "Randomized designs only: the column giving each unit's arrival order. When set, the effect is reported as an anytime-valid confidence sequence at every look, so the analysis may be read -- and stopped -- as often as wanted without inflating its error rate. Needs `expected_treated_share`, the known allocation probability.",
           "title": "Sequence"
+        },
+        "target_population": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Declared only: the population the answer is meant for, when it differs from `population`. The kernel has no transport analysis, so it does not carry the estimate there; the result says it is not transported, and the decision layer does not treat it as evidence about the target (register: transportability).",
+          "title": "Target Population"
         },
         "time": {
           "anyOf": [
@@ -874,7 +903,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:causalplatform:claims:0.14.0:abstention",
+  "$id": "urn:causalplatform:claims:0.15.0:abstention",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {

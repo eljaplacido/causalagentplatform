@@ -40,7 +40,7 @@
       "follow_up_window": "data/S-004-after.csv"
     },
     "follow_up_after": "30d",
-    "expect": "DESIGN_CHECK_FAILED",
+    "expect": "NO_VARIATION",
     "human_decision": null,
     "human_acted": null,
     "tag": "shadow-fixture"

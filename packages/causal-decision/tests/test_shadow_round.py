@@ -7,7 +7,7 @@ judgement the scorecard makes can be checked against the truth:
     S-001  randomized,     y = 1 + 1.0 t + e         -> act; after: +1.0 (holds) or -1.0 (reversed)
     S-002  observational,  y = z + 1.0 t + e, z -> t -> act; after: everyone treated (undecidable)
     S-003  planted: a confounder u with no data column -> NON_IDENTIFIABLE
-    S-004  planted: every unit treated                 -> DESIGN_CHECK_FAILED
+    S-004  planted: every unit treated                 -> NO_VARIATION (an experiment)
     S-005  randomized,     y = 1 - 1.0 t + e         -> refuse; after: -1.0 again
 
 Preconditions: a copy of the fixture directory with its decision-window data written;
@@ -124,7 +124,7 @@ def _bars(card: Scorecard) -> dict[str, str]:
 
 def test_seal_decides_every_study_and_seals_it_as_shadow(round_dir: Path) -> None:
     path, sealed = seal(round_dir, now=T0, git="test")
-    assert path.name == "2026-10-01-v1-run1.json"
+    assert path.name == "2026-10-01-v2-run1.json"
     assert path.parent == round_dir / "results"
 
     by_id = {s.id: s for s in sealed.studies}
@@ -133,7 +133,11 @@ def test_seal_decides_every_study_and_seals_it_as_shadow(round_dir: Path) -> Non
     assert by_id["S-002"].verdict is Verdict.act
     assert by_id["S-005"].verdict is Verdict.refuse
     assert by_id["S-003"].refusal_reason == "NON_IDENTIFIABLE"
-    assert by_id["S-004"].refusal_reason == "DESIGN_CHECK_FAILED"
+    # A treatment that never varied is NO_VARIATION since contract 0.15.0 (#107), and its
+    # verdict is an experiment, not a refusal: the kernel still refused to estimate.
+    assert by_id["S-004"].refusal_reason == "NO_VARIATION"
+    assert by_id["S-004"].verdict is Verdict.experiment
+    assert by_id["S-004"].outcome_kind == "refusal"
     # The graph alone identifies S-003 (u is a node); the data, which lacks u, does not.
     assert by_id["S-003"].identification.identified
     assert by_id["S-003"].outcome_kind == "refusal"
@@ -180,7 +184,7 @@ def test_a_round_that_holds_passes_once_its_follow_ups_and_reviews_are_in(
     # S-002: rolled out to everyone afterwards, so the later data cannot say.
     r2 = by_id["S-002"].realization
     assert r2 is not None and not r2.decidable
-    assert r2.undecidable_reason == "DESIGN_CHECK_FAILED"
+    assert r2.undecidable_reason == "NO_VARIATION"
     # S-005 was refused, so it cannot be confidently wrong; its effect is still harmful.
     r5 = by_id["S-005"].realization
     assert r5 is not None and r5.realized_ci is not None
@@ -202,15 +206,16 @@ def test_a_round_that_holds_passes_once_its_follow_ups_and_reviews_are_in(
     path, final = score(round_dir, now=DUE + timedelta(days=1), git="test")
     assert final.status == "passed", [b for b in final.bars if b.status != "pass"]
     # The follow-ups taken by the earlier scoring stand; they are not re-measured.
-    assert {s.measured_in for s in final.studies if s.realization} == {"2026-10-31-v1-run1.json"}
-    assert path.name == "2026-11-01-v1-run1.json"
+    assert {s.measured_in for s in final.studies if s.realization} == {"2026-10-31-v2-run1.json"}
+    assert path.name == "2026-11-01-v2-run1.json"
     assert final.calibration.n_decisions == 3 and final.calibration.n_undecidable == 1
     # Five studies: every rate is refused below ten, with its counts kept.
     assert final.reported["act_right_rate"]["rate"] is None
     assert final.reported["act_right_rate"]["successes"] == 1
     assert final.reported["refusal_share_by_reason"]["counts"] == {
-        "NON_IDENTIFIABLE": 1, "DESIGN_CHECK_FAILED": 1,
+        "NON_IDENTIFIABLE": 1, "NO_VARIATION": 1,
     }
+    assert final.reported["experiment_share"]["successes"] == 2  # S-003 and S-004
 
 
 def test_a_reversed_effect_fails_the_round_and_the_failed_scorecard_is_kept(
@@ -234,7 +239,7 @@ def test_a_reversed_effect_fails_the_round_and_the_failed_scorecard_is_kept(
 
     # Scoring again writes a new file and leaves the failed one as it was.
     second, again = score(round_dir, now=DUE, git="test")
-    assert second != first and second.name == "2026-10-31-v1-run2.json"
+    assert second != first and second.name == "2026-10-31-v2-run2.json"
     assert first.read_text() == kept
     assert again.status == "failed"
     # A friendlier window cannot replace the first measurement.
@@ -342,3 +347,40 @@ def test_the_command_line_exit_codes(round_dir: Path) -> None:
     assert main(["seal", str(round_dir)]) == 3  # already sealed: refused, nothing written
     assert main(["score", str(round_dir)]) == 2  # nothing is due yet: pending
     assert len(list((round_dir / "scorecards").glob("*.json"))) == 1
+
+
+def test_a_study_from_another_population_is_sealed_as_an_experiment_there(
+    round_dir: Path,
+) -> None:
+    """Evidence from one population is not a verdict about another (#107, in a shadow round).
+
+    S-001 is re-declared before the seal: its data come from the local lane and the action
+    targets the hosted lane. The set effect (+1.0) would call for act; with no transport
+    analysis the verdict is capped at an experiment run in the target, the sealed text says
+    "not transported", and the study is not scored as acted -- so a reversed effect afterwards
+    cannot make it confidently wrong, and its disagreement with the people who acted is owed
+    a review.
+    """
+    path = round_dir / "studies" / "S-001.json"
+    study = json.loads(path.read_text())
+    study["query"]["population"] = "local lane"
+    study["query"]["target_population"] = "hosted lane"
+    path.write_text(json.dumps(study, indent=2))
+
+    _, sealed = seal(round_dir, now=T0, git="test")
+    s001 = next(s for s in sealed.studies if s.id == "S-001")
+    assert s001.verdict is Verdict.experiment
+    assert "not transported" in s001.explanation
+    record = sealed.records[0]
+    assert record.decision.evidence.population == "local lane"
+    assert record.decision.evidence.target_population == "hosted lane"
+    assert record.decision.experiment is not None
+    assert record.decision.experiment.population == "hosted lane"
+    assert verify_chain(list(sealed.records)).ok
+
+    _follow_ups(round_dir, s001_effect=-1.0)  # it would have harmed: set by construction
+    _, card = score(round_dir, now=DUE, git="test")
+    scored = next(s for s in card.studies if s.id == "S-001")
+    assert scored.confident_wrong is None
+    assert scored.agrees_with_human is False and scored.reviewed is False
+    assert next(b for b in card.bars if b.name == "max_confident_wrong").status == "pass"

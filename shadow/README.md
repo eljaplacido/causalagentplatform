@@ -34,7 +34,10 @@ which data exists, and the platform does not.
 1. **Propose 10–20 studies**, each filled in from `study-template.json`. Spread them across the
    designs in the card, and plant some questions the platform should refuse: a confounder with
    no data column, a segment where every unit was treated, a rollout with no comparison group.
-   Each planted case names its expected refusal in `shadow.expect`.
+   Each planted case names its expected refusal in `shadow.expect`. A treatment that never
+   varied (every unit treated, no comparison group) is `NO_VARIATION` since contract 0.15.0: the
+   kernel still refuses to estimate, but the verdict is an experiment sized from the outcome's
+   spread, not a refusal to act.
 2. **Pre-register.** Copy `PRE-REGISTRATION.template.md` to the round's directory, fill in the
    study list and the bars, and have the owner approve it. Commit it before the first run.
 3. **Run in shadow.** Each study goes through the normal flow: check the graph, then identify,

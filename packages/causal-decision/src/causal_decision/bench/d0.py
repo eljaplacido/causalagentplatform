@@ -196,6 +196,61 @@ def did_fragile() -> CausalOutcome:
     return _rollout(0.5, seed=42)
 
 
+# v5: the three gaps the gnomon analysis found (benchmarks/d0-decision-policy, Changelog v5).
+
+
+def never_varied() -> CausalOutcome:
+    """The playbook was never applied: NO_VARIATION, carrying the outcome's spread."""
+    return cc.analyze(_ops_data().assign(playbook=0.0), GRAPH, treatment="playbook",
+                      outcome="minutes", estimand="att", policy=FAST)
+
+
+def sample_ratio_mismatch() -> CausalOutcome:
+    """A randomized split of 0.5 where 0.3 was declared: DESIGN_CHECK_FAILED."""
+    rng = np.random.default_rng(13)
+    n = 4000
+    playbook = (rng.random(n) < 0.5).astype(float)
+    minutes = 60 - 9.0 * playbook + rng.normal(0, 8, size=n)
+    return cc.analyze(pd.DataFrame({"playbook": playbook, "minutes": minutes}),
+                      "playbook -> minutes", treatment="playbook", outcome="minutes",
+                      design="randomized", expected_treated_share=0.3, policy=FAST)
+
+
+SOURCE = "incidents on cluster A"
+TARGET = "incidents on cluster B"
+
+
+def from_cluster_a() -> CausalOutcome:
+    """strong_effect's analysis, stating the population its data come from."""
+    return cc.analyze(_ops_data(), GRAPH, treatment="playbook", outcome="minutes",
+                      estimand="att", population=SOURCE, policy=FAST)
+
+
+def _paired_data(effect: float, k: int, noise: float, seed: int) -> pd.DataFrame:
+    """Incidents matched in pairs (same service, same hour), the playbook randomized to one."""
+    rng = np.random.default_rng(seed)
+    base = 60 + 12 * rng.normal(size=k)
+    return pd.DataFrame({
+        "pair": np.r_[np.arange(k), np.arange(k)],
+        "playbook": np.r_[np.ones(k), np.zeros(k)],
+        "minutes": np.r_[base + effect + rng.normal(0, noise, k), base + rng.normal(0, noise, k)],
+    })
+
+
+def _paired(effect: float, k: int, noise: float, seed: int) -> CausalOutcome:
+    return cc.analyze(_paired_data(effect, k, noise, seed), "playbook -> minutes",
+                      treatment="playbook", outcome="minutes", design="randomized",
+                      block="pair", policy=FAST)
+
+
+def paired_strong() -> CausalOutcome:
+    return _paired(-9.0, 400, 4.0, seed=17)
+
+
+def paired_uncertain() -> CausalOutcome:
+    return _paired(-5.0, 60, 6.0, seed=19)
+
+
 DID_REQUEST = DecisionRequest(
     action="keep the staggered rollout",
     outcome="latency",
@@ -299,7 +354,48 @@ SCENARIOS: tuple[Scenario, ...] = (
         "robust to large trend violations, but tier C never automates"),
     Scenario("did_fragile_to_trends", did_fragile, DID_REQUEST, Verdict.experiment,
         "a violation smaller than the pre-adoption ones would reach zero"),
+    Scenario("never_varied_can_test", never_varied, BASE, Verdict.experiment,
+        "a lever nobody has tried: an experiment is exactly what settles it"),
+    Scenario("never_varied_cannot_test", never_varied, BASE.model_copy(
+        update={"can_randomize": False}), Verdict.refuse,
+        "never tried and cannot be tried: nothing to act on"),
+    Scenario("sample_ratio_mismatch", sample_ratio_mismatch, BASE, Verdict.refuse,
+        "a broken assignment: more of the same pipeline would not repair it"),
+    Scenario("other_population", from_cluster_a, BASE.model_copy(
+        update={"population": TARGET}), Verdict.experiment,
+        "strong evidence from cluster A is not evidence about cluster B: not transported"),
+    Scenario("other_population_cannot_test", from_cluster_a, BASE.model_copy(
+        update={"population": TARGET, "can_randomize": False}), Verdict.act_with_approval,
+        "not transported, and no experiment possible: a person decides"),
+    Scenario("same_population", from_cluster_a, BASE.model_copy(
+        update={"population": SOURCE}), Verdict.act,
+        "evidence from the population the action targets: naming it caps nothing"),
+    Scenario("source_population_unstated", strong_effect, BASE.model_copy(
+        update={"population": TARGET}), Verdict.act_with_approval,
+        "the action names a population the evidence never states it is about"),
+    Scenario("paired_strong_effect", paired_strong, BASE, Verdict.act,
+        "a matched-pair randomized result passes the same checks as any other"),
+    Scenario("paired_uncertain_worth", paired_uncertain, BASE, Verdict.experiment,
+        "a matched-pair result straddling the bar: a paired experiment settles it"),
 )
+
+
+def check_experiments(cfg: dict[str, Any]) -> list[str]:
+    """`[experiments]`: each listed scenario's experiment has the registered design, sized."""
+    want: dict[str, str] = cfg.get("experiments", {})
+    out = []
+    for s in SCENARIOS:
+        if s.id not in want:
+            continue
+        spec = decide(s.evidence(), s.request).experiment
+        if spec is None:
+            out.append(f"experiment {s.id}: no experiment returned")
+        elif spec.design != want[s.id] or spec.units_per_arm is None:
+            out.append(f"experiment {s.id}: expected {want[s.id]}, sized; got {spec.design}, "
+                       f"units_per_arm={spec.units_per_arm}")
+    missing = set(want) - {s.id for s in SCENARIOS}
+    out += [f"experiment {i}: registered but no such scenario" for i in sorted(missing)]
+    return out
 
 
 @dataclass
@@ -435,6 +531,10 @@ CATCHER: dict[str, Callable[[dict[str, Any]], bool]] = {
     "ignore_segments": lambda cfg: _scenario_fails("harmed_segment"),
     "ignore_trend_breakdown": lambda cfg: _scenario_fails("did_fragile_to_trends"),
     "ignore_llm_edges": lambda cfg: _scenario_fails("provisional_graph"),
+    "constant_treatment_refused": lambda cfg: _scenario_fails("never_varied_can_test"),
+    "every_design_failure_testable": lambda cfg: _scenario_fails("sample_ratio_mismatch"),
+    "ignore_population": lambda cfg: _scenario_fails("other_population"),
+    "unpaired_sizing": lambda cfg: bool(check_experiments(cfg)),
 }
 
 
@@ -476,7 +576,7 @@ def run(cfg: dict[str, Any]) -> dict[str, Any]:
     violations += check_evidence_monotonicity()
     caught = check_defects(cfg)
 
-    failures: list[str] = registered_table_mismatch(cfg)
+    failures: list[str] = registered_table_mismatch(cfg) + check_experiments(cfg)
     matched = sum(bool(r["passed"]) for r in table) / len(table)
     if matched < cfg["table"]["scenarios_must_match"]:
         failures += [f"scenario {r['id']}: expected {r['expected']}, got {r['got']}"
