@@ -513,6 +513,34 @@ BEFORE DELETE ON audit_log
 BEGIN
     SELECT RAISE(ABORT, 'audit_log is append-only: DELETE operations are forbidden');
 END;
+-- 015_drift_alerts.sql: every drift alert Neo4j did not store (septa-62).
+CREATE TABLE IF NOT EXISTS drift_alerts (
+    id                 TEXT PRIMARY KEY,
+    alert_type         TEXT NOT NULL,
+    severity           TEXT NOT NULL,
+    drift_type         TEXT NOT NULL,
+    fragment_id        TEXT,
+    drift_score        REAL NOT NULL,
+    drifted_features   TEXT NOT NULL DEFAULT '[]',
+    description        TEXT NOT NULL,
+    recommendation     TEXT,
+    context            TEXT NOT NULL DEFAULT '{}',
+    session_id         TEXT,
+    agent_id           TEXT NOT NULL,
+    created_at         TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_drift_alerts_created_at ON drift_alerts (created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_drift_alerts_fragment ON drift_alerts (fragment_id, created_at DESC);
+CREATE TRIGGER IF NOT EXISTS tg_drift_alerts_no_update
+BEFORE UPDATE ON drift_alerts
+BEGIN
+    SELECT RAISE(ABORT, 'drift_alerts is append-only: UPDATE is not permitted');
+END;
+CREATE TRIGGER IF NOT EXISTS tg_drift_alerts_no_delete
+BEFORE DELETE ON drift_alerts
+BEGIN
+    SELECT RAISE(ABORT, 'drift_alerts is append-only: DELETE is not permitted');
+END;
 """
 
 

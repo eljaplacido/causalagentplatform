@@ -313,7 +313,7 @@ Components under `frontend/src/components/` are marked **built**. The rest are *
 
 | Group | Built | Not built | Used by |
 |---|---|---|---|
-| **Causal Graph** | `DAGCanvas`, `EdgeProposal`, `NodeDetail`, `GraphDiff`, `FragmentCard`, `FragmentDraftComposer` | -- | Workbench (`DAGCanvas`, `FragmentDraftComposer`), Analyst and Platform Engineer (`FragmentCard`) |
+| **Causal Graph** | `DAGCanvas`, `NodeDetail`, `FragmentCard`, `FragmentDraftComposer` | -- | Workbench (`DAGCanvas`, `NodeDetail`, `FragmentDraftComposer`), Analyst and Platform Engineer (`FragmentCard`) |
 | **Decisions** | `VerdictBadge`, `DecisionDetail` (with the follow-up form), `CalibrationReportPanel` | -- | Executive, Governance Officer, Analyst |
 | **Assumption registry** | `ModelVersionView` (with `EdgeTable`), `ModelDiffView`, `ImpactReportView` | -- | Analyst, Governance Officer |
 | **Incident Response** | `IncidentBrief`, `CynefinBadge` (in `shared/`), `CausalHypothesisList`, `InterventionCard`, `EscalationBanner` | -- | SRE, Incident Commander |
@@ -346,12 +346,15 @@ the audit panel and leaves decisions enabled. Across the governance, incidents a
 a 401 or 403 (other than a Guardian block) reads "not authorised", not "backend unavailable" or
 an empty list.
 
-The incidents page speaks the backend's severity vocabulary, P0 to P3, end to end (rows the seed
-script wrote as SEV1 to SEV4 are shown as P0 to P3). No endpoint returns an effect estimate for an
+The incidents page speaks the backend's severity vocabulary, P0 to P3, end to end. The seed
+script writes P0 to P3 too; rows it wrote as SEV1 to SEV4 before septa-84, still in a database
+seeded then, are shown as P0 to P3. No endpoint returns an effect estimate for an
 incident's interventions, so `InterventionCard` says "No effect estimate" rather than drawing an
 interval. The Guardian's verdict and a person's recorded decision are shown side by side as two
 labelled facts ("Guardian verdict", "Human decision"); the incidents API returns the decision as
-`humanDecision` and leaves `guardianVerdict` as the Guardian issued it. Once a decision is
+`humanDecision` and leaves `guardianVerdict` as the Guardian issued it. That verdict is the
+Guardian's ruling on that intervention, one check each, not the session's verdict copied onto
+every card (the triage response carries the same verdicts as `interventions`). Once a decision is
 recorded the card closes approve and reject and says what was decided. The number on a card is
 the recommendation's `confidence`, which the triage agent sets to its heuristic triage score, so
 it is labelled "Triage score", not drawn as a confidence meter. The triage agent's `ESCALATE: ...`
@@ -374,8 +377,16 @@ proposed edge's endpoints arrive as ids, and are shown as short labelled ids. Th
 "Classification" is the response's `cynefin_domain`, the one classification on the page: when the
 backend's explanation or recommendations name another Cynefin domain, the page says so (the tour
 of 2026-09-26 met a COMPLICATED run explained as CHAOTIC, from before the backend's escalation text
-named its actual reason), and a new run clears the previous run's result. `EdgeProposal`, `NodeDetail` and `GraphDiff` are built, and no page
-renders them since the analyst page stopped drawing a graph it had made up.
+named its actual reason), and a new run clears the previous run's result. `NodeDetail` shows, in
+the workbench, a node clicked on the canvas with what the fragment's edges say about it (the object
+type they reference it as, its domain, the edges touching it); it claims no status or verdict for
+the node. `EdgeProposal` and `GraphDiff` were deleted (septa-87): no page rendered them after the
+analyst page stopped drawing a graph it had made up, and nothing stores what they showed (a
+rationale and evidence citations per edge); an edge is reviewed in `ApprovalPanel`, and two model
+versions are compared in `ModelDiffView` from the kernel's diff.
+The review panel shows, for an edge, the assumptions it rests on and the sensitivity results the
+platform recorded for it, as the review queue sends them (septa-88); it shows no evidence
+citations, since the backend stores no evidence to cite.
 Approving or rejecting in `ApprovalPanel` asks the reviewer to classify the situation
 (Cynefin domain; required, nothing pre-selected, DISORDER not offered): Guardian reads it,
 and without one rule PR-006 refuses the request. A rejection needs an APPROVED verdict for

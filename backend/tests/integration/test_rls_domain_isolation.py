@@ -225,7 +225,7 @@ async def test_the_app_connects_as_causal_app_which_rls_binds(db_engine: AsyncEn
     assert await rls_bypass_reasons(db_engine) == []
 
 
-#: Tables whose rows are never revised: 001-007, 011 and 014 revoke UPDATE and trap it.
+#: Tables whose rows are never revised: 001-007, 011, 014 and 015 revoke UPDATE and trap it.
 APPEND_ONLY = {
     "audit_log",
     "verdict_consumption",
@@ -236,6 +236,7 @@ APPEND_ONLY = {
     "semantic_object_versions",
     "provenance_entries",
     "provenance_erasures",
+    "drift_alerts",
 }
 
 

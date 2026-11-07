@@ -4,9 +4,11 @@
  * ApprovalPanel — Side panel for reviewing and approving/rejecting a draft object.
  *
  * Shows:
- *   - Evidence citations (data-testid="evidence-citations")
- *   - Sensitivity results (data-testid="sensitivity-result")
- *   - Assumption list
+ *   - For an edge: the sensitivity results the platform recorded for it
+ *     (data-testid="sensitivity-result") and the stored assumptions it rests on
+ *     (data-testid="assumption-list"), as GET /api/governance/review-queue sends
+ *     them. No evidence citations: the backend stores no evidence to cite
+ *     (septa-88).
  *   - Causal chain (if EpistemicState available)
  *   - Approve / reject buttons (data-testid="approve-button" / "reject-button")
  *   - Reason textarea + confirm button (data-testid="confirm-approval" / "confirm-rejection")
@@ -23,7 +25,6 @@ import { useState } from "react";
 import {
   CheckCircle2,
   XCircle,
-  BookOpen,
   FlaskConical,
   AlertCircle,
   ChevronDown,
@@ -34,9 +35,8 @@ import { objectTypeLabel } from "@/components/governance/ReviewQueue";
 import { CynefinBadge } from "@/components/shared/CynefinBadge";
 import type {
   ReviewQueueItem,
-  Evidence,
-  StatisticalTestResult,
-  Assumption,
+  ReviewQueueAssumption,
+  ReviewQueueSensitivity,
   CynefinDomain,
 } from "@/lib/types";
 
@@ -85,136 +85,94 @@ function formatDecisionError(kind: "approve" | "reject", err: unknown): string {
     : `Rejection failed: ${detail}. The item was NOT rejected and remains in its previous state.`;
 }
 
-function EvidenceCitationList({ citations }: { citations: Evidence[] }) {
-  return (
-    <div data-testid="evidence-citations" className="space-y-2">
-      <h4 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
-        Evidence Citations ({citations.length})
-      </h4>
-      {citations.length === 0 ? (
-        <p className="rounded-md border border-dashed border-border p-3 text-xs text-muted-foreground">
-          No evidence citations provided.
-        </p>
-      ) : (
-        <ul className="space-y-2">
-          {citations.map((cite) => (
-            <li
-              key={cite.id}
-              className="rounded-md border border-border bg-muted/30 p-3"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <span className="text-xs font-semibold text-foreground">
-                  {cite.source}
-                </span>
-                <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
-                  {cite.type.replace("_", " ")}
-                </span>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">{cite.snippet}</p>
-              {cite.url && (
-                <a
-                  href={cite.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-1 block text-xs text-blue-600 underline dark:text-blue-400"
-                >
-                  View source →
-                </a>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
+function formatSensitivityNumber(value: number | null): string | null {
+  return value === null ? null : value.toFixed(2);
 }
 
-function SensitivityResultList({
-  results,
-}: {
-  results: StatisticalTestResult[];
-}) {
+/**
+ * The sensitivity results the platform recorded for an edge -- the ones its risk
+ * tier and Guardian PR-007 read -- as stored. Shown for edges only: a fragment or
+ * an entity rests on no assumption a result could be recorded on.
+ */
+function SensitivityResultList({ results }: { results: ReviewQueueSensitivity[] }) {
   return (
     <div data-testid="sensitivity-result" className="space-y-2">
       <h4 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         <FlaskConical className="h-3.5 w-3.5" aria-hidden="true" />
-        Sensitivity Results ({results.length})
+        Recorded sensitivity results ({results.length})
       </h4>
       {results.length === 0 ? (
         <p className="rounded-md border border-dashed border-border p-3 text-xs text-muted-foreground">
-          No sensitivity tests run yet.
+          No sensitivity result recorded for this edge. Guardian PR-007 refuses its
+          approval until one is.
         </p>
       ) : (
         <ul className="space-y-2">
-          {results.map((result, i) => (
-            <li
-              key={i}
-              className={cn(
-                "rounded-md border p-3",
-                result.significant
-                  ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950"
-                  : "border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950"
-              )}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-semibold text-foreground">
-                  {result.testName}
-                </span>
-                <span
-                  className={cn(
-                    "text-xs font-bold",
-                    result.significant
-                      ? "text-green-700 dark:text-green-400"
-                      : "text-amber-700 dark:text-amber-400"
+          {results.map((result, i) => {
+            const eValue = formatSensitivityNumber(result.eValue);
+            const gamma = formatSensitivityNumber(result.rosenbaumGamma);
+            return (
+              <li
+                key={i}
+                className={cn(
+                  "rounded-md border p-3",
+                  result.robust
+                    ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950"
+                    : "border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950"
+                )}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-semibold text-foreground">
+                    {result.analysisMethod}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-xs font-bold",
+                      result.robust
+                        ? "text-green-700 dark:text-green-400"
+                        : "text-amber-700 dark:text-amber-400"
+                    )}
+                  >
+                    {result.robust
+                      ? "Robust to unmeasured confounding"
+                      : "Not robust to unmeasured confounding"}
+                  </span>
+                </div>
+                <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                  {eValue !== null && (
+                    <span>
+                      E-value: <strong className="text-foreground">{eValue}</strong>
+                    </span>
                   )}
-                >
-                  {result.significant ? "Significant" : "Not significant"}
-                </span>
-              </div>
-              <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted-foreground">
-                <span>
-                  Statistic:{" "}
-                  <strong className="text-foreground">
-                    {result.statistic.toFixed(3)}
-                  </strong>
-                </span>
-                {result.pValue !== null && (
+                  {gamma !== null && (
+                    <span>
+                      Rosenbaum Γ: <strong className="text-foreground">{gamma}</strong>
+                    </span>
+                  )}
                   <span>
-                    p-value:{" "}
-                    <strong className="text-foreground">
-                      {result.pValue.toFixed(4)}
-                    </strong>
+                    by {result.computedBy}
+                    {result.computedAt
+                      ? `, ${new Date(result.computedAt).toLocaleString()}`
+                      : ""}
                   </span>
-                )}
-                {result.eValue !== null && (
-                  <span>
-                    E-value:{" "}
-                    <strong className="text-foreground">
-                      {result.eValue.toFixed(3)}
-                    </strong>
-                  </span>
-                )}
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {result.interpretation}
-              </p>
-            </li>
-          ))}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
   );
 }
 
-function AssumptionList({ assumptions }: { assumptions: Assumption[] }) {
+function AssumptionList({ assumptions }: { assumptions: ReviewQueueAssumption[] }) {
   const [expanded, setExpanded] = useState(false);
   const visible = expanded ? assumptions : assumptions.slice(0, 3);
 
   if (assumptions.length === 0) return null;
 
   return (
-    <div className="space-y-2">
+    <div data-testid="assumption-list" className="space-y-2">
       <h4 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
         Assumptions ({assumptions.length})
@@ -226,30 +184,26 @@ function AssumptionList({ assumptions }: { assumptions: Assumption[] }) {
             className="rounded-md border border-border bg-muted/20 p-2.5 text-xs"
           >
             <div className="flex items-center gap-1.5">
-              <span
-                className={cn(
-                  "rounded px-1 py-0.5 text-xs font-semibold",
-                  assumption.strength === "STRONG"
-                    ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
-                    : assumption.strength === "MODERATE"
-                    ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400"
-                    : "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400"
-                )}
-              >
-                {assumption.strength}
+              <span className="rounded bg-muted px-1 py-0.5 font-mono text-xs text-muted-foreground">
+                {assumption.assumptionType}
               </span>
               <span
                 className={cn(
                   "rounded px-1 py-0.5 text-xs",
-                  assumption.reviewStatus === "OVERDUE"
+                  assumption.reviewStatus === "REJECTED"
                     ? "bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400"
-                    : assumption.reviewStatus === "DUE_REVIEW"
+                    : assumption.reviewStatus === "CONTESTED"
                     ? "bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400"
                     : "bg-muted text-muted-foreground"
                 )}
               >
                 {assumption.reviewStatus}
               </span>
+              {assumption.lastReviewedAt && (
+                <span className="text-muted-foreground">
+                  reviewed {new Date(assumption.lastReviewedAt).toLocaleDateString()}
+                </span>
+              )}
             </div>
             <p className="mt-1 text-foreground">{assumption.statement}</p>
           </li>
@@ -441,11 +395,10 @@ export function ApprovalPanel({
 
       {/* Panel body */}
       <div className="space-y-5 p-5">
-        {/* Evidence citations */}
-        <EvidenceCitationList citations={item.evidenceCitations} />
-
-        {/* Sensitivity results */}
-        <SensitivityResultList results={item.sensitivityResults} />
+        {/* Recorded sensitivity results: an edge's alone */}
+        {item.objectType === "CausalEdge" && (
+          <SensitivityResultList results={item.sensitivityResults} />
+        )}
 
         {/* Assumptions */}
         <AssumptionList assumptions={item.assumptions} />
