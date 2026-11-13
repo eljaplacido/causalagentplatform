@@ -325,27 +325,30 @@ export function splitCsv(text: string, delimiter = ","): string[][] {
 
 const MISSING = new Set(["", "na", "nan", "null", "none", "n/a"]);
 
-/** A column's cells: numbers when every present value parses as one, else strings. */
-function typed(raw: string[]): Cell[] {
+/** "3,5" -> "3.5": a decimal comma, as Excel writes numbers in Finnish and other locales. */
+const DECIMAL_COMMA = /^([+-]?\d*),(\d+(?:[eE][+-]?\d+)?)$/;
+
+/**
+ * A column's cells: numbers when every present value parses as one, else strings. With
+ * `decimalComma` (a semicolon- or tab-separated file, where a comma cannot be the delimiter),
+ * "3,5" is 3.5 too.
+ */
+function typed(raw: string[], decimalComma = false): Cell[] {
+  const num = (v: string) => Number(decimalComma ? v.trim().replace(DECIMAL_COMMA, "$1.$2") : v);
   const present = raw.filter((v) => !MISSING.has(v.trim().toLowerCase()));
-  const numeric = present.length > 0 && present.every((v) => v.trim() !== "" && Number.isFinite(Number(v)));
+  const numeric = present.length > 0 && present.every((v) => v.trim() !== "" && Number.isFinite(num(v)));
   const bool = !numeric && present.length > 0 && present.every((v) => /^(true|false)$/i.test(v.trim()));
   return raw.map((v) => {
     const t = v.trim();
     if (MISSING.has(t.toLowerCase())) return null;
-    if (numeric) return Number(t);
+    if (numeric) return num(t);
     if (bool) return t.toLowerCase() === "true" ? 1 : 0;
     return t;
   });
 }
 
-/** Parse CSV (or semicolon/tab separated) text with a header row. */
-export function parseCsv(text: string): ParsedTable {
-  const firstLine = text.split(/\r?\n/, 1)[0] ?? "";
-  const delimiter = [",", ";", "\t"].reduce((best, d) =>
-    firstLine.split(d).length > firstLine.split(best).length ? d : best
-  );
-  const rows = splitCsv(text.replace(/^﻿/, ""), delimiter);
+/** Rows of cell strings, header first, to a typed table: the one path CSV and .xlsx share. */
+export function tableFromRows(rows: string[][], options: { decimalComma?: boolean } = {}): ParsedTable {
   const head = rows[0];
   if (!head || rows.length < 2) {
     throw new Error("the file needs a header row and at least one data row");
@@ -362,9 +365,19 @@ export function parseCsv(text: string): ParsedTable {
   }
   const columns: Columns = {};
   header.forEach((name, j) => {
-    columns[name] = typed(body.map((r) => r[j] ?? ""));
+    columns[name] = typed(body.map((r) => r[j] ?? ""), options.decimalComma);
   });
   return { columns, names: header, nRows: body.length };
+}
+
+/** Parse CSV (or semicolon/tab separated) text with a header row. */
+export function parseCsv(text: string): ParsedTable {
+  const clean = text.replace(/^\uFEFF/, "");
+  const firstLine = clean.split(/\r?\n/, 1)[0] ?? "";
+  const delimiter = [",", ";", "\t"].reduce((best, d) =>
+    firstLine.split(d).length > firstLine.split(best).length ? d : best
+  );
+  return tableFromRows(splitCsv(clean, delimiter), { decimalComma: delimiter !== "," });
 }
 
 export type ColumnKind = "binary" | "numeric" | "text";

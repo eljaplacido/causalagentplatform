@@ -3,7 +3,7 @@
 /**
  * /analyze — ask a causal question of your own data, in four steps.
  *
- *   1. Data: an example (simulated with a known effect) or your CSV.
+ *   1. Data: an example (simulated with a known effect) or your CSV or .xlsx file.
  *   2. Question: treatment, outcome, how the data came about.
  *   3. Assumptions: what causes what, as a graph. Checked live against the
  *      question: is the effect identified from it, and by adjusting for what?
@@ -43,10 +43,12 @@ import {
   type Estimand,
   type ExampleData,
   type ExampleSummary,
+  type ParsedTable,
   type RunResponse,
   type Suggestion,
 } from "@/lib/analysis";
 import { CausalApiError } from "@/lib/api";
+import { readTableFile } from "@/lib/spreadsheet";
 import { CausalGraphView } from "@/components/analysis/CausalGraphView";
 import { ResultView } from "@/components/analysis/ResultView";
 import { Term } from "@/components/analysis/Term";
@@ -311,9 +313,9 @@ function AnalyzePage() {
     });
   }, [params, loadExample, loadSuggestion, applyPrefill]);
 
-  function acceptTable(text: string, src: Source) {
+  function acceptTable(read: () => ParsedTable, src: Source) {
     try {
-      const t = parseCsv(text);
+      const t = read();
       setColumns(t.columns);
       setSource(src);
       setDataError(null);
@@ -333,7 +335,12 @@ function AnalyzePage() {
       setDataError("That file is over 25 MB; sample it down first (the analysis runs in one request).");
       return;
     }
-    acceptTable(await file.text(), { kind: "file", name: file.name });
+    try {
+      const { table, sheet } = await readTableFile(file);
+      acceptTable(() => table, { kind: "file", name: sheet ? `${file.name} (sheet "${sheet}")` : file.name });
+    } catch (err) {
+      setDataError(errorText(err));
+    }
   }
 
   // Live check of graph + question
@@ -507,7 +514,7 @@ function AnalyzePage() {
               }}
             >
               <FileUp className="h-6 w-6 text-muted-foreground" aria-hidden />
-              <p className="text-sm text-foreground">Drop a CSV here, or</p>
+              <p className="text-sm text-foreground">Drop a CSV or Excel (.xlsx) file here, or</p>
               <div className="flex flex-wrap justify-center gap-2">
                 <button type="button" className={quietBtn} onClick={() => fileRef.current?.click()}>
                   Choose a file
@@ -519,9 +526,9 @@ function AnalyzePage() {
               <input
                 ref={fileRef}
                 type="file"
-                accept=".csv,.tsv,.txt,text/csv"
+                accept=".csv,.tsv,.txt,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 className="sr-only"
-                aria-label="CSV file"
+                aria-label="CSV or Excel file"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
                   if (f) void onFile(f);
@@ -546,7 +553,7 @@ function AnalyzePage() {
                   onChange={(e) => setPasteText(e.target.value)}
                   placeholder={"treated,outcome,age\n1,3.2,41\n0,2.9,38"}
                 />
-                <button type="button" className={primaryBtn} onClick={() => acceptTable(pasteText, { kind: "paste" })}>
+                <button type="button" className={primaryBtn} onClick={() => acceptTable(() => parseCsv(pasteText), { kind: "paste" })}>
                   Use this data
                 </button>
               </div>

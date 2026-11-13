@@ -42,8 +42,9 @@ per page (it used to be a role picker that forwarded every later visit to the la
 so home was unreachable). On a persona page `PersonaSelector` switches persona and goes to that
 persona's page. How much of each view's surface below is built varies (see §4.2).
 
-- **`/analyze`** asks a causal question of the user's data in four steps: data (a CSV file or
-  pasted text, parsed in the browser; or an example from `GET /api/v1/analysis/examples`, each
+- **`/analyze`** asks a causal question of the user's data in four steps: data (a CSV file, an
+  .xlsx workbook's first sheet or pasted text, parsed in the browser, with Excel's
+  Windows-1252 CSVs and a semicolon file's decimal commas read as such; or an example from `GET /api/v1/analysis/examples`, each
   simulated from a structural model with a stated true effect), the question (treatment, outcome,
   randomized or observational, ATE or ATT), the graph (picked from the columns as confounders and
   other causes of the outcome, or written in the kernel's syntax), and the answer. The graph is

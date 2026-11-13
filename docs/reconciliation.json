@@ -32,12 +32,12 @@
           "packages/causal-mcp": "a6e19b07b09b94989ff60e6b66cbfea208918f186d53b5d6c58e26cd80f4ab2d",
           "frontend/package.json": "90091605609635e84200d37acfeeafd37a63e7271a725463bc536857284747f7",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "26ff25ca705923a16ab1aa3042748fda5a013ba925d0085503695951e4e33b00"
+          "docs/CURRENT_STAGE.md": "1e320045831892902de67da0a3ab6e4f9124e09fb1bdbeabdec10ec4b8c9986a"
         }
       },
       "last_read": {
         "on": "2026-11-07",
-        "by": "Claude (train/6 merge of train/5 after #107: pipeline.analyze now pins BLAS around _not_transported(_analyze(...)); read CURRENT_STAGE row 85 (digest reproducibility, amended to name the paired, NO_VARIATION and not-transported paths the extended test covers) and the shadow rows; TESTING_CICD BLAS-threads paragraph 309-314 and gate table incl. T11; ROADMAP rows 26-33 vs pipeline.py (target_population warning unchanged, only wrapped in pinned()); README pointers; causal-core CHANGELOG digest bullet moved to the 0.15.0 section: no other claim moved)"
+        "by": "Claude (fix/analyze-xlsx merged onto train/6: CURRENT_STAGE analysis-page row and UIX /analyze paragraph are this branch's .xlsx/encoding text, checked against spreadsheet.ts and its tests; register change is two UIX re-citations (200, 251); README and ROADMAP rows link those register ids, status unchanged, no claim moved)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-11-07",
         "sha256": {
-          "conformance/declared_not_implemented.json": "3aa3ce359f0e2249dbb9ca471797f237ab7b9760a7d74c8e6bdf06aa78dc9922",
+          "conformance/declared_not_implemented.json": "19fce26026495a934c465e9b4a5de6472548e01e2cc7ad75ba73315dd15beb6f",
           "backend/src": "783f26b65a502b14052c9550cb1b1ca2f6e4b626140c1d8859a1f27dda748a95",
           "backend/tests": "517445af1871784d79d5f4ab139e35c3fd5511491d5fa3af01d9e314bb5ac0a5",
-          "frontend/src": "68c4623ae1d1cdb82303cd276740af418940acd6484c6b42df56dd627b30342b",
+          "frontend/src": "20491f5b0669c5358adab5e85f291c92bf993e18c7dbb8995708519de636a3c1",
           "packages": "dafd969ee9e0feff47e0b7abe4aee29dd94f61886714010557f631e7c2f50efc",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-11-07",
-        "by": "Claude (train/6 merge of train/5 after #107: pipeline.analyze now pins BLAS around _not_transported(_analyze(...)); read CURRENT_STAGE row 85 (digest reproducibility, amended to name the paired, NO_VARIATION and not-transported paths the extended test covers) and the shadow rows; TESTING_CICD BLAS-threads paragraph 309-314 and gate table incl. T11; ROADMAP rows 26-33 vs pipeline.py (target_population warning unchanged, only wrapped in pinned()); README pointers; causal-core CHANGELOG digest bullet moved to the 0.15.0 section: no other claim moved)"
+        "by": "Claude (fix/analyze-xlsx merged onto train/6: CURRENT_STAGE analysis-page row and UIX /analyze paragraph are this branch's .xlsx/encoding text, checked against spreadsheet.ts and its tests; register change is two UIX re-citations (200, 251); README and ROADMAP rows link those register ids, status unchanged, no claim moved)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -334,12 +334,12 @@
       "baseline": {
         "on": "2026-11-07",
         "sha256": {
-          "frontend/src": "68c4623ae1d1cdb82303cd276740af418940acd6484c6b42df56dd627b30342b"
+          "frontend/src": "20491f5b0669c5358adab5e85f291c92bf993e18c7dbb8995708519de636a3c1"
         }
       },
       "last_read": {
         "on": "2026-11-07",
-        "by": "Claude (train/5 merge of train/4 after #107: read CURRENT_STAGE shadow rows 104-106 and TESTING_CICD shadow paragraph against #107 -- the fixture S-004 (every unit treated) is now NO_VARIATION with an experiment verdict, fixture prereg v2, and a not-transported study is sealed as an experiment in the target: both updated; shadow/README planted-case passage amended; ROADMAP shadow paragraph 148-152 and README pointers: no claim moved; UIX /decisions Shadow switch vs ResultView NO_VARIATION text: no claim moved)"
+        "by": "Claude (fix/analyze-xlsx merged onto train/6: CURRENT_STAGE analysis-page row and UIX /analyze paragraph are this branch's .xlsx/encoding text, checked against spreadsheet.ts and its tests; register change is two UIX re-citations (200, 251); README and ROADMAP rows link those register ids, status unchanged, no claim moved)"
       }
     },
     "docs/ROADMAP.md": {
@@ -353,13 +353,13 @@
         "on": "2026-11-07",
         "sha256": {
           "packages/causal-core/src/causal_core": "b687c297357776c340e6dc43fb906e0e5ba9f61d29f386250204cb4524b10568",
-          "conformance/declared_not_implemented.json": "3aa3ce359f0e2249dbb9ca471797f237ab7b9760a7d74c8e6bdf06aa78dc9922",
-          "docs/CURRENT_STAGE.md": "26ff25ca705923a16ab1aa3042748fda5a013ba925d0085503695951e4e33b00"
+          "conformance/declared_not_implemented.json": "19fce26026495a934c465e9b4a5de6472548e01e2cc7ad75ba73315dd15beb6f",
+          "docs/CURRENT_STAGE.md": "1e320045831892902de67da0a3ab6e4f9124e09fb1bdbeabdec10ec4b8c9986a"
         }
       },
       "last_read": {
         "on": "2026-11-07",
-        "by": "Claude (train/6 merge of train/5 after #107: pipeline.analyze now pins BLAS around _not_transported(_analyze(...)); read CURRENT_STAGE row 85 (digest reproducibility, amended to name the paired, NO_VARIATION and not-transported paths the extended test covers) and the shadow rows; TESTING_CICD BLAS-threads paragraph 309-314 and gate table incl. T11; ROADMAP rows 26-33 vs pipeline.py (target_population warning unchanged, only wrapped in pinned()); README pointers; causal-core CHANGELOG digest bullet moved to the 0.15.0 section: no other claim moved)"
+        "by": "Claude (fix/analyze-xlsx merged onto train/6: CURRENT_STAGE analysis-page row and UIX /analyze paragraph are this branch's .xlsx/encoding text, checked against spreadsheet.ts and its tests; register change is two UIX re-citations (200, 251); README and ROADMAP rows link those register ids, status unchanged, no claim moved)"
       }
     },
     "SECURITY.md": {
