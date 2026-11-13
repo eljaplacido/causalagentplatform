@@ -148,6 +148,15 @@ jobs:
       - name: Frontend dependencies
         run: npm ci
 
+      - name: Playwright's Chromium (the gate's frontend-e2e step)
+        # Installed by the job, not left to the host: a self-hosted runner's
+        # ~/.cache/ms-playwright can be emptied, and main's gate at be26939 then exited 2
+        # with frontend-e2e SKIPPED. A no-op when the browser is already cached. The
+        # browser's system libraries are the host's (--with-deps needs root); GitHub's
+        # hosted Ubuntu images carry them.
+        working-directory: frontend
+        run: npx --no-install playwright install chromium
+
       - name: Licence gate (runtime dependencies must be permissive)
         run: |
           packages/causal-core/.venv/bin/python packages/causal-core/scripts/check_licenses.py causal-core
