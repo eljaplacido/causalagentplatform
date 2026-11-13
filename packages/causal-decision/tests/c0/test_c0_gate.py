@@ -74,9 +74,10 @@ def test_the_cases_depend_on_the_registered_seeds_and_nothing_else(cfg: dict[str
     """A0 v2 run 1 depended on PYTHONHASHSEED; the stream draws here must not.
 
     What is compared is what the gate reads -- each pool member's cell, verdict and
-    flags, and each config's counts -- not the decision digests or raw estimates:
-    those move in the last bits with the BLAS thread count (seen: 1-2 threads vs 4+),
-    which says nothing about the seed and changes no flag here.
+    flags, and each config's counts -- not the decision digests or raw estimates.
+    Those once moved between processes (put down to the BLAS thread count; at this
+    pool's size it was the hash seed's order in the ID expression), and their
+    reproducibility is pinned on its own in tests/test_digest_reproducible.py (septa-89).
     """
     import os
     import subprocess

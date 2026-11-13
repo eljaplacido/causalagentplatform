@@ -715,7 +715,7 @@
       "reality": "Declared, not implemented. CausalQuery carries `population` (where the data come from) and `target_population` (where the answer is meant for). When they differ the kernel estimates for the data's population only and adds a 'not transported' warning to the result; the decision layer compares the evidence's population with the request's and the declared target, caps the verdict at `experiment` with 'not transported; evidence is from <population>' in the check, and sizes the experiment to run in the target. Nothing estimates the effect in the target population, and nothing judges whether a result would carry over. Added after gnomon's benchmark analysis (2026-11-04) could only state its local-to-hosted transport (its R4).",
       "evidence": [
         {
-          "at": "packages/causal-core/src/causal_core/pipeline.py:250",
+          "at": "packages/causal-core/src/causal_core/pipeline.py:251",
           "says": "f\"not transported: the estimate is about {source}. The declared target population \""
         },
         {
