@@ -638,7 +638,8 @@ published since the last push surfaces without one):
   the `pip-audit-*` steps audit the locks. `package-lock.json` pins npm with integrity hashes.
 - **Release SBOM.** `release.yml` writes a CycloneDX 1.6 SBOM of the published packages'
   runtime environment (the built wheels plus `requirements/release.txt`), checks that it lists
-  exactly that (`scripts/sbom_check.py`), and attaches it to the tag's GitHub release.
+  exactly that (`scripts/sbom_check.py`), and attaches it, with the sdists and wheels, to the
+  tag's GitHub release.
 - **Update PRs.** `.github/dependabot.yml`: weekly, grouped, for the Python locks and ranges,
   npm, the GitHub Actions and the base images. It ignores the pins the ratchets count per
   version (ruff, mypy, bandit, pip-audit), semver-majors in pyprojects and npm (ledger work, TESTING_CICD.md §5.4), and node

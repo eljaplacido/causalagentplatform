@@ -1,9 +1,13 @@
-name: Release to PyPI
+name: Release
 
-# Publishes packages/causal-core, packages/causal-decision and packages/causal-mcp when a
-# v* tag (vYYYY.MM.DD, CONTRIBUTING.md "Releases") is pushed. Each package goes out at its
-# own version; one already on PyPI at that version (unchanged since the last release) is
-# skipped, not re-uploaded.
+# Releases packages/causal-core, packages/causal-decision and packages/causal-mcp when a
+# v* tag (vYYYY.MM.DD, CONTRIBUTING.md "Releases") is pushed: the tag's GitHub release gets
+# their sdists and wheels and the SBOM, and, once the repository variable PYPI_PUBLISH is
+# "true", they also go to PyPI. Each package goes out at its own version; one already on
+# PyPI at that version (unchanged since the last release) is skipped, not re-uploaded.
+#
+# PYPI_PUBLISH stays unset until each project has its trusted publisher on PyPI (below):
+# until then a tag makes a GitHub release only, and the publish job is skipped, not failed.
 #
 # Only the verify job may use the self-hosted runners (vars.CI_RUNS_ON). Building and
 # publishing run on GitHub-hosted runners: the job that holds the PyPI upload token never
@@ -18,14 +22,15 @@ name: Release to PyPI
 # Nothing is published before the kernel's own gates pass on the tagged commit,
 # including the pre-registered T0 correctness gate and its seeded defects.
 #
-# Every run writes a CycloneDX SBOM of the published packages' runtime environment
-# (artifact `sbom`); a v* tag also attaches it to that tag's GitHub release.
+# Every run writes a CycloneDX SBOM of the released packages' runtime environment
+# (artifact `sbom`); a v* tag also attaches it, with the distributions, to that tag's
+# GitHub release.
 
 on:
   push:
     tags: ["v*"]
   # A manual run verifies and builds -- a dry run of the release -- and cannot
-  # publish: the publish job below only runs for a v* tag.
+  # publish or release: those jobs only run for a v* tag.
   workflow_dispatch:
 
 permissions:
@@ -48,9 +53,14 @@ jobs:
   verify:
     name: Gates before publishing
     runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
-    timeout-minutes: 30
+    # The kernel's full suite with T2/T3 and T0 takes ~30 minutes on the self-hosted host.
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Full history, as in ci.yml: test_benchmark_results.py accepts a gate's recorded
+          # run only when its commit is an ancestor of HEAD, which a shallow clone cannot show.
+          fetch-depth: 0
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
@@ -157,32 +167,12 @@ jobs:
           name: sbom
           path: sbom/
 
-  attach-sbom:
-    name: Attach the SBOM to the GitHub release
-    needs: publish
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write # create the release for this tag if absent, and upload to it
-    steps:
-      - uses: actions/download-artifact@v8
-        with:
-          name: sbom
-          path: sbom/
-      - name: Upload
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
-        run: |
-          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
-            || gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --title "$TAG" \
-                 --notes "causal-core, causal-decision and causal-mcp as published to PyPI. The SBOM (CycloneDX) lists the runtime environment they were verified in."
-          gh release upload "$TAG" sbom/causal-packages.cdx.json --repo "$GITHUB_REPOSITORY" --clobber
-
   publish:
     name: Publish ${{ matrix.package }}
     needs: build
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    if: >-
+      github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+      && vars.PYPI_PUBLISH == 'true'
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -204,3 +194,39 @@ jobs:
           # Each package keeps its own version: one unchanged since the last release is
           # already on PyPI and is skipped.
           skip-existing: true
+
+  github-release:
+    name: GitHub release (distributions and SBOM)
+    # After publishing when PyPI is on; straight after the build when it is off (skipped).
+    needs: [build, publish]
+    if: >-
+      always() && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+      && needs.build.result == 'success'
+      && (needs.publish.result == 'success' || needs.publish.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the release for this tag if absent, and upload to it
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: sbom
+          path: sbom/
+      - uses: actions/download-artifact@v8
+        with:
+          name: distributions
+          path: dist/
+      - name: Upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          ON_PYPI: ${{ needs.publish.result == 'success' }}
+        run: |
+          if [ "$ON_PYPI" = "true" ]; then
+            where="as published to PyPI"
+          else
+            where="as built from this tag (not on PyPI: install the wheels below with pip)"
+          fi
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
+            || gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --title "$TAG" \
+                 --notes "causal-core, causal-decision and causal-mcp $where. The SBOM (CycloneDX) lists the runtime environment they were verified in."
+          gh release upload "$TAG" sbom/causal-packages.cdx.json dist/*/* --repo "$GITHUB_REPOSITORY" --clobber

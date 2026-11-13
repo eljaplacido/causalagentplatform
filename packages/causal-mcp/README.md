@@ -8,6 +8,12 @@ and binds every number it returns to a claim.
 { "mcpServers": { "causal": { "command": "causal-mcp" } } }
 ```
 
+Until the PyPI release, install the wheels from the repository's
+[GitHub release](https://github.com/eljaplacido/causalagentplatform/releases) (causal-core with
+causal-mcp; add causal-decision for `[decision]`), e.g.
+`pip install "causal-mcp[decision] @ <release>/causal_mcp-0.5.0-py3-none-any.whl"` beside the
+other two wheels. From PyPI, once published:
+
 ```bash
 pip install causal-mcp                 # the four evidence tools
 pip install 'causal-mcp[decision]'     # adds causal_decide and causal_impact (installs causal-decision)
