@@ -1,7 +1,7 @@
 # Quickstart — Causal Platform
 
 > **Target:** developers and coding agents setting up a local checkout.
-> **Assumption:** Linux or macOS with Python 3.12+ and Node 24+ (the LTS line CI uses). Docker is optional.
+> **Assumption:** Linux or macOS with Python 3.12+ and Node 26+ (the LTS line CI uses). Docker is optional.
 > Coding agents: read the root [`AGENTS.md`](../AGENTS.md) first.
 
 ---
@@ -11,8 +11,8 @@
 | Tool | Minimum version | Verify |
 |---|---|---|
 | Python | 3.12 | `python3 --version` |
-| Node.js | 20.x | `node --version` |
-| npm | 10.x | `npm --version` |
+| Node.js | 26 (LTS, as CI) | `node --version` |
+| npm | the one bundled with Node | `npm --version` |
 | Docker + Compose (optional) | 24.x | `docker compose version` |
 
 ---
@@ -62,6 +62,14 @@ that was not re-locked ([`TESTING_CICD.md`](TESTING_CICD.md) §5.4).
 # From the repo ROOT (npm workspaces), not frontend/
 npm ci
 ```
+
+The frontend imports the workspace package `@causalplatform/semantic-types` from its built
+`dist/`, which `npm ci` does not build. The frontend's `dev`, `build` and `type-check` scripts
+build it first (their `predev`, `prebuild` and `pretype-check` hooks run
+`npm run build:types`), so a fresh checkout needs nothing more. Run by hand
+(`npx next build`, `npx tsc`), the tools skip those hooks: build the types once with
+`npm run build:types` (from the root or `frontend/`) first, or `tsc` fails with "Cannot find
+module '@causalplatform/semantic-types'".
 
 > If `node_modules` was copied from another OS and `npm run type-check` fails with "Permission
 > denied" or missing binaries, purge and reinstall:
@@ -117,7 +125,7 @@ script sets that local-dev password. Migrations run as the owner (`causal`); see
 The dev auth bypass works only with `ENV=local`, so a local session with the bypass is always on
 SQLite. The causal graph is always in SQL. Neo4j is used only when `NEO4J_URI` is set, for the
 experience buffer and drift-alert storage; unset, the experience buffer reads SQL session
-snapshots and drift alerts are not stored.
+snapshots and drift alerts are stored in the SQL `drift_alerts` table.
 
 **Guardian signing key.** Every Guardian verdict is HMAC-signed with `GUARDIAN_SIGNING_KEY`.
 Locally you may leave it unset: each backend process then generates its own key and logs
@@ -166,7 +174,7 @@ learning radar's improvement targets, and recorded decisions can be reported bac
 ```bash
 AGENTCENTER_URL=http://127.0.0.1:8765
 ORACLE_URL=http://127.0.0.1:8767      # the default once AGENTCENTER_URL is set
-AGENTCENTER_EMIT=true                 # send each recorded decision to agentcenter's event log
+AGENTCENTER_EMIT=true                 # send each recorded decision (never a shadow one) to agentcenter's event log
 ```
 
 > **Security:** never commit `.env` files. They are gitignored.
@@ -204,17 +212,35 @@ docker compose down
 
 ## 5. Start the application
 
+Every command here listens on the loopback interface only (127.0.0.1). The local backend runs
+with `DEV_AUTH_BYPASS`, which accepts a fixed token (§8), so it must not be reachable from the
+network; the frontend's `npm run dev` and `npm run start` pass `--hostname 127.0.0.1` themselves
+(`frontend/package.json`), where Next.js would otherwise listen on every interface. Open the UI
+as `http://localhost:3000`, the origin the backend's CORS list names. To reach a frontend from
+another machine on purpose, add `-- --hostname 0.0.0.0` (the last `--hostname` wins), and do not
+expose a backend that has the bypass on.
+
 ### Option A: two launchers (the README's route)
 
 ```bash
 bash launch_backend.sh                         # backend on http://127.0.0.1:49234
-cd frontend && NEXT_PUBLIC_API_BASE_URL=http://localhost:49234 npm run dev
+cd frontend && NEXT_PUBLIC_ENVIRONMENT=local NEXT_PUBLIC_API_BASE_URL=http://localhost:49234 npm run dev
 ```
+
+A production build of the frontend, still local:
+
+```bash
+cd frontend && NEXT_PUBLIC_ENVIRONMENT=local NEXT_PUBLIC_API_BASE_URL=http://localhost:49234 npm run build
+npm run start                                  # http://localhost:3000, loopback only
+```
+
+(The container image is different: `frontend/Dockerfile` runs the standalone server with
+`HOSTNAME=0.0.0.0`, because a container must listen on its own interface to be published.)
 
 ### Option B: `start.sh`
 
 ```bash
-./start.sh            # backend (:49234) + frontend (:3000)
+./start.sh            # backend (127.0.0.1:49234) + frontend (127.0.0.1:3000)
 ./start.sh backend    # backend only
 ./start.sh frontend   # frontend only
 ./start.sh test       # backend test suite
@@ -254,7 +280,7 @@ written here. Pieces, when iterating:
 
 ```bash
 cd backend && .venv/bin/pytest -q                          # backend suite, on SQLite
-cd packages/causal-core && .venv/bin/pytest                # kernel, incl. the T0 and T4-T10 gates
+cd packages/causal-core && .venv/bin/pytest                # kernel, incl. the T0 and T4-T11 gates
 cd packages/causal-decision && ../causal-core/.venv/bin/pytest   # decision layer, incl. D0 and A0
 cd frontend && npm run type-check && npx vitest run        # frontend
 ```
@@ -307,6 +333,12 @@ cd backend
 .venv/bin/python -m scripts.seed_data --all          # everything
 .venv/bin/python -m scripts.seed_data --clear        # remove seeded data
 ```
+
+It may run before the backend has ever started: with `ENV=local` it first creates the SQLite
+schema the way the backend's startup does (`CloudSqlFactory.init_db`, a no-op on a database that
+already has it), so a brand-new `SQLITE_PATH` file can be seeded directly
+(`backend/tests/integration/test_seed_data_backends.py`). On PostgreSQL it creates nothing: the
+schema is the migrations' (§4).
 
 The seeder runs on SQLite (`ENV=local`, the default) and on PostgreSQL, where it may connect as
 `causal_app`: it writes inside a service scope, which the row-level-security policies let write

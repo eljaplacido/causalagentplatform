@@ -39,11 +39,17 @@ def explain(decision: Decision, outcome: CausalOutcome, strict: bool = True) -> 
             else "size unknown (no outcome standard deviation was reported)"
         )
         days = f", about {spec.estimated_days} days" if spec.estimated_days else ""
+        how = (
+            f"  Run {spec.pairs} matched pairs ({2 * spec.pairs} {spec.unit}s): in each pair one "
+            f"{spec.unit} {spec.arms[0]}, one {spec.arms[1]}, assigned at random{days}."
+            if spec.design == "paired_units" and spec.pairs
+            else f"  Randomize {spec.unit}s, {spec.arms[0]} vs {spec.arms[1]}, {size}{days}."
+        )
         lines += [
             "",
             "Experiment that would settle it:",
             f"  {spec.question}",
-            f"  Randomize {spec.unit}s, {spec.arms[0]} vs {spec.arms[1]}, {size}{days}.",
+            how,
             *[f"  Guardrail: {g}" for g in spec.guardrails],
             f"  {spec.note}",
         ]
@@ -70,12 +76,16 @@ def _declared_numbers(decision: Decision) -> tuple[str, ...]:
 def _without_quotes(text: str, decision: Decision) -> str:
     """The rationale with the request's own free text taken out before it is checked.
 
-    The rationale quotes the requester ("Act: cut price 30%."); a digit or a causal verb
+    The rationale quotes the requester ("Go ahead: cut price 30%."); a digit or a causal verb
     in that quote is theirs, not a claim of the analysis, so it is neither bound nor
     refused. Only the quoted text is removed: the same number anywhere else is checked.
     """
     r = decision.request
-    quoted = [q for q in (r.action, r.population, r.horizon) if q and len(q.strip()) >= 3]
+    ev = decision.evidence
+    # Population labels are the analyst's and the requester's words ("qwen3.6, local lane"),
+    # quoted when the evidence is not transported; their digits are not claims either.
+    labels = (r.action, r.population, r.horizon, ev.population, ev.target_population)
+    quoted = [q for q in labels if q and len(q.strip()) >= 3]
     for q in sorted(quoted, key=len, reverse=True):
         text = text.replace(q, " ")
     return text

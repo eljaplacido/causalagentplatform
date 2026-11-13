@@ -1,6 +1,6 @@
 # Agents, Skills & Prompt Architecture
 
-> **Scope:** Canonical reference for all agents deployed across the Unified Enterprise Causal Platform. Every agent, skill, and orchestration pattern must conform to this document. This file is loaded as shared context by every agent in the system.
+> **Scope:** Canonical reference for all agents deployed across the Causal Platform. Every agent, skill, and orchestration pattern must conform to this document. This file is loaded as shared context by every agent in the system.
 >
 > **This document is a specification, not a description of the code.** All eight agents below exist and run, but several of the skills beneath them return a constant. What is actually implemented is in [`CURRENT_STAGE.md`](CURRENT_STAGE.md), where every row links to the test that pins it; what this document claims and the code does not do is in [`conformance/declared_not_implemented.json`](../conformance/declared_not_implemented.json), checked on every run by `scripts/status_claims.py`. As of 2026-09-25 that covers the evidence-grounding and expert-elicitation skills (`agent-skills-are-stubs`), causal discovery (`causal-discovery`), the counterfactual skill (`scm-counterfactuals`), and the Cynefin classifier, which is a keyword stub (`cynefin-classifier-keyword-stub`). Earlier versions also named Rust crates (`cynepic-*`), EconML, PyMC, Kafka and a Neo4j causal-graph store as backing these agents; none of them is in this repository or used by it, and those claims were withdrawn (`rust-crates`, `econml-pymc`, `kafka-streaming`, `neo4j-graph-store` in the register's `left_the_list`).
 
@@ -148,7 +148,7 @@ Agents do not generate outputs directly. They generate **EpistemicState transiti
 - Identified drift type: distribution, causal, semantic, or concept drift
 - Per-feature divergence scores
 - Suggested re-validation trigger
-- Alerts stored in Neo4j with TTL and acknowledgment tracking, when `NEO4J_URI` is set
+- Alerts stored in Neo4j with TTL and acknowledgment tracking, when `NEO4J_URI` is set; every alert Neo4j did not store is a row in the SQL `drift_alerts` table (no acknowledgement there)
 
 **Constraints:**
 - Alerts must include the statistical evidence (KL divergence value, chi-squared result, etc.)
@@ -548,6 +548,9 @@ Intake → CynefinClassify → [Router]
     │                               Output  [requires_human_review on every escalation]
     ├── CHAOTIC      → EscalateHuman → GuardianCheck → Output [Human approval required]
     └── DISORDER     → DisorderProtocol → CynefinClassify [retry once, then EscalateHuman]
+
+An incident run (POST /api/v1/session/incident) takes IncidentTriage → PlanAhead
+in place of DirectAnswer / CausalAnalysis / CausalDiscovery.
 ```
 
 Every path ends GuardianCheck → Output: nothing a session returns lacks a Guardian verdict, and
@@ -563,6 +566,21 @@ the Guardian marked `plan_unsimulated`, with that said on each recommendation; o
 that estimated consequences and found every candidate unsafe escalates. Pinned by
 `backend/tests/integration/test_session_reaches_guardian.py`, on SQLite and PostgreSQL.
 
+An incident is analysed once and ruled on once: `/incident` runs the graph with the
+`IncidentTriageAgent` as its analysis node (without the agent's own Guardian check), where it
+used to run the agent, Guardian check included, and then the graph's `CausalAnalysis` over its
+output, with a second Guardian row. Each proposed intervention the incident row stores is then
+ruled on by the Guardian on its own (`INCIDENT_INTERVENTION_CHECK`, one `audit_log` row each, no
+subject: read, never spent) and stores that verdict and its row id; it used to store the
+session's verdict. A run that fails before `GuardianCheck` (an exception, an open circuit
+breaker) answers with a verdict the session API sets, REJECTED or REQUIRES_ESCALATION, and
+writes it to `audit_log` unsigned, with why: history, not a ruling. Resuming a session starts a
+fresh run on the session's context (fragment, assumptions, evidence, history); flags,
+recommendations, proposed edges, the verdict and the cycle count are the run's own, where they
+used to pile up until PR-005 escalated every run. Pinned by
+`backend/tests/integration/test_incident_integrity.py` and
+`backend/tests/integration/test_session_api.py`.
+
 ### 5.2 Graph Node Responsibilities
 
 | Node | Agent | Condition for transition |
@@ -571,6 +589,7 @@ that estimated consequences and found every candidate unsafe escalates. Pinned b
 | `CynefinClassify` | `cynefin_classify` skill | Domain confidence > 0.7 |
 | `CausalAnalysis` | `CausalDiscoveryAgent` | Graph fragment available |
 | `CausalDiscovery` | `CausalDiscoveryAgent` | Complex domain with low evidence |
+| `IncidentTriage` | `IncidentTriageAgent` | An incident run (`/incident`) classified CLEAR, COMPLICATED or COMPLEX; then `PlanAhead` |
 | `PlanAhead` | `plan_action_sequence` skill | Candidate recommendations exist |
 | `GuardianCheck` | `GovernanceAgent` | Every run, before `Output`: after PlanAhead, and after EscalateHuman |
 | `EscalateHuman` | — | CHAOTIC domain, DISORDER still unresolved after one retry, or PlanAhead's lookahead estimated every candidate unsafe; then `GuardianCheck` |

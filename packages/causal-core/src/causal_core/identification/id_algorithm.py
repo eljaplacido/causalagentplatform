@@ -135,7 +135,9 @@ class ADMG:
         for p in self.bidirected:
             a, b = tuple(p)
             g.add_edge(a, b)
-        return [frozenset(c) for c in nx.connected_components(g)]
+        # Sorted: networkx yields components in set-iteration order, which follows the
+        # string hash seed, and the order reaches the rendered expression and its digest.
+        return sorted((frozenset(c) for c in nx.connected_components(g)), key=sorted)
 
 
 # ── distributions carried through the recursion ──────────────────────────────

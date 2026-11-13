@@ -22,6 +22,7 @@ from pydantic import ValidationError
 from causal_core import estimators as est_registry
 from causal_core import refute as refuters
 from causal_core._version import __version__
+from causal_core.blocked import analyze_blocked
 from causal_core.canonical import data_digest, digest
 from causal_core.claims import build_claims
 from causal_core.cluster import analyze_cluster
@@ -57,6 +58,7 @@ from causal_core.identification import (
     identify,
     missing_information,
 )
+from causal_core.numerics import pinned
 from causal_core.panel import analyze_panel
 from causal_core.panel import certificate as panel_certificate
 from causal_core.refute import RefutationContext, holm
@@ -226,6 +228,36 @@ def _frame_diagnostics(frame: pd.DataFrame, query: CausalQuery) -> Diagnostics |
         return None
 
 
+def _same_population(a: str | None, b: str | None) -> bool:
+    return (a or "").strip().casefold() == (b or "").strip().casefold()
+
+
+def _not_transported(out: Outcome) -> Outcome:
+    """A declared target population is stated on the result, never acted on.
+
+    The kernel has no transport analysis (register: transportability). An estimate made on
+    one population and read as one about another is the error this prevents: the result
+    keeps its own population, and says in a warning that it was not carried to the target.
+    The decision layer reads the same two fields and caps its verdict.
+    """
+    if not isinstance(out, CausalResult):
+        return out
+    q = out.query
+    target = (q.target_population or "").strip()
+    if not target or _same_population(target, q.population):
+        return out
+    source = q.population or "the population these data come from (query.population not stated)"
+    note = (
+        f"not transported: the estimate is about {source}. The declared target population "
+        f"({target}) is a different population, and this kernel has no transport analysis, so "
+        "the estimate is not evidence about it"
+    )
+    res = out.model_copy(update={"warnings": (*out.warnings, note)})
+    return res.model_copy(
+        update={"result_digest": digest(res.model_dump(mode="json", exclude={"result_digest"}))}
+    )
+
+
 def analyze(
     data: Any,
     graph: CausalGraph | str | Any,
@@ -274,9 +306,16 @@ def analyze(
         )
 
     try:
-        return _analyze(
-            data, graph, treatment, outcome, query, policy, query_fields, stage, prov, refuse
-        )
+        # One BLAS thread, so the digests do not depend on the host's thread count
+        # (causal_core.numerics says why, and what it does not cover). The not-transported
+        # warning rewrites the result, so it runs inside the pin too.
+        with pinned():
+            return _not_transported(
+                _analyze(
+                    data, graph, treatment, outcome, query, policy, query_fields, stage, prov,
+                    refuse,
+                )
+            )
     except Exception as exc:
         return ApparatusFailure(
             stage=stage.name,
@@ -366,6 +405,13 @@ def _analyze(
     if refuted:
         warnings.append(f"refuted edges were removed before analysis: {refuted}")
 
+    if query.block is not None and query.design is not Design.randomized:
+        return refuse(
+            AbstentionReason.INVALID_INPUT,
+            f"`block` is for designs randomized within blocks (design='randomized'); with "
+            f"design='{query.design.value}' the blocks would carry no meaning",
+            q=query,
+        )
     # Panel designs leave the graph-based path here: what identifies them (parallel
     # trends, no anticipation) is not in the graph, so the certificate is tier C and
     # the estimator is causal_core.panel's. The review checks above still applied.
@@ -444,6 +490,18 @@ def _analyze(
     # A watched randomized stream: an anytime-valid confidence sequence at every
     # look, from causal_core.sequential. Identification above still had to certify
     # randomization; the sequential path refuses anything else.
+    if query.block is not None:
+        stage.name = "blocked"
+        return analyze_blocked(
+            frame,
+            query,
+            policy,
+            cert=cert,
+            unreviewed=unreviewed,
+            warnings=warnings,
+            prov=prov,
+            refuse=refuse,
+        )
     if query.cluster is not None:
         stage.name = "cluster"
         return analyze_cluster(

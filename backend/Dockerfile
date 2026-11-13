@@ -6,7 +6,7 @@
 # `pip install .`, which cannot build a package whose sources are absent.)
 
 # ── Build stage ────────────────────────────────────────────────────────────
-FROM python:3.12-slim@sha256:f77ac9e44ae96ef2c90b8053ea08c31f8be030f824196b0ae4db6d462c84e51f AS builder
+FROM python:3.12-slim@sha256:4840d514c583a4d3d8cad3940e68dee6f0f6f3635c12fcd0a3d74c21a5b93a54 AS builder
 
 WORKDIR /build
 
@@ -38,7 +38,7 @@ RUN pip install --no-cache-dir --no-deps --no-build-isolation \
     && python -m pip uninstall --yes --quiet pip
 
 # ── Production stage (distroless-style slim) ───────────────────────────────
-FROM python:3.12-slim@sha256:f77ac9e44ae96ef2c90b8053ea08c31f8be030f824196b0ae4db6d462c84e51f AS production
+FROM python:3.12-slim@sha256:4840d514c583a4d3d8cad3940e68dee6f0f6f3635c12fcd0a3d74c21a5b93a54 AS production
 
 WORKDIR /app
 
@@ -76,6 +76,10 @@ USER causal
 
 # Cloud Run listens on $PORT (default 8080)
 ENV PORT=8080
+# A deployment, not local development: without the signing key, the privacy key and a
+# PostgreSQL URL the app refuses to start, and the dev token bypass is off (it needs
+# ENV=local exactly). Run the image with -e ENV=local only for a throwaway try-out.
+ENV ENV=production
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 

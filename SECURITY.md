@@ -15,10 +15,12 @@ are no LTS branches yet.
 **Please do not open public GitHub issues for vulnerabilities.** Report them
 privately so they can be triaged and fixed before disclosure.
 
-To report, use **GitHub Security Advisories**:
+To report, use GitHub's **private vulnerability reporting**:
 
-- Go to the repository's *Security* tab → *Advisories* → *New draft security advisory*
-- This creates a private channel between you and the maintainer
+- Go to the repository's *Security* tab → *Report a vulnerability*
+  (https://github.com/eljaplacido/causalagentplatform/security/advisories/new)
+- Only you and the maintainer see the report; it becomes a private advisory where the fix is
+  discussed, and is published only once a fix or mitigation is out
 
 This is the only supported reporting path. Please do not DM the maintainer on
 any other platform for security issues.

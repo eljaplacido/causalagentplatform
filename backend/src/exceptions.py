@@ -9,7 +9,7 @@ from __future__ import annotations
 
 
 class CausalPlatformError(Exception):
-    """Base class for all Unified Enterprise Causal Platform errors."""
+    """Base class for all Causal Platform errors."""
 
 
 # ── Guardian / Governance ─────────────────────────────────────────────────────

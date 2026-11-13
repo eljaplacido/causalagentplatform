@@ -32,6 +32,16 @@ def _template(out: CausalResult) -> str:
     lines.append(
         f"Identification: {c.strategy.value if c.strategy else 'none'}{adj}, tier {c.tier.value}."
     )
+    if out.blocks is not None and "blocks" in claim_ids:
+        bs = out.blocks
+        kind = "pairs" if bs.pairs else "blocks"
+        lines.append(f"Compared within ⟦claim:blocks⟧ {kind} of {bs.column}.")
+        if {"discordant.treated", "discordant.control", "mcnemar.p"} <= claim_ids:
+            lines.append(
+                "Discordant pairs: ⟦claim:discordant.treated⟧ with the outcome only under "
+                "treatment, ⟦claim:discordant.control⟧ only under control; exact McNemar "
+                "p = ⟦claim:mcnemar.p⟧."
+            )
     if out.triangulation is not None:
         others = ", ".join(out.triangulation.estimators[1:])
         verdict = (

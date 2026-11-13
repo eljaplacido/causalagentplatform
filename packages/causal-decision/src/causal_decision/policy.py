@@ -18,7 +18,9 @@ Four verdicts:
 from __future__ import annotations
 
 import math
+from typing import Literal
 
+from causal_core.blocked import paired_binary_pairs
 from causal_core.canonical import digest
 from causal_core.contract import (
     Abstention,
@@ -41,24 +43,45 @@ from causal_decision.contract import (
     DecisionRequest,
     Evidence,
     ExperimentSpec,
+    PairedEvidence,
     RiskRule,
     SegmentEvidence,
     Verdict,
 )
 
 #: Refusals an experiment could resolve. The rest are faults in the question or the data,
-#: and running a trial would not answer them.
+#: and running a trial would not answer them. NO_VARIATION is the plainest case: the data
+#: never tried the other arm, and setting it by experiment is what answers the question.
+#: DESIGN_CHECK_FAILED is not here: a broken assignment, missing values or a treatment that
+#: varies inside its cluster says the pipeline is not what the analysis assumes, and more of
+#: the same pipeline does not repair that.
 EXPERIMENTABLE = {
     AbstentionReason.NON_IDENTIFIABLE,
     AbstentionReason.POSITIVITY,
     AbstentionReason.LOW_N,
     AbstentionReason.CI_TOO_WIDE,
     AbstentionReason.WEAK_INSTRUMENT,
+    AbstentionReason.NO_VARIATION,
 }
 
 #: When nothing states how small an effect is still worth having, an experiment is sized
 #: to detect this fraction of the outcome's standard deviation (a conventional small effect).
 DEFAULT_MDE_IN_SD = 0.2
+
+
+def _paired_evidence(out: CausalResult) -> PairedEvidence | None:
+    """A matched-pair result's sizing facts; None for every other design."""
+    bs = out.blocks
+    if bs is None or not bs.pairs or bs.n_blocks < 1:
+        return None
+    if bs.discordant_treated is not None and bs.discordant_control is not None:
+        return PairedEvidence(
+            n_pairs=bs.n_blocks,
+            binary_outcome=True,
+            discordance=(bs.discordant_treated + bs.discordant_control) / bs.n_blocks,
+        )
+    return PairedEvidence(n_pairs=bs.n_blocks, binary_outcome=False,
+                          sd_difference=bs.sd_difference)
 
 
 def _evidence(out: CausalOutcome, request: DecisionRequest) -> Evidence:
@@ -73,6 +96,8 @@ def _evidence(out: CausalOutcome, request: DecisionRequest) -> Evidence:
             identification_strategy=out.certificate.strategy.value
             if out.certificate and out.certificate.strategy
             else None,
+            population=out.query.population if out.query else None,
+            target_population=out.query.target_population if out.query else None,
         )
     sign = 1.0 if request.direction == "increase" else -1.0
     ci = out.primary.ci
@@ -98,7 +123,66 @@ def _evidence(out: CausalOutcome, request: DecisionRequest) -> Evidence:
         segments=tuple(_segment_evidence(s, sign) for s in out.segments),
         heterogeneity_differs=out.heterogeneity.differs if out.heterogeneity else None,
         trend_breakdown=_trend_breakdown(out),
+        population=out.query.population,
+        target_population=out.query.target_population,
+        paired=_paired_evidence(out),
     )
+
+
+def _norm(population: str | None) -> str:
+    return (population or "").strip().casefold()
+
+
+def _targets(ev: Evidence, request: DecisionRequest) -> list[str]:
+    """Populations the decision is about: one the analysis declared as its target, and the
+    one the request names. Either may differ from where the data came from."""
+    return [t.strip() for t in (ev.target_population, request.population) if t and t.strip()]
+
+
+def _elsewhere(ev: Evidence, request: DecisionRequest) -> str | None:
+    """The first target the evidence is not about, or None."""
+    source = _norm(ev.population)
+    for t in _targets(ev, request):
+        declared = ev.target_population is not None and _norm(t) == _norm(ev.target_population)
+        if (source and _norm(t) != source) or (not source and declared):
+            return t
+    return None
+
+
+def _population_check(ev: Evidence, request: DecisionRequest) -> Check | None:
+    """Is the evidence about the population the action targets?
+
+    The kernel has no transport analysis (register: transportability). An effect measured on
+    one population -- a local lane -- is not evidence about another -- a hosted lane -- until
+    something argues it carries over, and nothing here does. So a mismatch is said in so many
+    words ("not transported") and caps the verdict at `experiment`: a trial in the target
+    population is what settles it. A request that names a population for evidence that states
+    none goes to a person who knows where the data came from. Nothing named, nothing checked.
+
+    A seam for the seeded defects: `ignore_population` makes this return None.
+    """
+    targets = _targets(ev, request)
+    if not targets:
+        return None
+    name = "the evidence is about the population the action targets"
+    other = _elsewhere(ev, request)
+    if other is not None:
+        source = ev.population or "a population the analysis does not state"
+        return Check(
+            name=name, passed=False, allows=Verdict.experiment,
+            detail=f"not transported; evidence is from {source}, and the action targets "
+            f"{other}. No transport analysis exists here, so this is not evidence about "
+            f"{other}: an experiment there is",
+        )
+    if not _norm(ev.population):
+        return Check(
+            name=name, passed=False, allows=Verdict.act_with_approval,
+            detail=f"the action targets {targets[0]}; the analysis does not state which "
+            "population its data come from (query.population), so nothing shows it is about "
+            "that one, and a person who knows where the data came from decides",
+        )
+    return Check(name=name, passed=True, allows=Verdict.act,
+                 detail=f"evidence from {ev.population}, the population the action targets")
 
 
 def _trend_breakdown(out: CausalResult) -> float | None:
@@ -424,6 +508,40 @@ def _weakest(checks: list[Check]) -> Verdict:
     )
 
 
+def _paired_pairs(paired: PairedEvidence, mde: float, policy: DecisionPolicy
+                  ) -> tuple[int | None, float | None, str]:
+    """Pairs a matched-pair trial needs, the discordance it assumed (binary), and why.
+
+    Binary outcome: only discordant pairs carry information, so the observed discordance, not
+    the outcome's spread, sizes the trial -- exactly, against the kernel's own
+    McNemar-consistent analysis (`causal_core.blocked.paired_binary_power`). Continuous: the
+    within-pair spread, on t(K - 1).
+    """
+    if paired.binary_outcome and paired.discordance is not None:
+        observed = paired.discordance
+        disc = max(observed, mde)
+        k = paired_binary_pairs(disc, mde, policy.alpha, policy.power)
+        why = (f"{observed:.3g} of the evidence's {paired.n_pairs} pairs disagreed (a pair whose "
+               "two arms had the same outcome says nothing about the difference)")
+        if disc > observed:
+            why += f"; an effect of {mde:.4g} needs at least that much disagreement, so {disc:.3g}"
+        return k, disc, why
+    sd_d = paired.sd_difference
+    if not sd_d or mde <= 0:
+        return None, None, "no within-pair spread was reported"
+    z_a = float(stats.norm.ppf(1 - policy.alpha / 2))
+    z_b = float(stats.norm.ppf(policy.power))
+    k = max(math.ceil(((z_a + z_b) * sd_d / mde) ** 2), 2)
+    for _ in range(20):  # t(K - 1) critical values for small K
+        t_a = float(stats.t.ppf(1 - policy.alpha / 2, k - 1))
+        t_b = float(stats.t.ppf(policy.power, k - 1))
+        nxt = max(math.ceil(((t_a + t_b) * sd_d / mde) ** 2), 2)
+        if nxt == k:
+            break
+        k = nxt
+    return k, None, f"the within-pair difference had a standard deviation of {sd_d:.4g}"
+
+
 def _sizing(ev: Evidence, request: DecisionRequest, policy: DecisionPolicy) -> ExperimentSpec:
     sd = ev.outcome_sd
     mde = request.minimum_worthwhile_effect
@@ -447,10 +565,40 @@ def _sizing(ev: Evidence, request: DecisionRequest, policy: DecisionPolicy) -> E
         per_arm = math.ceil(2 * (z_a + z_b) ** 2 * sd**2 / mde**2)
         if request.units_per_day:
             days = round(2 * per_arm / request.units_per_day, 1)
+    sized = (f"Sized for {policy.power:.0%} power at alpha {policy.alpha:g}, two-sided, "
+             "equal allocation.")
+    if ev.refusal_reason == AbstentionReason.NO_VARIATION.value:
+        note = ((note + " ") if note else "") + (
+            "The treatment never varied in the data, so nothing is known about its effect; the "
+            "trial is sized from the outcome's spread at the one level observed, assuming the "
+            "other arm's is similar. " + sized)
+    target = _elsewhere(ev, request)
+    where = f" in {target}" if target else ""
+    design: Literal["randomized_units", "paired_units"] = "randomized_units"
+    pairs: int | None = None
+    discordance: float | None = None
+    sd_difference: float | None = None
+    if ev.paired is not None and mde > 0:
+        k, discordance, why = _paired_pairs(ev.paired, mde, policy)
+        if k is not None:
+            unpaired = (f" Unpaired, the same question needs {per_arm} per arm."
+                        if per_arm else "")
+            design, pairs, per_arm = "paired_units", k, k
+            sd_difference = None if ev.paired.binary_outcome else ev.paired.sd_difference
+            days = round(2 * k / request.units_per_day, 1) if request.units_per_day else None
+            note = ((note + " ") if note else "") + (
+                f"Matched pairs, because the evidence was paired: {why}. {k} pairs give "
+                f"{policy.power:.0%} power at alpha {policy.alpha:g}, two-sided, under the "
+                "kernel's analysis of pairs." + unpaired)
+    if target:
+        note = ((note + " ") if note else "") + (
+            f"Run it in {target}: the evidence is from "
+            f"{ev.population or 'a population the analysis does not state'} and was not "
+            "transported; the size assumes the outcome spreads alike there.")
     return ExperimentSpec(
         question=f"Does '{request.action}' change {request.outcome} by at least {mde:.4g} "
-        f"({request.direction})?",
-        design="randomized_units",
+        f"({request.direction}){where}?",
+        design=design,
         unit=request.randomization_unit,
         allocation=0.5,
         minimum_detectable_effect=mde,
@@ -463,9 +611,11 @@ def _sizing(ev: Evidence, request: DecisionRequest, policy: DecisionPolicy) -> E
             "randomize the assignment; do not let the agent choose who is treated",
             "fix the analysis before the data arrive: this is the estimand above",
         ),
-        note=note
-        or (f"Sized for {policy.power:.0%} power at alpha {policy.alpha:g}, two-sided, "
-            "equal allocation."),
+        note=note or sized,
+        pairs=pairs,
+        discordance=discordance,
+        sd_difference=sd_difference,
+        population=target,
     )
 
 
@@ -479,8 +629,12 @@ def _rationale(verdict: Verdict, ev: Evidence, request: DecisionRequest) -> str:
     the tail carrying numbers -- an E-value bar, an interval-width ratio -- that no claim
     of the analysis backed, inside prose that promises the opposite.
     """
+    # The lead clause says what to do in words. It must not repeat the verdict's own
+    # name: ``explain`` already heads the text with it ("ACT: ..."), and a lead of
+    # "Act: ..." rendered as "ACT: Act: send the email campaign." (platform run,
+    # 2026-10-27).
     head = {
-        Verdict.act: f"Act: {request.action}.",
+        Verdict.act: f"Go ahead: {request.action}.",
         Verdict.act_with_approval: f"Ask a person to approve: {request.action}.",
         Verdict.experiment: f"Run an experiment before acting: {request.action}.",
         Verdict.refuse: f"Do not act: {request.action}.",
@@ -493,6 +647,11 @@ def _rationale(verdict: Verdict, ev: Evidence, request: DecisionRequest) -> str:
             f"{ev.estimator}), read as a benefit of {lo:.4g} to {hi:.4g} in the requested "
             f"direction ({request.direction})."
         )
+        other = _elsewhere(ev, request)
+        if other is not None:
+            body += (f" Not transported: the evidence is from "
+                     f"{ev.population or 'a population the analysis does not state'}, not "
+                     f"{other}.")
     elif ev.kind == "result":
         body = " An effect was estimated but carries no interval, so its precision is unknown."
     elif ev.kind == "refusal":
@@ -518,7 +677,11 @@ def decide(
         checks = _result_checks(outcome, ev, request, rule, policy)
         checks += [
             c
-            for c in (_reversibility_check(request), _risk_class_check(request, rule))
+            for c in (
+                _population_check(ev, request),
+                _reversibility_check(request),
+                _risk_class_check(request, rule),
+            )
             if c is not None
         ]
 

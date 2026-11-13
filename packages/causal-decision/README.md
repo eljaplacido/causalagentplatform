@@ -32,7 +32,7 @@ print(explain(d, out))
 ```
 
 ```text
-ACT: Act: apply remediation playbook X. The estimate is -8.899 on minutes (95% CI -9.495 to
+ACT: Go ahead: apply remediation playbook X. The estimate is -8.899 on minutes (95% CI -9.495 to
 -8.303, n = 4000, estimator aipw), read as a benefit of 8.303 to 9.495 in the requested
 direction (decrease).
 
@@ -91,6 +91,7 @@ recorded whether it passed or failed: *what did you look at* is part of the answ
 | Precision | An interval wider than the risk class allows, as a multiple of the effect → `experiment` |
 | Reversibility | An irreversible action → `act_with_approval`, always |
 | Risk class | `high` → `act_with_approval`, always, however good the evidence |
+| Population | Evidence from a population other than the one the action targets (`query.population` against `request.population` or a declared `query.target_population`) → `experiment` in the target, said as "not transported": no transport analysis exists. An action that names a population for evidence that states none → `act_with_approval` |
 
 Thresholds live in a `DecisionPolicy` you set, per risk class; the defaults are a starting point,
 not a recommendation. Every decision carries digests of the policy, the request and itself, so a
@@ -139,6 +140,21 @@ The decision carries the experiment that would: the randomization unit, arms, a 
 minimum worthwhile effect and the outcome's spread, an estimated duration from the arrival rate,
 and guardrails. If no experiment is possible (`can_randomize=False`, or the policy says so), the
 open question goes to a person rather than quietly becoming an action.
+
+Which refusals an experiment can resolve is a fixed list (`EXPERIMENTABLE`): not identified, no
+overlap, too little data, too wide, a weak instrument, and **a treatment that never varied**
+(`NO_VARIATION`): a configuration lever nobody has tried has nothing to compare, and setting it by
+experiment is exactly the remedy; the trial is sized from the outcome's spread at the one level
+seen. A failed design check (`DESIGN_CHECK_FAILED`: a broken traffic split, missing values) still
+refuses: more of the same pipeline would not repair it.
+
+**Paired evidence, paired experiment.** When the evidence came from matched pairs (the kernel's
+`block`, every block one unit per arm), the experiment is matched pairs too (`design =
+"paired_units"`), sized from what the pairs showed. For a binary outcome that is the share of pairs
+that disagreed — only those carry information — and the size is exact: the fewest pairs at which
+the kernel's own McNemar-consistent analysis reaches the stated power
+(`causal_core.blocked.paired_binary_power`). For a continuous outcome it is the within-pair
+spread. The note gives the unpaired size beside it.
 
 ## Keeping the decision
 
@@ -236,19 +252,49 @@ interval, undecidable follow-ups scored as agreements or dropped, no minimum, "c
 read as "no difference"). It proves the report honest; it says nothing about how well any real
 operation's thresholds are calibrated.
 
+## Trying it in shadow
+
+A shadow run (the repository's `shadow/README.md`) measures the platform on real questions
+without anyone acting on its verdicts. `append(..., shadow="shadow-round-1")` seals a decision
+with a shadow tag; the tag is under the entry's digest, so a shadow verdict cannot later pass as a
+real one, nor a real one be filed away as shadow, without breaking the chain.
+`causal_decision.shadow` holds the runtime rules: `emittable(record)` raises
+`ShadowEmissionError` for a shadow record, and every emitter passes the sealed record through it
+before reporting a decision outward; `select(records, scope, tag)` lists real (the default),
+shadow or all; and `past_review` never lets a shadow decision retire a real one on the same action.
+
+`causal_decision.shadow_round` runs a round in two steps, because verdicts must be sealed before
+any follow-up data exists:
+
+```bash
+python -m causal_decision.shadow_round seal  shadow/rounds/1   # check graph, identify, decide, seal
+python -m causal_decision.shadow_round score shadow/rounds/1   # take due follow-ups, judge the bars
+```
+
+`seal` writes `results/<date>-v<version>-run<N>.json` once per pre-registration version: the
+chain, each study's graph check, identification, outcome, verdict, explanation and follow-up plan
+with its due date. `score` refuses a seal whose chain does not recompute, whose
+`PRE-REGISTRATION.md` changed, or whose studies changed in anything but the human decision; takes
+each follow-up once (a later scoring reuses it); and writes a new
+`scorecards/<date>-v<version>-run<N>.json` every time, failed or not. Each bar is `pass`, `fail`,
+`pending` (the data that would settle it does not exist yet) or `not_applicable`; the round
+passes only when every bar is measured and holds. `tests/test_shadow_round.py` holds it to a
+five-study fixture round whose data is simulated with the effects set.
+
 ## Evidence
 
 The D0 gate is pre-registered in `benchmarks/d0-decision-policy/PRE-REGISTRATION.md`, with bars
 fixed before the first run, and runs on every change (`pytest -m d0`):
 
-- **15 of 15 scenarios** return exactly the verdict the table names, spanning all four verdicts and
-  all three kinds of outcome (result, refusal, apparatus failure).
+- **31 of 31 scenarios** return exactly the verdict the table names, spanning all four verdicts and
+  all three kinds of outcome (result, refusal, apparatus failure); two of them must also return a
+  sized experiment of the registered design (v5).
 - **8 properties** hold over a seeded sweep of 400 (request, policy) pairs with zero violations:
   irreversible actions are never automated; raising the risk class or the worthwhile bar never
   raises autonomy; more data never lowers it; no estimate means no action; contested evidence is
   never automated; the same inputs give the same `decision_digest`; and every verdict's prose
   verifies against the analysis.
-- **6 seeded defects** each make the gate fail, including the dangerous one: reading a contested
+- **13 seeded defects** each make the gate fail, including the dangerous one: reading a contested
   result as if it were supported.
 - **The record's own tests** cover an entry edited, removed and reordered — each caught, each
   located by index — plus the limit above.
@@ -268,5 +314,7 @@ written up in the pre-registration and the failing behaviours are pinned by test
   refused for want of follow-ups. Until at least ten real ones stand behind a rate, treat the
   verdicts as a discipline, not as a measured success rate.
 - **Cost-benefit arithmetic**, multi-arm choice, or sequential/anytime-valid monitoring. Not yet.
+- **Transport.** Evidence from one population is never read as evidence about another; nothing
+  here judges whether it would carry over (register: transportability).
 
 Licence: Apache-2.0.

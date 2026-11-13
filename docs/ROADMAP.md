@@ -23,14 +23,14 @@ sustainability investment assurance follow, in that order.
 
 | Capability the layer needs | Today |
 |---|---|
-| A typed causal question | Partial: `CausalQuery` is typed, but `population` and `horizon` are free text, and nothing translates an agent's action into an estimand |
+| A typed causal question | Partial: `CausalQuery` is typed, but `population` and `horizon` are free text, and nothing translates an agent's action into an estimand. A declared `target_population` is stated on the result and read by the decision layer ("not transported"), never estimated for: transport is on the register |
 | Retrieve the assumptions and evidence that apply | Done for causal models: `causal_decision.assumptions` and `/api/v1/models` keep each model as immutable, content-addressed versions whose edges carry origin and review status, and a decision names the version it used. Missing: retrieving evidence (documents, metrics) for an edge; nothing links it |
-| Decide identified / partially identified / unsupported | Done, except bounds: complete ID, back-door with the optimal adjustment set, front-door, conditional IV, proximal; 11 typed refusals, each with what is missing |
-| Estimate impact and uncertainty | Done for ATE and ATT with coverage-tested intervals; for effects within declared segments with family-wise correction and a heterogeneity test (pre-registered T4); for staggered rollouts by difference-in-differences with unit-clustered intervals and a pre-trends test, against never-treated or not-yet-treated units and, with covariates, doubly robust (T5); for watched randomized rollouts by anytime-valid confidence sequences (T6); for cluster-randomized rollouts with CR2 cluster-robust intervals (T7); and for switchbacks, where the caller chooses a washout that covers the carryover (T8). Missing: policy value, spillovers between units, DiD with anticipation or repeated cross-sections, a carryover check with real power, and subgroup *discovery* |
+| Decide identified / partially identified / unsupported | Done, except bounds: complete ID, back-door with the optimal adjustment set, front-door, conditional IV, proximal; 12 typed refusals, each with what is missing (`NO_VARIATION`, a treatment that never varied, apart from a failed design check since contract 0.15.0) |
+| Estimate impact and uncertainty | Done for ATE and ATT with coverage-tested intervals; for effects within declared segments with family-wise correction and a heterogeneity test (pre-registered T4); for staggered rollouts by difference-in-differences with unit-clustered intervals and a pre-trends test, against never-treated or not-yet-treated units and, with covariates, doubly robust (T5); for watched randomized rollouts by anytime-valid confidence sequences (T6); for cluster-randomized rollouts with CR2 cluster-robust intervals (T7); for switchbacks, where the caller chooses a washout that covers the carryover (T8); and for experiments randomized within pairs or blocks, such as the same task run under both arms, with an interval consistent with McNemar's test for a binary outcome in pairs (T11). Missing: transport of an effect to another population; policy value, spillovers between units, DiD with anticipation or repeated cross-sections, a carryover check with real power, and subgroup *discovery* |
 | Robustness checks | Done: placebo, negative controls, graph-implied independences with measured power, overlap (honest covariate regions and a limited-overlap flag, T10), balance, E-values, robustness values, and Rosenbaum bounds on a matched design for back-door designs with a binary treatment (T9). Missing: a sensitivity model for the weighted estimators themselves |
-| Decide: act, ask, experiment, refuse | Done: `packages/causal-decision` turns an outcome, a request and a policy into one verdict, deterministically, gated by the pre-registered D0 suite (v4: 22 scenarios, 8 properties, 9 seeded defects). Declared segments reach the verdict -- an action that harms one of them is not automated on a favourable pooled effect -- and so does a difference-in-differences result's parallel-trends breakdown: a conclusion a violation smaller than the pre-adoption ones would flip is sent to an experiment. An unreviewed edge a language model proposed sends the decision to an experiment too (v4) |
+| Decide: act, ask, experiment, refuse | Done: `packages/causal-decision` turns an outcome, a request and a policy into one verdict, deterministically, gated by the pre-registered D0 suite (v5: 31 scenarios, 8 properties, 13 seeded defects). Declared segments reach the verdict -- an action that harms one of them is not automated on a favourable pooled effect -- and so does a difference-in-differences result's parallel-trends breakdown: a conclusion a violation smaller than the pre-adoption ones would flip is sent to an experiment. An unreviewed edge a language model proposed sends the decision to an experiment too (v4). A treatment that never varied is sent to a sized experiment rather than refused, and evidence from another population is not transported: the verdict is an experiment in the target (v5) |
 | Evidence record | Partial: every result and every decision carries digests of its inputs and itself, decisions are persisted into a verified hash chain with the observed outcome recorded against them, and the model version a decision used is recorded. Checkpoints of the chain head can be taken and verified against (`/api/v1/decisions/checkpoint`, `/verify-anchored`). Missing: publishing a checkpoint somewhere the writer cannot edit |
-| Recommend the next experiment | Done for the case the layer can size: randomized units, with the minimum detectable effect, per-arm size, duration and guardrails. Clustered, switchback and sequential designs are not sized |
+| Recommend the next experiment | Done for the cases the layer can size: randomized units, with the minimum detectable effect, per-arm size, duration and guardrails; and matched pairs when the evidence was paired, sized exactly from the observed discordance (or the within-pair spread) against the kernel's own analysis of pairs. Clustered, switchback and sequential designs are not sized |
 
 ## Order of work
 
@@ -77,7 +77,8 @@ sustainability investment assurance follow, in that order.
 5. **Outcome capture and calibration.** *Machinery built; evidence not yet gathered.* Every
    decision now seals a follow-up plan carrying the prediction it used;
    `POST /api/v1/decisions/{entry_digest}/followup` re-runs that plan's own analysis over a
-   later window and scores it; `GET /api/v1/decisions/calibration` aggregates. The hard part
+   later window and scores it; `GET /api/v1/decisions/calibration` aggregates (over real
+   decisions; shadow ones only when asked). The hard part
    was not the arithmetic: calibrating a causal prediction needs a causal estimate afterwards,
    and an action rolled out to everybody leaves no comparison group. That case is the kernel's
    own refusal, recorded as an undecidable measurement and counted beside the rates rather than
@@ -146,8 +147,10 @@ priority first, and the priorities put hardening the platform before new estimat
   and its simulated C0 gate are built; real follow-ups are not),
   and anchoring (`septa-11`). Real follow-ups are to come from **shadow runs**: studies on real
   decisions, proposed by devbrain and agentcenter, with verdicts sealed and not acted on. Their
-  context pack is built (`shadow/`, `septa-94`). Still to build: a runtime shadow mode that
-  never emits (`septa-95`), and a round runner with a scorecard (`septa-96`). Metamorphic tests
+  context pack is built (`shadow/`, `septa-94`), and so is the runtime: a decision recorded
+  with a shadow tag is sealed, never emitted and listed apart (`septa-95`), and
+  `causal_decision.shadow_round` seals a round's studies and scores them against the round's
+  pre-registered bars (`septa-96`). No round on real decisions has run yet. Metamorphic tests
   of the kernel are built (`septa-99`): they check that renaming, rescaling, reordering and
   duplicating the data change the answer only as they must. The browser golden path is gated
   (`septa-97`): the gate's `frontend-e2e` step drives `/analyze` in Chromium against a live

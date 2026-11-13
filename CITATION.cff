@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "Causal Platform: a causal-inference kernel, decision ledger and MCP server"
+type: software
+authors:
+  - family-names: Suhonen
+    given-names: Eljas
+repository-code: "https://github.com/eljaplacido/causalagentplatform"
+license: Apache-2.0
+keywords:
+  - causal inference
+  - identification
+  - sensitivity analysis
+  - decision making
+  - model context protocol

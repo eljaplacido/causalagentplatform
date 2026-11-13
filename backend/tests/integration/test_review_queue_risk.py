@@ -318,3 +318,99 @@ async def test_each_item_says_who_submitted_it(
         text("SELECT created_by FROM causal_edges WHERE id = :i"), {"i": str(edge.id)}
     )
     assert "edge-author" in str(row.scalar_one())
+
+
+# ── What an item shows of the edge's assumptions and sensitivity (septa-88) ──────
+#
+# The page's ReviewQueueItem declared evidenceCitations, sensitivityResults and
+# assumptions that the endpoint never sent, so every live item read "No sensitivity
+# tests run yet" -- also for an edge whose recorded robust result had just put it in
+# MEDIUM. The backend stores both: the assumptions an edge references (`assumptions`)
+# and the sensitivity results the platform recorded for it. It stores no evidence to
+# cite (evidence_refs are ids into nothing), so evidence citations were dropped.
+#
+# Postconditions:
+#   * an edge item's `assumptions` are the stored assumptions it references, each
+#     with its id, statement, type and review status, in the edge's order;
+#   * its `sensitivity_results` are the results the platform recorded for it --
+#     a result a drafter attached to an assumption is not one -- with their stored
+#     e-value, method and robustness;
+#   * an assumption outside the reviewer's domain scope is not shown;
+#   * fragment and entity items carry both lists, empty.
+
+
+async def test_an_edge_item_shows_its_assumptions_and_recorded_sensitivity(
+    gov_client: AsyncClient,
+    registry: SemanticLayerRegistry,
+    verdict_for: VerdictFactory,
+    db_session: AsyncSession,
+) -> None:
+    drafted = await _assumption(registry, verdict_for, robust=False)
+    edge = await _edge(
+        registry, verdict_for, confidence=0.9, submitter="as", assumptions=(drafted,)
+    )
+    await _record(registry, db_session, edge, robust=True)
+
+    item = (await _queue(gov_client))[str(edge.id)]
+    ids = [a["id"] for a in item["assumptions"]]
+    assert len(ids) == 2 and ids[0] == str(drafted.id)
+    first = item["assumptions"][0]
+    assert first["statement"] == drafted.statement
+    assert first["assumption_type"] == "IGNORABILITY"
+    assert first["review_status"] == "PENDING"
+
+    # Only the recorded result: the drafter's (e-value 1.2, not robust) is not one.
+    assert len(item["sensitivity_results"]) == 1
+    recorded = item["sensitivity_results"][0]
+    assert recorded["e_value"] == pytest.approx(3.1)
+    assert recorded["robust_to_unmeasured_confounding"] is True
+    assert recorded["analysis_method"] == "e_value"
+    assert recorded["computed_by"] == "causal-core"
+    assert item["risk_tier"] == "MEDIUM"
+
+
+async def test_fragment_and_entity_items_carry_empty_lists(
+    gov_client: AsyncClient,
+    registry: SemanticLayerRegistry,
+    verdict_for: VerdictFactory,
+) -> None:
+    fragment = await _fragment(registry, verdict_for, "lists", [])
+    entity = await _entity(registry, verdict_for, "lists", age=0)
+    queue = await _queue(gov_client)
+    for obj in (fragment, entity):
+        assert queue[str(obj.id)]["assumptions"] == []
+        assert queue[str(obj.id)]["sensitivity_results"] == []
+
+
+async def test_an_assumption_outside_the_reviewers_domains_is_not_shown(
+    db_engine: object,
+    registry: SemanticLayerRegistry,
+    verdict_for: VerdictFactory,
+) -> None:
+    from src.api.main import app
+
+    elsewhere = Assumption(
+        statement="Marketing spend is not chosen with churn in view",
+        assumption_type=AssumptionType.IGNORABILITY,
+        justification="Budget set annually",
+        elicited_from=ElicitedFrom.AGENT,
+        elicited_by=_user("elicitor"),
+        domain="marketing",
+    )
+    await registry.propose_draft(elsewhere, await verdict_for(elsewhere.id))
+    edge = await _edge(
+        registry, verdict_for, confidence=0.9, submitter="sc", assumptions=(elsewhere,)
+    )
+    scoped = {**_USER, "domains": ["devops"]}
+    with patch(
+        "src.middleware.auth._verify_firebase_token",
+        new_callable=AsyncMock,
+        return_value=scoped,
+    ):
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+            headers={"Authorization": "Bearer queue-token"},
+        ) as client:
+            item = (await _queue(client))[str(edge.id)]
+    assert item["assumptions"] == []
