@@ -1,7 +1,7 @@
 # Quickstart — Causal Platform
 
 > **Target:** developers and coding agents setting up a local checkout.
-> **Assumption:** Linux or macOS with Python 3.12+ and Node 24+ (the LTS line CI uses). Docker is optional.
+> **Assumption:** Linux or macOS with Python 3.12+ and Node 26+ (the LTS line CI uses). Docker is optional.
 > Coding agents: read the root [`AGENTS.md`](../AGENTS.md) first.
 
 ---

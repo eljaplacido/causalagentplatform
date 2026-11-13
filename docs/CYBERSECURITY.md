@@ -560,7 +560,7 @@ access inside the platform.
 ### 8.3 Container Security
 
 - **In place:** backend and frontend images run as non-root users (`USER causal`,
-  `USER nextjs`). The backend image is `python:3.12-slim`, the frontend image `node:24-alpine`,
+  `USER nextjs`). The backend image is `python:3.12-slim`, the frontend image `node:26-alpine`,
   each pinned by digest (Dependabot moves the digest). The backend installs its Python packages
   from the hash-pinned lock `requirements/image.txt` (§8.4) and keeps no pip at run time; the
   frontend installs `package-lock.json` with `npm ci` and runs Next's standalone server with npm
@@ -592,10 +592,12 @@ published since the last push surfaces without one):
   and a `review_by` date; an expired entry fails, and so does one whose advisory is no longer
   reported. Every advisory found when the step was added was fixed by raising a floor in
   `backend/pyproject.toml` (transitive dependencies included) or upgrading in
-  `package-lock.json`. The list holds one entry since 2026-10-14: `braces`
-  (GHSA-vfj7-8cjw-p6xm), which has no patched release and reaches the repository only as a
-  lint-time dependency of `eslint-config-next`, never the frontend image; it is reviewed by
-  2026-11-15 and leaves with the move to Next 16 (septa-57). The advisory databases are remote; when one cannot be
+  `package-lock.json`. The list held one entry from 2026-10-14, `braces`
+  (GHSA-vfj7-8cjw-p6xm), until GitHub withdrew that advisory on 2026-10-23. It holds one since
+  2026-10-31: `minimatch` (GHSA-g3hv-75wg-m249), whose only patched release opens a new major
+  that the lint toolchain (eslint 9 and its plugins, typescript-eslint) has not moved to; every
+  path to it is a lint-time devDependency, never the frontend image; it is reviewed by
+  2026-11-30 and leaves when the toolchain moves to a patched minimatch (septa-130). The advisory databases are remote; when one cannot be
   reached the step is SKIPPED (not measured), which fails CI.
 - **SAST.** `bandit` over `backend/src` and every `packages/*/src`,
   blocking on MEDIUM and HIGH findings, held at zero by the ratchet in
@@ -632,8 +634,8 @@ published since the last push surfaces without one):
   exactly that (`scripts/sbom_check.py`), and attaches it to the tag's GitHub release.
 - **Update PRs.** `.github/dependabot.yml`: weekly, grouped, for the Python locks and ranges,
   npm, the GitHub Actions and the base images. It ignores the pins the ratchets count per
-  version (ruff, mypy, bandit, pip-audit), semver-majors in pyprojects and npm (ledger work), node lines that are not LTS, and
-  the specific majors whose ledger items are open (TESTING_CICD.md §5.4).
+  version (ruff, mypy, bandit, pip-audit), semver-majors in pyprojects and npm (ledger work, TESTING_CICD.md §5.4), and node
+  lines that are not LTS.
 - **Where CI runs.** Jobs run where the repository variable `CI_RUNS_ON` says: GitHub's hosted
   runners when it is unset, otherwise self-hosted runners (label `causalplatform-ci`). A
   self-hosted job executes the repository's code, including a dependency update's install
