@@ -7,7 +7,7 @@
 > work between tools outside that chain; where the two differ, the chain wins, and the
 > verification that decides is always `.gnomon/ci.sh`. See the root [`AGENTS.md`](../AGENTS.md).
 
-> **Scope:** Standard for structured handoff between agentic providers (OpenCode Go, GitHub Copilot Pro, Claude Code, Codex, etc.) across the Unified Enterprise Causal Platform.
+> **Scope:** Standard for structured handoff between agentic providers (OpenCode Go, GitHub Copilot Pro, Claude Code, Codex, etc.) across the Causal Platform.
 > **Status:** Active — 2026-04-07 (promoted from Proposed 2026-04-30)
 
 ---

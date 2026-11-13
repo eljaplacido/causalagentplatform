@@ -369,13 +369,17 @@ python3 scripts/image_scan.py scan/trivy-backend.json --image backend
 
 On a `v*` tag: re-run the three packages' full suites (with `CAUSAL_FETCH=1`, so T2 and T3 run;
 T0 and D0 as their own steps) in the environment of `requirements/kernel.txt`, installed as CI
-installs it, and the licence check. Then build sdists and wheels (with `build`, `twine` and
-`cyclonedx-bom` at pinned versions), install the wheels into a fresh environment that holds only
+installs it, and the licence check. Then, on GitHub's hosted runners whatever `CI_RUNS_ON` says
+(the jobs that build and hold the PyPI upload token never run on a self-hosted host), check that
+each package's `LICENSE` and `NOTICE` are the repository's, build sdists and wheels (with
+`build`, `twine` and `cyclonedx-bom` at pinned versions) and check that each one carries both
+files (Apache-2.0 §4), install the wheels into a fresh environment that holds only
 them and `requirements/release.txt` (their runtime dependencies, hash-pinned), and write a
 **CycloneDX 1.6 SBOM** of that environment. `cyclonedx-py` validates it against the schema as it
 writes, and `scripts/sbom_check.py` then checks it: it parses, and lists every locked pin at its
 version, the three packages, and nothing else. Then publish `causal-core`, `causal-decision` and
-`causal-mcp` to PyPI with Trusted Publishing (OIDC, no stored token), and attach the SBOM to the
+`causal-mcp` to PyPI with Trusted Publishing (OIDC, no stored token; a package whose version is
+already on PyPI is skipped, since each keeps its own version under a dated `v*` tag), and attach the SBOM to the
 tag's GitHub release (creating the release if the tag has none). A manual run does all of this
 except publishing and attaching; the SBOM is kept as the `sbom` artifact either way. The backend and frontend
 are not published or deployed. The repository has no deployment pipeline and no staging

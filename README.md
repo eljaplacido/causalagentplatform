@@ -91,19 +91,23 @@ cd backend
 .venv/bin/python -m pytest        # full backend suite (coverage is judged by .gnomon/ci.sh)
 
 # 2. Frontend
-cd ../frontend
-npm install
+cd ..
+npm ci                             # from the root: npm workspaces (frontend + semantic-types)
 
 # 3. Launch (two terminals, both from the repository root)
 bash launch_backend.sh             # backend on :49234
-cd frontend && NEXT_PUBLIC_API_BASE_URL=http://localhost:49234 npm run dev
+cd frontend && NEXT_PUBLIC_ENVIRONMENT=local NEXT_PUBLIC_API_BASE_URL=http://localhost:49234 npm run dev
 # then open http://localhost:3000/analyze?example=email-campaign for a first analysis
+# NEXT_PUBLIC_ENVIRONMENT=local makes the UI send the dev token the backend accepts only
+# with ENV=local and DEV_AUTH_BYPASS=true (launch_backend.sh sets both); without it every call is a 401.
 ```
 
 Then open <http://localhost:3000/workbench>.
 
 Containers: `docker build -f backend/Dockerfile .` and `docker build -f frontend/Dockerfile .`,
-both from the repository root.
+both from the repository root. The backend image defaults to `ENV=production`: it refuses to start
+without its configured secrets (the Guardian signing key first; `docs/QUICKSTART.md` §3), and the
+dev token bypass is off. `docker compose up -d` (PostgreSQL, Neo4j) listens on 127.0.0.1 only.
 
 Full guide: [`docs/QUICKSTART.md`](docs/QUICKSTART.md).
 

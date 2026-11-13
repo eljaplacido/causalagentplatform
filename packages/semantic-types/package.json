@@ -1,7 +1,9 @@
 {
   "name": "@causalplatform/semantic-types",
   "version": "0.1.0",
-  "description": "Canonical TypeScript type definitions for the Unified Enterprise Causal Platform semantic layer",
+  "private": true,
+  "license": "Apache-2.0",
+  "description": "Canonical TypeScript type definitions for the Causal Platform semantic layer",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -22,5 +24,7 @@
     "typescript": "^6.0.3",
     "vitest": "^5.0.5"
   },
-  "files": ["dist"]
+  "files": [
+    "dist"
+  ]
 }

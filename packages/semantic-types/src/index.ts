@@ -1,7 +1,7 @@
 /**
  * @causalplatform/semantic-types
  *
- * Canonical TypeScript type definitions for the Unified Enterprise Causal Platform.
+ * Canonical TypeScript type definitions for the Causal Platform.
  * This package is the single source of truth for all semantic layer object types,
  * shared across the frontend, backend, and agent implementations.
  *

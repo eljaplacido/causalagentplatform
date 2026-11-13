@@ -29,7 +29,7 @@ services:
       # start as the owner. Local-dev throwaway, like the password above.
       CAUSAL_APP_PASSWORD: causal_app_local_dev
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"   # loopback only: the passwords above are throwaway
     volumes:
       - postgres_data:/var/lib/postgresql/data
       # On first start: every migration in order, then causal_app's login.
@@ -50,8 +50,8 @@ services:
       NEO4J_dbms_memory_heap_initial__size: 512m
       NEO4J_dbms_memory_heap_max__size: 1g
     ports:
-      - "7474:7474"   # HTTP browser
-      - "7687:7687"   # Bolt
+      - "127.0.0.1:7474:7474"   # HTTP browser (loopback only)
+      - "127.0.0.1:7687:7687"   # Bolt (loopback only)
     volumes:
       - neo4j_data:/data
       - neo4j_logs:/logs

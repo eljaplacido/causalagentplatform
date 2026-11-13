@@ -1,6 +1,6 @@
 # UIX: Design System, Personas & User Stories
 
-> **Scope:** User experience architecture, design principles, user personas, user stories, and component strategy for the Unified Enterprise Causal Platform. Every new feature must be anchored to an identified persona need before design begins.
+> **Scope:** User experience architecture, design principles, user personas, user stories, and component strategy for the Causal Platform. Every new feature must be anchored to an identified persona need before design begins.
 >
 > **Read against `frontend/src` 2026-09-26.** The personas and user stories (§3) are needs, not
 > features, and many are unbuilt. The principles (§1) and the component inventory (§4.2) now

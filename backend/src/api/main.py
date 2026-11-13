@@ -1,5 +1,5 @@
 """
-FastAPI application entry point for the Unified Enterprise Causal Platform.
+FastAPI application entry point for the Causal Platform.
 
 Registers:
   - CORS middleware
@@ -108,7 +108,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="Unified Enterprise Causal Platform",
+        title="Causal Platform",
         description=(
             "Governed causal AI platform. "
             "All writes require Guardian APPROVED verdicts. "
@@ -118,21 +118,6 @@ def create_app() -> FastAPI:
         docs_url="/docs",
         redoc_url="/redoc",
         lifespan=lifespan,
-    )
-
-    # ── CORS ──────────────────────────────────────────────────────────────────
-    allowed_origins = os.getenv(
-        "CORS_ALLOWED_ORIGINS",
-        "http://localhost:3000,http://localhost:5173",
-    ).split(",")
-
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=allowed_origins,
-        allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
-        expose_headers=["X-Request-ID"],
     )
 
     # ── Firebase auth middleware ───────────────────────────────────────────────
@@ -166,6 +151,24 @@ def create_app() -> FastAPI:
         )
         response.headers["X-Request-ID"] = request_id
         return response  # type: ignore[return-value]
+
+    # ── CORS (added last, so outermost) ─────────────────────────────────────────
+    # Starlette runs the middleware added last first. CORS goes outermost so every response
+    # carries its headers, a 401 from the auth middleware included; under it, a browser
+    # reports a rejected token as a CORS failure instead of the 401 it is.
+    allowed_origins = os.getenv(
+        "CORS_ALLOWED_ORIGINS",
+        "http://localhost:3000,http://localhost:5173",
+    ).split(",")
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+        expose_headers=["X-Request-ID"],
+    )
 
     # ── Routers ───────────────────────────────────────────────────────────────
     app.include_router(

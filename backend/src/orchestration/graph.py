@@ -1,5 +1,5 @@
 """
-LangGraph StateGraph for the Unified Enterprise Causal Platform.
+LangGraph StateGraph for the Causal Platform.
 
 Topology (AGENTS.md §5.1):
 

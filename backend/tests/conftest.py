@@ -1,5 +1,5 @@
 """
-Shared pytest fixtures for the Unified Enterprise Causal Platform test suite.
+Shared pytest fixtures for the Causal Platform test suite.
 
 Fixture hierarchy:
   - db_engine    — the engine the app's code runs on: in-memory SQLite (per
