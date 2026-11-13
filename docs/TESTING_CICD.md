@@ -245,7 +245,8 @@ T9 and pinned to a published example by `backend/tests/unit/test_rosenbaum_bound
   only backend-confirmed decisions and audit rows, and the incidents page leaves a decision
   unchanged and shows the error when the API call fails. They also pin that each page renders
   data shaped as the backend sends it and invents none: registry rows with a business domain,
-  stored incidents with P0–P3 or seeded SEV1–SEV4 severities and no effect estimate, and a
+  stored incidents with P0–P3 severities (or SEV1–SEV4, from a database seeded before septa-84)
+  and no effect estimate, and a
   session result with only a proposed-edge count.
   There is no coverage threshold.
 - **Playwright** (`frontend/e2e/`, config `frontend/playwright.config.ts`). The gate's

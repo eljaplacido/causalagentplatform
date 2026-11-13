@@ -16,6 +16,12 @@
 # The backend uses SQLite for local dev (ENV=local; no Docker required) and
 # listens on the same port as launch_backend.sh and the README (49234). No LLM
 # API key is needed: no code path calls an LLM today.
+#
+# Both servers listen on the loopback interface only (127.0.0.1): the backend
+# runs with DEV_AUTH_BYPASS, which accepts a fixed token, so it must not be
+# reachable from the network. The frontend's `npm run dev` passes
+# --hostname 127.0.0.1 itself (frontend/package.json) and builds the
+# @causalplatform/semantic-types workspace first (its predev hook).
 # ─────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
@@ -25,7 +31,7 @@ BACKEND_DIR="$SCRIPT_DIR/backend"
 FRONTEND_DIR="$SCRIPT_DIR/frontend"
 BACKEND_ENV="$BACKEND_DIR/.env"
 BACKEND_PORT="${BACKEND_PORT:-49234}"
-# The frontend's built-in default is :8000; point it at the port used here.
+# The frontend's built-in default is :49234 (frontend/src/lib/api.ts); follow BACKEND_PORT.
 export NEXT_PUBLIC_API_BASE_URL="${NEXT_PUBLIC_API_BASE_URL:-http://localhost:$BACKEND_PORT}"
 export NEXT_PUBLIC_ENVIRONMENT="${NEXT_PUBLIC_ENVIRONMENT:-local}"
 
@@ -59,7 +65,7 @@ load_env() {
 # ── Backend ───────────────────────────────────────────────────────────────────
 
 start_backend() {
-  info "Starting backend (FastAPI + LangGraph) on http://localhost:$BACKEND_PORT"
+  info "Starting backend (FastAPI + LangGraph) on http://127.0.0.1:$BACKEND_PORT (loopback only)"
   info "  ENV=${ENV:-local} | DEV_AUTH_BYPASS=${DEV_AUTH_BYPASS:-true} | SQLite"
 
   cd "$BACKEND_DIR"
@@ -79,7 +85,7 @@ start_backend() {
 # ── Frontend ──────────────────────────────────────────────────────────────────
 
 start_frontend() {
-  info "Starting frontend (Next.js 16) on http://localhost:3000"
+  info "Starting frontend (Next.js 16) on http://localhost:3000 (loopback only)"
 
   cd "$FRONTEND_DIR"
 

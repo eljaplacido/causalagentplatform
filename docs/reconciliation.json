@@ -30,7 +30,7 @@
         "sha256": {
           "backend/pyproject.toml": "f7fbeb2dafb5635e8bc3d4ff461bb5b65a7091ed592a2b03c1442d2e6a74df5d",
           "packages/causal-mcp": "a6e19b07b09b94989ff60e6b66cbfea208918f186d53b5d6c58e26cd80f4ab2d",
-          "frontend/package.json": "ac359e5e20646cc62485f3b8237c63c331e66413423c6618349d11488d17da5f",
+          "frontend/package.json": "90091605609635e84200d37acfeeafd37a63e7271a725463bc536857284747f7",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docs/CURRENT_STAGE.md": "e50d05617946f1e7e1fe3c94f91eec17f86d92478e89cb65db634feddba19d8d"
         }
@@ -55,15 +55,15 @@
         "sha256": {
           "conformance/declared_not_implemented.json": "0ab82df90f259eee11aa4531b8f2222cbcc41ff2f9b72d4e94a8d70cb68f977e",
           "backend/src": "56ca28dd53e2d20be2d46d32b213d2224f478f2e920c4fe99dafc16ebcdb8bd7",
-          "backend/tests": "ed6e8c031488d045d9241d153887965ff1a328843b93b4e8ecef976938ba51aa",
-          "frontend/src": "5704ea6971366bc477d396112a49a9b2db09e3a98e70738175f6cf305914e38d",
-          "packages": "c1eab24b1ffb373fe080f2ab0677850a85c13fdbfac9603971a78ee81f09c35f",
+          "backend/tests": "3343e3687e96f039c3b7fe15ef9fab1ada6f7d144cdf40ad8fb8b897c31342b8",
+          "frontend/src": "55d16090bec9d8c6b62a52e0ee1b177b9608559b9593b2536dacd1ca77a0123d",
+          "packages": "05cc6e5f8b4972f73a145b3049ddebfc9d0c0eb5715b2e86d5243ef7fa86541b",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-11-07",
-        "by": "Claude (train/1 main-merge of #107: read CURRENT_STAGE rows 47-52/86-88 (T10/T11/NO_VARIATION/transportability) against the merged register (dast re-cite + transportability entry both kept); ROADMAP lines 26-31 (12 typed refusals = AbstentionReason incl. NO_VARIATION, D0 v5); TESTING_CICD gate table incl. T11 row 188 and the Node 26/TS 7 dependency notes; UIX component table vs ResultView NO_VARIATION text and the frontend-majors edits: no claim moved)"
+        "by": "Claude (train/2 merge of train/1 after #107: read CURRENT_STAGE decision rows 82-90 against \"Go ahead:\" rationale lead + #107 paired-experiment rendering (render.py merged both: paired how-line and population labels in _without_quotes), no quoted \"Act:\"; TESTING_CICD §3 frontend vitest paragraph (P0-P3 / septa-84) and T11 rows; UIX incidents severity paragraph vs incidents/page.tsx and ResultView NO_VARIATION reason: no claim moved)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -275,14 +275,14 @@
       "baseline": {
         "on": "2026-11-04",
         "sha256": {
-          "start.sh": "a44c4631216644b7223150fb5ffea1ba1f241b90c038d4be07e0b42571be5af1",
+          "start.sh": "c023b8e3f6954333aed3f2e56ebe4e73db617d7678a556f6459fbc748431e5f3",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
           "backend/pyproject.toml": "f7fbeb2dafb5635e8bc3d4ff461bb5b65a7091ed592a2b03c1442d2e6a74df5d",
-          "frontend/package.json": "ac359e5e20646cc62485f3b8237c63c331e66413423c6618349d11488d17da5f",
+          "frontend/package.json": "90091605609635e84200d37acfeeafd37a63e7271a725463bc536857284747f7",
           "package.json": "833bce1de1e6a72e2d906799e3265db59290a9ba3833b745a1a943e567113f46",
           ".env.example": "c1b1272a098696c6c0e72ba533fca78db4060da7c549715d14fb1167656e906a",
-          "backend/scripts": "adfe996282f443b9f37340ccda7e0e85afae2ad77fbed2455cc8dc6a63dc987b"
+          "backend/scripts": "097dcb6a137bc57ec08b586e935683b9dfa17e2fffa50ccb1d3d23ba6a9810a6"
         }
       },
       "last_read": {
@@ -309,7 +309,7 @@
         "on": "2026-11-07",
         "sha256": {
           ".github/workflows": "dda91d5921d692ddf3c2cb61ede9c6cf00b576478eda4736820ea0a442099d80",
-          "backend/tests": "ed6e8c031488d045d9241d153887965ff1a328843b93b4e8ecef976938ba51aa",
+          "backend/tests": "3343e3687e96f039c3b7fe15ef9fab1ada6f7d144cdf40ad8fb8b897c31342b8",
           "backend/pyproject.toml": "f7fbeb2dafb5635e8bc3d4ff461bb5b65a7091ed592a2b03c1442d2e6a74df5d",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5dc65a49d6975444738042f9c292b56050a932ed23932e45498fbcea6285ff3e",
@@ -318,12 +318,12 @@
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "18f87f3832f78cb09851f14d4dbb13138036998b913eb74868dbe598a09479e8",
           "packages/causal-core/tests": "06c4404c64460ffa20bade9cd9fc594e877cf94ab042444a4f562b7332ff057a",
-          "packages/causal-decision/tests": "abcda507471f8fbe990f2cbc613feed9cee70d44c66ed93de15a2f85257a4041"
+          "packages/causal-decision/tests": "f8893495eb1947470bbc24d4924b3670f26526de253d1d12a5c93321e28e99b6"
         }
       },
       "last_read": {
         "on": "2026-11-07",
-        "by": "Claude (train/1 main-merge of #107: read CURRENT_STAGE rows 47-52/86-88 (T10/T11/NO_VARIATION/transportability) against the merged register (dast re-cite + transportability entry both kept); ROADMAP lines 26-31 (12 typed refusals = AbstentionReason incl. NO_VARIATION, D0 v5); TESTING_CICD gate table incl. T11 row 188 and the Node 26/TS 7 dependency notes; UIX component table vs ResultView NO_VARIATION text and the frontend-majors edits: no claim moved)"
+        "by": "Claude (train/2 merge of train/1 after #107: read CURRENT_STAGE decision rows 82-90 against \"Go ahead:\" rationale lead + #107 paired-experiment rendering (render.py merged both: paired how-line and population labels in _without_quotes), no quoted \"Act:\"; TESTING_CICD §3 frontend vitest paragraph (P0-P3 / septa-84) and T11 rows; UIX incidents severity paragraph vs incidents/page.tsx and ResultView NO_VARIATION reason: no claim moved)"
       }
     },
     "docs/UIX.md": {
@@ -334,12 +334,12 @@
       "baseline": {
         "on": "2026-11-07",
         "sha256": {
-          "frontend/src": "5704ea6971366bc477d396112a49a9b2db09e3a98e70738175f6cf305914e38d"
+          "frontend/src": "55d16090bec9d8c6b62a52e0ee1b177b9608559b9593b2536dacd1ca77a0123d"
         }
       },
       "last_read": {
         "on": "2026-11-07",
-        "by": "Claude (train/1 main-merge of #107: read CURRENT_STAGE rows 47-52/86-88 (T10/T11/NO_VARIATION/transportability) against the merged register (dast re-cite + transportability entry both kept); ROADMAP lines 26-31 (12 typed refusals = AbstentionReason incl. NO_VARIATION, D0 v5); TESTING_CICD gate table incl. T11 row 188 and the Node 26/TS 7 dependency notes; UIX component table vs ResultView NO_VARIATION text and the frontend-majors edits: no claim moved)"
+        "by": "Claude (train/2 merge of train/1 after #107: read CURRENT_STAGE decision rows 82-90 against \"Go ahead:\" rationale lead + #107 paired-experiment rendering (render.py merged both: paired how-line and population labels in _without_quotes), no quoted \"Act:\"; TESTING_CICD §3 frontend vitest paragraph (P0-P3 / septa-84) and T11 rows; UIX incidents severity paragraph vs incidents/page.tsx and ResultView NO_VARIATION reason: no claim moved)"
       }
     },
     "docs/ROADMAP.md": {
