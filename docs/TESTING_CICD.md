@@ -152,7 +152,8 @@ docker rm -f causal-pg-test
 ```
 
 The optional Neo4j code paths (experience buffer, drift-alert storage) are tested only with a
-mocked driver; Neo4j is not the causal graph store (`neo4j-graph-store` was retracted). No backend test asserts a causal estimate against ground truth:
+mocked driver (the SQL record a drift alert leaves without Neo4j, `drift_alerts`, is tested on both
+schemas: `test_drift_alert_record.py`); Neo4j is not the causal graph store (`neo4j-graph-store` was retracted). No backend test asserts a causal estimate against ground truth:
 the backend delegates estimation to `packages/causal-core`, and that is where estimates are
 gated (§3.2); the narration tests check the kernel's interval covers
 the effect their simulated data were built with only as a premise, before testing what the LLM

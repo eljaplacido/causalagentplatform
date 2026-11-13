@@ -293,10 +293,34 @@ export interface ReviewQueueItem {
   /** ISO8601 created_at from the backend, or null when it sent none. */
   submittedAt: string | null;
   status: ReviewQueueStatus;
-  evidenceCitations: Evidence[];
-  sensitivityResults: StatisticalTestResult[];
-  assumptions: Assumption[];
+  /**
+   * The sensitivity results the platform recorded for an edge (empty for other
+   * types). There are no evidence citations: the backend stores no evidence to
+   * cite, only an edge's evidence_refs ids (septa-88).
+   */
+  sensitivityResults: ReviewQueueSensitivity[];
+  /** The stored assumptions an edge references (empty for other types). */
+  assumptions: ReviewQueueAssumption[];
   epistemicState?: EpistemicState;
+}
+
+/** An assumption as the review queue sends it: its stored columns, no more. */
+export interface ReviewQueueAssumption {
+  id: string;
+  statement: string;
+  assumptionType: string;
+  reviewStatus: string;
+  lastReviewedAt: string | null;
+}
+
+/** A sensitivity result the platform recorded for an edge, as the queue sends it. */
+export interface ReviewQueueSensitivity {
+  eValue: number | null;
+  rosenbaumGamma: number | null;
+  robust: boolean;
+  analysisMethod: string;
+  computedAt: string | null;
+  computedBy: string;
 }
 
 // ─── Audit log ────────────────────────────────────────────────────────────────

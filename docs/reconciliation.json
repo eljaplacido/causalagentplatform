@@ -32,12 +32,12 @@
           "packages/causal-mcp": "a6e19b07b09b94989ff60e6b66cbfea208918f186d53b5d6c58e26cd80f4ab2d",
           "frontend/package.json": "90091605609635e84200d37acfeeafd37a63e7271a725463bc536857284747f7",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "01eed7df507754bebe59c16989bfc3c5ab9a31b466b7e675d4a76f327a6af2ba"
+          "docs/CURRENT_STAGE.md": "aaf8459a29327de8459c8039501c60dc4f81477a3c20255b857299433513ddce"
         }
       },
       "last_read": {
         "on": "2026-11-07",
-        "by": "Claude (train/3 merge of train/2 after #107: read README status pointers and CURRENT_STAGE incident-integrity row vs the T11/NO_VARIATION/transportability rows; register merged by id (governance/AGENTS/incident_triage re-cites + transportability entry, 0 drifted); ROADMAP rows 26-31; TESTING_CICD gate table and lint ratchet note vs scripts/lint-baseline.json (train/3 values kept, main did not touch it); UIX incidents/Guardian-verdict paragraph -- Guardian verdicts are a separate vocabulary from causal-decision verdicts, NO_VARIATION/target_population do not reach incidents: no claim moved)"
+        "by": "Claude (train/4 merge of train/3 after #107: read README status pointers; CURRENT_STAGE semantic-surface rows (drift-alert record, review-queue risk, governance/workbench) beside the T11/NO_VARIATION/transportability rows; register merged by id, 0 drifted; ROADMAP rows 26-31; UIX governance/ApprovalPanel/NodeDetail passages vs #107 frontend change (ResultView NO_VARIATION reason text only): no claim moved)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-11-07",
         "sha256": {
-          "conformance/declared_not_implemented.json": "29e0cad37ee26f476ac01d368e03f6fc0564a086434c11b2e815b20984d4a76c",
-          "backend/src": "2086b55f401955acc33b3b0c511c9f943588b96fe95ddfe9e580cea87a4c80a7",
-          "backend/tests": "6bdd324a96328037db6e55e4952adc91bcada3b833078673c120e1de7ca38347",
-          "frontend/src": "509473ccbced9cee65c687fac792c25d8ea8cd0428beafaf3079d9ea4aae092e",
+          "conformance/declared_not_implemented.json": "1269ddf39d586bd90541c366fb60f20dc9646d69b7babb89260414d3171aee8d",
+          "backend/src": "416f8f6af2b48a52e5b7ce3c3d3bc3cd6f0f2ea34804dbaa139c8b3cd3ef4732",
+          "backend/tests": "62e4e3d876f06e89c344901c7830ed96d197df9eb6c7641c5ab49f67ee4936c0",
+          "frontend/src": "d2b27dab541a4b7a27b148040cde2906603856ca12f7945ec8744e7b8ec9175e",
           "packages": "05cc6e5f8b4972f73a145b3049ddebfc9d0c0eb5715b2e86d5243ef7fa86541b",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-11-07",
-        "by": "Claude (train/3 merge of train/2 after #107: read README status pointers and CURRENT_STAGE incident-integrity row vs the T11/NO_VARIATION/transportability rows; register merged by id (governance/AGENTS/incident_triage re-cites + transportability entry, 0 drifted); ROADMAP rows 26-31; TESTING_CICD gate table and lint ratchet note vs scripts/lint-baseline.json (train/3 values kept, main did not touch it); UIX incidents/Guardian-verdict paragraph -- Guardian verdicts are a separate vocabulary from causal-decision verdicts, NO_VARIATION/target_population do not reach incidents: no claim moved)"
+        "by": "Claude (train/4 merge of train/3 after #107: read README status pointers; CURRENT_STAGE semantic-surface rows (drift-alert record, review-queue risk, governance/workbench) beside the T11/NO_VARIATION/transportability rows; register merged by id, 0 drifted; ROADMAP rows 26-31; UIX governance/ApprovalPanel/NodeDetail passages vs #107 frontend change (ResultView NO_VARIATION reason text only): no claim moved)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -78,7 +78,7 @@
       "baseline": {
         "on": "2026-10-31",
         "sha256": {
-          "backend/src/semantic_layer": "646146562db92f7d82c010bc985f8104b2ae1ad072575c03301b2478a690c95b",
+          "backend/src/semantic_layer": "95d4d49653b6a6a28d7a8930667f0d1605a93136a5aa7668bf30ea8dd290fa5d",
           "backend/src/agents/governance.py": "5b3f9564c2bb422416fc77075f2aa7d9245c3e49a3edcd769d407c236c30d747",
           "packages/semantic-types/src": "599b141c5312c6940a4479a5400b1113adfbef407f85ff016edeeade864d834c",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
@@ -87,7 +87,7 @@
       },
       "last_read": {
         "on": "2026-10-31",
-        "by": "Claude (incident-integrity branch): septa-79/80/85 -- read the passages on the session graph, Guardian checks and audit rows, incidents and interventions, resumed sessions and circuit breaker against graph.py, session.py, governance.py, incident_triage.py and the incidents page; ADR-003 resumed-flags line reworded, AGENTS 5.1/5.2, UIX, TESTING_CICD and CURRENT_STAGE updated"
+        "by": "Claude (semantic-surface branch): septa-62/72/87/88 -- drift_alerts table (015, append-only) and its SQL fallback, CausalEdge.created_at, review queue assumptions + recorded sensitivity (no evidence citations), NodeDetail in the workbench, EdgeProposal/GraphDiff deleted; re-read for those claims and fixed DATA_LAYER, QUICKSTART, AGENTS, UIX, ADR-001, CYBERSECURITY, TESTING_CICD, CURRENT_STAGE; README, SECURITY, HANDOFFS, ROADMAP unaffected"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -146,7 +146,7 @@
       "baseline": {
         "on": "2026-11-04",
         "sha256": {
-          "backend/src/agents": "b0d812c42df4fc73969970eec49ccb123a4b9f2453df61b4d8db95792c557b57",
+          "backend/src/agents": "cb4abf2b3e0d5c5dda8cfbd954ba6d05f7b82fb12b7884db11cc6cf2d0667498",
           "backend/src/skills": "b0bcef79c64f6b8d2f35f87f92095d54c52cec7d972a4cf1520b95fcc0d68347",
           "packages/causal-mcp": "a6e19b07b09b94989ff60e6b66cbfea208918f186d53b5d6c58e26cd80f4ab2d",
           "backend/src/orchestration": "1c89092d1341d3ac23a45b8f05b6dfc97978a8d1479f11d14367cb62afec0b13",
@@ -175,19 +175,19 @@
         "on": "2026-10-31",
         "sha256": {
           "backend/src/middleware": "382780d8717bb592eb4ddc1d9e21dcd0227129be3ba5c9d60815c0ef4ee7de0a",
-          "backend/src/api/governance.py": "c2ab8a061fe056b835dbb9097b147f414437df0ca702708c3e923b23c8d5751c",
+          "backend/src/api/governance.py": "64ed8722f8567c738245b1750a3a42826994687b2fe1862034f4044ca3624610",
           "backend/src/agents/governance.py": "5b3f9564c2bb422416fc77075f2aa7d9245c3e49a3edcd769d407c236c30d747",
-          "backend/src/semantic_layer/registry.py": "fcf26738fc64003c29d3a4964517495cdb2b0267fb39f2c44c3f4311e30c9374",
+          "backend/src/semantic_layer/registry.py": "9d804b796fa34109248f431edf709c8b9ef0bbf400be4ca4cde40651085c8108",
           "backend/src/api/interventions.py": "928915a5bb49c3e1d993fc0da88ca6d1ac05bb1923afc6c3a0f248194d229e43",
           "backend/src/api/provenance.py": "2a308e924c9fd7ea910284fa58a479bdeeb97f260764d9c09c5d7eabeb74cfec",
-          "backend/src/db/migrations": "0061d7048117bb0d23b2c6b9dddc771f21ab84dc5076464aa54750aa8ddb05e8",
+          "backend/src/db/migrations": "bb1f25ccbfa15878d18ea4cf66cb7cec9c623d05a6ca61f73c76f5536692f457",
           "backend/src/semantic_layer/verdict.py": "6a46fcf8331be6953a01541f0f75151246ab50967b6baf2e1ded51ad55a80ae8",
           ".github/workflows": "dda91d5921d692ddf3c2cb61ede9c6cf00b576478eda4736820ea0a442099d80"
         }
       },
       "last_read": {
         "on": "2026-10-31",
-        "by": "Claude (incident-integrity branch): septa-79/80/85 -- read the passages on the session graph, Guardian checks and audit rows, incidents and interventions, resumed sessions and circuit breaker against graph.py, session.py, governance.py, incident_triage.py and the incidents page; ADR-003 resumed-flags line reworded, AGENTS 5.1/5.2, UIX, TESTING_CICD and CURRENT_STAGE updated"
+        "by": "Claude (semantic-surface branch): septa-62/72/87/88 -- drift_alerts table (015, append-only) and its SQL fallback, CausalEdge.created_at, review queue assumptions + recorded sensitivity (no evidence citations), NodeDetail in the workbench, EdgeProposal/GraphDiff deleted; re-read for those claims and fixed DATA_LAYER, QUICKSTART, AGENTS, UIX, ADR-001, CYBERSECURITY, TESTING_CICD, CURRENT_STAGE; README, SECURITY, HANDOFFS, ROADMAP unaffected"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -203,21 +203,21 @@
         "backend/src/skills/drift_detect.py"
       ],
       "baseline": {
-        "on": "2026-09-29",
+        "on": "2026-10-31",
         "sha256": {
-          "backend/src/db": "9f4dc35b1cdc1fe31da03685469dce8d67be6bfe3a4d49574e983750f9b96ac7",
+          "backend/src/db": "f3d5a7089a42e3d8daf6eec4c1a0c3b131a5a73cf55303576a36660ca42ec839",
           "backend/src/connectors": "a1392b68cb6ca4d05b943de26a39eec5d9979e15866bf1f704d84339ac0c6f6b",
-          "backend/src/semantic_layer/models.py": "b797d8121087451bbd55dd3489732f7aeabaea2e59c10138e2759f11bbd58960",
-          "backend/src/sensors": "37f0b547a27bf3617693225db822302372fe941185153afa65d9cc5296e3360c",
+          "backend/src/semantic_layer/models.py": "faa1f82a78cfb0338fdccf3f3711d93abd873eb87f6625219f15191f7ae87c43",
+          "backend/src/sensors": "157d56ba253af8e684dc2e2f00d9a937b817a13ce4c42ef85929f2be4c1631ce",
           "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
-          "backend/src/semantic_layer/registry.py": "fcf26738fc64003c29d3a4964517495cdb2b0267fb39f2c44c3f4311e30c9374",
-          "backend/src/agents/drift_monitor.py": "3e5807b7fcc88cb7215e1126cbf5461c293020fb2153937fbbd923ca085b2c9f",
+          "backend/src/semantic_layer/registry.py": "9d804b796fa34109248f431edf709c8b9ef0bbf400be4ca4cde40651085c8108",
+          "backend/src/agents/drift_monitor.py": "f9a9912af225beead5d29f7fe5ec9707cfdb1aa33b586bab4b36df8e740d8ad6",
           "backend/src/skills/drift_detect.py": "9432982258b155287a90701d76dc9bf331dd8c65fbc692ad37fcd124fcab7111"
         }
       },
       "last_read": {
-        "on": "2026-09-29",
-        "by": "Claude (septa-92: re-read; the decisions endpoint's post-seal event is described in CYBERSECURITY and CURRENT_STAGE; the data layer and test layout claims are unchanged)"
+        "on": "2026-10-31",
+        "by": "Claude (semantic-surface branch): septa-62/72/87/88 -- drift_alerts table (015, append-only) and its SQL fallback, CausalEdge.created_at, review queue assumptions + recorded sensitivity (no evidence citations), NodeDetail in the workbench, EdgeProposal/GraphDiff deleted; re-read for those claims and fixed DATA_LAYER, QUICKSTART, AGENTS, UIX, ADR-001, CYBERSECURITY, TESTING_CICD, CURRENT_STAGE; README, SECURITY, HANDOFFS, ROADMAP unaffected"
       }
     },
     "docs/HANDOFFS.md": {
@@ -227,15 +227,15 @@
         "backend/src/semantic_layer/models.py"
       ],
       "baseline": {
-        "on": "2026-09-26",
+        "on": "2026-10-31",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
-          "backend/src/semantic_layer/models.py": "b797d8121087451bbd55dd3489732f7aeabaea2e59c10138e2759f11bbd58960"
+          "backend/src/semantic_layer/models.py": "faa1f82a78cfb0338fdccf3f3711d93abd873eb87f6625219f15191f7ae87c43"
         }
       },
       "last_read": {
-        "on": "2026-09-26",
-        "by": "Claude (merge of the train into septa-14/15: re-read after models.py gained created_by on edges and the RECORDED meaning; its EpistemicState constraints still hold)"
+        "on": "2026-10-31",
+        "by": "Claude (semantic-surface branch): septa-62/72/87/88 -- drift_alerts table (015, append-only) and its SQL fallback, CausalEdge.created_at, review queue assumptions + recorded sensitivity (no evidence citations), NodeDetail in the workbench, EdgeProposal/GraphDiff deleted; re-read for those claims and fixed DATA_LAYER, QUICKSTART, AGENTS, UIX, ADR-001, CYBERSECURITY, TESTING_CICD, CURRENT_STAGE; README, SECURITY, HANDOFFS, ROADMAP unaffected"
       }
     },
     "docs/ORCHESTRATION.md": {
@@ -282,7 +282,7 @@
           "frontend/package.json": "90091605609635e84200d37acfeeafd37a63e7271a725463bc536857284747f7",
           "package.json": "833bce1de1e6a72e2d906799e3265db59290a9ba3833b745a1a943e567113f46",
           ".env.example": "c1b1272a098696c6c0e72ba533fca78db4060da7c549715d14fb1167656e906a",
-          "backend/scripts": "097dcb6a137bc57ec08b586e935683b9dfa17e2fffa50ccb1d3d23ba6a9810a6"
+          "backend/scripts": "2f49e9b1e5c0e10e6d50ba69cabf3e265404308b1bd11b498d6b1fe8d2074ecb"
         }
       },
       "last_read": {
@@ -309,7 +309,7 @@
         "on": "2026-11-07",
         "sha256": {
           ".github/workflows": "dda91d5921d692ddf3c2cb61ede9c6cf00b576478eda4736820ea0a442099d80",
-          "backend/tests": "6bdd324a96328037db6e55e4952adc91bcada3b833078673c120e1de7ca38347",
+          "backend/tests": "62e4e3d876f06e89c344901c7830ed96d197df9eb6c7641c5ab49f67ee4936c0",
           "backend/pyproject.toml": "f7fbeb2dafb5635e8bc3d4ff461bb5b65a7091ed592a2b03c1442d2e6a74df5d",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5dc65a49d6975444738042f9c292b56050a932ed23932e45498fbcea6285ff3e",
@@ -334,12 +334,12 @@
       "baseline": {
         "on": "2026-11-07",
         "sha256": {
-          "frontend/src": "509473ccbced9cee65c687fac792c25d8ea8cd0428beafaf3079d9ea4aae092e"
+          "frontend/src": "d2b27dab541a4b7a27b148040cde2906603856ca12f7945ec8744e7b8ec9175e"
         }
       },
       "last_read": {
         "on": "2026-11-07",
-        "by": "Claude (train/3 merge of train/2 after #107: read README status pointers and CURRENT_STAGE incident-integrity row vs the T11/NO_VARIATION/transportability rows; register merged by id (governance/AGENTS/incident_triage re-cites + transportability entry, 0 drifted); ROADMAP rows 26-31; TESTING_CICD gate table and lint ratchet note vs scripts/lint-baseline.json (train/3 values kept, main did not touch it); UIX incidents/Guardian-verdict paragraph -- Guardian verdicts are a separate vocabulary from causal-decision verdicts, NO_VARIATION/target_population do not reach incidents: no claim moved)"
+        "by": "Claude (train/4 merge of train/3 after #107: read README status pointers; CURRENT_STAGE semantic-surface rows (drift-alert record, review-queue risk, governance/workbench) beside the T11/NO_VARIATION/transportability rows; register merged by id, 0 drifted; ROADMAP rows 26-31; UIX governance/ApprovalPanel/NodeDetail passages vs #107 frontend change (ResultView NO_VARIATION reason text only): no claim moved)"
       }
     },
     "docs/ROADMAP.md": {
@@ -353,13 +353,13 @@
         "on": "2026-11-07",
         "sha256": {
           "packages/causal-core/src/causal_core": "28552dab1a30eeec7b4d4591f06cd8c26f9843a609357f6cedf577a114abc55d",
-          "conformance/declared_not_implemented.json": "29e0cad37ee26f476ac01d368e03f6fc0564a086434c11b2e815b20984d4a76c",
-          "docs/CURRENT_STAGE.md": "01eed7df507754bebe59c16989bfc3c5ab9a31b466b7e675d4a76f327a6af2ba"
+          "conformance/declared_not_implemented.json": "1269ddf39d586bd90541c366fb60f20dc9646d69b7babb89260414d3171aee8d",
+          "docs/CURRENT_STAGE.md": "aaf8459a29327de8459c8039501c60dc4f81477a3c20255b857299433513ddce"
         }
       },
       "last_read": {
         "on": "2026-11-07",
-        "by": "Claude (train/3 merge of train/2 after #107: read README status pointers and CURRENT_STAGE incident-integrity row vs the T11/NO_VARIATION/transportability rows; register merged by id (governance/AGENTS/incident_triage re-cites + transportability entry, 0 drifted); ROADMAP rows 26-31; TESTING_CICD gate table and lint ratchet note vs scripts/lint-baseline.json (train/3 values kept, main did not touch it); UIX incidents/Guardian-verdict paragraph -- Guardian verdicts are a separate vocabulary from causal-decision verdicts, NO_VARIATION/target_population do not reach incidents: no claim moved)"
+        "by": "Claude (train/4 merge of train/3 after #107: read README status pointers; CURRENT_STAGE semantic-surface rows (drift-alert record, review-queue risk, governance/workbench) beside the T11/NO_VARIATION/transportability rows; register merged by id, 0 drifted; ROADMAP rows 26-31; UIX governance/ApprovalPanel/NodeDetail passages vs #107 frontend change (ResultView NO_VARIATION reason text only): no claim moved)"
       }
     },
     "SECURITY.md": {
@@ -376,16 +376,16 @@
         "on": "2026-10-31",
         "sha256": {
           "backend/src/middleware": "382780d8717bb592eb4ddc1d9e21dcd0227129be3ba5c9d60815c0ef4ee7de0a",
-          "backend/src/api/governance.py": "c2ab8a061fe056b835dbb9097b147f414437df0ca702708c3e923b23c8d5751c",
+          "backend/src/api/governance.py": "64ed8722f8567c738245b1750a3a42826994687b2fe1862034f4044ca3624610",
           "backend/src/api/interventions.py": "928915a5bb49c3e1d993fc0da88ca6d1ac05bb1923afc6c3a0f248194d229e43",
           "backend/src/agents/governance.py": "5b3f9564c2bb422416fc77075f2aa7d9245c3e49a3edcd769d407c236c30d747",
-          "backend/src/semantic_layer/registry.py": "fcf26738fc64003c29d3a4964517495cdb2b0267fb39f2c44c3f4311e30c9374",
+          "backend/src/semantic_layer/registry.py": "9d804b796fa34109248f431edf709c8b9ef0bbf400be4ca4cde40651085c8108",
           "backend/src/semantic_layer/verdict.py": "6a46fcf8331be6953a01541f0f75151246ab50967b6baf2e1ded51ad55a80ae8"
         }
       },
       "last_read": {
         "on": "2026-10-31",
-        "by": "Claude (incident-integrity branch): septa-79/80/85 -- read the passages on the session graph, Guardian checks and audit rows, incidents and interventions, resumed sessions and circuit breaker against graph.py, session.py, governance.py, incident_triage.py and the incidents page; ADR-003 resumed-flags line reworded, AGENTS 5.1/5.2, UIX, TESTING_CICD and CURRENT_STAGE updated"
+        "by": "Claude (semantic-surface branch): septa-62/72/87/88 -- drift_alerts table (015, append-only) and its SQL fallback, CausalEdge.created_at, review queue assumptions + recorded sensitivity (no evidence citations), NodeDetail in the workbench, EdgeProposal/GraphDiff deleted; re-read for those claims and fixed DATA_LAYER, QUICKSTART, AGENTS, UIX, ADR-001, CYBERSECURITY, TESTING_CICD, CURRENT_STAGE; README, SECURITY, HANDOFFS, ROADMAP unaffected"
       }
     },
     "shadow/README.md": {

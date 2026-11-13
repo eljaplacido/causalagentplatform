@@ -351,6 +351,35 @@ export interface ReviewQueueItemResponse {
   risk_reasons: string[];
   /** The id in the object's created_by; null where none was recorded. */
   submitted_by: string | null;
+  /**
+   * For an edge: the stored assumptions it references that the reviewer may see,
+   * in the edge's order. Empty for fragments and entities (septa-88).
+   */
+  assumptions: ReviewQueueAssumptionResponse[];
+  /**
+   * For an edge: the sensitivity results the platform recorded for it (the ones
+   * its tier and Guardian PR-007 read). Empty for fragments and entities.
+   */
+  sensitivity_results: ReviewQueueSensitivityResponse[];
+}
+
+/** governance.py ReviewQueueAssumption: the stored columns of `assumptions`. */
+export interface ReviewQueueAssumptionResponse {
+  id: string;
+  statement: string;
+  assumption_type: string;
+  review_status: string;
+  last_reviewed_at: string | null;
+}
+
+/** governance.py ReviewQueueSensitivity: a recorded SensitivityResult's fields. */
+export interface ReviewQueueSensitivityResponse {
+  e_value: number | null;
+  rosenbaum_gamma: number | null;
+  robust_to_unmeasured_confounding: boolean;
+  analysis_method: string;
+  computed_at: string | null;
+  computed_by: string;
 }
 
 /**
@@ -416,6 +445,8 @@ export interface CausalEdgeResponse {
   guardianVerdictRef: string;
   version: string;
   domain: string;
+  /** When the edge was drafted: the server's time of the insert (septa-72). */
+  createdAt: string;
 }
 
 /** Build `?a=1&b=2` from the defined entries of `params`; "" when there are none. */

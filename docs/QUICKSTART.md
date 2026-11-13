@@ -125,7 +125,7 @@ script sets that local-dev password. Migrations run as the owner (`causal`); see
 The dev auth bypass works only with `ENV=local`, so a local session with the bypass is always on
 SQLite. The causal graph is always in SQL. Neo4j is used only when `NEO4J_URI` is set, for the
 experience buffer and drift-alert storage; unset, the experience buffer reads SQL session
-snapshots and drift alerts are not stored.
+snapshots and drift alerts are stored in the SQL `drift_alerts` table.
 
 **Guardian signing key.** Every Guardian verdict is HMAC-signed with `GUARDIAN_SIGNING_KEY`.
 Locally you may leave it unset: each backend process then generates its own key and logs
