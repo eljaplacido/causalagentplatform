@@ -236,6 +236,12 @@ function sessionState(overrides: Record<string, unknown> = {}) {
     timestamp: "2026-09-18T10:00:00+00:00",
     stored: true,
     store_error: null,
+    interventions: [
+      { id: "int-1-sess-new-1", title: "Roll back payment-api",
+        description: "Deploy correlates with onset.", confidence: 0.7, riskTier: "MEDIUM",
+        rank: 1, guardianVerdict: "REQUIRES_ESCALATION", guardianVerdictRef: "audit-1",
+        policyRulesCited: ["PR-004"] },
+    ],
     ...overrides,
   };
 }
@@ -331,6 +337,44 @@ describe("IncidentsPage — a newly triaged incident", () => {
     const card = await screen.findByTestId("intervention-card");
     expect(within(card).getByTestId("no-effect-estimate")).toBeInTheDocument();
     expect(card.textContent).not.toMatch(/95% CI/);
+  });
+
+  it("shows each intervention's own Guardian verdict, not the session's (septa-85)", async () => {
+    const user = userEvent.setup();
+    incidentsApiMock.list.mockResolvedValue([]);
+    const rec = (rank: number, action: string) => ({
+      rank, action, rationale: "r", confidence: 0.7, risk_tier: "MEDIUM",
+    });
+    const ruled = (rank: number, verdict: string) => ({
+      id: `int-${rank}-sess-new-1`, title: "t", description: "r", confidence: 0.7,
+      riskTier: "MEDIUM", rank, guardianVerdict: verdict, guardianVerdictRef: `audit-${rank}`,
+      policyRulesCited: [],
+    });
+    sessionApiMock.incident.mockResolvedValue(
+      sessionState({
+        guardian_verdict: "APPROVED",
+        recommendation_count: 3,
+        recommendations: [rec(1, "Roll back"), rec(2, "Scale out"), rec(3, "Page owner")],
+        // Rank 3 has no verdict of its own in the response: it shows PENDING.
+        interventions: [ruled(1, "APPROVED"), ruled(2, "REJECTED")],
+      })
+    );
+
+    render(<IncidentsPage />);
+    await submitIncident(user, "Checkout latency spike after deploy");
+
+    await screen.findAllByTestId("intervention-card");
+    const verdicts = screen
+      .getAllByTestId("intervention-card")
+      .map((card) => [
+        card.getAttribute("data-intervention-id"),
+        within(card).getByTestId("guardian-verdict-badge").getAttribute("data-verdict"),
+      ]);
+    expect(verdicts).toEqual([
+      ["int-1-sess-new-1", "APPROVED"],
+      ["int-2-sess-new-1", "REJECTED"],
+      ["int-3-sess-new-1", "PENDING"],
+    ]);
   });
 
   it("says a triaged incident was not stored when the backend could not save it", async () => {
