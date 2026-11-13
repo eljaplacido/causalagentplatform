@@ -377,11 +377,13 @@ files (Apache-2.0 §4), install the wheels into a fresh environment that holds o
 them and `requirements/release.txt` (their runtime dependencies, hash-pinned), and write a
 **CycloneDX 1.6 SBOM** of that environment. `cyclonedx-py` validates it against the schema as it
 writes, and `scripts/sbom_check.py` then checks it: it parses, and lists every locked pin at its
-version, the three packages, and nothing else. Then publish `causal-core`, `causal-decision` and
-`causal-mcp` to PyPI with Trusted Publishing (OIDC, no stored token; a package whose version is
-already on PyPI is skipped, since each keeps its own version under a dated `v*` tag), and attach the SBOM to the
-tag's GitHub release (creating the release if the tag has none). A manual run does all of this
-except publishing and attaching; the SBOM is kept as the `sbom` artifact either way. The backend and frontend
+version, the three packages, and nothing else. Then, when the repository variable `PYPI_PUBLISH`
+is `true`, publish `causal-core`, `causal-decision` and `causal-mcp` to PyPI with Trusted
+Publishing (OIDC, no stored token; a package whose version is already on PyPI is skipped, since
+each keeps its own version under a dated `v*` tag); unset, that job is skipped. Last, attach the
+sdists, the wheels and the SBOM to the tag's GitHub release (creating the release if the tag has
+none). A manual run does all of this except publishing and releasing; the distributions and the
+SBOM are kept as the `distributions` and `sbom` artifacts either way. The backend and frontend
 are not published or deployed. The repository has no deployment pipeline and no staging
 environment.
 

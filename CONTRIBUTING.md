@@ -185,13 +185,17 @@ Details: [`.gnomon/skills/register-hygiene.md`](.gnomon/skills/register-hygiene.
 
 ### Releases
 
-`causal-core`, `causal-decision` and `causal-mcp` are published to PyPI together by
-`.github/workflows/release.yml` when a `v*` tag is pushed. Authentication is Trusted Publishing
-(OIDC); no token is stored anywhere. Once, before the first release, the owner:
+`causal-core`, `causal-decision` and `causal-mcp` are released together by
+`.github/workflows/release.yml` when a `v*` tag is pushed: their sdists and wheels and the SBOM
+go to the tag's GitHub release, and to PyPI once the repository variable `PYPI_PUBLISH` is
+`true`. Until then a tag makes a GitHub release only (the publish job is skipped). PyPI
+authentication is Trusted Publishing (OIDC); no token is stored anywhere. Once, before the first
+PyPI release, the owner:
 
 1. adds a trusted publisher on PyPI for each of the three projects: owner `eljaplacido`,
    repository `causalagentplatform`, workflow `release.yml`, environment `pypi`;
-2. creates the `pypi` environment in the GitHub repository (optionally with a required reviewer).
+2. creates the `pypi` environment in the GitHub repository (optionally with a required reviewer);
+3. sets the repository variable `PYPI_PUBLISH` to `true`.
 
 Each release:
 
@@ -201,9 +205,10 @@ Each release:
    gates, builds and writes the SBOM, and cannot publish;
 3. tag that merge commit `vYYYY.MM.DD` (the tag names the release; each package keeps its own
    version) and push the tag. The workflow re-runs the kernel's gates on the tagged commit,
-   publishes, and attaches the CycloneDX SBOM to the GitHub release. A package whose version
-   did not change is already on PyPI and is skipped. Building and publishing run on GitHub's
-   hosted runners, never self-hosted ones.
+   publishes (when `PYPI_PUBLISH` is on), and attaches the distributions and the CycloneDX SBOM
+   to the GitHub release. A package whose version did not change is already on PyPI and is
+   skipped. Building, publishing and releasing run on GitHub's hosted runners, never self-hosted
+   ones.
 
 A published version is never re-used: PyPI refuses it, and causal-core hashes its version into
 every result's provenance.

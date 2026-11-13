@@ -3,7 +3,7 @@
 Earlier version numbers were development milestones inside the repository and were never
 published.
 
-## 0.5.0 -- first PyPI release (unreleased)
+## 0.5.0 -- 2026-11-13, first release (GitHub release v2026.11.13; PyPI to follow)
 
 - An MCP server (Python SDK v2), stdio by default and stateless HTTP with the `[http]` extra.
 - Its analysis parameters are the kernel's `CausalQuery` fields, so with causal-core 0.15.0 the tools

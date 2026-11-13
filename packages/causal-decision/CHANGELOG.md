@@ -3,7 +3,7 @@
 Earlier version numbers were development milestones inside the repository and were never
 published.
 
-## 0.7.0 -- first PyPI release (unreleased)
+## 0.7.0 -- 2026-11-13, first release (GitHub release v2026.11.13; PyPI to follow)
 
 Needs causal-core 0.15.0. 0.6.0 was never published; this entry and the next are one release.
 
