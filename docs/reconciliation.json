@@ -26,18 +26,18 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-11-07",
+        "on": "2026-11-13",
         "sha256": {
           "backend/pyproject.toml": "f7fbeb2dafb5635e8bc3d4ff461bb5b65a7091ed592a2b03c1442d2e6a74df5d",
-          "packages/causal-mcp": "b3c2f2571bde0365a7c3897c41571b922e12324dab9471c3a20ac6075dbfd0d9",
+          "packages/causal-mcp": "537745875d70eb00aff85fbf9bbc267380ca694f333eda01a68eb8f64944d32e",
           "frontend/package.json": "90091605609635e84200d37acfeeafd37a63e7271a725463bc536857284747f7",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
           "docs/CURRENT_STAGE.md": "1e320045831892902de67da0a3ab6e4f9124e09fb1bdbeabdec10ec4b8c9986a"
         }
       },
       "last_read": {
-        "on": "2026-11-07",
-        "by": "Claude (release/oss-prep: read the release passages (TESTING_CICD 5.2, CYBERSECURITY where-CI-runs and SBOM, CONTRIBUTING Releases) against release.yml: build/publish/attach on hosted runners, LICENSE/NOTICE checks, skip-existing; container (CYBERSECURITY 8.3, README, QUICKSTART 208-238) against backend/Dockerfile ENV=production (startup refusal checked: SigningKeyError) and compose loopback ports; QUICKSTART prerequisites and launch lines (Node 26, NEXT_PUBLIC_ENVIRONMENT=local, root npm ci); product name 'Unified Enterprise Causal Platform' -> 'Causal Platform' in AGENTS/UIX/DATA_LAYER/CYBERSECURITY/HANDOFFS scope lines only; ADR-001/003, ORCHESTRATION, ROADMAP, CURRENT_STAGE: no claim moved (CORS-outermost and semantic-types private=true change no row; register re-cite CYBERSECURITY:696))"
+        "on": "2026-11-13",
+        "by": "Claude (release/v2026.11.13: release.yml gains PYPI_PUBLISH (publish skipped until set) and a github-release job attaching sdists, wheels and SBOM; read CONTRIBUTING Releases, TESTING_CICD 5.2, CYBERSECURITY release-SBOM and where-CI-runs against it; README external-agent and causal-mcp README install lines now give the release wheels (pip form checked in a fresh venv); package CHANGELOG headings dated 2026-11-13; CURRENT_STAGE row 151 (release.yml not yet run on GitHub) still true; ROADMAP septa-2 PyPI release still open; AGENTS, ORCHESTRATION: no claim moved; register re-cite dast-not-built CYBERSECURITY:701)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -51,19 +51,19 @@
         "specs"
       ],
       "baseline": {
-        "on": "2026-11-07",
+        "on": "2026-11-13",
         "sha256": {
-          "conformance/declared_not_implemented.json": "e6abd422c47f90bc85ad8000f7a60e4a1680fdc5714a6fc3134a049790965e63",
+          "conformance/declared_not_implemented.json": "92de63343dc24e2f82d6b1dab47c82f6f203a4cc387c5a8f9b87262ccee13a78",
           "backend/src": "b814fc16c9b945483b5b7aa263a5aae14e442478d160bffceffd90b4e3fc9d0b",
           "backend/tests": "6523531ca601548892c50443bc84754b96c49b67d895cbbb80f199444aa65234",
           "frontend/src": "0c21f8826d22ec03c713ab92ea12a77979b6247a4f56ce9c3e89f6306271a471",
-          "packages": "49ac44522a0f67faa1d8e9925ab5cf182ee16969ce0f7293a0e0b8497a87952e",
+          "packages": "94391e6ea48c0bfc835cf795cafa1c2d84b51836980bcc4576198037e54883d2",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
-        "on": "2026-11-07",
-        "by": "Claude (release/oss-prep: register re-cite dast-not-built CYBERSECURITY.md:700 after the where-CI-runs and container paragraphs grew; no claim moved)"
+        "on": "2026-11-13",
+        "by": "Claude (release/v2026.11.13: release.yml gains PYPI_PUBLISH (publish skipped until set) and a github-release job attaching sdists, wheels and SBOM; read CONTRIBUTING Releases, TESTING_CICD 5.2, CYBERSECURITY release-SBOM and where-CI-runs against it; README external-agent and causal-mcp README install lines now give the release wheels (pip form checked in a fresh venv); package CHANGELOG headings dated 2026-11-13; CURRENT_STAGE row 151 (release.yml not yet run on GitHub) still true; ROADMAP septa-2 PyPI release still open; AGENTS, ORCHESTRATION: no claim moved; register re-cite dast-not-built CYBERSECURITY:701)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -144,18 +144,18 @@
         "prompts"
       ],
       "baseline": {
-        "on": "2026-11-07",
+        "on": "2026-11-13",
         "sha256": {
           "backend/src/agents": "cb4abf2b3e0d5c5dda8cfbd954ba6d05f7b82fb12b7884db11cc6cf2d0667498",
           "backend/src/skills": "b0bcef79c64f6b8d2f35f87f92095d54c52cec7d972a4cf1520b95fcc0d68347",
-          "packages/causal-mcp": "b3c2f2571bde0365a7c3897c41571b922e12324dab9471c3a20ac6075dbfd0d9",
+          "packages/causal-mcp": "537745875d70eb00aff85fbf9bbc267380ca694f333eda01a68eb8f64944d32e",
           "backend/src/orchestration": "a91bcdf61c9b453e873bcaea1147d0fd12a45b1030fb3356be731e599062a8b1",
           "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9"
         }
       },
       "last_read": {
-        "on": "2026-11-07",
-        "by": "Claude (release/oss-prep: read the release passages (TESTING_CICD 5.2, CYBERSECURITY where-CI-runs and SBOM, CONTRIBUTING Releases) against release.yml: build/publish/attach on hosted runners, LICENSE/NOTICE checks, skip-existing; container (CYBERSECURITY 8.3, README, QUICKSTART 208-238) against backend/Dockerfile ENV=production (startup refusal checked: SigningKeyError) and compose loopback ports; QUICKSTART prerequisites and launch lines (Node 26, NEXT_PUBLIC_ENVIRONMENT=local, root npm ci); product name 'Unified Enterprise Causal Platform' -> 'Causal Platform' in AGENTS/UIX/DATA_LAYER/CYBERSECURITY/HANDOFFS scope lines only; ADR-001/003, ORCHESTRATION, ROADMAP, CURRENT_STAGE: no claim moved (CORS-outermost and semantic-types private=true change no row; register re-cite CYBERSECURITY:696))"
+        "on": "2026-11-13",
+        "by": "Claude (release/v2026.11.13: release.yml gains PYPI_PUBLISH (publish skipped until set) and a github-release job attaching sdists, wheels and SBOM; read CONTRIBUTING Releases, TESTING_CICD 5.2, CYBERSECURITY release-SBOM and where-CI-runs against it; README external-agent and causal-mcp README install lines now give the release wheels (pip form checked in a fresh venv); package CHANGELOG headings dated 2026-11-13; CURRENT_STAGE row 151 (release.yml not yet run on GitHub) still true; ROADMAP septa-2 PyPI release still open; AGENTS, ORCHESTRATION: no claim moved; register re-cite dast-not-built CYBERSECURITY:701)"
       }
     },
     "docs/CYBERSECURITY.md": {
@@ -172,7 +172,7 @@
         ".github/workflows"
       ],
       "baseline": {
-        "on": "2026-11-07",
+        "on": "2026-11-13",
         "sha256": {
           "backend/src/middleware": "382780d8717bb592eb4ddc1d9e21dcd0227129be3ba5c9d60815c0ef4ee7de0a",
           "backend/src/api/governance.py": "64ed8722f8567c738245b1750a3a42826994687b2fe1862034f4044ca3624610",
@@ -182,12 +182,12 @@
           "backend/src/api/provenance.py": "2a308e924c9fd7ea910284fa58a479bdeeb97f260764d9c09c5d7eabeb74cfec",
           "backend/src/db/migrations": "a690806c2c1ff37bc81aadb53d96f3c8ff8b77e79d8fc61a6f50bf4ff16e2bb3",
           "backend/src/semantic_layer/verdict.py": "6a46fcf8331be6953a01541f0f75151246ab50967b6baf2e1ded51ad55a80ae8",
-          ".github/workflows": "7ad526352adee5b1aff5e79ea895d0cca3ebe9a915990a096ea9344fed1be924"
+          ".github/workflows": "7a6b80ca906232763d03ef3c55bb2bd8f245f4aa15789624e22ece84e213593d"
         }
       },
       "last_read": {
-        "on": "2026-11-07",
-        "by": "Claude (release/oss-prep: read the release passages (TESTING_CICD 5.2, CYBERSECURITY where-CI-runs and SBOM, CONTRIBUTING Releases) against release.yml: build/publish/attach on hosted runners, LICENSE/NOTICE checks, skip-existing; container (CYBERSECURITY 8.3, README, QUICKSTART 208-238) against backend/Dockerfile ENV=production (startup refusal checked: SigningKeyError) and compose loopback ports; QUICKSTART prerequisites and launch lines (Node 26, NEXT_PUBLIC_ENVIRONMENT=local, root npm ci); product name 'Unified Enterprise Causal Platform' -> 'Causal Platform' in AGENTS/UIX/DATA_LAYER/CYBERSECURITY/HANDOFFS scope lines only; ADR-001/003, ORCHESTRATION, ROADMAP, CURRENT_STAGE: no claim moved (CORS-outermost and semantic-types private=true change no row; register re-cite CYBERSECURITY:696))"
+        "on": "2026-11-13",
+        "by": "Claude (release/v2026.11.13: release.yml gains PYPI_PUBLISH (publish skipped until set) and a github-release job attaching sdists, wheels and SBOM; read CONTRIBUTING Releases, TESTING_CICD 5.2, CYBERSECURITY release-SBOM and where-CI-runs against it; README external-agent and causal-mcp README install lines now give the release wheels (pip form checked in a fresh venv); package CHANGELOG headings dated 2026-11-13; CURRENT_STAGE row 151 (release.yml not yet run on GitHub) still true; ROADMAP septa-2 PyPI release still open; AGENTS, ORCHESTRATION: no claim moved; register re-cite dast-not-built CYBERSECURITY:701)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -247,17 +247,17 @@
         ".gnomon"
       ],
       "baseline": {
-        "on": "2026-11-07",
+        "on": "2026-11-13",
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9",
-          ".github": "248037fe5cf37efd57d0b7c1ee640ab005627429e8ef2598a6ddd90b432dc4f5",
+          ".github": "2a5622d7125c12506d2dbf222aad42b133b0949f9f7caafc6fbefe4b519e3d3a",
           ".gnomon": "ee147e3edf82b9371953e17ac4c663f28983c116ed09e0625fb7c451162ee5d8"
         }
       },
       "last_read": {
-        "on": "2026-11-07",
-        "by": "Claude (release/oss-prep: read the release passages (TESTING_CICD 5.2, CYBERSECURITY where-CI-runs and SBOM, CONTRIBUTING Releases) against release.yml: build/publish/attach on hosted runners, LICENSE/NOTICE checks, skip-existing; container (CYBERSECURITY 8.3, README, QUICKSTART 208-238) against backend/Dockerfile ENV=production (startup refusal checked: SigningKeyError) and compose loopback ports; QUICKSTART prerequisites and launch lines (Node 26, NEXT_PUBLIC_ENVIRONMENT=local, root npm ci); product name 'Unified Enterprise Causal Platform' -> 'Causal Platform' in AGENTS/UIX/DATA_LAYER/CYBERSECURITY/HANDOFFS scope lines only; ADR-001/003, ORCHESTRATION, ROADMAP, CURRENT_STAGE: no claim moved (CORS-outermost and semantic-types private=true change no row; register re-cite CYBERSECURITY:696))"
+        "on": "2026-11-13",
+        "by": "Claude (release/v2026.11.13: release.yml gains PYPI_PUBLISH (publish skipped until set) and a github-release job attaching sdists, wheels and SBOM; read CONTRIBUTING Releases, TESTING_CICD 5.2, CYBERSECURITY release-SBOM and where-CI-runs against it; README external-agent and causal-mcp README install lines now give the release wheels (pip form checked in a fresh venv); package CHANGELOG headings dated 2026-11-13; CURRENT_STAGE row 151 (release.yml not yet run on GitHub) still true; ROADMAP septa-2 PyPI release still open; AGENTS, ORCHESTRATION: no claim moved; register re-cite dast-not-built CYBERSECURITY:701)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -306,9 +306,9 @@
         "packages/causal-decision/tests"
       ],
       "baseline": {
-        "on": "2026-11-07",
+        "on": "2026-11-13",
         "sha256": {
-          ".github/workflows": "7ad526352adee5b1aff5e79ea895d0cca3ebe9a915990a096ea9344fed1be924",
+          ".github/workflows": "7a6b80ca906232763d03ef3c55bb2bd8f245f4aa15789624e22ece84e213593d",
           "backend/tests": "6523531ca601548892c50443bc84754b96c49b67d895cbbb80f199444aa65234",
           "backend/pyproject.toml": "f7fbeb2dafb5635e8bc3d4ff461bb5b65a7091ed592a2b03c1442d2e6a74df5d",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
@@ -322,8 +322,8 @@
         }
       },
       "last_read": {
-        "on": "2026-11-07",
-        "by": "Claude (release/oss-prep: read the release passages (TESTING_CICD 5.2, CYBERSECURITY where-CI-runs and SBOM, CONTRIBUTING Releases) against release.yml: build/publish/attach on hosted runners, LICENSE/NOTICE checks, skip-existing; container (CYBERSECURITY 8.3, README, QUICKSTART 208-238) against backend/Dockerfile ENV=production (startup refusal checked: SigningKeyError) and compose loopback ports; QUICKSTART prerequisites and launch lines (Node 26, NEXT_PUBLIC_ENVIRONMENT=local, root npm ci); product name 'Unified Enterprise Causal Platform' -> 'Causal Platform' in AGENTS/UIX/DATA_LAYER/CYBERSECURITY/HANDOFFS scope lines only; ADR-001/003, ORCHESTRATION, ROADMAP, CURRENT_STAGE: no claim moved (CORS-outermost and semantic-types private=true change no row; register re-cite CYBERSECURITY:696))"
+        "on": "2026-11-13",
+        "by": "Claude (release/v2026.11.13: release.yml gains PYPI_PUBLISH (publish skipped until set) and a github-release job attaching sdists, wheels and SBOM; read CONTRIBUTING Releases, TESTING_CICD 5.2, CYBERSECURITY release-SBOM and where-CI-runs against it; README external-agent and causal-mcp README install lines now give the release wheels (pip form checked in a fresh venv); package CHANGELOG headings dated 2026-11-13; CURRENT_STAGE row 151 (release.yml not yet run on GitHub) still true; ROADMAP septa-2 PyPI release still open; AGENTS, ORCHESTRATION: no claim moved; register re-cite dast-not-built CYBERSECURITY:701)"
       }
     },
     "docs/UIX.md": {
@@ -350,16 +350,16 @@
         "docs/CURRENT_STAGE.md"
       ],
       "baseline": {
-        "on": "2026-11-07",
+        "on": "2026-11-13",
         "sha256": {
           "packages/causal-core/src/causal_core": "b687c297357776c340e6dc43fb906e0e5ba9f61d29f386250204cb4524b10568",
-          "conformance/declared_not_implemented.json": "e6abd422c47f90bc85ad8000f7a60e4a1680fdc5714a6fc3134a049790965e63",
+          "conformance/declared_not_implemented.json": "92de63343dc24e2f82d6b1dab47c82f6f203a4cc387c5a8f9b87262ccee13a78",
           "docs/CURRENT_STAGE.md": "1e320045831892902de67da0a3ab6e4f9124e09fb1bdbeabdec10ec4b8c9986a"
         }
       },
       "last_read": {
-        "on": "2026-11-07",
-        "by": "Claude (release/oss-prep: register re-cite dast-not-built CYBERSECURITY.md:700 after the where-CI-runs and container paragraphs grew; no claim moved)"
+        "on": "2026-11-13",
+        "by": "Claude (release/v2026.11.13: register change is the re-cite dast-not-built CYBERSECURITY.md:701; septa-2 (first PyPI release) still open, the GitHub release is not it; no claim moved)"
       }
     },
     "SECURITY.md": {

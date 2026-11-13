@@ -113,9 +113,15 @@ Full guide: [`docs/QUICKSTART.md`](docs/QUICKSTART.md).
 
 ## Calling the kernel from an external agent
 
-In its own virtualenv (causal-mcp needs MCP SDK v2):
+In its own virtualenv (causal-mcp needs MCP SDK v2). The packages are not on PyPI yet; install
+the wheels attached to the [GitHub release](https://github.com/eljaplacido/causalagentplatform/releases),
+or this checkout:
 
 ```bash
+R=https://github.com/eljaplacido/causalagentplatform/releases/download/v2026.11.13
+pip install "$R/causal_core-0.15.0-py3-none-any.whl" "$R/causal_decision-0.7.0-py3-none-any.whl" \
+  "causal-mcp[decision] @ $R/causal_mcp-0.5.0-py3-none-any.whl"
+# or, from a clone:
 pip install -e 'packages/causal-core' -e 'packages/causal-decision' -e 'packages/causal-mcp[decision]'
 causal-mcp                        # stdio; `causal-mcp --http --port 8765` needs the [http] extra
 ```
