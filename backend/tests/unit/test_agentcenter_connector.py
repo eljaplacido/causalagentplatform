@@ -5,7 +5,8 @@ shapes were read from the running services on 2026-09-29): a hypothesis becomes
 an analysis prefill with its data binding judged; a review item a next step; a
 radar report's improvement targets one suggestion each. A source that is down is
 reported as unreachable while the other still answers; a decision event goes to
-`/events/emit` only when emitting is on, and a failure there never raises.
+`/events/emit` only when emitting is on, and a failure there never raises. A
+decision sealed in shadow (septa-95) is never sent, with emitting on or off.
 """
 
 from __future__ import annotations
@@ -15,6 +16,9 @@ from typing import Any
 
 import httpx
 import pytest
+from causal_decision import decide
+from causal_decision.bench.d0 import BASE, strong_effect
+from causal_decision.ledger import DecisionRecord, append
 
 from src.connectors import agentcenter as ac
 
@@ -138,6 +142,19 @@ def handler(
         return httpx.Response(404)
 
     return httpx.MockTransport(respond)
+
+
+_NOW = "2026-10-01T09:00:00+00:00"
+
+
+@pytest.fixture(scope="module")
+def records() -> tuple[DecisionRecord, DecisionRecord]:
+    """A real decision and a shadow one after it, sealed from an effect set by construction."""
+    outcome = strong_effect()
+    real = append(None, decide(outcome, BASE), outcome, recorded_at=_NOW)
+    shadow = append(real, decide(outcome, BASE), outcome, recorded_at=_NOW,
+                    shadow="shadow-round-1")
+    return real, shadow
 
 
 @pytest.fixture
@@ -272,25 +289,53 @@ async def test_unfetchable_and_unknown_hypotheses(cfg: ac.Config) -> None:
 
 @pytest.mark.asyncio
 async def test_a_decision_is_emitted_only_when_emitting_is_on(
-    cfg: ac.Config, monkeypatch: pytest.MonkeyPatch
+    cfg: ac.Config,
+    monkeypatch: pytest.MonkeyPatch,
+    records: tuple[DecisionRecord, DecisionRecord],
 ) -> None:
+    real, _ = records
     sent: list[dict[str, Any]] = []
     monkeypatch.setattr(ac, "_transport", handler(emitted=sent))
-    assert await ac.emit_decision({"verdict": "act", "origin": "oracle:H-01"}, cfg) is True
+    payload = {"verdict": "act", "origin": "oracle:H-01"}
+    assert await ac.emit_decision(real, payload, cfg) is True
     assert sent == [
         {
             "kind": "causalplatform.decision.recorded",
             "project": "causalplatform",
             "agent": "causalplatform",
-            "payload": {"verdict": "act", "origin": "oracle:H-01"},
+            "payload": {**payload, "entry_digest": real.entry_digest},
         }
     ]
     off = ac.Config(AC, ORACLE, emit=False, project="causalplatform")
-    assert await ac.emit_decision({"verdict": "act"}, off) is False
+    assert await ac.emit_decision(real, {"verdict": "act"}, off) is False
     assert len(sent) == 1
 
 
 @pytest.mark.asyncio
-async def test_a_failed_emit_is_swallowed(cfg: ac.Config, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_a_shadow_decision_is_never_emitted(
+    cfg: ac.Config,
+    monkeypatch: pytest.MonkeyPatch,
+    records: tuple[DecisionRecord, DecisionRecord],
+) -> None:
+    """Negative control: delete the `emittable(record)` guard in emit_decision and this fails."""
+    real, shadow = records
+    sent: list[dict[str, Any]] = []
+    monkeypatch.setattr(ac, "_transport", handler(emitted=sent))
+    # Emitting is on and agentcenter is up: only the tag stands between the record and it.
+    assert await ac.emit_decision(shadow, {"verdict": "act"}, cfg) is False
+    # Nor can a payload that claims to be another decision carry it out.
+    assert await ac.emit_decision(shadow, {"entry_digest": real.entry_digest}, cfg) is False
+    assert sent == []
+    # The real decision beside it still goes, and under its own digest.
+    assert await ac.emit_decision(real, {"entry_digest": shadow.entry_digest}, cfg) is True
+    assert [e["payload"]["entry_digest"] for e in sent] == [real.entry_digest]
+
+
+@pytest.mark.asyncio
+async def test_a_failed_emit_is_swallowed(
+    cfg: ac.Config,
+    monkeypatch: pytest.MonkeyPatch,
+    records: tuple[DecisionRecord, DecisionRecord],
+) -> None:
     monkeypatch.setattr(ac, "_transport", handler(emit_status=500))
-    assert await ac.emit_decision({"verdict": "act"}, cfg) is False
+    assert await ac.emit_decision(records[0], {"verdict": "act"}, cfg) is False

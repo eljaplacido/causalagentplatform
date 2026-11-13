@@ -144,8 +144,13 @@ CREATE TABLE IF NOT EXISTS decision_records (
     subject             TEXT NOT NULL,
     verdict             TEXT NOT NULL,
     recorded_at         TEXT NOT NULL,
-    record              TEXT NOT NULL
+    record              TEXT NOT NULL,
+    -- The shadow tag sealed in `record`; NULL for a real decision
+    -- (016_decision_shadow.sql).
+    shadow              TEXT
 );
+CREATE INDEX IF NOT EXISTS ix_decision_records_shadow
+    ON decision_records (shadow, sequence DESC);
 CREATE TABLE IF NOT EXISTS decision_followups (
     id                  INTEGER PRIMARY KEY AUTOINCREMENT,
     entry_digest        TEXT NOT NULL,

@@ -32,12 +32,12 @@
           "packages/causal-mcp": "a6e19b07b09b94989ff60e6b66cbfea208918f186d53b5d6c58e26cd80f4ab2d",
           "frontend/package.json": "90091605609635e84200d37acfeeafd37a63e7271a725463bc536857284747f7",
           "launch_backend.sh": "628bee3793afd8fc0d777eb5a789e9f1a49adff55d59af6888956d59d8e63c4f",
-          "docs/CURRENT_STAGE.md": "aaf8459a29327de8459c8039501c60dc4f81477a3c20255b857299433513ddce"
+          "docs/CURRENT_STAGE.md": "84e5a8f50eb1a0003e55067b4c0220e7bfd7928f3d1208fb7644113a1aad7831"
         }
       },
       "last_read": {
         "on": "2026-11-07",
-        "by": "Claude (train/4 merge of train/3 after #107: read README status pointers; CURRENT_STAGE semantic-surface rows (drift-alert record, review-queue risk, governance/workbench) beside the T11/NO_VARIATION/transportability rows; register merged by id, 0 drifted; ROADMAP rows 26-31; UIX governance/ApprovalPanel/NodeDetail passages vs #107 frontend change (ResultView NO_VARIATION reason text only): no claim moved)"
+        "by": "Claude (train/5 merge of train/4 after #107: read CURRENT_STAGE shadow rows 104-106 and TESTING_CICD shadow paragraph against #107 -- the fixture S-004 (every unit treated) is now NO_VARIATION with an experiment verdict, fixture prereg v2, and a not-transported study is sealed as an experiment in the target: both updated; shadow/README planted-case passage amended; ROADMAP shadow paragraph 148-152 and README pointers: no claim moved; UIX /decisions Shadow switch vs ResultView NO_VARIATION text: no claim moved)"
       }
     },
     "docs/CURRENT_STAGE.md": {
@@ -53,17 +53,17 @@
       "baseline": {
         "on": "2026-11-07",
         "sha256": {
-          "conformance/declared_not_implemented.json": "1269ddf39d586bd90541c366fb60f20dc9646d69b7babb89260414d3171aee8d",
-          "backend/src": "416f8f6af2b48a52e5b7ce3c3d3bc3cd6f0f2ea34804dbaa139c8b3cd3ef4732",
-          "backend/tests": "62e4e3d876f06e89c344901c7830ed96d197df9eb6c7641c5ab49f67ee4936c0",
-          "frontend/src": "d2b27dab541a4b7a27b148040cde2906603856ca12f7945ec8744e7b8ec9175e",
-          "packages": "05cc6e5f8b4972f73a145b3049ddebfc9d0c0eb5715b2e86d5243ef7fa86541b",
+          "conformance/declared_not_implemented.json": "0ad06eb087673d01c0d207a2c68a346611d9e609b67b2114cde0f4907492f379",
+          "backend/src": "783f26b65a502b14052c9550cb1b1ca2f6e4b626140c1d8859a1f27dda748a95",
+          "backend/tests": "517445af1871784d79d5f4ab139e35c3fd5511491d5fa3af01d9e314bb5ac0a5",
+          "frontend/src": "68c4623ae1d1cdb82303cd276740af418940acd6484c6b42df56dd627b30342b",
+          "packages": "732f6698e0a691e535e3a07444b9266b21b5378eb17a888884d28dbb131f88f1",
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3"
         }
       },
       "last_read": {
         "on": "2026-11-07",
-        "by": "Claude (train/4 merge of train/3 after #107: read README status pointers; CURRENT_STAGE semantic-surface rows (drift-alert record, review-queue risk, governance/workbench) beside the T11/NO_VARIATION/transportability rows; register merged by id, 0 drifted; ROADMAP rows 26-31; UIX governance/ApprovalPanel/NodeDetail passages vs #107 frontend change (ResultView NO_VARIATION reason text only): no claim moved)"
+        "by": "Claude (train/5 merge of train/4 after #107: read CURRENT_STAGE shadow rows 104-106 and TESTING_CICD shadow paragraph against #107 -- the fixture S-004 (every unit treated) is now NO_VARIATION with an experiment verdict, fixture prereg v2, and a not-transported study is sealed as an experiment in the target: both updated; shadow/README planted-case passage amended; ROADMAP shadow paragraph 148-152 and README pointers: no claim moved; UIX /decisions Shadow switch vs ResultView NO_VARIATION text: no claim moved)"
       }
     },
     "docs/ADR-001-canonical-semantic-layer.md": {
@@ -78,7 +78,7 @@
       "baseline": {
         "on": "2026-10-31",
         "sha256": {
-          "backend/src/semantic_layer": "95d4d49653b6a6a28d7a8930667f0d1605a93136a5aa7668bf30ea8dd290fa5d",
+          "backend/src/semantic_layer": "517fb1b2d51ae4342931b07e45282b9585e70028f1a7eee055effd95d398e3a6",
           "backend/src/agents/governance.py": "5b3f9564c2bb422416fc77075f2aa7d9245c3e49a3edcd769d407c236c30d747",
           "packages/semantic-types/src": "599b141c5312c6940a4479a5400b1113adfbef407f85ff016edeeade864d834c",
           "backend/src/agents/base.py": "b4846fe89f72558093198658a80f9d744ee506f5d204760c23f5cc9e755a4658",
@@ -87,7 +87,7 @@
       },
       "last_read": {
         "on": "2026-10-31",
-        "by": "Claude (semantic-surface branch): septa-62/72/87/88 -- drift_alerts table (015, append-only) and its SQL fallback, CausalEdge.created_at, review queue assumptions + recorded sensitivity (no evidence citations), NodeDetail in the workbench, EdgeProposal/GraphDiff deleted; re-read for those claims and fixed DATA_LAYER, QUICKSTART, AGENTS, UIX, ADR-001, CYBERSECURITY, TESTING_CICD, CURRENT_STAGE; README, SECURITY, HANDOFFS, ROADMAP unaffected"
+        "by": "Claude (merge train): link 5 = shadow-runtime + links 1-4 merged; its migration renumbered 016_decision_shadow.sql after semantic-surface's 015_drift_alerts.sql (DATA_LAYER range and decision_records row, factory comment); re-read DATA_LAYER, CYBERSECURITY (append-only tables, shadow never emitted), ADR-001, UIX (decisions Shadow switch beside the governance/incidents changes), TESTING_CICD (shadow round, drift and seed tests), CURRENT_STAGE/ROADMAP register re-cites and README pointers; claims hold"
       }
     },
     "docs/ADR-002-agentic-provenance-and-data-contracts.md": {
@@ -180,14 +180,14 @@
           "backend/src/semantic_layer/registry.py": "9d804b796fa34109248f431edf709c8b9ef0bbf400be4ca4cde40651085c8108",
           "backend/src/api/interventions.py": "928915a5bb49c3e1d993fc0da88ca6d1ac05bb1923afc6c3a0f248194d229e43",
           "backend/src/api/provenance.py": "2a308e924c9fd7ea910284fa58a479bdeeb97f260764d9c09c5d7eabeb74cfec",
-          "backend/src/db/migrations": "bb1f25ccbfa15878d18ea4cf66cb7cec9c623d05a6ca61f73c76f5536692f457",
+          "backend/src/db/migrations": "a690806c2c1ff37bc81aadb53d96f3c8ff8b77e79d8fc61a6f50bf4ff16e2bb3",
           "backend/src/semantic_layer/verdict.py": "6a46fcf8331be6953a01541f0f75151246ab50967b6baf2e1ded51ad55a80ae8",
           ".github/workflows": "dda91d5921d692ddf3c2cb61ede9c6cf00b576478eda4736820ea0a442099d80"
         }
       },
       "last_read": {
         "on": "2026-10-31",
-        "by": "Claude (semantic-surface branch): septa-62/72/87/88 -- drift_alerts table (015, append-only) and its SQL fallback, CausalEdge.created_at, review queue assumptions + recorded sensitivity (no evidence citations), NodeDetail in the workbench, EdgeProposal/GraphDiff deleted; re-read for those claims and fixed DATA_LAYER, QUICKSTART, AGENTS, UIX, ADR-001, CYBERSECURITY, TESTING_CICD, CURRENT_STAGE; README, SECURITY, HANDOFFS, ROADMAP unaffected"
+        "by": "Claude (merge train): link 5 = shadow-runtime + links 1-4 merged; its migration renumbered 016_decision_shadow.sql after semantic-surface's 015_drift_alerts.sql (DATA_LAYER range and decision_records row, factory comment); re-read DATA_LAYER, CYBERSECURITY (append-only tables, shadow never emitted), ADR-001, UIX (decisions Shadow switch beside the governance/incidents changes), TESTING_CICD (shadow round, drift and seed tests), CURRENT_STAGE/ROADMAP register re-cites and README pointers; claims hold"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -205,8 +205,8 @@
       "baseline": {
         "on": "2026-10-31",
         "sha256": {
-          "backend/src/db": "f3d5a7089a42e3d8daf6eec4c1a0c3b131a5a73cf55303576a36660ca42ec839",
-          "backend/src/connectors": "a1392b68cb6ca4d05b943de26a39eec5d9979e15866bf1f704d84339ac0c6f6b",
+          "backend/src/db": "b0ddb9b8fadb97994259032c012cb49dfb2aff47e805d0a2d4bfc93e4accca93",
+          "backend/src/connectors": "48489f6f7a9a5e193136873213223aef2e7c4c900a6c80b22d402b1d7fd3d83f",
           "backend/src/semantic_layer/models.py": "faa1f82a78cfb0338fdccf3f3711d93abd873eb87f6625219f15191f7ae87c43",
           "backend/src/sensors": "157d56ba253af8e684dc2e2f00d9a937b817a13ce4c42ef85929f2be4c1631ce",
           "docker-compose.yml": "cf00714523945859fe34180220d6449e99fcc64052a1b7b95dc03c02ded140e4",
@@ -217,7 +217,7 @@
       },
       "last_read": {
         "on": "2026-10-31",
-        "by": "Claude (semantic-surface branch): septa-62/72/87/88 -- drift_alerts table (015, append-only) and its SQL fallback, CausalEdge.created_at, review queue assumptions + recorded sensitivity (no evidence citations), NodeDetail in the workbench, EdgeProposal/GraphDiff deleted; re-read for those claims and fixed DATA_LAYER, QUICKSTART, AGENTS, UIX, ADR-001, CYBERSECURITY, TESTING_CICD, CURRENT_STAGE; README, SECURITY, HANDOFFS, ROADMAP unaffected"
+        "by": "Claude (merge train): link 5 = shadow-runtime + links 1-4 merged; its migration renumbered 016_decision_shadow.sql after semantic-surface's 015_drift_alerts.sql (DATA_LAYER range and decision_records row, factory comment); re-read DATA_LAYER, CYBERSECURITY (append-only tables, shadow never emitted), ADR-001, UIX (decisions Shadow switch beside the governance/incidents changes), TESTING_CICD (shadow round, drift and seed tests), CURRENT_STAGE/ROADMAP register re-cites and README pointers; claims hold"
       }
     },
     "docs/HANDOFFS.md": {
@@ -309,7 +309,7 @@
         "on": "2026-11-07",
         "sha256": {
           ".github/workflows": "dda91d5921d692ddf3c2cb61ede9c6cf00b576478eda4736820ea0a442099d80",
-          "backend/tests": "62e4e3d876f06e89c344901c7830ed96d197df9eb6c7641c5ab49f67ee4936c0",
+          "backend/tests": "517445af1871784d79d5f4ab139e35c3fd5511491d5fa3af01d9e314bb5ac0a5",
           "backend/pyproject.toml": "f7fbeb2dafb5635e8bc3d4ff461bb5b65a7091ed592a2b03c1442d2e6a74df5d",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
           "frontend/playwright.config.ts": "5dc65a49d6975444738042f9c292b56050a932ed23932e45498fbcea6285ff3e",
@@ -318,12 +318,12 @@
           "specs": "185fafa0ddf9176adc5a8bc0dcd120c974d0c7a504207e42f2ab1703667008a3",
           "benchmarks": "18f87f3832f78cb09851f14d4dbb13138036998b913eb74868dbe598a09479e8",
           "packages/causal-core/tests": "06c4404c64460ffa20bade9cd9fc594e877cf94ab042444a4f562b7332ff057a",
-          "packages/causal-decision/tests": "f8893495eb1947470bbc24d4924b3670f26526de253d1d12a5c93321e28e99b6"
+          "packages/causal-decision/tests": "0a423c6b905ff4f062dae132eaffad9c6c0f52428e63b78c7dad59ebc613ce8a"
         }
       },
       "last_read": {
         "on": "2026-11-07",
-        "by": "Claude (train/3 merge of train/2 after #107: read README status pointers and CURRENT_STAGE incident-integrity row vs the T11/NO_VARIATION/transportability rows; register merged by id (governance/AGENTS/incident_triage re-cites + transportability entry, 0 drifted); ROADMAP rows 26-31; TESTING_CICD gate table and lint ratchet note vs scripts/lint-baseline.json (train/3 values kept, main did not touch it); UIX incidents/Guardian-verdict paragraph -- Guardian verdicts are a separate vocabulary from causal-decision verdicts, NO_VARIATION/target_population do not reach incidents: no claim moved)"
+        "by": "Claude (train/5 merge of train/4 after #107: read CURRENT_STAGE shadow rows 104-106 and TESTING_CICD shadow paragraph against #107 -- the fixture S-004 (every unit treated) is now NO_VARIATION with an experiment verdict, fixture prereg v2, and a not-transported study is sealed as an experiment in the target: both updated; shadow/README planted-case passage amended; ROADMAP shadow paragraph 148-152 and README pointers: no claim moved; UIX /decisions Shadow switch vs ResultView NO_VARIATION text: no claim moved)"
       }
     },
     "docs/UIX.md": {
@@ -334,12 +334,12 @@
       "baseline": {
         "on": "2026-11-07",
         "sha256": {
-          "frontend/src": "d2b27dab541a4b7a27b148040cde2906603856ca12f7945ec8744e7b8ec9175e"
+          "frontend/src": "68c4623ae1d1cdb82303cd276740af418940acd6484c6b42df56dd627b30342b"
         }
       },
       "last_read": {
         "on": "2026-11-07",
-        "by": "Claude (train/4 merge of train/3 after #107: read README status pointers; CURRENT_STAGE semantic-surface rows (drift-alert record, review-queue risk, governance/workbench) beside the T11/NO_VARIATION/transportability rows; register merged by id, 0 drifted; ROADMAP rows 26-31; UIX governance/ApprovalPanel/NodeDetail passages vs #107 frontend change (ResultView NO_VARIATION reason text only): no claim moved)"
+        "by": "Claude (train/5 merge of train/4 after #107: read CURRENT_STAGE shadow rows 104-106 and TESTING_CICD shadow paragraph against #107 -- the fixture S-004 (every unit treated) is now NO_VARIATION with an experiment verdict, fixture prereg v2, and a not-transported study is sealed as an experiment in the target: both updated; shadow/README planted-case passage amended; ROADMAP shadow paragraph 148-152 and README pointers: no claim moved; UIX /decisions Shadow switch vs ResultView NO_VARIATION text: no claim moved)"
       }
     },
     "docs/ROADMAP.md": {
@@ -353,13 +353,13 @@
         "on": "2026-11-07",
         "sha256": {
           "packages/causal-core/src/causal_core": "28552dab1a30eeec7b4d4591f06cd8c26f9843a609357f6cedf577a114abc55d",
-          "conformance/declared_not_implemented.json": "1269ddf39d586bd90541c366fb60f20dc9646d69b7babb89260414d3171aee8d",
-          "docs/CURRENT_STAGE.md": "aaf8459a29327de8459c8039501c60dc4f81477a3c20255b857299433513ddce"
+          "conformance/declared_not_implemented.json": "0ad06eb087673d01c0d207a2c68a346611d9e609b67b2114cde0f4907492f379",
+          "docs/CURRENT_STAGE.md": "84e5a8f50eb1a0003e55067b4c0220e7bfd7928f3d1208fb7644113a1aad7831"
         }
       },
       "last_read": {
         "on": "2026-11-07",
-        "by": "Claude (train/4 merge of train/3 after #107: read README status pointers; CURRENT_STAGE semantic-surface rows (drift-alert record, review-queue risk, governance/workbench) beside the T11/NO_VARIATION/transportability rows; register merged by id, 0 drifted; ROADMAP rows 26-31; UIX governance/ApprovalPanel/NodeDetail passages vs #107 frontend change (ResultView NO_VARIATION reason text only): no claim moved)"
+        "by": "Claude (train/5 merge of train/4 after #107: read CURRENT_STAGE shadow rows 104-106 and TESTING_CICD shadow paragraph against #107 -- the fixture S-004 (every unit treated) is now NO_VARIATION with an experiment verdict, fixture prereg v2, and a not-transported study is sealed as an experiment in the target: both updated; shadow/README planted-case passage amended; ROADMAP shadow paragraph 148-152 and README pointers: no claim moved; UIX /decisions Shadow switch vs ResultView NO_VARIATION text: no claim moved)"
       }
     },
     "SECURITY.md": {
@@ -401,9 +401,9 @@
         "on": "2026-11-04",
         "sha256": {
           "shadow/capability-card.json": "4d2b87fa74d4eaa02e520b387d67f2aca8b7088751b1da44778e95e8c34f69b1",
-          "shadow/study-template.json": "83ba4ab56c575ee617e4b1200b377eb0a4a91775e7cfadfd9a15509de499b8a8",
+          "shadow/study-template.json": "14e71ffb993bc5f44ac402f8c98492af881787ed95a70f352d65edf5381dfe2d",
           "shadow/PRE-REGISTRATION.template.md": "c5a4e0709b371106cdeb5f0bb2c2f0b1bf581e530d98d886a2cc6e2ca1b13623",
-          "backend/src/connectors/agentcenter.py": "5a4190cd6088af24e0f6738a7b6be3c6115745474fc6dfe125324849148d73ac",
+          "backend/src/connectors/agentcenter.py": "1a2661fbda3f6ebd43423685a566b7c2580607aef79df936373b198f6f9f3490",
           "packages/causal-decision/src/causal_decision/contract.py": "bf4d754e10881989248e8061a8a74800b0ce3ba43895c997acbe2a80e05b3c27"
         }
       },

@@ -75,7 +75,9 @@ persona's page. How much of each view's surface below is built varies (see §4.2
   (`backend/tests/integration/test_draft_submission_api.py`), so a classified draft reaches the
   review queue. Authoring new edges or entities is not built, and the register entry
   `dag-workbench` stays open (`partial`).
-- **`/decisions` (decision ledger)** lists `GET /api/v1/decisions` (filter by action, limit),
+- **`/decisions` (decision ledger)** lists `GET /api/v1/decisions` (filter by action, limit;
+  real decisions by default, shadow ones under the "Shadow" switch, each marked with its tag
+  and the calibration report following the same switch),
   shows a record's verdict, checks, evidence and chain digests, verifies the chain
   (`/verify`), takes a follow-up (`POST .../{entry_digest}/followup`, once per decision) and shows
   the calibration report (`/calibration`). Numbers are the API's, shown in the kernel's own

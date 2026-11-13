@@ -219,7 +219,13 @@ proposed by devbrain and agentcenter, verdicts sealed and not acted on, and a fo
 against bars pre-registered from `shadow/PRE-REGISTRATION.template.md`. `shadow/` sits outside
 `benchmarks/` because it is not a gate. Its capability card and study template are pinned to the
 kernel's and the decision layer's contracts by `packages/causal-decision/tests/test_shadow_pack.py`.
-No round has run yet.
+The round runner and scorecard (`causal_decision.shadow_round`) are tested on a five-study fixture
+round whose data is simulated with the effects set
+(`packages/causal-decision/tests/test_shadow_round.py`): a reversed effect fails the round as a
+confident wrong answer, and the failed scorecard is kept. A planted every-unit-treated study is
+sealed as `NO_VARIATION` with an experiment verdict, and a study whose data come from another
+population than its declared target is sealed as an experiment in the target, not scored as acted.
+No round on real decisions has run yet.
 
 Counterfactuals over an SCM and causal discovery have no correctness tests because they are not
 implemented (registers `scm-counterfactuals`, `causal-discovery`). Rosenbaum bounds are gated by

@@ -252,6 +252,35 @@ interval, undecidable follow-ups scored as agreements or dropped, no minimum, "c
 read as "no difference"). It proves the report honest; it says nothing about how well any real
 operation's thresholds are calibrated.
 
+## Trying it in shadow
+
+A shadow run (the repository's `shadow/README.md`) measures the platform on real questions
+without anyone acting on its verdicts. `append(..., shadow="shadow-round-1")` seals a decision
+with a shadow tag; the tag is under the entry's digest, so a shadow verdict cannot later pass as a
+real one, nor a real one be filed away as shadow, without breaking the chain.
+`causal_decision.shadow` holds the runtime rules: `emittable(record)` raises
+`ShadowEmissionError` for a shadow record, and every emitter passes the sealed record through it
+before reporting a decision outward; `select(records, scope, tag)` lists real (the default),
+shadow or all; and `past_review` never lets a shadow decision retire a real one on the same action.
+
+`causal_decision.shadow_round` runs a round in two steps, because verdicts must be sealed before
+any follow-up data exists:
+
+```bash
+python -m causal_decision.shadow_round seal  shadow/rounds/1   # check graph, identify, decide, seal
+python -m causal_decision.shadow_round score shadow/rounds/1   # take due follow-ups, judge the bars
+```
+
+`seal` writes `results/<date>-v<version>-run<N>.json` once per pre-registration version: the
+chain, each study's graph check, identification, outcome, verdict, explanation and follow-up plan
+with its due date. `score` refuses a seal whose chain does not recompute, whose
+`PRE-REGISTRATION.md` changed, or whose studies changed in anything but the human decision; takes
+each follow-up once (a later scoring reuses it); and writes a new
+`scorecards/<date>-v<version>-run<N>.json` every time, failed or not. Each bar is `pass`, `fail`,
+`pending` (the data that would settle it does not exist yet) or `not_applicable`; the round
+passes only when every bar is measured and holds. `tests/test_shadow_round.py` holds it to a
+five-study fixture round whose data is simulated with the effects set.
+
 ## Evidence
 
 The D0 gate is pre-registered in `benchmarks/d0-decision-policy/PRE-REGISTRATION.md`, with bars
