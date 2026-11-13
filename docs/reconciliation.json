@@ -182,12 +182,12 @@
           "backend/src/api/provenance.py": "2a308e924c9fd7ea910284fa58a479bdeeb97f260764d9c09c5d7eabeb74cfec",
           "backend/src/db/migrations": "a690806c2c1ff37bc81aadb53d96f3c8ff8b77e79d8fc61a6f50bf4ff16e2bb3",
           "backend/src/semantic_layer/verdict.py": "6a46fcf8331be6953a01541f0f75151246ab50967b6baf2e1ded51ad55a80ae8",
-          ".github/workflows": "7a6b80ca906232763d03ef3c55bb2bd8f245f4aa15789624e22ece84e213593d"
+          ".github/workflows": "0795ad9a63e22ac54e0869269020ad7456f642f00ab33234e2df21d77a1445c6"
         }
       },
       "last_read": {
         "on": "2026-11-13",
-        "by": "Claude (release/v2026.11.13: release.yml gains PYPI_PUBLISH (publish skipped until set) and a github-release job attaching sdists, wheels and SBOM; read CONTRIBUTING Releases, TESTING_CICD 5.2, CYBERSECURITY release-SBOM and where-CI-runs against it; README external-agent and causal-mcp README install lines now give the release wheels (pip form checked in a fresh venv); package CHANGELOG headings dated 2026-11-13; CURRENT_STAGE row 151 (release.yml not yet run on GitHub) still true; ROADMAP septa-2 PyPI release still open; AGENTS, ORCHESTRATION: no claim moved; register re-cite dast-not-built CYBERSECURITY:701)"
+        "by": "Claude (release/v2026.11.13: release.yml verify now checks out full history (fetch-depth 0), as ci.yml does; no passage describes checkout depth; no claim moved)"
       }
     },
     "docs/DATA_LAYER.md": {
@@ -251,13 +251,13 @@
         "sha256": {
           "templates": "41f3c58e7df931a181c17a4b43ce0ef52d3c6f42bc8634b911a810a169f4097c",
           "prompts": "7160c082930c39f2ca426a6f05a0bcd08633455bf7ffec240439c3d6b0df48c9",
-          ".github": "2a5622d7125c12506d2dbf222aad42b133b0949f9f7caafc6fbefe4b519e3d3a",
+          ".github": "c719b1641f42523d4e2cc7d850c3a78f6871e5143eb92cbe6521d103adb3685a",
           ".gnomon": "ee147e3edf82b9371953e17ac4c663f28983c116ed09e0625fb7c451162ee5d8"
         }
       },
       "last_read": {
         "on": "2026-11-13",
-        "by": "Claude (release/v2026.11.13: release.yml gains PYPI_PUBLISH (publish skipped until set) and a github-release job attaching sdists, wheels and SBOM; read CONTRIBUTING Releases, TESTING_CICD 5.2, CYBERSECURITY release-SBOM and where-CI-runs against it; README external-agent and causal-mcp README install lines now give the release wheels (pip form checked in a fresh venv); package CHANGELOG headings dated 2026-11-13; CURRENT_STAGE row 151 (release.yml not yet run on GitHub) still true; ROADMAP septa-2 PyPI release still open; AGENTS, ORCHESTRATION: no claim moved; register re-cite dast-not-built CYBERSECURITY:701)"
+        "by": "Claude (release/v2026.11.13: release.yml verify now checks out full history (fetch-depth 0), as ci.yml does; no passage describes checkout depth; no claim moved)"
       }
     },
     "docs/QUICKSTART.md": {
@@ -308,7 +308,7 @@
       "baseline": {
         "on": "2026-11-13",
         "sha256": {
-          ".github/workflows": "7a6b80ca906232763d03ef3c55bb2bd8f245f4aa15789624e22ece84e213593d",
+          ".github/workflows": "0795ad9a63e22ac54e0869269020ad7456f642f00ab33234e2df21d77a1445c6",
           "backend/tests": "6523531ca601548892c50443bc84754b96c49b67d895cbbb80f199444aa65234",
           "backend/pyproject.toml": "f7fbeb2dafb5635e8bc3d4ff461bb5b65a7091ed592a2b03c1442d2e6a74df5d",
           "frontend/vitest.config.mts": "6cad9cbaa519d93c92b44153f1fc38d1d785a56be8bc58618e48c768e5bf1b3d",
@@ -323,7 +323,7 @@
       },
       "last_read": {
         "on": "2026-11-13",
-        "by": "Claude (release/v2026.11.13: release.yml gains PYPI_PUBLISH (publish skipped until set) and a github-release job attaching sdists, wheels and SBOM; read CONTRIBUTING Releases, TESTING_CICD 5.2, CYBERSECURITY release-SBOM and where-CI-runs against it; README external-agent and causal-mcp README install lines now give the release wheels (pip form checked in a fresh venv); package CHANGELOG headings dated 2026-11-13; CURRENT_STAGE row 151 (release.yml not yet run on GitHub) still true; ROADMAP septa-2 PyPI release still open; AGENTS, ORCHESTRATION: no claim moved; register re-cite dast-not-built CYBERSECURITY:701)"
+        "by": "Claude (release/v2026.11.13: release.yml verify now checks out full history (fetch-depth 0), as ci.yml does; no passage describes checkout depth; no claim moved)"
       }
     },
     "docs/UIX.md": {

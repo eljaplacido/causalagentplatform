@@ -57,6 +57,10 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Full history, as in ci.yml: test_benchmark_results.py accepts a gate's recorded
+          # run only when its commit is an ancestor of HEAD, which a shallow clone cannot show.
+          fetch-depth: 0
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
