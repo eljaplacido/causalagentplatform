@@ -258,7 +258,9 @@ T9 and pinned to a published example by `backend/tests/unit/test_rosenbaum_bound
   There is no coverage threshold.
 - **Playwright** (`frontend/e2e/`, config `frontend/playwright.config.ts`). The gate's
   `frontend-e2e` step runs `golden-path.spec.ts` against a live backend it starts (septa-97;
-  the spec's header says how to run it by hand). `workbench-authoring.spec.ts` is not in the
+  the spec's header says how to run it by hand). CI installs Playwright's Chromium in the job
+  (`npx playwright install chromium`) instead of trusting a self-hosted host's cache; locally,
+  a missing browser makes the step SKIPPED and the gate exit 2. `workbench-authoring.spec.ts` is not in the
   gate; run it by hand with `npx playwright test e2e/workbench-authoring.spec.ts` in `frontend/`.
   It drives the real frontend in Chromium with
   the backend stubbed at the network boundary (`page.route`), so it checks the drafting surface,
