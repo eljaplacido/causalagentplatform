@@ -13,7 +13,7 @@
 # Node is kept on an LTS line (26, Active LTS since 2026-10-28); .github/dependabot.yml
 # ignores the non-LTS lines, so a bot PR only moves the digest within 26 or proposes the
 # next LTS.
-FROM node:26-alpine@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94 AS builder
+FROM node:26-alpine@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5 AS builder
 WORKDIR /repo
 
 # The workspace manifests first, so the install layer is cached across source edits.
@@ -32,7 +32,7 @@ RUN npm run build --workspace=packages/semantic-types \
     && npm run build --workspace=frontend
 
 # ── Production stage ───────────────────────────────────────────────────────
-FROM node:26-alpine@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94 AS production
+FROM node:26-alpine@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5 AS production
 WORKDIR /app
 
 ENV NODE_ENV=production
